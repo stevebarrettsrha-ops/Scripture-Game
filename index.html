@@ -189,11 +189,11 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback, useRef } = React;
 
-    const TILE_SIZE = 24;
+    const TILE_SIZE = 32;
     const MAP_WIDTH = 60;
     const MAP_HEIGHT = 40;
-    const VIEWPORT_WIDTH = 24;
-    const VIEWPORT_HEIGHT = 14;
+    const VIEWPORT_WIDTH = 18;
+    const VIEWPORT_HEIGHT = 11;
 
     const GARDEN_BOUNDS = { minX: 5, maxX: 55, minY: 5, maxY: 35 };
     const TREE_OF_KNOWLEDGE = { x: 15, y: 18 };
@@ -1449,6 +1449,113 @@
               ctx.fillStyle = '#a08050';
               ctx.fillRect(x - 8, y + 6, 4, 14);
               ctx.fillRect(x + 4, y + 6, 4, 14);
+            } else if (type === 'frog') {
+              // Body
+              ctx.fillStyle = '#4a8040';
+              ctx.beginPath();
+              ctx.ellipse(x, y, 12, 10, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // Head
+              ctx.fillStyle = '#5a9050';
+              ctx.beginPath();
+              ctx.ellipse(x - 8, y - 4, 8, 6, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // Eyes (bulging)
+              ctx.fillStyle = '#2a5020';
+              ctx.beginPath();
+              ctx.arc(x - 12, y - 10, 5, 0, Math.PI * 2);
+              ctx.arc(x - 4, y - 10, 5, 0, Math.PI * 2);
+              ctx.fill();
+              // Back legs
+              ctx.fillStyle = '#4a8040';
+              ctx.beginPath();
+              ctx.ellipse(x + 8, y + 8, 8, 5, Math.PI * 0.3, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (type === 'bunny') {
+              // Body
+              ctx.fillStyle = '#d0c0b0';
+              ctx.beginPath();
+              ctx.ellipse(x, y, 12, 10, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // Head
+              ctx.beginPath();
+              ctx.arc(x - 10, y - 5, 8, 0, Math.PI * 2);
+              ctx.fill();
+              // Ears
+              ctx.beginPath();
+              ctx.ellipse(x - 14, y - 20, 4, 10, -0.2, 0, Math.PI * 2);
+              ctx.ellipse(x - 6, y - 20, 4, 10, 0.2, 0, Math.PI * 2);
+              ctx.fill();
+              // Inner ears
+              ctx.fillStyle = '#f0c0c0';
+              ctx.beginPath();
+              ctx.ellipse(x - 14, y - 20, 2, 7, -0.2, 0, Math.PI * 2);
+              ctx.ellipse(x - 6, y - 20, 2, 7, 0.2, 0, Math.PI * 2);
+              ctx.fill();
+              // Tail
+              ctx.fillStyle = '#fff';
+              ctx.beginPath();
+              ctx.arc(x + 12, y, 5, 0, Math.PI * 2);
+              ctx.fill();
+            } else if (type === 'dog') {
+              // Body
+              ctx.fillStyle = '#8b6040';
+              ctx.beginPath();
+              ctx.ellipse(x, y, 18, 12, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // Head
+              ctx.beginPath();
+              ctx.arc(x - 14, y - 4, 10, 0, Math.PI * 2);
+              ctx.fill();
+              // Snout
+              ctx.fillStyle = '#7b5030';
+              ctx.beginPath();
+              ctx.ellipse(x - 22, y - 2, 6, 4, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // Nose
+              ctx.fillStyle = '#1a1a1a';
+              ctx.beginPath();
+              ctx.arc(x - 27, y - 2, 2, 0, Math.PI * 2);
+              ctx.fill();
+              // Ears
+              ctx.fillStyle = '#6b4020';
+              ctx.beginPath();
+              ctx.ellipse(x - 18, y - 14, 5, 8, -0.3, 0, Math.PI * 2);
+              ctx.ellipse(x - 8, y - 12, 5, 8, 0.3, 0, Math.PI * 2);
+              ctx.fill();
+              // Tail
+              ctx.fillStyle = '#8b6040';
+              ctx.beginPath();
+              ctx.moveTo(x + 16, y - 4);
+              ctx.quadraticCurveTo(x + 28, y - 15, x + 25, y - 8);
+              ctx.quadraticCurveTo(x + 22, y - 2, x + 16, y);
+              ctx.fill();
+              // Legs
+              ctx.fillRect(x - 10, y + 8, 5, 12);
+              ctx.fillRect(x + 5, y + 8, 5, 12);
+            } else if (type === 'sheep') {
+              // Fluffy body
+              ctx.fillStyle = '#f0f0e8';
+              for (let i = 0; i < 6; i++) {
+                const sx = x + (i % 3 - 1) * 8;
+                const sy = y + Math.floor(i / 3) * 6 - 3;
+                ctx.beginPath();
+                ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+                ctx.fill();
+              }
+              // Head
+              ctx.fillStyle = '#2a2a2a';
+              ctx.beginPath();
+              ctx.ellipse(x - 12, y, 6, 5, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // Ears
+              ctx.beginPath();
+              ctx.ellipse(x - 16, y - 4, 3, 5, -0.5, 0, Math.PI * 2);
+              ctx.ellipse(x - 8, y - 4, 3, 5, 0.5, 0, Math.PI * 2);
+              ctx.fill();
+              // Legs
+              ctx.fillRect(x - 6, y + 8, 4, 10);
+              ctx.fillRect(x + 2, y + 8, 4, 10);
             }
           };
 
@@ -1591,16 +1698,17 @@
 
             // Vegetation and trees (verse 11+)
             if (currentVerse.verse >= 11) {
-              // Trees
+              // Trees on land only (right side, above water)
               for (let i = 0; i < 5; i++) {
-                drawTree(80 + i * 100, canvas.height * 0.52, 35);
+                drawTree(canvas.width * 0.5 + i * 80, canvas.height * 0.47, 35);
               }
 
-              // Flowers
+              // Flowers on dry land only (above water line at 0.6)
               const flowerColors = ['#ff6090', '#ffe040', '#fff8f0', '#90c0ff', '#ff9060'];
-              for (let i = 0; i < 25; i++) {
-                const fx = 20 + (i * 53) % (canvas.width - 40);
-                const fy = canvas.height * 0.56 + (i * 17) % 30;
+              for (let i = 0; i < 20; i++) {
+                // Place flowers on the right side where the land is
+                const fx = canvas.width * 0.45 + (i * 37) % (canvas.width * 0.5);
+                const fy = canvas.height * 0.50 + (i * 13) % 15;
                 ctx.fillStyle = flowerColors[i % 5];
                 for (let p = 0; p < 5; p++) {
                   const angle = (p / 5) * Math.PI * 2;
@@ -1710,22 +1818,20 @@
               drawAnimal(fx, fy, 'fish');
             }
 
-            // Sea monster/whale
-            const whaleX = ((gameTime * 0.8) % (canvas.width + 200)) - 100;
+            // Sea monster/whale - moving right (same direction as fish)
+            const whaleX = canvas.width + 100 - ((gameTime * 0.8) % (canvas.width + 200));
             ctx.fillStyle = '#304060';
             ctx.beginPath();
             ctx.ellipse(whaleX, canvas.height * 0.7, 50, 25, 0, 0, Math.PI * 2);
             ctx.fill();
+            // Tail on left side (whale facing right)
             ctx.beginPath();
-            ctx.moveTo(whaleX + 45, canvas.height * 0.7);
-            ctx.lineTo(whaleX + 70, canvas.height * 0.7 - 20);
-            ctx.lineTo(whaleX + 70, canvas.height * 0.7 + 20);
+            ctx.moveTo(whaleX - 45, canvas.height * 0.7);
+            ctx.lineTo(whaleX - 70, canvas.height * 0.7 - 20);
+            ctx.lineTo(whaleX - 70, canvas.height * 0.7 + 20);
             ctx.closePath();
             ctx.fill();
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(whaleX - 30, canvas.height * 0.7 - 5, 5, 0, Math.PI * 2);
-            ctx.fill();
+            // No eye - removed per request
           }
           // DAY 6 - Land animals and man
           else if (day === 6) {
@@ -1762,27 +1868,32 @@
               drawTree(60 + i * 140, canvas.height * 0.53, 40);
             }
 
-            // Animals
-            drawAnimal(100, canvas.height * 0.7, 'lion');
-            drawAnimal(250, canvas.height * 0.72, 'deer');
-            drawAnimal(400, canvas.height * 0.68, 'deer');
+            // Animals - many different kinds
+            drawAnimal(80, canvas.height * 0.72, 'lion');
+            drawAnimal(180, canvas.height * 0.74, 'deer');
+            drawAnimal(280, canvas.height * 0.70, 'dog');
+            drawAnimal(380, canvas.height * 0.75, 'bunny');
+            drawAnimal(450, canvas.height * 0.73, 'sheep');
+            drawAnimal(520, canvas.height * 0.76, 'frog');
+            drawAnimal(150, canvas.height * 0.82, 'bunny');
+            drawAnimal(350, canvas.height * 0.80, 'deer');
 
-            // Adam figure (verse 26+)
-            if (currentVerse.verse >= 26) {
-              // Draw Adam with glory
+            // Adam figure (verse 27+ when man is created, not before)
+            if (currentVerse.verse >= 27) {
+              // Draw Adam with glory on land
               const adamX = canvas.width / 2;
-              const adamY = canvas.height * 0.65;
+              const adamY = canvas.height * 0.62; // On land, not water
 
               // Glory aura
               ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
               ctx.shadowColor = '#ffd700';
               ctx.shadowBlur = 30 + Math.sin(gameTime * 0.1) * 10;
               ctx.beginPath();
-              ctx.ellipse(adamX, adamY, 40, 50, 0, 0, Math.PI * 2);
+              ctx.ellipse(adamX, adamY + 5, 40, 50, 0, 0, Math.PI * 2);
               ctx.fill();
               ctx.shadowBlur = 0;
 
-              drawChibiCharacter(ctx, adamX - 8, adamY - 15, {
+              drawChibiCharacter(ctx, adamX - 8, adamY - 10, {
                 skinColor: SKIN_COLOR,
                 hairColor: '#1a1a1a',
                 hairHighlight: '#3a3a3a',
@@ -1950,52 +2061,50 @@
                 gameTime
               });
             } else if (scene === 'sleep') {
-              // Adam sleeping
-              const adamX = canvas.width / 2;
-              const adamY = canvas.height * 0.65;
+              // Adam sleeping - turned on his side
+              const adamX = canvas.width / 2 - 30;
+              const adamY = canvas.height * 0.60;
 
-              // Sleeping Adam (lying down representation)
+              // Glory aura (horizontal for sleeping)
               ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
               ctx.beginPath();
-              ctx.ellipse(adamX, adamY, 50, 25, 0, 0, Math.PI * 2);
+              ctx.ellipse(adamX + 10, adamY + 15, 50, 35, 0, 0, Math.PI * 2);
               ctx.fill();
 
-              ctx.fillStyle = SKIN_COLOR;
-              ctx.beginPath();
-              ctx.ellipse(adamX, adamY, 40, 15, 0, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.strokeStyle = '#1a1a1a';
-              ctx.lineWidth = 1;
-              ctx.stroke();
+              // Save context, rotate to draw character on side
+              ctx.save();
+              ctx.translate(adamX + 8, adamY + 10);
+              ctx.rotate(Math.PI / 2); // Rotate 90 degrees to lie on side
 
-              // Head
-              ctx.fillStyle = SKIN_COLOR;
-              ctx.beginPath();
-              ctx.arc(adamX - 35, adamY - 5, 12, 0, Math.PI * 2);
-              ctx.fill();
-              ctx.stroke();
+              drawChibiCharacter(ctx, -8, -10, {
+                skinColor: SKIN_COLOR,
+                hairColor: '#1a1a1a',
+                hairHighlight: '#3a3a3a',
+                hasGlory: true,
+                direction: 'down',
+                gameTime
+              });
 
-              // Hair
-              ctx.fillStyle = '#1a1a1a';
-              ctx.beginPath();
-              ctx.arc(adamX - 35, adamY - 10, 12, Math.PI, 0);
-              ctx.fill();
+              ctx.restore();
 
-              // Closed eyes (Z's)
+              // Sleeping Z's
               ctx.fillStyle = '#6080ff';
-              ctx.font = 'bold 12px sans-serif';
-              ctx.fillText('Z', adamX - 20, adamY - 20);
-              ctx.font = 'bold 16px sans-serif';
-              ctx.fillText('Z', adamX - 10, adamY - 30);
-              ctx.font = 'bold 20px sans-serif';
-              ctx.fillText('Z', adamX + 5, adamY - 40);
+              ctx.font = 'bold 14px sans-serif';
+              ctx.fillText('Z', adamX + 30, adamY - 10);
+              ctx.font = 'bold 18px sans-serif';
+              ctx.fillText('Z', adamX + 45, adamY - 25);
+              ctx.font = 'bold 22px sans-serif';
+              ctx.fillText('Z', adamX + 65, adamY - 40);
 
-              // Divine light forming Chawwah
-              const lightX = adamX + 20;
+              // Divine light forming Chawwah from his side
+              const lightX = adamX + 80;
               ctx.fillStyle = `rgba(255, 255, 200, ${0.5 + Math.sin(gameTime * 0.15) * 0.2})`;
+              ctx.shadowColor = '#ffffd0';
+              ctx.shadowBlur = 20;
               ctx.beginPath();
-              ctx.ellipse(lightX + 30, adamY - 10, 25, 35, 0, 0, Math.PI * 2);
+              ctx.ellipse(lightX + 20, adamY, 30, 40, 0, 0, Math.PI * 2);
               ctx.fill();
+              ctx.shadowBlur = 0;
             } else if (scene === 'chawwah_created') {
               // Both Adam and Chawwah
               const adamX = canvas.width * 0.4;
