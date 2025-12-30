@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>BERE'SHIYTH: In The Beginning</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #111827;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    #root { width: 100%; }
+    .game-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 8px;
+    }
+    .title {
+      font-size: 1.125rem;
+      font-weight: bold;
+      color: #facc15;
+      margin-bottom: 4px;
+      font-family: Georgia, serif;
+    }
+    canvas {
+      border: 4px solid #ca8a04;
+      border-radius: 4px;
+      image-rendering: pixelated;
+      max-width: 100%;
+    }
+    .dialogue-box {
+      width: 100%;
+      max-width: 28rem;
+      margin-top: 8px;
+      background: black;
+      border: 2px solid #eab308;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .dialogue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .dialogue-name {
+      color: #facc15;
+      font-weight: bold;
+    }
+    .dialogue-counter {
+      color: #6b7280;
+      font-size: 0.75rem;
+    }
+    .dialogue-text {
+      color: white;
+      font-size: 0.875rem;
+      margin-bottom: 12px;
+    }
+    .scene-text {
+      color: #fde047;
+      font-size: 0.875rem;
+      font-style: italic;
+      margin-bottom: 12px;
+      font-family: Georgia, serif;
+    }
+    .btn {
+      width: 100%;
+      background: #ca8a04;
+      color: white;
+      font-weight: bold;
+      padding: 8px 16px;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn:hover { background: #eab308; }
+    .btn:active { background: #a16207; }
+    .quest-text {
+      margin-top: 8px;
+      color: #fde047;
+      font-size: 0.75rem;
+      text-align: center;
+    }
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      gap: 24px;
+      align-items: center;
+    }
+    .dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+    .dpad-btn {
+      width: 48px;
+      height: 48px;
+      background: #1f2937;
+      border: 2px solid #4b5563;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      color: #d1d5db;
+      cursor: pointer;
+    }
+    .dpad-btn:active {
+      background: #374151;
+      border-color: #eab308;
+    }
+    .talk-btn {
+      width: 56px;
+      height: 56px;
+      background: #ca8a04;
+      border: 4px solid #facc15;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+    .talk-btn:active { background: #eab308; }
+    .phase-indicator {
+      margin-top: 8px;
+      color: #f87171;
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .help-text {
+      margin-top: 8px;
+      color: #6b7280;
+      font-size: 0.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
+
+    const TILE_SIZE = 32;
+    const MAP_WIDTH = 40;
+    const MAP_HEIGHT = 30;
+    const VIEWPORT_WIDTH = 14;
+    const VIEWPORT_HEIGHT = 10;
+
+    const GARDEN_BOUNDS = { minX: 5, maxX: 35, minY: 5, maxY: 20 };
+    const TREE_OF_KNOWLEDGE = { x: 10, y: 10 };
+    const SKIN_COLOR = '#5D4037';
+
+    const TILES = {
+      GRASS: 0, WATER: 1, TREE: 2, FLOWER: 3, PATH: 4,
+      TREE_OF_LIFE: 5, TREE_OF_KNOWLEDGE: 6, ROCK: 7, BUSH: 8,
+    };
+
+    const COLORS = {
+      grass: '#5a8f3d', grassDark: '#4a7f2d', water: '#3d7aaf', waterLight: '#5d9acf',
+      tree: '#2d5a1d', treeTrunk: '#8b4513', flower: '#ff69b4', flowerYellow: '#ffd700',
+      path: '#c9a86c', rock: '#808080', bush: '#3d6f2d', treeOfLife: '#ffd700',
+      treeOfKnowledge: '#8b0000', sky: '#87ceeb',
+    };
+
+    const generateMap = () => {
+      const map = [];
+      for (let y = 0; y < MAP_HEIGHT; y++) {
+        const row = [];
+        for (let x = 0; x < MAP_WIDTH; x++) {
+          if (y >= 22 && y <= 25) row.push(TILES.WATER);
+          else if ((x === 15 && y >= 5 && y <= 20) || (y === 12 && x >= 8 && x <= 28)) row.push(TILES.PATH);
+          else if (x < 3 || x > MAP_WIDTH - 4 || y < 3 || y > MAP_HEIGHT - 4) row.push(Math.random() > 0.3 ? TILES.TREE : TILES.GRASS);
+          else {
+            const rand = Math.random();
+            if (rand < 0.05) row.push(TILES.TREE);
+            else if (rand < 0.08) row.push(TILES.FLOWER);
+            else if (rand < 0.1) row.push(TILES.BUSH);
+            else if (rand < 0.11) row.push(TILES.ROCK);
+            else row.push(TILES.GRASS);
+          }
+        }
+        map.push(row);
+      }
+      map[10][28] = TILES.TREE_OF_LIFE;
+      map[TREE_OF_KNOWLEDGE.y][TREE_OF_KNOWLEDGE.x] = TILES.TREE_OF_KNOWLEDGE;
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          if (map[10 + dy]) {
+            if (map[10 + dy][28 + dx] !== undefined && map[10 + dy][28 + dx] !== TILES.TREE_OF_LIFE) map[10 + dy][28 + dx] = TILES.GRASS;
+            if (map[TREE_OF_KNOWLEDGE.y + dy] && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== undefined && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== TILES.TREE_OF_KNOWLEDGE) map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] = TILES.GRASS;
+          }
+        }
+      }
+      return map;
+    };
+
+    const createNPCs = () => [
+      {
+        id: 'adam', name: "A'dam", x: 20, y: 14, prevX: 20, prevY: 14, color: SKIN_COLOR, hairColor: '#1a1a1a',
+        thoughts: ["YAHUAH formed me from the dust...", "I am to dress and keep this garden.", "She is bone of my bones..."],
+        dialogue: ["Shalom, traveler. I am A'dam.", "YAHUAH ELOHIYM formed me of the dust of the ground.", "He breathed into my nostrils the breath of life.", "I became a living nephesh.", "YAHUAH put me in the Garden of Eden to dress it and keep it.", "Of every tree I may freely eat...", "But of the Ets HaDa'at Tov v'Ra, I shall not eat.", "For in the day I eat thereof, I shall surely die."],
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 20, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
+      },
+      {
+        id: 'chavvah', name: 'Chavvah', x: 22, y: 14, prevX: 22, prevY: 14, color: SKIN_COLOR, hairColor: '#1a1a1a', isEve: true,
+        thoughts: ["The garden is so beautiful...", "That tree... the fruit looks good...", "The nachash says we won't die..."],
+        dialogue: ["I am Chavvah, the mother of all living.", "YAHUAH ELOHIYM caused a deep sleep upon A'dam.", "He took one of his ribs and made me.", "We may eat of the fruit of the trees of the garden.", "But of the tree in the midst of the garden...", "ELOHIYM has said, Ye shall not eat of it.", "Neither shall ye touch it, lest ye die.", "But the nachash says our eyes will be opened..."],
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 22, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
+      },
+      {
+        id: 'nachash', name: 'Nachash', x: 10, y: 12, prevX: 10, prevY: 12, color: '#228b22', isSerpent: true,
+        thoughts: ["Yea, hath ELOHIYM said...?", "Ye shall not surely die...", "Your eyes shall be opened..."],
+        dialogue: ["Yea, hath ELOHIYM said...", "Ye shall not eat of every tree of the garden?", "Ye shall not surely die.", "For ELOHIYM knows that in the day ye eat thereof...", "Your eyes shall be opened.", "And ye shall be as elohiym...", "Knowing good and evil.", "Is the fruit not pleasant to the eyes?"],
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'circle_tree', circleAngle: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false,
+      },
+      {
+        id: 'malak', name: 'Malak', x: 28, y: 8, prevX: 28, prevY: 8, color: SKIN_COLOR, hairColor: '#1a1a1a', isAngel: true,
+        thoughts: ["Holy, holy, holy is YAHUAH!", "I guard the Ets Chayim.", "The flaming sword turns every way..."],
+        dialogue: ["Shalom. I am a malak of YAHUAH.", "I watch over this qodesh garden.", "Behold, the Ets Chayim - the Tree of Life!", "And there - the Ets HaDa'at Tov v'Ra.", "YAHUAH ELOHIYM has forbidden its fruit.", "Guard your heart, child of the Most High."],
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 28, y: 8}, {x: 26, y: 10}, {x: 30, y: 10}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false,
+      }
+    ];
+
+    const PHASES = {
+      EXPLORE: 'explore', SCENE_START: 'scene_start', CHAVVAH_WALKS_TO_TREE: 'chavvah_walks',
+      CHAVVAH_TAKES_FRUIT: 'chavvah_takes', CHAVVAH_EATS: 'chavvah_eats', CHAVVAH_GLORY_FADES: 'chavvah_glory_fades',
+      CHAVVAH_WALKS_TO_ADAM: 'chavvah_to_adam', ADAM_EATS: 'adam_eats', ADAM_GLORY_FADES: 'adam_glory_fades',
+      EYES_OPENED: 'eyes_opened', COMPLETE: 'complete'
+    };
+
+    const GenesisGame = () => {
+      const canvasRef = useRef(null);
+      const [map] = useState(generateMap);
+      const [player, setPlayer] = useState({ x: 17, y: 16, prevX: 17, prevY: 16, direction: 'down', walkFrame: 0, isMoving: false });
+      const [npcs, setNpcs] = useState(createNPCs);
+      const [camera, setCamera] = useState({ x: 0, y: 0 });
+      const [showDialogue, setShowDialogue] = useState(null);
+      const [sceneText, setSceneText] = useState("Bere'shiyth - In the beginning ELOHIYM created the heavens and the earth...");
+      const [showSceneText, setShowSceneText] = useState(true);
+      const [gameTime, setGameTime] = useState(0);
+      const [gamePhase, setGamePhase] = useState(PHASES.EXPLORE);
+      const keysPressed = useRef({});
+      const [touchDirection, setTouchDirection] = useState(null);
+
+      const checkSceneTrigger = useCallback(() => {
+        const adam = npcs.find(n => n.id === 'adam');
+        const chavvah = npcs.find(n => n.id === 'chavvah');
+        const nachash = npcs.find(n => n.id === 'nachash');
+        return adam?.hasSpoken && chavvah?.hasSpoken && nachash?.hasSpoken;
+      }, [npcs]);
+
+      const canNPCMoveTo = useCallback((x, y) => {
+        if (x < GARDEN_BOUNDS.minX || x > GARDEN_BOUNDS.maxX || y < GARDEN_BOUNDS.minY || y > GARDEN_BOUNDS.maxY) return false;
+        if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
+        const tile = map[Math.floor(y)][Math.floor(x)];
+        return tile !== TILES.WATER && tile !== TILES.TREE && tile !== TILES.ROCK && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE;
+      }, [map]);
+
+      const canMoveTo = useCallback((x, y) => {
+        if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
+        const tile = map[Math.floor(y)][Math.floor(x)];
+        return tile !== TILES.WATER && tile !== TILES.TREE && tile !== TILES.ROCK && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE;
+      }, [map]);
+
+      useEffect(() => {
+        setCamera({
+          x: Math.max(0, Math.min(player.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)),
+          y: Math.max(0, Math.min(player.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT))
+        });
+      }, [player]);
+
+      const advanceDialogue = useCallback(() => {
+        if (!showDialogue) return;
+        const currentNpc = npcs.find(n => n.id === showDialogue.id);
+        if (currentNpc) {
+          const nextDialogue = showDialogue.currentDialogue + 1;
+          if (nextDialogue >= currentNpc.dialogue.length) {
+            setShowDialogue(null);
+            setNpcs(prev => prev.map(npc => npc.id === currentNpc.id ? { ...npc, hasSpoken: true, currentDialogue: 0 } : npc));
+          } else {
+            setShowDialogue({ ...showDialogue, currentDialogue: nextDialogue });
+          }
+        }
+      }, [showDialogue, npcs]);
+
+      const handleInteraction = useCallback(() => {
+        if (showDialogue) { advanceDialogue(); return; }
+        if (showSceneText) { setShowSceneText(false); return; }
+        if (gamePhase === PHASES.EXPLORE) {
+          const nearbyNpc = npcs.find(npc => Math.abs(npc.x - player.x) < 1.5 && Math.abs(npc.y - player.y) < 1.5);
+          if (nearbyNpc) setShowDialogue({ ...nearbyNpc, currentDialogue: 0 });
+        }
+      }, [showDialogue, showSceneText, gamePhase, npcs, player, advanceDialogue]);
+
+      const advanceScene = useCallback(() => {
+        setShowSceneText(false);
+        switch (gamePhase) {
+          case PHASES.SCENE_START:
+            setGamePhase(PHASES.CHAVVAH_WALKS_TO_TREE);
+            setSceneText("And when the woman saw that the tree was good for food, and pleasant to the eyes...");
+            setShowSceneText(true);
+            break;
+          case PHASES.CHAVVAH_TAKES_FRUIT:
+            setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, holdingFruit: true } : npc));
+            setGamePhase(PHASES.CHAVVAH_EATS);
+            setSceneText("She took of the fruit thereof...");
+            setShowSceneText(true);
+            break;
+          case PHASES.CHAVVAH_EATS:
+            setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, isEating: true } : npc));
+            setTimeout(() => {
+              setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, isEating: false } : npc));
+              setGamePhase(PHASES.CHAVVAH_GLORY_FADES);
+              setSceneText("And did eat... and the glory of YAHUAH departed from her...");
+              setShowSceneText(true);
+              setTimeout(() => {
+                setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, hasGlory: false, clothesBlink: 4 } : npc));
+              }, 500);
+            }, 1500);
+            break;
+          case PHASES.CHAVVAH_GLORY_FADES:
+            setGamePhase(PHASES.CHAVVAH_WALKS_TO_ADAM);
+            setSceneText("And gave also unto her husband with her...");
+            setShowSceneText(true);
+            break;
+          case PHASES.ADAM_EATS:
+            setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, holdingFruit: true, isEating: true } : npc));
+            setTimeout(() => {
+              setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, isEating: false } : npc));
+              setGamePhase(PHASES.ADAM_GLORY_FADES);
+              setSceneText("And he did eat... and the glory departed from him also...");
+              setShowSceneText(true);
+              setTimeout(() => {
+                setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, hasGlory: false, clothesBlink: 4 } : npc));
+              }, 500);
+            }, 1500);
+            break;
+          case PHASES.ADAM_GLORY_FADES:
+            setGamePhase(PHASES.EYES_OPENED);
+            setSceneText("And the eyes of them both were opened, and they knew that they were naked...");
+            setShowSceneText(true);
+            break;
+          case PHASES.EYES_OPENED:
+            setGamePhase(PHASES.COMPLETE);
+            setSceneText("And they sewed fig leaves together, and made themselves aprons...");
+            setShowSceneText(true);
+            break;
+        }
+      }, [gamePhase]);
+
+      useEffect(() => {
+        const handleKeyDown = (e) => {
+          keysPressed.current[e.key.toLowerCase()] = true;
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault();
+            if (showSceneText && gamePhase !== PHASES.EXPLORE) advanceScene();
+            else handleInteraction();
+          }
+        };
+        const handleKeyUp = (e) => { keysPressed.current[e.key.toLowerCase()] = false; };
+        window.addEventListener('keydown', handleKeyDown);
+        window.addEventListener('keyup', handleKeyUp);
+        return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
+      }, [handleInteraction, advanceScene, showSceneText, gamePhase]);
+
+      const handleTouchStart = (direction) => setTouchDirection(direction);
+      const handleTouchEnd = () => setTouchDirection(null);
+
+      useEffect(() => {
+        const gameLoop = setInterval(() => {
+          setGameTime(prev => prev + 1);
+          if (gamePhase === PHASES.EXPLORE && checkSceneTrigger()) {
+            setGamePhase(PHASES.SCENE_START);
+            setSceneText("The nachash beguiled Chavvah... she looked upon the forbidden tree...");
+            setShowSceneText(true);
+          }
+          if (!showDialogue && gamePhase === PHASES.EXPLORE) {
+            setPlayer(prev => {
+              let newX = prev.x, newY = prev.y, newDir = prev.direction;
+              const speed = 0.15;
+              const up = keysPressed.current['w'] || keysPressed.current['arrowup'] || touchDirection === 'up';
+              const down = keysPressed.current['s'] || keysPressed.current['arrowdown'] || touchDirection === 'down';
+              const left = keysPressed.current['a'] || keysPressed.current['arrowleft'] || touchDirection === 'left';
+              const right = keysPressed.current['d'] || keysPressed.current['arrowright'] || touchDirection === 'right';
+              if (up) { newY -= speed; newDir = 'up'; }
+              if (down) { newY += speed; newDir = 'down'; }
+              if (left) { newX -= speed; newDir = 'left'; }
+              if (right) { newX += speed; newDir = 'right'; }
+              let finalX = prev.x, finalY = prev.y;
+              if (canMoveTo(newX, newY)) { finalX = newX; finalY = newY; }
+              else if (canMoveTo(newX, prev.y)) { finalX = newX; }
+              else if (canMoveTo(prev.x, newY)) { finalY = newY; }
+              const isMoving = finalX !== prev.x || finalY !== prev.y;
+              const walkFrame = isMoving ? (prev.walkFrame + 0.3) % 4 : 0;
+              return { x: finalX, y: finalY, prevX: prev.x, prevY: prev.y, direction: newDir, walkFrame, isMoving };
+            });
+          }
+          if (!showDialogue) {
+            setNpcs(prev => prev.map(npc => {
+              let newNpc = { ...npc, moveTimer: npc.moveTimer + 1, thoughtTimer: npc.thoughtTimer + 1 };
+              if (npc.clothesBlink > 0) {
+                newNpc.clothesBlink = npc.clothesBlink - 0.1;
+                if (newNpc.clothesBlink <= 0) { newNpc.clothesBlink = 0; newNpc.hasClothes = true; }
+              }
+              if (newNpc.thoughtTimer > 150) { newNpc.currentThought = (npc.currentThought + 1) % npc.thoughts.length; newNpc.thoughtTimer = 0; }
+              if (npc.id === 'chavvah') {
+                if (gamePhase === PHASES.CHAVVAH_WALKS_TO_TREE) {
+                  newNpc.behavior = 'scene'; newNpc.targetX = TREE_OF_KNOWLEDGE.x + 1; newNpc.targetY = TREE_OF_KNOWLEDGE.y + 1;
+                  if (Math.abs(npc.x - (TREE_OF_KNOWLEDGE.x + 1)) < 0.3 && Math.abs(npc.y - (TREE_OF_KNOWLEDGE.y + 1)) < 0.3) {
+                    setGamePhase(PHASES.CHAVVAH_TAKES_FRUIT);
+                    setSceneText("And a tree to be desired to make one wise...");
+                    setShowSceneText(true);
+                  }
+                } else if (gamePhase === PHASES.CHAVVAH_WALKS_TO_ADAM) {
+                  const adam = prev.find(n => n.id === 'adam');
+                  if (adam) {
+                    newNpc.targetX = adam.x - 1; newNpc.targetY = adam.y;
+                    if (Math.abs(npc.x - (adam.x - 1)) < 0.5 && Math.abs(npc.y - adam.y) < 0.5) {
+                      setGamePhase(PHASES.ADAM_EATS);
+                      setSceneText("And gave also unto her husband with her; and he did eat...");
+                      setShowSceneText(true);
+                    }
+                  }
+                }
+              }
+              if (npc.id === 'adam' && gamePhase !== PHASES.EXPLORE) { newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false; }
+              if (npc.behavior === 'circle_tree') {
+                newNpc.circleAngle = (npc.circleAngle || 0) + 0.02;
+                const radius = 2.5;
+                newNpc.targetX = TREE_OF_KNOWLEDGE.x + Math.cos(newNpc.circleAngle) * radius;
+                newNpc.targetY = TREE_OF_KNOWLEDGE.y + Math.sin(newNpc.circleAngle) * radius;
+              }
+              if (npc.behavior === 'wander' && gamePhase === PHASES.EXPLORE && newNpc.moveTimer > 90) {
+                if (!npc.targetX || (Math.abs(npc.x - npc.targetX) < 0.5 && Math.abs(npc.y - npc.targetY) < 0.5)) {
+                  let attempts = 0, validTarget = false;
+                  while (!validTarget && attempts < 10) {
+                    const newTargetX = npc.homeX + (Math.random() - 0.5) * 8;
+                    const newTargetY = npc.homeY + (Math.random() - 0.5) * 6;
+                    if (canNPCMoveTo(newTargetX, newTargetY)) { newNpc.targetX = newTargetX; newNpc.targetY = newTargetY; validTarget = true; }
+                    attempts++;
+                  }
+                  if (!validTarget) { newNpc.targetX = npc.homeX; newNpc.targetY = npc.homeY; }
+                  newNpc.moveTimer = 0;
+                }
+              }
+              if (npc.behavior === 'patrol' && npc.patrolPoints) {
+                const target = npc.patrolPoints[npc.patrolIndex];
+                if (Math.abs(npc.x - target.x) < 0.3 && Math.abs(npc.y - target.y) < 0.3) newNpc.patrolIndex = (npc.patrolIndex + 1) % npc.patrolPoints.length;
+                newNpc.targetX = npc.patrolPoints[newNpc.patrolIndex].x;
+                newNpc.targetY = npc.patrolPoints[newNpc.patrolIndex].y;
+              }
+              newNpc.prevX = npc.x; newNpc.prevY = npc.y;
+              if (newNpc.targetX !== null && newNpc.targetY !== null) {
+                const dx = newNpc.targetX - npc.x, dy = newNpc.targetY - npc.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist > 0.1) {
+                  const speed = (npc.id === 'chavvah' && gamePhase !== PHASES.EXPLORE) ? 0.04 : 0.03;
+                  const moveX = npc.x + (dx / dist) * speed, moveY = npc.y + (dy / dist) * speed;
+                  if (canNPCMoveTo(moveX, moveY) || npc.behavior === 'scene' || npc.behavior === 'circle_tree') {
+                    newNpc.x = moveX; newNpc.y = moveY; newNpc.isMoving = true; newNpc.walkFrame = (npc.walkFrame + 0.25) % 4;
+                  } else { newNpc.targetX = npc.homeX || npc.x; newNpc.targetY = npc.homeY || npc.y; newNpc.isMoving = false; newNpc.walkFrame = 0; }
+                } else { newNpc.isMoving = false; newNpc.walkFrame = 0; }
+              } else { newNpc.isMoving = false; newNpc.walkFrame = 0; }
+              return newNpc;
+            }));
+          }
+        }, 1000 / 30);
+        return () => clearInterval(gameLoop);
+      }, [canMoveTo, canNPCMoveTo, showDialogue, touchDirection, gameTime, gamePhase, checkSceneTrigger]);
+
+      const drawSpeechBubble = (ctx, x, y, text, isSerpent = false) => {
+        const maxWidth = 120, padding = 6, lineHeight = 12;
+        ctx.font = '9px monospace';
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+        words.forEach(word => {
+          const testLine = currentLine + (currentLine ? ' ' : '') + word;
+          if (ctx.measureText(testLine).width > maxWidth - padding * 2) { if (currentLine) lines.push(currentLine); currentLine = word; }
+          else currentLine = testLine;
+        });
+        if (currentLine) lines.push(currentLine);
+        const bubbleWidth = Math.min(maxWidth, Math.max(...lines.map(l => ctx.measureText(l).width)) + padding * 2);
+        const bubbleHeight = lines.length * lineHeight + padding * 2;
+        const bubbleX = x - bubbleWidth / 2, bubbleY = y - bubbleHeight - 20;
+        ctx.fillStyle = isSerpent ? 'rgba(30, 50, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+        ctx.strokeStyle = isSerpent ? '#4a7c4a' : '#666';
+        ctx.lineWidth = 2;
+        const radius = 8;
+        ctx.beginPath();
+        ctx.moveTo(bubbleX + radius, bubbleY);
+        ctx.lineTo(bubbleX + bubbleWidth - radius, bubbleY);
+        ctx.quadraticCurveTo(bubbleX + bubbleWidth, bubbleY, bubbleX + bubbleWidth, bubbleY + radius);
+        ctx.lineTo(bubbleX + bubbleWidth, bubbleY + bubbleHeight - radius);
+        ctx.quadraticCurveTo(bubbleX + bubbleWidth, bubbleY + bubbleHeight, bubbleX + bubbleWidth - radius, bubbleY + bubbleHeight);
+        ctx.lineTo(bubbleX + radius, bubbleY + bubbleHeight);
+        ctx.quadraticCurveTo(bubbleX, bubbleY + bubbleHeight, bubbleX, bubbleY + bubbleHeight - radius);
+        ctx.lineTo(bubbleX, bubbleY + radius);
+        ctx.quadraticCurveTo(bubbleX, bubbleY, bubbleX + radius, bubbleY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+        ctx.fillStyle = isSerpent ? 'rgba(30, 50, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)';
+        ctx.beginPath(); ctx.arc(x - 4, bubbleY + bubbleHeight + 5, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x, bubbleY + bubbleHeight + 11, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = isSerpent ? '#90EE90' : '#333';
+        ctx.font = '9px monospace';
+        lines.forEach((line, i) => { ctx.fillText(line, bubbleX + padding, bubbleY + padding + lineHeight * (i + 0.8)); });
+      };
+
+      const drawLegs = (ctx, screenX, screenY, walkFrame, isMoving, skinColor) => {
+        ctx.fillStyle = skinColor;
+        if (isMoving) {
+          const frame = Math.floor(walkFrame);
+          if (frame === 0 || frame === 2) { ctx.fillRect(screenX + 11, screenY + 28, 4, 6); ctx.fillRect(screenX + 17, screenY + 28, 4, 6); }
+          else if (frame === 1) { ctx.fillRect(screenX + 9, screenY + 28, 4, 6); ctx.fillRect(screenX + 19, screenY + 28, 4, 6); }
+          else { ctx.fillRect(screenX + 13, screenY + 28, 4, 6); ctx.fillRect(screenX + 15, screenY + 28, 4, 6); }
+        } else { ctx.fillRect(screenX + 11, screenY + 28, 4, 6); ctx.fillRect(screenX + 17, screenY + 28, 4, 6); }
+      };
+
+      useEffect(() => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = COLORS.sky;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let y = 0; y < VIEWPORT_HEIGHT + 1; y++) {
+          for (let x = 0; x < VIEWPORT_WIDTH + 1; x++) {
+            const mapX = Math.floor(camera.x) + x, mapY = Math.floor(camera.y) + y;
+            if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
+              const tile = map[mapY][mapX];
+              const screenX = (x - (camera.x % 1)) * TILE_SIZE, screenY = (y - (camera.y % 1)) * TILE_SIZE;
+              ctx.fillStyle = (mapX + mapY) % 2 === 0 ? COLORS.grass : COLORS.grassDark;
+              ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+              switch (tile) {
+                case TILES.WATER:
+                  ctx.fillStyle = (gameTime + mapX + mapY) % 20 < 10 ? COLORS.water : COLORS.waterLight;
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  break;
+                case TILES.TREE:
+                  ctx.fillStyle = COLORS.treeTrunk; ctx.fillRect(screenX + 12, screenY + 16, 8, 16);
+                  ctx.fillStyle = COLORS.tree; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 12, 14, 0, Math.PI * 2); ctx.fill();
+                  break;
+                case TILES.FLOWER:
+                  ctx.fillStyle = mapX % 2 === 0 ? COLORS.flower : COLORS.flowerYellow;
+                  ctx.beginPath(); ctx.arc(screenX + 16, screenY + 16, 4, 0, Math.PI * 2); ctx.fill();
+                  break;
+                case TILES.PATH: ctx.fillStyle = COLORS.path; ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE); break;
+                case TILES.ROCK:
+                  ctx.fillStyle = COLORS.rock; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 20, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+                  break;
+                case TILES.BUSH:
+                  ctx.fillStyle = COLORS.bush; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 20, 10, 0, Math.PI * 2); ctx.fill();
+                  break;
+                case TILES.TREE_OF_LIFE:
+                  ctx.fillStyle = '#654321'; ctx.fillRect(screenX + 8, screenY + 10, 16, 24);
+                  ctx.fillStyle = COLORS.treeOfLife; ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20 + Math.sin(gameTime * 0.1) * 8;
+                  ctx.beginPath(); ctx.arc(screenX + 16, screenY + 4, 22, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+                  ctx.fillStyle = '#ffd700'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
+                  ctx.fillText('ETS CHAYIM', screenX + 16, screenY + 42); ctx.textAlign = 'left';
+                  break;
+                case TILES.TREE_OF_KNOWLEDGE:
+                  ctx.fillStyle = '#4a3520'; ctx.fillRect(screenX + 8, screenY + 10, 16, 24);
+                  ctx.fillStyle = '#1a3a1a'; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 4, 22, 0, Math.PI * 2); ctx.fill();
+                  ctx.fillStyle = '#cc0000';
+                  [[8,2],[24,0],[16,8],[6,10],[26,8]].forEach(([fx,fy]) => { ctx.beginPath(); ctx.arc(screenX + fx, screenY + fy, 4, 0, Math.PI * 2); ctx.fill(); });
+                  ctx.fillStyle = '#ff6666'; ctx.font = 'bold 6px monospace'; ctx.textAlign = 'center';
+                  ctx.fillText("ETS HADA'AT", screenX + 16, screenY + 42);
+                  ctx.fillText("TOV V'RA", screenX + 16, screenY + 49); ctx.textAlign = 'left';
+                  break;
+              }
+            }
+          }
+        }
+
+        npcs.forEach(npc => {
+          const screenX = (npc.x - camera.x) * TILE_SIZE, screenY = (npc.y - camera.y) * TILE_SIZE;
+          if (screenX > -TILE_SIZE * 2 && screenX < canvas.width + TILE_SIZE * 2 && screenY > -TILE_SIZE * 2 && screenY < canvas.height + TILE_SIZE * 2) {
+            if (npc.isSerpent) {
+              ctx.fillStyle = npc.color;
+              const wave = Math.sin(gameTime * 0.2) * 3;
+              for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(screenX + 16 - i * 7, screenY + 20 + Math.sin(gameTime * 0.2 + i) * 2, 5 - i, 0, Math.PI * 2); ctx.fill(); }
+              ctx.beginPath(); ctx.arc(screenX + 22, screenY + 18 + wave, 6, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(screenX + 25, screenY + 16 + wave, 2, 0, Math.PI * 2); ctx.fill();
+            } else if (npc.isAngel) {
+              ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8; ctx.fillStyle = '#fff8dc';
+              ctx.beginPath(); ctx.ellipse(screenX + 4, screenY + 14, 9, 12, -0.3, 0, Math.PI * 2); ctx.ellipse(screenX + 28, screenY + 14, 9, 12, 0.3, 0, Math.PI * 2); ctx.fill();
+              ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff';
+              ctx.beginPath(); ctx.moveTo(screenX + 10, screenY + 14); ctx.lineTo(screenX + 22, screenY + 14); ctx.lineTo(screenX + 24, screenY + 32); ctx.lineTo(screenX + 8, screenY + 32); ctx.closePath(); ctx.fill();
+              ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 10, 7, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8, 7, Math.PI, 0); ctx.fill();
+              ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(screenX + 14, screenY + 10, 2, 0, Math.PI * 2); ctx.arc(screenX + 18, screenY + 10, 2, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX + 14, screenY + 10, 1, 0, Math.PI * 2); ctx.arc(screenX + 18, screenY + 10, 1, 0, Math.PI * 2); ctx.fill();
+              ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 1, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
+            } else {
+              if (npc.hasGlory) {
+                ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 15 + Math.sin(gameTime * 0.15) * 5;
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 18, 18, 22, 0, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+              }
+              const showClothes = npc.hasClothes || (npc.clothesBlink > 0 && Math.floor(npc.clothesBlink * 3) % 2 === 0);
+              if (showClothes) { ctx.fillStyle = '#8B7355'; ctx.fillRect(screenX + 10, screenY + 14, 12, 16); }
+              if (!showClothes) { ctx.fillStyle = SKIN_COLOR; ctx.fillRect(screenX + 11, screenY + 14, 10, 14); }
+              ctx.fillStyle = SKIN_COLOR; ctx.fillRect(screenX + 6, screenY + 15, 4, 10); ctx.fillRect(screenX + 22, screenY + 15, 4, 10);
+              drawLegs(ctx, screenX, screenY, npc.walkFrame, npc.isMoving, SKIN_COLOR);
+              ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 10, 8, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = npc.hairColor;
+              if (npc.isEve) { ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8, 8, Math.PI, 0); ctx.fill(); ctx.fillRect(screenX + 8, screenY + 8, 4, 18); ctx.fillRect(screenX + 20, screenY + 8, 4, 18); }
+              else { ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8, 8, Math.PI, 0); ctx.fill(); }
+              ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(screenX + 13, screenY + 10, 2.5, 0, Math.PI * 2); ctx.arc(screenX + 19, screenY + 10, 2.5, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX + 13, screenY + 10, 1.2, 0, Math.PI * 2); ctx.arc(screenX + 19, screenY + 10, 1.2, 0, Math.PI * 2); ctx.fill();
+              if (npc.isEating) { ctx.fillStyle = '#8b0000'; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 14, 3, 0, Math.PI * 2); ctx.fill(); }
+              if (npc.holdingFruit && !npc.isEating) { ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.arc(screenX + 28, screenY + 20, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#654321'; ctx.fillRect(screenX + 27, screenY + 15, 2, 3); }
+            }
+            if (!showDialogue && gamePhase === PHASES.EXPLORE) drawSpeechBubble(ctx, screenX + 16, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
+            const nameText = npc.hasSpoken ? `✓ ${npc.name}` : npc.name;
+            ctx.font = '9px monospace';
+            const nameWidth = ctx.measureText(nameText).width + 6;
+            ctx.fillStyle = npc.hasSpoken ? 'rgba(0,80,0,0.8)' : 'rgba(0,0,0,0.7)';
+            ctx.fillRect(screenX + 16 - nameWidth/2, screenY + 36, nameWidth, 12);
+            ctx.fillStyle = npc.isSerpent ? '#90EE90' : '#fff';
+            ctx.fillText(nameText, screenX + 16 - nameWidth/2 + 3, screenY + 45);
+          }
+        });
+
+        if (gamePhase === PHASES.EXPLORE) {
+          const playerScreenX = (player.x - camera.x) * TILE_SIZE, playerScreenY = (player.y - camera.y) * TILE_SIZE;
+          ctx.fillStyle = '#4169e1'; ctx.fillRect(playerScreenX + 10, playerScreenY + 14, 12, 16);
+          drawLegs(ctx, playerScreenX, playerScreenY, player.walkFrame, player.isMoving, SKIN_COLOR);
+          ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(playerScreenX + 16, playerScreenY + 10, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(playerScreenX + 16, playerScreenY + 8, 8, Math.PI, 0); ctx.fill();
+          ctx.fillStyle = '#fff';
+          const eyeOffsetX = player.direction === 'left' ? -2 : player.direction === 'right' ? 2 : 0;
+          const eyeOffsetY = player.direction === 'up' ? -2 : player.direction === 'down' ? 2 : 0;
+          ctx.beginPath(); ctx.arc(playerScreenX + 13 + eyeOffsetX, playerScreenY + 10 + eyeOffsetY, 2.5, 0, Math.PI * 2); ctx.arc(playerScreenX + 19 + eyeOffsetX, playerScreenY + 10 + eyeOffsetY, 2.5, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(playerScreenX + 13 + eyeOffsetX, playerScreenY + 10 + eyeOffsetY, 1.2, 0, Math.PI * 2); ctx.arc(playerScreenX + 19 + eyeOffsetX, playerScreenY + 10 + eyeOffsetY, 1.2, 0, Math.PI * 2); ctx.fill();
+        }
+
+        if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE) {
+          const chavvah = npcs.find(n => n.id === 'chavvah');
+          if (chavvah) setCamera({ x: Math.max(0, Math.min(chavvah.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)), y: Math.max(0, Math.min(chavvah.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT)) });
+        }
+      }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase]);
+
+      const spokenCount = npcs.filter(n => ['adam', 'chavvah', 'nachash'].includes(n.id) && n.hasSpoken).length;
+
+      return (
+        <div className="game-container">
+          <h1 className="title">BERE'SHIYTH: In The Beginning</h1>
+          <canvas ref={canvasRef} width={VIEWPORT_WIDTH * TILE_SIZE} height={VIEWPORT_HEIGHT * TILE_SIZE} />
+
+          {showDialogue && (
+            <div className="dialogue-box">
+              <div className="dialogue-header">
+                <span className="dialogue-name">{showDialogue.name}</span>
+                <span className="dialogue-counter">{showDialogue.currentDialogue + 1}/{npcs.find(n => n.id === showDialogue.id)?.dialogue.length}</span>
+              </div>
+              <p className="dialogue-text">{npcs.find(n => n.id === showDialogue.id)?.dialogue[showDialogue.currentDialogue]}</p>
+              <button className="btn" onClick={advanceDialogue}>
+                {showDialogue.currentDialogue < (npcs.find(n => n.id === showDialogue.id)?.dialogue.length || 1) - 1 ? 'Next ▶' : 'Close ✓'}
+              </button>
+            </div>
+          )}
+
+          {showSceneText && !showDialogue && (
+            <div className="dialogue-box">
+              <p className="scene-text">{sceneText}</p>
+              <button className="btn" onClick={() => { if (gamePhase !== PHASES.EXPLORE) advanceScene(); else setShowSceneText(false); }}>
+                {gamePhase === PHASES.EXPLORE ? 'Begin ▶' : 'Continue ▶'}
+              </button>
+            </div>
+          )}
+
+          {gamePhase === PHASES.EXPLORE && !showDialogue && !showSceneText && (
+            <p className="quest-text">Speak to A'dam, Chavvah, and the Nachash ({spokenCount}/3)</p>
+          )}
+
+          {gamePhase === PHASES.EXPLORE && !showDialogue && !showSceneText && (
+            <div className="controls">
+              <div className="dpad">
+                <div></div>
+                <button className="dpad-btn" onTouchStart={(e) => { e.preventDefault(); handleTouchStart('up'); }} onTouchEnd={(e) => { e.preventDefault(); handleTouchEnd(); }} onMouseDown={() => handleTouchStart('up')} onMouseUp={handleTouchEnd} onMouseLeave={handleTouchEnd}>▲</button>
+                <div></div>
+                <button className="dpad-btn" onTouchStart={(e) => { e.preventDefault(); handleTouchStart('left'); }} onTouchEnd={(e) => { e.preventDefault(); handleTouchEnd(); }} onMouseDown={() => handleTouchStart('left')} onMouseUp={handleTouchEnd} onMouseLeave={handleTouchEnd}>◀</button>
+                <div></div>
+                <button className="dpad-btn" onTouchStart={(e) => { e.preventDefault(); handleTouchStart('right'); }} onTouchEnd={(e) => { e.preventDefault(); handleTouchEnd(); }} onMouseDown={() => handleTouchStart('right')} onMouseUp={handleTouchEnd} onMouseLeave={handleTouchEnd}>▶</button>
+                <div></div>
+                <button className="dpad-btn" onTouchStart={(e) => { e.preventDefault(); handleTouchStart('down'); }} onTouchEnd={(e) => { e.preventDefault(); handleTouchEnd(); }} onMouseDown={() => handleTouchStart('down')} onMouseUp={handleTouchEnd} onMouseLeave={handleTouchEnd}>▼</button>
+                <div></div>
+              </div>
+              <button className="talk-btn" onClick={handleInteraction}>TALK</button>
+            </div>
+          )}
+
+          {gamePhase !== PHASES.EXPLORE && (
+            <p className="phase-indicator">{gamePhase === PHASES.COMPLETE ? '📖 The Fall of Man' : '📖 Scene in Progress...'}</p>
+          )}
+
+          <p className="help-text">WASD/Arrows to move • SPACE to interact</p>
+        </div>
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<GenesisGame />);
+  </script>
+</body>
+</html>
