@@ -10,7 +10,7 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+      background: linear-gradient(180deg, #0a0a15 0%, #101020 100%);
       min-height: 100vh;
       display: flex;
       justify-content: center;
@@ -47,7 +47,7 @@
     }
     .dialogue-box {
       width: 100%;
-      max-width: 28rem;
+      max-width: 40rem;
       margin-top: 8px;
       background: linear-gradient(180deg, #2a2a4a 0%, #1a1a3a 100%);
       border: 3px solid #ffd700;
@@ -78,11 +78,17 @@
     }
     .scene-text {
       color: #fde047;
-      font-size: 0.875rem;
+      font-size: 1rem;
       font-style: italic;
       margin-bottom: 12px;
       font-family: Georgia, serif;
-      line-height: 1.4;
+      line-height: 1.5;
+      text-align: center;
+    }
+    .verse-number {
+      color: #ffd700;
+      font-weight: bold;
+      font-size: 0.8rem;
     }
     .btn {
       width: 100%;
@@ -164,6 +170,18 @@
       color: #666;
       font-size: 0.7rem;
     }
+    .creation-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -171,91 +189,82 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback, useRef } = React;
 
-    const TILE_SIZE = 32;
-    const MAP_WIDTH = 40;
-    const MAP_HEIGHT = 30;
-    const VIEWPORT_WIDTH = 14;
-    const VIEWPORT_HEIGHT = 10;
+    const TILE_SIZE = 16;
+    const MAP_WIDTH = 60;
+    const MAP_HEIGHT = 40;
+    const VIEWPORT_WIDTH = 35;
+    const VIEWPORT_HEIGHT = 20;
 
-    const GARDEN_BOUNDS = { minX: 5, maxX: 35, minY: 5, maxY: 20 };
-    const TREE_OF_KNOWLEDGE = { x: 10, y: 10 };
+    const GARDEN_BOUNDS = { minX: 5, maxX: 55, minY: 5, maxY: 35 };
+    const TREE_OF_KNOWLEDGE = { x: 15, y: 18 };
 
     const TILES = {
       GRASS: 0, WATER: 1, TREE: 2, FLOWER: 3, PATH: 4,
       TREE_OF_LIFE: 5, TREE_OF_KNOWLEDGE: 6, ROCK: 7, BUSH: 8,
-      CLIFF_TOP: 9, CLIFF_SIDE: 10, GRASS_DARK: 11
+      VOID: 9, LIGHT: 10
     };
 
-    // DBZ GBC-inspired color palette
+    // Color palette
     const COLORS = {
-      // Terrain colors
       grassLight: '#7ec850',
       grassMid: '#5eb040',
       grassDark: '#3e9030',
       grassShadow: '#2e7020',
-
       dirtLight: '#d4a574',
       dirtMid: '#b8956a',
       dirtDark: '#9c7850',
       dirtShadow: '#7a5a38',
-
-      cliffLight: '#c9a875',
-      cliffMid: '#a8875a',
-      cliffDark: '#876840',
-      cliffShadow: '#654a28',
-
       water: '#4a90c8',
       waterLight: '#6ab0e8',
       waterDark: '#3a70a8',
       waterDeep: '#2a5088',
-
       treeTrunk: '#8b5a2b',
       treeTrunkDark: '#6b4020',
       treeLeaf: '#3a8028',
       treeLeafLight: '#5aa048',
       treeLeafDark: '#2a6018',
-
-      pathLight: '#e8d4a8',
-      pathMid: '#d4bc8c',
-      pathDark: '#b8a070',
-
       rock: '#888888',
       rockLight: '#a8a8a8',
       rockDark: '#686868',
-
       flowerPink: '#ff6090',
       flowerYellow: '#ffe040',
       flowerWhite: '#fff8f0',
-
       treeOfLife: '#ffd700',
       treeOfLifeGlow: '#fff8c0',
       treeOfKnowledge: '#c00020',
       treeOfKnowledgeDark: '#800010',
-
-      // Character outline
       outline: '#1a1a1a',
+      void: '#000000',
+      light: '#ffffd0',
     };
 
-    // Character sprite data - DBZ GBC chibi style
-    const SPRITE_CONFIG = {
-      width: 24,
-      height: 32,
-      headRatio: 0.4,  // Head takes 40% of height
-    };
+    // Genesis 1 Creation Story verses
+    const CREATION_STORY = [
+      { verse: 1, text: "IN the beginning ELOHIYM created את eth the heavens and את eth the earth." },
+      { verse: 2, text: "And the earth was without form, and void; and darkness was upon the face of the deep. And the RUACH ELOHIYM moved upon the face of the waters." },
+      { verse: 3, text: "And ELOHIYM said, Let there be light: and there was light." },
+      { verse: 4, text: "And ELOHIYM saw את eth-the light, that it was good: and ELOHIYM divided the light from the darkness." },
+      { verse: 5, text: "And ELOHIYM called the light Day, and the darkness he called Night. And the evening and the morning were the first day." },
+      { verse: 6, text: "And ELOHIYM said, Let there be a firmament in the midst of the waters, and let it divide the waters from the waters." },
+      { verse: 7, text: "And ELOHIYM made את eth-the firmament, and divided the waters which were under the firmament from the waters which were above the firmament: and it was so." },
+      { verse: 8, text: "And ELOHIYM called the firmament Heaven. And the evening and the morning were the second day." },
+      { verse: 9, text: "And ELOHIYM said, Let the waters under the heavens be gathered together unto one place, and let the dry land appear: and it was so." },
+      { verse: 10, text: "And ELOHIYM called the dry land Earth; and the gathering together of the waters called he Seas: and ELOHIYM saw that it was good." },
+      { verse: 11, text: "And ELOHIYM said, Let the earth bring forth grass, the herb yielding seed, and the fruit tree yielding fruit after his kind, whose seed is in itself, upon the earth: and it was so." },
+    ];
 
-    // Draw a DBZ-style chibi character
+    // Draw a chibi character (no spiky hair)
     const drawChibiCharacter = (ctx, x, y, config) => {
       const {
         skinColor = '#c8a882',
-        skinShadow = '#a88862',
         hairColor = '#1a1a1a',
         hairHighlight = '#3a3a3a',
         outfitColor = '#4060c0',
         outfitShadow = '#2040a0',
-        outfitHighlight = '#6080e0',
         isEve = false,
         isSerpent = false,
         isAngel = false,
+        isPlayer = false,
         direction = 'down',
         walkFrame = 0,
         isMoving = false,
@@ -268,131 +277,146 @@
       } = config;
 
       const outline = COLORS.outline;
+      const scale = 0.5; // Scale down for smaller tiles
 
       // Glory aura for Adam and Eve
-      if (hasGlory && !isSerpent && !isAngel) {
+      if (hasGlory && !isSerpent && !isAngel && !isPlayer) {
         const glowIntensity = 0.3 + Math.sin(gameTime * 0.1) * 0.1;
         ctx.shadowColor = '#ffd700';
-        ctx.shadowBlur = 20;
+        ctx.shadowBlur = 10;
         ctx.fillStyle = `rgba(255, 215, 0, ${glowIntensity})`;
         ctx.beginPath();
-        ctx.ellipse(x + 12, y + 16, 20, 24, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + 8, y + 10, 12, 14, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.shadowBlur = 0;
       }
 
       if (isSerpent) {
-        // Serpent - detailed snake with coils
-        const wave = Math.sin(gameTime * 0.15) * 2;
+        // Pre-curse Nachash - upright creature with arms and legs
+        const wave = Math.sin(gameTime * 0.15) * 1;
 
-        // Body coils
+        // Legs
         ctx.fillStyle = '#228b22';
         ctx.strokeStyle = outline;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 0.5;
 
-        // Main body segments
-        const segments = [
-          { x: x + 4, y: y + 22, r: 5 },
-          { x: x + 10, y: y + 24 + wave * 0.3, r: 5 },
-          { x: x + 16, y: y + 22 - wave * 0.3, r: 6 },
-        ];
+        // Left leg
+        ctx.beginPath();
+        ctx.roundRect(x + 4, y + 14, 3, 6, 1);
+        ctx.fill();
+        ctx.stroke();
 
-        segments.forEach(seg => {
-          ctx.beginPath();
-          ctx.arc(seg.x, seg.y, seg.r, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-        });
+        // Right leg
+        ctx.beginPath();
+        ctx.roundRect(x + 9, y + 14, 3, 6, 1);
+        ctx.fill();
+        ctx.stroke();
 
-        // Pattern on body
+        // Feet
+        ctx.fillStyle = '#1a6b1a';
+        ctx.beginPath();
+        ctx.ellipse(x + 5.5, y + 19, 2.5, 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(x + 10.5, y + 19, 2.5, 1.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Body
+        ctx.fillStyle = '#228b22';
+        ctx.beginPath();
+        ctx.roundRect(x + 3, y + 8, 10, 8, 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Belly pattern
         ctx.fillStyle = '#90ee90';
-        segments.forEach(seg => {
-          ctx.beginPath();
-          ctx.arc(seg.x, seg.y - 1, seg.r * 0.4, 0, Math.PI * 2);
-          ctx.fill();
-        });
+        ctx.beginPath();
+        ctx.roundRect(x + 5, y + 10, 6, 5, 1);
+        ctx.fill();
+
+        // Arms
+        ctx.fillStyle = '#228b22';
+        // Left arm
+        ctx.beginPath();
+        ctx.roundRect(x + 0, y + 9 + wave, 3, 6, 1);
+        ctx.fill();
+        ctx.stroke();
+
+        // Right arm
+        ctx.beginPath();
+        ctx.roundRect(x + 13, y + 9 - wave, 3, 6, 1);
+        ctx.fill();
+        ctx.stroke();
+
+        // Hands (clawed)
+        ctx.fillStyle = '#1a6b1a';
+        ctx.beginPath();
+        ctx.arc(x + 1.5, y + 15 + wave, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x + 14.5, y + 15 - wave, 2, 0, Math.PI * 2);
+        ctx.fill();
 
         // Head
         ctx.fillStyle = '#228b22';
         ctx.beginPath();
-        ctx.ellipse(x + 20, y + 16 + wave, 7, 6, 0.2, 0, Math.PI * 2);
+        ctx.ellipse(x + 8, y + 5, 5, 4, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.stroke();
 
         // Eyes
         ctx.fillStyle = '#ffff00';
         ctx.beginPath();
-        ctx.ellipse(x + 22, y + 14 + wave, 3, 2.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + 6, y + 4, 2, 1.5, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + 10, y + 4, 2, 1.5, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = outline;
         ctx.stroke();
 
-        // Pupil (slit)
+        // Slit pupils
         ctx.fillStyle = '#000';
-        ctx.fillRect(x + 22, y + 13 + wave, 1, 3);
+        ctx.fillRect(x + 5.5, y + 3.5, 1, 2);
+        ctx.fillRect(x + 9.5, y + 3.5, 1, 2);
 
-        // Tongue
+        // Forked tongue
         ctx.strokeStyle = '#ff3030';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(x + 26, y + 17 + wave);
-        ctx.lineTo(x + 30, y + 16 + wave);
-        ctx.moveTo(x + 30, y + 16 + wave);
-        ctx.lineTo(x + 32, y + 14 + wave);
-        ctx.moveTo(x + 30, y + 16 + wave);
-        ctx.lineTo(x + 32, y + 18 + wave);
+        ctx.moveTo(x + 8, y + 8);
+        ctx.lineTo(x + 8, y + 10);
+        ctx.moveTo(x + 8, y + 10);
+        ctx.lineTo(x + 6, y + 11);
+        ctx.moveTo(x + 8, y + 10);
+        ctx.lineTo(x + 10, y + 11);
         ctx.stroke();
 
         return;
       }
 
       if (isAngel) {
-        // Angel with wings and halo
         // Wings
         ctx.fillStyle = '#f8f8ff';
         ctx.strokeStyle = outline;
-        ctx.lineWidth = 1;
-
-        // Left wing
-        ctx.beginPath();
-        ctx.moveTo(x + 4, y + 16);
-        ctx.quadraticCurveTo(x - 8, y + 8, x - 4, y + 4);
-        ctx.quadraticCurveTo(x + 2, y + 6, x + 4, y + 16);
-        ctx.fill();
-        ctx.stroke();
-
-        // Right wing
-        ctx.beginPath();
-        ctx.moveTo(x + 20, y + 16);
-        ctx.quadraticCurveTo(x + 32, y + 8, x + 28, y + 4);
-        ctx.quadraticCurveTo(x + 22, y + 6, x + 20, y + 16);
-        ctx.fill();
-        ctx.stroke();
-
-        // Wing feather details
-        ctx.strokeStyle = '#ddd';
         ctx.lineWidth = 0.5;
-        for (let i = 0; i < 3; i++) {
-          ctx.beginPath();
-          ctx.moveTo(x + 2 - i * 2, y + 14 - i * 3);
-          ctx.lineTo(x - 2 - i * 2, y + 8 - i * 2);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.moveTo(x + 22 + i * 2, y + 14 - i * 3);
-          ctx.lineTo(x + 26 + i * 2, y + 8 - i * 2);
-          ctx.stroke();
-        }
+
+        ctx.beginPath();
+        ctx.moveTo(x + 3, y + 10);
+        ctx.quadraticCurveTo(x - 4, y + 4, x, y + 2);
+        ctx.quadraticCurveTo(x + 4, y + 4, x + 3, y + 10);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(x + 13, y + 10);
+        ctx.quadraticCurveTo(x + 20, y + 4, x + 16, y + 2);
+        ctx.quadraticCurveTo(x + 12, y + 4, x + 13, y + 10);
+        ctx.fill();
+        ctx.stroke();
 
         // Halo
         ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.ellipse(x + 12, y + 2, 8, 3, 0, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.strokeStyle = '#ffec80';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.ellipse(x + 12, y + 2, 6, 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + 8, y + 1, 5, 2, 0, 0, Math.PI * 2);
         ctx.stroke();
       }
 
@@ -403,535 +427,366 @@
 
       if (isMoving) {
         const frame = Math.floor(walkFrame) % 4;
-        legOffset = [0, 3, 0, -3][frame];
+        legOffset = [0, 2, 0, -2][frame];
         bodyBob = [0, -1, 0, -1][frame];
-        armSwing = [0, 2, 0, -2][frame];
+        armSwing = [0, 1, 0, -1][frame];
       }
 
-      // Body/Outfit
-      const showClothes = hasClothes || (clothesBlink > 0 && Math.floor(clothesBlink * 3) % 2 === 0);
+      // Determine if character wears clothes
+      const wearingClothes = isPlayer || isAngel || hasClothes || (clothesBlink > 0 && Math.floor(clothesBlink * 3) % 2 === 0);
 
-      if (!showClothes && !isAngel) {
-        // Naked body (skin color)
+      // Body/Outfit
+      if (!wearingClothes) {
+        // Naked body (skin color) - for Adam and Chawwah before the fall
         ctx.fillStyle = skinColor;
         ctx.strokeStyle = outline;
-        ctx.lineWidth = 1;
-
-        // Torso
+        ctx.lineWidth = 0.5;
         ctx.beginPath();
-        ctx.roundRect(x + 6, y + 12 + bodyBob, 12, 12, 2);
+        ctx.roundRect(x + 4, y + 8 + bodyBob, 8, 8, 1);
         ctx.fill();
         ctx.stroke();
       } else {
-        // Clothed body or fig leaves
+        // Clothed body
         ctx.fillStyle = isAngel ? '#f0f0ff' : (hasClothes ? '#6b8e23' : outfitColor);
         ctx.strokeStyle = outline;
-        ctx.lineWidth = 1;
-
-        // Torso
+        ctx.lineWidth = 0.5;
         ctx.beginPath();
-        ctx.roundRect(x + 6, y + 12 + bodyBob, 12, 12, 2);
+        ctx.roundRect(x + 4, y + 8 + bodyBob, 8, 8, 1);
         ctx.fill();
         ctx.stroke();
 
-        // Outfit details
-        if (isAngel) {
-          ctx.fillStyle = '#e0e0f0';
-          ctx.fillRect(x + 8, y + 14 + bodyBob, 8, 3);
-        } else if (hasClothes) {
+        if (hasClothes && !isPlayer && !isAngel) {
           // Fig leaf pattern
           ctx.fillStyle = '#4a6b13';
           ctx.beginPath();
-          ctx.moveTo(x + 12, y + 14 + bodyBob);
-          ctx.lineTo(x + 8, y + 20 + bodyBob);
-          ctx.lineTo(x + 16, y + 20 + bodyBob);
+          ctx.moveTo(x + 8, y + 9 + bodyBob);
+          ctx.lineTo(x + 5, y + 14 + bodyBob);
+          ctx.lineTo(x + 11, y + 14 + bodyBob);
           ctx.closePath();
           ctx.fill();
-        } else {
+        } else if (!isAngel) {
           ctx.fillStyle = outfitShadow;
-          ctx.fillRect(x + 6, y + 20 + bodyBob, 12, 4);
+          ctx.fillRect(x + 4, y + 13 + bodyBob, 8, 3);
         }
       }
 
       // Arms
       ctx.fillStyle = skinColor;
       ctx.strokeStyle = outline;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 0.5;
 
-      // Left arm
       ctx.beginPath();
-      ctx.roundRect(x + 2, y + 14 + bodyBob - armSwing, 5, 10, 2);
+      ctx.roundRect(x + 1, y + 9 + bodyBob - armSwing, 3, 6, 1);
       ctx.fill();
       ctx.stroke();
 
-      // Right arm (may hold fruit)
       if (holdingFruit && !isEating) {
         ctx.beginPath();
-        ctx.roundRect(x + 17, y + 12 + bodyBob, 5, 8, 2);
+        ctx.roundRect(x + 12, y + 8 + bodyBob, 3, 5, 1);
         ctx.fill();
         ctx.stroke();
 
-        // Fruit in hand
         ctx.fillStyle = '#cc0000';
-        ctx.strokeStyle = outline;
         ctx.beginPath();
-        ctx.arc(x + 22, y + 12 + bodyBob, 4, 0, Math.PI * 2);
+        ctx.arc(x + 15, y + 8 + bodyBob, 2, 0, Math.PI * 2);
         ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = '#6b4020';
-        ctx.fillRect(x + 21, y + 7 + bodyBob, 2, 3);
       } else {
         ctx.beginPath();
-        ctx.roundRect(x + 17, y + 14 + bodyBob + armSwing, 5, 10, 2);
+        ctx.roundRect(x + 12, y + 9 + bodyBob + armSwing, 3, 6, 1);
         ctx.fill();
         ctx.stroke();
       }
 
-      // Legs with walk animation
-      ctx.fillStyle = showClothes ? '#6b8e23' : skinColor;
+      // Legs
+      ctx.fillStyle = wearingClothes && hasClothes ? '#6b8e23' : (wearingClothes ? outfitShadow : skinColor);
       ctx.strokeStyle = outline;
-      ctx.lineWidth = 1;
 
-      // Left leg
       ctx.beginPath();
-      ctx.roundRect(x + 7 - legOffset, y + 23, 4, 9, 2);
+      ctx.roundRect(x + 5 - legOffset, y + 15, 2, 5, 1);
       ctx.fill();
       ctx.stroke();
 
-      // Right leg
       ctx.beginPath();
-      ctx.roundRect(x + 13 + legOffset, y + 23, 4, 9, 2);
+      ctx.roundRect(x + 9 + legOffset, y + 15, 2, 5, 1);
       ctx.fill();
       ctx.stroke();
 
-      // Head (large, chibi style)
+      // Head
       ctx.fillStyle = skinColor;
       ctx.strokeStyle = outline;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 0.5;
       ctx.beginPath();
-      ctx.arc(x + 12, y + 8 + bodyBob, 9, 0, Math.PI * 2);
+      ctx.arc(x + 8, y + 5 + bodyBob, 5, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      // Hair
+      // Hair (rounded, no spikes)
       ctx.fillStyle = hairColor;
       ctx.strokeStyle = outline;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 0.5;
 
       if (isEve) {
-        // Long hair for Eve
+        // Long hair for Chawwah
         ctx.beginPath();
-        ctx.arc(x + 12, y + 6 + bodyBob, 9, Math.PI, 0);
+        ctx.arc(x + 8, y + 4 + bodyBob, 5, Math.PI, 0);
         ctx.fill();
         ctx.stroke();
 
-        // Side hair
-        ctx.fillRect(x + 2, y + 6 + bodyBob, 5, 16);
-        ctx.strokeRect(x + 2, y + 6 + bodyBob, 5, 16);
-        ctx.fillRect(x + 17, y + 6 + bodyBob, 5, 16);
-        ctx.strokeRect(x + 17, y + 6 + bodyBob, 5, 16);
+        ctx.fillRect(x + 2, y + 4 + bodyBob, 3, 10);
+        ctx.strokeRect(x + 2, y + 4 + bodyBob, 3, 10);
+        ctx.fillRect(x + 11, y + 4 + bodyBob, 3, 10);
+        ctx.strokeRect(x + 11, y + 4 + bodyBob, 3, 10);
 
-        // Hair highlight
         ctx.fillStyle = hairHighlight;
         ctx.beginPath();
-        ctx.arc(x + 10, y + 4 + bodyBob, 3, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (isAngel) {
-        // Short neat hair
-        ctx.beginPath();
-        ctx.arc(x + 12, y + 6 + bodyBob, 9, Math.PI, 0);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = hairHighlight;
-        ctx.beginPath();
-        ctx.arc(x + 10, y + 4 + bodyBob, 3, 0, Math.PI * 2);
+        ctx.arc(x + 7, y + 2 + bodyBob, 2, 0, Math.PI * 2);
         ctx.fill();
       } else {
-        // Short spiky hair (DBZ style)
+        // Short rounded hair (no spikes)
         ctx.beginPath();
-        ctx.arc(x + 12, y + 6 + bodyBob, 9, Math.PI, 0);
-        ctx.fill();
-        ctx.stroke();
-
-        // Spikes
-        ctx.beginPath();
-        ctx.moveTo(x + 4, y + 4 + bodyBob);
-        ctx.lineTo(x + 2, y - 2 + bodyBob);
-        ctx.lineTo(x + 8, y + 2 + bodyBob);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(x + 10, y + 2 + bodyBob);
-        ctx.lineTo(x + 12, y - 4 + bodyBob);
-        ctx.lineTo(x + 14, y + 2 + bodyBob);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.moveTo(x + 16, y + 4 + bodyBob);
-        ctx.lineTo(x + 22, y - 2 + bodyBob);
-        ctx.lineTo(x + 20, y + 4 + bodyBob);
+        ctx.arc(x + 8, y + 4 + bodyBob, 5, Math.PI, 0);
         ctx.fill();
         ctx.stroke();
 
         // Hair highlight
         ctx.fillStyle = hairHighlight;
         ctx.beginPath();
-        ctx.arc(x + 9, y + 4 + bodyBob, 2, 0, Math.PI * 2);
+        ctx.arc(x + 6, y + 2 + bodyBob, 2, 0, Math.PI * 2);
         ctx.fill();
       }
 
-      // Face based on direction
+      // Face
       const eyeOffset = {
         up: { x: 0, y: -1 },
         down: { x: 0, y: 1 },
-        left: { x: -2, y: 0 },
-        right: { x: 2, y: 0 }
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 }
       }[direction] || { x: 0, y: 0 };
 
-      // Eyes (large anime style)
+      // Eyes
       ctx.fillStyle = '#fff';
       ctx.strokeStyle = outline;
-      ctx.lineWidth = 1;
+      ctx.lineWidth = 0.5;
 
-      // Left eye
       ctx.beginPath();
-      ctx.ellipse(x + 8 + eyeOffset.x, y + 8 + bodyBob + eyeOffset.y, 3, 3.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 6 + eyeOffset.x, y + 5 + bodyBob + eyeOffset.y, 1.5, 2, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      // Right eye
       ctx.beginPath();
-      ctx.ellipse(x + 16 + eyeOffset.x, y + 8 + bodyBob + eyeOffset.y, 3, 3.5, 0, 0, Math.PI * 2);
+      ctx.ellipse(x + 10 + eyeOffset.x, y + 5 + bodyBob + eyeOffset.y, 1.5, 2, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
       // Pupils
       ctx.fillStyle = '#000';
       ctx.beginPath();
-      ctx.arc(x + 8 + eyeOffset.x * 1.5, y + 8 + bodyBob + eyeOffset.y, 1.5, 0, Math.PI * 2);
-      ctx.arc(x + 16 + eyeOffset.x * 1.5, y + 8 + bodyBob + eyeOffset.y, 1.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Eye shine
-      ctx.fillStyle = '#fff';
-      ctx.beginPath();
-      ctx.arc(x + 7, y + 7 + bodyBob, 1, 0, Math.PI * 2);
-      ctx.arc(x + 15, y + 7 + bodyBob, 1, 0, Math.PI * 2);
+      ctx.arc(x + 6 + eyeOffset.x, y + 5 + bodyBob + eyeOffset.y, 0.8, 0, Math.PI * 2);
+      ctx.arc(x + 10 + eyeOffset.x, y + 5 + bodyBob + eyeOffset.y, 0.8, 0, Math.PI * 2);
       ctx.fill();
 
       // Mouth
       if (isEating) {
-        // Eating animation - open mouth with fruit
         ctx.fillStyle = '#a00';
         ctx.beginPath();
-        ctx.arc(x + 12, y + 13 + bodyBob, 3, 0, Math.PI * 2);
+        ctx.arc(x + 8, y + 8 + bodyBob, 1.5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = outline;
-        ctx.stroke();
       } else {
-        // Normal mouth
         ctx.strokeStyle = outline;
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 0.5;
         ctx.beginPath();
-        ctx.arc(x + 12, y + 12 + bodyBob, 2, 0.1 * Math.PI, 0.9 * Math.PI);
+        ctx.arc(x + 8, y + 7 + bodyBob, 1, 0.1 * Math.PI, 0.9 * Math.PI);
         ctx.stroke();
       }
     };
 
-    // Draw DBZ-style terrain tile
-    const drawTerrain = (ctx, x, y, tile, mapX, mapY, gameTime) => {
+    // Draw terrain tile
+    const drawTerrain = (ctx, x, y, tile, mapX, mapY, gameTime, creationDay) => {
       const isEvenTile = (mapX + mapY) % 2 === 0;
+
+      // During creation, show different states
+      if (creationDay < 3) {
+        // Void/darkness before day 3
+        ctx.fillStyle = creationDay >= 1 ? '#0a0a20' : '#000000';
+        ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
+        return;
+      }
 
       switch (tile) {
         case TILES.GRASS:
-        case TILES.GRASS_DARK:
-          // Base grass with texture
           ctx.fillStyle = isEvenTile ? COLORS.grassLight : COLORS.grassMid;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Grass texture pattern (dithering like GBC)
           ctx.fillStyle = COLORS.grassDark;
-          for (let i = 0; i < 8; i++) {
+          for (let i = 0; i < 3; i++) {
             const gx = (mapX * 7 + i * 5) % TILE_SIZE;
             const gy = (mapY * 11 + i * 3) % TILE_SIZE;
-            ctx.fillRect(x + gx, y + gy, 2, 2);
-          }
-
-          // Occasional grass blades
-          if ((mapX * mapY) % 5 === 0) {
-            ctx.strokeStyle = COLORS.grassShadow;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(x + 8, y + TILE_SIZE);
-            ctx.lineTo(x + 10, y + TILE_SIZE - 6);
-            ctx.moveTo(x + 20, y + TILE_SIZE);
-            ctx.lineTo(x + 18, y + TILE_SIZE - 5);
-            ctx.stroke();
+            ctx.fillRect(x + gx, y + gy, 1, 1);
           }
           break;
 
         case TILES.PATH:
-          // Dirt path with DBZ style
           ctx.fillStyle = COLORS.dirtMid;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Path texture
           ctx.fillStyle = COLORS.dirtLight;
-          for (let i = 0; i < 6; i++) {
-            const px = (mapX * 5 + i * 7) % (TILE_SIZE - 4);
-            const py = (mapY * 3 + i * 5) % (TILE_SIZE - 4);
-            ctx.fillRect(x + px, y + py, 3, 2);
-          }
-
-          // Dark spots
-          ctx.fillStyle = COLORS.dirtShadow;
-          for (let i = 0; i < 4; i++) {
-            const px = (mapX * 3 + i * 9) % (TILE_SIZE - 2);
-            const py = (mapY * 7 + i * 4) % (TILE_SIZE - 2);
-            ctx.fillRect(x + px, y + py, 2, 2);
+          for (let i = 0; i < 3; i++) {
+            const px = (mapX * 5 + i * 7) % (TILE_SIZE - 2);
+            const py = (mapY * 3 + i * 5) % (TILE_SIZE - 2);
+            ctx.fillRect(x + px, y + py, 2, 1);
           }
           break;
 
         case TILES.WATER:
-          // Animated water with DBZ style
           const waterPhase = (gameTime + mapX * 3 + mapY * 2) % 30;
           ctx.fillStyle = waterPhase < 10 ? COLORS.water :
                           waterPhase < 20 ? COLORS.waterLight : COLORS.waterDark;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Wave highlights
           ctx.fillStyle = COLORS.waterLight;
-          const waveOffset = Math.sin((gameTime + mapX) * 0.2) * 3;
+          const waveOffset = Math.sin((gameTime + mapX) * 0.2) * 2;
           ctx.beginPath();
-          ctx.ellipse(x + 16, y + 10 + waveOffset, 8, 2, 0, 0, Math.PI * 2);
+          ctx.ellipse(x + 8, y + 6 + waveOffset, 4, 1, 0, 0, Math.PI * 2);
           ctx.fill();
-
-          // Deep water shadows
-          ctx.fillStyle = COLORS.waterDeep;
-          ctx.fillRect(x, y + TILE_SIZE - 6, TILE_SIZE, 3);
           break;
 
         case TILES.TREE:
-          // Draw grass base first
           ctx.fillStyle = COLORS.grassMid;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Tree trunk with shading
           ctx.fillStyle = COLORS.treeTrunk;
-          ctx.fillRect(x + 12, y + 18, 8, 14);
-          ctx.fillStyle = COLORS.treeTrunkDark;
-          ctx.fillRect(x + 12, y + 18, 3, 14);
+          ctx.fillRect(x + 6, y + 10, 4, 6);
 
-          // Tree foliage (layered circles like DBZ)
           ctx.fillStyle = COLORS.treeLeafDark;
           ctx.beginPath();
-          ctx.arc(x + 16, y + 14, 14, 0, Math.PI * 2);
+          ctx.arc(x + 8, y + 7, 6, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = COLORS.treeLeaf;
           ctx.beginPath();
-          ctx.arc(x + 16, y + 12, 12, 0, Math.PI * 2);
+          ctx.arc(x + 8, y + 6, 5, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = COLORS.treeLeafLight;
           ctx.beginPath();
-          ctx.arc(x + 13, y + 9, 6, 0, Math.PI * 2);
+          ctx.arc(x + 6, y + 5, 2, 0, Math.PI * 2);
           ctx.fill();
-
-          // Outline
-          ctx.strokeStyle = COLORS.outline;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(x + 16, y + 12, 12, 0, Math.PI * 2);
-          ctx.stroke();
           break;
 
         case TILES.ROCK:
-          // Draw grass base first
           ctx.fillStyle = COLORS.grassMid;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Rock with DBZ shading
           ctx.fillStyle = COLORS.rockDark;
           ctx.beginPath();
-          ctx.ellipse(x + 16, y + 22, 12, 10, 0, 0, Math.PI * 2);
+          ctx.ellipse(x + 8, y + 10, 6, 4, 0, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = COLORS.rock;
           ctx.beginPath();
-          ctx.ellipse(x + 15, y + 20, 10, 8, 0, 0, Math.PI * 2);
+          ctx.ellipse(x + 7, y + 9, 5, 3, 0, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = COLORS.rockLight;
           ctx.beginPath();
-          ctx.ellipse(x + 12, y + 18, 5, 4, -0.3, 0, Math.PI * 2);
+          ctx.ellipse(x + 5, y + 8, 2, 1.5, 0, 0, Math.PI * 2);
           ctx.fill();
-
-          // Outline
-          ctx.strokeStyle = COLORS.outline;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.ellipse(x + 16, y + 22, 12, 10, 0, 0, Math.PI * 2);
-          ctx.stroke();
           break;
 
         case TILES.BUSH:
-          // Draw grass base first
           ctx.fillStyle = COLORS.grassMid;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Bush with DBZ style
           ctx.fillStyle = COLORS.treeLeafDark;
           ctx.beginPath();
-          ctx.arc(x + 16, y + 22, 11, 0, Math.PI * 2);
+          ctx.arc(x + 8, y + 10, 5, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = COLORS.treeLeaf;
           ctx.beginPath();
-          ctx.arc(x + 14, y + 20, 9, 0, Math.PI * 2);
+          ctx.arc(x + 7, y + 9, 4, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = COLORS.treeLeafLight;
           ctx.beginPath();
-          ctx.arc(x + 11, y + 18, 4, 0, Math.PI * 2);
+          ctx.arc(x + 5, y + 8, 2, 0, Math.PI * 2);
           ctx.fill();
-
-          ctx.strokeStyle = COLORS.outline;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.arc(x + 16, y + 22, 11, 0, Math.PI * 2);
-          ctx.stroke();
           break;
 
         case TILES.FLOWER:
-          // Draw grass base first
           ctx.fillStyle = isEvenTile ? COLORS.grassLight : COLORS.grassMid;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Flower stem
           ctx.strokeStyle = COLORS.grassDark;
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 1;
           ctx.beginPath();
-          ctx.moveTo(x + 16, y + TILE_SIZE);
-          ctx.lineTo(x + 16, y + 18);
+          ctx.moveTo(x + 8, y + TILE_SIZE);
+          ctx.lineTo(x + 8, y + 10);
           ctx.stroke();
 
-          // Flower petals
           const flowerColor = mapX % 3 === 0 ? COLORS.flowerPink :
                              mapX % 3 === 1 ? COLORS.flowerYellow : COLORS.flowerWhite;
           ctx.fillStyle = flowerColor;
           for (let i = 0; i < 5; i++) {
             const angle = (i / 5) * Math.PI * 2;
             ctx.beginPath();
-            ctx.arc(x + 16 + Math.cos(angle) * 5, y + 16 + Math.sin(angle) * 5, 3, 0, Math.PI * 2);
+            ctx.arc(x + 8 + Math.cos(angle) * 3, y + 8 + Math.sin(angle) * 3, 2, 0, Math.PI * 2);
             ctx.fill();
           }
 
-          // Flower center
           ctx.fillStyle = '#ffcc00';
           ctx.beginPath();
-          ctx.arc(x + 16, y + 16, 3, 0, Math.PI * 2);
+          ctx.arc(x + 8, y + 8, 2, 0, Math.PI * 2);
           ctx.fill();
-
-          ctx.strokeStyle = COLORS.outline;
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
           break;
 
         case TILES.TREE_OF_LIFE:
-          // Draw grass base first
           ctx.fillStyle = COLORS.grassMid;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Glowing trunk
           ctx.shadowColor = COLORS.treeOfLife;
-          ctx.shadowBlur = 15;
+          ctx.shadowBlur = 8;
           ctx.fillStyle = '#8b6914';
-          ctx.fillRect(x + 10, y + 12, 12, 20);
+          ctx.fillRect(x + 5, y + 8, 6, 8);
           ctx.shadowBlur = 0;
 
-          // Golden foliage
           ctx.fillStyle = COLORS.treeOfLife;
           ctx.shadowColor = COLORS.treeOfLifeGlow;
-          ctx.shadowBlur = 20 + Math.sin(gameTime * 0.1) * 8;
+          ctx.shadowBlur = 10 + Math.sin(gameTime * 0.1) * 4;
           ctx.beginPath();
-          ctx.arc(x + 16, y + 6, 18, 0, Math.PI * 2);
+          ctx.arc(x + 8, y + 4, 8, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
 
-          // Highlight
           ctx.fillStyle = COLORS.treeOfLifeGlow;
           ctx.beginPath();
-          ctx.arc(x + 12, y + 2, 8, 0, Math.PI * 2);
+          ctx.arc(x + 6, y + 2, 4, 0, Math.PI * 2);
           ctx.fill();
-
-          // Outline
-          ctx.strokeStyle = '#8b6914';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(x + 16, y + 6, 18, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Label
-          ctx.fillStyle = COLORS.treeOfLife;
-          ctx.font = 'bold 7px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText('ETS CHAYIM', x + 16, y + 40);
-          ctx.textAlign = 'left';
           break;
 
         case TILES.TREE_OF_KNOWLEDGE:
-          // Draw grass base first
           ctx.fillStyle = COLORS.grassMid;
           ctx.fillRect(x, y, TILE_SIZE, TILE_SIZE);
 
-          // Dark trunk
           ctx.fillStyle = '#3a2010';
-          ctx.fillRect(x + 10, y + 12, 12, 20);
-          ctx.fillStyle = '#2a1008';
-          ctx.fillRect(x + 10, y + 12, 4, 20);
+          ctx.fillRect(x + 5, y + 8, 6, 8);
 
-          // Dark foliage
           ctx.fillStyle = '#1a3010';
           ctx.beginPath();
-          ctx.arc(x + 16, y + 6, 18, 0, Math.PI * 2);
+          ctx.arc(x + 8, y + 4, 8, 0, Math.PI * 2);
           ctx.fill();
 
           ctx.fillStyle = '#2a4018';
           ctx.beginPath();
-          ctx.arc(x + 14, y + 4, 12, 0, Math.PI * 2);
+          ctx.arc(x + 7, y + 3, 6, 0, Math.PI * 2);
           ctx.fill();
 
-          // Forbidden fruits
           ctx.fillStyle = COLORS.treeOfKnowledge;
-          const fruitPositions = [[8, 2], [24, 0], [16, 8], [6, 10], [26, 8], [18, -2], [10, 6]];
-          fruitPositions.forEach(([fx, fy]) => {
+          [[4, 2], [12, 1], [8, 5], [3, 6], [13, 5]].forEach(([fx, fy]) => {
             ctx.beginPath();
-            ctx.arc(x + fx, y + fy, 4, 0, Math.PI * 2);
+            ctx.arc(x + fx, y + fy, 2, 0, Math.PI * 2);
             ctx.fill();
-            ctx.fillStyle = COLORS.treeOfKnowledgeDark;
-            ctx.beginPath();
-            ctx.arc(x + fx - 1, y + fy + 1, 2, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = COLORS.treeOfKnowledge;
           });
-
-          // Outline
-          ctx.strokeStyle = COLORS.outline;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(x + 16, y + 6, 18, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Label
-          ctx.fillStyle = '#ff6666';
-          ctx.font = 'bold 6px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText("ETS HADA'AT", x + 16, y + 40);
-          ctx.fillText("TOV V'RA", x + 16, y + 47);
-          ctx.textAlign = 'left';
           break;
       }
     };
@@ -941,26 +796,26 @@
       for (let y = 0; y < MAP_HEIGHT; y++) {
         const row = [];
         for (let x = 0; x < MAP_WIDTH; x++) {
-          if (y >= 22 && y <= 25) row.push(TILES.WATER);
-          else if ((x === 15 && y >= 5 && y <= 20) || (y === 12 && x >= 8 && x <= 28)) row.push(TILES.PATH);
+          if (y >= 32 && y <= 36) row.push(TILES.WATER);
+          else if ((x === 25 && y >= 8 && y <= 30) || (y === 20 && x >= 10 && x <= 45)) row.push(TILES.PATH);
           else if (x < 3 || x > MAP_WIDTH - 4 || y < 3 || y > MAP_HEIGHT - 4) row.push(Math.random() > 0.3 ? TILES.TREE : TILES.GRASS);
           else {
             const rand = Math.random();
-            if (rand < 0.05) row.push(TILES.TREE);
-            else if (rand < 0.08) row.push(TILES.FLOWER);
-            else if (rand < 0.1) row.push(TILES.BUSH);
-            else if (rand < 0.11) row.push(TILES.ROCK);
+            if (rand < 0.04) row.push(TILES.TREE);
+            else if (rand < 0.07) row.push(TILES.FLOWER);
+            else if (rand < 0.09) row.push(TILES.BUSH);
+            else if (rand < 0.10) row.push(TILES.ROCK);
             else row.push(TILES.GRASS);
           }
         }
         map.push(row);
       }
-      map[10][28] = TILES.TREE_OF_LIFE;
+      map[18][45] = TILES.TREE_OF_LIFE;
       map[TREE_OF_KNOWLEDGE.y][TREE_OF_KNOWLEDGE.x] = TILES.TREE_OF_KNOWLEDGE;
       for (let dy = -2; dy <= 2; dy++) {
         for (let dx = -2; dx <= 2; dx++) {
-          if (map[10 + dy]) {
-            if (map[10 + dy][28 + dx] !== undefined && map[10 + dy][28 + dx] !== TILES.TREE_OF_LIFE) map[10 + dy][28 + dx] = TILES.GRASS;
+          if (map[18 + dy]) {
+            if (map[18 + dy][45 + dx] !== undefined && map[18 + dy][45 + dx] !== TILES.TREE_OF_LIFE) map[18 + dy][45 + dx] = TILES.GRASS;
             if (map[TREE_OF_KNOWLEDGE.y + dy] && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== undefined && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== TILES.TREE_OF_KNOWLEDGE) map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] = TILES.GRASS;
           }
         }
@@ -973,52 +828,60 @@
 
     const createNPCs = () => [
       {
-        id: 'adam', name: "A'dam", x: 20, y: 14, prevX: 20, prevY: 14,
+        id: 'adam', name: "A'dam", x: 30, y: 22, prevX: 30, prevY: 22,
         skinColor: SKIN_COLOR, skinShadow: SKIN_SHADOW,
         hairColor: '#1a1a1a', hairHighlight: '#3a3a3a',
-        outfitColor: '#4a6090', outfitShadow: '#3a4070', outfitHighlight: '#6080b0',
+        outfitColor: '#4a6090', outfitShadow: '#3a4070',
         thoughts: ["YAHUAH formed me from the dust...", "I am to dress and keep this garden.", "She is bone of my bones..."],
         dialogue: ["Shalom, traveler. I am A'dam.", "YAHUAH ELOHIYM formed me of the dust of the ground.", "He breathed into my nostrils the breath of life.", "I became a living nephesh.", "YAHUAH put me in the Garden of Eden to dress it and keep it.", "Of every tree I may freely eat...", "But of the Ets HaDa'at Tov v'Ra, I shall not eat.", "For in the day I eat thereof, I shall surely die."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 20, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0, direction: 'down',
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 30, homeY: 22, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0, direction: 'down',
       },
       {
-        id: 'chavvah', name: 'Chavvah', x: 22, y: 14, prevX: 22, prevY: 14,
+        id: 'chawwah', name: 'Chawwah', x: 32, y: 22, prevX: 32, prevY: 22,
         skinColor: SKIN_COLOR, skinShadow: SKIN_SHADOW,
         hairColor: '#1a1a1a', hairHighlight: '#3a3a3a',
-        outfitColor: '#905080', outfitShadow: '#704060', outfitHighlight: '#b070a0',
+        outfitColor: '#905080', outfitShadow: '#704060',
         isEve: true,
         thoughts: ["The garden is so beautiful...", "That tree... the fruit looks good...", "The nachash says we won't die..."],
-        dialogue: ["I am Chavvah, the mother of all living.", "YAHUAH ELOHIYM caused a deep sleep upon A'dam.", "He took one of his ribs and made me.", "We may eat of the fruit of the trees of the garden.", "But of the tree in the midst of the garden...", "ELOHIYM has said, Ye shall not eat of it.", "Neither shall ye touch it, lest ye die.", "But the nachash says our eyes will be opened..."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 22, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0, direction: 'down',
+        dialogue: ["I am Chawwah, the mother of all living.", "YAHUAH ELOHIYM caused a deep sleep upon A'dam.", "He took one of his ribs and made me.", "We may eat of the fruit of the trees of the garden.", "But of the tree in the midst of the garden...", "ELOHIYM has said, Ye shall not eat of it.", "Neither shall ye touch it, lest ye die.", "But the nachash says our eyes will be opened..."],
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 32, homeY: 22, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0, direction: 'down',
       },
       {
-        id: 'nachash', name: 'Nachash', x: 10, y: 12, prevX: 10, prevY: 12,
+        id: 'nachash', name: 'Nachash', x: 15, y: 20, prevX: 15, prevY: 20,
         isSerpent: true,
         thoughts: ["Yea, hath ELOHIYM said...?", "Ye shall not surely die...", "Your eyes shall be opened..."],
         dialogue: ["Yea, hath ELOHIYM said...", "Ye shall not eat of every tree of the garden?", "Ye shall not surely die.", "For ELOHIYM knows that in the day ye eat thereof...", "Your eyes shall be opened.", "And ye shall be as elohiym...", "Knowing good and evil.", "Is the fruit not pleasant to the eyes?"],
         currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'circle_tree', circleAngle: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, direction: 'right',
       },
       {
-        id: 'malak', name: 'Malak', x: 28, y: 8, prevX: 28, prevY: 8,
+        id: 'malak', name: 'Malak', x: 45, y: 16, prevX: 45, prevY: 16,
         skinColor: SKIN_COLOR, skinShadow: SKIN_SHADOW,
         hairColor: '#d4af37', hairHighlight: '#f0d060',
         isAngel: true,
         thoughts: ["Holy, holy, holy is YAHUAH!", "I guard the Ets Chayim.", "The flaming sword turns every way..."],
         dialogue: ["Shalom. I am a malak of YAHUAH.", "I watch over this qodesh garden.", "Behold, the Ets Chayim - the Tree of Life!", "And there - the Ets HaDa'at Tov v'Ra.", "YAHUAH ELOHIYM has forbidden its fruit.", "Guard your heart, child of the Most High."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 28, y: 8}, {x: 26, y: 10}, {x: 30, y: 10}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, direction: 'down',
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 45, y: 16}, {x: 43, y: 18}, {x: 47, y: 18}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, direction: 'down',
       }
     ];
 
     const PHASES = {
-      EXPLORE: 'explore', SCENE_START: 'scene_start', CHAVVAH_WALKS_TO_TREE: 'chavvah_walks',
-      CHAVVAH_TAKES_FRUIT: 'chavvah_takes', CHAVVAH_EATS: 'chavvah_eats', CHAVVAH_GLORY_FADES: 'chavvah_glory_fades',
-      CHAVVAH_WALKS_TO_ADAM: 'chavvah_to_adam', ADAM_EATS: 'adam_eats', ADAM_GLORY_FADES: 'adam_glory_fades',
-      EYES_OPENED: 'eyes_opened', COMPLETE: 'complete'
+      CREATION: 'creation',
+      EXPLORE: 'explore',
+      SCENE_START: 'scene_start',
+      CHAWWAH_WALKS_TO_TREE: 'chawwah_walks',
+      CHAWWAH_TAKES_FRUIT: 'chawwah_takes',
+      CHAWWAH_EATS: 'chawwah_eats',
+      CHAWWAH_GLORY_FADES: 'chawwah_glory_fades',
+      CHAWWAH_WALKS_TO_ADAM: 'chawwah_to_adam',
+      ADAM_EATS: 'adam_eats',
+      ADAM_GLORY_FADES: 'adam_glory_fades',
+      EYES_OPENED: 'eyes_opened',
+      COMPLETE: 'complete'
     };
 
     const drawSpeechBubble = (ctx, x, y, text, isSerpent = false) => {
-      const maxWidth = 120, padding = 6, lineHeight = 12;
-      ctx.font = '9px monospace';
+      const maxWidth = 80, padding = 4, lineHeight = 8;
+      ctx.font = '7px monospace';
       const words = text.split(' ');
       const lines = [];
       let currentLine = '';
@@ -1030,14 +893,13 @@
       if (currentLine) lines.push(currentLine);
       const bubbleWidth = Math.min(maxWidth, Math.max(...lines.map(l => ctx.measureText(l).width)) + padding * 2);
       const bubbleHeight = lines.length * lineHeight + padding * 2;
-      const bubbleX = x - bubbleWidth / 2, bubbleY = y - bubbleHeight - 20;
+      const bubbleX = x - bubbleWidth / 2, bubbleY = y - bubbleHeight - 12;
 
-      // Bubble background with gradient effect
       ctx.fillStyle = isSerpent ? 'rgba(20, 40, 20, 0.95)' : 'rgba(255, 255, 255, 0.95)';
       ctx.strokeStyle = isSerpent ? '#4a7c4a' : '#333';
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 1;
 
-      const radius = 8;
+      const radius = 4;
       ctx.beginPath();
       ctx.moveTo(bubbleX + radius, bubbleY);
       ctx.lineTo(bubbleX + bubbleWidth - radius, bubbleY);
@@ -1052,36 +914,36 @@
       ctx.fill();
       ctx.stroke();
 
-      // Thought bubbles
       ctx.fillStyle = isSerpent ? 'rgba(20, 40, 20, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-      ctx.beginPath(); ctx.arc(x - 4, bubbleY + bubbleHeight + 5, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.arc(x, bubbleY + bubbleHeight + 11, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x - 2, bubbleY + bubbleHeight + 3, 2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(x, bubbleY + bubbleHeight + 6, 1.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
 
-      // Text
       ctx.fillStyle = isSerpent ? '#90EE90' : '#333';
-      ctx.font = '9px monospace';
+      ctx.font = '7px monospace';
       lines.forEach((line, i) => { ctx.fillText(line, bubbleX + padding, bubbleY + padding + lineHeight * (i + 0.8)); });
     };
 
     const GenesisGame = () => {
       const canvasRef = useRef(null);
       const [map] = useState(generateMap);
-      const [player, setPlayer] = useState({ x: 17, y: 16, prevX: 17, prevY: 16, direction: 'down', walkFrame: 0, isMoving: false });
+      const [player, setPlayer] = useState({ x: 28, y: 24, prevX: 28, prevY: 24, direction: 'down', walkFrame: 0, isMoving: false });
       const [npcs, setNpcs] = useState(createNPCs);
       const [camera, setCamera] = useState({ x: 0, y: 0 });
       const [showDialogue, setShowDialogue] = useState(null);
-      const [sceneText, setSceneText] = useState("Bere'shiyth - In the beginning ELOHIYM created the heavens and the earth...");
-      const [showSceneText, setShowSceneText] = useState(true);
+      const [sceneText, setSceneText] = useState("");
+      const [showSceneText, setShowSceneText] = useState(false);
       const [gameTime, setGameTime] = useState(0);
-      const [gamePhase, setGamePhase] = useState(PHASES.EXPLORE);
+      const [gamePhase, setGamePhase] = useState(PHASES.CREATION);
+      const [creationStep, setCreationStep] = useState(0);
+      const [creationDay, setCreationDay] = useState(0);
       const keysPressed = useRef({});
       const [touchDirection, setTouchDirection] = useState(null);
 
       const checkSceneTrigger = useCallback(() => {
         const adam = npcs.find(n => n.id === 'adam');
-        const chavvah = npcs.find(n => n.id === 'chavvah');
+        const chawwah = npcs.find(n => n.id === 'chawwah');
         const nachash = npcs.find(n => n.id === 'nachash');
-        return adam?.hasSpoken && chavvah?.hasSpoken && nachash?.hasSpoken;
+        return adam?.hasSpoken && chawwah?.hasSpoken && nachash?.hasSpoken;
       }, [npcs]);
 
       const canNPCMoveTo = useCallback((x, y) => {
@@ -1098,11 +960,30 @@
       }, [map]);
 
       useEffect(() => {
-        setCamera({
-          x: Math.max(0, Math.min(player.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)),
-          y: Math.max(0, Math.min(player.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT))
-        });
-      }, [player]);
+        if (gamePhase !== PHASES.CREATION) {
+          setCamera({
+            x: Math.max(0, Math.min(player.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)),
+            y: Math.max(0, Math.min(player.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT))
+          });
+        }
+      }, [player, gamePhase]);
+
+      const advanceCreation = useCallback(() => {
+        if (creationStep < CREATION_STORY.length - 1) {
+          setCreationStep(prev => prev + 1);
+          // Update creation day based on verse
+          const nextVerse = CREATION_STORY[creationStep + 1].verse;
+          if (nextVerse >= 3) setCreationDay(1);
+          if (nextVerse >= 6) setCreationDay(2);
+          if (nextVerse >= 9) setCreationDay(3);
+        } else {
+          // End creation cutscene
+          setGamePhase(PHASES.EXPLORE);
+          setCreationDay(7); // Full creation complete
+          setSceneText("Welcome to the Garden of Eden. Explore and speak with the inhabitants.");
+          setShowSceneText(true);
+        }
+      }, [creationStep]);
 
       const advanceDialogue = useCallback(() => {
         if (!showDialogue) return;
@@ -1119,42 +1000,43 @@
       }, [showDialogue, npcs]);
 
       const handleInteraction = useCallback(() => {
+        if (gamePhase === PHASES.CREATION) { advanceCreation(); return; }
         if (showDialogue) { advanceDialogue(); return; }
         if (showSceneText) { setShowSceneText(false); return; }
         if (gamePhase === PHASES.EXPLORE) {
-          const nearbyNpc = npcs.find(npc => Math.abs(npc.x - player.x) < 1.5 && Math.abs(npc.y - player.y) < 1.5);
+          const nearbyNpc = npcs.find(npc => Math.abs(npc.x - player.x) < 2 && Math.abs(npc.y - player.y) < 2);
           if (nearbyNpc) setShowDialogue({ ...nearbyNpc, currentDialogue: 0 });
         }
-      }, [showDialogue, showSceneText, gamePhase, npcs, player, advanceDialogue]);
+      }, [showDialogue, showSceneText, gamePhase, npcs, player, advanceDialogue, advanceCreation]);
 
       const advanceScene = useCallback(() => {
         setShowSceneText(false);
         switch (gamePhase) {
           case PHASES.SCENE_START:
-            setGamePhase(PHASES.CHAVVAH_WALKS_TO_TREE);
+            setGamePhase(PHASES.CHAWWAH_WALKS_TO_TREE);
             setSceneText("And when the woman saw that the tree was good for food, and pleasant to the eyes...");
             setShowSceneText(true);
             break;
-          case PHASES.CHAVVAH_TAKES_FRUIT:
-            setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, holdingFruit: true } : npc));
-            setGamePhase(PHASES.CHAVVAH_EATS);
+          case PHASES.CHAWWAH_TAKES_FRUIT:
+            setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, holdingFruit: true } : npc));
+            setGamePhase(PHASES.CHAWWAH_EATS);
             setSceneText("She took of the fruit thereof...");
             setShowSceneText(true);
             break;
-          case PHASES.CHAVVAH_EATS:
-            setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, isEating: true } : npc));
+          case PHASES.CHAWWAH_EATS:
+            setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, isEating: true } : npc));
             setTimeout(() => {
-              setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, isEating: false } : npc));
-              setGamePhase(PHASES.CHAVVAH_GLORY_FADES);
+              setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, isEating: false } : npc));
+              setGamePhase(PHASES.CHAWWAH_GLORY_FADES);
               setSceneText("And did eat... and the glory of YAHUAH departed from her...");
               setShowSceneText(true);
               setTimeout(() => {
-                setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, hasGlory: false, clothesBlink: 4 } : npc));
+                setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, hasGlory: false, clothesBlink: 4 } : npc));
               }, 500);
             }, 1500);
             break;
-          case PHASES.CHAVVAH_GLORY_FADES:
-            setGamePhase(PHASES.CHAVVAH_WALKS_TO_ADAM);
+          case PHASES.CHAWWAH_GLORY_FADES:
+            setGamePhase(PHASES.CHAWWAH_WALKS_TO_ADAM);
             setSceneText("And gave also unto her husband with her...");
             setShowSceneText(true);
             break;
@@ -1188,7 +1070,8 @@
           keysPressed.current[e.key.toLowerCase()] = true;
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
-            if (showSceneText && gamePhase !== PHASES.EXPLORE) advanceScene();
+            if (gamePhase === PHASES.CREATION) advanceCreation();
+            else if (showSceneText && gamePhase !== PHASES.EXPLORE) advanceScene();
             else handleInteraction();
           }
         };
@@ -1196,7 +1079,7 @@
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
         return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
-      }, [handleInteraction, advanceScene, showSceneText, gamePhase]);
+      }, [handleInteraction, advanceScene, advanceCreation, showSceneText, gamePhase]);
 
       const handleTouchStart = (direction) => setTouchDirection(direction);
       const handleTouchEnd = () => setTouchDirection(null);
@@ -1204,15 +1087,17 @@
       useEffect(() => {
         const gameLoop = setInterval(() => {
           setGameTime(prev => prev + 1);
+
           if (gamePhase === PHASES.EXPLORE && checkSceneTrigger()) {
             setGamePhase(PHASES.SCENE_START);
-            setSceneText("The nachash beguiled Chavvah... she looked upon the forbidden tree...");
+            setSceneText("The nachash beguiled Chawwah... she looked upon the forbidden tree...");
             setShowSceneText(true);
           }
+
           if (!showDialogue && gamePhase === PHASES.EXPLORE) {
             setPlayer(prev => {
               let newX = prev.x, newY = prev.y, newDir = prev.direction;
-              const speed = 0.15;
+              const speed = 0.12;
               const up = keysPressed.current['w'] || keysPressed.current['arrowup'] || touchDirection === 'up';
               const down = keysPressed.current['s'] || keysPressed.current['arrowdown'] || touchDirection === 'down';
               const left = keysPressed.current['a'] || keysPressed.current['arrowleft'] || touchDirection === 'left';
@@ -1230,7 +1115,8 @@
               return { x: finalX, y: finalY, prevX: prev.x, prevY: prev.y, direction: newDir, walkFrame, isMoving };
             });
           }
-          if (!showDialogue) {
+
+          if (!showDialogue && gamePhase !== PHASES.CREATION) {
             setNpcs(prev => prev.map(npc => {
               let newNpc = { ...npc, moveTimer: npc.moveTimer + 1, thoughtTimer: npc.thoughtTimer + 1 };
               if (npc.clothesBlink > 0) {
@@ -1238,15 +1124,15 @@
                 if (newNpc.clothesBlink <= 0) { newNpc.clothesBlink = 0; newNpc.hasClothes = true; }
               }
               if (newNpc.thoughtTimer > 150) { newNpc.currentThought = (npc.currentThought + 1) % npc.thoughts.length; newNpc.thoughtTimer = 0; }
-              if (npc.id === 'chavvah') {
-                if (gamePhase === PHASES.CHAVVAH_WALKS_TO_TREE) {
+              if (npc.id === 'chawwah') {
+                if (gamePhase === PHASES.CHAWWAH_WALKS_TO_TREE) {
                   newNpc.behavior = 'scene'; newNpc.targetX = TREE_OF_KNOWLEDGE.x + 1; newNpc.targetY = TREE_OF_KNOWLEDGE.y + 1;
                   if (Math.abs(npc.x - (TREE_OF_KNOWLEDGE.x + 1)) < 0.3 && Math.abs(npc.y - (TREE_OF_KNOWLEDGE.y + 1)) < 0.3) {
-                    setGamePhase(PHASES.CHAVVAH_TAKES_FRUIT);
+                    setGamePhase(PHASES.CHAWWAH_TAKES_FRUIT);
                     setSceneText("And a tree to be desired to make one wise...");
                     setShowSceneText(true);
                   }
-                } else if (gamePhase === PHASES.CHAVVAH_WALKS_TO_ADAM) {
+                } else if (gamePhase === PHASES.CHAWWAH_WALKS_TO_ADAM) {
                   const adam = prev.find(n => n.id === 'adam');
                   if (adam) {
                     newNpc.targetX = adam.x - 1; newNpc.targetY = adam.y;
@@ -1260,8 +1146,8 @@
               }
               if (npc.id === 'adam' && gamePhase !== PHASES.EXPLORE) { newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false; }
               if (npc.behavior === 'circle_tree') {
-                newNpc.circleAngle = (npc.circleAngle || 0) + 0.02;
-                const radius = 2.5;
+                newNpc.circleAngle = (npc.circleAngle || 0) + 0.015;
+                const radius = 3;
                 newNpc.targetX = TREE_OF_KNOWLEDGE.x + Math.cos(newNpc.circleAngle) * radius;
                 newNpc.targetY = TREE_OF_KNOWLEDGE.y + Math.sin(newNpc.circleAngle) * radius;
               }
@@ -1269,8 +1155,8 @@
                 if (!npc.targetX || (Math.abs(npc.x - npc.targetX) < 0.5 && Math.abs(npc.y - npc.targetY) < 0.5)) {
                   let attempts = 0, validTarget = false;
                   while (!validTarget && attempts < 10) {
-                    const newTargetX = npc.homeX + (Math.random() - 0.5) * 8;
-                    const newTargetY = npc.homeY + (Math.random() - 0.5) * 6;
+                    const newTargetX = npc.homeX + (Math.random() - 0.5) * 10;
+                    const newTargetY = npc.homeY + (Math.random() - 0.5) * 8;
                     if (canNPCMoveTo(newTargetX, newTargetY)) { newNpc.targetX = newTargetX; newNpc.targetY = newTargetY; validTarget = true; }
                     attempts++;
                   }
@@ -1289,18 +1175,15 @@
                 const dx = newNpc.targetX - npc.x, dy = newNpc.targetY - npc.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist > 0.1) {
-                  const speed = (npc.id === 'chavvah' && gamePhase !== PHASES.EXPLORE) ? 0.04 : 0.03;
+                  const speed = (npc.id === 'chawwah' && gamePhase !== PHASES.EXPLORE) ? 0.04 : 0.025;
                   const moveX = npc.x + (dx / dist) * speed, moveY = npc.y + (dy / dist) * speed;
-
-                  // Update direction based on movement
                   if (Math.abs(dx) > Math.abs(dy)) {
                     newNpc.direction = dx > 0 ? 'right' : 'left';
                   } else {
                     newNpc.direction = dy > 0 ? 'down' : 'up';
                   }
-
                   if (canNPCMoveTo(moveX, moveY) || npc.behavior === 'scene' || npc.behavior === 'circle_tree') {
-                    newNpc.x = moveX; newNpc.y = moveY; newNpc.isMoving = true; newNpc.walkFrame = (npc.walkFrame + 0.25) % 4;
+                    newNpc.x = moveX; newNpc.y = moveY; newNpc.isMoving = true; newNpc.walkFrame = (npc.walkFrame + 0.2) % 4;
                   } else { newNpc.targetX = npc.homeX || npc.x; newNpc.targetY = npc.homeY || npc.y; newNpc.isMoving = false; newNpc.walkFrame = 0; }
                 } else { newNpc.isMoving = false; newNpc.walkFrame = 0; }
               } else { newNpc.isMoving = false; newNpc.walkFrame = 0; }
@@ -1316,6 +1199,151 @@
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
 
+        if (gamePhase === PHASES.CREATION) {
+          // Draw creation cutscene
+          const currentVerse = CREATION_STORY[creationStep];
+
+          // Background based on creation progress
+          if (currentVerse.verse < 3) {
+            // Void/darkness
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            if (currentVerse.verse >= 2) {
+              // Waters with spirit moving
+              ctx.fillStyle = '#0a1525';
+              ctx.fillRect(0, canvas.height / 2, canvas.width, canvas.height / 2);
+
+              // Animated spirit/wind
+              for (let i = 0; i < 5; i++) {
+                const waveX = (gameTime * 2 + i * 100) % (canvas.width + 100) - 50;
+                ctx.strokeStyle = `rgba(200, 220, 255, ${0.3 - i * 0.05})`;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(waveX, canvas.height / 2 + Math.sin(gameTime * 0.1 + i) * 20);
+                ctx.quadraticCurveTo(waveX + 50, canvas.height / 2 + Math.sin(gameTime * 0.1 + i + 1) * 30, waveX + 100, canvas.height / 2 + Math.sin(gameTime * 0.1 + i + 2) * 20);
+                ctx.stroke();
+              }
+            }
+          } else if (currentVerse.verse >= 3 && currentVerse.verse < 6) {
+            // Light and darkness divided
+            const lightAmount = Math.min(1, (currentVerse.verse - 2) * 0.3);
+
+            // Draw gradient from light to dark
+            const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+            gradient.addColorStop(0, `rgba(255, 255, 200, ${lightAmount})`);
+            gradient.addColorStop(0.5, `rgba(100, 100, 150, ${lightAmount * 0.5})`);
+            gradient.addColorStop(1, '#000010');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Sun rays
+            if (currentVerse.verse >= 4) {
+              ctx.fillStyle = `rgba(255, 255, 150, ${0.3 + Math.sin(gameTime * 0.05) * 0.1})`;
+              for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2 + gameTime * 0.01;
+                ctx.beginPath();
+                ctx.moveTo(80, 80);
+                ctx.lineTo(80 + Math.cos(angle) * 200, 80 + Math.sin(angle) * 200);
+                ctx.lineTo(80 + Math.cos(angle + 0.2) * 200, 80 + Math.sin(angle + 0.2) * 200);
+                ctx.closePath();
+                ctx.fill();
+              }
+
+              // Sun
+              ctx.fillStyle = '#fff8c0';
+              ctx.beginPath();
+              ctx.arc(80, 80, 40, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else if (currentVerse.verse >= 6 && currentVerse.verse < 9) {
+            // Firmament - sky and waters
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#87ceeb');
+            skyGradient.addColorStop(0.4, '#b0e0f0');
+            skyGradient.addColorStop(0.6, '#4a90c8');
+            skyGradient.addColorStop(1, '#2a5088');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+            for (let i = 0; i < 5; i++) {
+              const cloudX = ((gameTime * 0.5 + i * 120) % (canvas.width + 100)) - 50;
+              ctx.beginPath();
+              ctx.arc(cloudX, 50 + i * 20, 30, 0, Math.PI * 2);
+              ctx.arc(cloudX + 25, 45 + i * 20, 25, 0, Math.PI * 2);
+              ctx.arc(cloudX + 50, 50 + i * 20, 30, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else {
+            // Land and seas, then vegetation
+            const skyGradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            skyGradient.addColorStop(0, '#87ceeb');
+            skyGradient.addColorStop(0.5, '#b0e0f0');
+            ctx.fillStyle = skyGradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Land
+            ctx.fillStyle = '#8b7355';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * 0.6);
+            ctx.quadraticCurveTo(canvas.width * 0.3, canvas.height * 0.5, canvas.width * 0.5, canvas.height * 0.55);
+            ctx.quadraticCurveTo(canvas.width * 0.7, canvas.height * 0.6, canvas.width, canvas.height * 0.5);
+            ctx.lineTo(canvas.width, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Water/sea
+            ctx.fillStyle = '#4a90c8';
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height * 0.7);
+            ctx.quadraticCurveTo(canvas.width * 0.2, canvas.height * 0.75, canvas.width * 0.4, canvas.height * 0.7);
+            ctx.lineTo(canvas.width * 0.4, canvas.height);
+            ctx.lineTo(0, canvas.height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Vegetation (verse 11+)
+            if (currentVerse.verse >= 11) {
+              ctx.fillStyle = '#5eb040';
+              ctx.fillRect(canvas.width * 0.4, canvas.height * 0.55, canvas.width * 0.6, canvas.height * 0.1);
+
+              // Trees
+              for (let i = 0; i < 8; i++) {
+                const tx = canvas.width * 0.45 + i * 50;
+                const ty = canvas.height * 0.5;
+
+                ctx.fillStyle = '#6b4020';
+                ctx.fillRect(tx + 8, ty + 15, 8, 20);
+
+                ctx.fillStyle = '#3a8028';
+                ctx.beginPath();
+                ctx.arc(tx + 12, ty + 10, 15, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#5aa048';
+                ctx.beginPath();
+                ctx.arc(tx + 10, ty + 6, 8, 0, Math.PI * 2);
+                ctx.fill();
+              }
+
+              // Flowers
+              for (let i = 0; i < 15; i++) {
+                const fx = canvas.width * 0.45 + Math.random() * canvas.width * 0.5;
+                const fy = canvas.height * 0.58 + Math.random() * 30;
+                ctx.fillStyle = ['#ff6090', '#ffe040', '#fff8f0'][i % 3];
+                ctx.beginPath();
+                ctx.arc(fx, fy, 4, 0, Math.PI * 2);
+                ctx.fill();
+              }
+            }
+          }
+
+          return;
+        }
+
         // Clear canvas
         ctx.fillStyle = '#1a3010';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1327,52 +1355,48 @@
             if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
               const tile = map[mapY][mapX];
               const screenX = (x - (camera.x % 1)) * TILE_SIZE, screenY = (y - (camera.y % 1)) * TILE_SIZE;
-              drawTerrain(ctx, screenX, screenY, tile, mapX, mapY, gameTime);
+              drawTerrain(ctx, screenX, screenY, tile, mapX, mapY, gameTime, creationDay);
             }
           }
         }
 
         // Draw NPCs
         npcs.forEach(npc => {
-          const screenX = (npc.x - camera.x) * TILE_SIZE - 4;
-          const screenY = (npc.y - camera.y) * TILE_SIZE - 8;
+          const screenX = (npc.x - camera.x) * TILE_SIZE;
+          const screenY = (npc.y - camera.y) * TILE_SIZE - 4;
           if (screenX > -TILE_SIZE * 2 && screenX < canvas.width + TILE_SIZE * 2 && screenY > -TILE_SIZE * 2 && screenY < canvas.height + TILE_SIZE * 2) {
             drawChibiCharacter(ctx, screenX, screenY, {
               ...npc,
               gameTime
             });
 
-            // Draw thought bubble
             if (!showDialogue && gamePhase === PHASES.EXPLORE) {
-              drawSpeechBubble(ctx, screenX + 12, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
+              drawSpeechBubble(ctx, screenX + 8, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
             }
 
-            // Draw name tag
             const nameText = npc.hasSpoken ? `✓ ${npc.name}` : npc.name;
-            ctx.font = 'bold 9px monospace';
-            const nameWidth = ctx.measureText(nameText).width + 8;
+            ctx.font = 'bold 6px monospace';
+            const nameWidth = ctx.measureText(nameText).width + 4;
 
-            // Name tag background
             ctx.fillStyle = npc.hasSpoken ? 'rgba(0, 100, 0, 0.9)' : 'rgba(0, 0, 0, 0.8)';
             ctx.strokeStyle = npc.hasSpoken ? '#4a4' : '#666';
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 0.5;
             ctx.beginPath();
-            ctx.roundRect(screenX + 12 - nameWidth / 2, screenY + 36, nameWidth, 14, 3);
+            ctx.roundRect(screenX + 8 - nameWidth / 2, screenY + 22, nameWidth, 8, 2);
             ctx.fill();
             ctx.stroke();
 
-            // Name text
             ctx.fillStyle = npc.isSerpent ? '#90EE90' : '#fff';
             ctx.textAlign = 'center';
-            ctx.fillText(nameText, screenX + 12, screenY + 47);
+            ctx.fillText(nameText, screenX + 8, screenY + 28);
             ctx.textAlign = 'left';
           }
         });
 
         // Draw player
         if (gamePhase === PHASES.EXPLORE) {
-          const playerScreenX = (player.x - camera.x) * TILE_SIZE - 4;
-          const playerScreenY = (player.y - camera.y) * TILE_SIZE - 8;
+          const playerScreenX = (player.x - camera.x) * TILE_SIZE;
+          const playerScreenY = (player.y - camera.y) * TILE_SIZE - 4;
 
           drawChibiCharacter(ctx, playerScreenX, playerScreenY, {
             skinColor: SKIN_COLOR,
@@ -1381,7 +1405,7 @@
             hairHighlight: '#3a3a3a',
             outfitColor: '#3060a0',
             outfitShadow: '#204080',
-            outfitHighlight: '#4080c0',
+            isPlayer: true,
             direction: player.direction,
             walkFrame: player.walkFrame,
             isMoving: player.isMoving,
@@ -1389,21 +1413,32 @@
           });
         }
 
-        // Camera follow during scenes
-        if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE) {
-          const chavvah = npcs.find(n => n.id === 'chavvah');
-          if (chavvah) setCamera({ x: Math.max(0, Math.min(chavvah.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)), y: Math.max(0, Math.min(chavvah.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT)) });
+        if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE && gamePhase !== PHASES.CREATION) {
+          const chawwah = npcs.find(n => n.id === 'chawwah');
+          if (chawwah) setCamera({ x: Math.max(0, Math.min(chawwah.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)), y: Math.max(0, Math.min(chawwah.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT)) });
         }
-      }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase]);
+      }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase, creationStep, creationDay]);
 
-      const spokenCount = npcs.filter(n => ['adam', 'chavvah', 'nachash'].includes(n.id) && n.hasSpoken).length;
+      const spokenCount = npcs.filter(n => ['adam', 'chawwah', 'nachash'].includes(n.id) && n.hasSpoken).length;
 
       return (
         <div className="game-container">
           <h1 className="title">BERE'SHIYTH: In The Beginning</h1>
           <canvas ref={canvasRef} width={VIEWPORT_WIDTH * TILE_SIZE} height={VIEWPORT_HEIGHT * TILE_SIZE} />
 
-          {showDialogue && (
+          {gamePhase === PHASES.CREATION && (
+            <div className="dialogue-box">
+              <p className="scene-text">
+                <span className="verse-number">{CREATION_STORY[creationStep].verse} </span>
+                {CREATION_STORY[creationStep].text}
+              </p>
+              <button className="btn" onClick={advanceCreation}>
+                {creationStep < CREATION_STORY.length - 1 ? 'Continue ▶' : 'Enter the Garden ▶'}
+              </button>
+            </div>
+          )}
+
+          {showDialogue && gamePhase !== PHASES.CREATION && (
             <div className="dialogue-box">
               <div className="dialogue-header">
                 <span className="dialogue-name">{showDialogue.name}</span>
@@ -1416,7 +1451,7 @@
             </div>
           )}
 
-          {showSceneText && !showDialogue && (
+          {showSceneText && !showDialogue && gamePhase !== PHASES.CREATION && (
             <div className="dialogue-box">
               <p className="scene-text">{sceneText}</p>
               <button className="btn" onClick={() => { if (gamePhase !== PHASES.EXPLORE) advanceScene(); else setShowSceneText(false); }}>
@@ -1426,7 +1461,7 @@
           )}
 
           {gamePhase === PHASES.EXPLORE && !showDialogue && !showSceneText && (
-            <p className="quest-text">Speak to A'dam, Chavvah, and the Nachash ({spokenCount}/3)</p>
+            <p className="quest-text">Speak to A'dam, Chawwah, and the Nachash ({spokenCount}/3)</p>
           )}
 
           {gamePhase === PHASES.EXPLORE && !showDialogue && !showSceneText && (
@@ -1446,7 +1481,7 @@
             </div>
           )}
 
-          {gamePhase !== PHASES.EXPLORE && (
+          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CREATION && (
             <p className="phase-indicator">{gamePhase === PHASES.COMPLETE ? '📖 The Fall of Man' : '📖 Scene in Progress...'}</p>
           )}
 
