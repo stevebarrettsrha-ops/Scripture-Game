@@ -189,11 +189,11 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback, useRef } = React;
 
-    const TILE_SIZE = 32;
+    const TILE_SIZE = 48;
     const MAP_WIDTH = 60;
     const MAP_HEIGHT = 40;
-    const VIEWPORT_WIDTH = 18;
-    const VIEWPORT_HEIGHT = 11;
+    const VIEWPORT_WIDTH = 12;
+    const VIEWPORT_HEIGHT = 7;
 
     const GARDEN_BOUNDS = { minX: 5, maxX: 55, minY: 5, maxY: 35 };
     const TREE_OF_KNOWLEDGE = { x: 15, y: 18 };
@@ -864,8 +864,8 @@
       return map;
     };
 
-    const SKIN_COLOR = '#c8a882';
-    const SKIN_SHADOW = '#a88862';
+    const SKIN_COLOR = '#8B4513';  // Dark brown skin
+    const SKIN_SHADOW = '#5D2E0C'; // Darker brown shadow
 
     const createNPCs = () => [
       {
@@ -917,6 +917,13 @@
       ADAM_EATS: 'adam_eats',
       ADAM_GLORY_FADES: 'adam_glory_fades',
       EYES_OPENED: 'eyes_opened',
+      CLOTHED: 'clothed',
+      YAHUAH_WALKS: 'yahuah_walks',
+      HIDING: 'hiding',
+      CALLED_OUT: 'called_out',
+      CONFRONTATION: 'confrontation',
+      CURSE_NACHASH: 'curse_nachash',
+      EXPULSION: 'expulsion',
       COMPLETE: 'complete'
     };
 
@@ -1097,8 +1104,58 @@
             setShowSceneText(true);
             break;
           case PHASES.EYES_OPENED:
-            setGamePhase(PHASES.COMPLETE);
+            setGamePhase(PHASES.CLOTHED);
             setSceneText("And they sewed fig leaves together, and made themselves aprons...");
+            setShowSceneText(true);
+            setNpcs(prev => prev.map(npc =>
+              (npc.id === 'adam' || npc.id === 'chawwah') ? { ...npc, hasClothes: true, clothesBlink: 0 } : npc
+            ));
+            break;
+          case PHASES.CLOTHED:
+            setGamePhase(PHASES.YAHUAH_WALKS);
+            setSceneText("And they heard the voice of YAHUAH ELOHIYM walking in the garden in the cool of the day...");
+            setShowSceneText(true);
+            break;
+          case PHASES.YAHUAH_WALKS:
+            setGamePhase(PHASES.HIDING);
+            setSceneText("And A'dam and his woman hid themselves from the presence of YAHUAH ELOHIYM amongst the trees of the garden.");
+            setShowSceneText(true);
+            // Move Adam and Chawwah to hide behind tree
+            setNpcs(prev => prev.map(npc => {
+              if (npc.id === 'adam') return { ...npc, isHiding: true, x: TREE_OF_KNOWLEDGE.x + 2, y: TREE_OF_KNOWLEDGE.y + 1 };
+              if (npc.id === 'chawwah') return { ...npc, isHiding: true, x: TREE_OF_KNOWLEDGE.x + 3, y: TREE_OF_KNOWLEDGE.y + 1 };
+              return npc;
+            }));
+            break;
+          case PHASES.HIDING:
+            setGamePhase(PHASES.CALLED_OUT);
+            setSceneText("And YAHUAH ELOHIYM called unto A'dam, and said unto him, Where are you?");
+            setShowSceneText(true);
+            break;
+          case PHASES.CALLED_OUT:
+            setGamePhase(PHASES.CONFRONTATION);
+            setSceneText("And he said, I heard your voice in the garden, and I was afraid, because I was naked; and I hid myself.");
+            setShowSceneText(true);
+            // Adam and Chawwah come out of hiding
+            setNpcs(prev => prev.map(npc => {
+              if (npc.id === 'adam') return { ...npc, isHiding: false, x: TREE_OF_KNOWLEDGE.x + 3, y: TREE_OF_KNOWLEDGE.y + 2 };
+              if (npc.id === 'chawwah') return { ...npc, isHiding: false, x: TREE_OF_KNOWLEDGE.x + 4, y: TREE_OF_KNOWLEDGE.y + 2 };
+              return npc;
+            }));
+            break;
+          case PHASES.CONFRONTATION:
+            setGamePhase(PHASES.CURSE_NACHASH);
+            setSceneText("And YAHUAH ELOHIYM said unto the nachash, Because you have done this, you are cursed above all cattle, and above every beast of the field; upon your belly shall you go, and dust shall you eat all the days of your life.");
+            setShowSceneText(true);
+            break;
+          case PHASES.CURSE_NACHASH:
+            setGamePhase(PHASES.EXPULSION);
+            setSceneText("Therefore YAHUAH ELOHIYM sent him forth from the Garden of Eden, to till the ground from whence he was taken.");
+            setShowSceneText(true);
+            break;
+          case PHASES.EXPULSION:
+            setGamePhase(PHASES.COMPLETE);
+            setSceneText("So he drove out the man; and he placed at the east of the Garden of Eden Cherubims, and a flaming sword which turned every way, to guard the way of the tree of life.");
             setShowSceneText(true);
             break;
         }
@@ -2208,10 +2265,46 @@
           }
         }
 
+        // Draw divine presence (white/golden aura) during YAHUAH_WALKS and HIDING phases
+        if (gamePhase === PHASES.YAHUAH_WALKS || gamePhase === PHASES.HIDING || gamePhase === PHASES.CALLED_OUT) {
+          const auraX = (TREE_OF_KNOWLEDGE.x - camera.x) * TILE_SIZE + Math.sin(gameTime * 0.05) * 30;
+          const auraY = (TREE_OF_KNOWLEDGE.y - 2 - camera.y) * TILE_SIZE;
+
+          // Glowing white/golden divine presence
+          ctx.save();
+          ctx.shadowColor = '#ffffff';
+          ctx.shadowBlur = 40 + Math.sin(gameTime * 0.1) * 15;
+
+          // Outer glow
+          const gradient = ctx.createRadialGradient(auraX, auraY, 0, auraX, auraY, 80);
+          gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+          gradient.addColorStop(0.3, 'rgba(255, 255, 200, 0.6)');
+          gradient.addColorStop(0.6, 'rgba(255, 215, 0, 0.3)');
+          gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          ctx.fillStyle = gradient;
+          ctx.beginPath();
+          ctx.arc(auraX, auraY, 80, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Inner bright core
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+          ctx.beginPath();
+          ctx.arc(auraX, auraY, 25 + Math.sin(gameTime * 0.15) * 5, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.restore();
+        }
+
         // Draw NPCs
         npcs.forEach(npc => {
           const screenX = (npc.x - camera.x) * TILE_SIZE;
           const screenY = (npc.y - camera.y) * TILE_SIZE - 4;
+
+          // Skip drawing if NPC is hiding (behind tree)
+          if (npc.isHiding) {
+            return;
+          }
+
           if (screenX > -TILE_SIZE * 2 && screenX < canvas.width + TILE_SIZE * 2 && screenY > -TILE_SIZE * 2 && screenY < canvas.height + TILE_SIZE * 2) {
             drawChibiCharacter(ctx, screenX, screenY, {
               ...npc,
@@ -2262,8 +2355,16 @@
         }
 
         if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE && gamePhase !== PHASES.CREATION) {
-          const chawwah = npcs.find(n => n.id === 'chawwah');
-          if (chawwah) setCamera({ x: Math.max(0, Math.min(chawwah.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)), y: Math.max(0, Math.min(chawwah.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT)) });
+          // During expulsion scenes, focus on Tree of Knowledge area
+          if (gamePhase === PHASES.YAHUAH_WALKS || gamePhase === PHASES.HIDING || gamePhase === PHASES.CALLED_OUT || gamePhase === PHASES.CONFRONTATION || gamePhase === PHASES.CURSE_NACHASH || gamePhase === PHASES.EXPULSION) {
+            setCamera({
+              x: Math.max(0, Math.min(TREE_OF_KNOWLEDGE.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)),
+              y: Math.max(0, Math.min(TREE_OF_KNOWLEDGE.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT))
+            });
+          } else {
+            const chawwah = npcs.find(n => n.id === 'chawwah');
+            if (chawwah) setCamera({ x: Math.max(0, Math.min(chawwah.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)), y: Math.max(0, Math.min(chawwah.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT)) });
+          }
         }
       }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase, creationStep, creationDay]);
 
@@ -2330,7 +2431,13 @@
           )}
 
           {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CREATION && (
-            <p className="phase-indicator">{gamePhase === PHASES.COMPLETE ? '📖 The Fall of Man' : '📖 Scene in Progress...'}</p>
+            <p className="phase-indicator">
+              {gamePhase === PHASES.COMPLETE ? '📖 The Expulsion from Eden' :
+               gamePhase === PHASES.YAHUAH_WALKS || gamePhase === PHASES.HIDING || gamePhase === PHASES.CALLED_OUT ? '📖 YAHUAH Walks in the Garden' :
+               gamePhase === PHASES.CONFRONTATION || gamePhase === PHASES.CURSE_NACHASH ? '📖 The Judgment' :
+               gamePhase === PHASES.EXPULSION ? '📖 The Expulsion' :
+               '📖 The Fall of Man'}
+            </p>
           )}
 
           <p className="help-text">WASD/Arrows to move • SPACE to interact</p>
