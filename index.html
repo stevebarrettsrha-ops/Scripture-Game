@@ -190,13 +190,14 @@
     const { useState, useEffect, useCallback, useRef } = React;
 
     const TILE_SIZE = 48;
-    const MAP_WIDTH = 60;
-    const MAP_HEIGHT = 40;
-    const VIEWPORT_WIDTH = 12;
-    const VIEWPORT_HEIGHT = 7;
+    const MAP_WIDTH = 40;
+    const MAP_HEIGHT = 30;
+    const VIEWPORT_WIDTH = 14;
+    const VIEWPORT_HEIGHT = 10;
 
-    const GARDEN_BOUNDS = { minX: 5, maxX: 55, minY: 5, maxY: 35 };
-    const TREE_OF_KNOWLEDGE = { x: 15, y: 18 };
+    const GARDEN_BOUNDS = { minX: 5, maxX: 35, minY: 5, maxY: 20 };
+    const TREE_OF_KNOWLEDGE = { x: 10, y: 10 };
+    const TREE_OF_LIFE_POS = { x: 28, y: 10 };
 
     const TILES = {
       GRASS: 0, WATER: 1, TREE: 2, FLOWER: 3, PATH: 4,
@@ -837,8 +838,11 @@
       for (let y = 0; y < MAP_HEIGHT; y++) {
         const row = [];
         for (let x = 0; x < MAP_WIDTH; x++) {
-          if (y >= 32 && y <= 36) row.push(TILES.WATER);
-          else if ((x === 25 && y >= 8 && y <= 30) || (y === 20 && x >= 10 && x <= 45)) row.push(TILES.PATH);
+          // Water at bottom of map
+          if (y >= MAP_HEIGHT - 5 && y <= MAP_HEIGHT - 2) row.push(TILES.WATER);
+          // Paths through garden
+          else if ((x === 20 && y >= 5 && y <= 20) || (y === 12 && x >= 8 && x <= 32)) row.push(TILES.PATH);
+          // Dense trees at edges
           else if (x < 3 || x > MAP_WIDTH - 4 || y < 3 || y > MAP_HEIGHT - 4) row.push(Math.random() > 0.3 ? TILES.TREE : TILES.GRASS);
           else {
             const rand = Math.random();
@@ -851,13 +855,18 @@
         }
         map.push(row);
       }
-      map[18][45] = TILES.TREE_OF_LIFE;
+      // Place Tree of Life at (28, 10)
+      map[TREE_OF_LIFE_POS.y][TREE_OF_LIFE_POS.x] = TILES.TREE_OF_LIFE;
+      // Place Tree of Knowledge at (10, 10)
       map[TREE_OF_KNOWLEDGE.y][TREE_OF_KNOWLEDGE.x] = TILES.TREE_OF_KNOWLEDGE;
+      // Clear grass around both trees
       for (let dy = -2; dy <= 2; dy++) {
         for (let dx = -2; dx <= 2; dx++) {
-          if (map[18 + dy]) {
-            if (map[18 + dy][45 + dx] !== undefined && map[18 + dy][45 + dx] !== TILES.TREE_OF_LIFE) map[18 + dy][45 + dx] = TILES.GRASS;
-            if (map[TREE_OF_KNOWLEDGE.y + dy] && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== undefined && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== TILES.TREE_OF_KNOWLEDGE) map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] = TILES.GRASS;
+          if (map[TREE_OF_LIFE_POS.y + dy]) {
+            if (map[TREE_OF_LIFE_POS.y + dy][TREE_OF_LIFE_POS.x + dx] !== undefined && map[TREE_OF_LIFE_POS.y + dy][TREE_OF_LIFE_POS.x + dx] !== TILES.TREE_OF_LIFE) map[TREE_OF_LIFE_POS.y + dy][TREE_OF_LIFE_POS.x + dx] = TILES.GRASS;
+          }
+          if (map[TREE_OF_KNOWLEDGE.y + dy]) {
+            if (map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== undefined && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== TILES.TREE_OF_KNOWLEDGE) map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] = TILES.GRASS;
           }
         }
       }
@@ -869,62 +878,57 @@
 
     const createNPCs = () => [
       {
-        id: 'adam', name: "A'dam", x: 30, y: 22, prevX: 30, prevY: 22,
+        id: 'adam', name: "A'dam", x: 18, y: 12, prevX: 18, prevY: 12,
         skinColor: SKIN_COLOR, skinShadow: SKIN_SHADOW,
         hairColor: '#1a1a1a', hairHighlight: '#3a3a3a',
         outfitColor: '#4a6090', outfitShadow: '#3a4070',
         thoughts: ["YAHUAH formed me from the dust...", "I am to dress and keep this garden.", "She is bone of my bones..."],
         dialogue: ["Shalom, traveler. I am A'dam.", "YAHUAH ELOHIYM formed me of the dust of the ground.", "He breathed into my nostrils the breath of life.", "I became a living nephesh.", "YAHUAH put me in the Garden of Eden to dress it and keep it.", "Of every tree I may freely eat...", "But of the Ets HaDa'at Tov v'Ra, I shall not eat.", "For in the day I eat thereof, I shall surely die."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 30, homeY: 22, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0, direction: 'down',
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 18, homeY: 12, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0, direction: 'down',
       },
       {
-        id: 'chawwah', name: 'Chawwah', x: 32, y: 22, prevX: 32, prevY: 22,
+        id: 'chawwah', name: 'Chawwah', x: 20, y: 12, prevX: 20, prevY: 12,
         skinColor: SKIN_COLOR, skinShadow: SKIN_SHADOW,
         hairColor: '#1a1a1a', hairHighlight: '#3a3a3a',
         outfitColor: '#905080', outfitShadow: '#704060',
         isEve: true,
         thoughts: ["The garden is so beautiful...", "That tree... the fruit looks good...", "The nachash says we won't die..."],
         dialogue: ["I am Chawwah, the mother of all living.", "YAHUAH ELOHIYM caused a deep sleep upon A'dam.", "He took one of his ribs and made me.", "We may eat of the fruit of the trees of the garden.", "But of the tree in the midst of the garden...", "ELOHIYM has said, Ye shall not eat of it.", "Neither shall ye touch it, lest ye die.", "But the nachash says our eyes will be opened..."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 32, homeY: 22, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0, direction: 'down',
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 20, homeY: 12, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0, direction: 'down',
       },
       {
-        id: 'nachash', name: 'Nachash', x: 15, y: 20, prevX: 15, prevY: 20,
+        id: 'nachash', name: 'Nachash', x: 10, y: 12, prevX: 10, prevY: 12,
         isSerpent: true,
         thoughts: ["Yea, hath ELOHIYM said...?", "Ye shall not surely die...", "Your eyes shall be opened..."],
         dialogue: ["Yea, hath ELOHIYM said...", "Ye shall not eat of every tree of the garden?", "Ye shall not surely die.", "For ELOHIYM knows that in the day ye eat thereof...", "Your eyes shall be opened.", "And ye shall be as elohiym...", "Knowing good and evil.", "Is the fruit not pleasant to the eyes?"],
         currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'circle_tree', circleAngle: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, direction: 'right',
       },
       {
-        id: 'malak', name: 'Malak', x: 45, y: 16, prevX: 45, prevY: 16,
+        id: 'malak', name: 'Malak', x: 28, y: 12, prevX: 28, prevY: 12,
         skinColor: SKIN_COLOR, skinShadow: SKIN_SHADOW,
         hairColor: '#d4af37', hairHighlight: '#f0d060',
         isAngel: true,
         thoughts: ["Holy, holy, holy is YAHUAH!", "I guard the Ets Chayim.", "The flaming sword turns every way..."],
         dialogue: ["Shalom. I am a malak of YAHUAH.", "I watch over this qodesh garden.", "Behold, the Ets Chayim - the Tree of Life!", "And there - the Ets HaDa'at Tov v'Ra.", "YAHUAH ELOHIYM has forbidden its fruit.", "Guard your heart, child of the Most High."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 45, y: 16}, {x: 43, y: 18}, {x: 47, y: 18}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, direction: 'down',
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 28, y: 12}, {x: 26, y: 14}, {x: 30, y: 14}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, direction: 'down',
       }
     ];
 
+    // 12 narrative phases from EXPLORE → COMPLETE (plus CREATION intro)
     const PHASES = {
-      CREATION: 'creation',
-      EXPLORE: 'explore',
-      SCENE_START: 'scene_start',
-      CHAWWAH_WALKS_TO_TREE: 'chawwah_walks',
-      CHAWWAH_TAKES_FRUIT: 'chawwah_takes',
-      CHAWWAH_EATS: 'chawwah_eats',
-      CHAWWAH_GLORY_FADES: 'chawwah_glory_fades',
-      CHAWWAH_WALKS_TO_ADAM: 'chawwah_to_adam',
-      ADAM_EATS: 'adam_eats',
-      ADAM_GLORY_FADES: 'adam_glory_fades',
-      EYES_OPENED: 'eyes_opened',
-      CLOTHED: 'clothed',
-      YAHUAH_WALKS: 'yahuah_walks',
-      HIDING: 'hiding',
-      CALLED_OUT: 'called_out',
-      CONFRONTATION: 'confrontation',
-      CURSE_NACHASH: 'curse_nachash',
-      EXPULSION: 'expulsion',
-      COMPLETE: 'complete'
+      CREATION: 'creation',       // Intro cutscene (before EXPLORE)
+      EXPLORE: 'explore',         // 1. Free exploration
+      TEMPTATION: 'temptation',   // 2. Nachash tempts Chawwah
+      CHAWWAH_FALLS: 'chawwah_falls', // 3. Chawwah eats forbidden fruit
+      ADAM_FALLS: 'adam_falls',   // 4. Adam eats forbidden fruit
+      EYES_OPENED: 'eyes_opened', // 5. They realize nakedness
+      CLOTHED: 'clothed',         // 6. They cover themselves
+      YAHUAH_WALKS: 'yahuah_walks', // 7. Divine presence enters garden
+      HIDING: 'hiding',           // 8. They hide from YAHUAH
+      CALLED_OUT: 'called_out',   // 9. YAHUAH calls to Adam
+      JUDGMENT: 'judgment',       // 10. Confrontation and curses
+      EXPULSION: 'expulsion',     // 11. Expelled from garden
+      COMPLETE: 'complete'        // 12. End state
     };
 
     const drawSpeechBubble = (ctx, x, y, text, isSerpent = false) => {
@@ -974,7 +978,7 @@
     const GenesisGame = () => {
       const canvasRef = useRef(null);
       const [map] = useState(generateMap);
-      const [player, setPlayer] = useState({ x: 28, y: 24, prevX: 28, prevY: 24, direction: 'down', walkFrame: 0, isMoving: false });
+      const [player, setPlayer] = useState({ x: 20, y: 15, prevX: 20, prevY: 15, direction: 'down', walkFrame: 0, isMoving: false });
       const [npcs, setNpcs] = useState(createNPCs);
       const [camera, setCamera] = useState({ x: 0, y: 0 });
       const [showDialogue, setShowDialogue] = useState(null);
@@ -1058,50 +1062,32 @@
       const advanceScene = useCallback(() => {
         setShowSceneText(false);
         switch (gamePhase) {
-          case PHASES.SCENE_START:
-            setGamePhase(PHASES.CHAWWAH_WALKS_TO_TREE);
-            setSceneText("And when the woman saw that the tree was good for food, and pleasant to the eyes...");
-            setShowSceneText(true);
-            break;
-          case PHASES.CHAWWAH_TAKES_FRUIT:
+          case PHASES.TEMPTATION:
+            // Chawwah approaches tree and takes fruit
             setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, holdingFruit: true } : npc));
-            setGamePhase(PHASES.CHAWWAH_EATS);
-            setSceneText("She took of the fruit thereof...");
+            setGamePhase(PHASES.CHAWWAH_FALLS);
+            setSceneText("She took of the fruit thereof, and did eat...");
             setShowSceneText(true);
             break;
-          case PHASES.CHAWWAH_EATS:
+          case PHASES.CHAWWAH_FALLS:
+            // Chawwah eats and glory fades
             setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, isEating: true } : npc));
             setTimeout(() => {
-              setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, isEating: false } : npc));
-              setGamePhase(PHASES.CHAWWAH_GLORY_FADES);
-              setSceneText("And did eat... and the glory of YAHUAH departed from her...");
+              setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, isEating: false, hasGlory: false, clothesBlink: 4 } : npc));
+              setGamePhase(PHASES.ADAM_FALLS);
+              setSceneText("And gave also unto her husband with her; and he did eat...");
               setShowSceneText(true);
-              setTimeout(() => {
-                setNpcs(prev => prev.map(npc => npc.id === 'chawwah' ? { ...npc, hasGlory: false, clothesBlink: 4 } : npc));
-              }, 500);
             }, 1500);
             break;
-          case PHASES.CHAWWAH_GLORY_FADES:
-            setGamePhase(PHASES.CHAWWAH_WALKS_TO_ADAM);
-            setSceneText("And gave also unto her husband with her...");
-            setShowSceneText(true);
-            break;
-          case PHASES.ADAM_EATS:
+          case PHASES.ADAM_FALLS:
+            // Adam eats and glory fades
             setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, holdingFruit: true, isEating: true } : npc));
             setTimeout(() => {
-              setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, isEating: false } : npc));
-              setGamePhase(PHASES.ADAM_GLORY_FADES);
-              setSceneText("And he did eat... and the glory departed from him also...");
+              setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, isEating: false, hasGlory: false, clothesBlink: 4 } : npc));
+              setGamePhase(PHASES.EYES_OPENED);
+              setSceneText("And the eyes of them both were opened, and they knew that they were naked...");
               setShowSceneText(true);
-              setTimeout(() => {
-                setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, hasGlory: false, clothesBlink: 4 } : npc));
-              }, 500);
             }, 1500);
-            break;
-          case PHASES.ADAM_GLORY_FADES:
-            setGamePhase(PHASES.EYES_OPENED);
-            setSceneText("And the eyes of them both were opened, and they knew that they were naked...");
-            setShowSceneText(true);
             break;
           case PHASES.EYES_OPENED:
             setGamePhase(PHASES.CLOTHED);
@@ -1120,7 +1106,6 @@
             setGamePhase(PHASES.HIDING);
             setSceneText("And A'dam and his woman hid themselves from the presence of YAHUAH ELOHIYM amongst the trees of the garden.");
             setShowSceneText(true);
-            // Move Adam and Chawwah to hide behind tree
             setNpcs(prev => prev.map(npc => {
               if (npc.id === 'adam') return { ...npc, isHiding: true, x: TREE_OF_KNOWLEDGE.x + 2, y: TREE_OF_KNOWLEDGE.y + 1 };
               if (npc.id === 'chawwah') return { ...npc, isHiding: true, x: TREE_OF_KNOWLEDGE.x + 3, y: TREE_OF_KNOWLEDGE.y + 1 };
@@ -1133,24 +1118,18 @@
             setShowSceneText(true);
             break;
           case PHASES.CALLED_OUT:
-            setGamePhase(PHASES.CONFRONTATION);
+            setGamePhase(PHASES.JUDGMENT);
             setSceneText("And he said, I heard your voice in the garden, and I was afraid, because I was naked; and I hid myself.");
             setShowSceneText(true);
-            // Adam and Chawwah come out of hiding
             setNpcs(prev => prev.map(npc => {
               if (npc.id === 'adam') return { ...npc, isHiding: false, x: TREE_OF_KNOWLEDGE.x + 3, y: TREE_OF_KNOWLEDGE.y + 2 };
               if (npc.id === 'chawwah') return { ...npc, isHiding: false, x: TREE_OF_KNOWLEDGE.x + 4, y: TREE_OF_KNOWLEDGE.y + 2 };
               return npc;
             }));
             break;
-          case PHASES.CONFRONTATION:
-            setGamePhase(PHASES.CURSE_NACHASH);
-            setSceneText("And YAHUAH ELOHIYM said unto the nachash, Because you have done this, you are cursed above all cattle, and above every beast of the field; upon your belly shall you go, and dust shall you eat all the days of your life.");
-            setShowSceneText(true);
-            break;
-          case PHASES.CURSE_NACHASH:
+          case PHASES.JUDGMENT:
             setGamePhase(PHASES.EXPULSION);
-            setSceneText("Therefore YAHUAH ELOHIYM sent him forth from the Garden of Eden, to till the ground from whence he was taken.");
+            setSceneText("And YAHUAH ELOHIYM said unto the nachash, Because you have done this, you are cursed... upon your belly shall you go. Therefore YAHUAH ELOHIYM sent them forth from the Garden of Eden.");
             setShowSceneText(true);
             break;
           case PHASES.EXPULSION:
@@ -1185,8 +1164,8 @@
           setGameTime(prev => prev + 1);
 
           if (gamePhase === PHASES.EXPLORE && checkSceneTrigger()) {
-            setGamePhase(PHASES.SCENE_START);
-            setSceneText("The nachash beguiled Chawwah... she looked upon the forbidden tree...");
+            setGamePhase(PHASES.TEMPTATION);
+            setSceneText("The nachash beguiled Chawwah... And when the woman saw that the tree was good for food, and pleasant to the eyes, and a tree to be desired to make one wise...");
             setShowSceneText(true);
           }
 
@@ -1221,23 +1200,9 @@
               }
               if (newNpc.thoughtTimer > 150) { newNpc.currentThought = (npc.currentThought + 1) % npc.thoughts.length; newNpc.thoughtTimer = 0; }
               if (npc.id === 'chawwah') {
-                if (gamePhase === PHASES.CHAWWAH_WALKS_TO_TREE) {
+                if (gamePhase === PHASES.TEMPTATION) {
+                  // Chawwah walks to Tree of Knowledge
                   newNpc.behavior = 'scene'; newNpc.targetX = TREE_OF_KNOWLEDGE.x + 1; newNpc.targetY = TREE_OF_KNOWLEDGE.y + 1;
-                  if (Math.abs(npc.x - (TREE_OF_KNOWLEDGE.x + 1)) < 0.3 && Math.abs(npc.y - (TREE_OF_KNOWLEDGE.y + 1)) < 0.3) {
-                    setGamePhase(PHASES.CHAWWAH_TAKES_FRUIT);
-                    setSceneText("And a tree to be desired to make one wise...");
-                    setShowSceneText(true);
-                  }
-                } else if (gamePhase === PHASES.CHAWWAH_WALKS_TO_ADAM) {
-                  const adam = prev.find(n => n.id === 'adam');
-                  if (adam) {
-                    newNpc.targetX = adam.x - 1; newNpc.targetY = adam.y;
-                    if (Math.abs(npc.x - (adam.x - 1)) < 0.5 && Math.abs(npc.y - adam.y) < 0.5) {
-                      setGamePhase(PHASES.ADAM_EATS);
-                      setSceneText("And gave also unto her husband with her; and he did eat...");
-                      setShowSceneText(true);
-                    }
-                  }
                 }
               }
               if (npc.id === 'adam' && gamePhase !== PHASES.EXPLORE) { newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false; }
@@ -2356,7 +2321,7 @@
 
         if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE && gamePhase !== PHASES.CREATION) {
           // During expulsion scenes, focus on Tree of Knowledge area
-          if (gamePhase === PHASES.YAHUAH_WALKS || gamePhase === PHASES.HIDING || gamePhase === PHASES.CALLED_OUT || gamePhase === PHASES.CONFRONTATION || gamePhase === PHASES.CURSE_NACHASH || gamePhase === PHASES.EXPULSION) {
+          if (gamePhase === PHASES.YAHUAH_WALKS || gamePhase === PHASES.HIDING || gamePhase === PHASES.CALLED_OUT || gamePhase === PHASES.JUDGMENT || gamePhase === PHASES.EXPULSION) {
             setCamera({
               x: Math.max(0, Math.min(TREE_OF_KNOWLEDGE.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)),
               y: Math.max(0, Math.min(TREE_OF_KNOWLEDGE.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT))
@@ -2434,7 +2399,7 @@
             <p className="phase-indicator">
               {gamePhase === PHASES.COMPLETE ? '📖 The Expulsion from Eden' :
                gamePhase === PHASES.YAHUAH_WALKS || gamePhase === PHASES.HIDING || gamePhase === PHASES.CALLED_OUT ? '📖 YAHUAH Walks in the Garden' :
-               gamePhase === PHASES.CONFRONTATION || gamePhase === PHASES.CURSE_NACHASH ? '📖 The Judgment' :
+               gamePhase === PHASES.JUDGMENT ? '📖 The Judgment' :
                gamePhase === PHASES.EXPULSION ? '📖 The Expulsion' :
                '📖 The Fall of Man'}
             </p>
