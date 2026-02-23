@@ -176,7 +176,7 @@
 
     const TILES = {
       GRASS: 0, WATER: 1, TREE: 2, FLOWER: 3, PATH: 4,
-      TREE_OF_LIFE: 5, TREE_OF_KNOWLEDGE: 6, ROCK: 7, BUSH: 8,
+      TREE_OF_LIFE: 5, TREE_OF_KNOWLEDGE: 6, ROCK: 7, BUSH: 8, GOLDEN_GATE: 9,
     };
 
     const COLORS = {
@@ -212,6 +212,17 @@
       }
       map[TOL.y][TOL.x] = TILES.TREE_OF_LIFE;
       map[TOK.y][TOK.x] = TILES.TREE_OF_KNOWLEDGE;
+      // Place Golden Gate at the east end of the horizontal path (x=65, y=26)
+      const GATE_POS = { x: 65, y: 26 };
+      for (let dy = -3; dy <= 3; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
+          const nx = GATE_POS.x + dx, ny = GATE_POS.y + dy;
+          if (map[ny] && map[ny][nx] !== undefined && !(dx === 0 && dy === 0)) {
+            if ([TILES.TREE, TILES.ROCK, TILES.BUSH].includes(map[ny][nx])) map[ny][nx] = TILES.GRASS;
+          }
+        }
+      }
+      map[GATE_POS.y][GATE_POS.x] = TILES.GOLDEN_GATE;
       // Clear a walkable ring around each special tree
       for (let dy = -3; dy <= 3; dy++) {
         for (let dx = -3; dx <= 3; dx++) {
@@ -242,10 +253,10 @@
         currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'circle_tree', circleAngle: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
       },
       {
-        id: 'malak', name: 'Malak', x: 56, y: 18, prevX: 56, prevY: 18, color: SKIN_COLOR, hairColor: '#1a1a1a', isAngel: true,
-        thoughts: ["Holy, holy, holy is YAHUAH!", "I guard the Ets Chayim.", "The flaming sword turns every way..."],
-        dialogue: ["Shalom. I am a malak of YAHUAH.", "I watch over this qodesh garden.", "Behold, the Ets Chayim - the Tree of Life!", "And there - the Ets HaDa'at Tov v'Ra.", "YAHUAH ELOHIYM has forbidden its fruit.", "Guard your heart, child of the Most High."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 56, y: 18}, {x: 53, y: 21}, {x: 59, y: 21}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
+        id: 'malak', name: 'Malak', x: 63, y: 26, prevX: 63, prevY: 26, color: SKIN_COLOR, hairColor: '#1a1a1a', isAngel: true,
+        thoughts: ["None may pass the SHA'AR ZAHAV...", "The flaming sword turns every way!", "I guard the eastern gate of the garden."],
+        dialogue: ["Shalom. I am a malak of YAHUAH.", "I watch over this qodesh garden.", "Behind me stands the Sha'ar Zahav - the Golden Gate.", "None may enter or leave without YAHUAH's permission.", "YAHUAH ELOHIYM has set his watchmen here.", "Guard your heart, child of the Most High."],
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 63, y: 26}, {x: 63, y: 24}, {x: 63, y: 28}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
       }
     ];
 
@@ -281,13 +292,13 @@
         if (x < GARDEN_BOUNDS.minX || x > GARDEN_BOUNDS.maxX || y < GARDEN_BOUNDS.minY || y > GARDEN_BOUNDS.maxY) return false;
         if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
         const tile = map[Math.floor(y)][Math.floor(x)];
-        return tile !== TILES.WATER && tile !== TILES.TREE && tile !== TILES.ROCK && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE;
+        return tile !== TILES.WATER && tile !== TILES.TREE && tile !== TILES.ROCK && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE && tile !== TILES.GOLDEN_GATE;
       }, [map]);
 
       const canMoveTo = useCallback((x, y) => {
         if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
         const tile = map[Math.floor(y)][Math.floor(x)];
-        return tile !== TILES.WATER && tile !== TILES.TREE && tile !== TILES.ROCK && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE;
+        return tile !== TILES.WATER && tile !== TILES.TREE && tile !== TILES.ROCK && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE && tile !== TILES.GOLDEN_GATE;
       }, [map]);
 
       useEffect(() => {
@@ -782,6 +793,47 @@
                   ctx.fillText("TOV V'RA", 16, 49); ctx.textAlign = 'left';
                   ctx.restore();
                   break;
+                case TILES.GOLDEN_GATE: {
+                  // Draw path ground under the gate
+                  ctx.fillStyle = '#9b7d52'; ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+                  // Animated golden glow behind the gate
+                  const glowPulse = 0.5 + 0.5 * Math.sin(gameTime * 0.07);
+                  ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 18 + glowPulse * 12;
+                  // Left pillar (x=4..9, from y=-26 to y=32)
+                  const pillarGrad = ctx.createLinearGradient(4, 0, 10, 0);
+                  pillarGrad.addColorStop(0, '#8b6914'); pillarGrad.addColorStop(0.3, '#ffd700'); pillarGrad.addColorStop(0.7, '#ffec6e'); pillarGrad.addColorStop(1, '#b8860b');
+                  ctx.fillStyle = pillarGrad; ctx.fillRect(4, -26, 6, 58);
+                  // Right pillar (x=22..27)
+                  const pillarGrad2 = ctx.createLinearGradient(22, 0, 28, 0);
+                  pillarGrad2.addColorStop(0, '#b8860b'); pillarGrad2.addColorStop(0.3, '#ffec6e'); pillarGrad2.addColorStop(0.7, '#ffd700'); pillarGrad2.addColorStop(1, '#8b6914');
+                  ctx.fillStyle = pillarGrad2; ctx.fillRect(22, -26, 6, 58);
+                  // Pillar caps (decorative blocks at top)
+                  ctx.fillStyle = '#ffd700';
+                  ctx.fillRect(2, -29, 10, 4); ctx.fillRect(20, -29, 10, 4);
+                  // Arch connecting the two pillars at top
+                  ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 4;
+                  ctx.beginPath(); ctx.arc(16, -26, 12, Math.PI, 0); ctx.stroke();
+                  ctx.lineWidth = 2; ctx.strokeStyle = '#fff8dc';
+                  ctx.beginPath(); ctx.arc(16, -26, 10, Math.PI, 0); ctx.stroke();
+                  // Gate bars between pillars
+                  ctx.strokeStyle = '#daa520'; ctx.lineWidth = 1.5;
+                  for (let bx = 11; bx <= 21; bx += 2) {
+                    ctx.beginPath(); ctx.moveTo(bx, -22); ctx.lineTo(bx, 28); ctx.stroke();
+                  }
+                  // Horizontal crossbar
+                  ctx.fillStyle = '#ffd700'; ctx.fillRect(10, -6, 12, 2);
+                  // Star / crest at top of arch
+                  ctx.shadowBlur = 0; ctx.fillStyle = '#fff8a0';
+                  ctx.beginPath(); ctx.arc(16, -26, 3, 0, Math.PI * 2); ctx.fill();
+                  ctx.fillStyle = '#ffd700';
+                  [[0,-4],[4,3],[-4,3],[2,-3],[-2,-3]].forEach(([ox,oy]) => {
+                    ctx.beginPath(); ctx.arc(16+ox, -26+oy, 1, 0, Math.PI*2); ctx.fill();
+                  });
+                  ctx.shadowBlur = 0;
+                  ctx.restore();
+                  break;
+                }
               }
             }
           }
