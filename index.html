@@ -29,8 +29,6 @@
       display: block;
       width: 100vw;
       height: 100vh;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
     }
     /* ── overlaid UI ─────────────────────────────────────── */
     .title {
@@ -675,14 +673,18 @@
       useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
-        // Resize canvas bitmap to match its actual CSS-rendered size every frame
-        // so fullscreen / window resize never causes cropping or stretching.
+        // Account for device pixel ratio so canvas text and graphics are
+        // crisp on Retina / high-DPI screens.  All coordinates below stay
+        // in CSS pixels; only the bitmap is larger.
+        const dpr = window.devicePixelRatio || 1;
         const W = canvas.clientWidth  || window.innerWidth;
         const H = canvas.clientHeight || window.innerHeight;
-        if (canvas.width !== W)  canvas.width  = W;
-        if (canvas.height !== H) canvas.height = H;
+        if (canvas.width  !== Math.round(W * dpr)) canvas.width  = Math.round(W * dpr);
+        if (canvas.height !== Math.round(H * dpr)) canvas.height = Math.round(H * dpr);
         const vp = { w: Math.ceil(W / TILE_SIZE) + 2, h: Math.ceil(H / TILE_SIZE) + 2 };
         const ctx = canvas.getContext('2d');
+        // Reset transform then apply DPR scale so every draw call uses CSS px.
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
         ctx.fillStyle = COLORS.sky;
         ctx.fillRect(0, 0, W, H);
 
