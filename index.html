@@ -165,8 +165,12 @@
     const SCALE = 2;            // sprite / decoration scale (= TILE_SIZE / 32)
     const MAP_WIDTH = 80;
     const MAP_HEIGHT = 60;
-    const VIEWPORT_WIDTH  = Math.ceil(window.innerWidth  / TILE_SIZE) + 2;
-    const VIEWPORT_HEIGHT = Math.ceil(window.innerHeight / TILE_SIZE) + 2;
+    // Viewport dims are computed dynamically each frame from the canvas client size
+    // so they always match the actual displayed resolution (handles fullscreen, resize, etc.)
+    const getVP = (canvas) => ({
+      w: Math.ceil((canvas.clientWidth  || window.innerWidth)  / TILE_SIZE) + 2,
+      h: Math.ceil((canvas.clientHeight || window.innerHeight) / TILE_SIZE) + 2,
+    });
 
     const GARDEN_BOUNDS = { minX: 10, maxX: 70, minY: 10, maxY: 48 };
     const TREE_OF_KNOWLEDGE = { x: 20, y: 22 };
@@ -289,9 +293,10 @@
       }, [map]);
 
       useEffect(() => {
+        const vp = getVP(canvasRef.current || { clientWidth: window.innerWidth, clientHeight: window.innerHeight });
         setCamera({
-          x: Math.max(0, Math.min(player.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)),
-          y: Math.max(0, Math.min(player.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT))
+          x: Math.max(0, Math.min(player.x - vp.w / 2, MAP_WIDTH - vp.w)),
+          y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
         });
       }, [player]);
 
@@ -670,12 +675,19 @@
       useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
+        // Resize canvas bitmap to match its actual CSS-rendered size every frame
+        // so fullscreen / window resize never causes cropping or stretching.
+        const W = canvas.clientWidth  || window.innerWidth;
+        const H = canvas.clientHeight || window.innerHeight;
+        if (canvas.width !== W)  canvas.width  = W;
+        if (canvas.height !== H) canvas.height = H;
+        const vp = { w: Math.ceil(W / TILE_SIZE) + 2, h: Math.ceil(H / TILE_SIZE) + 2 };
         const ctx = canvas.getContext('2d');
         ctx.fillStyle = COLORS.sky;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillRect(0, 0, W, H);
 
-        for (let y = 0; y < VIEWPORT_HEIGHT + 1; y++) {
-          for (let x = 0; x < VIEWPORT_WIDTH + 1; x++) {
+        for (let y = 0; y < vp.h + 1; y++) {
+          for (let x = 0; x < vp.w + 1; x++) {
             const mapX = Math.floor(camera.x) + x, mapY = Math.floor(camera.y) + y;
             if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
               const tile = map[mapY][mapX];
@@ -833,7 +845,7 @@
 
         if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE) {
           const chavvah = npcs.find(n => n.id === 'chavvah');
-          if (chavvah) setCamera({ x: Math.max(0, Math.min(chavvah.x - VIEWPORT_WIDTH / 2, MAP_WIDTH - VIEWPORT_WIDTH)), y: Math.max(0, Math.min(chavvah.y - VIEWPORT_HEIGHT / 2, MAP_HEIGHT - VIEWPORT_HEIGHT)) });
+          if (chavvah) setCamera({ x: Math.max(0, Math.min(chavvah.x - vp.w / 2, MAP_WIDTH - vp.w)), y: Math.max(0, Math.min(chavvah.y - vp.h / 2, MAP_HEIGHT - vp.h)) });
         }
       }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase]);
 
@@ -842,7 +854,7 @@
       return (
         <div className="game-container">
           <h1 className="title">BERE'SHIYTH: In The Beginning</h1>
-          <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} />
+          <canvas ref={canvasRef} />
 
           {showDialogue && (
             <div className="dialogue-box">
