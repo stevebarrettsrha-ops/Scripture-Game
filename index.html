@@ -11,45 +11,50 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       background: #111827;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       -webkit-user-select: none;
       user-select: none;
       touch-action: manipulation;
     }
-    #root { width: 100%; }
+    #root { width: 100%; height: 100vh; }
+    /* Canvas fills the whole screen; all UI floats on top */
     .game-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 8px;
-    }
-    .title {
-      font-size: 1.125rem;
-      font-weight: bold;
-      color: #facc15;
-      margin-bottom: 4px;
-      font-family: Georgia, serif;
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
     }
     canvas {
-      border: 4px solid #ca8a04;
-      border-radius: 4px;
+      display: block;
+      width: 100vw;
+      height: 100vh;
       image-rendering: pixelated;
-      max-width: 100%;
+      image-rendering: crisp-edges;
+    }
+    /* ── overlaid UI ─────────────────────────────────────── */
+    .title {
+      position: absolute;
+      top: 8px; left: 50%; transform: translateX(-50%);
+      font-size: 1rem;
+      font-weight: bold;
+      color: #facc15;
+      font-family: Georgia, serif;
+      text-shadow: 0 1px 4px #000;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 10;
     }
     .dialogue-box {
-      width: 100%;
-      max-width: 40rem;
-      margin-top: 8px;
-      background: black;
+      position: absolute;
+      bottom: 90px; left: 50%; transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 640px;
+      background: rgba(0,0,0,0.92);
       border: 2px solid #eab308;
       border-radius: 8px;
       padding: 12px;
+      z-index: 20;
     }
     .dialogue-header {
       display: flex;
@@ -57,22 +62,12 @@
       align-items: center;
       margin-bottom: 8px;
     }
-    .dialogue-name {
-      color: #facc15;
-      font-weight: bold;
-    }
-    .dialogue-counter {
-      color: #6b7280;
-      font-size: 0.75rem;
-    }
-    .dialogue-text {
-      color: white;
-      font-size: 0.875rem;
-      margin-bottom: 12px;
-    }
+    .dialogue-name { color: #facc15; font-weight: bold; }
+    .dialogue-counter { color: #6b7280; font-size: 0.75rem; }
+    .dialogue-text { color: white; font-size: 0.9rem; margin-bottom: 12px; }
     .scene-text {
       color: #fde047;
-      font-size: 0.875rem;
+      font-size: 0.9rem;
       font-style: italic;
       margin-bottom: 12px;
       font-family: Georgia, serif;
@@ -91,16 +86,22 @@
     .btn:hover { background: #eab308; }
     .btn:active { background: #a16207; }
     .quest-text {
-      margin-top: 8px;
+      position: absolute;
+      top: 34px; left: 50%; transform: translateX(-50%);
       color: #fde047;
-      font-size: 0.75rem;
-      text-align: center;
+      font-size: 0.8rem;
+      text-shadow: 0 1px 3px #000;
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 10;
     }
     .controls {
-      margin-top: 12px;
+      position: absolute;
+      bottom: 14px; left: 50%; transform: translateX(-50%);
       display: flex;
-      gap: 24px;
+      gap: 32px;
       align-items: center;
+      z-index: 20;
     }
     .dpad {
       display: grid;
@@ -108,25 +109,22 @@
       gap: 4px;
     }
     .dpad-btn {
-      width: 48px;
-      height: 48px;
-      background: #1f2937;
+      width: 56px;
+      height: 56px;
+      background: rgba(31,41,55,0.85);
       border: 2px solid #4b5563;
       border-radius: 8px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
+      font-size: 1.5rem;
       color: #d1d5db;
       cursor: pointer;
     }
-    .dpad-btn:active {
-      background: #374151;
-      border-color: #eab308;
-    }
+    .dpad-btn:active { background: #374151; border-color: #eab308; }
     .talk-btn {
-      width: 56px;
-      height: 56px;
+      width: 72px;
+      height: 72px;
       background: #ca8a04;
       border: 4px solid #facc15;
       border-radius: 50%;
@@ -135,22 +133,26 @@
       justify-content: center;
       color: white;
       font-weight: bold;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       cursor: pointer;
     }
     .talk-btn:active { background: #eab308; }
     .phase-indicator {
-      margin-top: 8px;
+      position: absolute;
+      bottom: 14px; left: 50%; transform: translateX(-50%);
       color: #f87171;
-      font-size: 0.75rem;
+      font-size: 0.85rem;
       font-weight: bold;
       text-transform: uppercase;
-      text-align: center;
+      text-shadow: 0 1px 3px #000;
+      z-index: 10;
     }
     .help-text {
-      margin-top: 8px;
-      color: #6b7280;
-      font-size: 0.75rem;
+      position: absolute;
+      bottom: 4px; right: 8px;
+      color: #4b5563;
+      font-size: 0.65rem;
+      z-index: 10;
     }
   </style>
 </head>
@@ -159,11 +161,12 @@
   <script type="text/babel">
     const { useState, useEffect, useCallback, useRef } = React;
 
-    const TILE_SIZE = 32;
+    const TILE_SIZE = 64;
+    const SCALE = 2;            // sprite / decoration scale (= TILE_SIZE / 32)
     const MAP_WIDTH = 40;
     const MAP_HEIGHT = 30;
-    const VIEWPORT_WIDTH = 20;
-    const VIEWPORT_HEIGHT = 14;
+    const VIEWPORT_WIDTH  = Math.ceil(window.innerWidth  / TILE_SIZE) + 2;
+    const VIEWPORT_HEIGHT = Math.ceil(window.innerHeight / TILE_SIZE) + 2;
 
     const GARDEN_BOUNDS = { minX: 5, maxX: 35, minY: 5, maxY: 20 };
     const TREE_OF_KNOWLEDGE = { x: 10, y: 10 };
@@ -681,35 +684,47 @@
                   ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
                   break;
                 case TILES.TREE:
-                  ctx.fillStyle = COLORS.treeTrunk; ctx.fillRect(screenX + 12, screenY + 16, 8, 16);
-                  ctx.fillStyle = COLORS.tree; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 12, 14, 0, Math.PI * 2); ctx.fill();
+                  ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+                  ctx.fillStyle = COLORS.treeTrunk; ctx.fillRect(12, 16, 8, 16);
+                  ctx.fillStyle = COLORS.tree; ctx.beginPath(); ctx.arc(16, 12, 14, 0, Math.PI * 2); ctx.fill();
+                  ctx.restore();
                   break;
                 case TILES.FLOWER:
+                  ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
                   ctx.fillStyle = mapX % 2 === 0 ? COLORS.flower : COLORS.flowerYellow;
-                  ctx.beginPath(); ctx.arc(screenX + 16, screenY + 16, 4, 0, Math.PI * 2); ctx.fill();
+                  ctx.beginPath(); ctx.arc(16, 16, 4, 0, Math.PI * 2); ctx.fill();
+                  ctx.restore();
                   break;
                 case TILES.PATH: ctx.fillStyle = COLORS.path; ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE); break;
                 case TILES.ROCK:
-                  ctx.fillStyle = COLORS.rock; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 20, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+                  ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+                  ctx.fillStyle = COLORS.rock; ctx.beginPath(); ctx.ellipse(16, 20, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+                  ctx.restore();
                   break;
                 case TILES.BUSH:
-                  ctx.fillStyle = COLORS.bush; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 20, 10, 0, Math.PI * 2); ctx.fill();
+                  ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+                  ctx.fillStyle = COLORS.bush; ctx.beginPath(); ctx.arc(16, 20, 10, 0, Math.PI * 2); ctx.fill();
+                  ctx.restore();
                   break;
                 case TILES.TREE_OF_LIFE:
-                  ctx.fillStyle = '#654321'; ctx.fillRect(screenX + 8, screenY + 10, 16, 24);
+                  ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+                  ctx.fillStyle = '#654321'; ctx.fillRect(8, 10, 16, 24);
                   ctx.fillStyle = COLORS.treeOfLife; ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20 + Math.sin(gameTime * 0.1) * 8;
-                  ctx.beginPath(); ctx.arc(screenX + 16, screenY + 4, 22, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+                  ctx.beginPath(); ctx.arc(16, 4, 22, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
                   ctx.fillStyle = '#ffd700'; ctx.font = 'bold 7px monospace'; ctx.textAlign = 'center';
-                  ctx.fillText('ETS CHAYIM', screenX + 16, screenY + 42); ctx.textAlign = 'left';
+                  ctx.fillText('ETS CHAYIM', 16, 42); ctx.textAlign = 'left';
+                  ctx.restore();
                   break;
                 case TILES.TREE_OF_KNOWLEDGE:
-                  ctx.fillStyle = '#4a3520'; ctx.fillRect(screenX + 8, screenY + 10, 16, 24);
-                  ctx.fillStyle = '#1a3a1a'; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 4, 22, 0, Math.PI * 2); ctx.fill();
+                  ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+                  ctx.fillStyle = '#4a3520'; ctx.fillRect(8, 10, 16, 24);
+                  ctx.fillStyle = '#1a3a1a'; ctx.beginPath(); ctx.arc(16, 4, 22, 0, Math.PI * 2); ctx.fill();
                   ctx.fillStyle = '#cc0000';
-                  [[8,2],[24,0],[16,8],[6,10],[26,8]].forEach(([fx,fy]) => { ctx.beginPath(); ctx.arc(screenX + fx, screenY + fy, 4, 0, Math.PI * 2); ctx.fill(); });
+                  [[8,2],[24,0],[16,8],[6,10],[26,8]].forEach(([fx,fy]) => { ctx.beginPath(); ctx.arc(fx, fy, 4, 0, Math.PI * 2); ctx.fill(); });
                   ctx.fillStyle = '#ff6666'; ctx.font = 'bold 6px monospace'; ctx.textAlign = 'center';
-                  ctx.fillText("ETS HADA'AT", screenX + 16, screenY + 42);
-                  ctx.fillText("TOV V'RA", screenX + 16, screenY + 49); ctx.textAlign = 'left';
+                  ctx.fillText("ETS HADA'AT", 16, 42);
+                  ctx.fillText("TOV V'RA", 16, 49); ctx.textAlign = 'left';
+                  ctx.restore();
                   break;
               }
             }
@@ -719,31 +734,30 @@
         npcs.forEach(npc => {
           const screenX = (npc.x - camera.x) * TILE_SIZE, screenY = (npc.y - camera.y) * TILE_SIZE;
           if (screenX > -TILE_SIZE * 2 && screenX < canvas.width + TILE_SIZE * 2 && screenY > -TILE_SIZE * 2 && screenY < canvas.height + TILE_SIZE * 2) {
+            // All sprite drawing scaled 2× inside this block
+            ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
             if (npc.isSerpent) {
               ctx.fillStyle = npc.color;
               const wave = Math.sin(gameTime * 0.2) * 3;
-              for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(screenX + 16 - i * 7, screenY + 20 + Math.sin(gameTime * 0.2 + i) * 2, 5 - i, 0, Math.PI * 2); ctx.fill(); }
-              ctx.beginPath(); ctx.arc(screenX + 22, screenY + 18 + wave, 6, 0, Math.PI * 2); ctx.fill();
-              ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(screenX + 25, screenY + 16 + wave, 2, 0, Math.PI * 2); ctx.fill();
+              for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(16 - i * 7, 20 + Math.sin(gameTime * 0.2 + i) * 2, 5 - i, 0, Math.PI * 2); ctx.fill(); }
+              ctx.beginPath(); ctx.arc(22, 18 + wave, 6, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(25, 16 + wave, 2, 0, Math.PI * 2); ctx.fill();
             } else if (npc.isAngel) {
-              // Wings behind body
               ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
               ctx.fillStyle = '#fff8dc';
-              ctx.beginPath(); ctx.ellipse(screenX + 3,  screenY + 15, 8, 11, -0.3, 0, Math.PI * 2); ctx.fill();
-              ctx.beginPath(); ctx.ellipse(screenX + 29, screenY + 15, 8, 11,  0.3, 0, Math.PI * 2); ctx.fill();
+              ctx.beginPath(); ctx.ellipse(3,  15, 8, 11, -0.3, 0, Math.PI * 2); ctx.fill();
+              ctx.beginPath(); ctx.ellipse(29, 15, 8, 11,  0.3, 0, Math.PI * 2); ctx.fill();
               ctx.shadowBlur = 0;
-              // Body via shared sprite (white robes)
-              drawCharacterSprite(ctx, screenX, screenY, {
+              drawCharacterSprite(ctx, 0, 0, {
                 walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: npc.direction || 'down',
                 hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
                 isEve: false, showClothes: false, gameTime,
               });
-              // Halo over head
               ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
-              ctx.beginPath(); ctx.ellipse(screenX + 16, screenY - 3, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
+              ctx.beginPath(); ctx.ellipse(16, -3, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
             } else {
               const showClothes = npc.hasClothes || (npc.clothesBlink > 0 && Math.floor(npc.clothesBlink * 3) % 2 === 0);
-              drawCharacterSprite(ctx, screenX, screenY, {
+              drawCharacterSprite(ctx, 0, 0, {
                 walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: npc.direction || 'down',
                 hairColor: npc.hairColor, bodyColor: npc.isEve ? '#c07080' : '#6b8c42', skinColor: SKIN_COLOR,
                 isEve: npc.isEve, showClothes,
@@ -751,24 +765,29 @@
                 hasGlory: npc.hasGlory, gameTime,
               });
             }
-            if (!showDialogue && gamePhase === PHASES.EXPLORE) drawSpeechBubble(ctx, screenX + 16, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
+            ctx.restore();
+            // Name tag and speech bubble drawn at screen coords (outside scale block)
+            const cx = screenX + TILE_SIZE / 2;
+            if (!showDialogue && gamePhase === PHASES.EXPLORE) drawSpeechBubble(ctx, cx, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
             const nameText = npc.hasSpoken ? `✓ ${npc.name}` : npc.name;
-            ctx.font = '9px monospace';
-            const nameWidth = ctx.measureText(nameText).width + 6;
+            ctx.font = '12px monospace';
+            const nameWidth = ctx.measureText(nameText).width + 8;
             ctx.fillStyle = npc.hasSpoken ? 'rgba(0,80,0,0.8)' : 'rgba(0,0,0,0.7)';
-            ctx.fillRect(screenX + 16 - nameWidth/2, screenY + 36, nameWidth, 12);
+            ctx.fillRect(cx - nameWidth / 2, screenY + 66, nameWidth, 15);
             ctx.fillStyle = npc.isSerpent ? '#90EE90' : '#fff';
-            ctx.fillText(nameText, screenX + 16 - nameWidth/2 + 3, screenY + 45);
+            ctx.fillText(nameText, cx - nameWidth / 2 + 4, screenY + 78);
           }
         });
 
         if (gamePhase === PHASES.EXPLORE) {
           const playerScreenX = (player.x - camera.x) * TILE_SIZE, playerScreenY = (player.y - camera.y) * TILE_SIZE;
-          drawCharacterSprite(ctx, playerScreenX, playerScreenY, {
+          ctx.save(); ctx.translate(playerScreenX, playerScreenY); ctx.scale(SCALE, SCALE);
+          drawCharacterSprite(ctx, 0, 0, {
             walkFrame: player.walkFrame, isMoving: player.isMoving, direction: player.direction,
             hairColor: '#1a1a1a', bodyColor: '#4169e1', skinColor: SKIN_COLOR,
             gameTime,
           });
+          ctx.restore();
         }
 
         if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE) {
@@ -782,7 +801,7 @@
       return (
         <div className="game-container">
           <h1 className="title">BERE'SHIYTH: In The Beginning</h1>
-          <canvas ref={canvasRef} width={VIEWPORT_WIDTH * TILE_SIZE} height={VIEWPORT_HEIGHT * TILE_SIZE} />
+          <canvas ref={canvasRef} width={window.innerWidth} height={window.innerHeight} />
 
           {showDialogue && (
             <div className="dialogue-box">
