@@ -528,59 +528,114 @@
         lines.forEach((line, i) => { ctx.fillText(line, bubbleX + padding, bubbleY + padding + lineHeight * (i + 0.8)); });
       };
 
-      // Returns a vertical body-bob offset (0 or 1px) for the current walk frame
-      const getBodyBob = (walkFrame, isMoving) => isMoving ? (Math.floor(walkFrame) % 2 === 0 ? 0 : 1) : 0;
+      // Unified GBA-style character sprite renderer.
+      // All parts are anchored to cx (horizontal centre) and baseY (top of head)
+      // so nothing ever detaches and both sides are perfectly symmetric.
+      const drawCharacterSprite = (ctx, screenX, screenY, opts) => {
+        const {
+          walkFrame = 0, isMoving = false, direction = 'down',
+          hairColor = '#1a1a1a', bodyColor = '#4169e1', skinColor = SKIN_COLOR,
+          isEve = false, showClothes = false,
+          holdingFruit = false, isEating = false, hasGlory = false, gameTime = 0,
+        } = opts;
 
-      const drawLegs = (ctx, screenX, screenY, walkFrame, isMoving, skinColor, direction) => {
-        const frame = Math.floor(walkFrame) % 4;
-        // Shoe color to distinguish feet from skin
-        const leftColor  = skinColor;
-        const rightColor = skinColor;
-        const shoeL = '#3a2a1a';
-        const shoeR = '#3a2a1a';
+        const frame  = Math.floor(walkFrame) % 4;
+        const bob    = isMoving && frame % 2 === 1 ? 1 : 0;   // whole-body 1-px bounce
+        const cx     = screenX + 16;                           // horizontal centre
+        const by     = screenY + bob;                          // top-of-head Y (shifts with bob)
 
-        if (isMoving) {
-          if (direction === 'left' || direction === 'right') {
-            // Side-on view: front leg clearly lower (depth), back leg slightly higher
-            const frontX = direction === 'right' ? screenX + 16 : screenX + 12;
-            const backX  = direction === 'right' ? screenX + 11 : screenX + 17;
-            const swing  = frame === 1 ? 3 : frame === 3 ? -3 : 0;
-            // Back leg
-            ctx.fillStyle = skinColor;
-            ctx.fillRect(backX,          screenY + 28 - swing, 4, 5);
-            ctx.fillStyle = shoeL;
-            ctx.fillRect(backX,          screenY + 33 - swing, 4, 2);
-            // Front leg
-            ctx.fillStyle = skinColor;
-            ctx.fillRect(frontX,         screenY + 28 + swing, 4, 5);
-            ctx.fillStyle = shoeR;
-            ctx.fillRect(frontX,         screenY + 33 + swing, 4, 2);
-          } else {
-            // Front / back view: left and right legs alternate forward / back
-            const leftForward = frame < 2;
-            const leftY  = leftForward ? screenY + 25 : screenY + 29;
-            const rightY = leftForward ? screenY + 29 : screenY + 25;
-            const leftH  = leftForward ? 6 : 4;
-            const rightH = leftForward ? 4 : 6;
-            // Left leg
-            ctx.fillStyle = skinColor;
-            ctx.fillRect(screenX + 11, leftY,  4, leftH);
-            ctx.fillStyle = shoeL;
-            ctx.fillRect(screenX + 11, leftY + leftH,  4, 2);
-            // Right leg
-            ctx.fillStyle = skinColor;
-            ctx.fillRect(screenX + 17, rightY, 4, rightH);
-            ctx.fillStyle = shoeR;
-            ctx.fillRect(screenX + 17, rightY + rightH, 4, 2);
-          }
+        // Convenience: fill a rect relative to cx/by
+        const r = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + dx, by + dy, w, h); };
+
+        const outline = '#0a0500';
+        const shoeClr = '#1c1008';
+        const bClr    = showClothes ? '#8B7355' : bodyColor;
+
+        // ── GLORY AURA ────────────────────────────────────────────
+        if (hasGlory) {
+          ctx.shadowColor = '#ffd700';
+          ctx.shadowBlur  = 12 + Math.sin(gameTime * 0.15) * 4;
+          ctx.fillStyle   = 'rgba(255,215,0,0.22)';
+          ctx.beginPath();
+          ctx.ellipse(cx, by + 16, 13, 18, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+
+        // ── LEGS (drawn back-to-front so forward leg is on top) ───
+        // Body bottom = by+22, leg top = by+22  →  always connected.
+        // Shoe bottom = by+32.
+        const lLX = -6; const rLX = 1; const legW = 5; // left/right leg X offsets, width
+
+        if (!isMoving) {
+          // Standing – both legs identical
+          r(lLX, 22, legW, 7, bClr);  r(lLX - 1, 29, legW + 2, 3, shoeClr);
+          r(rLX, 22, legW, 7, bClr);  r(rLX - 1, 29, legW + 2, 3, shoeClr);
+        } else if (direction === 'left' || direction === 'right') {
+          // Side view: front/back legs swing fore-aft
+          const swing  = frame === 1 ? 4 : frame === 3 ? -4 : 0;
+          const fwdOff = direction === 'right' ? rLX : lLX;
+          const bckOff = direction === 'right' ? lLX : rLX;
+          // Back leg first
+          r(bckOff, 22 - swing, legW, 8, bClr);
+          r(bckOff - 1, 30 - swing, legW + 1, 2, shoeClr);
+          // Front leg on top
+          r(fwdOff, 22 + swing, legW, 8, bClr);
+          r(fwdOff - 1, 30 + swing, legW + 2, 2, shoeClr);
         } else {
-          ctx.fillStyle = skinColor;
-          ctx.fillRect(screenX + 11, screenY + 28, 4, 5);
-          ctx.fillRect(screenX + 17, screenY + 28, 4, 5);
-          ctx.fillStyle = shoeL;
-          ctx.fillRect(screenX + 11, screenY + 33, 4, 2);
-          ctx.fillStyle = shoeR;
-          ctx.fillRect(screenX + 17, screenY + 33, 4, 2);
+          // Front/back view: legs alternate height (one forward = longer + lower)
+          const lFwd = frame < 2;
+          const fX = lFwd ? lLX : rLX;
+          const bX = lFwd ? rLX : lLX;
+          // Back leg: 5 tall, higher start
+          r(bX, 25, legW, 4, bClr);  r(bX - 1, 29, legW + 1, 2, shoeClr);
+          // Forward leg: 9 tall, lower start (extends further, shows depth)
+          r(fX, 22, legW, 7, bClr);  r(fX - 1, 29, legW + 2, 3, shoeClr);
+        }
+
+        // ── BODY (connects directly to leg top at by+22) ──────────
+        r(-6, 12, 12, 10, bClr);
+
+        // ── ARMS (symmetric: left at cx-9, right at cx+6, 3px wide each) ──
+        const armSwg = isMoving ? (frame < 2 ? -2 : 2) : 0;
+        r(-9, 13 + armSwg, 3, 8, skinColor);  // left arm
+        r( 6, 13 - armSwg, 3, 8, skinColor);  // right arm
+
+        // ── HEAD (outline then fill; always centered on cx) ───────
+        r(-7, 0, 14, 13, outline);          // dark outline box
+        r(-6, 1, 12, 11, skinColor);        // skin fill
+
+        // Hair
+        if (direction === 'up') {
+          r(-6, 1, 12, 11, hairColor);      // facing away – whole head is hair
+        } else {
+          r(-6, 1, 12, 4, hairColor);       // top hair band
+        }
+        if (isEve && direction !== 'up') {
+          r(-6, 5, 2, 8, hairColor);        // left flowing strand
+          r( 4, 5, 2, 8, hairColor);        // right flowing strand
+        }
+
+        // Eyes (hidden when facing up)
+        if (direction !== 'up') {
+          const eox = direction === 'left' ? -2 : direction === 'right' ? 2 : 0;
+          const eoy = direction === 'down' ? 2 : 0;
+          r(-4 + eox, 6 + eoy, 3, 3, '#fff');    // left eye white
+          r( 1 + eox, 6 + eoy, 3, 3, '#fff');    // right eye white
+          r(-3 + eox, 7 + eoy, 2, 2, '#2a1800'); // left pupil
+          r( 2 + eox, 7 + eoy, 2, 2, '#2a1800'); // right pupil
+        }
+
+        // Eating indicator
+        if (isEating) { r(-2, 10, 4, 2, '#8b0000'); }
+
+        // Held fruit (to the right of body)
+        if (holdingFruit && !isEating) {
+          ctx.fillStyle = '#cc0000';
+          ctx.beginPath();
+          ctx.arc(cx + 11, by + 17, 4, 0, Math.PI * 2);
+          ctx.fill();
+          r(9, 13, 2, 4, '#654321'); // stem
         }
       };
 
@@ -650,49 +705,30 @@
               ctx.beginPath(); ctx.arc(screenX + 22, screenY + 18 + wave, 6, 0, Math.PI * 2); ctx.fill();
               ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(screenX + 25, screenY + 16 + wave, 2, 0, Math.PI * 2); ctx.fill();
             } else if (npc.isAngel) {
-              ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8; ctx.fillStyle = '#fff8dc';
-              ctx.beginPath(); ctx.ellipse(screenX + 4, screenY + 14, 9, 12, -0.3, 0, Math.PI * 2); ctx.ellipse(screenX + 28, screenY + 14, 9, 12, 0.3, 0, Math.PI * 2); ctx.fill();
-              ctx.shadowBlur = 0; ctx.fillStyle = '#ffffff';
-              ctx.beginPath(); ctx.moveTo(screenX + 10, screenY + 14); ctx.lineTo(screenX + 22, screenY + 14); ctx.lineTo(screenX + 24, screenY + 32); ctx.lineTo(screenX + 8, screenY + 32); ctx.closePath(); ctx.fill();
-              ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 10, 7, 0, Math.PI * 2); ctx.fill();
-              ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8, 7, Math.PI, 0); ctx.fill();
-              ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(screenX + 14, screenY + 10, 2, 0, Math.PI * 2); ctx.arc(screenX + 18, screenY + 10, 2, 0, Math.PI * 2); ctx.fill();
-              ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX + 14, screenY + 10, 1, 0, Math.PI * 2); ctx.arc(screenX + 18, screenY + 10, 1, 0, Math.PI * 2); ctx.fill();
-              ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 1, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
+              // Wings behind body
+              ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
+              ctx.fillStyle = '#fff8dc';
+              ctx.beginPath(); ctx.ellipse(screenX + 3,  screenY + 15, 8, 11, -0.3, 0, Math.PI * 2); ctx.fill();
+              ctx.beginPath(); ctx.ellipse(screenX + 29, screenY + 15, 8, 11,  0.3, 0, Math.PI * 2); ctx.fill();
+              ctx.shadowBlur = 0;
+              // Body via shared sprite (white robes)
+              drawCharacterSprite(ctx, screenX, screenY, {
+                walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: npc.direction || 'down',
+                hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
+                isEve: false, showClothes: false, gameTime,
+              });
+              // Halo over head
+              ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
+              ctx.beginPath(); ctx.ellipse(screenX + 16, screenY - 3, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
             } else {
-              const npcBob = getBodyBob(npc.walkFrame, npc.isMoving);
-              const npcDir = npc.direction || 'down';
-              const npcFrame = Math.floor(npc.walkFrame) % 4;
-              // Arm swing: left arm and right arm swing opposite each other
-              const npcArmSwing = npc.isMoving ? (npcFrame < 2 ? -2 : 2) : 0;
-
-              if (npc.hasGlory) {
-                ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 15 + Math.sin(gameTime * 0.15) * 5;
-                ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 18 + npcBob, 18, 22, 0, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
-              }
               const showClothes = npc.hasClothes || (npc.clothesBlink > 0 && Math.floor(npc.clothesBlink * 3) % 2 === 0);
-              // Body
-              if (showClothes) { ctx.fillStyle = '#8B7355'; ctx.fillRect(screenX + 10, screenY + 14 + npcBob, 12, 14); }
-              if (!showClothes) { ctx.fillStyle = SKIN_COLOR; ctx.fillRect(screenX + 11, screenY + 14 + npcBob, 10, 14); }
-              // Arms with swing
-              ctx.fillStyle = SKIN_COLOR;
-              ctx.fillRect(screenX + 6,  screenY + 15 + npcBob + npcArmSwing,  4, 10);
-              ctx.fillRect(screenX + 22, screenY + 15 + npcBob - npcArmSwing, 4, 10);
-              drawLegs(ctx, screenX, screenY + npcBob, npc.walkFrame, npc.isMoving, SKIN_COLOR, npcDir);
-              // Head
-              ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 10 + npcBob, 8, 0, Math.PI * 2); ctx.fill();
-              ctx.fillStyle = npc.hairColor;
-              if (npc.isEve) { ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8 + npcBob, 8, Math.PI, 0); ctx.fill(); ctx.fillRect(screenX + 8, screenY + 8 + npcBob, 4, 18); ctx.fillRect(screenX + 20, screenY + 8 + npcBob, 4, 18); }
-              else { ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8 + npcBob, 8, Math.PI, 0); ctx.fill(); }
-              // Direction-aware eyes
-              const npcEyeOX = npcDir === 'left' ? -2 : npcDir === 'right' ? 2 : 0;
-              const npcEyeOY = npcDir === 'up'   ? -2 : npcDir === 'down'  ? 2 : 0;
-              if (npcDir !== 'up') {
-                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(screenX + 13 + npcEyeOX, screenY + 10 + npcBob + npcEyeOY, 2.5, 0, Math.PI * 2); ctx.arc(screenX + 19 + npcEyeOX, screenY + 10 + npcBob + npcEyeOY, 2.5, 0, Math.PI * 2); ctx.fill();
-                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX + 13 + npcEyeOX, screenY + 10 + npcBob + npcEyeOY, 1.2, 0, Math.PI * 2); ctx.arc(screenX + 19 + npcEyeOX, screenY + 10 + npcBob + npcEyeOY, 1.2, 0, Math.PI * 2); ctx.fill();
-              }
-              if (npc.isEating) { ctx.fillStyle = '#8b0000'; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 14 + npcBob, 3, 0, Math.PI * 2); ctx.fill(); }
-              if (npc.holdingFruit && !npc.isEating) { ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.arc(screenX + 28, screenY + 20 + npcBob, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#654321'; ctx.fillRect(screenX + 27, screenY + 15 + npcBob, 2, 3); }
+              drawCharacterSprite(ctx, screenX, screenY, {
+                walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: npc.direction || 'down',
+                hairColor: npc.hairColor, bodyColor: npc.isEve ? '#c07080' : '#6b8c42', skinColor: SKIN_COLOR,
+                isEve: npc.isEve, showClothes,
+                holdingFruit: npc.holdingFruit, isEating: npc.isEating,
+                hasGlory: npc.hasGlory, gameTime,
+              });
             }
             if (!showDialogue && gamePhase === PHASES.EXPLORE) drawSpeechBubble(ctx, screenX + 16, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
             const nameText = npc.hasSpoken ? `✓ ${npc.name}` : npc.name;
@@ -707,26 +743,11 @@
 
         if (gamePhase === PHASES.EXPLORE) {
           const playerScreenX = (player.x - camera.x) * TILE_SIZE, playerScreenY = (player.y - camera.y) * TILE_SIZE;
-          const pBob = getBodyBob(player.walkFrame, player.isMoving);
-          const pFrame = Math.floor(player.walkFrame) % 4;
-          const pArmSwing = player.isMoving ? (pFrame < 2 ? -2 : 2) : 0;
-          // Body
-          ctx.fillStyle = '#4169e1'; ctx.fillRect(playerScreenX + 10, playerScreenY + 14 + pBob, 12, 14);
-          // Arms with swing
-          ctx.fillStyle = SKIN_COLOR;
-          ctx.fillRect(playerScreenX + 6,  playerScreenY + 15 + pBob + pArmSwing, 4, 10);
-          ctx.fillRect(playerScreenX + 22, playerScreenY + 15 + pBob - pArmSwing, 4, 10);
-          drawLegs(ctx, playerScreenX, playerScreenY + pBob, player.walkFrame, player.isMoving, SKIN_COLOR, player.direction);
-          // Head
-          ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(playerScreenX + 16, playerScreenY + 10 + pBob, 8, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(playerScreenX + 16, playerScreenY + 8 + pBob, 8, Math.PI, 0); ctx.fill();
-          const eyeOffsetX = player.direction === 'left' ? -2 : player.direction === 'right' ? 2 : 0;
-          const eyeOffsetY = player.direction === 'up'   ? -2 : player.direction === 'down'  ? 2 : 0;
-          if (player.direction !== 'up') {
-            ctx.fillStyle = '#fff';
-            ctx.beginPath(); ctx.arc(playerScreenX + 13 + eyeOffsetX, playerScreenY + 10 + pBob + eyeOffsetY, 2.5, 0, Math.PI * 2); ctx.arc(playerScreenX + 19 + eyeOffsetX, playerScreenY + 10 + pBob + eyeOffsetY, 2.5, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(playerScreenX + 13 + eyeOffsetX, playerScreenY + 10 + pBob + eyeOffsetY, 1.2, 0, Math.PI * 2); ctx.arc(playerScreenX + 19 + eyeOffsetX, playerScreenY + 10 + pBob + eyeOffsetY, 1.2, 0, Math.PI * 2); ctx.fill();
-          }
+          drawCharacterSprite(ctx, playerScreenX, playerScreenY, {
+            walkFrame: player.walkFrame, isMoving: player.isMoving, direction: player.direction,
+            hairColor: '#1a1a1a', bodyColor: '#4169e1', skinColor: SKIN_COLOR,
+            gameTime,
+          });
         }
 
         if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE) {
