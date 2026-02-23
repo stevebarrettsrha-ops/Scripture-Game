@@ -218,25 +218,25 @@
         id: 'adam', name: "A'dam", x: 20, y: 14, prevX: 20, prevY: 14, color: SKIN_COLOR, hairColor: '#1a1a1a',
         thoughts: ["YAHUAH formed me from the dust...", "I am to dress and keep this garden.", "She is bone of my bones..."],
         dialogue: ["Shalom, traveler. I am A'dam.", "YAHUAH ELOHIYM formed me of the dust of the ground.", "He breathed into my nostrils the breath of life.", "I became a living nephesh.", "YAHUAH put me in the Garden of Eden to dress it and keep it.", "Of every tree I may freely eat...", "But of the Ets HaDa'at Tov v'Ra, I shall not eat.", "For in the day I eat thereof, I shall surely die."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 20, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 20, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
       },
       {
         id: 'chavvah', name: 'Chavvah', x: 22, y: 14, prevX: 22, prevY: 14, color: SKIN_COLOR, hairColor: '#1a1a1a', isEve: true,
         thoughts: ["The garden is so beautiful...", "That tree... the fruit looks good...", "The nachash says we won't die..."],
         dialogue: ["I am Chavvah, the mother of all living.", "YAHUAH ELOHIYM caused a deep sleep upon A'dam.", "He took one of his ribs and made me.", "We may eat of the fruit of the trees of the garden.", "But of the tree in the midst of the garden...", "ELOHIYM has said, Ye shall not eat of it.", "Neither shall ye touch it, lest ye die.", "But the nachash says our eyes will be opened..."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 22, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 22, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
       },
       {
         id: 'nachash', name: 'Nachash', x: 10, y: 12, prevX: 10, prevY: 12, color: '#228b22', isSerpent: true,
         thoughts: ["Yea, hath ELOHIYM said...?", "Ye shall not surely die...", "Your eyes shall be opened..."],
         dialogue: ["Yea, hath ELOHIYM said...", "Ye shall not eat of every tree of the garden?", "Ye shall not surely die.", "For ELOHIYM knows that in the day ye eat thereof...", "Your eyes shall be opened.", "And ye shall be as elohiym...", "Knowing good and evil.", "Is the fruit not pleasant to the eyes?"],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'circle_tree', circleAngle: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'circle_tree', circleAngle: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
       },
       {
         id: 'malak', name: 'Malak', x: 28, y: 8, prevX: 28, prevY: 8, color: SKIN_COLOR, hairColor: '#1a1a1a', isAngel: true,
         thoughts: ["Holy, holy, holy is YAHUAH!", "I guard the Ets Chayim.", "The flaming sword turns every way..."],
         dialogue: ["Shalom. I am a malak of YAHUAH.", "I watch over this qodesh garden.", "Behold, the Ets Chayim - the Tree of Life!", "And there - the Ets HaDa'at Tov v'Ra.", "YAHUAH ELOHIYM has forbidden its fruit.", "Guard your heart, child of the Most High."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 28, y: 8}, {x: 26, y: 10}, {x: 30, y: 10}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, hasSpoken: false,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 28, y: 8}, {x: 26, y: 10}, {x: 30, y: 10}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
       }
     ];
 
@@ -477,6 +477,7 @@
                   const moveX = npc.x + (dx / dist) * speed, moveY = npc.y + (dy / dist) * speed;
                   if (canNPCMoveTo(moveX, moveY) || npc.behavior === 'scene' || npc.behavior === 'circle_tree') {
                     newNpc.x = moveX; newNpc.y = moveY; newNpc.isMoving = true; newNpc.walkFrame = (npc.walkFrame + 0.25) % 4;
+                    newNpc.direction = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
                   } else { newNpc.targetX = npc.homeX || npc.x; newNpc.targetY = npc.homeY || npc.y; newNpc.isMoving = false; newNpc.walkFrame = 0; }
                 } else { newNpc.isMoving = false; newNpc.walkFrame = 0; }
               } else { newNpc.isMoving = false; newNpc.walkFrame = 0; }
@@ -527,14 +528,60 @@
         lines.forEach((line, i) => { ctx.fillText(line, bubbleX + padding, bubbleY + padding + lineHeight * (i + 0.8)); });
       };
 
-      const drawLegs = (ctx, screenX, screenY, walkFrame, isMoving, skinColor) => {
-        ctx.fillStyle = skinColor;
+      // Returns a vertical body-bob offset (0 or 1px) for the current walk frame
+      const getBodyBob = (walkFrame, isMoving) => isMoving ? (Math.floor(walkFrame) % 2 === 0 ? 0 : 1) : 0;
+
+      const drawLegs = (ctx, screenX, screenY, walkFrame, isMoving, skinColor, direction) => {
+        const frame = Math.floor(walkFrame) % 4;
+        // Shoe color to distinguish feet from skin
+        const leftColor  = skinColor;
+        const rightColor = skinColor;
+        const shoeL = '#3a2a1a';
+        const shoeR = '#3a2a1a';
+
         if (isMoving) {
-          const frame = Math.floor(walkFrame);
-          if (frame === 0 || frame === 2) { ctx.fillRect(screenX + 11, screenY + 28, 4, 6); ctx.fillRect(screenX + 17, screenY + 28, 4, 6); }
-          else if (frame === 1) { ctx.fillRect(screenX + 9, screenY + 28, 4, 6); ctx.fillRect(screenX + 19, screenY + 28, 4, 6); }
-          else { ctx.fillRect(screenX + 13, screenY + 28, 4, 6); ctx.fillRect(screenX + 15, screenY + 28, 4, 6); }
-        } else { ctx.fillRect(screenX + 11, screenY + 28, 4, 6); ctx.fillRect(screenX + 17, screenY + 28, 4, 6); }
+          if (direction === 'left' || direction === 'right') {
+            // Side-on view: front leg clearly lower (depth), back leg slightly higher
+            const frontX = direction === 'right' ? screenX + 16 : screenX + 12;
+            const backX  = direction === 'right' ? screenX + 11 : screenX + 17;
+            const swing  = frame === 1 ? 3 : frame === 3 ? -3 : 0;
+            // Back leg
+            ctx.fillStyle = skinColor;
+            ctx.fillRect(backX,          screenY + 28 - swing, 4, 5);
+            ctx.fillStyle = shoeL;
+            ctx.fillRect(backX,          screenY + 33 - swing, 4, 2);
+            // Front leg
+            ctx.fillStyle = skinColor;
+            ctx.fillRect(frontX,         screenY + 28 + swing, 4, 5);
+            ctx.fillStyle = shoeR;
+            ctx.fillRect(frontX,         screenY + 33 + swing, 4, 2);
+          } else {
+            // Front / back view: left and right legs alternate forward / back
+            const leftForward = frame < 2;
+            const leftY  = leftForward ? screenY + 25 : screenY + 29;
+            const rightY = leftForward ? screenY + 29 : screenY + 25;
+            const leftH  = leftForward ? 6 : 4;
+            const rightH = leftForward ? 4 : 6;
+            // Left leg
+            ctx.fillStyle = skinColor;
+            ctx.fillRect(screenX + 11, leftY,  4, leftH);
+            ctx.fillStyle = shoeL;
+            ctx.fillRect(screenX + 11, leftY + leftH,  4, 2);
+            // Right leg
+            ctx.fillStyle = skinColor;
+            ctx.fillRect(screenX + 17, rightY, 4, rightH);
+            ctx.fillStyle = shoeR;
+            ctx.fillRect(screenX + 17, rightY + rightH, 4, 2);
+          }
+        } else {
+          ctx.fillStyle = skinColor;
+          ctx.fillRect(screenX + 11, screenY + 28, 4, 5);
+          ctx.fillRect(screenX + 17, screenY + 28, 4, 5);
+          ctx.fillStyle = shoeL;
+          ctx.fillRect(screenX + 11, screenY + 33, 4, 2);
+          ctx.fillStyle = shoeR;
+          ctx.fillRect(screenX + 17, screenY + 33, 4, 2);
+        }
       };
 
       useEffect(() => {
@@ -613,23 +660,39 @@
               ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX + 14, screenY + 10, 1, 0, Math.PI * 2); ctx.arc(screenX + 18, screenY + 10, 1, 0, Math.PI * 2); ctx.fill();
               ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 1, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
             } else {
+              const npcBob = getBodyBob(npc.walkFrame, npc.isMoving);
+              const npcDir = npc.direction || 'down';
+              const npcFrame = Math.floor(npc.walkFrame) % 4;
+              // Arm swing: left arm and right arm swing opposite each other
+              const npcArmSwing = npc.isMoving ? (npcFrame < 2 ? -2 : 2) : 0;
+
               if (npc.hasGlory) {
                 ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 15 + Math.sin(gameTime * 0.15) * 5;
-                ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 18, 18, 22, 0, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
+                ctx.fillStyle = 'rgba(255, 215, 0, 0.3)'; ctx.beginPath(); ctx.ellipse(screenX + 16, screenY + 18 + npcBob, 18, 22, 0, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0;
               }
               const showClothes = npc.hasClothes || (npc.clothesBlink > 0 && Math.floor(npc.clothesBlink * 3) % 2 === 0);
-              if (showClothes) { ctx.fillStyle = '#8B7355'; ctx.fillRect(screenX + 10, screenY + 14, 12, 16); }
-              if (!showClothes) { ctx.fillStyle = SKIN_COLOR; ctx.fillRect(screenX + 11, screenY + 14, 10, 14); }
-              ctx.fillStyle = SKIN_COLOR; ctx.fillRect(screenX + 6, screenY + 15, 4, 10); ctx.fillRect(screenX + 22, screenY + 15, 4, 10);
-              drawLegs(ctx, screenX, screenY, npc.walkFrame, npc.isMoving, SKIN_COLOR);
-              ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 10, 8, 0, Math.PI * 2); ctx.fill();
+              // Body
+              if (showClothes) { ctx.fillStyle = '#8B7355'; ctx.fillRect(screenX + 10, screenY + 14 + npcBob, 12, 14); }
+              if (!showClothes) { ctx.fillStyle = SKIN_COLOR; ctx.fillRect(screenX + 11, screenY + 14 + npcBob, 10, 14); }
+              // Arms with swing
+              ctx.fillStyle = SKIN_COLOR;
+              ctx.fillRect(screenX + 6,  screenY + 15 + npcBob + npcArmSwing,  4, 10);
+              ctx.fillRect(screenX + 22, screenY + 15 + npcBob - npcArmSwing, 4, 10);
+              drawLegs(ctx, screenX, screenY + npcBob, npc.walkFrame, npc.isMoving, SKIN_COLOR, npcDir);
+              // Head
+              ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 10 + npcBob, 8, 0, Math.PI * 2); ctx.fill();
               ctx.fillStyle = npc.hairColor;
-              if (npc.isEve) { ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8, 8, Math.PI, 0); ctx.fill(); ctx.fillRect(screenX + 8, screenY + 8, 4, 18); ctx.fillRect(screenX + 20, screenY + 8, 4, 18); }
-              else { ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8, 8, Math.PI, 0); ctx.fill(); }
-              ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(screenX + 13, screenY + 10, 2.5, 0, Math.PI * 2); ctx.arc(screenX + 19, screenY + 10, 2.5, 0, Math.PI * 2); ctx.fill();
-              ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX + 13, screenY + 10, 1.2, 0, Math.PI * 2); ctx.arc(screenX + 19, screenY + 10, 1.2, 0, Math.PI * 2); ctx.fill();
-              if (npc.isEating) { ctx.fillStyle = '#8b0000'; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 14, 3, 0, Math.PI * 2); ctx.fill(); }
-              if (npc.holdingFruit && !npc.isEating) { ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.arc(screenX + 28, screenY + 20, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#654321'; ctx.fillRect(screenX + 27, screenY + 15, 2, 3); }
+              if (npc.isEve) { ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8 + npcBob, 8, Math.PI, 0); ctx.fill(); ctx.fillRect(screenX + 8, screenY + 8 + npcBob, 4, 18); ctx.fillRect(screenX + 20, screenY + 8 + npcBob, 4, 18); }
+              else { ctx.beginPath(); ctx.arc(screenX + 16, screenY + 8 + npcBob, 8, Math.PI, 0); ctx.fill(); }
+              // Direction-aware eyes
+              const npcEyeOX = npcDir === 'left' ? -2 : npcDir === 'right' ? 2 : 0;
+              const npcEyeOY = npcDir === 'up'   ? -2 : npcDir === 'down'  ? 2 : 0;
+              if (npcDir !== 'up') {
+                ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(screenX + 13 + npcEyeOX, screenY + 10 + npcBob + npcEyeOY, 2.5, 0, Math.PI * 2); ctx.arc(screenX + 19 + npcEyeOX, screenY + 10 + npcBob + npcEyeOY, 2.5, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(screenX + 13 + npcEyeOX, screenY + 10 + npcBob + npcEyeOY, 1.2, 0, Math.PI * 2); ctx.arc(screenX + 19 + npcEyeOX, screenY + 10 + npcBob + npcEyeOY, 1.2, 0, Math.PI * 2); ctx.fill();
+              }
+              if (npc.isEating) { ctx.fillStyle = '#8b0000'; ctx.beginPath(); ctx.arc(screenX + 16, screenY + 14 + npcBob, 3, 0, Math.PI * 2); ctx.fill(); }
+              if (npc.holdingFruit && !npc.isEating) { ctx.fillStyle = '#cc0000'; ctx.beginPath(); ctx.arc(screenX + 28, screenY + 20 + npcBob, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = '#654321'; ctx.fillRect(screenX + 27, screenY + 15 + npcBob, 2, 3); }
             }
             if (!showDialogue && gamePhase === PHASES.EXPLORE) drawSpeechBubble(ctx, screenX + 16, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
             const nameText = npc.hasSpoken ? `✓ ${npc.name}` : npc.name;
@@ -644,15 +707,26 @@
 
         if (gamePhase === PHASES.EXPLORE) {
           const playerScreenX = (player.x - camera.x) * TILE_SIZE, playerScreenY = (player.y - camera.y) * TILE_SIZE;
-          ctx.fillStyle = '#4169e1'; ctx.fillRect(playerScreenX + 10, playerScreenY + 14, 12, 16);
-          drawLegs(ctx, playerScreenX, playerScreenY, player.walkFrame, player.isMoving, SKIN_COLOR);
-          ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(playerScreenX + 16, playerScreenY + 10, 8, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(playerScreenX + 16, playerScreenY + 8, 8, Math.PI, 0); ctx.fill();
-          ctx.fillStyle = '#fff';
+          const pBob = getBodyBob(player.walkFrame, player.isMoving);
+          const pFrame = Math.floor(player.walkFrame) % 4;
+          const pArmSwing = player.isMoving ? (pFrame < 2 ? -2 : 2) : 0;
+          // Body
+          ctx.fillStyle = '#4169e1'; ctx.fillRect(playerScreenX + 10, playerScreenY + 14 + pBob, 12, 14);
+          // Arms with swing
+          ctx.fillStyle = SKIN_COLOR;
+          ctx.fillRect(playerScreenX + 6,  playerScreenY + 15 + pBob + pArmSwing, 4, 10);
+          ctx.fillRect(playerScreenX + 22, playerScreenY + 15 + pBob - pArmSwing, 4, 10);
+          drawLegs(ctx, playerScreenX, playerScreenY + pBob, player.walkFrame, player.isMoving, SKIN_COLOR, player.direction);
+          // Head
+          ctx.fillStyle = SKIN_COLOR; ctx.beginPath(); ctx.arc(playerScreenX + 16, playerScreenY + 10 + pBob, 8, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = '#1a1a1a'; ctx.beginPath(); ctx.arc(playerScreenX + 16, playerScreenY + 8 + pBob, 8, Math.PI, 0); ctx.fill();
           const eyeOffsetX = player.direction === 'left' ? -2 : player.direction === 'right' ? 2 : 0;
-          const eyeOffsetY = player.direction === 'up' ? -2 : player.direction === 'down' ? 2 : 0;
-          ctx.beginPath(); ctx.arc(playerScreenX + 13 + eyeOffsetX, playerScreenY + 10 + eyeOffsetY, 2.5, 0, Math.PI * 2); ctx.arc(playerScreenX + 19 + eyeOffsetX, playerScreenY + 10 + eyeOffsetY, 2.5, 0, Math.PI * 2); ctx.fill();
-          ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(playerScreenX + 13 + eyeOffsetX, playerScreenY + 10 + eyeOffsetY, 1.2, 0, Math.PI * 2); ctx.arc(playerScreenX + 19 + eyeOffsetX, playerScreenY + 10 + eyeOffsetY, 1.2, 0, Math.PI * 2); ctx.fill();
+          const eyeOffsetY = player.direction === 'up'   ? -2 : player.direction === 'down'  ? 2 : 0;
+          if (player.direction !== 'up') {
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(playerScreenX + 13 + eyeOffsetX, playerScreenY + 10 + pBob + eyeOffsetY, 2.5, 0, Math.PI * 2); ctx.arc(playerScreenX + 19 + eyeOffsetX, playerScreenY + 10 + pBob + eyeOffsetY, 2.5, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#000'; ctx.beginPath(); ctx.arc(playerScreenX + 13 + eyeOffsetX, playerScreenY + 10 + pBob + eyeOffsetY, 1.2, 0, Math.PI * 2); ctx.arc(playerScreenX + 19 + eyeOffsetX, playerScreenY + 10 + pBob + eyeOffsetY, 1.2, 0, Math.PI * 2); ctx.fill();
+          }
         }
 
         if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE) {
