@@ -499,8 +499,9 @@
       }, [canMoveTo, canNPCMoveTo, showDialogue, touchDirection, gameTime, gamePhase, checkSceneTrigger]);
 
       const drawSpeechBubble = (ctx, x, y, text, isSerpent = false) => {
-        const maxWidth = 120, padding = 6, lineHeight = 12;
-        ctx.font = '9px monospace';
+        const FONT = 'bold 14px sans-serif';
+        const maxWidth = 240, padding = 11, lineHeight = 20;
+        ctx.font = FONT;
         const words = text.split(' ');
         const lines = [];
         let currentLine = '';
@@ -512,11 +513,11 @@
         if (currentLine) lines.push(currentLine);
         const bubbleWidth = Math.min(maxWidth, Math.max(...lines.map(l => ctx.measureText(l).width)) + padding * 2);
         const bubbleHeight = lines.length * lineHeight + padding * 2;
-        const bubbleX = x - bubbleWidth / 2, bubbleY = y - bubbleHeight - 20;
-        ctx.fillStyle = isSerpent ? 'rgba(30, 50, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-        ctx.strokeStyle = isSerpent ? '#4a7c4a' : '#666';
+        const bubbleX = x - bubbleWidth / 2, bubbleY = y - bubbleHeight - 26;
+        ctx.fillStyle = isSerpent ? 'rgba(20, 40, 20, 0.96)' : 'rgba(255, 255, 255, 0.96)';
+        ctx.strokeStyle = isSerpent ? '#5a9c5a' : '#444';
         ctx.lineWidth = 2;
-        const radius = 8;
+        const radius = 10;
         ctx.beginPath();
         ctx.moveTo(bubbleX + radius, bubbleY);
         ctx.lineTo(bubbleX + bubbleWidth - radius, bubbleY);
@@ -530,12 +531,12 @@
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
-        ctx.fillStyle = isSerpent ? 'rgba(30, 50, 30, 0.95)' : 'rgba(255, 255, 255, 0.95)';
-        ctx.beginPath(); ctx.arc(x - 4, bubbleY + bubbleHeight + 5, 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.beginPath(); ctx.arc(x, bubbleY + bubbleHeight + 11, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = isSerpent ? '#90EE90' : '#333';
-        ctx.font = '9px monospace';
-        lines.forEach((line, i) => { ctx.fillText(line, bubbleX + padding, bubbleY + padding + lineHeight * (i + 0.8)); });
+        ctx.fillStyle = isSerpent ? 'rgba(20, 40, 20, 0.96)' : 'rgba(255, 255, 255, 0.96)';
+        ctx.beginPath(); ctx.arc(x - 5, bubbleY + bubbleHeight + 6, 5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.arc(x - 1, bubbleY + bubbleHeight + 14, 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = isSerpent ? '#aaffaa' : '#111';
+        ctx.font = FONT;
+        lines.forEach((line, i) => { ctx.fillText(line, bubbleX + padding, bubbleY + padding + lineHeight * (i + 0.85)); });
       };
 
       // Pokemon Generation III TDSM-style sprite renderer.
@@ -825,12 +826,15 @@
             const cx = screenX + TILE_SIZE / 2;
             if (!showDialogue && gamePhase === PHASES.EXPLORE) drawSpeechBubble(ctx, cx, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
             const nameText = npc.hasSpoken ? `✓ ${npc.name}` : npc.name;
-            ctx.font = '12px monospace';
-            const nameWidth = ctx.measureText(nameText).width + 8;
-            ctx.fillStyle = npc.hasSpoken ? 'rgba(0,80,0,0.8)' : 'rgba(0,0,0,0.7)';
-            ctx.fillRect(cx - nameWidth / 2, screenY + 66, nameWidth, 15);
-            ctx.fillStyle = npc.isSerpent ? '#90EE90' : '#fff';
-            ctx.fillText(nameText, cx - nameWidth / 2 + 4, screenY + 78);
+            ctx.font = 'bold 14px sans-serif';
+            const nameWidth = ctx.measureText(nameText).width + 12;
+            const nameBoxH = 20, nameBoxY = screenY + 68;
+            ctx.fillStyle = npc.hasSpoken ? 'rgba(0,100,0,0.85)' : 'rgba(0,0,0,0.75)';
+            ctx.beginPath();
+            ctx.roundRect(cx - nameWidth / 2, nameBoxY, nameWidth, nameBoxH, 5);
+            ctx.fill();
+            ctx.fillStyle = npc.isSerpent ? '#aaffaa' : '#fff';
+            ctx.fillText(nameText, cx - nameWidth / 2 + 6, nameBoxY + 14);
           }
         });
 
