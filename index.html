@@ -528,9 +528,18 @@
         lines.forEach((line, i) => { ctx.fillText(line, bubbleX + padding, bubbleY + padding + lineHeight * (i + 0.8)); });
       };
 
-      // Unified GBA-style character sprite renderer.
-      // All parts are anchored to cx (horizontal centre) and baseY (top of head)
-      // so nothing ever detaches and both sides are perfectly symmetric.
+      // Pokemon Generation III TDSM-style sprite renderer.
+      // Chibi proportions: big head (~13 px, ~50 % of height), short body (7 px),
+      // short chunky legs (7 px + 2 px shoe).  Dark pixel outline on every part.
+      // All coordinates are anchored to cx (tile centre) so the sprite is always
+      // perfectly symmetric and nothing ever detaches.
+      //
+      // Layout (by = screenY + bob):
+      //   HEAD  : by+ 0 … by+13   (hair fills top half, face bottom half)
+      //   BODY  : by+13 … by+20
+      //   ARMS  : by+13 … by+20   (2 px wide, outside body)
+      //   LEGS  : by+20 … by+27
+      //   SHOES : by+26 … by+28
       const drawCharacterSprite = (ctx, screenX, screenY, opts) => {
         const {
           walkFrame = 0, isMoving = false, direction = 'down',
@@ -539,17 +548,17 @@
           holdingFruit = false, isEating = false, hasGlory = false, gameTime = 0,
         } = opts;
 
-        const frame  = Math.floor(walkFrame) % 4;
-        const bob    = isMoving && frame % 2 === 1 ? 1 : 0;   // whole-body 1-px bounce
-        const cx     = screenX + 16;                           // horizontal centre
-        const by     = screenY + bob;                          // top-of-head Y (shifts with bob)
+        const frame = Math.floor(walkFrame) % 4;
+        const bob   = isMoving && frame % 2 === 1 ? 1 : 0;
+        const cx    = screenX + 16;   // horizontal centre – never drifts
+        const by    = screenY + bob;  // head top
 
-        // Convenience: fill a rect relative to cx/by
+        // r(dx,dy,w,h,color) – fill a rect relative to cx / by
         const r = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + dx, by + dy, w, h); };
 
-        const outline = '#0a0500';
-        const shoeClr = '#1c1008';
-        const bClr    = showClothes ? '#8B7355' : bodyColor;
+        const DK   = '#0d0700';                              // dark pixel outline
+        const SH   = '#17100a';                              // shoe colour
+        const bClr = showClothes ? '#8b7355' : bodyColor;   // shirt / torso
 
         // ── GLORY AURA ────────────────────────────────────────────
         if (hasGlory) {
@@ -557,85 +566,87 @@
           ctx.shadowBlur  = 12 + Math.sin(gameTime * 0.15) * 4;
           ctx.fillStyle   = 'rgba(255,215,0,0.22)';
           ctx.beginPath();
-          ctx.ellipse(cx, by + 16, 13, 18, 0, 0, Math.PI * 2);
+          ctx.ellipse(cx, by + 14, 13, 16, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.shadowBlur = 0;
         }
 
-        // ── LEGS (drawn back-to-front so forward leg is on top) ───
-        // Body bottom = by+22, leg top = by+22  →  always connected.
-        // Shoe bottom = by+32.
-        const lLX = -6; const rLX = 1; const legW = 5; // left/right leg X offsets, width
+        // ── WALK STATE ────────────────────────────────────────────
+        const armSwg = isMoving ? (frame < 2 ? 2 : -2) : 0;  // arms swing opposite to legs
 
+        // ── LEGS  (body bottom = by+20 = leg top → always flush) ─
         if (!isMoving) {
-          // Standing – both legs identical
-          r(lLX, 22, legW, 7, bClr);  r(lLX - 1, 29, legW + 2, 3, shoeClr);
-          r(rLX, 22, legW, 7, bClr);  r(rLX - 1, 29, legW + 2, 3, shoeClr);
+          r(-5, 20, 4, 6, bClr);  r(-6, 26, 6, 2, SH);   // left leg + shoe
+          r( 1, 20, 4, 6, bClr);  r( 0, 26, 6, 2, SH);   // right leg + shoe
         } else if (direction === 'left' || direction === 'right') {
-          // Side view: front/back legs swing fore-aft
-          const swing  = frame === 1 ? 4 : frame === 3 ? -4 : 0;
-          const fwdOff = direction === 'right' ? rLX : lLX;
-          const bckOff = direction === 'right' ? lLX : rLX;
-          // Back leg first
-          r(bckOff, 22 - swing, legW, 8, bClr);
-          r(bckOff - 1, 30 - swing, legW + 1, 2, shoeClr);
-          // Front leg on top
-          r(fwdOff, 22 + swing, legW, 8, bClr);
-          r(fwdOff - 1, 30 + swing, legW + 2, 2, shoeClr);
+          // Side view – legs swing fore / aft
+          const sw   = frame === 1 ? 4 : frame === 3 ? -4 : 0;
+          const fwdX = direction === 'right' ?  1 : -5;
+          const bckX = direction === 'right' ? -5 :  1;
+          r(bckX, 20 - sw, 4, 6, bClr);  r(bckX - 1, 26 - sw, 5, 2, SH);  // back leg
+          r(fwdX, 20 + sw, 4, 6, bClr);  r(fwdX - 1, 26 + sw, 6, 2, SH);  // front leg
         } else {
-          // Front/back view: legs alternate height (one forward = longer + lower)
-          const lFwd = frame < 2;
-          const fX = lFwd ? lLX : rLX;
-          const bX = lFwd ? rLX : lLX;
-          // Back leg: 5 tall, higher start
-          r(bX, 25, legW, 4, bClr);  r(bX - 1, 29, legW + 1, 2, shoeClr);
-          // Forward leg: 9 tall, lower start (extends further, shows depth)
-          r(fX, 22, legW, 7, bClr);  r(fX - 1, 29, legW + 2, 3, shoeClr);
+          // Front / back – one leg steps forward (full height), one back (shorter)
+          const fwdX = frame < 2 ? -5 :  1;
+          const bckX = frame < 2 ?  1 : -5;
+          r(bckX, 23, 4, 3, bClr);  r(bckX - 1, 26, 5, 2, SH);  // back leg
+          r(fwdX, 20, 4, 6, bClr);  r(fwdX - 1, 26, 6, 2, SH);  // forward leg
         }
 
-        // ── BODY (connects directly to leg top at by+22) ──────────
-        r(-6, 12, 12, 10, bClr);
+        // ── BODY  (by+13 … by+20) ─────────────────────────────────
+        r(-6, 12, 12, 9, DK);     // outline
+        r(-5, 13, 10, 7, bClr);   // fill
 
-        // ── ARMS (symmetric: left at cx-9, right at cx+6, 3px wide each) ──
-        const armSwg = isMoving ? (frame < 2 ? -2 : 2) : 0;
-        r(-9, 13 + armSwg, 3, 8, skinColor);  // left arm
-        r( 6, 13 - armSwg, 3, 8, skinColor);  // right arm
+        // ── ARMS  (2 px wide, skin coloured, outside body) ────────
+        r(-8, 13 + armSwg, 3, 7, DK);    r(-8, 14 + armSwg, 2, 5, skinColor);  // left
+        r( 5, 13 - armSwg, 3, 7, DK);    r( 5, 14 - armSwg, 2, 5, skinColor);  // right
 
-        // ── HEAD (outline then fill; always centered on cx) ───────
-        r(-7, 0, 14, 13, outline);          // dark outline box
-        r(-6, 1, 12, 11, skinColor);        // skin fill
+        // ── HEAD  (by+0 … by+13) ──────────────────────────────────
+        // Gen III chibi: head ≈ 50 % of total height.
+        // Dark outline box → base skin → hair overlay → eyes on top.
 
-        // Hair
+        r(-7, 0, 14, 14, DK);          // dark outline (1 px border)
+        r(-6, 1, 12, 12, skinColor);   // base skin fill
+
+        // HAIR – direction specific
         if (direction === 'up') {
-          r(-6, 1, 12, 11, hairColor);      // facing away – whole head is hair
+          r(-6, 1, 12, 12, hairColor); // back-of-head: all hair
+        } else if (direction === 'left') {
+          r(-6, 1, 12, 7, hairColor);  // top hair band (generous, Gen III style)
+          r( 3, 1,  3, 12, hairColor); // right-side hair visible in left profile
+        } else if (direction === 'right') {
+          r(-6, 1, 12, 7, hairColor);
+          r(-6, 1,  3, 12, hairColor); // left-side hair visible in right profile
         } else {
-          r(-6, 1, 12, 4, hairColor);       // top hair band
-        }
-        if (isEve && direction !== 'up') {
-          r(-6, 5, 2, 8, hairColor);        // left flowing strand
-          r( 4, 5, 2, 8, hairColor);        // right flowing strand
+          r(-6, 1, 12, 7, hairColor);  // facing down: thick top band (covers ~60 % of head)
         }
 
-        // Eyes (hidden when facing up)
+        // Chavvah / Eve: long flowing side strands (outside head outline)
+        if (isEve && direction !== 'up') {
+          r(-9, 5, 3, 10, hairColor);
+          r( 6, 5, 3, 10, hairColor);
+        }
+
+        // EYES – two when facing down, one when facing sideways, none when facing up
         if (direction !== 'up') {
-          const eox = direction === 'left' ? -2 : direction === 'right' ? 2 : 0;
-          const eoy = direction === 'down' ? 2 : 0;
-          r(-4 + eox, 6 + eoy, 3, 3, '#fff');    // left eye white
-          r( 1 + eox, 6 + eoy, 3, 3, '#fff');    // right eye white
-          r(-3 + eox, 7 + eoy, 2, 2, '#2a1800'); // left pupil
-          r( 2 + eox, 7 + eoy, 2, 2, '#2a1800'); // right pupil
+          if (direction !== 'left') {   // right eye (visible facing down or right)
+            r( 1, 9, 3, 3, '#f0f0f0');
+            r( 2, 10, 2, 2, DK);
+          }
+          if (direction !== 'right') {  // left eye (visible facing down or left)
+            r(-4, 9, 3, 3, '#f0f0f0');
+            r(-4, 10, 2, 2, DK);
+          }
         }
 
         // Eating indicator
-        if (isEating) { r(-2, 10, 4, 2, '#8b0000'); }
+        if (isEating) { r(-2, 11, 4, 2, '#8b0000'); }
 
-        // Held fruit (to the right of body)
+        // Held fruit (held to the right of body)
         if (holdingFruit && !isEating) {
           ctx.fillStyle = '#cc0000';
-          ctx.beginPath();
-          ctx.arc(cx + 11, by + 17, 4, 0, Math.PI * 2);
-          ctx.fill();
-          r(9, 13, 2, 4, '#654321'); // stem
+          ctx.beginPath(); ctx.arc(cx + 10, by + 17, 4, 0, Math.PI * 2); ctx.fill();
+          r(8, 13, 2, 4, '#654321'); // stem
         }
       };
 
