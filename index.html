@@ -212,17 +212,18 @@
       }
       map[TOL.y][TOL.x] = TILES.TREE_OF_LIFE;
       map[TOK.y][TOK.x] = TILES.TREE_OF_KNOWLEDGE;
-      // Place Golden Gate at the east end of the horizontal path (x=65, y=26)
-      const GATE_POS = { x: 65, y: 26 };
-      for (let dy = -3; dy <= 3; dy++) {
-        for (let dx = -3; dx <= 3; dx++) {
-          const nx = GATE_POS.x + dx, ny = GATE_POS.y + dy;
-          if (map[ny] && map[ny][nx] !== undefined && !(dx === 0 && dy === 0)) {
-            if ([TILES.TREE, TILES.ROCK, TILES.BUSH].includes(map[ny][nx])) map[ny][nx] = TILES.GRASS;
-          }
-        }
+      // ── Golden Gate + Eastern Path ────────────────────────────────────────
+      const GATE = { x: 65, y: 26 };
+      // Carve a visible PATH corridor east of the gate all the way to the map edge
+      for (let x = GATE.x + 1; x < MAP_WIDTH; x++) map[GATE.y][x] = TILES.PATH;
+      // Flanking tree walls N and S of the gate — player cannot walk around it
+      for (let dx = -1; dx <= 3; dx++) {
+        const nx = GATE.x + dx;
+        if (map[GATE.y - 1] && map[GATE.y - 1][nx] !== undefined) map[GATE.y - 1][nx] = TILES.TREE;
+        if (map[GATE.y + 1] && map[GATE.y + 1][nx] !== undefined) map[GATE.y + 1][nx] = TILES.TREE;
       }
-      map[GATE_POS.y][GATE_POS.x] = TILES.GOLDEN_GATE;
+      map[GATE.y][GATE.x] = TILES.GOLDEN_GATE;
+      // ─────────────────────────────────────────────────────────────────────
       // Clear a walkable ring around each special tree
       for (let dy = -3; dy <= 3; dy++) {
         for (let dx = -3; dx <= 3; dx++) {
@@ -254,9 +255,9 @@
       },
       {
         id: 'malak', name: 'Malak', x: 63, y: 26, prevX: 63, prevY: 26, color: SKIN_COLOR, hairColor: '#1a1a1a', isAngel: true,
-        thoughts: ["None may pass the SHA'AR ZAHAV...", "The flaming sword turns every way!", "I guard the eastern gate of the garden."],
-        dialogue: ["Shalom. I am a malak of YAHUAH.", "I watch over this qodesh garden.", "Behind me stands the Sha'ar Zahav - the Golden Gate.", "None may enter or leave without YAHUAH's permission.", "YAHUAH ELOHIYM has set his watchmen here.", "Guard your heart, child of the Most High."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 63, y: 26}, {x: 63, y: 24}, {x: 63, y: 28}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
+        thoughts: ["None may pass the Sha'ar Zahav!", "The flaming sword turns every way...", "I guard the eastern gate of Eden."],
+        dialogue: ["Shalom. I am a malak of YAHUAH.", "I stand guard at the Sha'ar Zahav - the Golden Gate.", "None may pass through this gate without YAHUAH's word.", "Beyond lies the path out of the garden.", "YAHUAH set cherubim to guard the way.", "Turn back, child. The garden is your dwelling."],
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 63, y: 26}, {x: 61, y: 26}, {x: 63, y: 26}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'right', hasSpoken: false,
       }
     ];
 
