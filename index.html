@@ -163,13 +163,13 @@
 
     const TILE_SIZE = 64;
     const SCALE = 2;            // sprite / decoration scale (= TILE_SIZE / 32)
-    const MAP_WIDTH = 40;
-    const MAP_HEIGHT = 30;
+    const MAP_WIDTH = 80;
+    const MAP_HEIGHT = 60;
     const VIEWPORT_WIDTH  = Math.ceil(window.innerWidth  / TILE_SIZE) + 2;
     const VIEWPORT_HEIGHT = Math.ceil(window.innerHeight / TILE_SIZE) + 2;
 
-    const GARDEN_BOUNDS = { minX: 5, maxX: 35, minY: 5, maxY: 20 };
-    const TREE_OF_KNOWLEDGE = { x: 10, y: 10 };
+    const GARDEN_BOUNDS = { minX: 10, maxX: 70, minY: 10, maxY: 48 };
+    const TREE_OF_KNOWLEDGE = { x: 20, y: 22 };
     const SKIN_COLOR = '#5D4037';
 
     const TILES = {
@@ -185,32 +185,36 @@
     };
 
     const generateMap = () => {
+      const TOL = { x: 56, y: 20 };   // Tree of Life
+      const TOK = TREE_OF_KNOWLEDGE;   // { x: 20, y: 22 }
       const map = [];
       for (let y = 0; y < MAP_HEIGHT; y++) {
         const row = [];
         for (let x = 0; x < MAP_WIDTH; x++) {
-          if (y >= 22 && y <= 25) row.push(TILES.WATER);
-          else if ((x === 15 && y >= 5 && y <= 20) || (y === 12 && x >= 8 && x <= 28)) row.push(TILES.PATH);
-          else if (x < 3 || x > MAP_WIDTH - 4 || y < 3 || y > MAP_HEIGHT - 4) row.push(Math.random() > 0.3 ? TILES.TREE : TILES.GRASS);
+          // River
+          if (y >= 46 && y <= 50) row.push(TILES.WATER);
+          // Garden paths: vertical spine x=30, horizontal corridor y=26
+          else if ((x === 30 && y >= 10 && y <= 45) || (y === 26 && x >= 14 && x <= 66)) row.push(TILES.PATH);
+          // Dense tree border around the whole map
+          else if (x < 6 || x > MAP_WIDTH - 7 || y < 6 || y > MAP_HEIGHT - 7) row.push(Math.random() > 0.25 ? TILES.TREE : TILES.GRASS);
           else {
             const rand = Math.random();
-            if (rand < 0.05) row.push(TILES.TREE);
-            else if (rand < 0.08) row.push(TILES.FLOWER);
-            else if (rand < 0.1) row.push(TILES.BUSH);
-            else if (rand < 0.11) row.push(TILES.ROCK);
+            if (rand < 0.04) row.push(TILES.TREE);
+            else if (rand < 0.07) row.push(TILES.FLOWER);
+            else if (rand < 0.09) row.push(TILES.BUSH);
+            else if (rand < 0.10) row.push(TILES.ROCK);
             else row.push(TILES.GRASS);
           }
         }
         map.push(row);
       }
-      map[10][28] = TILES.TREE_OF_LIFE;
-      map[TREE_OF_KNOWLEDGE.y][TREE_OF_KNOWLEDGE.x] = TILES.TREE_OF_KNOWLEDGE;
-      for (let dy = -2; dy <= 2; dy++) {
-        for (let dx = -2; dx <= 2; dx++) {
-          if (map[10 + dy]) {
-            if (map[10 + dy][28 + dx] !== undefined && map[10 + dy][28 + dx] !== TILES.TREE_OF_LIFE) map[10 + dy][28 + dx] = TILES.GRASS;
-            if (map[TREE_OF_KNOWLEDGE.y + dy] && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== undefined && map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] !== TILES.TREE_OF_KNOWLEDGE) map[TREE_OF_KNOWLEDGE.y + dy][TREE_OF_KNOWLEDGE.x + dx] = TILES.GRASS;
-          }
+      map[TOL.y][TOL.x] = TILES.TREE_OF_LIFE;
+      map[TOK.y][TOK.x] = TILES.TREE_OF_KNOWLEDGE;
+      // Clear a walkable ring around each special tree
+      for (let dy = -3; dy <= 3; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
+          if (map[TOL.y + dy] && map[TOL.y + dy][TOL.x + dx] !== undefined && map[TOL.y + dy][TOL.x + dx] !== TILES.TREE_OF_LIFE) map[TOL.y + dy][TOL.x + dx] = TILES.GRASS;
+          if (map[TOK.y + dy] && map[TOK.y + dy][TOK.x + dx] !== undefined && map[TOK.y + dy][TOK.x + dx] !== TILES.TREE_OF_KNOWLEDGE) map[TOK.y + dy][TOK.x + dx] = TILES.GRASS;
         }
       }
       return map;
@@ -218,28 +222,28 @@
 
     const createNPCs = () => [
       {
-        id: 'adam', name: "A'dam", x: 20, y: 14, prevX: 20, prevY: 14, color: SKIN_COLOR, hairColor: '#1a1a1a',
+        id: 'adam', name: "A'dam", x: 38, y: 30, prevX: 38, prevY: 30, color: SKIN_COLOR, hairColor: '#1a1a1a',
         thoughts: ["YAHUAH formed me from the dust...", "I am to dress and keep this garden.", "She is bone of my bones..."],
         dialogue: ["Shalom, traveler. I am A'dam.", "YAHUAH ELOHIYM formed me of the dust of the ground.", "He breathed into my nostrils the breath of life.", "I became a living nephesh.", "YAHUAH put me in the Garden of Eden to dress it and keep it.", "Of every tree I may freely eat...", "But of the Ets HaDa'at Tov v'Ra, I shall not eat.", "For in the day I eat thereof, I shall surely die."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 20, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 38, homeY: 30, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
       },
       {
-        id: 'chavvah', name: 'Chavvah', x: 22, y: 14, prevX: 22, prevY: 14, color: SKIN_COLOR, hairColor: '#1a1a1a', isEve: true,
+        id: 'chavvah', name: 'Chavvah', x: 42, y: 30, prevX: 42, prevY: 30, color: SKIN_COLOR, hairColor: '#1a1a1a', isEve: true,
         thoughts: ["The garden is so beautiful...", "That tree... the fruit looks good...", "The nachash says we won't die..."],
         dialogue: ["I am Chavvah, the mother of all living.", "YAHUAH ELOHIYM caused a deep sleep upon A'dam.", "He took one of his ribs and made me.", "We may eat of the fruit of the trees of the garden.", "But of the tree in the midst of the garden...", "ELOHIYM has said, Ye shall not eat of it.", "Neither shall ye touch it, lest ye die.", "But the nachash says our eyes will be opened..."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 22, homeY: 14, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 42, homeY: 30, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
       },
       {
-        id: 'nachash', name: 'Nachash', x: 10, y: 12, prevX: 10, prevY: 12, color: '#228b22', isSerpent: true,
+        id: 'nachash', name: 'Nachash', x: 20, y: 24, prevX: 20, prevY: 24, color: '#228b22', isSerpent: true,
         thoughts: ["Yea, hath ELOHIYM said...?", "Ye shall not surely die...", "Your eyes shall be opened..."],
         dialogue: ["Yea, hath ELOHIYM said...", "Ye shall not eat of every tree of the garden?", "Ye shall not surely die.", "For ELOHIYM knows that in the day ye eat thereof...", "Your eyes shall be opened.", "And ye shall be as elohiym...", "Knowing good and evil.", "Is the fruit not pleasant to the eyes?"],
         currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'circle_tree', circleAngle: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
       },
       {
-        id: 'malak', name: 'Malak', x: 28, y: 8, prevX: 28, prevY: 8, color: SKIN_COLOR, hairColor: '#1a1a1a', isAngel: true,
+        id: 'malak', name: 'Malak', x: 56, y: 18, prevX: 56, prevY: 18, color: SKIN_COLOR, hairColor: '#1a1a1a', isAngel: true,
         thoughts: ["Holy, holy, holy is YAHUAH!", "I guard the Ets Chayim.", "The flaming sword turns every way..."],
         dialogue: ["Shalom. I am a malak of YAHUAH.", "I watch over this qodesh garden.", "Behold, the Ets Chayim - the Tree of Life!", "And there - the Ets HaDa'at Tov v'Ra.", "YAHUAH ELOHIYM has forbidden its fruit.", "Guard your heart, child of the Most High."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 28, y: 8}, {x: 26, y: 10}, {x: 30, y: 10}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'patrol', patrolPoints: [{x: 56, y: 18}, {x: 53, y: 21}, {x: 59, y: 21}], patrolIndex: 0, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false,
       }
     ];
 
@@ -253,7 +257,7 @@
     const GenesisGame = () => {
       const canvasRef = useRef(null);
       const [map] = useState(generateMap);
-      const [player, setPlayer] = useState({ x: 17, y: 16, prevX: 17, prevY: 16, direction: 'down', walkFrame: 0, isMoving: false });
+      const [player, setPlayer] = useState({ x: 35, y: 30, prevX: 35, prevY: 30, direction: 'down', walkFrame: 0, isMoving: false });
       const [npcs, setNpcs] = useState(createNPCs);
       const [camera, setCamera] = useState({ x: 0, y: 0 });
       const [showDialogue, setShowDialogue] = useState(null);
@@ -676,26 +680,63 @@
             if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
               const tile = map[mapY][mapX];
               const screenX = (x - (camera.x % 1)) * TILE_SIZE, screenY = (y - (camera.y % 1)) * TILE_SIZE;
-              ctx.fillStyle = (mapX + mapY) % 2 === 0 ? COLORS.grass : COLORS.grassDark;
+
+              // ── Natural grass base (no checkerboard) ─────────────────
+              const gh = ((mapX * 1234567 + mapY * 891011) >>> 0) % 100;
+              const grassBases = ['#4e7c2b', '#527f2e', '#4a7828', '#568231', '#4c7a2c'];
+              ctx.fillStyle = grassBases[gh % 5];
               ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+              // Occasional subtle earth patch
+              if (gh < 18) {
+                ctx.fillStyle = 'rgba(90,62,28,0.18)';
+                ctx.fillRect(screenX + (gh * 5) % 44, screenY + (gh * 7) % 44, 14, 12);
+              }
+              // Dark grass blade strokes
+              ctx.fillStyle = '#3a6020';
+              for (let bi = 0; bi < 5; bi++) {
+                ctx.fillRect(screenX + (gh*(bi+1)*13+mapX)%58+2, screenY + (gh*(bi+1)*7+mapY)%56+2, 2, 5);
+              }
+              // Light grass highlight strokes
+              ctx.fillStyle = '#6aaa3e';
+              for (let bi = 0; bi < 3; bi++) {
+                ctx.fillRect(screenX + (gh*(bi+4)*17)%58+2, screenY + (gh*(bi+4)*11)%56+2, 2, 3);
+              }
+
               switch (tile) {
                 case TILES.WATER:
                   ctx.fillStyle = (gameTime + mapX + mapY) % 20 < 10 ? COLORS.water : COLORS.waterLight;
                   ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  // Ripple highlight
+                  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+                  ctx.fillRect(screenX + ((gameTime + mapX*3)%48)+4, screenY + ((gameTime*2+mapY*5)%48)+4, 18, 4);
                   break;
                 case TILES.TREE:
                   ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
                   ctx.fillStyle = COLORS.treeTrunk; ctx.fillRect(12, 16, 8, 16);
                   ctx.fillStyle = COLORS.tree; ctx.beginPath(); ctx.arc(16, 12, 14, 0, Math.PI * 2); ctx.fill();
+                  // Canopy highlight
+                  ctx.fillStyle = 'rgba(255,255,255,0.10)';
+                  ctx.beginPath(); ctx.arc(13, 8, 7, 0, Math.PI * 2); ctx.fill();
                   ctx.restore();
                   break;
                 case TILES.FLOWER:
                   ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
                   ctx.fillStyle = mapX % 2 === 0 ? COLORS.flower : COLORS.flowerYellow;
-                  ctx.beginPath(); ctx.arc(16, 16, 4, 0, Math.PI * 2); ctx.fill();
+                  ctx.beginPath(); ctx.arc(16, 18, 5, 0, Math.PI * 2); ctx.fill();
+                  ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(16, 18, 2, 0, Math.PI * 2); ctx.fill();
                   ctx.restore();
                   break;
-                case TILES.PATH: ctx.fillStyle = COLORS.path; ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE); break;
+                case TILES.PATH: {
+                  // Dirt path with subtle pebble texture
+                  const ph = ((mapX * 2345 + mapY * 6789) >>> 0) % 100;
+                  ctx.fillStyle = '#9b7d52';
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  ctx.fillStyle = '#7a6040';
+                  for (let pi = 0; pi < 4; pi++) ctx.fillRect(screenX + (ph*(pi+1)*11)%56+4, screenY + (ph*(pi+1)*7)%56+4, 5, 3);
+                  ctx.fillStyle = '#c0a070';
+                  for (let pi = 0; pi < 3; pi++) ctx.fillRect(screenX + (ph*(pi+4)*17)%56+4, screenY + (ph*(pi+4)*13)%56+4, 3, 2);
+                  break;
+                }
                 case TILES.ROCK:
                   ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
                   ctx.fillStyle = COLORS.rock; ctx.beginPath(); ctx.ellipse(16, 20, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
