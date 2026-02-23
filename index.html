@@ -575,13 +575,14 @@
 
         // ── LEGS  (tops ALWAYS at by+20 = body bottom; never detach) ─────
         if (isSide) {
-          // Side profile: single centered leg (mirrors the single centered arm).
-          // Walk motion is shown by swinging the shoe in the direction of travel.
-          const footShift = !isMoving ? 0 :
-            frame === 1 ? (direction === 'right' ?  2 : -2) :
-            frame === 3 ? (direction === 'right' ? -2 :  2) : 0;
-          r(-2, 20, 4, 6, bClr);               // leg (centered on body)
-          r(-3 + footShift, 26, 7, 2, SH);     // shoe swings forward / back
+          // Side profile: wider leg implies two overlapping legs in profile.
+          // Two shoes swing in opposite phase to mimic a two-footed stride.
+          const dir = direction === 'right' ? 1 : -1;
+          const fStep = !isMoving ? 0 : frame === 1 ?  2*dir : frame === 3 ? -2*dir : 0;
+          const bStep = !isMoving ? 0 : frame === 1 ? -2*dir : frame === 3 ?  2*dir : 0;
+          r(-3, 20, 6, 6, bClr);               // wider leg (two legs overlapping in profile)
+          r(-4 + bStep, 26, 7, 2, bClr);       // back shoe (body colour = depth cue)
+          r(-4 + fStep, 26, 7, 2, SH);         // front shoe swings forward / back
         } else if (!isMoving) {
           r(-5, 20, 4, 6, bClr);  r(-6, 26, 6, 2, SH);  // left
           r( 1, 20, 4, 6, bClr);  r( 0, 26, 6, 2, SH);  // right
