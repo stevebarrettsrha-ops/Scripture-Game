@@ -574,18 +574,17 @@
         const isSide = direction === 'left' || direction === 'right';
 
         // ── LEGS  (tops ALWAYS at by+20 = body bottom; never detach) ─────
-        // Depth illusion: forward leg is full height (6 px), back leg shorter (4 px).
-        // We NEVER shift the leg top Y — only the shoe position changes with height.
-        if (!isMoving) {
+        if (isSide) {
+          // Side profile: single centered leg (mirrors the single centered arm).
+          // Walk motion is shown by swinging the shoe in the direction of travel.
+          const footShift = !isMoving ? 0 :
+            frame === 1 ? (direction === 'right' ?  2 : -2) :
+            frame === 3 ? (direction === 'right' ? -2 :  2) : 0;
+          r(-2, 20, 4, 6, bClr);               // leg (centered on body)
+          r(-3 + footShift, 26, 7, 2, SH);     // shoe swings forward / back
+        } else if (!isMoving) {
           r(-5, 20, 4, 6, bClr);  r(-6, 26, 6, 2, SH);  // left
           r( 1, 20, 4, 6, bClr);  r( 0, 26, 6, 2, SH);  // right
-        } else if (isSide) {
-          // Alternate which leg leads every two frames
-          const rightLeads = frame < 2;
-          const fwdX = rightLeads ?  1 : -5;   // full-height front leg
-          const bckX = rightLeads ? -5 :  1;   // shorter back leg
-          r(bckX, 20, 4, 4, bClr);  r(bckX - 1, 24, 5, 2, SH);  // back (shorter)
-          r(fwdX, 20, 4, 6, bClr);  r(fwdX - 1, 26, 6, 2, SH);  // front (full)
         } else {
           // Front / back view: alternate which leg strides
           const fwdX = frame < 2 ? -5 :  1;
