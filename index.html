@@ -293,13 +293,20 @@
         if (x < GARDEN_BOUNDS.minX || x > GARDEN_BOUNDS.maxX || y < GARDEN_BOUNDS.minY || y > GARDEN_BOUNDS.maxY) return false;
         if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
         const tile = map[Math.floor(y)][Math.floor(x)];
-        return tile !== TILES.WATER && tile !== TILES.TREE && tile !== TILES.ROCK && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE && tile !== TILES.GOLDEN_GATE;
+        return tile === TILES.GRASS || tile === TILES.PATH;
       }, [map]);
 
-      const canMoveTo = useCallback((x, y) => {
+      const canMoveTo = useCallback((x, y, currentNpcs) => {
         if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
         const tile = map[Math.floor(y)][Math.floor(x)];
-        return tile !== TILES.WATER && tile !== TILES.TREE && tile !== TILES.ROCK && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE && tile !== TILES.GOLDEN_GATE;
+        if (tile !== TILES.GRASS && tile !== TILES.PATH) return false;
+        // Block walking through NPCs
+        if (currentNpcs) {
+          for (const npc of currentNpcs) {
+            if (Math.abs(x - npc.x) < 0.8 && Math.abs(y - npc.y) < 0.8) return false;
+          }
+        }
+        return true;
       }, [map]);
 
       useEffect(() => {
@@ -428,9 +435,9 @@
               if (left) { newX -= speed; newDir = 'left'; }
               if (right) { newX += speed; newDir = 'right'; }
               let finalX = prev.x, finalY = prev.y;
-              if (canMoveTo(newX, newY)) { finalX = newX; finalY = newY; }
-              else if (canMoveTo(newX, prev.y)) { finalX = newX; }
-              else if (canMoveTo(prev.x, newY)) { finalY = newY; }
+              if (canMoveTo(newX, newY, npcs)) { finalX = newX; finalY = newY; }
+              else if (canMoveTo(newX, prev.y, npcs)) { finalX = newX; }
+              else if (canMoveTo(prev.x, newY, npcs)) { finalY = newY; }
               const isMoving = finalX !== prev.x || finalY !== prev.y;
               const walkFrame = isMoving ? (prev.walkFrame + 0.3) % 4 : 0;
               return { x: finalX, y: finalY, prevX: prev.x, prevY: prev.y, direction: newDir, walkFrame, isMoving };
