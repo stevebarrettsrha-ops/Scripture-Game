@@ -1154,55 +1154,69 @@
               x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
             }
             ctx.stroke();
-            // fish swimming
-            for (let i = 0; i < 10; i++) {
-              const fx = ((pr(i) * W + t * (1 + pr(i + 5)) * 0.8) % (W + 60)) - 30;
-              const fy = H * 0.48 + pr(i + 20) * H * 0.4;
-              const fs = 6 + pr(i + 30) * 8;
-              const fc = i % 3 === 0 ? '#ff8844' : i % 3 === 1 ? '#44aaff' : '#88cc44';
-              ctx.fillStyle = fc;
+            // light rays under water
+            ctx.save();
+            ctx.globalAlpha = 0.04;
+            for (let i = 0; i < 6; i++) {
+              const rx = W * 0.15 + i * W * 0.14;
+              ctx.fillStyle = '#88ccff';
               ctx.beginPath();
-              ctx.ellipse(fx, fy, fs, fs * 0.5, 0, 0, Math.PI * 2);
+              ctx.moveTo(rx - 8, H * 0.38);
+              ctx.lineTo(rx - 30, H);
+              ctx.lineTo(rx + 30, H);
+              ctx.lineTo(rx + 8, H * 0.38);
               ctx.fill();
-              // tail
-              ctx.beginPath();
-              ctx.moveTo(fx - fs, fy);
-              ctx.lineTo(fx - fs - fs * 0.6, fy - fs * 0.4);
-              ctx.lineTo(fx - fs - fs * 0.6, fy + fs * 0.4);
-              ctx.fill();
-              // eye
-              ctx.fillStyle = '#111';
-              ctx.beginPath(); ctx.arc(fx + fs * 0.4, fy - fs * 0.12, 1.5, 0, Math.PI * 2); ctx.fill();
             }
-            // whale
-            ctx.fillStyle = '#2a4a6a';
-            const wx = ((t * 0.3) % (W + 200)) - 100;
-            ctx.beginPath();
-            ctx.ellipse(wx, H * 0.72, 50, 22, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#3a5a7a';
-            ctx.beginPath(); ctx.ellipse(wx, H * 0.72 - 4, 45, 16, 0, 0, Math.PI * 2); ctx.fill();
-            // whale tail
-            ctx.fillStyle = '#2a4a6a';
-            ctx.beginPath();
-            ctx.moveTo(wx - 48, H * 0.72);
-            ctx.quadraticCurveTo(wx - 70, H * 0.72 - 18, wx - 80, H * 0.72 - 25);
-            ctx.quadraticCurveTo(wx - 70, H * 0.72, wx - 80, H * 0.72 + 15);
-            ctx.quadraticCurveTo(wx - 70, H * 0.72 + 5, wx - 48, H * 0.72);
-            ctx.fill();
-            // birds in sky
-            for (let i = 0; i < 8; i++) {
-              const bx = ((pr(i + 60) * W + t * (0.5 + pr(i + 70) * 0.6)) % (W + 40)) - 20;
-              const byy = H * 0.08 + pr(i + 80) * H * 0.25;
-              const wingA = Math.sin(t * 0.15 + i * 3) * 0.4;
-              ctx.strokeStyle = '#222';
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.moveTo(bx - 8, byy + wingA * 8);
-              ctx.quadraticCurveTo(bx - 3, byy - 4 + wingA * 6, bx, byy);
-              ctx.quadraticCurveTo(bx + 3, byy - 4 + wingA * 6, bx + 8, byy + wingA * 8);
-              ctx.stroke();
+            ctx.restore();
+            // bubbles
+            for (let i = 0; i < 12; i++) {
+              const bx = (pr(i + 150) * W + Math.sin(t * 0.03 + i) * 15);
+              const by = H - ((t * 0.4 + pr(i + 160) * H) % (H * 0.55));
+              ctx.strokeStyle = `rgba(180,220,255,${0.15 + 0.1 * Math.sin(t * 0.06 + i)})`;
+              ctx.lineWidth = 1;
+              ctx.beginPath(); ctx.arc(bx, by + H * 0.4, 2 + pr(i + 170) * 4, 0, Math.PI * 2); ctx.stroke();
             }
+            // emoji fish swimming at various depths
+            const fishEmoji = ['\uD83D\uDC1F', '\uD83D\uDC20', '\uD83D\uDC21', '\uD83D\uDC1F', '\uD83D\uDC20', '\uD83D\uDC21', '\uD83D\uDC1F', '\uD83D\uDC20'];
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            for (let i = 0; i < fishEmoji.length; i++) {
+              const speed = 0.4 + pr(i + 5) * 0.6;
+              const fx = ((pr(i) * W + t * speed) % (W + 60)) - 30;
+              const fy = H * 0.46 + pr(i + 20) * H * 0.3;
+              const sz = 18 + pr(i + 30) * 16;
+              const bob = Math.sin(t * 0.08 + i * 2.5) * 5;
+              ctx.save();
+              ctx.translate(fx, fy + bob);
+              // flip fish facing right (moving right)
+              ctx.scale(-1, 1);
+              ctx.font = `${sz}px serif`;
+              ctx.fillText(fishEmoji[i], 0, 0);
+              ctx.restore();
+            }
+            // emoji whale swimming slowly
+            const wx = ((t * 0.25) % (W + 300)) - 150;
+            const wBob = Math.sin(t * 0.03) * 6;
+            ctx.save();
+            ctx.translate(wx, H * 0.72 + wBob);
+            ctx.scale(-1, 1);
+            ctx.font = `${Math.max(48, W * 0.08)}px serif`;
+            ctx.fillText('\uD83D\uDC0B', 0, 0);
+            ctx.restore();
+            // emoji birds in the sky (various types)
+            const birdEmoji = ['\uD83D\uDD4A\uFE0F', '\uD83E\uDD85', '\uD83E\uDD86', '\uD83D\uDC26', '\uD83E\uDD9C', '\uD83D\uDD4A\uFE0F', '\uD83D\uDC26', '\uD83E\uDD85'];
+            for (let i = 0; i < birdEmoji.length; i++) {
+              const bx = ((pr(i + 60) * W + t * (0.5 + pr(i + 70) * 0.8)) % (W + 60)) - 30;
+              const byy = H * 0.06 + pr(i + 80) * H * 0.26;
+              const bSz = 18 + pr(i + 90) * 14;
+              const flap = Math.sin(t * 0.15 + i * 3) * 3;
+              ctx.save();
+              ctx.translate(bx, byy + flap);
+              ctx.scale(-1, 1); // face right
+              ctx.font = `${bSz}px serif`;
+              ctx.fillText(birdEmoji[i], 0, 0);
+              ctx.restore();
+            }
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
             break;
           }
 
@@ -1218,28 +1232,45 @@
             ctx.fillRect(0, H * 0.55, W, H * 0.45);
             ctx.fillStyle = '#3d6a20';
             ctx.fillRect(0, H * 0.55, W, 4);
-            // simple animal silhouettes walking across
-            const animals = [
-              { ox: 0.15, oy: 0.65, s: 1.0 },   // cattle
-              { ox: 0.4,  oy: 0.7,  s: 0.7 },   // small beast
-              { ox: 0.6,  oy: 0.62, s: 1.2 },   // large beast
-              { ox: 0.8,  oy: 0.72, s: 0.5 },   // creeping thing
-              { ox: 0.25, oy: 0.78, s: 0.6 },   // another
+            // grass tufts
+            ctx.strokeStyle = '#5a8a30';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 20; i++) {
+              const gx = pr(i + 200) * W;
+              const gy = H * 0.56 + pr(i + 210) * H * 0.06;
+              for (let b = -1; b <= 1; b++) {
+                ctx.beginPath();
+                ctx.moveTo(gx + b * 3, gy);
+                ctx.quadraticCurveTo(gx + b * 5 + Math.sin(t * 0.04 + i) * 2, gy - 8, gx + b * 4, gy - 12);
+                ctx.stroke();
+              }
+            }
+            // emoji animals walking across the land
+            const landAnimals = [
+              { emoji: '\uD83D\uDC2E', ox: 0.10, oy: 0.63, sz: 32, spd: 0.20 },  // cow
+              { emoji: '\uD83E\uDD81', ox: 0.55, oy: 0.60, sz: 36, spd: 0.35 },  // lion
+              { emoji: '\uD83D\uDC11', ox: 0.30, oy: 0.70, sz: 26, spd: 0.15 },  // sheep
+              { emoji: '\uD83E\uDD8C', ox: 0.72, oy: 0.66, sz: 30, spd: 0.25 },  // deer
+              { emoji: '\uD83D\uDC0E', ox: 0.45, oy: 0.62, sz: 34, spd: 0.40 },  // horse
+              { emoji: '\uD83D\uDC18', ox: 0.85, oy: 0.64, sz: 38, spd: 0.12 },  // elephant
+              { emoji: '\uD83D\uDC07', ox: 0.20, oy: 0.76, sz: 22, spd: 0.50 },  // rabbit
+              { emoji: '\uD83E\uDD92', ox: 0.65, oy: 0.56, sz: 40, spd: 0.18 },  // giraffe
+              { emoji: '\uD83D\uDC0D', ox: 0.40, oy: 0.80, sz: 20, spd: 0.10 },  // snake (creeping)
+              { emoji: '\uD83E\uDD8E', ox: 0.78, oy: 0.82, sz: 18, spd: 0.08 },  // lizard (creeping)
             ];
-            animals.forEach((an, i) => {
-              const ax = ((an.ox * W + t * (0.3 + pr(i + 40) * 0.3)) % (W + 80)) - 40;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            landAnimals.forEach((an, i) => {
+              const ax = ((an.ox * W + t * an.spd) % (W + 80)) - 40;
               const ay = an.oy * H;
-              const sz = 16 * an.s;
-              // body
-              ctx.fillStyle = i % 2 === 0 ? '#8b6842' : '#6b5232';
-              ctx.beginPath(); ctx.ellipse(ax, ay, sz, sz * 0.55, 0, 0, Math.PI * 2); ctx.fill();
-              // head
-              ctx.beginPath(); ctx.arc(ax + sz * 0.8, ay - sz * 0.3, sz * 0.4, 0, Math.PI * 2); ctx.fill();
-              // legs
-              const legSwing = Math.sin(t * 0.12 + i * 5) * 3;
-              ctx.fillRect(ax - sz * 0.4, ay + sz * 0.3, 3, sz * 0.5 + legSwing);
-              ctx.fillRect(ax + sz * 0.2, ay + sz * 0.3, 3, sz * 0.5 - legSwing);
+              const bob = Math.sin(t * 0.1 + i * 2.1) * 3;
+              ctx.save();
+              ctx.translate(ax, ay + bob);
+              ctx.scale(-1, 1); // face right
+              ctx.font = `${an.sz}px serif`;
+              ctx.fillText(an.emoji, 0, 0);
+              ctx.restore();
             });
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
             break;
           }
 
