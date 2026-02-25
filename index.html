@@ -1076,16 +1076,17 @@
                 return (1-tt)*(1-tt)*p0y + 2*(1-tt)*tt*c0y + tt*tt*p1y;
               }
             };
-            // little trees sprouting on the land surface
+            // little trees sprouting on the land surface (emoji)
+            const day3Trees = ['🌳', '🌲', '🌳', '🌴', '🌲', '🌳', '🌲'];
             for (let i = 0; i < 7; i++) {
               const tx = W * 0.42 + i * W * 0.08;
               const ty = landY(tx);          // base sits on the curve
-              const th = 15 + pr(i + 10) * 20;
-              ctx.fillStyle = '#6b4513';
-              ctx.fillRect(tx - 2, ty - th, 4, th);
-              ctx.fillStyle = i % 2 === 0 ? '#2d6a1d' : '#3d8a2d';
-              ctx.beginPath(); ctx.arc(tx, ty - th - 6, 8 + pr(i) * 6, 0, Math.PI * 2); ctx.fill();
+              const sz = 18 + pr(i + 10) * 14;
+              ctx.font = `${sz}px serif`;
+              ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+              ctx.fillText(day3Trees[i], tx, ty);
             }
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
             break;
           }
 
@@ -1193,28 +1194,73 @@
               ctx.fillText(fishEmoji[i], 0, 0);
               ctx.restore();
             }
-            // emoji whale swimming slowly
+            // emoji whale swimming slowly with animation
             const wx = ((t * 0.25) % (W + 300)) - 150;
-            const wBob = Math.sin(t * 0.03) * 6;
+            const wBob = Math.sin(t * 0.03) * 8;
+            const wTilt = Math.sin(t * 0.02) * 0.05; // gentle tilt as it swims
             ctx.save();
             ctx.translate(wx, H * 0.72 + wBob);
+            ctx.rotate(wTilt);
             ctx.scale(-1, 1);
             ctx.font = `${Math.max(48, W * 0.08)}px serif`;
             ctx.fillText('\uD83D\uDC0B', 0, 0);
             ctx.restore();
-            // emoji birds in the sky (various types)
-            const birdEmoji = ['\uD83D\uDD4A\uFE0F', '\uD83E\uDD85', '\uD83E\uDD86', '\uD83D\uDC26', '\uD83E\uDD9C', '\uD83D\uDD4A\uFE0F', '\uD83D\uDC26', '\uD83E\uDD85'];
-            for (let i = 0; i < birdEmoji.length; i++) {
+            // whale tail splash – animated arc behind the whale
+            const tailX = wx + 60;
+            const tailY = H * 0.72 + wBob - 8;
+            const tailFlap = Math.sin(t * 0.1) * 12;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(100,180,230,0.5)';
+            ctx.lineWidth = 3; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.quadraticCurveTo(tailX + 15, tailY - 15 + tailFlap, tailX + 25, tailY - 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.quadraticCurveTo(tailX + 15, tailY + 15 - tailFlap, tailX + 25, tailY + 5);
+            ctx.stroke();
+            ctx.restore();
+            // whale spout – periodic water spray
+            const spoutCycle = (t * 0.02) % (Math.PI * 2);
+            if (spoutCycle < Math.PI * 0.6) {
+              const spoutAlpha = Math.sin(spoutCycle / 0.6);
+              const spoutX = wx - 20;
+              const spoutBaseY = H * 0.72 + wBob - 25;
+              ctx.save();
+              ctx.globalAlpha = spoutAlpha * 0.6;
+              ctx.strokeStyle = '#b0d8f0'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+              // two spray arcs
+              ctx.beginPath();
+              ctx.moveTo(spoutX, spoutBaseY);
+              ctx.quadraticCurveTo(spoutX - 6, spoutBaseY - 18 * spoutAlpha, spoutX - 10, spoutBaseY - 28 * spoutAlpha);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(spoutX, spoutBaseY);
+              ctx.quadraticCurveTo(spoutX + 6, spoutBaseY - 18 * spoutAlpha, spoutX + 10, spoutBaseY - 28 * spoutAlpha);
+              ctx.stroke();
+              // spray droplets
+              for (let d = 0; d < 4; d++) {
+                const dx = spoutX + (d - 1.5) * 6;
+                const dy = spoutBaseY - 26 * spoutAlpha - d * 3;
+                ctx.fillStyle = '#b0d8f0';
+                ctx.beginPath(); ctx.arc(dx, dy, 1.5, 0, Math.PI * 2); ctx.fill();
+              }
+              ctx.restore();
+            }
+            // birds in the sky – simple flapping V-lines
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 2; ctx.lineCap = 'round';
+            for (let i = 0; i < 8; i++) {
               const bx = ((pr(i + 60) * W + t * (0.5 + pr(i + 70) * 0.8)) % (W + 60)) - 30;
               const byy = H * 0.06 + pr(i + 80) * H * 0.26;
-              const bSz = 18 + pr(i + 90) * 14;
-              const flap = Math.sin(t * 0.15 + i * 3) * 3;
-              ctx.save();
-              ctx.translate(bx, byy + flap);
-              ctx.scale(-1, 1); // face right
-              ctx.font = `${bSz}px serif`;
-              ctx.fillText(birdEmoji[i], 0, 0);
-              ctx.restore();
+              const wingSpan = 8 + pr(i + 90) * 6;
+              const flap = Math.sin(t * 0.15 + i * 3) * wingSpan * 0.5;
+              ctx.beginPath();
+              ctx.moveTo(bx - wingSpan, byy - flap);
+              ctx.quadraticCurveTo(bx - wingSpan * 0.3, byy + flap * 0.3, bx, byy);
+              ctx.quadraticCurveTo(bx + wingSpan * 0.3, byy + flap * 0.3, bx + wingSpan, byy - flap);
+              ctx.stroke();
             }
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
             break;
@@ -1344,23 +1390,16 @@
             ctx.fill();
             // helper: sample the front hill curve at any X
             const hillY = (px) => H * 0.44 + Math.sin(px * 0.008 + 1) * H * 0.04;
-            // fruit trees – base sits on the hill curve
+            // fruit trees – emoji trees sitting on the hill curve
+            const fruitTrees = ['🌳', '🌴', '🌲', '🌳', '🌴', '🌳'];
             for (let i = 0; i < 6; i++) {
               const tx = W * 0.1 + i * W * 0.15;
               const ty = hillY(tx);            // tree base on the curve
-              ctx.fillStyle = '#6b4513';
-              ctx.fillRect(tx - 3, ty - 30, 6, 30);
-              ctx.fillStyle = '#2d7a1d';
-              ctx.beginPath(); ctx.arc(tx, ty - 35, 18, 0, Math.PI * 2); ctx.fill();
-              // fruits
-              const colors = ['#cc0000', '#ff8800', '#ffdd00', '#cc0000', '#ff6688', '#ffaa00'];
-              for (let f = 0; f < 4; f++) {
-                const fx = tx + Math.cos(f * 1.8 + i) * 10;
-                const fy = ty - 35 + Math.sin(f * 1.8 + i) * 8;
-                ctx.fillStyle = colors[i];
-                ctx.beginPath(); ctx.arc(fx, fy, 3.5, 0, Math.PI * 2); ctx.fill();
-              }
+              ctx.font = '36px serif';
+              ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+              ctx.fillText(fruitTrees[i], tx, ty);
             }
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
             // herbs / grain at bottom
             ctx.strokeStyle = '#3a6a10';
             ctx.lineWidth = 1.5;
@@ -1439,16 +1478,16 @@
               ctx.fillStyle = '#cc0000';
               ctx.beginPath(); ctx.arc(tokX + Math.cos(a) * 20, H * 0.15 + Math.sin(a) * 18, 5, 0, Math.PI * 2); ctx.fill();
             }
-            // decorative trees lining the garden
+            // decorative emoji trees lining the garden
+            const gardenTrees = ['🌳', '🌲', '🌳', '🌴', '🌲', '🌳', '🌲', '🌳', '🌴', '🌳'];
             for (let i = 0; i < 10; i++) {
               const tx = i * (W / 10) + W * 0.05;
               if (Math.abs(tx - cx) < 40 || Math.abs(tx - tolX) < 50 || Math.abs(tx - tokX) < 50) continue;
-              const ty = H * 0.38;
-              ctx.fillStyle = '#5a3a15';
-              ctx.fillRect(tx - 3, ty, 6, 20);
-              ctx.fillStyle = '#2d6a1d';
-              ctx.beginPath(); ctx.arc(tx, ty - 6, 14, 0, Math.PI * 2); ctx.fill();
+              ctx.font = '28px serif';
+              ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+              ctx.fillText(gardenTrees[i], tx, H * 0.42);
             }
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
             // flowers
             for (let i = 0; i < 15; i++) {
               const fx = pr(i + 120) * W;
@@ -1583,10 +1622,10 @@
           switch (tile) {
             case TILES.TREE:
               ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
-              ctx.fillStyle = COLORS.treeTrunk; ctx.fillRect(12, 16, 8, 16);
-              ctx.fillStyle = COLORS.tree; ctx.beginPath(); ctx.arc(16, 12, 14, 0, Math.PI * 2); ctx.fill();
-              ctx.fillStyle = 'rgba(255,255,255,0.10)';
-              ctx.beginPath(); ctx.arc(13, 8, 7, 0, Math.PI * 2); ctx.fill();
+              ctx.font = '28px serif';
+              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+              ctx.fillText('🌳', 16, 14);
+              ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
               ctx.restore();
               break;
             case TILES.TREE_OF_LIFE:
