@@ -186,7 +186,14 @@
       treeOfKnowledge: '#8b0000', sky: '#87ceeb',
     };
 
+    // Seeded PRNG (mulberry32) – gives a consistent map on every load
+    const seededRandom = (seed) => {
+      let s = seed | 0;
+      return () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    };
+
     const generateMap = () => {
+      const rng = seededRandom(12345);
       const TOL = { x: 56, y: 20 };   // Tree of Life
       const TOK = TREE_OF_KNOWLEDGE;   // { x: 20, y: 22 }
       const map = [];
@@ -198,9 +205,9 @@
           // Garden paths: vertical spine x=30, horizontal corridor y=26
           else if ((x === 30 && y >= 10 && y <= 45) || (y === 26 && x >= 14 && x <= 66)) row.push(TILES.PATH);
           // Dense tree border around the whole map
-          else if (x < 6 || x > MAP_WIDTH - 7 || y < 6 || y > MAP_HEIGHT - 7) row.push(Math.random() > 0.25 ? TILES.TREE : TILES.GRASS);
+          else if (x < 6 || x > MAP_WIDTH - 7 || y < 6 || y > MAP_HEIGHT - 7) row.push(rng() > 0.25 ? TILES.TREE : TILES.GRASS);
           else {
-            const rand = Math.random();
+            const rand = rng();
             if (rand < 0.04) row.push(TILES.TREE);
             else if (rand < 0.07) row.push(TILES.FLOWER);
             else if (rand < 0.09) row.push(TILES.BUSH);
@@ -281,6 +288,17 @@
       const [gamePhase, setGamePhase] = useState(PHASES.EXPLORE);
       const keysPressed = useRef({});
       const [touchDirection, setTouchDirection] = useState(null);
+      // Refs to avoid stale closures in game loop
+      const touchDirRef = useRef(null);
+      const showDialogueRef = useRef(null);
+      const gamePhaseRef = useRef(PHASES.EXPLORE);
+      const npcsRef = useRef(null);
+
+      // Keep refs in sync with state for the game loop
+      useEffect(() => { touchDirRef.current = touchDirection; }, [touchDirection]);
+      useEffect(() => { showDialogueRef.current = showDialogue; }, [showDialogue]);
+      useEffect(() => { gamePhaseRef.current = gamePhase; }, [gamePhase]);
+      useEffect(() => { npcsRef.current = npcs; }, [npcs]);
 
       const checkSceneTrigger = useCallback(() => {
         const adam = npcs.find(n => n.id === 'adam');
@@ -311,11 +329,23 @@
 
       useEffect(() => {
         const vp = getVP(canvasRef.current || { clientWidth: window.innerWidth, clientHeight: window.innerHeight });
-        setCamera({
-          x: Math.max(0, Math.min(player.x - vp.w / 2, MAP_WIDTH - vp.w)),
-          y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
-        });
-      }, [player]);
+        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE) {
+          // Follow player during explore / complete
+          setCamera({
+            x: Math.max(0, Math.min(player.x - vp.w / 2, MAP_WIDTH - vp.w)),
+            y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
+          });
+        } else {
+          // Follow Chavvah during scene phases
+          const chavvah = npcs.find(n => n.id === 'chavvah');
+          if (chavvah) {
+            setCamera({
+              x: Math.max(0, Math.min(chavvah.x - vp.w / 2, MAP_WIDTH - vp.w)),
+              y: Math.max(0, Math.min(chavvah.y - vp.h / 2, MAP_HEIGHT - vp.h))
+            });
+          }
+        }
+      }, [player, npcs, gamePhase]);
 
       const advanceDialogue = useCallback(() => {
         if (!showDialogue) return;
@@ -415,35 +445,57 @@
       const handleTouchEnd = () => setTouchDirection(null);
 
       useEffect(() => {
-        const gameLoop = setInterval(() => {
+        const FRAME_MS = 1000 / 30;  // target 30 FPS
+        let lastTime = 0;
+        let rafId;
+        const gameLoop = (timestamp) => {
+          rafId = requestAnimationFrame(gameLoop);
+          if (timestamp - lastTime < FRAME_MS) return;
+          lastTime = timestamp;
+
+          const phase = gamePhaseRef.current;
+          const dlg   = showDialogueRef.current;
+          const touch = touchDirRef.current;
+          const currentNpcs = npcsRef.current;
+
           setGameTime(prev => prev + 1);
-          if (gamePhase === PHASES.EXPLORE && checkSceneTrigger()) {
-            setGamePhase(PHASES.SCENE_START);
-            setSceneText("The nachash beguiled Chavvah... she looked upon the forbidden tree...");
-            setShowSceneText(true);
+
+          // Check scene trigger using ref (avoids stale closure)
+          if (phase === PHASES.EXPLORE && currentNpcs) {
+            const adam = currentNpcs.find(n => n.id === 'adam');
+            const chavvah = currentNpcs.find(n => n.id === 'chavvah');
+            const nachash = currentNpcs.find(n => n.id === 'nachash');
+            if (adam?.hasSpoken && chavvah?.hasSpoken && nachash?.hasSpoken) {
+              setGamePhase(PHASES.SCENE_START);
+              setSceneText("The nachash beguiled Chavvah... she looked upon the forbidden tree...");
+              setShowSceneText(true);
+            }
           }
-          if (!showDialogue && gamePhase === PHASES.EXPLORE) {
+
+          if (!dlg && phase === PHASES.EXPLORE) {
             setPlayer(prev => {
               let newX = prev.x, newY = prev.y, newDir = prev.direction;
               const speed = 0.15;
-              const up = keysPressed.current['w'] || keysPressed.current['arrowup'] || touchDirection === 'up';
-              const down = keysPressed.current['s'] || keysPressed.current['arrowdown'] || touchDirection === 'down';
-              const left = keysPressed.current['a'] || keysPressed.current['arrowleft'] || touchDirection === 'left';
-              const right = keysPressed.current['d'] || keysPressed.current['arrowright'] || touchDirection === 'right';
+              const up = keysPressed.current['w'] || keysPressed.current['arrowup'] || touch === 'up';
+              const down = keysPressed.current['s'] || keysPressed.current['arrowdown'] || touch === 'down';
+              const left = keysPressed.current['a'] || keysPressed.current['arrowleft'] || touch === 'left';
+              const right = keysPressed.current['d'] || keysPressed.current['arrowright'] || touch === 'right';
               if (up) { newY -= speed; newDir = 'up'; }
               if (down) { newY += speed; newDir = 'down'; }
               if (left) { newX -= speed; newDir = 'left'; }
               if (right) { newX += speed; newDir = 'right'; }
               let finalX = prev.x, finalY = prev.y;
-              if (canMoveTo(newX, newY, npcs)) { finalX = newX; finalY = newY; }
-              else if (canMoveTo(newX, prev.y, npcs)) { finalX = newX; }
-              else if (canMoveTo(prev.x, newY, npcs)) { finalY = newY; }
+              // Use npcsRef for fresh NPC positions (fixes stale closure bug)
+              const liveNpcs = npcsRef.current;
+              if (canMoveTo(newX, newY, liveNpcs)) { finalX = newX; finalY = newY; }
+              else if (canMoveTo(newX, prev.y, liveNpcs)) { finalX = newX; }
+              else if (canMoveTo(prev.x, newY, liveNpcs)) { finalY = newY; }
               const isMoving = finalX !== prev.x || finalY !== prev.y;
               const walkFrame = isMoving ? (prev.walkFrame + 0.3) % 4 : 0;
               return { x: finalX, y: finalY, prevX: prev.x, prevY: prev.y, direction: newDir, walkFrame, isMoving };
             });
           }
-          if (!showDialogue) {
+          if (!dlg) {
             setNpcs(prev => prev.map(npc => {
               let newNpc = { ...npc, moveTimer: npc.moveTimer + 1, thoughtTimer: npc.thoughtTimer + 1 };
               if (npc.clothesBlink > 0) {
@@ -452,14 +504,14 @@
               }
               if (newNpc.thoughtTimer > 150) { newNpc.currentThought = (npc.currentThought + 1) % npc.thoughts.length; newNpc.thoughtTimer = 0; }
               if (npc.id === 'chavvah') {
-                if (gamePhase === PHASES.CHAVVAH_WALKS_TO_TREE) {
+                if (phase === PHASES.CHAVVAH_WALKS_TO_TREE) {
                   newNpc.behavior = 'scene'; newNpc.targetX = TREE_OF_KNOWLEDGE.x + 1; newNpc.targetY = TREE_OF_KNOWLEDGE.y + 1;
                   if (Math.abs(npc.x - (TREE_OF_KNOWLEDGE.x + 1)) < 0.3 && Math.abs(npc.y - (TREE_OF_KNOWLEDGE.y + 1)) < 0.3) {
                     setGamePhase(PHASES.CHAVVAH_TAKES_FRUIT);
                     setSceneText("And a tree to be desired to make one wise...");
                     setShowSceneText(true);
                   }
-                } else if (gamePhase === PHASES.CHAVVAH_WALKS_TO_ADAM) {
+                } else if (phase === PHASES.CHAVVAH_WALKS_TO_ADAM) {
                   const adam = prev.find(n => n.id === 'adam');
                   if (adam) {
                     newNpc.targetX = adam.x - 1; newNpc.targetY = adam.y;
@@ -471,14 +523,14 @@
                   }
                 }
               }
-              if (npc.id === 'adam' && gamePhase !== PHASES.EXPLORE) { newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false; }
+              if (npc.id === 'adam' && phase !== PHASES.EXPLORE) { newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false; }
               if (npc.behavior === 'circle_tree') {
                 newNpc.circleAngle = (npc.circleAngle || 0) + 0.02;
                 const radius = 2.5;
                 newNpc.targetX = TREE_OF_KNOWLEDGE.x + Math.cos(newNpc.circleAngle) * radius;
                 newNpc.targetY = TREE_OF_KNOWLEDGE.y + Math.sin(newNpc.circleAngle) * radius;
               }
-              if (npc.behavior === 'wander' && gamePhase === PHASES.EXPLORE && newNpc.moveTimer > 90) {
+              if (npc.behavior === 'wander' && phase === PHASES.EXPLORE && newNpc.moveTimer > 90) {
                 if (!npc.targetX || (Math.abs(npc.x - npc.targetX) < 0.5 && Math.abs(npc.y - npc.targetY) < 0.5)) {
                   let attempts = 0, validTarget = false;
                   while (!validTarget && attempts < 10) {
@@ -502,7 +554,7 @@
                 const dx = newNpc.targetX - npc.x, dy = newNpc.targetY - npc.y;
                 const dist = Math.sqrt(dx * dx + dy * dy);
                 if (dist > 0.1) {
-                  const speed = (npc.id === 'chavvah' && gamePhase !== PHASES.EXPLORE) ? 0.04 : 0.03;
+                  const speed = (npc.id === 'chavvah' && phase !== PHASES.EXPLORE) ? 0.04 : 0.03;
                   const moveX = npc.x + (dx / dist) * speed, moveY = npc.y + (dy / dist) * speed;
                   if (canNPCMoveTo(moveX, moveY) || npc.behavior === 'scene' || npc.behavior === 'circle_tree') {
                     newNpc.x = moveX; newNpc.y = moveY; newNpc.isMoving = true; newNpc.walkFrame = (npc.walkFrame + 0.25) % 4;
@@ -513,9 +565,10 @@
               return newNpc;
             }));
           }
-        }, 1000 / 30);
-        return () => clearInterval(gameLoop);
-      }, [canMoveTo, canNPCMoveTo, showDialogue, touchDirection, gameTime, gamePhase, checkSceneTrigger]);
+        };
+        rafId = requestAnimationFrame(gameLoop);
+        return () => cancelAnimationFrame(rafId);
+      }, [canMoveTo, canNPCMoveTo]);
 
       const drawSpeechBubble = (ctx, x, y, text, isSerpent = false) => {
         const FONT = 'bold 14px sans-serif';
@@ -914,12 +967,43 @@
             gameTime,
           });
           ctx.restore();
+
+          // ── Off-screen NPC direction arrows ────────────────────────
+          const margin = 40;
+          npcs.forEach(npc => {
+            if (npc.id === 'malak') return; // don't point to the angel
+            if (npc.hasSpoken) return;       // already spoken to
+            const sx = (npc.x - camera.x) * TILE_SIZE;
+            const sy = (npc.y - camera.y) * TILE_SIZE;
+            const onScreen = sx > -TILE_SIZE && sx < W + TILE_SIZE && sy > -TILE_SIZE && sy < H + TILE_SIZE;
+            if (onScreen) return;
+            // Clamp to screen edge
+            const ax = Math.max(margin, Math.min(W - margin, sx));
+            const ay = Math.max(margin + 30, Math.min(H - margin - 90, sy));
+            const angle = Math.atan2(sy - H / 2, sx - W / 2);
+            const arrowColor = npc.isSerpent ? '#5aff5a' : '#facc15';
+            ctx.save();
+            ctx.translate(ax, ay);
+            ctx.rotate(angle);
+            ctx.fillStyle = arrowColor;
+            ctx.globalAlpha = 0.6 + 0.2 * Math.sin(gameTime * 0.15);
+            ctx.beginPath();
+            ctx.moveTo(14, 0);
+            ctx.lineTo(-6, -8);
+            ctx.lineTo(-6, 8);
+            ctx.closePath();
+            ctx.fill();
+            ctx.globalAlpha = 1;
+            ctx.restore();
+            // Label
+            ctx.font = 'bold 11px sans-serif';
+            ctx.fillStyle = arrowColor;
+            ctx.globalAlpha = 0.8;
+            ctx.fillText(npc.name, ax - ctx.measureText(npc.name).width / 2, ay + 18);
+            ctx.globalAlpha = 1;
+          });
         }
 
-        if (gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.COMPLETE) {
-          const chavvah = npcs.find(n => n.id === 'chavvah');
-          if (chavvah) setCamera({ x: Math.max(0, Math.min(chavvah.x - vp.w / 2, MAP_WIDTH - vp.w)), y: Math.max(0, Math.min(chavvah.y - vp.h / 2, MAP_HEIGHT - vp.h)) });
-        }
       }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase]);
 
       const spokenCount = npcs.filter(n => ['adam', 'chavvah', 'nachash'].includes(n.id) && n.hasSpoken).length;
