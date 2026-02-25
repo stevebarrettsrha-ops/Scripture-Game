@@ -1061,10 +1061,25 @@
             ctx.lineTo(W, H * 0.45); ctx.quadraticCurveTo(W * 0.7, H * 0.38, W * 0.5, H * 0.42);
             ctx.quadraticCurveTo(W * 0.35, H * 0.5, W * 0.3, H);
             ctx.fill();
-            // little trees sprouting
+            // helper: get Y on the grass-top curve at a given X
+            // The grass curve is two quadratic segments:
+            //   seg1: (W*0.3,H) ctrl(W*0.35,H*0.49) to(W*0.5,H*0.41)
+            //   seg2: (W*0.5,H*0.41) ctrl(W*0.7,H*0.37) to(W,H*0.44)
+            const landY = (px) => {
+              if (px <= W * 0.5) {
+                const tt = Math.max(0, Math.min(1, (px - W * 0.3) / (W * 0.2)));
+                const p0y = H, c0y = H * 0.49, p1y = H * 0.41;
+                return (1-tt)*(1-tt)*p0y + 2*(1-tt)*tt*c0y + tt*tt*p1y;
+              } else {
+                const tt = Math.max(0, Math.min(1, (px - W * 0.5) / (W * 0.5)));
+                const p0y = H * 0.41, c0y = H * 0.37, p1y = H * 0.44;
+                return (1-tt)*(1-tt)*p0y + 2*(1-tt)*tt*c0y + tt*tt*p1y;
+              }
+            };
+            // little trees sprouting on the land surface
             for (let i = 0; i < 7; i++) {
               const tx = W * 0.42 + i * W * 0.08;
-              const ty = H * 0.39 + Math.sin(i * 2.3) * H * 0.04;
+              const ty = landY(tx);          // base sits on the curve
               const th = 15 + pr(i + 10) * 20;
               ctx.fillStyle = '#6b4513';
               ctx.fillRect(tx - 2, ty - th, 4, th);
