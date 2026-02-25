@@ -1083,10 +1083,10 @@
               const ty = landY(tx);          // base sits on the curve
               const sz = 18 + pr(i + 10) * 14;
               ctx.font = `${sz}px serif`;
-              ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-              ctx.fillText(day3Trees[i], tx, ty);
+              ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+              ctx.fillText(day3Trees[i], tx, ty + sz * 0.15);
             }
-            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+            ctx.textAlign = 'left';
             break;
           }
 
@@ -1194,56 +1194,93 @@
               ctx.fillText(fishEmoji[i], 0, 0);
               ctx.restore();
             }
-            // emoji whale swimming slowly with animation
-            const wx = ((t * 0.25) % (W + 300)) - 150;
+            // hand-drawn animated whale
+            const wSpeed = 0.25;
+            const wx = ((t * wSpeed) % (W + 300)) - 150;
             const wBob = Math.sin(t * 0.03) * 8;
-            const wTilt = Math.sin(t * 0.02) * 0.05; // gentle tilt as it swims
+            const wY = H * 0.70 + wBob;
+            const wLen = Math.max(60, W * 0.1);  // whale body length
+            const tailWag = Math.sin(t * 0.12) * 10; // tail wag animation
+            const bodyWave = Math.sin(t * 0.06) * 3; // gentle body undulation
             ctx.save();
-            ctx.translate(wx, H * 0.72 + wBob);
-            ctx.rotate(wTilt);
-            ctx.scale(-1, 1);
-            ctx.font = `${Math.max(48, W * 0.08)}px serif`;
-            ctx.fillText('\uD83D\uDC0B', 0, 0);
-            ctx.restore();
-            // whale tail splash – animated arc behind the whale
-            const tailX = wx + 60;
-            const tailY = H * 0.72 + wBob - 8;
-            const tailFlap = Math.sin(t * 0.1) * 12;
-            ctx.save();
-            ctx.strokeStyle = 'rgba(100,180,230,0.5)';
-            ctx.lineWidth = 3; ctx.lineCap = 'round';
+            ctx.translate(wx, wY);
+            // whale body (elongated oval)
+            ctx.fillStyle = '#2a4a6a';
             ctx.beginPath();
-            ctx.moveTo(tailX, tailY);
-            ctx.quadraticCurveTo(tailX + 15, tailY - 15 + tailFlap, tailX + 25, tailY - 5);
-            ctx.stroke();
+            ctx.moveTo(-wLen * 0.5, 0);
+            ctx.bezierCurveTo(-wLen * 0.5, -wLen * 0.35,
+                              wLen * 0.3, -wLen * 0.38 + bodyWave,
+                              wLen * 0.55, -wLen * 0.05 + bodyWave);
+            ctx.bezierCurveTo(wLen * 0.3, wLen * 0.3 + bodyWave,
+                              -wLen * 0.3, wLen * 0.3,
+                              -wLen * 0.5, 0);
+            ctx.fill();
+            // lighter belly
+            ctx.fillStyle = '#5a8aaa';
             ctx.beginPath();
-            ctx.moveTo(tailX, tailY);
-            ctx.quadraticCurveTo(tailX + 15, tailY + 15 - tailFlap, tailX + 25, tailY + 5);
+            ctx.moveTo(-wLen * 0.4, wLen * 0.05);
+            ctx.bezierCurveTo(-wLen * 0.2, wLen * 0.22,
+                              wLen * 0.15, wLen * 0.22 + bodyWave,
+                              wLen * 0.4, wLen * 0.02 + bodyWave);
+            ctx.bezierCurveTo(wLen * 0.15, wLen * 0.15 + bodyWave,
+                              -wLen * 0.2, wLen * 0.15,
+                              -wLen * 0.4, wLen * 0.05);
+            ctx.fill();
+            // tail fluke (animated)
+            ctx.fillStyle = '#2a4a6a';
+            ctx.beginPath();
+            ctx.moveTo(wLen * 0.5, -wLen * 0.05 + bodyWave);
+            ctx.quadraticCurveTo(wLen * 0.65, -wLen * 0.05 + bodyWave,
+                                 wLen * 0.8, -wLen * 0.25 + tailWag);
+            ctx.quadraticCurveTo(wLen * 0.65, -wLen * 0.02 + bodyWave,
+                                 wLen * 0.65, wLen * 0.02 + bodyWave);
+            ctx.quadraticCurveTo(wLen * 0.65, wLen * 0.05 + bodyWave,
+                                 wLen * 0.8, wLen * 0.2 - tailWag);
+            ctx.quadraticCurveTo(wLen * 0.65, wLen * 0.05 + bodyWave,
+                                 wLen * 0.5, wLen * 0.02 + bodyWave);
+            ctx.fill();
+            // eye
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(-wLen * 0.28, -wLen * 0.08, wLen * 0.05, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#111';
+            ctx.beginPath(); ctx.arc(-wLen * 0.27, -wLen * 0.08, wLen * 0.025, 0, Math.PI * 2); ctx.fill();
+            // mouth line
+            ctx.strokeStyle = '#1a3a5a'; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(-wLen * 0.48, wLen * 0.02);
+            ctx.quadraticCurveTo(-wLen * 0.3, wLen * 0.08, -wLen * 0.15, wLen * 0.04);
             ctx.stroke();
+            // dorsal fin
+            ctx.fillStyle = '#2a4a6a';
+            ctx.beginPath();
+            ctx.moveTo(wLen * 0.05, -wLen * 0.28 + bodyWave);
+            ctx.quadraticCurveTo(wLen * 0.15, -wLen * 0.45 + bodyWave, wLen * 0.25, -wLen * 0.26 + bodyWave);
+            ctx.lineTo(wLen * 0.05, -wLen * 0.28 + bodyWave);
+            ctx.fill();
             ctx.restore();
-            // whale spout – periodic water spray
+            // spout – periodic water spray above the whale's head
             const spoutCycle = (t * 0.02) % (Math.PI * 2);
             if (spoutCycle < Math.PI * 0.6) {
               const spoutAlpha = Math.sin(spoutCycle / 0.6);
-              const spoutX = wx - 20;
-              const spoutBaseY = H * 0.72 + wBob - 25;
+              const spoutX = wx - wLen * 0.3;
+              const spoutBaseY = wY - wLen * 0.35;
               ctx.save();
-              ctx.globalAlpha = spoutAlpha * 0.6;
+              ctx.globalAlpha = spoutAlpha * 0.7;
               ctx.strokeStyle = '#b0d8f0'; ctx.lineWidth = 2; ctx.lineCap = 'round';
-              // two spray arcs
+              const spH = 25 * spoutAlpha;
               ctx.beginPath();
               ctx.moveTo(spoutX, spoutBaseY);
-              ctx.quadraticCurveTo(spoutX - 6, spoutBaseY - 18 * spoutAlpha, spoutX - 10, spoutBaseY - 28 * spoutAlpha);
+              ctx.quadraticCurveTo(spoutX - 8, spoutBaseY - spH * 0.6, spoutX - 12, spoutBaseY - spH);
               ctx.stroke();
               ctx.beginPath();
               ctx.moveTo(spoutX, spoutBaseY);
-              ctx.quadraticCurveTo(spoutX + 6, spoutBaseY - 18 * spoutAlpha, spoutX + 10, spoutBaseY - 28 * spoutAlpha);
+              ctx.quadraticCurveTo(spoutX + 8, spoutBaseY - spH * 0.6, spoutX + 12, spoutBaseY - spH);
               ctx.stroke();
-              // spray droplets
-              for (let d = 0; d < 4; d++) {
-                const dx = spoutX + (d - 1.5) * 6;
-                const dy = spoutBaseY - 26 * spoutAlpha - d * 3;
-                ctx.fillStyle = '#b0d8f0';
+              // droplets at the top
+              ctx.fillStyle = '#b0d8f0';
+              for (let d = 0; d < 5; d++) {
+                const dx = spoutX + (d - 2) * 5;
+                const dy = spoutBaseY - spH - 2 - Math.abs(d - 2) * 2;
                 ctx.beginPath(); ctx.arc(dx, dy, 1.5, 0, Math.PI * 2); ctx.fill();
               }
               ctx.restore();
@@ -1396,10 +1433,10 @@
               const tx = W * 0.1 + i * W * 0.15;
               const ty = hillY(tx);            // tree base on the curve
               ctx.font = '36px serif';
-              ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-              ctx.fillText(fruitTrees[i], tx, ty);
+              ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+              ctx.fillText(fruitTrees[i], tx, ty + 5);
             }
-            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+            ctx.textAlign = 'left';
             // herbs / grain at bottom
             ctx.strokeStyle = '#3a6a10';
             ctx.lineWidth = 1.5;
@@ -1484,10 +1521,10 @@
               const tx = i * (W / 10) + W * 0.05;
               if (Math.abs(tx - cx) < 40 || Math.abs(tx - tolX) < 50 || Math.abs(tx - tokX) < 50) continue;
               ctx.font = '28px serif';
-              ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-              ctx.fillText(gardenTrees[i], tx, H * 0.42);
+              ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
+              ctx.fillText(gardenTrees[i], tx, H * 0.44);
             }
-            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+            ctx.textAlign = 'left';
             // flowers
             for (let i = 0; i < 15; i++) {
               const fx = pr(i + 120) * W;
