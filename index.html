@@ -1194,28 +1194,73 @@
               ctx.fillText(fishEmoji[i], 0, 0);
               ctx.restore();
             }
-            // emoji whale swimming slowly
+            // emoji whale swimming slowly with animation
             const wx = ((t * 0.25) % (W + 300)) - 150;
-            const wBob = Math.sin(t * 0.03) * 6;
+            const wBob = Math.sin(t * 0.03) * 8;
+            const wTilt = Math.sin(t * 0.02) * 0.05; // gentle tilt as it swims
             ctx.save();
             ctx.translate(wx, H * 0.72 + wBob);
+            ctx.rotate(wTilt);
             ctx.scale(-1, 1);
             ctx.font = `${Math.max(48, W * 0.08)}px serif`;
             ctx.fillText('\uD83D\uDC0B', 0, 0);
             ctx.restore();
-            // emoji birds in the sky (various types)
-            const birdEmoji = ['\uD83D\uDD4A\uFE0F', '\uD83E\uDD85', '\uD83E\uDD86', '\uD83D\uDC26', '\uD83E\uDD9C', '\uD83D\uDD4A\uFE0F', '\uD83D\uDC26', '\uD83E\uDD85'];
-            for (let i = 0; i < birdEmoji.length; i++) {
+            // whale tail splash – animated arc behind the whale
+            const tailX = wx + 60;
+            const tailY = H * 0.72 + wBob - 8;
+            const tailFlap = Math.sin(t * 0.1) * 12;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(100,180,230,0.5)';
+            ctx.lineWidth = 3; ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.quadraticCurveTo(tailX + 15, tailY - 15 + tailFlap, tailX + 25, tailY - 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.quadraticCurveTo(tailX + 15, tailY + 15 - tailFlap, tailX + 25, tailY + 5);
+            ctx.stroke();
+            ctx.restore();
+            // whale spout – periodic water spray
+            const spoutCycle = (t * 0.02) % (Math.PI * 2);
+            if (spoutCycle < Math.PI * 0.6) {
+              const spoutAlpha = Math.sin(spoutCycle / 0.6);
+              const spoutX = wx - 20;
+              const spoutBaseY = H * 0.72 + wBob - 25;
+              ctx.save();
+              ctx.globalAlpha = spoutAlpha * 0.6;
+              ctx.strokeStyle = '#b0d8f0'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+              // two spray arcs
+              ctx.beginPath();
+              ctx.moveTo(spoutX, spoutBaseY);
+              ctx.quadraticCurveTo(spoutX - 6, spoutBaseY - 18 * spoutAlpha, spoutX - 10, spoutBaseY - 28 * spoutAlpha);
+              ctx.stroke();
+              ctx.beginPath();
+              ctx.moveTo(spoutX, spoutBaseY);
+              ctx.quadraticCurveTo(spoutX + 6, spoutBaseY - 18 * spoutAlpha, spoutX + 10, spoutBaseY - 28 * spoutAlpha);
+              ctx.stroke();
+              // spray droplets
+              for (let d = 0; d < 4; d++) {
+                const dx = spoutX + (d - 1.5) * 6;
+                const dy = spoutBaseY - 26 * spoutAlpha - d * 3;
+                ctx.fillStyle = '#b0d8f0';
+                ctx.beginPath(); ctx.arc(dx, dy, 1.5, 0, Math.PI * 2); ctx.fill();
+              }
+              ctx.restore();
+            }
+            // birds in the sky – simple flapping V-lines
+            ctx.strokeStyle = '#222';
+            ctx.lineWidth = 2; ctx.lineCap = 'round';
+            for (let i = 0; i < 8; i++) {
               const bx = ((pr(i + 60) * W + t * (0.5 + pr(i + 70) * 0.8)) % (W + 60)) - 30;
               const byy = H * 0.06 + pr(i + 80) * H * 0.26;
-              const bSz = 18 + pr(i + 90) * 14;
-              const flap = Math.sin(t * 0.15 + i * 3) * 3;
-              ctx.save();
-              ctx.translate(bx, byy + flap);
-              ctx.scale(-1, 1); // face right
-              ctx.font = `${bSz}px serif`;
-              ctx.fillText(birdEmoji[i], 0, 0);
-              ctx.restore();
+              const wingSpan = 8 + pr(i + 90) * 6;
+              const flap = Math.sin(t * 0.15 + i * 3) * wingSpan * 0.5;
+              ctx.beginPath();
+              ctx.moveTo(bx - wingSpan, byy - flap);
+              ctx.quadraticCurveTo(bx - wingSpan * 0.3, byy + flap * 0.3, bx, byy);
+              ctx.quadraticCurveTo(bx + wingSpan * 0.3, byy + flap * 0.3, bx + wingSpan, byy - flap);
+              ctx.stroke();
             }
             ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
             break;
