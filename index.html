@@ -152,6 +152,77 @@
       font-size: 0.65rem;
       z-index: 10;
     }
+    /* ── Cutscene overlay ────────────────────────────────── */
+    .cutscene-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .cutscene-header {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      text-align: center;
+      padding: 18px 12px 10px;
+      pointer-events: none;
+    }
+    .cutscene-day {
+      color: #d4a017;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      font-family: Georgia, serif;
+      text-shadow: 0 1px 6px #000;
+    }
+    .cutscene-counter {
+      position: absolute;
+      top: 10px; right: 14px;
+      color: #6b7280;
+      font-size: 0.7rem;
+    }
+    .cutscene-box {
+      margin: 0 auto 28px;
+      width: calc(100% - 24px);
+      max-width: 680px;
+      background: rgba(0,0,0,0.88);
+      border: 2px solid #d4a017;
+      border-radius: 10px;
+      padding: 18px 18px 14px;
+      pointer-events: auto;
+    }
+    .cutscene-ref {
+      color: #8b7340;
+      font-size: 0.7rem;
+      margin-bottom: 10px;
+      font-family: Georgia, serif;
+      letter-spacing: 1px;
+    }
+    .cutscene-verse {
+      color: #f5e6c8;
+      font-size: 0.88rem;
+      line-height: 1.55;
+      font-family: Georgia, serif;
+      margin-bottom: 8px;
+    }
+    .cutscene-verse:last-of-type { margin-bottom: 14px; }
+    .cutscene-btn {
+      width: 100%;
+      background: linear-gradient(180deg, #b8860b, #8b6914);
+      color: #fff;
+      font-weight: bold;
+      padding: 10px 16px;
+      border-radius: 5px;
+      border: 1px solid #d4a017;
+      cursor: pointer;
+      font-size: 0.9rem;
+      letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+    .cutscene-btn:hover { background: linear-gradient(180deg, #d4a017, #b8860b); }
+    .cutscene-btn:active { background: #8b6914; }
   </style>
 </head>
 <body>
@@ -269,11 +340,90 @@
     ];
 
     const PHASES = {
+      CUTSCENE: 'cutscene',
       EXPLORE: 'explore', SCENE_START: 'scene_start', CHAVVAH_WALKS_TO_TREE: 'chavvah_walks',
       CHAVVAH_TAKES_FRUIT: 'chavvah_takes', CHAVVAH_EATS: 'chavvah_eats', CHAVVAH_GLORY_FADES: 'chavvah_glory_fades',
       CHAVVAH_WALKS_TO_ADAM: 'chavvah_to_adam', ADAM_EATS: 'adam_eats', ADAM_GLORY_FADES: 'adam_glory_fades',
       EYES_OPENED: 'eyes_opened', COMPLETE: 'complete'
     };
+
+    // ── Creation cutscene slides (Cepher – Bere'shiyth 1-2) ──────────
+    const CUTSCENE_SLIDES = [
+      // 0 – The Void  (1:1-2)
+      { day: null, ref: "Bere'shiyth 1:1-2", scene: 'void',
+        lines: [
+          "IN the beginning ELOHIYM created \u05D0\u05EA the heavens and \u05D0\u05EA the earth.",
+          "And the earth was without form, and void; and darkness was upon the face of the deep. And the RUACH ELOHIYM moved upon the face of the waters.",
+        ]},
+      // 1 – Day 1: Light  (1:3-5)
+      { day: 'The First Day', ref: "Bere'shiyth 1:3-5", scene: 'light',
+        lines: [
+          "And ELOHIYM said, Let there be light: and there was light.",
+          "And ELOHIYM saw \u05D0\u05EA the light, that it was good: and ELOHIYM divided the light from the darkness.",
+          "And ELOHIYM called the light Day, and the darkness he called Night. And the evening and the morning were the first day.",
+        ]},
+      // 2 – Day 2: Firmament  (1:6-8)
+      { day: 'The Second Day', ref: "Bere'shiyth 1:6-8", scene: 'firmament',
+        lines: [
+          "And ELOHIYM said, Let there be a firmament in the midst of the waters, and let it divide the waters from the waters.",
+          "And ELOHIYM made \u05D0\u05EA the firmament, and divided the waters which were under the firmament from the waters which were above the firmament: and it was so.",
+          "And ELOHIYM called the firmament Heaven. And the evening and the morning were the second day.",
+        ]},
+      // 3 – Day 3: Land & vegetation  (1:9-13)
+      { day: 'The Third Day', ref: "Bere'shiyth 1:9-13", scene: 'land',
+        lines: [
+          "And ELOHIYM said, Let the waters under the heaven be gathered together unto one place, and let the dry land appear: and it was so.",
+          "And ELOHIYM said, Let the earth bring forth grass, the herb yielding seed, and the fruit tree yielding fruit after his kind, whose seed is in itself, upon the earth: and it was so.",
+          "And the evening and the morning were the third day.",
+        ]},
+      // 4 – Day 4: Luminaries  (1:14-19)
+      { day: 'The Fourth Day', ref: "Bere'shiyth 1:14-19", scene: 'luminaries',
+        lines: [
+          "And ELOHIYM said, Let there be lights in the firmament of the heaven to divide the day from the night; and let them be for signs, and for appointed times, and for days, and years.",
+          "And ELOHIYM made \u05D0\u05EA two great lights; the greater light to rule the day, and the lesser light to rule the night: he made the stars also.",
+          "And the evening and the morning were the fourth day.",
+        ]},
+      // 5 – Day 5: Sea & sky creatures  (1:20-23)
+      { day: 'The Fifth Day', ref: "Bere'shiyth 1:20-23", scene: 'creatures_sea',
+        lines: [
+          "And ELOHIYM said, Let the waters bring forth abundantly the moving creature that has life, and fowl that may fly above the earth in the open firmament of heaven.",
+          "And ELOHIYM created \u05D0\u05EA great whales, and \u05D0\u05EA every living creature that moves, which the waters brought forth abundantly, after their kind, and \u05D0\u05EA every winged fowl after his kind: and ELOHIYM saw that it was good.",
+          "And the evening and the morning were the fifth day.",
+        ]},
+      // 6 – Day 6 part 1: Land animals  (1:24-25)
+      { day: 'The Sixth Day', ref: "Bere'shiyth 1:24-25", scene: 'creatures_land',
+        lines: [
+          "And ELOHIYM said, Let the earth bring forth the living creature after his kind, cattle, and creeping thing, and beast of the earth after his kind: and it was so.",
+          "And ELOHIYM made \u05D0\u05EA the beast of the earth after his kind, and \u05D0\u05EA cattle after their kind, and \u05D0\u05EA every thing that creeps upon the earth after his kind: and ELOHIYM saw that it was good.",
+        ]},
+      // 7 – Day 6 part 2: Man  (1:26-28)
+      { day: 'The Sixth Day', ref: "Bere'shiyth 1:26-28", scene: 'man',
+        lines: [
+          "And ELOHIYM said, Let us make A\u2019dam in our image, after our likeness: and let them have dominion over the fish of the sea, and over the fowl of the air, and over the cattle, and over all the earth.",
+          "So ELOHIYM created \u05D0\u05EA A\u2019dam in his own image, in the image of ELOHIYM he created him; male and female he created them.",
+          "And ELOHIYM blessed them, and ELOHIYM said unto them, Be fruitful, and multiply, and replenish the earth, and subdue it.",
+        ]},
+      // 8 – Day 6 part 3: Provision  (1:29-31)
+      { day: 'The Sixth Day', ref: "Bere'shiyth 1:29-31", scene: 'provision',
+        lines: [
+          "And ELOHIYM said, Behold, I have given you \u05D0\u05EA every herb bearing seed, which is upon the face of all the earth, and \u05D0\u05EA every tree, in the which is the fruit of a tree yielding seed; to you it shall be for food.",
+          "And ELOHIYM saw \u05D0\u05EA everything that he had made, and, behold, it was very good. And the evening and the morning were the sixth day.",
+        ]},
+      // 9 – Day 7: Rest  (2:1-3)
+      { day: 'The Seventh Day', ref: "Bere'shiyth 2:1-3", scene: 'rest',
+        lines: [
+          "Thus the heavens and the earth were finished, and all the host of them.",
+          "And on the seventh day ELOHIYM ended his work which he had made; and he rested on the seventh day from all his work which he had made.",
+          "And ELOHIYM blessed \u05D0\u05EA the seventh day, and sanctified it: because that in it he had rested from all his work which ELOHIYM created and made.",
+        ]},
+      // 10 – Garden of Eden  (2:7-9)
+      { day: null, ref: "Bere'shiyth 2:7-9", scene: 'garden',
+        lines: [
+          "And YAHUAH ELOHIYM formed \u05D0\u05EA the man of the dust of the ground, and breathed into his nostrils the breath of life; and the man became a living soul.",
+          "And YAHUAH ELOHIYM planted a garden eastward in Eden; and there he put \u05D0\u05EA the man whom he had formed.",
+          "And out of the ground made YAHUAH ELOHIYM to grow every tree that is pleasant to the sight, and good for food; the tree of life also in the midst of the garden, and the tree of knowledge of good and evil.",
+        ]},
+    ];
 
     const GenesisGame = () => {
       const canvasRef = useRef(null);
@@ -283,15 +433,16 @@
       const [camera, setCamera] = useState({ x: 0, y: 0 });
       const [showDialogue, setShowDialogue] = useState(null);
       const [sceneText, setSceneText] = useState("Bere'shiyth - In the beginning ELOHIYM created the heavens and the earth...");
-      const [showSceneText, setShowSceneText] = useState(true);
+      const [showSceneText, setShowSceneText] = useState(false);
       const [gameTime, setGameTime] = useState(0);
-      const [gamePhase, setGamePhase] = useState(PHASES.EXPLORE);
+      const [gamePhase, setGamePhase] = useState(PHASES.CUTSCENE);
+      const [cutsceneSlide, setCutsceneSlide] = useState(0);
       const keysPressed = useRef({});
       const [touchDirection, setTouchDirection] = useState(null);
       // Refs to avoid stale closures in game loop
       const touchDirRef = useRef(null);
       const showDialogueRef = useRef(null);
-      const gamePhaseRef = useRef(PHASES.EXPLORE);
+      const gamePhaseRef = useRef(PHASES.CUTSCENE);
       const npcsRef = useRef(null);
 
       // Keep refs in sync with state for the game loop
@@ -328,15 +479,14 @@
       }, [map]);
 
       useEffect(() => {
+        if (gamePhase === PHASES.CUTSCENE) return; // no camera during cutscene
         const vp = getVP(canvasRef.current || { clientWidth: window.innerWidth, clientHeight: window.innerHeight });
         if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE) {
-          // Follow player during explore / complete
           setCamera({
             x: Math.max(0, Math.min(player.x - vp.w / 2, MAP_WIDTH - vp.w)),
             y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
           });
         } else {
-          // Follow Chavvah during scene phases
           const chavvah = npcs.find(n => n.id === 'chavvah');
           if (chavvah) {
             setCamera({
@@ -426,12 +576,25 @@
         }
       }, [gamePhase]);
 
+      const advanceCutscene = useCallback(() => {
+        const next = cutsceneSlide + 1;
+        if (next >= CUTSCENE_SLIDES.length) {
+          // Cutscene over – transition to explore
+          setGamePhase(PHASES.EXPLORE);
+          setSceneText("Explore the Garden of Eden. Speak to A\u2019dam, Chavvah, and the Nachash...");
+          setShowSceneText(true);
+        } else {
+          setCutsceneSlide(next);
+        }
+      }, [cutsceneSlide]);
+
       useEffect(() => {
         const handleKeyDown = (e) => {
           keysPressed.current[e.key.toLowerCase()] = true;
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
-            if (showSceneText && gamePhase !== PHASES.EXPLORE) advanceScene();
+            if (gamePhase === PHASES.CUTSCENE) advanceCutscene();
+            else if (showSceneText && gamePhase !== PHASES.EXPLORE) advanceScene();
             else handleInteraction();
           }
         };
@@ -439,7 +602,7 @@
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
         return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
-      }, [handleInteraction, advanceScene, showSceneText, gamePhase]);
+      }, [handleInteraction, advanceScene, advanceCutscene, showSceneText, gamePhase]);
 
       const handleTouchStart = (direction) => setTouchDirection(direction);
       const handleTouchEnd = () => setTouchDirection(null);
@@ -495,7 +658,7 @@
               return { x: finalX, y: finalY, prevX: prev.x, prevY: prev.y, direction: newDir, walkFrame, isMoving };
             });
           }
-          if (!dlg) {
+          if (!dlg && phase !== PHASES.CUTSCENE) {
             setNpcs(prev => prev.map(npc => {
               let newNpc = { ...npc, moveTimer: npc.moveTimer + 1, thoughtTimer: npc.thoughtTimer + 1 };
               if (npc.clothesBlink > 0) {
@@ -743,6 +906,525 @@
         }
       };
 
+      // ── Cutscene canvas renderer ────────────────────────────────────
+      const drawCutscene = (ctx, W, H, slide, t) => {
+        const scene = CUTSCENE_SLIDES[slide]?.scene || 'void';
+        const cx = W / 2, cy = H / 2;
+
+        // helper: pseudo-random from seed (deterministic sparkle / star positions)
+        const pr = (i) => ((Math.sin(i * 127.1 + i * 311.7) * 43758.5453) % 1 + 1) % 1;
+
+        switch (scene) {
+
+          // ── 0: The Void ─────────────────────────────────────────────
+          case 'void': {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, W, H);
+            // subtle deep-water particles drifting
+            for (let i = 0; i < 60; i++) {
+              const px = (pr(i) * W + t * 0.15 * (pr(i + 99) - 0.5)) % W;
+              const py = (pr(i + 50) * H + t * 0.1 * pr(i + 200)) % H;
+              const r = 1 + pr(i + 30) * 2.5;
+              const a = 0.04 + 0.06 * Math.sin(t * 0.04 + i);
+              ctx.fillStyle = `rgba(40,60,120,${a})`;
+              ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+            }
+            // moving shimmer across the deep
+            const shimX = (t * 0.8) % (W + 200) - 100;
+            const grad = ctx.createLinearGradient(shimX - 80, 0, shimX + 80, 0);
+            grad.addColorStop(0, 'rgba(60,80,160,0)');
+            grad.addColorStop(0.5, 'rgba(80,120,200,0.08)');
+            grad.addColorStop(1, 'rgba(60,80,160,0)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, W, H);
+            break;
+          }
+
+          // ── 1: Light ────────────────────────────────────────────────
+          case 'light': {
+            // left = darkness, right = light, dividing line oscillates
+            const split = cx + Math.sin(t * 0.03) * 30;
+            ctx.fillStyle = '#020208';
+            ctx.fillRect(0, 0, split, H);
+            const lg = ctx.createRadialGradient(split + W * 0.3, cy, 0, split + W * 0.3, cy, W * 0.6);
+            lg.addColorStop(0, '#fffbe6');
+            lg.addColorStop(0.4, '#ffe066');
+            lg.addColorStop(1, '#332800');
+            ctx.fillStyle = lg;
+            ctx.fillRect(split, 0, W - split, H);
+            // rays emanating from the divide
+            ctx.save();
+            ctx.globalAlpha = 0.15 + 0.05 * Math.sin(t * 0.08);
+            for (let i = 0; i < 12; i++) {
+              const angle = (i / 12) * Math.PI - Math.PI / 2 + Math.sin(t * 0.02 + i) * 0.1;
+              ctx.strokeStyle = '#ffd700';
+              ctx.lineWidth = 2 + pr(i) * 3;
+              ctx.beginPath();
+              ctx.moveTo(split, cy);
+              ctx.lineTo(split + Math.cos(angle) * W * 0.7, cy + Math.sin(angle) * H * 0.8);
+              ctx.stroke();
+            }
+            ctx.restore();
+            break;
+          }
+
+          // ── 2: Firmament ────────────────────────────────────────────
+          case 'firmament': {
+            // waters above (top third)
+            const wg1 = ctx.createLinearGradient(0, 0, 0, H * 0.3);
+            wg1.addColorStop(0, '#1a2a5c');
+            wg1.addColorStop(1, '#2d5aaf');
+            ctx.fillStyle = wg1;
+            ctx.fillRect(0, 0, W, H * 0.3);
+            // ripples above
+            ctx.strokeStyle = 'rgba(120,180,255,0.2)';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 6; i++) {
+              const ry = H * 0.05 + i * H * 0.04;
+              ctx.beginPath();
+              for (let x = 0; x < W; x += 4) {
+                const yy = ry + Math.sin(x * 0.02 + t * 0.05 + i * 2) * 4;
+                x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+              }
+              ctx.stroke();
+            }
+            // firmament band (middle)
+            const fg = ctx.createLinearGradient(0, H * 0.3, 0, H * 0.7);
+            fg.addColorStop(0, '#5ba3d9');
+            fg.addColorStop(0.5, '#87ceeb');
+            fg.addColorStop(1, '#5ba3d9');
+            ctx.fillStyle = fg;
+            ctx.fillRect(0, H * 0.3, W, H * 0.4);
+            // label
+            ctx.fillStyle = 'rgba(255,255,255,0.12)';
+            ctx.font = `bold ${Math.max(14, W * 0.03)}px Georgia, serif`;
+            ctx.textAlign = 'center';
+            ctx.fillText('SHAMAYIM', cx, cy + 5);
+            ctx.textAlign = 'left';
+            // waters below (bottom third)
+            const wg2 = ctx.createLinearGradient(0, H * 0.7, 0, H);
+            wg2.addColorStop(0, '#2d5aaf');
+            wg2.addColorStop(1, '#0a1a3c');
+            ctx.fillStyle = wg2;
+            ctx.fillRect(0, H * 0.7, W, H * 0.3);
+            for (let i = 0; i < 6; i++) {
+              const ry = H * 0.75 + i * H * 0.04;
+              ctx.beginPath();
+              for (let x = 0; x < W; x += 4) {
+                const yy = ry + Math.sin(x * 0.015 + t * 0.04 + i * 3) * 5;
+                x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+              }
+              ctx.strokeStyle = 'rgba(80,140,220,0.18)';
+              ctx.stroke();
+            }
+            break;
+          }
+
+          // ── 3: Land & Vegetation ────────────────────────────────────
+          case 'land': {
+            // sky
+            const skyG = ctx.createLinearGradient(0, 0, 0, H * 0.5);
+            skyG.addColorStop(0, '#87ceeb');
+            skyG.addColorStop(1, '#b8e4f8');
+            ctx.fillStyle = skyG;
+            ctx.fillRect(0, 0, W, H * 0.5);
+            // sea on left
+            ctx.fillStyle = '#3d7aaf';
+            ctx.fillRect(0, H * 0.5, W * 0.35, H * 0.5);
+            for (let i = 0; i < 8; i++) {
+              ctx.strokeStyle = 'rgba(100,180,255,0.2)';
+              ctx.beginPath();
+              for (let x = 0; x < W * 0.35; x += 3) {
+                const yy = H * 0.55 + i * 20 + Math.sin(x * 0.03 + t * 0.06 + i) * 3;
+                x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+              }
+              ctx.stroke();
+            }
+            // land mass rising from right
+            const landG = ctx.createLinearGradient(0, H * 0.45, 0, H);
+            landG.addColorStop(0, '#8b7355');
+            landG.addColorStop(0.3, '#6b5530');
+            landG.addColorStop(1, '#4a3820');
+            ctx.fillStyle = landG;
+            ctx.beginPath();
+            ctx.moveTo(W * 0.3, H);
+            ctx.quadraticCurveTo(W * 0.35, H * 0.5, W * 0.5, H * 0.42);
+            ctx.quadraticCurveTo(W * 0.7, H * 0.38, W, H * 0.45);
+            ctx.lineTo(W, H);
+            ctx.fill();
+            // grass on top of land
+            ctx.fillStyle = '#4e7c2b';
+            ctx.beginPath();
+            ctx.moveTo(W * 0.3, H);
+            ctx.quadraticCurveTo(W * 0.35, H * 0.49, W * 0.5, H * 0.41);
+            ctx.quadraticCurveTo(W * 0.7, H * 0.37, W, H * 0.44);
+            ctx.lineTo(W, H * 0.45); ctx.quadraticCurveTo(W * 0.7, H * 0.38, W * 0.5, H * 0.42);
+            ctx.quadraticCurveTo(W * 0.35, H * 0.5, W * 0.3, H);
+            ctx.fill();
+            // little trees sprouting
+            for (let i = 0; i < 7; i++) {
+              const tx = W * 0.42 + i * W * 0.08;
+              const ty = H * 0.39 + Math.sin(i * 2.3) * H * 0.04;
+              const th = 15 + pr(i + 10) * 20;
+              ctx.fillStyle = '#6b4513';
+              ctx.fillRect(tx - 2, ty - th, 4, th);
+              ctx.fillStyle = i % 2 === 0 ? '#2d6a1d' : '#3d8a2d';
+              ctx.beginPath(); ctx.arc(tx, ty - th - 6, 8 + pr(i) * 6, 0, Math.PI * 2); ctx.fill();
+            }
+            break;
+          }
+
+          // ── 4: Luminaries (sun, moon, stars) ────────────────────────
+          case 'luminaries': {
+            // gradient sky: dark blue left (night), warm right (day)
+            const skyG = ctx.createLinearGradient(0, 0, W, 0);
+            skyG.addColorStop(0, '#0a0a2e');
+            skyG.addColorStop(0.45, '#1a1a4e');
+            skyG.addColorStop(0.55, '#cc6600');
+            skyG.addColorStop(1, '#ffd080');
+            ctx.fillStyle = skyG;
+            ctx.fillRect(0, 0, W, H);
+            // stars on the dark side
+            for (let i = 0; i < 80; i++) {
+              const sx = pr(i) * W * 0.5;
+              const sy = pr(i + 50) * H;
+              const sr = 0.5 + pr(i + 100) * 1.8;
+              const sa = 0.3 + 0.5 * Math.sin(t * 0.1 + i * 7);
+              ctx.fillStyle = `rgba(255,255,220,${sa})`;
+              ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2); ctx.fill();
+            }
+            // moon (left)
+            ctx.fillStyle = '#e8e8d0';
+            ctx.shadowColor = '#e8e8ff'; ctx.shadowBlur = 20;
+            ctx.beginPath(); ctx.arc(W * 0.2, H * 0.3, 35, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+            // moon dark side (crescent)
+            ctx.fillStyle = '#0a0a2e';
+            ctx.beginPath(); ctx.arc(W * 0.2 + 12, H * 0.3 - 2, 30, 0, Math.PI * 2); ctx.fill();
+            // sun (right)
+            ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 40 + Math.sin(t * 0.08) * 10;
+            ctx.fillStyle = '#ffe066';
+            ctx.beginPath(); ctx.arc(W * 0.78, H * 0.35, 45, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+            // sun rays
+            ctx.save(); ctx.globalAlpha = 0.2;
+            for (let i = 0; i < 16; i++) {
+              const a = (i / 16) * Math.PI * 2 + t * 0.01;
+              ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(W * 0.78 + Math.cos(a) * 50, H * 0.35 + Math.sin(a) * 50);
+              ctx.lineTo(W * 0.78 + Math.cos(a) * 90, H * 0.35 + Math.sin(a) * 90);
+              ctx.stroke();
+            }
+            ctx.restore();
+            break;
+          }
+
+          // ── 5: Sea creatures & birds ────────────────────────────────
+          case 'creatures_sea': {
+            // ocean background
+            const oG = ctx.createLinearGradient(0, 0, 0, H);
+            oG.addColorStop(0, '#87ceeb');
+            oG.addColorStop(0.35, '#5daacf');
+            oG.addColorStop(0.4, '#3d7aaf');
+            oG.addColorStop(1, '#0a2a4c');
+            ctx.fillStyle = oG;
+            ctx.fillRect(0, 0, W, H);
+            // water surface line
+            ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let x = 0; x < W; x += 3) {
+              const yy = H * 0.38 + Math.sin(x * 0.02 + t * 0.06) * 4;
+              x === 0 ? ctx.moveTo(x, yy) : ctx.lineTo(x, yy);
+            }
+            ctx.stroke();
+            // fish swimming
+            for (let i = 0; i < 10; i++) {
+              const fx = ((pr(i) * W + t * (1 + pr(i + 5)) * 0.8) % (W + 60)) - 30;
+              const fy = H * 0.48 + pr(i + 20) * H * 0.4;
+              const fs = 6 + pr(i + 30) * 8;
+              const fc = i % 3 === 0 ? '#ff8844' : i % 3 === 1 ? '#44aaff' : '#88cc44';
+              ctx.fillStyle = fc;
+              ctx.beginPath();
+              ctx.ellipse(fx, fy, fs, fs * 0.5, 0, 0, Math.PI * 2);
+              ctx.fill();
+              // tail
+              ctx.beginPath();
+              ctx.moveTo(fx - fs, fy);
+              ctx.lineTo(fx - fs - fs * 0.6, fy - fs * 0.4);
+              ctx.lineTo(fx - fs - fs * 0.6, fy + fs * 0.4);
+              ctx.fill();
+              // eye
+              ctx.fillStyle = '#111';
+              ctx.beginPath(); ctx.arc(fx + fs * 0.4, fy - fs * 0.12, 1.5, 0, Math.PI * 2); ctx.fill();
+            }
+            // whale
+            ctx.fillStyle = '#2a4a6a';
+            const wx = ((t * 0.3) % (W + 200)) - 100;
+            ctx.beginPath();
+            ctx.ellipse(wx, H * 0.72, 50, 22, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#3a5a7a';
+            ctx.beginPath(); ctx.ellipse(wx, H * 0.72 - 4, 45, 16, 0, 0, Math.PI * 2); ctx.fill();
+            // whale tail
+            ctx.fillStyle = '#2a4a6a';
+            ctx.beginPath();
+            ctx.moveTo(wx - 48, H * 0.72);
+            ctx.quadraticCurveTo(wx - 70, H * 0.72 - 18, wx - 80, H * 0.72 - 25);
+            ctx.quadraticCurveTo(wx - 70, H * 0.72, wx - 80, H * 0.72 + 15);
+            ctx.quadraticCurveTo(wx - 70, H * 0.72 + 5, wx - 48, H * 0.72);
+            ctx.fill();
+            // birds in sky
+            for (let i = 0; i < 8; i++) {
+              const bx = ((pr(i + 60) * W + t * (0.5 + pr(i + 70) * 0.6)) % (W + 40)) - 20;
+              const byy = H * 0.08 + pr(i + 80) * H * 0.25;
+              const wingA = Math.sin(t * 0.15 + i * 3) * 0.4;
+              ctx.strokeStyle = '#222';
+              ctx.lineWidth = 2;
+              ctx.beginPath();
+              ctx.moveTo(bx - 8, byy + wingA * 8);
+              ctx.quadraticCurveTo(bx - 3, byy - 4 + wingA * 6, bx, byy);
+              ctx.quadraticCurveTo(bx + 3, byy - 4 + wingA * 6, bx + 8, byy + wingA * 8);
+              ctx.stroke();
+            }
+            break;
+          }
+
+          // ── 6: Land creatures ───────────────────────────────────────
+          case 'creatures_land': {
+            // sky + grass
+            const sG = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+            sG.addColorStop(0, '#87ceeb');
+            sG.addColorStop(1, '#b8e4f8');
+            ctx.fillStyle = sG;
+            ctx.fillRect(0, 0, W, H * 0.55);
+            ctx.fillStyle = '#4e7c2b';
+            ctx.fillRect(0, H * 0.55, W, H * 0.45);
+            ctx.fillStyle = '#3d6a20';
+            ctx.fillRect(0, H * 0.55, W, 4);
+            // simple animal silhouettes walking across
+            const animals = [
+              { ox: 0.15, oy: 0.65, s: 1.0 },   // cattle
+              { ox: 0.4,  oy: 0.7,  s: 0.7 },   // small beast
+              { ox: 0.6,  oy: 0.62, s: 1.2 },   // large beast
+              { ox: 0.8,  oy: 0.72, s: 0.5 },   // creeping thing
+              { ox: 0.25, oy: 0.78, s: 0.6 },   // another
+            ];
+            animals.forEach((an, i) => {
+              const ax = ((an.ox * W + t * (0.3 + pr(i + 40) * 0.3)) % (W + 80)) - 40;
+              const ay = an.oy * H;
+              const sz = 16 * an.s;
+              // body
+              ctx.fillStyle = i % 2 === 0 ? '#8b6842' : '#6b5232';
+              ctx.beginPath(); ctx.ellipse(ax, ay, sz, sz * 0.55, 0, 0, Math.PI * 2); ctx.fill();
+              // head
+              ctx.beginPath(); ctx.arc(ax + sz * 0.8, ay - sz * 0.3, sz * 0.4, 0, Math.PI * 2); ctx.fill();
+              // legs
+              const legSwing = Math.sin(t * 0.12 + i * 5) * 3;
+              ctx.fillRect(ax - sz * 0.4, ay + sz * 0.3, 3, sz * 0.5 + legSwing);
+              ctx.fillRect(ax + sz * 0.2, ay + sz * 0.3, 3, sz * 0.5 - legSwing);
+            });
+            break;
+          }
+
+          // ── 7: Man created ──────────────────────────────────────────
+          case 'man': {
+            // golden radiant background
+            const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.7);
+            rg.addColorStop(0, '#fffbe0');
+            rg.addColorStop(0.3, '#ffd700');
+            rg.addColorStop(0.7, '#996600');
+            rg.addColorStop(1, '#1a0a00');
+            ctx.fillStyle = rg;
+            ctx.fillRect(0, 0, W, H);
+            // dust particles rising from below
+            for (let i = 0; i < 40; i++) {
+              const dx = cx + (pr(i) - 0.5) * W * 0.5;
+              const dy = H - ((t * 0.6 + pr(i + 20) * 200) % (H * 0.8));
+              const ds = 1 + pr(i + 40) * 3;
+              ctx.fillStyle = `rgba(180,140,80,${0.15 + 0.1 * Math.sin(t * 0.06 + i)})`;
+              ctx.beginPath(); ctx.arc(dx, dy, ds, 0, Math.PI * 2); ctx.fill();
+            }
+            // silhouette of man with glory aura
+            const figY = cy + H * 0.05;
+            // glory aura
+            ctx.shadowColor = '#ffd700';
+            ctx.shadowBlur = 30 + Math.sin(t * 0.08) * 10;
+            ctx.fillStyle = 'rgba(255,215,0,0.2)';
+            ctx.beginPath(); ctx.ellipse(cx, figY - 10, 40, 55, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+            // figure
+            ctx.fillStyle = '#3a2510';
+            // head
+            ctx.beginPath(); ctx.arc(cx, figY - 40, 14, 0, Math.PI * 2); ctx.fill();
+            // body
+            ctx.fillRect(cx - 8, figY - 26, 16, 24);
+            // arms raised
+            ctx.save(); ctx.lineWidth = 6; ctx.strokeStyle = '#3a2510'; ctx.lineCap = 'round';
+            ctx.beginPath(); ctx.moveTo(cx - 8, figY - 20); ctx.lineTo(cx - 28, figY - 38); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(cx + 8, figY - 20); ctx.lineTo(cx + 28, figY - 38); ctx.stroke();
+            ctx.restore();
+            // legs
+            ctx.fillRect(cx - 7, figY - 2, 6, 20);
+            ctx.fillRect(cx + 1, figY - 2, 6, 20);
+            break;
+          }
+
+          // ── 8: Provision ────────────────────────────────────────────
+          case 'provision': {
+            // lush garden scene
+            const sG = ctx.createLinearGradient(0, 0, 0, H * 0.45);
+            sG.addColorStop(0, '#6eb5e0');
+            sG.addColorStop(1, '#a8daf0');
+            ctx.fillStyle = sG;
+            ctx.fillRect(0, 0, W, H * 0.45);
+            // rolling green hills
+            ctx.fillStyle = '#5a9a3a';
+            ctx.beginPath();
+            ctx.moveTo(0, H * 0.5);
+            for (let x = 0; x <= W; x += 20) {
+              ctx.lineTo(x, H * 0.44 + Math.sin(x * 0.008 + 1) * H * 0.04);
+            }
+            ctx.lineTo(W, H); ctx.lineTo(0, H);
+            ctx.fill();
+            ctx.fillStyle = '#4a8a2a';
+            ctx.beginPath();
+            ctx.moveTo(0, H * 0.55);
+            for (let x = 0; x <= W; x += 20) {
+              ctx.lineTo(x, H * 0.52 + Math.sin(x * 0.006 + 3) * H * 0.03);
+            }
+            ctx.lineTo(W, H); ctx.lineTo(0, H);
+            ctx.fill();
+            // fruit trees
+            for (let i = 0; i < 6; i++) {
+              const tx = W * 0.1 + i * W * 0.15;
+              const ty = H * 0.42 + Math.sin(i * 2 + 1) * H * 0.05;
+              ctx.fillStyle = '#6b4513';
+              ctx.fillRect(tx - 3, ty, 6, 30);
+              ctx.fillStyle = '#2d7a1d';
+              ctx.beginPath(); ctx.arc(tx, ty - 5, 18, 0, Math.PI * 2); ctx.fill();
+              // fruits
+              const colors = ['#cc0000', '#ff8800', '#ffdd00', '#cc0000', '#ff6688', '#ffaa00'];
+              for (let f = 0; f < 4; f++) {
+                const fx = tx + Math.cos(f * 1.8 + i) * 10;
+                const fy = ty - 5 + Math.sin(f * 1.8 + i) * 8;
+                ctx.fillStyle = colors[i];
+                ctx.beginPath(); ctx.arc(fx, fy, 3.5, 0, Math.PI * 2); ctx.fill();
+              }
+            }
+            // herbs / grain at bottom
+            ctx.strokeStyle = '#3a6a10';
+            ctx.lineWidth = 1.5;
+            for (let i = 0; i < 30; i++) {
+              const gx = pr(i + 90) * W;
+              const gy = H * 0.75 + pr(i + 91) * H * 0.2;
+              const gh = 8 + pr(i + 92) * 14;
+              ctx.beginPath();
+              ctx.moveTo(gx, gy);
+              ctx.quadraticCurveTo(gx + Math.sin(t * 0.05 + i) * 4, gy - gh * 0.6, gx + Math.sin(t * 0.05 + i) * 3, gy - gh);
+              ctx.stroke();
+            }
+            break;
+          }
+
+          // ── 9: Seventh Day – Rest ───────────────────────────────────
+          case 'rest': {
+            // peaceful golden twilight
+            const rG = ctx.createRadialGradient(cx, cy * 0.7, 0, cx, cy * 0.7, Math.max(W, H) * 0.8);
+            rG.addColorStop(0, '#fff8e0');
+            rG.addColorStop(0.3, '#ffe4a0');
+            rG.addColorStop(0.6, '#cc8844');
+            rG.addColorStop(1, '#221100');
+            ctx.fillStyle = rG;
+            ctx.fillRect(0, 0, W, H);
+            // soft pulsing light
+            ctx.save();
+            const pulse = 0.08 + 0.04 * Math.sin(t * 0.04);
+            ctx.globalAlpha = pulse;
+            ctx.fillStyle = '#fff';
+            ctx.beginPath(); ctx.arc(cx, cy * 0.7, 120 + Math.sin(t * 0.03) * 20, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+            // gentle drifting motes
+            for (let i = 0; i < 25; i++) {
+              const mx = cx + Math.sin(t * 0.01 + i * 1.3) * W * 0.4;
+              const my = cy + Math.cos(t * 0.008 + i * 0.9) * H * 0.35;
+              ctx.fillStyle = `rgba(255,240,180,${0.1 + 0.08 * Math.sin(t * 0.05 + i)})`;
+              ctx.beginPath(); ctx.arc(mx, my, 2 + pr(i) * 3, 0, Math.PI * 2); ctx.fill();
+            }
+            break;
+          }
+
+          // ── 10: Garden of Eden ──────────────────────────────────────
+          case 'garden': {
+            // rich sky
+            const sG = ctx.createLinearGradient(0, 0, 0, H * 0.4);
+            sG.addColorStop(0, '#5a9ae0');
+            sG.addColorStop(1, '#87ceeb');
+            ctx.fillStyle = sG;
+            ctx.fillRect(0, 0, W, H * 0.4);
+            // lush ground
+            ctx.fillStyle = '#3a7a22';
+            ctx.fillRect(0, H * 0.4, W, H * 0.6);
+            // garden path down the middle
+            ctx.fillStyle = '#c9a86c';
+            ctx.fillRect(cx - 20, H * 0.4, 40, H * 0.6);
+            // Tree of Life (right, golden)
+            const tolX = cx + W * 0.25;
+            ctx.fillStyle = '#654321';
+            ctx.fillRect(tolX - 6, H * 0.2, 12, H * 0.25);
+            ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 25 + Math.sin(t * 0.1) * 8;
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath(); ctx.arc(tolX, H * 0.15, 35, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = 'rgba(255,255,200,0.4)';
+            ctx.beginPath(); ctx.arc(tolX, H * 0.15, 25, 0, Math.PI * 2); ctx.fill();
+            // Tree of Knowledge (left, dark with red fruit)
+            const tokX = cx - W * 0.25;
+            ctx.fillStyle = '#4a3520';
+            ctx.fillRect(tokX - 6, H * 0.2, 12, H * 0.25);
+            ctx.fillStyle = '#1a3a1a';
+            ctx.beginPath(); ctx.arc(tokX, H * 0.15, 35, 0, Math.PI * 2); ctx.fill();
+            // red fruits
+            for (let i = 0; i < 6; i++) {
+              const a = (i / 6) * Math.PI * 2 + 0.3;
+              ctx.fillStyle = '#cc0000';
+              ctx.beginPath(); ctx.arc(tokX + Math.cos(a) * 20, H * 0.15 + Math.sin(a) * 18, 5, 0, Math.PI * 2); ctx.fill();
+            }
+            // decorative trees lining the garden
+            for (let i = 0; i < 10; i++) {
+              const tx = i * (W / 10) + W * 0.05;
+              if (Math.abs(tx - cx) < 40 || Math.abs(tx - tolX) < 50 || Math.abs(tx - tokX) < 50) continue;
+              const ty = H * 0.38;
+              ctx.fillStyle = '#5a3a15';
+              ctx.fillRect(tx - 3, ty, 6, 20);
+              ctx.fillStyle = '#2d6a1d';
+              ctx.beginPath(); ctx.arc(tx, ty - 6, 14, 0, Math.PI * 2); ctx.fill();
+            }
+            // flowers
+            for (let i = 0; i < 15; i++) {
+              const fx = pr(i + 120) * W;
+              const fy = H * 0.5 + pr(i + 130) * H * 0.35;
+              if (Math.abs(fx - cx) < 25) continue;
+              ctx.fillStyle = i % 3 === 0 ? '#ff69b4' : i % 3 === 1 ? '#ffd700' : '#ff4444';
+              ctx.beginPath(); ctx.arc(fx, fy, 3 + pr(i + 140) * 2, 0, Math.PI * 2); ctx.fill();
+            }
+            // golden gate in the distance (top right)
+            ctx.fillStyle = '#daa520';
+            ctx.fillRect(W * 0.88, H * 0.3, 5, H * 0.15);
+            ctx.fillRect(W * 0.93, H * 0.3, 5, H * 0.15);
+            ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(W * 0.905, H * 0.31, 13, Math.PI, 0); ctx.stroke();
+            break;
+          }
+
+          default: {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, W, H);
+          }
+        }
+      };
+
       useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -758,6 +1440,12 @@
         const ctx = canvas.getContext('2d');
         // Reset transform then apply DPR scale so every draw call uses CSS px.
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // ── CUTSCENE rendering ──────────────────────────────────────────
+        if (gamePhase === PHASES.CUTSCENE) {
+          drawCutscene(ctx, W, H, cutsceneSlide, gameTime);
+          return; // don't draw the map during the cutscene
+        }
+
         ctx.fillStyle = COLORS.sky;
         ctx.fillRect(0, 0, W, H);
 
@@ -1004,14 +1692,33 @@
           });
         }
 
-      }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase]);
+      }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide]);
 
       const spokenCount = npcs.filter(n => ['adam', 'chavvah', 'nachash'].includes(n.id) && n.hasSpoken).length;
 
       return (
         <div className="game-container">
-          <h1 className="title">BERE'SHIYTH: In The Beginning</h1>
+          {gamePhase !== PHASES.CUTSCENE && <h1 className="title">BERE'SHIYTH: In The Beginning</h1>}
           <canvas ref={canvasRef} />
+
+          {gamePhase === PHASES.CUTSCENE && (() => {
+            const slide = CUTSCENE_SLIDES[cutsceneSlide];
+            return (
+              <div className="cutscene-overlay">
+                <div className="cutscene-header">
+                  {slide.day && <p className="cutscene-day">{slide.day}</p>}
+                </div>
+                <span className="cutscene-counter">{cutsceneSlide + 1} / {CUTSCENE_SLIDES.length}</span>
+                <div className="cutscene-box">
+                  <p className="cutscene-ref">{slide.ref}</p>
+                  {slide.lines.map((line, i) => <p key={i} className="cutscene-verse">{line}</p>)}
+                  <button className="cutscene-btn" onClick={advanceCutscene}>
+                    {cutsceneSlide < CUTSCENE_SLIDES.length - 1 ? 'Continue \u25B6' : 'Enter the Garden \u25B6'}
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
 
           {showDialogue && (
             <div className="dialogue-box">
