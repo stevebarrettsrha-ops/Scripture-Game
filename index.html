@@ -351,11 +351,20 @@
 
     const PHASES = {
       CUTSCENE: 'cutscene',
-      EXPLORE: 'explore', SCENE_START: 'scene_start', CHAVVAH_WALKS_TO_TREE: 'chavvah_walks',
+      EXPLORE: 'explore', SCENE_START: 'scene_start', SERPENT_DIALOGUE: 'serpent_dialogue', CHAVVAH_WALKS_TO_TREE: 'chavvah_walks',
       CHAVVAH_TAKES_FRUIT: 'chavvah_takes', CHAVVAH_EATS: 'chavvah_eats', CHAVVAH_GLORY_FADES: 'chavvah_glory_fades',
       CHAVVAH_WALKS_TO_ADAM: 'chavvah_to_adam', ADAM_EATS: 'adam_eats', ADAM_GLORY_FADES: 'adam_glory_fades',
       EYES_OPENED: 'eyes_opened', COMPLETE: 'complete'
     };
+
+    // ── Serpent–Chavvah dialogue (Bere'shiyth 3:1-5) ──────────────────
+    const SERPENT_DIALOGUE_LINES = [
+      { speaker: 'nachash', name: 'Nachash', text: "Yea, hath ELOHIYM said, Ye shall not eat of every tree of the garden?" },
+      { speaker: 'chavvah', name: 'Chavvah', text: "We may eat of the fruit of the trees of the garden:" },
+      { speaker: 'chavvah', name: 'Chavvah', text: "But of the fruit of the tree which is in the midst of the garden, ELOHIYM hath said, Ye shall not eat of it, neither shall ye touch it, lest ye die." },
+      { speaker: 'nachash', name: 'Nachash', text: "Ye shall not surely die:" },
+      { speaker: 'nachash', name: 'Nachash', text: "For ELOHIYM doth know that in the day ye eat thereof, then your eyes shall be opened, and ye shall be as elohiym, knowing good and evil." },
+    ];
 
     // ── Creation cutscene slides (Cepher – Bere'shiyth 1-2) ──────────
     const CUTSCENE_SLIDES = [
@@ -447,6 +456,7 @@
       const [gameTime, setGameTime] = useState(0);
       const [gamePhase, setGamePhase] = useState(PHASES.CUTSCENE);
       const [cutsceneSlide, setCutsceneSlide] = useState(0);
+      const [serpentDialogueIndex, setSerpentDialogueIndex] = useState(0);
       const keysPressed = useRef({});
       const [touchDirection, setTouchDirection] = useState(null);
       // Refs to avoid stale closures in game loop
@@ -508,11 +518,23 @@
             y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
           });
         } else {
-          const chavvah = npcs.find(n => n.id === 'chavvah');
-          if (chavvah) {
+          // During scene phases, focus on the tree area (fixed point) to prevent camera shake
+          const focusX = TREE_OF_KNOWLEDGE.x;
+          const focusY = TREE_OF_KNOWLEDGE.y + 1;
+          if (gamePhase === PHASES.CHAVVAH_WALKS_TO_ADAM || gamePhase === PHASES.ADAM_EATS || gamePhase === PHASES.ADAM_GLORY_FADES || gamePhase === PHASES.EYES_OPENED) {
+            // Follow Adam during later phases
+            const adam = npcs.find(n => n.id === 'adam');
+            const chavvah = npcs.find(n => n.id === 'chavvah');
+            const midX = adam && chavvah ? (adam.x + chavvah.x) / 2 : (adam?.x || focusX);
+            const midY = adam && chavvah ? (adam.y + chavvah.y) / 2 : (adam?.y || focusY);
             setCamera({
-              x: Math.max(0, Math.min(chavvah.x - vp.w / 2, MAP_WIDTH - vp.w)),
-              y: Math.max(0, Math.min(chavvah.y - vp.h / 2, MAP_HEIGHT - vp.h))
+              x: Math.round(Math.max(0, Math.min(midX - vp.w / 2, MAP_WIDTH - vp.w))),
+              y: Math.round(Math.max(0, Math.min(midY - vp.h / 2, MAP_HEIGHT - vp.h)))
+            });
+          } else {
+            setCamera({
+              x: Math.round(Math.max(0, Math.min(focusX - vp.w / 2, MAP_WIDTH - vp.w))),
+              y: Math.round(Math.max(0, Math.min(focusY - vp.h / 2, MAP_HEIGHT - vp.h)))
             });
           }
         }
@@ -541,13 +563,31 @@
         }
       }, [showDialogue, showSceneText, gamePhase, npcs, player, advanceDialogue]);
 
+      const advanceSerpentDialogue = useCallback(() => {
+        const next = serpentDialogueIndex + 1;
+        if (next >= SERPENT_DIALOGUE_LINES.length) {
+          // Dialogue done — Chavvah now walks to the tree
+          setSerpentDialogueIndex(0);
+          setGamePhase(PHASES.CHAVVAH_WALKS_TO_TREE);
+          setSceneText("And when the woman saw that the tree was good for food, and pleasant to the eyes...");
+          setShowSceneText(true);
+        } else {
+          setSerpentDialogueIndex(next);
+        }
+      }, [serpentDialogueIndex]);
+
       const advanceScene = useCallback(() => {
         setShowSceneText(false);
         switch (gamePhase) {
           case PHASES.SCENE_START:
-            setGamePhase(PHASES.CHAVVAH_WALKS_TO_TREE);
-            setSceneText("And when the woman saw that the tree was good for food, and pleasant to the eyes...");
-            setShowSceneText(true);
+            // Position Chavvah and Nachash near the tree for their dialogue
+            setNpcs(prev => prev.map(npc => {
+              if (npc.id === 'chavvah') return { ...npc, behavior: 'scene', x: TREE_OF_KNOWLEDGE.x + 2, y: TREE_OF_KNOWLEDGE.y + 2, targetX: null, targetY: null, isMoving: false, direction: 'left' };
+              if (npc.id === 'nachash') return { ...npc, behavior: 'scene', x: TREE_OF_KNOWLEDGE.x - 1, y: TREE_OF_KNOWLEDGE.y + 2, targetX: null, targetY: null, isMoving: false, direction: 'right' };
+              return npc;
+            }));
+            setSerpentDialogueIndex(0);
+            setGamePhase(PHASES.SERPENT_DIALOGUE);
             break;
           case PHASES.CHAVVAH_TAKES_FRUIT:
             setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, holdingFruit: true } : npc));
@@ -615,6 +655,7 @@
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
             if (gamePhase === PHASES.CUTSCENE) advanceCutscene();
+            else if (gamePhase === PHASES.SERPENT_DIALOGUE) advanceSerpentDialogue();
             else if (showSceneText && gamePhase !== PHASES.EXPLORE) advanceScene();
             else handleInteraction();
           }
@@ -623,7 +664,7 @@
         window.addEventListener('keydown', handleKeyDown);
         window.addEventListener('keyup', handleKeyUp);
         return () => { window.removeEventListener('keydown', handleKeyDown); window.removeEventListener('keyup', handleKeyUp); };
-      }, [handleInteraction, advanceScene, advanceCutscene, showSceneText, gamePhase]);
+      }, [handleInteraction, advanceScene, advanceCutscene, advanceSerpentDialogue, showSceneText, gamePhase]);
 
       const handleTouchStart = (direction) => setTouchDirection(direction);
       const handleTouchEnd = () => setTouchDirection(null);
@@ -708,7 +749,11 @@
                 }
               }
               if (npc.id === 'adam' && phase !== PHASES.EXPLORE) { newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false; }
-              if (npc.behavior === 'circle_tree') {
+              if (npc.id === 'nachash' && phase !== PHASES.EXPLORE) {
+                // Stop nachash circling during scene phases
+                newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false;
+              }
+              if (npc.behavior === 'circle_tree' && phase === PHASES.EXPLORE) {
                 newNpc.circleAngle = (npc.circleAngle || 0) + 0.02;
                 const radius = 2.5;
                 newNpc.targetX = TREE_OF_KNOWLEDGE.x + Math.cos(newNpc.circleAngle) * radius;
@@ -2036,6 +2081,22 @@
                     {cutsceneSlide < CUTSCENE_SLIDES.length - 1 ? 'Continue \u25B6' : 'Enter the Garden \u25B6'}
                   </button>
                 </div>
+              </div>
+            );
+          })()}
+
+          {gamePhase === PHASES.SERPENT_DIALOGUE && (() => {
+            const line = SERPENT_DIALOGUE_LINES[serpentDialogueIndex];
+            return (
+              <div className="dialogue-box">
+                <div className="dialogue-header">
+                  <span className="dialogue-name" style={{color: line.speaker === 'nachash' ? '#5a9c5a' : '#facc15'}}>{line.name}</span>
+                  <span className="dialogue-counter">{serpentDialogueIndex + 1}/{SERPENT_DIALOGUE_LINES.length}</span>
+                </div>
+                <p className="dialogue-text">{line.text}</p>
+                <button className="btn" onClick={advanceSerpentDialogue}>
+                  {serpentDialogueIndex < SERPENT_DIALOGUE_LINES.length - 1 ? 'Next \u25B6' : 'Continue \u25B6'}
+                </button>
               </div>
             );
           })()}
