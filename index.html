@@ -1757,21 +1757,71 @@
             // All sprite drawing scaled 2× inside this block
             ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
             if (npc.isSerpent) {
-              ctx.fillStyle = npc.color;
-              const wave = Math.sin(gameTime * 0.2) * 3;
-              // Feet (serpent had feet before the curse - Bere'shiyth 3:14)
-              const legWalk = Math.sin(gameTime * 0.3) * 2;
-              ctx.fillStyle = '#1a5c1a';
-              // Left leg pair
-              ctx.fillRect(6, 24, 3, 5 + legWalk); ctx.fillRect(5, 28 + legWalk, 5, 2);
-              ctx.fillRect(14, 24, 3, 5 - legWalk); ctx.fillRect(13, 28 - legWalk, 5, 2);
-              // Body segments
-              ctx.fillStyle = npc.color;
-              for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(16 - i * 7, 20 + Math.sin(gameTime * 0.2 + i) * 2, 5 - i, 0, Math.PI * 2); ctx.fill(); }
-              // Head
-              ctx.beginPath(); ctx.arc(22, 18 + wave, 6, 0, Math.PI * 2); ctx.fill();
-              // Eye
-              ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(25, 16 + wave, 2, 0, Math.PI * 2); ctx.fill();
+              // Upright walking lizard (Nachash before the curse)
+              const frame = Math.floor(npc.walkFrame) % 4;
+              const bob = npc.isMoving && frame % 2 === 1 ? 1 : 0;
+              const armSwg = npc.isMoving ? (frame < 2 ? 2 : -2) : 0;
+              const legSwg = npc.isMoving ? (frame < 2 ? 2 : -2) : 0;
+              const DK = '#0a3a0a';
+              const BODY = '#228b22';
+              const BELLY = '#90ee90';
+              const r = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(16 + dx, bob + dy, w, h); };
+
+              // Tail (behind body, curving down)
+              ctx.fillStyle = BODY;
+              ctx.beginPath();
+              ctx.moveTo(14, bob + 18);
+              ctx.quadraticCurveTo(6, bob + 24, 4, bob + 30);
+              ctx.lineTo(7, bob + 30);
+              ctx.quadraticCurveTo(9, bob + 24, 16, bob + 20);
+              ctx.fill();
+
+              // Legs with feet (walking animation)
+              r(-5, 20, 4, 6 + legSwg, BODY);   // left leg
+              r(-6, 26 + legSwg, 6, 2, DK);      // left foot (3 toes)
+              r(-7, 25 + legSwg, 2, 2, DK);      // left toe
+              r( 1, 20, 4, 6 - legSwg, BODY);    // right leg
+              r( 0, 26 - legSwg, 6, 2, DK);      // right foot
+              r( 5, 25 - legSwg, 2, 2, DK);      // right toe
+
+              // Body (torso)
+              r(-6, 11, 12, 10, DK);             // outline
+              r(-5, 12, 10, 8, BODY);            // body fill
+              r(-3, 13, 6, 6, BELLY);            // lighter belly
+
+              // Arms with claws
+              r(-8, 12 + armSwg, 3, 7, DK);      // left arm outline
+              r(-8, 13 + armSwg, 2, 5, BODY);    // left arm
+              r(-9, 18 + armSwg, 2, 2, DK);      // left claw
+              r( 5, 12 - armSwg, 3, 7, DK);      // right arm outline
+              r( 5, 13 - armSwg, 2, 5, BODY);    // right arm
+              r( 6, 18 - armSwg, 2, 2, DK);      // right claw
+
+              // Head (lizard-shaped, slightly elongated)
+              r(-7, 0, 14, 12, DK);              // outline
+              r(-6, 1, 12, 10, BODY);            // head fill
+              // Snout (protruding forward)
+              r(-8, 4, 3, 5, DK);
+              r(-7, 5, 2, 3, BODY);
+              // Eyes (slit pupils, yellow-red)
+              ctx.fillStyle = '#ffcc00'; ctx.fillRect(16 - 4, bob + 3, 3, 3);  // left eye
+              ctx.fillStyle = '#ffcc00'; ctx.fillRect(16 + 1, bob + 3, 3, 3);  // right eye
+              ctx.fillStyle = '#cc0000'; ctx.fillRect(16 - 3, bob + 4, 1, 2);  // left slit
+              ctx.fillStyle = '#cc0000'; ctx.fillRect(16 + 2, bob + 4, 1, 2);  // right slit
+              // Mouth line
+              ctx.fillStyle = DK; ctx.fillRect(16 - 7, bob + 8, 6, 1);
+              // Forked tongue (flickers)
+              if (Math.sin(gameTime * 0.3) > 0.3) {
+                ctx.fillStyle = '#ff3333';
+                ctx.fillRect(16 - 10, bob + 7, 3, 1);
+                ctx.fillRect(16 - 12, bob + 6, 2, 1);
+                ctx.fillRect(16 - 12, bob + 8, 2, 1);
+              }
+              // Ridge/spines along the back
+              ctx.fillStyle = '#1a6b1a';
+              for (let i = 0; i < 4; i++) {
+                ctx.fillRect(16 + 4, bob + 2 + i * 4, 3, 2);
+              }
             } else if (npc.isAngel) {
               // Wings drawn BEHIND character (offset back and partially hidden)
               ctx.save();
