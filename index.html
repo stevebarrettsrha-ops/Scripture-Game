@@ -480,8 +480,16 @@
       }, [map]);
 
       const canMoveTo = useCallback((x, y, currentNpcs) => {
-        if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
-        if (!isWalkable(map[Math.floor(y)][Math.floor(x)])) return false;
+        // Player collision box: check all four corners (±0.3 tiles from centre)
+        const pad = 0.3;
+        const corners = [
+          [x - pad, y - pad], [x + pad, y - pad],
+          [x - pad, y + pad], [x + pad, y + pad],
+        ];
+        for (const [cx, cy] of corners) {
+          if (cx < 0 || cx >= MAP_WIDTH || cy < 0 || cy >= MAP_HEIGHT) return false;
+          if (!isWalkable(map[Math.floor(cy)][Math.floor(cx)])) return false;
+        }
         // Block walking through NPCs and their speech bubble area
         if (currentNpcs) {
           for (const npc of currentNpcs) {
