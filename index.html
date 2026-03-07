@@ -1666,21 +1666,37 @@
                 case TILES.GOLDEN_GATE:
                   // Path ground under the gate (drawn in pass 1)
                   ctx.fillStyle = '#9b7d52'; ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
-                  tallObjects.push({ tile, screenX, screenY });
+                  tallObjects.push({ tile, screenX, screenY, mapY });
                   break;
                 case TILES.TREE:
                 case TILES.TREE_OF_LIFE:
                 case TILES.TREE_OF_KNOWLEDGE:
                   // Defer to pass 2 so they draw on top of all ground
-                  tallObjects.push({ tile, screenX, screenY, mapX });
+                  tallObjects.push({ tile, screenX, screenY, mapX, mapY });
                   break;
               }
             }
           }
         }
 
-        // ── PASS 2: Tall objects (trees, gate) drawn over all ground ──────
-        tallObjects.forEach(({ tile, screenX, screenY, mapX }) => {
+        // ── PASS 2: Y-sorted draw of tall objects, NPCs, and player ──────
+        // Collect all entities that need Y-sorting
+        const sortedEntities = [];
+        tallObjects.forEach(obj => sortedEntities.push({ type: 'tall', ...obj }));
+        npcs.forEach(npc => {
+          const sx = (npc.x - camera.x) * TILE_SIZE, sy = (npc.y - camera.y) * TILE_SIZE;
+          if (sx > -TILE_SIZE * 2 && sx < canvas.width + TILE_SIZE * 2 && sy > -TILE_SIZE * 2 && sy < canvas.height + TILE_SIZE * 2) {
+            sortedEntities.push({ type: 'npc', npc, screenX: sx, screenY: sy, mapY: npc.y });
+          }
+        });
+        if (gamePhase === PHASES.EXPLORE) {
+          sortedEntities.push({ type: 'player', screenX: (player.x - camera.x) * TILE_SIZE, screenY: (player.y - camera.y) * TILE_SIZE, mapY: player.y });
+        }
+        // Sort by mapY so entities further down screen draw on top
+        sortedEntities.sort((a, b) => a.mapY - b.mapY);
+
+        // Helper to draw a tall object
+        const drawTallObject = ({ tile, screenX, screenY, mapX }) => {
           switch (tile) {
             case TILES.TREE:
               ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
@@ -1749,11 +1765,10 @@
               break;
             }
           }
-        });
+        };
 
-        npcs.forEach(npc => {
-          const screenX = (npc.x - camera.x) * TILE_SIZE, screenY = (npc.y - camera.y) * TILE_SIZE;
-          if (screenX > -TILE_SIZE * 2 && screenX < canvas.width + TILE_SIZE * 2 && screenY > -TILE_SIZE * 2 && screenY < canvas.height + TILE_SIZE * 2) {
+        // Helper to draw an NPC
+        const drawNpc = (npc, screenX, screenY) => {
             // All sprite drawing scaled 2× inside this block
             ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
             if (npc.isSerpent) {
@@ -1823,23 +1838,72 @@
                 ctx.fillRect(16 + 4, bob + 2 + i * 4, 3, 2);
               }
             } else if (npc.isAngel) {
-              // Wings drawn BEHIND character (offset back and partially hidden)
-              ctx.save();
-              ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
-              ctx.fillStyle = '#fff8dc';
-              const wingFlutter = Math.sin(gameTime * 0.12) * 0.08;
-              // Left wing (behind, extending left-back)
-              ctx.beginPath(); ctx.ellipse(2, 12, 7, 12, -0.5 - wingFlutter, 0, Math.PI * 2); ctx.fill();
-              // Right wing (behind, extending right-back)
-              ctx.beginPath(); ctx.ellipse(30, 12, 7, 12, 0.5 + wingFlutter, 0, Math.PI * 2); ctx.fill();
-              ctx.shadowBlur = 0;
-              ctx.restore();
-              // Draw character body OVER the wings
-              drawCharacterSprite(ctx, 0, 0, {
-                walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: npc.direction || 'down',
-                hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
-                isEve: false, showClothes: false, gameTime,
-              });
+              const dir = npc.direction || 'down';
+              const wf = Math.sin(gameTime * 0.12) * 0.08;
+              const wingColor = '#fff8dc';
+              const wingEdge = '#e8e0c0';
+
+              // Draw wings BEFORE body for front/side, AFTER for back
+              const drawWings = () => {
+                ctx.save();
+                ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
+                ctx.fillStyle = wingColor;
+
+                if (dir === 'left' || dir === 'right') {
+                  // Side view: both wings stacked together behind body, visible as one pair
+                  const wx = dir === 'right' ? 4 : 28;
+                  // Back wing (slightly offset)
+                  ctx.fillStyle = wingEdge;
+                  ctx.beginPath(); ctx.ellipse(wx, 10, 5, 13, wf, 0, Math.PI * 2); ctx.fill();
+                  // Front wing
+                  ctx.fillStyle = wingColor;
+                  ctx.beginPath(); ctx.ellipse(wx + (dir === 'right' ? 1 : -1), 10, 5, 12, -wf, 0, Math.PI * 2); ctx.fill();
+                } else if (dir === 'up') {
+                  // Back view: wings on the character's back, spread outward
+                  // Left wing - attached to back, extending left
+                  ctx.fillStyle = wingColor;
+                  ctx.beginPath();
+                  ctx.moveTo(12, 8);
+                  ctx.quadraticCurveTo(-4 - wf * 30, 4, -2, 20);
+                  ctx.quadraticCurveTo(4, 16, 12, 14);
+                  ctx.closePath(); ctx.fill();
+                  ctx.strokeStyle = wingEdge; ctx.lineWidth = 1; ctx.stroke();
+                  // Right wing - attached to back, extending right
+                  ctx.beginPath();
+                  ctx.moveTo(20, 8);
+                  ctx.quadraticCurveTo(36 + wf * 30, 4, 34, 20);
+                  ctx.quadraticCurveTo(28, 16, 20, 14);
+                  ctx.closePath(); ctx.fill();
+                  ctx.strokeStyle = wingEdge; ctx.lineWidth = 1; ctx.stroke();
+                } else {
+                  // Front view (down): wings behind body, spread outward
+                  // Left wing
+                  ctx.beginPath(); ctx.ellipse(2, 12, 7, 12, -0.5 - wf, 0, Math.PI * 2); ctx.fill();
+                  // Right wing
+                  ctx.beginPath(); ctx.ellipse(30, 12, 7, 12, 0.5 + wf, 0, Math.PI * 2); ctx.fill();
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.restore();
+              };
+
+              // Back view: draw body first, then wings on top
+              if (dir === 'up') {
+                drawCharacterSprite(ctx, 0, 0, {
+                  walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: dir,
+                  hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
+                  isEve: false, showClothes: false, gameTime,
+                });
+                drawWings();
+              } else {
+                // Front/side: draw wings behind, then body over them
+                drawWings();
+                drawCharacterSprite(ctx, 0, 0, {
+                  walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: dir,
+                  hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
+                  isEve: false, showClothes: false, gameTime,
+                });
+              }
               // Halo
               ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
               ctx.beginPath(); ctx.ellipse(16, -3, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
@@ -1867,19 +1931,27 @@
             ctx.fill();
             ctx.fillStyle = npc.isSerpent ? '#aaffaa' : '#fff';
             ctx.fillText(nameText, cx - nameWidth / 2 + 6, nameBoxY + 14);
-          }
-        });
+        };
 
-        if (gamePhase === PHASES.EXPLORE) {
-          const playerScreenX = (player.x - camera.x) * TILE_SIZE, playerScreenY = (player.y - camera.y) * TILE_SIZE;
-          ctx.save(); ctx.translate(playerScreenX, playerScreenY); ctx.scale(SCALE, SCALE);
+        // Helper to draw the player
+        const drawPlayer = (screenX, screenY) => {
+          ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
           drawCharacterSprite(ctx, 0, 0, {
             walkFrame: player.walkFrame, isMoving: player.isMoving, direction: player.direction,
             hairColor: '#1a1a1a', bodyColor: '#4169e1', skinColor: SKIN_COLOR,
             gameTime,
           });
           ctx.restore();
+        };
 
+        // Draw all entities in Y-sorted order
+        sortedEntities.forEach(ent => {
+          if (ent.type === 'tall') drawTallObject(ent);
+          else if (ent.type === 'npc') drawNpc(ent.npc, ent.screenX, ent.screenY);
+          else if (ent.type === 'player') drawPlayer(ent.screenX, ent.screenY);
+        });
+
+        if (gamePhase === PHASES.EXPLORE) {
           // ── Off-screen NPC direction arrows ────────────────────────
           const margin = 40;
           npcs.forEach(npc => {
