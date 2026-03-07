@@ -1823,23 +1823,72 @@
                 ctx.fillRect(16 + 4, bob + 2 + i * 4, 3, 2);
               }
             } else if (npc.isAngel) {
-              // Wings drawn BEHIND character (offset back and partially hidden)
-              ctx.save();
-              ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
-              ctx.fillStyle = '#fff8dc';
-              const wingFlutter = Math.sin(gameTime * 0.12) * 0.08;
-              // Left wing (behind, extending left-back)
-              ctx.beginPath(); ctx.ellipse(2, 12, 7, 12, -0.5 - wingFlutter, 0, Math.PI * 2); ctx.fill();
-              // Right wing (behind, extending right-back)
-              ctx.beginPath(); ctx.ellipse(30, 12, 7, 12, 0.5 + wingFlutter, 0, Math.PI * 2); ctx.fill();
-              ctx.shadowBlur = 0;
-              ctx.restore();
-              // Draw character body OVER the wings
-              drawCharacterSprite(ctx, 0, 0, {
-                walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: npc.direction || 'down',
-                hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
-                isEve: false, showClothes: false, gameTime,
-              });
+              const dir = npc.direction || 'down';
+              const wf = Math.sin(gameTime * 0.12) * 0.08;
+              const wingColor = '#fff8dc';
+              const wingEdge = '#e8e0c0';
+
+              // Draw wings BEFORE body for front/side, AFTER for back
+              const drawWings = () => {
+                ctx.save();
+                ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
+                ctx.fillStyle = wingColor;
+
+                if (dir === 'left' || dir === 'right') {
+                  // Side view: both wings stacked together behind body, visible as one pair
+                  const wx = dir === 'right' ? 4 : 28;
+                  // Back wing (slightly offset)
+                  ctx.fillStyle = wingEdge;
+                  ctx.beginPath(); ctx.ellipse(wx, 10, 5, 13, wf, 0, Math.PI * 2); ctx.fill();
+                  // Front wing
+                  ctx.fillStyle = wingColor;
+                  ctx.beginPath(); ctx.ellipse(wx + (dir === 'right' ? 1 : -1), 10, 5, 12, -wf, 0, Math.PI * 2); ctx.fill();
+                } else if (dir === 'up') {
+                  // Back view: wings on the character's back, spread outward
+                  // Left wing - attached to back, extending left
+                  ctx.fillStyle = wingColor;
+                  ctx.beginPath();
+                  ctx.moveTo(12, 8);
+                  ctx.quadraticCurveTo(-4 - wf * 30, 4, -2, 20);
+                  ctx.quadraticCurveTo(4, 16, 12, 14);
+                  ctx.closePath(); ctx.fill();
+                  ctx.strokeStyle = wingEdge; ctx.lineWidth = 1; ctx.stroke();
+                  // Right wing - attached to back, extending right
+                  ctx.beginPath();
+                  ctx.moveTo(20, 8);
+                  ctx.quadraticCurveTo(36 + wf * 30, 4, 34, 20);
+                  ctx.quadraticCurveTo(28, 16, 20, 14);
+                  ctx.closePath(); ctx.fill();
+                  ctx.strokeStyle = wingEdge; ctx.lineWidth = 1; ctx.stroke();
+                } else {
+                  // Front view (down): wings behind body, spread outward
+                  // Left wing
+                  ctx.beginPath(); ctx.ellipse(2, 12, 7, 12, -0.5 - wf, 0, Math.PI * 2); ctx.fill();
+                  // Right wing
+                  ctx.beginPath(); ctx.ellipse(30, 12, 7, 12, 0.5 + wf, 0, Math.PI * 2); ctx.fill();
+                }
+
+                ctx.shadowBlur = 0;
+                ctx.restore();
+              };
+
+              // Back view: draw body first, then wings on top
+              if (dir === 'up') {
+                drawCharacterSprite(ctx, 0, 0, {
+                  walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: dir,
+                  hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
+                  isEve: false, showClothes: false, gameTime,
+                });
+                drawWings();
+              } else {
+                // Front/side: draw wings behind, then body over them
+                drawWings();
+                drawCharacterSprite(ctx, 0, 0, {
+                  walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: dir,
+                  hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
+                  isEve: false, showClothes: false, gameTime,
+                });
+              }
               // Halo
               ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
               ctx.beginPath(); ctx.ellipse(16, -3, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
