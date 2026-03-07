@@ -243,6 +243,8 @@
 
     const GARDEN_BOUNDS = { minX: 10, maxX: 70, minY: 10, maxY: 48 };
     const TREE_OF_KNOWLEDGE = { x: 20, y: 22 };
+    const TREE_OF_LIFE_POS = { x: 56, y: 20 };
+    const MALAK_GATE_POS = { x: 61, y: 26 };
     const SKIN_COLOR = '#5D4037';
 
     const TILES = {
@@ -294,11 +296,19 @@
       const GATE = { x: 63, y: 26 };
       // Carve a visible PATH corridor east of the gate all the way to the map edge
       for (let x = GATE.x + 1; x < MAP_WIDTH; x++) map[GATE.y][x] = TILES.PATH;
-      // Flanking tree walls N and S of the gate — player cannot walk around it
+      // Flanking tree walls N and S of the gate — thick barrier prevents walking around
       for (let dx = -1; dx <= 3; dx++) {
         const nx = GATE.x + dx;
-        if (map[GATE.y - 1] && map[GATE.y - 1][nx] !== undefined) map[GATE.y - 1][nx] = TILES.TREE;
-        if (map[GATE.y + 1] && map[GATE.y + 1][nx] !== undefined) map[GATE.y + 1][nx] = TILES.TREE;
+        // Build a thick wall of trees above and below the gate (multiple rows deep)
+        for (let wallDy = 1; wallDy <= 6; wallDy++) {
+          if (map[GATE.y - wallDy] && map[GATE.y - wallDy][nx] !== undefined) map[GATE.y - wallDy][nx] = TILES.TREE;
+          if (map[GATE.y + wallDy] && map[GATE.y + wallDy][nx] !== undefined) map[GATE.y + wallDy][nx] = TILES.TREE;
+        }
+      }
+      // Also block tiles east of the gate (path side) with trees above/below so player can't sneak past
+      for (let ex = GATE.x + 1; ex < MAP_WIDTH; ex++) {
+        if (map[GATE.y - 1] && map[GATE.y - 1][ex] !== undefined) map[GATE.y - 1][ex] = TILES.TREE;
+        if (map[GATE.y + 1] && map[GATE.y + 1][ex] !== undefined) map[GATE.y + 1][ex] = TILES.TREE;
       }
       map[GATE.y][GATE.x] = TILES.GOLDEN_GATE;
       // ─────────────────────────────────────────────────────────────────────
@@ -444,12 +454,14 @@
       const showDialogueRef = useRef(null);
       const gamePhaseRef = useRef(PHASES.CUTSCENE);
       const npcsRef = useRef(null);
+      const playerRef = useRef(null);
 
       // Keep refs in sync with state for the game loop
       useEffect(() => { touchDirRef.current = touchDirection; }, [touchDirection]);
       useEffect(() => { showDialogueRef.current = showDialogue; }, [showDialogue]);
       useEffect(() => { gamePhaseRef.current = gamePhase; }, [gamePhase]);
       useEffect(() => { npcsRef.current = npcs; }, [npcs]);
+      useEffect(() => { playerRef.current = player; }, [player]);
 
       const checkSceneTrigger = useCallback(() => {
         const adam = npcs.find(n => n.id === 'adam');
@@ -469,10 +481,10 @@
         if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
         const tile = map[Math.floor(y)][Math.floor(x)];
         if (tile !== TILES.GRASS && tile !== TILES.PATH) return false;
-        // Block walking through NPCs
+        // Block walking through NPCs and their speech bubble area
         if (currentNpcs) {
           for (const npc of currentNpcs) {
-            if (Math.abs(x - npc.x) < 0.8 && Math.abs(y - npc.y) < 0.8) return false;
+            if (Math.abs(x - npc.x) < 1.0 && Math.abs(y - npc.y) < 1.0) return false;
           }
         }
         return true;
@@ -706,7 +718,32 @@
                   newNpc.moveTimer = 0;
                 }
               }
-              if (npc.behavior === 'patrol' && npc.patrolPoints) {
+              // Malak teleports to Tree of Life when player approaches, returns to gate when player leaves
+              if (npc.isAngel && phase === PHASES.EXPLORE && playerRef.current) {
+                const pl = playerRef.current;
+                const distToTree = Math.sqrt(Math.pow(pl.x - TREE_OF_LIFE_POS.x, 2) + Math.pow(pl.y - TREE_OF_LIFE_POS.y, 2));
+                if (distToTree < 5) {
+                  // Player is near Tree of Life — Malak appears there
+                  const tolGuardX = TREE_OF_LIFE_POS.x + 1;
+                  const tolGuardY = TREE_OF_LIFE_POS.y + 2;
+                  if (Math.abs(npc.x - tolGuardX) > 0.5 || Math.abs(npc.y - tolGuardY) > 0.5) {
+                    // Teleport instantly (magical appearance)
+                    newNpc.x = tolGuardX; newNpc.y = tolGuardY;
+                    newNpc.prevX = tolGuardX; newNpc.prevY = tolGuardY;
+                  }
+                  newNpc.targetX = null; newNpc.targetY = null;
+                  newNpc.isMoving = false; newNpc.walkFrame = 0;
+                  newNpc.direction = 'up'; // face the tree
+                } else if (Math.abs(npc.x - MALAK_GATE_POS.x) > 0.5 || Math.abs(npc.y - MALAK_GATE_POS.y) > 0.5) {
+                  // Player moved away — Malak returns to gate instantly
+                  newNpc.x = MALAK_GATE_POS.x; newNpc.y = MALAK_GATE_POS.y;
+                  newNpc.prevX = MALAK_GATE_POS.x; newNpc.prevY = MALAK_GATE_POS.y;
+                  newNpc.targetX = null; newNpc.targetY = null;
+                  newNpc.isMoving = false; newNpc.walkFrame = 0;
+                  newNpc.direction = 'left';
+                }
+              }
+              if (npc.behavior === 'patrol' && npc.patrolPoints && !(npc.isAngel && phase === PHASES.EXPLORE)) {
                 const target = npc.patrolPoints[npc.patrolIndex];
                 if (Math.abs(npc.x - target.x) < 0.3 && Math.abs(npc.y - target.y) < 0.3) newNpc.patrolIndex = (npc.patrolIndex + 1) % npc.patrolPoints.length;
                 newNpc.targetX = npc.patrolPoints[newNpc.patrolIndex].x;
@@ -1734,20 +1771,38 @@
             if (npc.isSerpent) {
               ctx.fillStyle = npc.color;
               const wave = Math.sin(gameTime * 0.2) * 3;
+              // Feet (serpent had feet before the curse - Bere'shiyth 3:14)
+              const legWalk = Math.sin(gameTime * 0.3) * 2;
+              ctx.fillStyle = '#1a5c1a';
+              // Left leg pair
+              ctx.fillRect(6, 24, 3, 5 + legWalk); ctx.fillRect(5, 28 + legWalk, 5, 2);
+              ctx.fillRect(14, 24, 3, 5 - legWalk); ctx.fillRect(13, 28 - legWalk, 5, 2);
+              // Body segments
+              ctx.fillStyle = npc.color;
               for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.arc(16 - i * 7, 20 + Math.sin(gameTime * 0.2 + i) * 2, 5 - i, 0, Math.PI * 2); ctx.fill(); }
+              // Head
               ctx.beginPath(); ctx.arc(22, 18 + wave, 6, 0, Math.PI * 2); ctx.fill();
+              // Eye
               ctx.fillStyle = '#ff0000'; ctx.beginPath(); ctx.arc(25, 16 + wave, 2, 0, Math.PI * 2); ctx.fill();
             } else if (npc.isAngel) {
+              // Wings drawn BEHIND character (offset back and partially hidden)
+              ctx.save();
               ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 8;
               ctx.fillStyle = '#fff8dc';
-              ctx.beginPath(); ctx.ellipse(3,  15, 8, 11, -0.3, 0, Math.PI * 2); ctx.fill();
-              ctx.beginPath(); ctx.ellipse(29, 15, 8, 11,  0.3, 0, Math.PI * 2); ctx.fill();
+              const wingFlutter = Math.sin(gameTime * 0.12) * 0.08;
+              // Left wing (behind, extending left-back)
+              ctx.beginPath(); ctx.ellipse(2, 12, 7, 12, -0.5 - wingFlutter, 0, Math.PI * 2); ctx.fill();
+              // Right wing (behind, extending right-back)
+              ctx.beginPath(); ctx.ellipse(30, 12, 7, 12, 0.5 + wingFlutter, 0, Math.PI * 2); ctx.fill();
               ctx.shadowBlur = 0;
+              ctx.restore();
+              // Draw character body OVER the wings
               drawCharacterSprite(ctx, 0, 0, {
                 walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: npc.direction || 'down',
                 hairColor: '#1a1a1a', bodyColor: '#ffffff', skinColor: SKIN_COLOR,
                 isEve: false, showClothes: false, gameTime,
               });
+              // Halo
               ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
               ctx.beginPath(); ctx.ellipse(16, -3, 8, 3, 0, 0, Math.PI * 2); ctx.stroke();
             } else {
