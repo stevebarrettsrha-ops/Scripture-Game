@@ -841,18 +841,30 @@
         const r = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + dx, by + dy, w, h); };
 
         const DK   = '#0d0700';                              // dark pixel outline
-        const SH   = '#17100a';                              // shoe colour
-        const bClr = showClothes ? '#8b7355' : bodyColor;   // shirt / torso
+        const SH   = hasGlory ? '#ffdd44' : '#17100a';      // barefoot when glorified
+        // When glorified (pre-fall), body is naked skin glowing bright yellow
+        const glorySkin = hasGlory ? '#ffdd44' : null;
+        const bClr = showClothes ? '#8b7355' : (glorySkin || bodyColor);   // shirt / torso
+        const sClr = glorySkin || skinColor;  // skin for arms/face – glows when glorified
 
         // ── GLORY AURA ────────────────────────────────────────────
         if (hasGlory) {
-          ctx.shadowColor = '#ffd700';
-          ctx.shadowBlur  = 12 + Math.sin(gameTime * 0.15) * 4;
-          ctx.fillStyle   = 'rgba(255,215,0,0.22)';
+          // Outer radiant glow
+          const pulse = Math.sin(gameTime * 0.12) * 6;
+          ctx.shadowColor = '#ffe040';
+          ctx.shadowBlur  = 22 + pulse;
+          ctx.fillStyle   = 'rgba(255,225,50,0.18)';
           ctx.beginPath();
-          ctx.ellipse(cx, by + 14, 13, 16, 0, 0, Math.PI * 2);
+          ctx.ellipse(cx, by + 14, 18, 22, 0, 0, Math.PI * 2);
           ctx.fill();
-          ctx.shadowBlur = 0;
+          // Inner bright glow
+          ctx.fillStyle = 'rgba(255,235,80,0.25)';
+          ctx.beginPath();
+          ctx.ellipse(cx, by + 14, 12, 15, 0, 0, Math.PI * 2);
+          ctx.fill();
+          // Keep shadow active so the whole sprite glows
+          ctx.shadowColor = '#ffd700';
+          ctx.shadowBlur  = 14 + pulse * 0.5;
         }
 
         const isSide = direction === 'left' || direction === 'right';
@@ -887,12 +899,12 @@
           // Side profile: single arm centered on body, swings with walk
           const aSwg = isMoving ? (frame < 2 ? 2 : -2) : 0;
           r(-2, 13 + aSwg, 4, 8, DK);          // outline
-          r(-1, 14 + aSwg, 2, 6, skinColor);    // skin fill
+          r(-1, 14 + aSwg, 2, 6, sClr);    // skin fill
         } else {
           // Front / back: two arms on opposite sides, swing in counter-phase
           const armSwg = isMoving ? (frame < 2 ? 2 : -2) : 0;
-          r(-8, 13 + armSwg, 3, 7, DK);  r(-8, 14 + armSwg, 2, 5, skinColor);  // left
-          r( 5, 13 - armSwg, 3, 7, DK);  r( 5, 14 - armSwg, 2, 5, skinColor);  // right
+          r(-8, 13 + armSwg, 3, 7, DK);  r(-8, 14 + armSwg, 2, 5, sClr);  // left
+          r( 5, 13 - armSwg, 3, 7, DK);  r( 5, 14 - armSwg, 2, 5, sClr);  // right
         }
 
         // ── HEAD  (by+0 … by+13) ──────────────────────────────────
@@ -900,7 +912,7 @@
         // Dark outline box → base skin → hair overlay → eyes on top.
 
         r(-7, 0, 14, 14, DK);          // dark outline (1 px border)
-        r(-6, 1, 12, 12, skinColor);   // base skin fill
+        r(-6, 1, 12, 12, sClr);   // base skin fill
 
         // HAIR – direction specific
         if (direction === 'up') {
@@ -942,6 +954,9 @@
           ctx.beginPath(); ctx.arc(cx + 10, by + 17, 4, 0, Math.PI * 2); ctx.fill();
           r(8, 13, 2, 4, '#654321'); // stem
         }
+
+        // Clear glory glow after drawing sprite
+        if (hasGlory) { ctx.shadowBlur = 0; }
       };
 
       // ── Cutscene canvas renderer ────────────────────────────────────
