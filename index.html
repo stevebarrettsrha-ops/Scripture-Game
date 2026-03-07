@@ -470,17 +470,18 @@
         return adam?.hasSpoken && chavvah?.hasSpoken && nachash?.hasSpoken;
       }, [npcs]);
 
+      // Tiles that characters can walk over (ground-level decorations don't block)
+      const isWalkable = (tile) => tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH;
+
       const canNPCMoveTo = useCallback((x, y) => {
         if (x < GARDEN_BOUNDS.minX || x > GARDEN_BOUNDS.maxX || y < GARDEN_BOUNDS.minY || y > GARDEN_BOUNDS.maxY) return false;
         if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
-        const tile = map[Math.floor(y)][Math.floor(x)];
-        return tile === TILES.GRASS || tile === TILES.PATH;
+        return isWalkable(map[Math.floor(y)][Math.floor(x)]);
       }, [map]);
 
       const canMoveTo = useCallback((x, y, currentNpcs) => {
         if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
-        const tile = map[Math.floor(y)][Math.floor(x)];
-        if (tile !== TILES.GRASS && tile !== TILES.PATH) return false;
+        if (!isWalkable(map[Math.floor(y)][Math.floor(x)])) return false;
         // Block walking through NPCs and their speech bubble area
         if (currentNpcs) {
           for (const npc of currentNpcs) {
