@@ -518,23 +518,18 @@
             y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
           });
         } else {
-          // During scene phases, focus on the tree area (fixed point) to prevent camera shake
-          const focusX = TREE_OF_KNOWLEDGE.x;
-          const focusY = TREE_OF_KNOWLEDGE.y + 1;
-          if (gamePhase === PHASES.CHAVVAH_WALKS_TO_ADAM || gamePhase === PHASES.ADAM_EATS || gamePhase === PHASES.ADAM_GLORY_FADES || gamePhase === PHASES.EYES_OPENED) {
-            // Follow Adam during later phases
-            const adam = npcs.find(n => n.id === 'adam');
-            const chavvah = npcs.find(n => n.id === 'chavvah');
-            const midX = adam && chavvah ? (adam.x + chavvah.x) / 2 : (adam?.x || focusX);
-            const midY = adam && chavvah ? (adam.y + chavvah.y) / 2 : (adam?.y || focusY);
-            setCamera({
-              x: Math.round(Math.max(0, Math.min(midX - vp.w / 2, MAP_WIDTH - vp.w))),
-              y: Math.round(Math.max(0, Math.min(midY - vp.h / 2, MAP_HEIGHT - vp.h)))
-            });
-          } else {
-            setCamera({
-              x: Math.round(Math.max(0, Math.min(focusX - vp.w / 2, MAP_WIDTH - vp.w))),
-              y: Math.round(Math.max(0, Math.min(focusY - vp.h / 2, MAP_HEIGHT - vp.h)))
+          // During scene phases, smoothly track Chavvah; round to prevent sub-pixel tile jitter
+          const chavvah = npcs.find(n => n.id === 'chavvah');
+          if (chavvah) {
+            setCamera(prev => {
+              const targetX = Math.max(0, Math.min(chavvah.x - vp.w / 2, MAP_WIDTH - vp.w));
+              const targetY = Math.max(0, Math.min(chavvah.y - vp.h / 2, MAP_HEIGHT - vp.h));
+              // Lerp for smooth follow, then round to snap to whole pixels
+              const lerp = 0.08;
+              return {
+                x: Math.round(prev.x + (targetX - prev.x) * lerp),
+                y: Math.round(prev.y + (targetY - prev.y) * lerp)
+              };
             });
           }
         }
