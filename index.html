@@ -917,17 +917,22 @@
             y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
           });
         } else {
-          // During scene phases, smoothly track Chavvah; round to prevent sub-pixel tile jitter
+          // During scene phases, track midpoint of key characters so everyone stays in view
           const chavvah = npcs.find(n => n.id === 'chavvah');
+          const adam = npcs.find(n => n.id === 'adam');
           if (chavvah) {
+            // During walks to Adam, track midpoint; otherwise track Chavvah
+            const trackX = (gamePhase === PHASES.CHAVVAH_WALKS_TO_ADAM || gamePhase === PHASES.ADAM_EATS || gamePhase === PHASES.ADAM_GLORY_FADES) && adam
+              ? (chavvah.x + adam.x) / 2 : chavvah.x;
+            const trackY = (gamePhase === PHASES.CHAVVAH_WALKS_TO_ADAM || gamePhase === PHASES.ADAM_EATS || gamePhase === PHASES.ADAM_GLORY_FADES) && adam
+              ? (chavvah.y + adam.y) / 2 : chavvah.y;
             setCamera(prev => {
-              const targetX = Math.max(0, Math.min(chavvah.x - vp.w / 2, MAP_WIDTH - vp.w));
-              const targetY = Math.max(0, Math.min(chavvah.y - vp.h / 2, MAP_HEIGHT - vp.h));
-              // Lerp for smooth follow, then round to snap to whole pixels
+              const targetX = Math.max(0, Math.min(trackX - vp.w / 2, MAP_WIDTH - vp.w));
+              const targetY = Math.max(0, Math.min(trackY - vp.h / 2, MAP_HEIGHT - vp.h));
               const lerp = 0.08;
               return {
-                x: Math.round(prev.x + (targetX - prev.x) * lerp),
-                y: Math.round(prev.y + (targetY - prev.y) * lerp)
+                x: prev.x + (targetX - prev.x) * lerp,
+                y: prev.y + (targetY - prev.y) * lerp
               };
             });
           }
@@ -990,9 +995,11 @@
         switch (gamePhase) {
           case PHASES.SCENE_START:
             // Chavvah walks to the tree (player watches); Nachash waits at the tree
+            // Move Adam near the tree so camera can keep everyone in view
             setNpcs(prev => prev.map(npc => {
               if (npc.id === 'chavvah') return { ...npc, behavior: 'scene', targetX: TREE_OF_KNOWLEDGE.x + 2, targetY: TREE_OF_KNOWLEDGE.y + 2 };
-              if (npc.id === 'nachash') return { ...npc, behavior: 'scene', x: TREE_OF_KNOWLEDGE.x - 1, y: TREE_OF_KNOWLEDGE.y + 2, targetX: null, targetY: null, isMoving: false, direction: 'right' };
+              if (npc.id === 'nachash') return { ...npc, behavior: 'scene', x: TREE_OF_KNOWLEDGE.x - 1, y: TREE_OF_KNOWLEDGE.y + 2, prevX: TREE_OF_KNOWLEDGE.x - 1, prevY: TREE_OF_KNOWLEDGE.y + 2, targetX: null, targetY: null, isMoving: false, direction: 'right' };
+              if (npc.id === 'adam') return { ...npc, behavior: 'scene', x: TREE_OF_KNOWLEDGE.x + 4, y: TREE_OF_KNOWLEDGE.y + 4, prevX: TREE_OF_KNOWLEDGE.x + 4, prevY: TREE_OF_KNOWLEDGE.y + 4, targetX: null, targetY: null, isMoving: false, direction: 'up' };
               return npc;
             }));
             setGamePhase(PHASES.CHAVVAH_APPROACHES_TREE);
@@ -1142,6 +1149,8 @@
             const nachash = currentNpcs.find(n => n.id === 'nachash');
             if (adam?.hasSpoken && chavvah?.hasSpoken && nachash?.hasSpoken) {
               setGamePhase(PHASES.SCENE_START);
+              // Move player near tree so they can watch the scene
+              setPlayer(prev => ({ ...prev, x: TREE_OF_KNOWLEDGE.x + 3, y: TREE_OF_KNOWLEDGE.y + 3, prevX: TREE_OF_KNOWLEDGE.x + 3, prevY: TREE_OF_KNOWLEDGE.y + 3, isMoving: false, direction: 'up' }));
               setSceneText("NOW the nachash was more subtil than any beast of the field which YAHUAH ELOHIYM had made...");
               setShowSceneText(true);
             }
