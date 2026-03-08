@@ -1185,47 +1185,88 @@
         ctx.restore();
       };
 
-      // Draw the "Express Image" of the Most High (radiant divine figure of light)
-      const drawDivinePresence = (ctx, x, y, scale, t) => {
-        const s = scale;
-        // Outer radiant glow
-        const pulse = Math.sin(t * 0.08) * 10;
+      // Draw the "Express Image" of the Most High – same sprite as the Malak
+      // (angel) but larger, with intense glory aura and glorified head.
+      const drawDivinePresence = (ctx, footX, footY, scale, t) => {
         ctx.save();
-        ctx.shadowColor = '#fff8dc';
-        ctx.shadowBlur = 40 + pulse;
-        // Radiant aura
-        ctx.fillStyle = 'rgba(255,248,220,0.12)';
-        ctx.beginPath(); ctx.ellipse(x, y - 30 * s, 50 * s, 70 * s, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = 'rgba(255,235,180,0.18)';
-        ctx.beginPath(); ctx.ellipse(x, y - 30 * s, 30 * s, 45 * s, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.translate(footX - 16 * scale, footY - 28 * scale);
+        ctx.scale(scale, scale);
+
+        const dir = 'down';
+        const wf = Math.sin(t * 0.12) * 0.08;
+        const wingColor = '#fff8dc';
+        const wingEdge = '#e8e0c0';
+        const pulse = Math.sin(t * 0.08) * 8;
+
+        // ── GLORY AURA (horah) ──────────────────────────────
+        ctx.shadowColor = '#ffe040';
+        ctx.shadowBlur = 30 + pulse;
+        ctx.fillStyle = 'rgba(255,225,50,0.15)';
+        ctx.beginPath(); ctx.ellipse(16, 14, 28, 36, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,235,80,0.22)';
+        ctx.beginPath(); ctx.ellipse(16, 14, 18, 24, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 18 + pulse * 0.5;
+
+        // ── WINGS (front view – behind body) ────────────────
+        ctx.save();
+        ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 10;
+        ctx.fillStyle = wingColor;
+        // Left wing
+        ctx.beginPath(); ctx.ellipse(2, 12, 7, 12, -0.5 - wf, 0, Math.PI * 2); ctx.fill();
+        // Right wing
+        ctx.beginPath(); ctx.ellipse(30, 12, 7, 12, 0.5 + wf, 0, Math.PI * 2); ctx.fill();
         ctx.shadowBlur = 0;
-        // Divine figure outline in pure light
-        ctx.fillStyle = 'rgba(255,250,230,0.85)';
-        // Head
-        ctx.beginPath(); ctx.arc(x, y - 55 * s, 10 * s, 0, Math.PI * 2); ctx.fill();
-        // Body/robe
-        ctx.beginPath();
-        ctx.moveTo(x - 12 * s, y - 45 * s);
-        ctx.lineTo(x - 18 * s, y);
-        ctx.lineTo(x + 18 * s, y);
-        ctx.lineTo(x + 12 * s, y - 45 * s);
-        ctx.closePath(); ctx.fill();
-        // Arms extended
-        ctx.strokeStyle = 'rgba(255,250,230,0.85)';
-        ctx.lineWidth = 4 * s; ctx.lineCap = 'round';
-        ctx.beginPath(); ctx.moveTo(x - 12 * s, y - 38 * s); ctx.lineTo(x - 30 * s, y - 28 * s); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x + 12 * s, y - 38 * s); ctx.lineTo(x + 30 * s, y - 28 * s); ctx.stroke();
-        // Light rays emanating
-        ctx.globalAlpha = 0.12 + 0.06 * Math.sin(t * 0.06);
-        for (let i = 0; i < 16; i++) {
-          const a = (i / 16) * Math.PI * 2 + t * 0.008;
-          ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2 * s;
+        ctx.restore();
+
+        // ── CHARACTER BODY (white robe, like Malak) ─────────
+        // Use glorified skin color (golden glow) for the head/skin
+        const glorySkin = '#ffdd44';
+        const DK = '#0d0700';
+        const bClr = '#ffffff';  // white robe body
+        const SH = '#ffdd44';    // golden barefoot (glorified)
+        const r = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(16 + dx, dy, w, h); };
+
+        // LEGS
+        r(-5, 20, 4, 6, bClr); r(-6, 26, 6, 2, SH);
+        r( 1, 20, 4, 6, bClr); r( 0, 26, 6, 2, SH);
+        // BODY
+        r(-6, 12, 12, 9, DK);
+        r(-5, 13, 10, 7, bClr);
+        // ARMS
+        const armSwg = 0;
+        r(-8, 13 + armSwg, 3, 7, DK); r(-8, 14 + armSwg, 2, 5, glorySkin);
+        r( 5, 13 - armSwg, 3, 7, DK); r( 5, 14 - armSwg, 2, 5, glorySkin);
+        // HEAD (glorified – golden glowing skin)
+        r(-7, 0, 14, 14, DK);
+        r(-6, 1, 12, 12, glorySkin);
+        // Hair
+        r(-6, 1, 12, 7, '#ffffff');  // white/silver hair
+        // Eyes
+        r( 1, 9, 3, 3, '#f0f0f0'); r( 2, 10, 2, 2, DK);
+        r(-4, 9, 3, 3, '#f0f0f0'); r(-4, 10, 2, 2, DK);
+
+        // ── HALO (larger, glowing golden) ───────────────────
+        ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
+        ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 12 + pulse * 0.4;
+        ctx.beginPath(); ctx.ellipse(16, -4, 10, 4, 0, 0, Math.PI * 2); ctx.stroke();
+        // Inner bright halo
+        ctx.strokeStyle = '#fff8a0'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(16, -4, 9, 3, 0, 0, Math.PI * 2); ctx.stroke();
+
+        // ── LIGHT RAYS emanating outward ────────────────────
+        ctx.globalAlpha = 0.1 + 0.05 * Math.sin(t * 0.06);
+        for (let i = 0; i < 12; i++) {
+          const a = (i / 12) * Math.PI * 2 + t * 0.008;
+          ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.moveTo(x + Math.cos(a) * 25 * s, y - 30 * s + Math.sin(a) * 35 * s);
-          ctx.lineTo(x + Math.cos(a) * 60 * s, y - 30 * s + Math.sin(a) * 80 * s);
+          ctx.moveTo(16 + Math.cos(a) * 20, 14 + Math.sin(a) * 26);
+          ctx.lineTo(16 + Math.cos(a) * 42, 14 + Math.sin(a) * 55);
           ctx.stroke();
         }
         ctx.globalAlpha = 1;
+
+        ctx.shadowBlur = 0;
         ctx.restore();
       };
 
