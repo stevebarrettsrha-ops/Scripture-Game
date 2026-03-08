@@ -466,6 +466,8 @@
       for (let dx = -1; dx <= 2; dx++) {
         const nx = GATE.x + dx;
         for (let wallDy = 1; wallDy <= 6; wallDy++) {
+          // Leave rows immediately above/below gate clear so the player collision box can pass through
+          if (wallDy === 1 && dx >= 0 && dx <= 2) continue;
           if (map[GATE.y - wallDy] && map[GATE.y - wallDy][nx] !== undefined) map[GATE.y - wallDy][nx] = TILES.TREE;
           if (map[GATE.y + wallDy] && map[GATE.y + wallDy][nx] !== undefined) map[GATE.y + wallDy][nx] = TILES.TREE;
         }
@@ -1058,8 +1060,8 @@
             // Start Adam and Chavvah walking through the gate
             setGamePhase(PHASES.EXPULSION_WALK);
             setNpcs(prev => prev.map(npc => {
-              if (npc.id === 'adam') return { ...npc, behavior: 'scene', targetX: 70, targetY: 25, isMoving: true };
-              if (npc.id === 'chavvah') return { ...npc, behavior: 'scene', targetX: 70, targetY: 27, isMoving: true };
+              if (npc.id === 'adam') return { ...npc, behavior: 'scene', targetX: 70, targetY: 25.5, isMoving: true };
+              if (npc.id === 'chavvah') return { ...npc, behavior: 'scene', targetX: 70, targetY: 26.5, isMoving: true };
               return npc;
             }));
             setSceneText("Follow A'dam and Chavvah through the Sha'ar Zahav...");
@@ -1091,8 +1093,8 @@
           // Position player near the gate, Adam and Chavvah inside garden near gate
           setPlayer(prev => ({ ...prev, x: 58, y: 26, prevX: 58, prevY: 26, direction: 'right', isMoving: false }));
           setNpcs(prev => prev.map(npc => {
-            if (npc.id === 'adam') return { ...npc, x: 60, y: 25, prevX: 60, prevY: 25, direction: 'right', behavior: 'scene', isMoving: false, targetX: null, targetY: null, hasSpoken: false, hasFigLeaves: false, hasClothes: true, dialogue: ADAM_WASTELAND_DIALOGUE, currentDialogue: 0, thoughts: ["The ground is cursed...", "Thorns and thistles...", "By the sweat of my face..."], currentThought: 0 };
-            if (npc.id === 'chavvah') return { ...npc, x: 60, y: 27, prevX: 60, prevY: 27, direction: 'right', behavior: 'scene', isMoving: false, targetX: null, targetY: null, hasSpoken: false, hasFigLeaves: false, hasClothes: true, dialogue: CHAVVAH_WASTELAND_DIALOGUE, currentDialogue: 0, thoughts: ["We have been driven out...", "My seed shall bruise his head...", "There is hope..."], currentThought: 0 };
+            if (npc.id === 'adam') return { ...npc, x: 60, y: 25.5, prevX: 60, prevY: 25.5, direction: 'right', behavior: 'scene', isMoving: false, targetX: null, targetY: null, hasSpoken: false, hasFigLeaves: false, hasClothes: true, dialogue: ADAM_WASTELAND_DIALOGUE, currentDialogue: 0, thoughts: ["The ground is cursed...", "Thorns and thistles...", "By the sweat of my face..."], currentThought: 0 };
+            if (npc.id === 'chavvah') return { ...npc, x: 59, y: 26.5, prevX: 59, prevY: 26.5, direction: 'right', behavior: 'scene', isMoving: false, targetX: null, targetY: null, hasSpoken: false, hasFigLeaves: false, hasClothes: true, dialogue: CHAVVAH_WASTELAND_DIALOGUE, currentDialogue: 0, thoughts: ["We have been driven out...", "My seed shall bruise his head...", "There is hope..."], currentThought: 0 };
             return npc;
           }));
           setGateOpen(true);
@@ -2637,11 +2639,11 @@
             // Snake head
             ctx.fillStyle = '#228b22';
             ctx.beginPath(); ctx.arc(cx + 80, H * 0.72, 7, 0, Math.PI * 2); ctx.fill();
-            // Eye - yellow iris with red slit pupil (matching upright serpent style)
+            // Eye - yellow iris with red slit pupil (on the head circle)
             ctx.fillStyle = '#ffcc00';
-            ctx.beginPath(); ctx.arc(cx + 82, H * 0.70, 3, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(cx + 83, H * 0.72 - 2, 2.5, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#cc0000';
-            ctx.fillRect(cx + 81.5, H * 0.70 - 2, 1.5, 4);
+            ctx.fillRect(cx + 82.5, H * 0.72 - 3.5, 1.2, 3);
             // Dust around serpent
             for (let i = 0; i < 15; i++) {
               const dx = cx + (pr(i + 600) - 0.5) * W * 0.4;
