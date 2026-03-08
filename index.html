@@ -333,13 +333,13 @@
         id: 'adam', name: "A'dam", x: 38, y: 30, prevX: 38, prevY: 30, color: SKIN_COLOR, hairColor: '#1a1a1a',
         thoughts: ["YAHUAH formed me from the dust...", "I am to dress and keep this garden.", "She is bone of my bones..."],
         dialogue: ["Shalom, traveler. I am A'dam.", "YAHUAH ELOHIYM formed me of the dust of the ground.", "He breathed into my nostrils the breath of life.", "I became a living nephesh.", "YAHUAH put me in the Garden of Eden to dress it and keep it.", "Of every tree I may freely eat...", "But of the Ets HaDa'at Tov v'Ra, I shall not eat.", "For in the day I eat thereof, I shall surely die."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 38, homeY: 30, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 38, homeY: 30, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, hasFigLeaves: false, clothesBlink: 0,
       },
       {
         id: 'chavvah', name: 'Chavvah', x: 42, y: 30, prevX: 42, prevY: 30, color: SKIN_COLOR, hairColor: '#1a1a1a', isEve: true,
         thoughts: ["The garden is so beautiful...", "That tree... the fruit looks good...", "The nachash says we won't die..."],
         dialogue: ["I am Chavvah, the mother of all living.", "YAHUAH ELOHIYM caused a deep sleep upon A'dam.", "He took one of his ribs and made me.", "We may eat of the fruit of the trees of the garden.", "But of the tree in the midst of the garden...", "ELOHIYM has said, Ye shall not eat of it.", "Neither shall ye touch it, lest ye die.", "But the nachash says our eyes will be opened..."],
-        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 42, homeY: 30, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, clothesBlink: 0,
+        currentDialogue: 0, currentThought: 0, thoughtTimer: 0, behavior: 'wander', homeX: 42, homeY: 30, targetX: null, targetY: null, moveTimer: 0, walkFrame: 0, isMoving: false, direction: 'down', hasSpoken: false, holdingFruit: false, isEating: false, hasGlory: true, hasClothes: false, hasFigLeaves: false, clothesBlink: 0,
       },
       {
         id: 'nachash', name: 'Nachash', x: 20, y: 24, prevX: 20, prevY: 24, color: '#228b22', isSerpent: true,
@@ -706,7 +706,7 @@
               setSceneText("...and did eat...");
               setShowSceneText(true);
               setTimeout(() => {
-                setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, hasGlory: false, clothesBlink: 4 } : npc));
+                setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, hasGlory: false } : npc));
               }, 500);
             }, 1500);
             break;
@@ -723,7 +723,7 @@
               setSceneText("...and he did eat.");
               setShowSceneText(true);
               setTimeout(() => {
-                setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, hasGlory: false, clothesBlink: 4 } : npc));
+                setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, hasGlory: false } : npc));
               }, 500);
             }, 1500);
             break;
@@ -731,6 +731,12 @@
             setGamePhase(PHASES.EYES_OPENED);
             setSceneText("And the eyes of them both were opened, and they knew that they were naked; and they sewed fig leaves together, and made themselves aprons.");
             setShowSceneText(true);
+            // After a brief moment of nakedness, they put on fig leaves
+            setTimeout(() => {
+              setNpcs(prev => prev.map(npc =>
+                (npc.id === 'adam' || npc.id === 'chavvah') ? { ...npc, hasFigLeaves: true } : npc
+              ));
+            }, 1500);
             break;
           case PHASES.EYES_OPENED:
             setChapter3Slide(0);
@@ -1004,7 +1010,7 @@
         const {
           walkFrame = 0, isMoving = false, direction = 'down',
           hairColor = '#1a1a1a', bodyColor = '#4169e1', skinColor = SKIN_COLOR,
-          isEve = false, showClothes = false,
+          isEve = false, showClothes = false, hasFigLeaves = false,
           holdingFruit = false, isEating = false, hasGlory = false, gameTime = 0,
         } = opts;
 
@@ -1018,9 +1024,12 @@
 
         const DK   = '#0d0700';                              // dark pixel outline
         const SH   = hasGlory ? '#ffdd44' : '#17100a';      // barefoot when glorified
+        const FIG  = '#3a7a2a';                              // fig leaf green
+        const COAT = '#c4a882';                              // light brown coats of skins
         // When glorified (pre-fall), body is naked skin glowing bright yellow
         const glorySkin = hasGlory ? '#ffdd44' : null;
-        const bClr = showClothes ? '#8b7355' : (glorySkin || bodyColor);   // shirt / torso
+        const bClr = showClothes ? COAT : (glorySkin || bodyColor);   // shirt / torso
+        const legClr = showClothes ? COAT : (hasFigLeaves ? FIG : (glorySkin || bodyColor)); // legs
         const sClr = glorySkin || skinColor;  // skin for arms/face – glows when glorified
 
         // ── GLORY AURA ────────────────────────────────────────────
@@ -1047,28 +1056,43 @@
 
         // ── LEGS  (tops ALWAYS at by+20 = body bottom; never detach) ─────
         if (isSide) {
-          // Side profile: wider leg implies two overlapping legs in profile.
-          // Two shoes swing in opposite phase to mimic a two-footed stride.
           const dir = direction === 'right' ? 1 : -1;
           const fStep = !isMoving ? 0 : frame === 1 ?  2*dir : frame === 3 ? -2*dir : 0;
           const bStep = !isMoving ? 0 : frame === 1 ? -2*dir : frame === 3 ?  2*dir : 0;
-          r(-3, 20, 6, 6, bClr);               // wider leg (two legs overlapping in profile)
-          r(-4 + bStep, 26, 7, 2, bClr);       // back shoe (body colour = depth cue)
-          r(-4 + fStep, 26, 7, 2, SH);         // front shoe swings forward / back
+          r(-3, 20, 6, 6, legClr);
+          r(-4 + bStep, 26, 7, 2, legClr);
+          r(-4 + fStep, 26, 7, 2, SH);
         } else if (!isMoving) {
-          r(-5, 20, 4, 6, bClr);  r(-6, 26, 6, 2, SH);  // left
-          r( 1, 20, 4, 6, bClr);  r( 0, 26, 6, 2, SH);  // right
+          r(-5, 20, 4, 6, legClr);  r(-6, 26, 6, 2, SH);  // left
+          r( 1, 20, 4, 6, legClr);  r( 0, 26, 6, 2, SH);  // right
         } else {
-          // Front / back view: alternate which leg strides
           const fwdX = frame < 2 ? -5 :  1;
           const bckX = frame < 2 ?  1 : -5;
-          r(bckX, 20, 4, 4, bClr);  r(bckX - 1, 24, 5, 2, SH);  // back (shorter)
-          r(fwdX, 20, 4, 6, bClr);  r(fwdX - 1, 26, 6, 2, SH);  // forward (full)
+          r(bckX, 20, 4, 4, legClr);  r(bckX - 1, 24, 5, 2, SH);  // back (shorter)
+          r(fwdX, 20, 4, 6, legClr);  r(fwdX - 1, 26, 6, 2, SH);  // forward (full)
+        }
+        // Chavvah fig leaves: only upper half of legs are green, lower half skin
+        if (hasFigLeaves && isEve && !showClothes) {
+          if (isSide) {
+            r(-3, 23, 6, 3, skinColor);
+          } else if (!isMoving) {
+            r(-5, 23, 4, 3, skinColor);
+            r( 1, 23, 4, 3, skinColor);
+          } else {
+            const fwdX = frame < 2 ? -5 : 1;
+            const bckX = frame < 2 ? 1 : -5;
+            r(bckX, 22, 4, 2, skinColor);
+            r(fwdX, 23, 4, 3, skinColor);
+          }
         }
 
         // ── BODY  (by+13 … by+20) ─────────────────────────────────
         r(-6, 12, 12, 9, DK);     // outline
         r(-5, 13, 10, 7, bClr);   // fill
+        // Chavvah fig leaves: green on lower half of torso
+        if (hasFigLeaves && isEve && !showClothes) {
+          r(-5, 16, 10, 4, FIG);
+        }
 
         // ── ARMS ──────────────────────────────────────────────────
         if (isSide) {
@@ -2157,8 +2181,8 @@
             ctx.rect(0, 0, W * 0.15 + 12, H);
             ctx.clip();
             drawCutsceneChar(ctx, W * 0.15 + 18, H * 0.68, charScale * 0.7, {
-              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
-              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, hasFigLeaves: true, gameTime: t,
             });
             ctx.restore();
             // Chavvah peeking from behind right tree (partially hidden)
@@ -2167,8 +2191,8 @@
             ctx.rect(W * 0.82 - 12, 0, W, H);
             ctx.clip();
             drawCutsceneChar(ctx, W * 0.82 - 18, H * 0.68, charScale * 0.7, {
-              direction: 'left', hairColor: '#1a1a1a', bodyColor: '#c07080',
-              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'left', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, isEve: true, hasFigLeaves: true, gameTime: t,
             });
             ctx.restore();
             break;
@@ -2195,13 +2219,13 @@
             ctx.textAlign = 'left';
             // Adam emerging, looking afraid (facing up toward divine presence)
             drawCutsceneChar(ctx, cx - W * 0.08, H * 0.78, charScale * 0.8, {
-              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
-              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, hasFigLeaves: true, gameTime: t,
             });
             // Chavvah beside Adam
             drawCutsceneChar(ctx, cx + W * 0.08, H * 0.78, charScale * 0.8, {
-              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#c07080',
-              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, isEve: true, hasFigLeaves: true, gameTime: t,
             });
             break;
           }
@@ -2221,13 +2245,13 @@
             ctx.fill();
             // Adam (left, facing divine presence)
             drawCutsceneChar(ctx, cx - W * 0.18, H * 0.78, charScale * 0.8, {
-              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
-              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, hasFigLeaves: true, gameTime: t,
             });
             // Chavvah (center, facing divine presence)
             drawCutsceneChar(ctx, cx, H * 0.78, charScale * 0.8, {
-              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#c07080',
-              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, isEve: true, hasFigLeaves: true, gameTime: t,
             });
             // Nachash (right, upright serpent)
             drawCutsceneSerpent(ctx, cx + W * 0.18, H * 0.78, charScale * 0.8, t);
@@ -2246,12 +2270,12 @@
             drawDivinePresence(ctx, cx, H * 0.28, charScale * 0.45, t);
             // Adam and Chavvah standing to the side (left, watching)
             drawCutsceneChar(ctx, W * 0.12, H * 0.75, charScale * 0.65, {
-              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
-              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, hasFigLeaves: true, gameTime: t,
             });
             drawCutsceneChar(ctx, W * 0.22, H * 0.75, charScale * 0.65, {
-              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#c07080',
-              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, isEve: true, hasFigLeaves: true, gameTime: t,
             });
             // Serpent on its belly (cursed form - snake slithering on ground)
             ctx.strokeStyle = '#228b22'; ctx.lineWidth = 6; ctx.lineCap = 'round';
@@ -2287,13 +2311,13 @@
             ctx.fill();
             // Adam standing to the side (left)
             drawCutsceneChar(ctx, W * 0.15, H * 0.75, charScale * 0.65, {
-              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
-              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, hasFigLeaves: true, gameTime: t,
             });
             // Chavvah in center, facing divine presence
             drawCutsceneChar(ctx, cx, H * 0.78, charScale * 0.85, {
-              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#c07080',
-              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, isEve: true, hasFigLeaves: true, gameTime: t,
             });
             // Tears falling
             for (let i = 0; i < 4; i++) {
@@ -2338,13 +2362,13 @@
             drawDivinePresence(ctx, cx, H * 0.28, charScale * 0.45, t);
             // Adam in center facing divine presence
             drawCutsceneChar(ctx, cx, H * 0.76, charScale * 0.85, {
-              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
-              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, hasFigLeaves: true, gameTime: t,
             });
             // Chavvah to the right
             drawCutsceneChar(ctx, cx + W * 0.15, H * 0.76, charScale * 0.65, {
-              direction: 'left', hairColor: '#1a1a1a', bodyColor: '#c07080',
-              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'left', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, isEve: true, hasFigLeaves: true, gameTime: t,
             });
             // Sweat drops around Adam
             for (let i = 0; i < 4; i++) {
@@ -2365,15 +2389,15 @@
             ctx.shadowBlur = 0;
             // Divine presence providing clothing
             drawDivinePresence(ctx, cx, H * 0.35, charScale * 0.45, t);
-            // Adam with clothes (left)
+            // Adam with coats of skins (light brown)
             drawCutsceneChar(ctx, cx - W * 0.12, H * 0.78, charScale * 0.8, {
-              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
-              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, showClothes: true, gameTime: t,
             });
-            // Chavvah with clothes (right)
+            // Chavvah with coats of skins (light brown)
             drawCutsceneChar(ctx, cx + W * 0.12, H * 0.78, charScale * 0.8, {
-              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#c07080',
-              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
+              skinColor: SKIN_COLOR, isEve: true, showClothes: true, gameTime: t,
             });
             break;
           }
@@ -2424,14 +2448,14 @@
             // Adam and Chavvah walking away to the right (animated position)
             const walkOff = (t * 0.3) % (W * 0.3);
             drawCutsceneChar(ctx, cx + 65 + walkOff, H * 0.82, charScale * 0.7, {
-              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
               skinColor: SKIN_COLOR, isMoving: true, walkFrame: (t * 0.15) % 4,
-              hasClothes: true, showClothes: true, gameTime: t,
+              showClothes: true, gameTime: t,
             });
             drawCutsceneChar(ctx, cx + 85 + walkOff, H * 0.82, charScale * 0.65, {
-              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
               skinColor: SKIN_COLOR, isEve: true, isMoving: true, walkFrame: (t * 0.15 + 1) % 4,
-              hasClothes: true, showClothes: true, gameTime: t,
+              showClothes: true, gameTime: t,
             });
             break;
           }
@@ -2780,10 +2804,12 @@
               // (no halo)
             } else {
               const showClothes = npc.hasClothes || (npc.clothesBlink > 0 && Math.floor(npc.clothesBlink * 3) % 2 === 0);
+              // When naked (no glory, no fig leaves, no clothes), body = skin color
+              const nakedBody = (!npc.hasGlory && !npc.hasFigLeaves && !npc.hasClothes) ? SKIN_COLOR : (npc.isEve ? '#c07080' : '#6b8c42');
               drawCharacterSprite(ctx, 0, 0, {
                 walkFrame: npc.walkFrame, isMoving: npc.isMoving, direction: npc.direction || 'down',
-                hairColor: npc.hairColor, bodyColor: npc.isEve ? '#c07080' : '#6b8c42', skinColor: SKIN_COLOR,
-                isEve: npc.isEve, showClothes,
+                hairColor: npc.hairColor, bodyColor: nakedBody, skinColor: SKIN_COLOR,
+                isEve: npc.isEve, showClothes, hasFigLeaves: npc.hasFigLeaves,
                 holdingFruit: npc.holdingFruit, isEating: npc.isEating,
                 hasGlory: npc.hasGlory, gameTime,
               });
