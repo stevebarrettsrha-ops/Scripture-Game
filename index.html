@@ -312,6 +312,82 @@
       font-size: 0.85rem;
       margin-bottom: 14px;
     }
+    .menu-icon-btn {
+      position: absolute;
+      top: 8px; right: 8px;
+      width: 36px; height: 36px;
+      background: rgba(0,0,0,0.7);
+      border: 2px solid #d4a017;
+      border-radius: 6px;
+      color: #facc15;
+      font-size: 1.2rem;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 25;
+      transition: background 0.2s;
+    }
+    .menu-icon-btn:hover { background: rgba(0,0,0,0.9); }
+    .pause-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 30;
+    }
+    .pause-box {
+      width: calc(100% - 40px);
+      max-width: 340px;
+      background: rgba(10,10,5,0.95);
+      border: 2px solid #d4a017;
+      border-radius: 10px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .pause-title {
+      font-family: Georgia, serif;
+      font-size: 1.2rem;
+      color: #ffd700;
+      margin-bottom: 18px;
+    }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+      padding: 8px 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+    }
+    .toggle-label { color: #f5e6c8; font-size: 0.85rem; }
+    .toggle-switch {
+      width: 44px; height: 24px;
+      background: #4b5563;
+      border-radius: 12px;
+      border: none;
+      cursor: pointer;
+      position: relative;
+      transition: background 0.2s;
+    }
+    .toggle-switch.on { background: #b8860b; }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 3px; left: 3px;
+      width: 18px; height: 18px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle-switch.on::after { transform: translateX(20px); }
+    .save-toast {
+      color: #4ade80;
+      font-size: 0.8rem;
+      margin-bottom: 10px;
+      min-height: 1.2em;
+    }
   </style>
 </head>
 <body>
@@ -677,6 +753,11 @@
       const [serpentDialogueIndex, setSerpentDialogueIndex] = useState(0);
       const [chapter3Slide, setChapter3Slide] = useState(0);
       const [gateOpen, setGateOpen] = useState(false);
+      const [autoSave, setAutoSave] = useState(() => {
+        try { return localStorage.getItem('bereshiyth_autosave') !== 'false'; } catch(e) { return true; }
+      });
+      const [showPauseMenu, setShowPauseMenu] = useState(false);
+      const [saveToast, setSaveToast] = useState(false);
       const keysPressed = useRef({});
       const [touchDirection, setTouchDirection] = useState(null);
       // Refs to avoid stale closures in game loop
@@ -780,10 +861,16 @@
 
       // Auto-save on significant phase changes
       useEffect(() => {
+        if (!autoSave) return;
         if (gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
         const timer = setTimeout(() => { saveGame(); }, 500);
         return () => clearTimeout(timer);
-      }, [gamePhase, saveGame]);
+      }, [gamePhase, saveGame, autoSave]);
+
+      // Persist auto-save preference
+      useEffect(() => {
+        try { localStorage.setItem('bereshiyth_autosave', autoSave ? 'true' : 'false'); } catch(e) {}
+      }, [autoSave]);
 
       const checkSceneTrigger = useCallback(() => {
         const adam = npcs.find(n => n.id === 'adam');
@@ -1491,16 +1578,7 @@
         ctx.shadowColor = '#ffd700';
         ctx.shadowBlur = 18 + pulse * 0.5;
 
-        // ── WINGS (front view – behind body) ────────────────
-        ctx.save();
-        ctx.shadowColor = '#ffffff'; ctx.shadowBlur = 10;
-        ctx.fillStyle = wingColor;
-        // Left wing
-        ctx.beginPath(); ctx.ellipse(2, 12, 7, 12, -0.5 - wf, 0, Math.PI * 2); ctx.fill();
-        // Right wing
-        ctx.beginPath(); ctx.ellipse(30, 12, 7, 12, 0.5 + wf, 0, Math.PI * 2); ctx.fill();
-        ctx.shadowBlur = 0;
-        ctx.restore();
+        // (No wings – the Most High is depicted without wings)
 
         // ── CHARACTER BODY (white robe, like Malak) ─────────
         // Use glorified skin color (golden glow) for the head/skin
@@ -1803,14 +1881,15 @@
               ctx.lineWidth = 1;
               ctx.beginPath(); ctx.arc(bx, by + H * 0.4, 2 + pr(i + 170) * 4, 0, Math.PI * 2); ctx.stroke();
             }
-            // emoji fish swimming at various depths
+            // emoji fish swimming at various depths (scaled to screen)
+            const fishSc = Math.max(1, H / 400);
             const fishEmoji = ['\uD83D\uDC1F', '\uD83D\uDC20', '\uD83D\uDC21', '\uD83D\uDC1F', '\uD83D\uDC20', '\uD83D\uDC21', '\uD83D\uDC1F', '\uD83D\uDC20'];
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             for (let i = 0; i < fishEmoji.length; i++) {
               const speed = 0.4 + pr(i + 5) * 0.6;
               const fx = ((pr(i) * W + t * speed) % (W + 60)) - 30;
               const fy = H * 0.46 + pr(i + 20) * H * 0.3;
-              const sz = 18 + pr(i + 30) * 16;
+              const sz = (18 + pr(i + 30) * 16) * fishSc;
               const bob = Math.sin(t * 0.08 + i * 2.5) * 5;
               ctx.save();
               ctx.translate(fx, fy + bob);
@@ -1955,18 +2034,19 @@
                 ctx.stroke();
               }
             }
-            // emoji animals walking across the land
+            // emoji animals walking across the land (sizes scale with screen)
+            const anSc = Math.max(1, H / 400);
             const landAnimals = [
-              { emoji: '\uD83D\uDC04', ox: 0.10, oy: 0.63, sz: 32, spd: 0.20 },  // cow (full body)
-              { emoji: '\uD83D\uDC2A', ox: 0.55, oy: 0.60, sz: 36, spd: 0.35 },  // camel (full body)
-              { emoji: '\uD83D\uDC11', ox: 0.30, oy: 0.70, sz: 26, spd: 0.15 },  // sheep
-              { emoji: '\uD83E\uDD8C', ox: 0.72, oy: 0.66, sz: 30, spd: 0.25 },  // deer
-              { emoji: '\uD83D\uDC0E', ox: 0.45, oy: 0.62, sz: 34, spd: 0.40 },  // horse
-              { emoji: '\uD83D\uDC18', ox: 0.85, oy: 0.64, sz: 38, spd: 0.12 },  // elephant
-              { emoji: '\uD83D\uDC07', ox: 0.20, oy: 0.76, sz: 22, spd: 0.50 },  // rabbit
-              { emoji: '\uD83E\uDD92', ox: 0.65, oy: 0.56, sz: 40, spd: 0.18 },  // giraffe
-              { emoji: '\uD83D\uDC0D', ox: 0.40, oy: 0.80, sz: 20, spd: 0.10 },  // snake (creeping)
-              { emoji: '\uD83E\uDD8E', ox: 0.78, oy: 0.82, sz: 18, spd: 0.08 },  // lizard (creeping)
+              { emoji: '\uD83D\uDC04', ox: 0.10, oy: 0.63, sz: 32 * anSc, spd: 0.20 },  // cow
+              { emoji: '\uD83D\uDC2A', ox: 0.55, oy: 0.60, sz: 36 * anSc, spd: 0.35 },  // camel
+              { emoji: '\uD83D\uDC11', ox: 0.30, oy: 0.70, sz: 26 * anSc, spd: 0.15 },  // sheep
+              { emoji: '\uD83E\uDD8C', ox: 0.72, oy: 0.66, sz: 30 * anSc, spd: 0.25 },  // deer
+              { emoji: '\uD83D\uDC0E', ox: 0.45, oy: 0.62, sz: 34 * anSc, spd: 0.40 },  // horse
+              { emoji: '\uD83D\uDC18', ox: 0.85, oy: 0.64, sz: 40 * anSc, spd: 0.12 },  // elephant
+              { emoji: '\uD83D\uDC07', ox: 0.20, oy: 0.76, sz: 22 * anSc, spd: 0.50 },  // rabbit
+              { emoji: '\uD83E\uDD92', ox: 0.65, oy: 0.56, sz: 44 * anSc, spd: 0.18 },  // giraffe
+              { emoji: '\uD83D\uDC0D', ox: 0.40, oy: 0.80, sz: 20 * anSc, spd: 0.10 },  // snake
+              { emoji: '\uD83E\uDD8E', ox: 0.78, oy: 0.82, sz: 18 * anSc, spd: 0.08 },  // lizard
             ];
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             landAnimals.forEach((an, i) => {
@@ -2234,14 +2314,15 @@
               direction: 'down', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
               skinColor: SKIN_COLOR, hasGlory: true, gameTime: t,
             });
-            // animals in semicircle
+            // animals in semicircle (scaled to screen)
+            const nameSc = Math.max(1, H / 400);
             const animalEmojis = ['🐄','🐂','🐑','🦌','🐦','🦅','🐇','🐎'];
             const animalAngles = [-2.5, -1.8, -1.1, -0.4, 0.4, 1.1, 1.8, 2.5];
             for (let i = 0; i < 8; i++) {
-              const dist = 90 + Math.sin(t * 0.02 + i) * 8;
+              const dist = (90 + Math.sin(t * 0.02 + i) * 8) * nameSc;
               const ax = cx + Math.cos(animalAngles[i]) * dist;
               const ay = H * 0.5 + Math.sin(animalAngles[i]) * dist * 0.4 + 20;
-              ctx.font = '26px serif'; ctx.textAlign = 'center';
+              ctx.font = `${Math.round(26 * nameSc)}px serif`; ctx.textAlign = 'center';
               ctx.fillText(animalEmojis[i], ax, ay);
             }
             ctx.textAlign = 'left';
@@ -2422,7 +2503,7 @@
             drawDarkGarden();
             // Divine presence walking through (the express image)
             const walkX = cx + Math.sin(t * 0.012) * W * 0.15;
-            drawDivinePresence(ctx, walkX, H * 0.58, charScale * 0.6, t);
+            drawDivinePresence(ctx, walkX, H * 0.58, charScale * 1.2, t);
             // Two specific trees for hiding (left and right)
             // Left tree (Adam hides behind)
             ctx.fillStyle = '#2a1a0a';
@@ -2469,7 +2550,7 @@
             ctx.lineTo(cx + 30, H * 0.7); ctx.lineTo(cx + 80, 0);
             ctx.fill();
             // Divine presence at top center
-            drawDivinePresence(ctx, cx, H * 0.35, charScale * 0.5, t);
+            drawDivinePresence(ctx, cx, H * 0.35, charScale * 1.1, t);
             // "WHERE ARE YOU?" text
             ctx.fillStyle = 'rgba(255,215,0,0.12)';
             ctx.font = `bold ${Math.max(16, W * 0.035)}px Georgia, serif`;
@@ -2492,7 +2573,7 @@
             // All three stand before the divine presence
             drawDarkGarden();
             // Divine presence above
-            drawDivinePresence(ctx, cx, H * 0.3, charScale * 0.5, t);
+            drawDivinePresence(ctx, cx, H * 0.3, charScale * 1.1, t);
             // Light beam
             const beamG = ctx.createLinearGradient(cx, 0, cx, H * 0.5);
             beamG.addColorStop(0, 'rgba(255,255,200,0.15)');
@@ -2526,7 +2607,7 @@
             ctx.fillStyle = rG;
             ctx.fillRect(0, 0, W, H);
             // Divine presence above
-            drawDivinePresence(ctx, cx, H * 0.28, charScale * 0.45, t);
+            drawDivinePresence(ctx, cx, H * 0.28, charScale * 1.0, t);
             // Adam and Chavvah standing to the side (left, watching)
             drawCutsceneChar(ctx, W * 0.12, H * 0.75, charScale * 0.65, {
               direction: 'right', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
@@ -2562,7 +2643,7 @@
             // Chavvah receives her judgment
             drawDarkGarden();
             // Divine presence above
-            drawDivinePresence(ctx, cx, H * 0.3, charScale * 0.45, t);
+            drawDivinePresence(ctx, cx, H * 0.3, charScale * 1.0, t);
             // Dim light
             ctx.fillStyle = 'rgba(255,255,200,0.03)';
             ctx.beginPath();
@@ -2618,7 +2699,7 @@
               ctx.stroke();
             }
             // Divine presence above
-            drawDivinePresence(ctx, cx, H * 0.28, charScale * 0.45, t);
+            drawDivinePresence(ctx, cx, H * 0.28, charScale * 1.0, t);
             // Adam in center facing divine presence
             drawCutsceneChar(ctx, cx, H * 0.76, charScale * 0.85, {
               direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
@@ -2647,7 +2728,7 @@
             ctx.beginPath(); ctx.arc(cx, H * 0.2, 80, 0, Math.PI * 2); ctx.fill();
             ctx.shadowBlur = 0;
             // Divine presence providing clothing
-            drawDivinePresence(ctx, cx, H * 0.35, charScale * 0.45, t);
+            drawDivinePresence(ctx, cx, H * 0.35, charScale * 1.0, t);
             // Adam with coats of skins (light brown)
             drawCutsceneChar(ctx, cx - W * 0.12, H * 0.78, charScale * 0.8, {
               direction: 'up', hairColor: '#1a1a1a', bodyColor: SKIN_COLOR,
@@ -3184,6 +3265,32 @@
           {gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && <h1 className="title">BERE'SHIYTH: In The Beginning</h1>}
           <canvas ref={canvasRef} />
 
+          {gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && !showPauseMenu && (
+            <button className="menu-icon-btn" onClick={() => setShowPauseMenu(true)} title="Menu">&#9776;</button>
+          )}
+
+          {showPauseMenu && (
+            <div className="pause-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowPauseMenu(false); }}>
+              <div className="pause-box">
+                <h2 className="pause-title">Paused</h2>
+                <div className="toggle-row">
+                  <span className="toggle-label">Auto-Save</span>
+                  <button className={`toggle-switch${autoSave ? ' on' : ''}`} onClick={() => setAutoSave(prev => !prev)}></button>
+                </div>
+                <button className="menu-btn" onClick={() => { saveGame(); setSaveToast(true); setTimeout(() => setSaveToast(false), 2000); }} style={{marginBottom: '10px'}}>
+                  Save Progress
+                </button>
+                <p className="save-toast">{saveToast ? 'Progress saved!' : ''}</p>
+                <button className="menu-btn secondary" onClick={() => setShowPauseMenu(false)}>
+                  Resume Game
+                </button>
+                <button className="menu-btn secondary" onClick={() => { setShowPauseMenu(false); setGamePhase(PHASES.START_MENU); }} style={{marginTop: '8px'}}>
+                  Main Menu
+                </button>
+              </div>
+            </div>
+          )}
+
           {gamePhase === PHASES.START_MENU && (
             <div className="menu-overlay">
               <h1 className="menu-title">BERE'SHIYTH</h1>
@@ -3225,6 +3332,10 @@
                     </div>
                   );
                 })()}
+                <div className="toggle-row">
+                  <span className="toggle-label">Auto-Save</span>
+                  <button className={`toggle-switch${autoSave ? ' on' : ''}`} onClick={() => setAutoSave(prev => !prev)}></button>
+                </div>
                 <button className="menu-btn" disabled={gamePhaseRef.current === PHASES.SETTINGS && !hasSaveData()} onClick={() => { saveGame(); }}>
                   Save Progress
                 </button>
