@@ -54,6 +54,10 @@
       padding: 12px;
       z-index: 20;
     }
+    .dialogue-box.scene-dialogue {
+      bottom: auto;
+      top: 8px;
+    }
     .dialogue-header {
       display: flex;
       justify-content: space-between;
@@ -184,13 +188,15 @@
       font-size: 0.7rem;
     }
     .cutscene-box {
-      margin: 0 auto 28px;
+      margin: 0 auto 12px;
       width: calc(100% - 24px);
       max-width: 680px;
+      max-height: 40vh;
+      overflow-y: auto;
       background: rgba(0,0,0,0.88);
       border: 2px solid #d4a017;
       border-radius: 10px;
-      padding: 18px 18px 14px;
+      padding: 14px 16px 10px;
       pointer-events: auto;
     }
     .cutscene-ref {
@@ -1129,6 +1135,100 @@
         if (hasGlory) { ctx.shadowBlur = 0; }
       };
 
+      // ── Cutscene character helpers ─────────────────────────────────
+      // Draw a character sprite in cutscene scenes at arbitrary foot-position and scale
+      const drawCutsceneChar = (ctx, footX, footY, scale, opts) => {
+        ctx.save();
+        ctx.translate(footX - 16 * scale, footY - 28 * scale);
+        ctx.scale(scale, scale);
+        drawCharacterSprite(ctx, 0, 0, opts);
+        ctx.restore();
+      };
+
+      // Draw the Nachash (upright serpent) in cutscene scenes
+      const drawCutsceneSerpent = (ctx, footX, footY, scale, t) => {
+        ctx.save();
+        ctx.translate(footX - 16 * scale, footY - 30 * scale);
+        ctx.scale(scale, scale);
+        const DK = '#0a3a0a', BODY = '#228b22', BELLY = '#90ee90';
+        const r = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(16 + dx, dy, w, h); };
+        // Tail
+        ctx.fillStyle = BODY;
+        ctx.beginPath();
+        ctx.moveTo(14, 18); ctx.quadraticCurveTo(6, 24, 4, 30);
+        ctx.lineTo(7, 30); ctx.quadraticCurveTo(9, 24, 16, 20);
+        ctx.fill();
+        // Legs
+        r(-5, 20, 4, 6, BODY); r(-6, 26, 6, 2, DK); r(-7, 25, 2, 2, DK);
+        r(1, 20, 4, 6, BODY); r(0, 26, 6, 2, DK); r(5, 25, 2, 2, DK);
+        // Body
+        r(-6, 11, 12, 10, DK); r(-5, 12, 10, 8, BODY); r(-3, 13, 6, 6, BELLY);
+        // Arms
+        r(-8, 12, 3, 7, DK); r(-8, 13, 2, 5, BODY); r(-9, 18, 2, 2, DK);
+        r(5, 12, 3, 7, DK); r(5, 13, 2, 5, BODY); r(6, 18, 2, 2, DK);
+        // Head
+        r(-7, 0, 14, 12, DK); r(-6, 1, 12, 10, BODY);
+        r(-8, 4, 3, 5, DK); r(-7, 5, 2, 3, BODY);
+        // Eyes
+        ctx.fillStyle = '#ffcc00'; ctx.fillRect(12, 3, 3, 3); ctx.fillRect(17, 3, 3, 3);
+        ctx.fillStyle = '#cc0000'; ctx.fillRect(13, 4, 1, 2); ctx.fillRect(18, 4, 1, 2);
+        // Mouth
+        ctx.fillStyle = DK; ctx.fillRect(9, 8, 6, 1);
+        // Tongue
+        if (Math.sin((t || 0) * 0.3) > 0.3) {
+          ctx.fillStyle = '#ff3333';
+          ctx.fillRect(6, 7, 3, 1); ctx.fillRect(4, 6, 2, 1); ctx.fillRect(4, 8, 2, 1);
+        }
+        // Spines
+        ctx.fillStyle = '#1a6b1a';
+        for (let i = 0; i < 4; i++) ctx.fillRect(20, 2 + i * 4, 3, 2);
+        ctx.restore();
+      };
+
+      // Draw the "Express Image" of the Most High (radiant divine figure of light)
+      const drawDivinePresence = (ctx, x, y, scale, t) => {
+        const s = scale;
+        // Outer radiant glow
+        const pulse = Math.sin(t * 0.08) * 10;
+        ctx.save();
+        ctx.shadowColor = '#fff8dc';
+        ctx.shadowBlur = 40 + pulse;
+        // Radiant aura
+        ctx.fillStyle = 'rgba(255,248,220,0.12)';
+        ctx.beginPath(); ctx.ellipse(x, y - 30 * s, 50 * s, 70 * s, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,235,180,0.18)';
+        ctx.beginPath(); ctx.ellipse(x, y - 30 * s, 30 * s, 45 * s, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
+        // Divine figure outline in pure light
+        ctx.fillStyle = 'rgba(255,250,230,0.85)';
+        // Head
+        ctx.beginPath(); ctx.arc(x, y - 55 * s, 10 * s, 0, Math.PI * 2); ctx.fill();
+        // Body/robe
+        ctx.beginPath();
+        ctx.moveTo(x - 12 * s, y - 45 * s);
+        ctx.lineTo(x - 18 * s, y);
+        ctx.lineTo(x + 18 * s, y);
+        ctx.lineTo(x + 12 * s, y - 45 * s);
+        ctx.closePath(); ctx.fill();
+        // Arms extended
+        ctx.strokeStyle = 'rgba(255,250,230,0.85)';
+        ctx.lineWidth = 4 * s; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(x - 12 * s, y - 38 * s); ctx.lineTo(x - 30 * s, y - 28 * s); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x + 12 * s, y - 38 * s); ctx.lineTo(x + 30 * s, y - 28 * s); ctx.stroke();
+        // Light rays emanating
+        ctx.globalAlpha = 0.12 + 0.06 * Math.sin(t * 0.06);
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2 + t * 0.008;
+          ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2 * s;
+          ctx.beginPath();
+          ctx.moveTo(x + Math.cos(a) * 25 * s, y - 30 * s + Math.sin(a) * 35 * s);
+          ctx.lineTo(x + Math.cos(a) * 60 * s, y - 30 * s + Math.sin(a) * 80 * s);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.restore();
+      };
+
       // ── Cutscene canvas renderer ────────────────────────────────────
       const drawCutscene = (ctx, W, H, slide, t) => {
         const scene = CUTSCENE_SLIDES[slide]?.scene || 'void';
@@ -1586,28 +1686,12 @@
               ctx.fillStyle = `rgba(180,140,80,${0.15 + 0.1 * Math.sin(t * 0.06 + i)})`;
               ctx.beginPath(); ctx.arc(dx, dy, ds, 0, Math.PI * 2); ctx.fill();
             }
-            // silhouette of man with glory aura
-            const figY = cy + H * 0.05;
-            // glory aura
-            ctx.shadowColor = '#ffd700';
-            ctx.shadowBlur = 30 + Math.sin(t * 0.08) * 10;
-            ctx.fillStyle = 'rgba(255,215,0,0.2)';
-            ctx.beginPath(); ctx.ellipse(cx, figY - 10, 40, 55, 0, 0, Math.PI * 2); ctx.fill();
-            ctx.shadowBlur = 0;
-            // figure
-            ctx.fillStyle = '#3a2510';
-            // head
-            ctx.beginPath(); ctx.arc(cx, figY - 40, 14, 0, Math.PI * 2); ctx.fill();
-            // body
-            ctx.fillRect(cx - 8, figY - 26, 16, 24);
-            // arms raised
-            ctx.save(); ctx.lineWidth = 6; ctx.strokeStyle = '#3a2510'; ctx.lineCap = 'round';
-            ctx.beginPath(); ctx.moveTo(cx - 8, figY - 20); ctx.lineTo(cx - 28, figY - 38); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(cx + 8, figY - 20); ctx.lineTo(cx + 28, figY - 38); ctx.stroke();
-            ctx.restore();
-            // legs
-            ctx.fillRect(cx - 7, figY - 2, 6, 20);
-            ctx.fillRect(cx + 1, figY - 2, 6, 20);
+            // Adam with glory aura (actual character sprite)
+            const figY = cy + H * 0.15;
+            drawCutsceneChar(ctx, cx, figY, 3, {
+              direction: 'down', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasGlory: true, gameTime: t,
+            });
             break;
           }
 
@@ -1812,10 +1896,11 @@
             ctx.strokeStyle = `rgba(255,0,0,${0.1 + 0.08 * Math.sin(t * 0.04)})`;
             ctx.lineWidth = 3;
             ctx.beginPath(); ctx.arc(cx, H * 0.2, 60, 0, Math.PI * 2); ctx.stroke();
-            // man figure
-            ctx.fillStyle = '#c4956a';
-            ctx.beginPath(); ctx.arc(cx + W * 0.25, H * 0.34, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx + W * 0.25 - 4, H * 0.35, 8, 18);
+            // Adam sprite (actual character)
+            drawCutsceneChar(ctx, cx + W * 0.25, H * 0.48, 2.5, {
+              direction: 'left', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasGlory: true, gameTime: t,
+            });
             break;
           }
 
@@ -1828,15 +1913,13 @@
             ctx.fillRect(0, 0, W, H * 0.4);
             ctx.fillStyle = '#3a7a22';
             ctx.fillRect(0, H * 0.4, W, H * 0.6);
-            // man in center
-            ctx.fillStyle = '#c4956a';
-            ctx.beginPath(); ctx.arc(cx, H * 0.38, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx - 5, H * 0.39, 10, 22);
-            ctx.strokeStyle = '#c4956a'; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(cx - 5, H * 0.42); ctx.lineTo(cx - 25, H * 0.38); ctx.stroke();
-            ctx.beginPath(); ctx.moveTo(cx + 5, H * 0.42); ctx.lineTo(cx + 25, H * 0.38); ctx.stroke();
+            // Adam sprite in center (actual character)
+            drawCutsceneChar(ctx, cx, H * 0.48, 2.5, {
+              direction: 'down', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasGlory: true, gameTime: t,
+            });
             // animals in semicircle
-            const animalEmojis = ['🦁','🐂','🐑','🦌','🐦','🦅','🐇','🐎'];
+            const animalEmojis = ['🐄','🐂','🐑','🦌','🐦','🦅','🐇','🐎'];
             const animalAngles = [-2.5, -1.8, -1.1, -0.4, 0.4, 1.1, 1.8, 2.5];
             for (let i = 0; i < 8; i++) {
               const dist = 90 + Math.sin(t * 0.02 + i) * 8;
@@ -1876,42 +1959,40 @@
             }
             ctx.fillStyle = '#1a4a12';
             ctx.fillRect(0, H * 0.4, W, H * 0.6);
-            // sleeping man
-            ctx.fillStyle = '#c4956a';
-            ctx.fillRect(cx - W * 0.2 - 15, H * 0.52, 30, 8);
-            ctx.beginPath(); ctx.arc(cx - W * 0.2 - 20, H * 0.52, 7, 0, Math.PI * 2); ctx.fill();
+            // Sleeping Adam (lying down, approximated by side sprite)
+            ctx.save();
+            ctx.translate(cx - W * 0.2, H * 0.52);
+            ctx.rotate(Math.PI / 2); // rotate to look like lying down
+            ctx.scale(2.5, 2.5);
+            drawCharacterSprite(ctx, 0, 0, {
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasGlory: true, gameTime: t,
+            });
+            ctx.restore();
+            // Divine sleep glow
             ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 20 + Math.sin(t * 0.05) * 10;
             ctx.strokeStyle = 'rgba(255,215,0,0.3)'; ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.ellipse(cx - W * 0.2, H * 0.52, 35, 18, 0, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.ellipse(cx - W * 0.2, H * 0.52, 45, 22, 0, 0, Math.PI * 2); ctx.stroke();
             ctx.shadowBlur = 0;
             // Z's
             for (let i = 0; i < 3; i++) {
               const zx = cx - W * 0.2 - 10 + i * 12;
-              const zy = H * 0.45 - i * 15 + Math.sin(t * 0.03 + i) * 5;
+              const zy = H * 0.42 - i * 15 + Math.sin(t * 0.03 + i) * 5;
               ctx.fillStyle = `rgba(200,200,255,${0.4 + i * 0.15})`;
               ctx.font = `${12 + i * 4}px sans-serif`; ctx.textAlign = 'center';
               ctx.fillText('z', zx, zy);
             }
-            // woman in divine light
+            // Chavvah in divine light (actual character sprite)
             const wAlpha = 0.5 + 0.5 * Math.sin(t * 0.02);
             const wGlow = ctx.createRadialGradient(cx + W * 0.2, H * 0.44, 5, cx + W * 0.2, H * 0.44, 50);
             wGlow.addColorStop(0, `rgba(255,255,220,${wAlpha * 0.5})`);
             wGlow.addColorStop(1, 'rgba(255,255,220,0)');
             ctx.fillStyle = wGlow;
             ctx.fillRect(cx + W * 0.2 - 50, H * 0.34, 100, 80);
-            ctx.fillStyle = '#c4956a';
-            ctx.beginPath(); ctx.arc(cx + W * 0.2, H * 0.42, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx + W * 0.2 - 4, H * 0.43, 8, 20);
-            // hair
-            ctx.strokeStyle = '#4a3520'; ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(cx + W * 0.2 - 6, H * 0.42);
-            ctx.quadraticCurveTo(cx + W * 0.2 - 10, H * 0.48, cx + W * 0.2 - 5, H * 0.53);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.moveTo(cx + W * 0.2 + 6, H * 0.42);
-            ctx.quadraticCurveTo(cx + W * 0.2 + 10, H * 0.48, cx + W * 0.2 + 5, H * 0.53);
-            ctx.stroke();
+            drawCutsceneChar(ctx, cx + W * 0.2, H * 0.56, 2.5, {
+              direction: 'down', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, hasGlory: true, gameTime: t,
+            });
             ctx.textAlign = 'left';
             break;
           }
@@ -1970,6 +2051,11 @@
               ctx.fillStyle = i % 3 === 0 ? '#ff69b4' : i % 3 === 1 ? '#ffd700' : '#ff4444';
               ctx.beginPath(); ctx.arc(fx, fy, 3 + pr(i + 140) * 2, 0, Math.PI * 2); ctx.fill();
             }
+            // Adam sprite on the garden path
+            drawCutsceneChar(ctx, cx, H * 0.55, 2, {
+              direction: 'down', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasGlory: true, gameTime: t,
+            });
             // golden gate in the distance (top right)
             ctx.fillStyle = '#daa520';
             ctx.fillRect(W * 0.88, H * 0.3, 5, H * 0.15);
@@ -1991,148 +2077,201 @@
         const scene = CHAPTER3_SLIDES[slide]?.scene || 'garden_voice';
         const cx = W / 2, cy = H / 2;
         const pr = (i) => ((Math.sin(i * 127.1 + i * 311.7) * 43758.5453) % 1 + 1) % 1;
+        const charScale = Math.max(2, Math.min(3.5, H / 250));
+
+        // Common dark garden background
+        const drawDarkGarden = () => {
+          const sG = ctx.createLinearGradient(0, 0, 0, H);
+          sG.addColorStop(0, '#1a2a1a');
+          sG.addColorStop(0.5, '#0a1a0a');
+          sG.addColorStop(1, '#0a0a05');
+          ctx.fillStyle = sG;
+          ctx.fillRect(0, 0, W, H);
+          // Ground
+          ctx.fillStyle = '#1a3a12';
+          ctx.fillRect(0, H * 0.65, W, H * 0.35);
+          // Trees silhouettes
+          for (let i = 0; i < 10; i++) {
+            const tx = pr(i + 500) * W;
+            const th = 60 + pr(i + 501) * 50;
+            ctx.fillStyle = `rgba(10,30,10,${0.5 + pr(i + 502) * 0.3})`;
+            ctx.fillRect(tx - 4, H * 0.5, 8, H * 0.16);
+            ctx.beginPath(); ctx.arc(tx, H * 0.5 - th * 0.1, th * 0.3, 0, Math.PI * 2); ctx.fill();
+          }
+        };
 
         switch (scene) {
           case 'garden_voice': {
-            // Dark garden scene with divine presence
-            const sG = ctx.createLinearGradient(0, 0, 0, H);
-            sG.addColorStop(0, '#1a2a1a');
-            sG.addColorStop(0.5, '#0a1a0a');
-            sG.addColorStop(1, '#0a0a05');
-            ctx.fillStyle = sG;
-            ctx.fillRect(0, 0, W, H);
-            // Trees silhouettes
-            for (let i = 0; i < 12; i++) {
-              const tx = pr(i + 500) * W;
-              const th = 80 + pr(i + 501) * 60;
-              ctx.fillStyle = `rgba(10,30,10,${0.6 + pr(i + 502) * 0.3})`;
-              ctx.beginPath(); ctx.arc(tx, H * 0.5 - th * 0.3, th * 0.4, 0, Math.PI * 2); ctx.fill();
-              ctx.fillRect(tx - 4, H * 0.5 - th * 0.3, 8, th * 0.5);
-            }
-            // Divine golden light moving through the garden
-            const walkX = cx + Math.sin(t * 0.015) * W * 0.3;
-            const glowG = ctx.createRadialGradient(walkX, cy * 0.6, 0, walkX, cy * 0.6, 120);
-            glowG.addColorStop(0, 'rgba(255,215,0,0.15)');
-            glowG.addColorStop(0.5, 'rgba(255,200,50,0.06)');
-            glowG.addColorStop(1, 'rgba(255,200,50,0)');
-            ctx.fillStyle = glowG;
-            ctx.fillRect(0, 0, W, H);
-            // Two small figures hiding behind trees
-            ctx.fillStyle = '#1a0a00';
-            ctx.fillRect(W * 0.15 - 3, H * 0.55, 6, 14);
-            ctx.beginPath(); ctx.arc(W * 0.15, H * 0.55, 5, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(W * 0.25 - 3, H * 0.58, 6, 12);
-            ctx.beginPath(); ctx.arc(W * 0.25, H * 0.58, 5, 0, Math.PI * 2); ctx.fill();
+            // The express image of YAHUAH walks in the garden; Adam and Chavvah hide
+            drawDarkGarden();
+            // Divine presence walking through (the express image)
+            const walkX = cx + Math.sin(t * 0.012) * W * 0.15;
+            drawDivinePresence(ctx, walkX, H * 0.58, charScale * 0.6, t);
+            // Two specific trees for hiding (left and right)
+            // Left tree (Adam hides behind)
+            ctx.fillStyle = '#2a1a0a';
+            ctx.fillRect(W * 0.15 - 5, H * 0.45, 10, H * 0.22);
+            ctx.fillStyle = '#0a2a0a';
+            ctx.beginPath(); ctx.arc(W * 0.15, H * 0.4, 35, 0, Math.PI * 2); ctx.fill();
+            // Right tree (Chavvah hides behind)
+            ctx.fillStyle = '#2a1a0a';
+            ctx.fillRect(W * 0.82 - 5, H * 0.45, 10, H * 0.22);
+            ctx.fillStyle = '#0a2a0a';
+            ctx.beginPath(); ctx.arc(W * 0.82, H * 0.4, 35, 0, Math.PI * 2); ctx.fill();
+            // Adam peeking from behind left tree (partially hidden)
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(0, 0, W * 0.15 + 12, H);
+            ctx.clip();
+            drawCutsceneChar(ctx, W * 0.15 + 18, H * 0.68, charScale * 0.7, {
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            ctx.restore();
+            // Chavvah peeking from behind right tree (partially hidden)
+            ctx.save();
+            ctx.beginPath();
+            ctx.rect(W * 0.82 - 12, 0, W, H);
+            ctx.clip();
+            drawCutsceneChar(ctx, W * 0.82 - 18, H * 0.68, charScale * 0.7, {
+              direction: 'left', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            ctx.restore();
             break;
           }
           case 'where_are_you': {
-            // Dark garden with divine voice from above
-            ctx.fillStyle = '#0a1a0a';
-            ctx.fillRect(0, 0, W, H);
-            // Beam of light from above
+            // Divine presence calls to Adam and Chavvah who emerge from hiding
+            drawDarkGarden();
+            // Beam of light from the divine presence
             const beamG = ctx.createLinearGradient(cx, 0, cx, H * 0.7);
-            beamG.addColorStop(0, 'rgba(255,255,200,0.25)');
+            beamG.addColorStop(0, 'rgba(255,255,200,0.2)');
             beamG.addColorStop(1, 'rgba(255,255,200,0)');
             ctx.fillStyle = beamG;
             ctx.beginPath();
-            ctx.moveTo(cx - 60, 0); ctx.lineTo(cx - 20, H * 0.7);
-            ctx.lineTo(cx + 20, H * 0.7); ctx.lineTo(cx + 60, 0);
+            ctx.moveTo(cx - 80, 0); ctx.lineTo(cx - 30, H * 0.7);
+            ctx.lineTo(cx + 30, H * 0.7); ctx.lineTo(cx + 80, 0);
             ctx.fill();
-            // Afraid man crouching
-            ctx.fillStyle = '#5D4037';
-            ctx.beginPath(); ctx.arc(cx, H * 0.65, 8, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx - 5, H * 0.66, 10, 15);
-            // Text glow
-            ctx.fillStyle = 'rgba(255,215,0,0.08)';
-            ctx.font = `bold ${Math.max(16, W * 0.04)}px Georgia, serif`;
+            // Divine presence at top center
+            drawDivinePresence(ctx, cx, H * 0.35, charScale * 0.5, t);
+            // "WHERE ARE YOU?" text
+            ctx.fillStyle = 'rgba(255,215,0,0.12)';
+            ctx.font = `bold ${Math.max(16, W * 0.035)}px Georgia, serif`;
             ctx.textAlign = 'center';
-            ctx.fillText('WHERE ARE YOU?', cx, cy * 0.4);
+            ctx.fillText('WHERE ARE YOU?', cx, H * 0.2);
             ctx.textAlign = 'left';
+            // Adam emerging, looking afraid (facing up toward divine presence)
+            drawCutsceneChar(ctx, cx - W * 0.08, H * 0.78, charScale * 0.8, {
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Chavvah beside Adam
+            drawCutsceneChar(ctx, cx + W * 0.08, H * 0.78, charScale * 0.8, {
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+            });
             break;
           }
           case 'who_told_you': {
-            // Questioning scene
-            const qG = ctx.createRadialGradient(cx, cy * 0.4, 0, cx, cy * 0.4, Math.max(W, H) * 0.6);
-            qG.addColorStop(0, '#332200');
-            qG.addColorStop(0.5, '#1a1100');
-            qG.addColorStop(1, '#0a0500');
-            ctx.fillStyle = qG;
-            ctx.fillRect(0, 0, W, H);
-            // Three figures - Adam pointing to Eve, Eve pointing to serpent
-            const figScale = Math.min(W, H) * 0.002;
-            // Adam
-            ctx.fillStyle = '#5D4037';
-            ctx.beginPath(); ctx.arc(cx - W * 0.2, H * 0.55, 8 * figScale, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx - W * 0.2 - 4 * figScale, H * 0.55 + 3, 8 * figScale, 16 * figScale);
-            // Eve
-            ctx.fillStyle = '#5D4037';
-            ctx.beginPath(); ctx.arc(cx, H * 0.55, 7 * figScale, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx - 3 * figScale, H * 0.55 + 3, 6 * figScale, 14 * figScale);
-            // Serpent (small)
-            ctx.fillStyle = '#228b22';
-            ctx.beginPath(); ctx.arc(cx + W * 0.2, H * 0.6, 6 * figScale, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx + W * 0.2 - 3 * figScale, H * 0.6 + 3, 6 * figScale, 12 * figScale);
+            // All three stand before the divine presence
+            drawDarkGarden();
+            // Divine presence above
+            drawDivinePresence(ctx, cx, H * 0.3, charScale * 0.5, t);
+            // Light beam
+            const beamG = ctx.createLinearGradient(cx, 0, cx, H * 0.5);
+            beamG.addColorStop(0, 'rgba(255,255,200,0.15)');
+            beamG.addColorStop(1, 'rgba(255,255,200,0)');
+            ctx.fillStyle = beamG;
+            ctx.beginPath();
+            ctx.moveTo(cx - 100, 0); ctx.lineTo(cx - 40, H * 0.5);
+            ctx.lineTo(cx + 40, H * 0.5); ctx.lineTo(cx + 100, 0);
+            ctx.fill();
+            // Adam (left, facing divine presence)
+            drawCutsceneChar(ctx, cx - W * 0.18, H * 0.78, charScale * 0.8, {
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Chavvah (center, facing divine presence)
+            drawCutsceneChar(ctx, cx, H * 0.78, charScale * 0.8, {
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Nachash (right, upright serpent)
+            drawCutsceneSerpent(ctx, cx + W * 0.18, H * 0.78, charScale * 0.8, t);
             break;
           }
           case 'curse_serpent': {
-            // Dark, ominous - serpent being cursed
-            ctx.fillStyle = '#0a0a00';
-            ctx.fillRect(0, 0, W, H);
-            // Red glow
+            // Serpent being cursed - falls to its belly
+            drawDarkGarden();
+            // Red ominous glow
             const rG = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.5);
-            rG.addColorStop(0, 'rgba(150,0,0,0.15)');
+            rG.addColorStop(0, 'rgba(150,0,0,0.12)');
             rG.addColorStop(1, 'rgba(50,0,0,0)');
             ctx.fillStyle = rG;
             ctx.fillRect(0, 0, W, H);
-            // Serpent on its belly
+            // Divine presence above
+            drawDivinePresence(ctx, cx, H * 0.28, charScale * 0.45, t);
+            // Adam and Chavvah standing to the side (left, watching)
+            drawCutsceneChar(ctx, W * 0.12, H * 0.75, charScale * 0.65, {
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            drawCutsceneChar(ctx, W * 0.22, H * 0.75, charScale * 0.65, {
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Serpent on its belly (cursed form - snake slithering on ground)
             ctx.strokeStyle = '#228b22'; ctx.lineWidth = 6; ctx.lineCap = 'round';
             ctx.beginPath();
-            ctx.moveTo(cx - 80, cy + 20);
-            for (let x = -80; x < 80; x += 2) {
-              ctx.lineTo(cx + x, cy + 20 + Math.sin(x * 0.08 + t * 0.05) * 8);
+            ctx.moveTo(cx - 60, H * 0.72);
+            for (let x = -60; x < 80; x += 2) {
+              ctx.lineTo(cx + x, H * 0.72 + Math.sin(x * 0.08 + t * 0.05) * 6);
             }
             ctx.stroke();
-            // Head
+            // Snake head
             ctx.fillStyle = '#228b22';
-            ctx.beginPath(); ctx.arc(cx + 80, cy + 20, 8, 0, Math.PI * 2); ctx.fill();
-            // Red eye
+            ctx.beginPath(); ctx.arc(cx + 80, H * 0.72, 7, 0, Math.PI * 2); ctx.fill();
             ctx.fillStyle = '#ff0000';
-            ctx.beginPath(); ctx.arc(cx + 82, cy + 18, 2, 0, Math.PI * 2); ctx.fill();
-            // Dust particles
-            for (let i = 0; i < 20; i++) {
-              const dx = cx + (pr(i + 600) - 0.5) * W * 0.6;
-              const dy = cy + 30 + pr(i + 601) * H * 0.2;
+            ctx.beginPath(); ctx.arc(cx + 82, H * 0.70, 2, 0, Math.PI * 2); ctx.fill();
+            // Dust around serpent
+            for (let i = 0; i < 15; i++) {
+              const dx = cx + (pr(i + 600) - 0.5) * W * 0.4;
+              const dy = H * 0.74 + pr(i + 601) * H * 0.08;
               ctx.fillStyle = `rgba(139,119,101,${0.2 + 0.1 * Math.sin(t * 0.04 + i)})`;
               ctx.beginPath(); ctx.arc(dx, dy, 1 + pr(i + 602) * 2, 0, Math.PI * 2); ctx.fill();
             }
             break;
           }
           case 'unto_woman': {
-            // Solemn scene
-            const wG = ctx.createLinearGradient(0, 0, 0, H);
-            wG.addColorStop(0, '#1a0a2a');
-            wG.addColorStop(1, '#0a0510');
-            ctx.fillStyle = wG;
-            ctx.fillRect(0, 0, W, H);
-            // Woman figure weeping
-            ctx.fillStyle = '#5D4037';
-            ctx.beginPath(); ctx.arc(cx, cy - 10, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx - 5, cy, 10, 20);
-            // Tears
-            for (let i = 0; i < 3; i++) {
-              const tearY = cy + 2 + ((t * 0.5 + i * 8) % 20);
-              ctx.fillStyle = `rgba(100,150,255,${0.5 - (tearY - cy) * 0.02})`;
-              ctx.beginPath(); ctx.arc(cx + 6 + i * 3, tearY, 1.5, 0, Math.PI * 2); ctx.fill();
-            }
-            // Dim light from above
+            // Chavvah receives her judgment
+            drawDarkGarden();
+            // Divine presence above
+            drawDivinePresence(ctx, cx, H * 0.3, charScale * 0.45, t);
+            // Dim light
             ctx.fillStyle = 'rgba(255,255,200,0.03)';
             ctx.beginPath();
-            ctx.moveTo(cx - 40, 0); ctx.lineTo(cx - 15, H); ctx.lineTo(cx + 15, H); ctx.lineTo(cx + 40, 0);
+            ctx.moveTo(cx - 50, 0); ctx.lineTo(cx - 20, H); ctx.lineTo(cx + 20, H); ctx.lineTo(cx + 50, 0);
             ctx.fill();
+            // Adam standing to the side (left)
+            drawCutsceneChar(ctx, W * 0.15, H * 0.75, charScale * 0.65, {
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Chavvah in center, facing divine presence
+            drawCutsceneChar(ctx, cx, H * 0.78, charScale * 0.85, {
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Tears falling
+            for (let i = 0; i < 4; i++) {
+              const tearY = H * 0.64 + ((t * 0.5 + i * 8) % 20);
+              ctx.fillStyle = `rgba(100,150,255,${0.5 - (tearY - H * 0.64) * 0.015})`;
+              ctx.beginPath(); ctx.arc(cx + 8 + i * 4, tearY, 1.5, 0, Math.PI * 2); ctx.fill();
+            }
             break;
           }
           case 'unto_adam': {
-            // Harsh ground scene
+            // Adam receives his judgment - harsh ground scene
             const aG = ctx.createLinearGradient(0, 0, 0, H);
             aG.addColorStop(0, '#2a1a0a');
             aG.addColorStop(0.5, '#1a1005');
@@ -2162,99 +2301,105 @@
               ctx.lineTo(tx + 8, ty - 3);
               ctx.stroke();
             }
-            // Man figure laboring
-            ctx.fillStyle = '#5D4037';
-            ctx.beginPath(); ctx.arc(cx, H * 0.5, 9, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx - 5, H * 0.51, 10, 18);
-            // Sweat drops
+            // Divine presence above
+            drawDivinePresence(ctx, cx, H * 0.28, charScale * 0.45, t);
+            // Adam in center facing divine presence
+            drawCutsceneChar(ctx, cx, H * 0.76, charScale * 0.85, {
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Chavvah to the right
+            drawCutsceneChar(ctx, cx + W * 0.15, H * 0.76, charScale * 0.65, {
+              direction: 'left', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Sweat drops around Adam
             for (let i = 0; i < 4; i++) {
-              const sy = H * 0.48 + ((t * 0.3 + i * 6) % 15);
-              ctx.fillStyle = `rgba(150,200,255,${0.4 - (sy - H * 0.48) * 0.02})`;
-              ctx.beginPath(); ctx.arc(cx - 8 + i * 4, sy, 1.2, 0, Math.PI * 2); ctx.fill();
+              const sy = H * 0.62 + ((t * 0.3 + i * 6) % 15);
+              ctx.fillStyle = `rgba(150,200,255,${0.4 - (sy - H * 0.62) * 0.02})`;
+              ctx.beginPath(); ctx.arc(cx - 10 + i * 5, sy, 1.2, 0, Math.PI * 2); ctx.fill();
             }
             break;
           }
           case 'naming_clothing': {
-            // Warm scene - coats of skins
-            const nG = ctx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(W, H) * 0.6);
-            nG.addColorStop(0, '#3a2a1a');
-            nG.addColorStop(0.6, '#1a1008');
-            nG.addColorStop(1, '#0a0500');
-            ctx.fillStyle = nG;
-            ctx.fillRect(0, 0, W, H);
-            // Warm light from above (divine provision)
+            // YAHUAH clothes them with coats of skins
+            drawDarkGarden();
+            // Warm divine light from above
             ctx.shadowColor = '#ffd700';
-            ctx.shadowBlur = 20 + Math.sin(t * 0.05) * 8;
-            ctx.fillStyle = 'rgba(255,215,0,0.08)';
-            ctx.beginPath(); ctx.arc(cx, cy * 0.3, 80, 0, Math.PI * 2); ctx.fill();
+            ctx.shadowBlur = 25 + Math.sin(t * 0.05) * 8;
+            ctx.fillStyle = 'rgba(255,215,0,0.1)';
+            ctx.beginPath(); ctx.arc(cx, H * 0.2, 80, 0, Math.PI * 2); ctx.fill();
             ctx.shadowBlur = 0;
-            // Two clothed figures
-            // Adam
-            ctx.fillStyle = '#8b7355'; // leather/skin color
-            ctx.fillRect(cx - W * 0.12 - 5, cy - 5, 10, 18);
-            ctx.fillStyle = '#5D4037';
-            ctx.beginPath(); ctx.arc(cx - W * 0.12, cy - 10, 8, 0, Math.PI * 2); ctx.fill();
-            // Eve
-            ctx.fillStyle = '#8b7355';
-            ctx.fillRect(cx + W * 0.12 - 5, cy - 3, 10, 16);
-            ctx.fillStyle = '#5D4037';
-            ctx.beginPath(); ctx.arc(cx + W * 0.12, cy - 8, 7, 0, Math.PI * 2); ctx.fill();
+            // Divine presence providing clothing
+            drawDivinePresence(ctx, cx, H * 0.35, charScale * 0.45, t);
+            // Adam with clothes (left)
+            drawCutsceneChar(ctx, cx - W * 0.12, H * 0.78, charScale * 0.8, {
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, hasClothes: true, showClothes: true, gameTime: t,
+            });
+            // Chavvah with clothes (right)
+            drawCutsceneChar(ctx, cx + W * 0.12, H * 0.78, charScale * 0.8, {
+              direction: 'up', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, hasClothes: true, showClothes: true, gameTime: t,
+            });
             break;
           }
           case 'expulsion': {
             // Dramatic expulsion scene
             const eG = ctx.createLinearGradient(0, 0, W, 0);
-            eG.addColorStop(0, '#1a3a1a'); // garden (left)
+            eG.addColorStop(0, '#1a3a1a');
             eG.addColorStop(0.4, '#0a2a0a');
-            eG.addColorStop(0.5, '#3a2a1a'); // divide
+            eG.addColorStop(0.5, '#3a2a1a');
             eG.addColorStop(0.6, '#4a3a2a');
-            eG.addColorStop(1, '#6a5a3a'); // wilderness (right)
+            eG.addColorStop(1, '#6a5a3a');
             ctx.fillStyle = eG;
             ctx.fillRect(0, 0, W, H);
+            // Ground
+            ctx.fillStyle = '#3a2a18';
+            ctx.fillRect(0, H * 0.7, W, H * 0.3);
             // Golden gate in center
             ctx.fillStyle = '#daa520';
-            ctx.fillRect(cx - 8, H * 0.2, 5, H * 0.6);
-            ctx.fillRect(cx + 3, H * 0.2, 5, H * 0.6);
+            ctx.fillRect(cx - 10, H * 0.15, 6, H * 0.55);
+            ctx.fillRect(cx + 4, H * 0.15, 6, H * 0.55);
             ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.arc(cx, H * 0.22, 10, Math.PI, 0); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, H * 0.17, 12, Math.PI, 0); ctx.stroke();
             // Flaming sword
             const swordGlow = Math.sin(t * 0.15) * 0.3;
             ctx.shadowColor = '#ff4400'; ctx.shadowBlur = 15 + swordGlow * 10;
             ctx.fillStyle = '#ff6600';
             ctx.beginPath();
-            ctx.moveTo(cx, H * 0.15);
-            ctx.lineTo(cx - 4, H * 0.35);
-            ctx.lineTo(cx + 4, H * 0.35);
+            ctx.moveTo(cx, H * 0.08);
+            ctx.lineTo(cx - 5, H * 0.3);
+            ctx.lineTo(cx + 5, H * 0.3);
             ctx.closePath(); ctx.fill();
-            // Flames on sword
             for (let i = 0; i < 6; i++) {
               const fx = cx + Math.sin(t * 0.2 + i * 1.5) * 6;
-              const fy = H * 0.18 + i * (H * 0.03);
+              const fy = H * 0.1 + i * (H * 0.03);
               ctx.fillStyle = `rgba(255,${100 + i * 20},0,${0.5 - i * 0.06})`;
               ctx.beginPath(); ctx.arc(fx, fy, 4 - i * 0.3, 0, Math.PI * 2); ctx.fill();
             }
             ctx.shadowBlur = 0;
-            // Keruviym silhouettes flanking the gate
-            ctx.fillStyle = '#c4a060';
-            // Left kerub
-            ctx.beginPath(); ctx.arc(cx - 30, H * 0.35, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx - 35, H * 0.36, 10, 20);
-            // Wings
-            ctx.fillStyle = 'rgba(255,248,220,0.5)';
-            ctx.beginPath(); ctx.ellipse(cx - 42, H * 0.35, 8, 14, -0.3, 0, Math.PI * 2); ctx.fill();
-            // Right kerub
-            ctx.fillStyle = '#c4a060';
-            ctx.beginPath(); ctx.arc(cx + 30, H * 0.35, 10, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx + 25, H * 0.36, 10, 20);
-            ctx.fillStyle = 'rgba(255,248,220,0.5)';
-            ctx.beginPath(); ctx.ellipse(cx + 42, H * 0.35, 8, 14, 0.3, 0, Math.PI * 2); ctx.fill();
-            // Two figures walking away to the right
-            ctx.fillStyle = '#5D4037';
+            // Keruviym (angel sprites) flanking the gate
+            drawCutsceneChar(ctx, cx - 35, H * 0.55, charScale * 0.5, {
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#ffffff',
+              skinColor: SKIN_COLOR, gameTime: t,
+            });
+            drawCutsceneChar(ctx, cx + 35, H * 0.55, charScale * 0.5, {
+              direction: 'left', hairColor: '#1a1a1a', bodyColor: '#ffffff',
+              skinColor: SKIN_COLOR, gameTime: t,
+            });
+            // Adam and Chavvah walking away to the right (animated position)
             const walkOff = (t * 0.3) % (W * 0.3);
-            ctx.beginPath(); ctx.arc(cx + 60 + walkOff, H * 0.6, 6, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx + 57 + walkOff, H * 0.61, 6, 12);
-            ctx.beginPath(); ctx.arc(cx + 72 + walkOff, H * 0.6, 5, 0, Math.PI * 2); ctx.fill();
-            ctx.fillRect(cx + 69 + walkOff, H * 0.61, 6, 11);
+            drawCutsceneChar(ctx, cx + 65 + walkOff, H * 0.82, charScale * 0.7, {
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#6b8c42',
+              skinColor: SKIN_COLOR, isMoving: true, walkFrame: (t * 0.15) % 4,
+              hasClothes: true, showClothes: true, gameTime: t,
+            });
+            drawCutsceneChar(ctx, cx + 85 + walkOff, H * 0.82, charScale * 0.65, {
+              direction: 'right', hairColor: '#1a1a1a', bodyColor: '#c07080',
+              skinColor: SKIN_COLOR, isEve: true, isMoving: true, walkFrame: (t * 0.15 + 1) % 4,
+              hasClothes: true, showClothes: true, gameTime: t,
+            });
             break;
           }
           default: {
@@ -2384,7 +2529,7 @@
             sortedEntities.push({ type: 'npc', npc, screenX: sx, screenY: sy, mapY: npc.y });
           }
         });
-        if (gamePhase === PHASES.EXPLORE) {
+        if (gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.COMPLETE) {
           sortedEntities.push({ type: 'player', screenX: (player.x - camera.x) * TILE_SIZE, screenY: (player.y - camera.y) * TILE_SIZE, mapY: player.y });
         }
         // Sort by mapY so entities further down screen draw on top
@@ -2733,7 +2878,7 @@
           {gamePhase === PHASES.SERPENT_DIALOGUE && (() => {
             const line = SERPENT_DIALOGUE_LINES[serpentDialogueIndex];
             return (
-              <div className="dialogue-box">
+              <div className="dialogue-box scene-dialogue">
                 <div className="dialogue-header">
                   <span className="dialogue-name" style={{color: line.speaker === 'nachash' ? '#5a9c5a' : '#facc15'}}>{line.name}</span>
                   <span className="dialogue-counter">{serpentDialogueIndex + 1}/{SERPENT_DIALOGUE_LINES.length}</span>
@@ -2760,7 +2905,7 @@
           )}
 
           {showSceneText && !showDialogue && (
-            <div className="dialogue-box">
+            <div className={`dialogue-box${gamePhase !== PHASES.EXPLORE ? ' scene-dialogue' : ''}`}>
               <p className="scene-text">{sceneText}</p>
               <button className="btn" onClick={() => { if (gamePhase !== PHASES.EXPLORE) advanceScene(); else setShowSceneText(false); }}>
                 {gamePhase === PHASES.EXPLORE ? 'Begin ▶' : 'Continue ▶'}
