@@ -256,6 +256,7 @@
     const TILES = {
       GRASS: 0, WATER: 1, TREE: 2, FLOWER: 3, PATH: 4,
       TREE_OF_LIFE: 5, TREE_OF_KNOWLEDGE: 6, ROCK: 7, BUSH: 8, GOLDEN_GATE: 9,
+      WASTELAND: 10,
     };
 
     const COLORS = {
@@ -298,23 +299,28 @@
       }
       map[TOL.y][TOL.x] = TILES.TREE_OF_LIFE;
       map[TOK.y][TOK.x] = TILES.TREE_OF_KNOWLEDGE;
-      // ── Golden Gate + Eastern Path ────────────────────────────────────────
+      // ── Golden Gate + Eastern Path + Wasteland ─────────────────────────
       const GATE = { x: 63, y: 26 };
-      // Carve a visible PATH corridor east of the gate all the way to the map edge
-      for (let x = GATE.x + 1; x < MAP_WIDTH; x++) map[GATE.y][x] = TILES.PATH;
+      // Carve a visible PATH corridor east of the gate to the wasteland
+      for (let x = GATE.x + 1; x <= GATE.x + 2; x++) map[GATE.y][x] = TILES.PATH;
       // Flanking tree walls N and S of the gate — thick barrier prevents walking around
-      for (let dx = -1; dx <= 3; dx++) {
+      for (let dx = -1; dx <= 2; dx++) {
         const nx = GATE.x + dx;
-        // Build a thick wall of trees above and below the gate (multiple rows deep)
         for (let wallDy = 1; wallDy <= 6; wallDy++) {
           if (map[GATE.y - wallDy] && map[GATE.y - wallDy][nx] !== undefined) map[GATE.y - wallDy][nx] = TILES.TREE;
           if (map[GATE.y + wallDy] && map[GATE.y + wallDy][nx] !== undefined) map[GATE.y + wallDy][nx] = TILES.TREE;
         }
       }
-      // Also block tiles east of the gate (path side) with trees above/below so player can't sneak past
-      for (let ex = GATE.x + 1; ex < MAP_WIDTH; ex++) {
-        if (map[GATE.y - 1] && map[GATE.y - 1][ex] !== undefined) map[GATE.y - 1][ex] = TILES.TREE;
-        if (map[GATE.y + 1] && map[GATE.y + 1][ex] !== undefined) map[GATE.y + 1][ex] = TILES.TREE;
+      // Wasteland area east of the gate (barren land outside Eden)
+      for (let y = 14; y <= 40; y++) {
+        for (let x = GATE.x + 3; x < MAP_WIDTH; x++) {
+          if (map[y] && map[y][x] !== undefined) map[y][x] = TILES.WASTELAND;
+        }
+      }
+      // Tree border on N/S edges of wasteland
+      for (let x = GATE.x + 3; x < MAP_WIDTH; x++) {
+        for (let by = 10; by <= 13; by++) { if (map[by]) map[by][x] = TILES.TREE; }
+        for (let by = 41; by <= 44; by++) { if (map[by]) map[by][x] = TILES.TREE; }
       }
       map[GATE.y][GATE.x] = TILES.GOLDEN_GATE;
       // ─────────────────────────────────────────────────────────────────────
@@ -361,7 +367,9 @@
       SERPENT_DIALOGUE: 'serpent_dialogue', CHAVVAH_WALKS_TO_TREE: 'chavvah_walks',
       CHAVVAH_TAKES_FRUIT: 'chavvah_takes', CHAVVAH_EATS: 'chavvah_eats', CHAVVAH_GLORY_FADES: 'chavvah_glory_fades',
       CHAVVAH_WALKS_TO_ADAM: 'chavvah_to_adam', ADAM_EATS: 'adam_eats', ADAM_GLORY_FADES: 'adam_glory_fades',
-      EYES_OPENED: 'eyes_opened', CHAPTER3_CUTSCENE: 'chapter3_cutscene', COMPLETE: 'complete'
+      EYES_OPENED: 'eyes_opened', CHAPTER3_CUTSCENE: 'chapter3_cutscene',
+      GATE_OPENS: 'gate_opens', EXPULSION_WALK: 'expulsion_walk', WASTELAND_EXPLORE: 'wasteland_explore',
+      COMPLETE: 'complete'
     };
 
     // ── Serpent–Chavvah dialogue (Bere'shiyth 3:1-5) ──────────────────
@@ -391,6 +399,24 @@
       "Its leaves are for the healing of the nations.",
       "Walk in the ways of YAHUAH, and you shall live.",
       "Guard your heart, for from it flow the springs of life.",
+    ];
+
+    // ── Wasteland dialogue for Adam and Chavvah ────────────────────
+    const ADAM_WASTELAND_DIALOGUE = [
+      "The ground is cursed for my sake...",
+      "In sorrow shall I eat of it all the days of my life.",
+      "Thorns and thistles it brings forth.",
+      "In the sweat of my face shall I eat bread...",
+      "Until I return unto the ground.",
+      "For dust I am, and unto dust shall I return.",
+    ];
+    const CHAVVAH_WASTELAND_DIALOGUE = [
+      "We have been sent forth from the Garden of Eden...",
+      "YAHUAH ELOHIYM made us coats of skins and clothed us.",
+      "I shall be called Chuah — the mother of all living.",
+      "In sorrow shall I bring forth children.",
+      "Yet YAHUAH spoke of my seed bruising the serpent's head.",
+      "There is hope in the promise of YAHUAH.",
     ];
 
     // ── Chapter 3 continuation cutscene slides (Bere'shiyth 3:8-24) ─
@@ -566,6 +592,7 @@
       const [cutsceneSlide, setCutsceneSlide] = useState(0);
       const [serpentDialogueIndex, setSerpentDialogueIndex] = useState(0);
       const [chapter3Slide, setChapter3Slide] = useState(0);
+      const [gateOpen, setGateOpen] = useState(false);
       const keysPressed = useRef({});
       const [touchDirection, setTouchDirection] = useState(null);
       // Refs to avoid stale closures in game loop
@@ -590,13 +617,13 @@
       }, [npcs]);
 
       // Tiles that characters can walk over (ground-level decorations don't block)
-      const isWalkable = (tile) => tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH;
+      const isWalkable = useCallback((tile) => tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND || (tile === TILES.GOLDEN_GATE && gateOpen), [gateOpen]);
 
       const canNPCMoveTo = useCallback((x, y) => {
         if (x < GARDEN_BOUNDS.minX || x > GARDEN_BOUNDS.maxX || y < GARDEN_BOUNDS.minY || y > GARDEN_BOUNDS.maxY) return false;
         if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
         return isWalkable(map[Math.floor(y)][Math.floor(x)]);
-      }, [map]);
+      }, [map, isWalkable]);
 
       const canMoveTo = useCallback((x, y, currentNpcs) => {
         // Player collision box: check all four corners (±0.3 tiles from centre)
@@ -616,12 +643,12 @@
           }
         }
         return true;
-      }, [map]);
+      }, [map, isWalkable]);
 
       useEffect(() => {
         if (gamePhase === PHASES.CUTSCENE || gamePhase === PHASES.CHAPTER3_CUTSCENE) return; // no camera during cutscenes
         const vp = getVP(canvasRef.current || { clientWidth: window.innerWidth, clientHeight: window.innerHeight });
-        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE) {
+        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.GATE_OPENS) {
           setCamera({
             x: Math.max(0, Math.min(player.x - vp.w / 2, MAP_WIDTH - vp.w)),
             y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
@@ -651,18 +678,33 @@
           const nextDialogue = showDialogue.currentDialogue + 1;
           if (nextDialogue >= currentNpc.dialogue.length) {
             setShowDialogue(null);
-            setNpcs(prev => prev.map(npc => npc.id === currentNpc.id ? { ...npc, hasSpoken: true, currentDialogue: 0 } : npc));
+            setNpcs(prev => {
+              const updated = prev.map(npc => npc.id === currentNpc.id ? { ...npc, hasSpoken: true, currentDialogue: 0 } : npc);
+              // Check if both Adam and Chavvah have been spoken to in the wasteland
+              if (gamePhase === PHASES.WASTELAND_EXPLORE) {
+                const adam = updated.find(n => n.id === 'adam');
+                const chavvah = updated.find(n => n.id === 'chavvah');
+                if (adam?.hasSpoken && chavvah?.hasSpoken) {
+                  setTimeout(() => {
+                    setGamePhase(PHASES.COMPLETE);
+                    setSceneText("Thus ends the account of the Garden of Eden...");
+                    setShowSceneText(true);
+                  }, 500);
+                }
+              }
+              return updated;
+            });
           } else {
             setShowDialogue({ ...showDialogue, currentDialogue: nextDialogue });
           }
         }
-      }, [showDialogue, npcs]);
+      }, [showDialogue, npcs, gamePhase]);
 
       const handleInteraction = useCallback(() => {
         if (showDialogue) { advanceDialogue(); return; }
         if (showSceneText) { setShowSceneText(false); return; }
-        if (gamePhase === PHASES.EXPLORE) {
-          const nearbyNpc = npcs.find(npc => Math.abs(npc.x - player.x) < 1.5 && Math.abs(npc.y - player.y) < 1.5);
+        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE) {
+          const nearbyNpc = npcs.find(npc => Math.abs(npc.x - player.x) < 1.5 && Math.abs(npc.y - player.y) < 1.5 && !npc.isSerpent);
           if (nearbyNpc) setShowDialogue({ ...nearbyNpc, currentDialogue: 0 });
         }
       }, [showDialogue, showSceneText, gamePhase, npcs, player, advanceDialogue]);
@@ -742,6 +784,20 @@
             setChapter3Slide(0);
             setGamePhase(PHASES.CHAPTER3_CUTSCENE);
             break;
+          case PHASES.GATE_OPENS:
+            // Start Adam and Chavvah walking through the gate
+            setGamePhase(PHASES.EXPULSION_WALK);
+            setNpcs(prev => prev.map(npc => {
+              if (npc.id === 'adam') return { ...npc, behavior: 'scene', targetX: 70, targetY: 25, isMoving: true };
+              if (npc.id === 'chavvah') return { ...npc, behavior: 'scene', targetX: 70, targetY: 27, isMoving: true };
+              return npc;
+            }));
+            setSceneText("Follow A'dam and Chavvah through the Sha'ar Zahav...");
+            setShowSceneText(true);
+            break;
+          case PHASES.EXPULSION_WALK:
+            // Player can now move — text dismissed
+            break;
         }
       }, [gamePhase]);
 
@@ -760,8 +816,17 @@
       const advanceChapter3 = useCallback(() => {
         const next = chapter3Slide + 1;
         if (next >= CHAPTER3_SLIDES.length) {
-          setGamePhase(PHASES.COMPLETE);
-          setSceneText("Thus ends the account of the Garden of Eden...");
+          // Transition to gate opening scene instead of ending
+          setGamePhase(PHASES.GATE_OPENS);
+          // Position player near the gate, Adam and Chavvah inside garden near gate
+          setPlayer(prev => ({ ...prev, x: 58, y: 26, prevX: 58, prevY: 26, direction: 'right', isMoving: false }));
+          setNpcs(prev => prev.map(npc => {
+            if (npc.id === 'adam') return { ...npc, x: 60, y: 25, prevX: 60, prevY: 25, direction: 'right', behavior: 'scene', isMoving: false, targetX: null, targetY: null, hasSpoken: false, hasFigLeaves: false, hasClothes: true, dialogue: ADAM_WASTELAND_DIALOGUE, currentDialogue: 0, thoughts: ["The ground is cursed...", "Thorns and thistles...", "By the sweat of my face..."], currentThought: 0 };
+            if (npc.id === 'chavvah') return { ...npc, x: 60, y: 27, prevX: 60, prevY: 27, direction: 'right', behavior: 'scene', isMoving: false, targetX: null, targetY: null, hasSpoken: false, hasFigLeaves: false, hasClothes: true, dialogue: CHAVVAH_WASTELAND_DIALOGUE, currentDialogue: 0, thoughts: ["We have been driven out...", "My seed shall bruise his head...", "There is hope..."], currentThought: 0 };
+            return npc;
+          }));
+          setGateOpen(true);
+          setSceneText("YAHUAH ELOHIYM sent them forth from the Garden of Eden...");
           setShowSceneText(true);
         } else {
           setChapter3Slide(next);
@@ -776,7 +841,7 @@
             if (gamePhase === PHASES.CUTSCENE) advanceCutscene();
             else if (gamePhase === PHASES.CHAPTER3_CUTSCENE) advanceChapter3();
             else if (gamePhase === PHASES.SERPENT_DIALOGUE) advanceSerpentDialogue();
-            else if (showSceneText && gamePhase !== PHASES.EXPLORE) advanceScene();
+            else if (showSceneText && gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.EXPULSION_WALK) advanceScene();
             else handleInteraction();
           }
         };
@@ -817,7 +882,7 @@
             }
           }
 
-          if (!dlg && phase === PHASES.EXPLORE) {
+          if (!dlg && (phase === PHASES.EXPLORE || phase === PHASES.EXPULSION_WALK || phase === PHASES.WASTELAND_EXPLORE)) {
             setPlayer(prev => {
               let newX = prev.x, newY = prev.y, newDir = prev.direction;
               const speed = 0.15;
@@ -830,7 +895,6 @@
               if (left) { newX -= speed; newDir = 'left'; }
               if (right) { newX += speed; newDir = 'right'; }
               let finalX = prev.x, finalY = prev.y;
-              // Use npcsRef for fresh NPC positions (fixes stale closure bug)
               const liveNpcs = npcsRef.current;
               if (canMoveTo(newX, newY, liveNpcs)) { finalX = newX; finalY = newY; }
               else if (canMoveTo(newX, prev.y, liveNpcs)) { finalX = newX; }
@@ -839,6 +903,17 @@
               const walkFrame = isMoving ? (prev.walkFrame + 0.3) % 4 : 0;
               return { x: finalX, y: finalY, prevX: prev.x, prevY: prev.y, direction: newDir, walkFrame, isMoving };
             });
+            // Check if player crossed through the gate into the wasteland
+            if (phase === PHASES.EXPULSION_WALK) {
+              setPlayer(prev => {
+                if (prev.x >= 66) {
+                  setGamePhase(PHASES.WASTELAND_EXPLORE);
+                  setSceneText("The barren land outside Eden... Speak to A'dam and Chavvah.");
+                  setShowSceneText(true);
+                }
+                return prev;
+              });
+            }
           }
           if (!dlg && phase !== PHASES.CUTSCENE) {
             setNpcs(prev => prev.map(npc => {
@@ -875,9 +950,15 @@
                   }
                 }
               }
-              if (npc.id === 'adam' && phase !== PHASES.EXPLORE) { newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false; }
+              if (npc.id === 'adam' && phase !== PHASES.EXPLORE && phase !== PHASES.EXPULSION_WALK && phase !== PHASES.WASTELAND_EXPLORE && phase !== PHASES.GATE_OPENS) { newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false; }
+              // During expulsion walk, Adam and Chavvah walk to wasteland then stop
+              if ((npc.id === 'adam' || npc.id === 'chavvah') && (phase === PHASES.EXPULSION_WALK || phase === PHASES.WASTELAND_EXPLORE)) {
+                if (npc.targetX !== null && Math.abs(npc.x - npc.targetX) < 0.5 && Math.abs(npc.y - npc.targetY) < 0.5) {
+                  newNpc.isMoving = false; newNpc.walkFrame = 0; newNpc.targetX = null; newNpc.targetY = null;
+                  newNpc.direction = 'down';
+                }
+              }
               if (npc.id === 'nachash' && phase !== PHASES.EXPLORE) {
-                // Stop nachash circling during scene phases
                 newNpc.behavior = 'scene'; newNpc.targetX = null; newNpc.targetY = null; newNpc.isMoving = false;
               }
               if (npc.behavior === 'circle_tree' && phase === PHASES.EXPLORE) {
@@ -2511,7 +2592,7 @@
               ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
 
               // Grass details only where grass is visible (skip water/path)
-              if (tile !== TILES.WATER && tile !== TILES.PATH && tile !== TILES.GOLDEN_GATE) {
+              if (tile !== TILES.WATER && tile !== TILES.PATH && tile !== TILES.GOLDEN_GATE && tile !== TILES.WASTELAND) {
                 if (gh < 18) {
                   ctx.fillStyle = 'rgba(90,62,28,0.18)';
                   ctx.fillRect(screenX + (gh * 5) % 44, screenY + (gh * 7) % 44, 14, 12);
@@ -2560,6 +2641,26 @@
                   ctx.fillStyle = COLORS.bush; ctx.beginPath(); ctx.arc(16, 20, 10, 0, Math.PI * 2); ctx.fill();
                   ctx.restore();
                   break;
+                case TILES.WASTELAND: {
+                  const wh = ((mapX * 3457 + mapY * 7891) >>> 0) % 100;
+                  ctx.fillStyle = '#4a3a2a';
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  // Cracks and dust details
+                  ctx.fillStyle = '#3a2a1a';
+                  for (let ci = 0; ci < 3; ci++) ctx.fillRect(screenX + (wh*(ci+1)*11)%56+4, screenY + (wh*(ci+1)*7)%56+4, 6, 2);
+                  ctx.fillStyle = '#5a4a3a';
+                  for (let ci = 0; ci < 2; ci++) ctx.fillRect(screenX + (wh*(ci+3)*17)%56+4, screenY + (wh*(ci+3)*13)%56+4, 4, 3);
+                  // Occasional thorns
+                  if (wh < 15) {
+                    ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+                    ctx.strokeStyle = '#5a4a30'; ctx.lineWidth = 1.5;
+                    ctx.beginPath(); ctx.moveTo(16, 24); ctx.lineTo(12, 16); ctx.moveTo(16, 24); ctx.lineTo(20, 16);
+                    ctx.moveTo(16, 20); ctx.lineTo(10, 14); ctx.moveTo(16, 20); ctx.lineTo(22, 14);
+                    ctx.stroke();
+                    ctx.restore();
+                  }
+                  break;
+                }
                 case TILES.GOLDEN_GATE:
                   // Path ground under the gate (drawn in pass 1)
                   ctx.fillStyle = '#9b7d52'; ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
@@ -2581,12 +2682,14 @@
         const sortedEntities = [];
         tallObjects.forEach(obj => sortedEntities.push({ type: 'tall', ...obj }));
         npcs.forEach(npc => {
+          // During wasteland/expulsion phases, only show Adam and Chavvah
+          if ((gamePhase === PHASES.GATE_OPENS || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE) && npc.id !== 'adam' && npc.id !== 'chavvah') return;
           const sx = (npc.x - camera.x) * TILE_SIZE, sy = (npc.y - camera.y) * TILE_SIZE;
           if (sx > -TILE_SIZE * 2 && sx < canvas.width + TILE_SIZE * 2 && sy > -TILE_SIZE * 2 && sy < canvas.height + TILE_SIZE * 2) {
             sortedEntities.push({ type: 'npc', npc, screenX: sx, screenY: sy, mapY: npc.y });
           }
         });
-        if (gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.COMPLETE) {
+        if (gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.COMPLETE && gamePhase !== PHASES.GATE_OPENS) {
           sortedEntities.push({ type: 'player', screenX: (player.x - camera.x) * TILE_SIZE, screenY: (player.y - camera.y) * TILE_SIZE, mapY: player.y });
         }
         // Sort by mapY so entities further down screen draw on top
@@ -2634,23 +2737,31 @@
               ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
               const glowPulse = 0.5 + 0.5 * Math.sin(gameTime * 0.07);
               ctx.shadowColor = '#ffd700'; ctx.shadowBlur = 18 + glowPulse * 12;
+              // Left pillar
               const pillarGrad = ctx.createLinearGradient(4, 0, 10, 0);
               pillarGrad.addColorStop(0, '#8b6914'); pillarGrad.addColorStop(0.3, '#ffd700'); pillarGrad.addColorStop(0.7, '#ffec6e'); pillarGrad.addColorStop(1, '#b8860b');
               ctx.fillStyle = pillarGrad; ctx.fillRect(4, -26, 6, 58);
+              // Right pillar
               const pillarGrad2 = ctx.createLinearGradient(22, 0, 28, 0);
               pillarGrad2.addColorStop(0, '#b8860b'); pillarGrad2.addColorStop(0.3, '#ffec6e'); pillarGrad2.addColorStop(0.7, '#ffd700'); pillarGrad2.addColorStop(1, '#8b6914');
               ctx.fillStyle = pillarGrad2; ctx.fillRect(22, -26, 6, 58);
+              // Pillar caps
               ctx.fillStyle = '#ffd700';
               ctx.fillRect(2, -29, 10, 4); ctx.fillRect(20, -29, 10, 4);
+              // Arch
               ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 4;
               ctx.beginPath(); ctx.arc(16, -26, 12, Math.PI, 0); ctx.stroke();
               ctx.lineWidth = 2; ctx.strokeStyle = '#fff8dc';
               ctx.beginPath(); ctx.arc(16, -26, 10, Math.PI, 0); ctx.stroke();
-              ctx.strokeStyle = '#daa520'; ctx.lineWidth = 1.5;
-              for (let bx = 11; bx <= 21; bx += 2) {
-                ctx.beginPath(); ctx.moveTo(bx, -22); ctx.lineTo(bx, 28); ctx.stroke();
+              if (!gateOpen) {
+                // Gate bars (closed)
+                ctx.strokeStyle = '#daa520'; ctx.lineWidth = 1.5;
+                for (let bx = 11; bx <= 21; bx += 2) {
+                  ctx.beginPath(); ctx.moveTo(bx, -22); ctx.lineTo(bx, 28); ctx.stroke();
+                }
+                ctx.fillStyle = '#ffd700'; ctx.fillRect(10, -6, 12, 2);
               }
-              ctx.fillStyle = '#ffd700'; ctx.fillRect(10, -6, 12, 2);
+              // Jewel at top
               ctx.shadowBlur = 0; ctx.fillStyle = '#fff8a0';
               ctx.beginPath(); ctx.arc(16, -26, 3, 0, Math.PI * 2); ctx.fill();
               ctx.fillStyle = '#ffd700';
@@ -2817,7 +2928,7 @@
             ctx.restore();
             // Name tag and speech bubble drawn at screen coords (outside scale block)
             const cx = screenX + TILE_SIZE / 2;
-            if (!showDialogue && gamePhase === PHASES.EXPLORE) drawSpeechBubble(ctx, cx, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
+            if (!showDialogue && (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE)) drawSpeechBubble(ctx, cx, screenY, npc.thoughts[npc.currentThought], npc.isSerpent);
             const nameText = npc.hasSpoken ? `✓ ${npc.name}` : npc.name;
             ctx.font = 'bold 14px sans-serif';
             const nameWidth = ctx.measureText(nameText).width + 12;
@@ -2848,11 +2959,12 @@
           else if (ent.type === 'player') drawPlayer(ent.screenX, ent.screenY);
         });
 
-        if (gamePhase === PHASES.EXPLORE) {
+        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE) {
           // ── Off-screen NPC direction arrows ────────────────────────
           const margin = 40;
           npcs.forEach(npc => {
-            if (npc.id === 'malak') return; // don't point to the angel
+            if (npc.id === 'malak' || npc.id === 'nachash') return;
+            if (gamePhase === PHASES.WASTELAND_EXPLORE && npc.id !== 'adam' && npc.id !== 'chavvah') return;
             if (npc.hasSpoken) return;       // already spoken to
             const sx = (npc.x - camera.x) * TILE_SIZE;
             const sy = (npc.y - camera.y) * TILE_SIZE;
@@ -2885,7 +2997,7 @@
           });
         }
 
-      }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide, chapter3Slide]);
+      }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide, chapter3Slide, gateOpen]);
 
       const spokenCount = npcs.filter(n => ['adam', 'chavvah', 'nachash'].includes(n.id) && n.hasSpoken).length;
 
@@ -2962,10 +3074,10 @@
           )}
 
           {showSceneText && !showDialogue && (
-            <div className={`dialogue-box${gamePhase !== PHASES.EXPLORE ? ' scene-dialogue' : ''}`}>
+            <div className={`dialogue-box${gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.WASTELAND_EXPLORE ? ' scene-dialogue' : ''}`}>
               <p className="scene-text">{sceneText}</p>
-              <button className="btn" onClick={() => { if (gamePhase !== PHASES.EXPLORE) advanceScene(); else setShowSceneText(false); }}>
-                {gamePhase === PHASES.EXPLORE ? 'Begin ▶' : 'Continue ▶'}
+              <button className="btn" onClick={() => { if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.EXPULSION_WALK) setShowSceneText(false); else advanceScene(); }}>
+                {gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.EXPULSION_WALK ? 'OK ▶' : 'Continue ▶'}
               </button>
             </div>
           )}
@@ -2974,7 +3086,11 @@
             <p className="quest-text">Speak to A'dam, Chavvah, and the Nachash ({spokenCount}/3)</p>
           )}
 
-          {gamePhase === PHASES.EXPLORE && !showDialogue && !showSceneText && (
+          {gamePhase === PHASES.WASTELAND_EXPLORE && !showDialogue && !showSceneText && (
+            <p className="quest-text">Speak to A'dam and Chavvah in the wasteland</p>
+          )}
+
+          {(gamePhase === PHASES.EXPLORE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE) && !showDialogue && !showSceneText && (
             <div className="controls">
               <div className="dpad">
                 <div></div>
@@ -2991,7 +3107,7 @@
             </div>
           )}
 
-          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && (
+          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.EXPULSION_WALK && gamePhase !== PHASES.WASTELAND_EXPLORE && (
             <p className="phase-indicator">{gamePhase === PHASES.COMPLETE ? '\uD83D\uDCD6 The Fall of Man' : '\uD83D\uDCD6 Scene in Progress...'}</p>
           )}
 
