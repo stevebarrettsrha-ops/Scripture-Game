@@ -229,6 +229,89 @@
     }
     .cutscene-btn:hover { background: linear-gradient(180deg, #d4a017, #b8860b); }
     .cutscene-btn:active { background: #8b6914; }
+    /* ── Start menu / Settings ─────────────────────────────── */
+    .menu-overlay {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(ellipse at 50% 40%, #1a2a1a 0%, #0a0a05 70%);
+      z-index: 30;
+    }
+    .menu-title {
+      font-family: Georgia, serif;
+      font-size: 2rem;
+      color: #ffd700;
+      text-shadow: 0 2px 12px rgba(255,215,0,0.4), 0 0 40px rgba(255,215,0,0.15);
+      margin-bottom: 6px;
+      text-align: center;
+      letter-spacing: 2px;
+    }
+    .menu-subtitle {
+      font-family: Georgia, serif;
+      font-size: 0.9rem;
+      color: #8b7340;
+      margin-bottom: 40px;
+      font-style: italic;
+    }
+    .menu-btn {
+      width: 260px;
+      padding: 14px 20px;
+      margin-bottom: 14px;
+      background: linear-gradient(180deg, #b8860b, #8b6914);
+      color: #fff;
+      font-weight: bold;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 2px solid #d4a017;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .menu-btn:hover { background: linear-gradient(180deg, #d4a017, #b8860b); transform: scale(1.03); }
+    .menu-btn:active { background: #8b6914; transform: scale(0.98); }
+    .menu-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .menu-btn.danger {
+      background: linear-gradient(180deg, #8b2020, #6b1010);
+      border-color: #c04040;
+    }
+    .menu-btn.danger:hover { background: linear-gradient(180deg, #a03030, #8b2020); }
+    .menu-btn.secondary {
+      background: rgba(30,30,30,0.8);
+      border-color: #4b5563;
+    }
+    .menu-btn.secondary:hover { background: rgba(50,50,50,0.9); }
+    .settings-box {
+      width: calc(100% - 40px);
+      max-width: 400px;
+      background: rgba(0,0,0,0.88);
+      border: 2px solid #d4a017;
+      border-radius: 10px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .settings-title {
+      font-family: Georgia, serif;
+      font-size: 1.3rem;
+      color: #ffd700;
+      margin-bottom: 20px;
+    }
+    .save-info {
+      color: #9ca3af;
+      font-size: 0.8rem;
+      margin-bottom: 20px;
+      padding: 10px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 6px;
+    }
+    .save-info strong { color: #facc15; }
+    .confirm-text {
+      color: #f87171;
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+    }
   </style>
 </head>
 <body>
@@ -362,6 +445,7 @@
     ];
 
     const PHASES = {
+      START_MENU: 'start_menu', SETTINGS: 'settings',
       CUTSCENE: 'cutscene',
       EXPLORE: 'explore', SCENE_START: 'scene_start', CHAVVAH_APPROACHES_TREE: 'chavvah_approaches',
       SERPENT_DIALOGUE: 'serpent_dialogue', CHAVVAH_WALKS_TO_TREE: 'chavvah_walks',
@@ -588,7 +672,7 @@
       const [sceneText, setSceneText] = useState("Bere'shiyth - In the beginning ELOHIYM created the heavens and the earth...");
       const [showSceneText, setShowSceneText] = useState(false);
       const [gameTime, setGameTime] = useState(0);
-      const [gamePhase, setGamePhase] = useState(PHASES.CUTSCENE);
+      const [gamePhase, setGamePhase] = useState(PHASES.START_MENU);
       const [cutsceneSlide, setCutsceneSlide] = useState(0);
       const [serpentDialogueIndex, setSerpentDialogueIndex] = useState(0);
       const [chapter3Slide, setChapter3Slide] = useState(0);
@@ -598,7 +682,7 @@
       // Refs to avoid stale closures in game loop
       const touchDirRef = useRef(null);
       const showDialogueRef = useRef(null);
-      const gamePhaseRef = useRef(PHASES.CUTSCENE);
+      const gamePhaseRef = useRef(PHASES.START_MENU);
       const npcsRef = useRef(null);
       const playerRef = useRef(null);
 
@@ -608,6 +692,98 @@
       useEffect(() => { gamePhaseRef.current = gamePhase; }, [gamePhase]);
       useEffect(() => { npcsRef.current = npcs; }, [npcs]);
       useEffect(() => { playerRef.current = player; }, [player]);
+
+      const [confirmDelete, setConfirmDelete] = useState(false);
+
+      // ── Save / Load game state ───────────────────────────────────
+      const SAVE_KEY = 'bereshiyth_save';
+
+      const saveGame = useCallback(() => {
+        const saveData = {
+          version: 1,
+          timestamp: Date.now(),
+          gamePhase,
+          player: { x: player.x, y: player.y, direction: player.direction },
+          cutsceneSlide,
+          chapter3Slide,
+          serpentDialogueIndex,
+          gateOpen,
+          npcs: npcs.map(npc => ({
+            id: npc.id, x: npc.x, y: npc.y, direction: npc.direction,
+            hasSpoken: npc.hasSpoken, hasGlory: npc.hasGlory, hasClothes: npc.hasClothes,
+            hasFigLeaves: npc.hasFigLeaves, holdingFruit: npc.holdingFruit,
+            behavior: npc.behavior, dialogue: npc.dialogue, thoughts: npc.thoughts,
+            currentDialogue: npc.currentDialogue, currentThought: npc.currentThought,
+          })),
+        };
+        try {
+          localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
+          return true;
+        } catch (e) { return false; }
+      }, [gamePhase, player, npcs, cutsceneSlide, chapter3Slide, serpentDialogueIndex, gateOpen]);
+
+      const loadGame = useCallback(() => {
+        try {
+          const raw = localStorage.getItem(SAVE_KEY);
+          if (!raw) return false;
+          const save = JSON.parse(raw);
+          if (!save.version || !save.gamePhase) return false;
+          setPlayer(prev => ({ ...prev, x: save.player.x, y: save.player.y, prevX: save.player.x, prevY: save.player.y, direction: save.player.direction, isMoving: false, walkFrame: 0 }));
+          setCutsceneSlide(save.cutsceneSlide || 0);
+          setChapter3Slide(save.chapter3Slide || 0);
+          setSerpentDialogueIndex(save.serpentDialogueIndex || 0);
+          setGateOpen(save.gateOpen || false);
+          setNpcs(prev => prev.map(npc => {
+            const saved = save.npcs?.find(s => s.id === npc.id);
+            if (!saved) return npc;
+            return { ...npc, x: saved.x, y: saved.y, prevX: saved.x, prevY: saved.y, direction: saved.direction, hasSpoken: saved.hasSpoken, hasGlory: saved.hasGlory, hasClothes: saved.hasClothes, hasFigLeaves: saved.hasFigLeaves || false, holdingFruit: saved.holdingFruit || false, behavior: saved.behavior || npc.behavior, dialogue: saved.dialogue || npc.dialogue, thoughts: saved.thoughts || npc.thoughts, currentDialogue: saved.currentDialogue || 0, currentThought: saved.currentThought || 0, isMoving: false, walkFrame: 0, targetX: null, targetY: null };
+          }));
+          setGamePhase(save.gamePhase);
+          setShowSceneText(false);
+          setShowDialogue(null);
+          return true;
+        } catch (e) { return false; }
+      }, []);
+
+      const deleteSave = useCallback(() => {
+        localStorage.removeItem(SAVE_KEY);
+        setConfirmDelete(false);
+      }, []);
+
+      const hasSaveData = useCallback(() => {
+        try { return !!localStorage.getItem(SAVE_KEY); } catch (e) { return false; }
+      }, []);
+
+      const getSaveInfo = useCallback(() => {
+        try {
+          const raw = localStorage.getItem(SAVE_KEY);
+          if (!raw) return null;
+          const save = JSON.parse(raw);
+          const date = new Date(save.timestamp);
+          const phaseNames = {
+            cutscene: 'Creation Cutscene', explore: 'Garden Exploration',
+            scene_start: 'The Fall Begins', serpent_dialogue: 'Serpent Dialogue',
+            chavvah_approaches: 'Approaching the Tree', chavvah_walks: 'Walking to the Tree',
+            chavvah_takes: 'Taking the Fruit', chavvah_eats: 'Eating the Fruit',
+            chavvah_glory_fades: 'Glory Fading', chavvah_to_adam: 'Going to Adam',
+            adam_eats: 'Adam Eats', adam_glory_fades: 'Glory Fading',
+            eyes_opened: 'Eyes Opened', chapter3_cutscene: 'The Fall of Man',
+            gate_opens: 'Gate Opens', expulsion_walk: 'Expulsion',
+            wasteland_explore: 'Wasteland', complete: 'Complete',
+          };
+          return {
+            phase: phaseNames[save.gamePhase] || save.gamePhase,
+            date: date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
+        } catch (e) { return null; }
+      }, []);
+
+      // Auto-save on significant phase changes
+      useEffect(() => {
+        if (gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
+        const timer = setTimeout(() => { saveGame(); }, 500);
+        return () => clearTimeout(timer);
+      }, [gamePhase, saveGame]);
 
       const checkSceneTrigger = useCallback(() => {
         const adam = npcs.find(n => n.id === 'adam');
@@ -646,7 +822,7 @@
       }, [map, isWalkable]);
 
       useEffect(() => {
-        if (gamePhase === PHASES.CUTSCENE || gamePhase === PHASES.CHAPTER3_CUTSCENE) return; // no camera during cutscenes
+        if (gamePhase === PHASES.CUTSCENE || gamePhase === PHASES.CHAPTER3_CUTSCENE || gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
         const vp = getVP(canvasRef.current || { clientWidth: window.innerWidth, clientHeight: window.innerHeight });
         if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.GATE_OPENS) {
           setCamera({
@@ -838,6 +1014,7 @@
           keysPressed.current[e.key.toLowerCase()] = true;
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
+            if (gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
             if (gamePhase === PHASES.CUTSCENE) advanceCutscene();
             else if (gamePhase === PHASES.CHAPTER3_CUTSCENE) advanceChapter3();
             else if (gamePhase === PHASES.SERPENT_DIALOGUE) advanceSerpentDialogue();
@@ -864,6 +1041,7 @@
           lastTime = timestamp;
 
           const phase = gamePhaseRef.current;
+          if (phase === PHASES.START_MENU || phase === PHASES.SETTINGS) return;
           const dlg   = showDialogueRef.current;
           const touch = touchDirRef.current;
           const currentNpcs = npcsRef.current;
@@ -2689,7 +2867,7 @@
             sortedEntities.push({ type: 'npc', npc, screenX: sx, screenY: sy, mapY: npc.y });
           }
         });
-        if (gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.COMPLETE && gamePhase !== PHASES.GATE_OPENS) {
+        if (gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.COMPLETE && gamePhase !== PHASES.GATE_OPENS && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS) {
           sortedEntities.push({ type: 'player', screenX: (player.x - camera.x) * TILE_SIZE, screenY: (player.y - camera.y) * TILE_SIZE, mapY: player.y });
         }
         // Sort by mapY so entities further down screen draw on top
@@ -3003,8 +3181,74 @@
 
       return (
         <div className="game-container">
-          {gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && <h1 className="title">BERE'SHIYTH: In The Beginning</h1>}
+          {gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && <h1 className="title">BERE'SHIYTH: In The Beginning</h1>}
           <canvas ref={canvasRef} />
+
+          {gamePhase === PHASES.START_MENU && (
+            <div className="menu-overlay">
+              <h1 className="menu-title">BERE'SHIYTH</h1>
+              <p className="menu-subtitle">In The Beginning</p>
+              <button className="menu-btn" onClick={() => {
+                setGamePhase(PHASES.CUTSCENE);
+                setPlayer(prev => ({ ...prev, x: 35, y: 30, prevX: 35, prevY: 30, direction: 'down', isMoving: false }));
+                setNpcs(createNPCs());
+                setCutsceneSlide(0);
+                setChapter3Slide(0);
+                setGateOpen(false);
+              }}>New Game</button>
+              <button className="menu-btn" disabled={!hasSaveData()} onClick={() => { if (loadGame()) { /* loaded */ } }}>
+                Continue
+              </button>
+              <button className="menu-btn secondary" onClick={() => { setConfirmDelete(false); setGamePhase(PHASES.SETTINGS); }}>
+                Settings
+              </button>
+            </div>
+          )}
+
+          {gamePhase === PHASES.SETTINGS && (
+            <div className="menu-overlay">
+              <div className="settings-box">
+                <h2 className="settings-title">Settings</h2>
+                {(() => {
+                  const info = getSaveInfo();
+                  return (
+                    <div className="save-info">
+                      {info ? (
+                        <>
+                          <p><strong>Save Data Found</strong></p>
+                          <p>Progress: {info.phase}</p>
+                          <p>Saved: {info.date}</p>
+                        </>
+                      ) : (
+                        <p>No save data</p>
+                      )}
+                    </div>
+                  );
+                })()}
+                <button className="menu-btn" disabled={gamePhaseRef.current === PHASES.SETTINGS && !hasSaveData()} onClick={() => { saveGame(); }}>
+                  Save Progress
+                </button>
+                {!confirmDelete ? (
+                  <button className="menu-btn danger" disabled={!hasSaveData()} onClick={() => setConfirmDelete(true)}>
+                    Delete Save Data
+                  </button>
+                ) : (
+                  <>
+                    <p className="confirm-text">Are you sure? This cannot be undone.</p>
+                    <button className="menu-btn danger" onClick={() => { deleteSave(); }}>
+                      Confirm Delete
+                    </button>
+                    <button className="menu-btn secondary" onClick={() => setConfirmDelete(false)}>
+                      Cancel
+                    </button>
+                  </>
+                )}
+                <button className="menu-btn secondary" onClick={() => setGamePhase(PHASES.START_MENU)} style={{marginTop: '10px'}}>
+                  Back
+                </button>
+              </div>
+            </div>
+          )}
 
           {gamePhase === PHASES.CUTSCENE && (() => {
             const slide = CUTSCENE_SLIDES[cutsceneSlide];
@@ -3107,11 +3351,13 @@
             </div>
           )}
 
-          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.EXPULSION_WALK && gamePhase !== PHASES.WASTELAND_EXPLORE && (
+          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.EXPULSION_WALK && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && (
             <p className="phase-indicator">{gamePhase === PHASES.COMPLETE ? '\uD83D\uDCD6 The Fall of Man' : '\uD83D\uDCD6 Scene in Progress...'}</p>
           )}
 
-          <p className="help-text">WASD/Arrows to move • SPACE to interact</p>
+          {gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && (
+            <p className="help-text">WASD/Arrows to move • SPACE to interact</p>
+          )}
         </div>
       );
     };
