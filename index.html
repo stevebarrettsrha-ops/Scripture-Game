@@ -409,13 +409,13 @@
     const GARDEN_BOUNDS = { minX: 10, maxX: 70, minY: 10, maxY: 48 };
 
     // ── Wasteland level constants ───────────────────────────────────
-    const WASTELAND_MAP_WIDTH = 40;
-    const WASTELAND_MAP_HEIGHT = 30;
-    const WASTELAND_GATE_POS = { x: 3, y: 14 };  // Gate on west side
-    const WASTELAND_MALAK_POS = { x: 5, y: 14 };  // Malak guards near gate
-    const WASTELAND_ADAM_POS = { x: 15, y: 16 };
-    const WASTELAND_CHAVVAH_POS = { x: 15, y: 19 };
-    const WASTELAND_PLAYER_START = { x: 12, y: 14 };
+    const WASTELAND_MAP_WIDTH = 80;
+    const WASTELAND_MAP_HEIGHT = 60;
+    const WASTELAND_GATE_POS = { x: 3, y: 30 };  // Gate on west side
+    const WASTELAND_MALAK_POS = { x: 5, y: 30 };  // Malak guards near gate
+    const WASTELAND_ADAM_POS = { x: 25, y: 28 };
+    const WASTELAND_CHAVVAH_POS = { x: 30, y: 42 };
+    const WASTELAND_PLAYER_START = { x: 12, y: 30 };
     const GATE_GUARD_DISTANCE = 3.5;  // How close before Malak appears with sword
     const TREE_OF_KNOWLEDGE = { x: 20, y: 22 };
     const TREE_OF_LIFE_POS = { x: 56, y: 20 };
@@ -425,8 +425,13 @@
     const TILES = {
       GRASS: 0, WATER: 1, TREE: 2, FLOWER: 3, PATH: 4,
       TREE_OF_LIFE: 5, TREE_OF_KNOWLEDGE: 6, ROCK: 7, BUSH: 8, GOLDEN_GATE: 9,
-      WASTELAND: 10,
+      WASTELAND: 10, TILLED_SOIL: 11, PLANTED: 12, SEA: 13,
     };
+
+    // Emoji crops for planting activity
+    const CROP_EMOJIS = ['🌱', '🌿', '🥕', '🌽', '🍅', '🌾', '🥬', '🫒'];
+    // Emoji trees for planted trees
+    const TREE_EMOJIS = ['🌳', '🌴', '🌲', '🍎', '🍊', '🫐'];
 
     const COLORS = {
       grass: '#5a8f3d', grassDark: '#4a7f2d', water: '#3d7aaf', waterLight: '#5d9acf',
@@ -505,11 +510,17 @@
       return map;
     };
 
-    // ── Generate the separate Wasteland level map ─────────────────
+    // ── Generate the separate Wasteland level map (80×60 with river & sea) ─────
     const generateWastelandMap = () => {
       const rng = seededRandom(54321);
       const map = [];
       const GATE = WASTELAND_GATE_POS;
+      // River flows roughly from north to south-east (around x=45-50)
+      const RIVER_X_CENTER = 48;
+      const RIVER_WIDTH = 3;
+      // Sea along the eastern edge (x >= 68)
+      const SEA_START_X = 68;
+
       for (let y = 0; y < WASTELAND_MAP_HEIGHT; y++) {
         const row = [];
         for (let x = 0; x < WASTELAND_MAP_WIDTH; x++) {
@@ -520,7 +531,6 @@
           // Left edge: garden peek (columns 0-2) with trees and grass behind the gate
           else if (x < GATE.x) {
             if (y >= GATE.y - 2 && y <= GATE.y + 2) {
-              // Visible garden grass behind the gate
               row.push(TILES.GRASS);
             } else {
               row.push(TILES.TREE);
@@ -542,11 +552,27 @@
           else if (y === GATE.y && x > GATE.x && x <= GATE.x + 3) {
             row.push(TILES.PATH);
           }
+          // Sea on the eastern side
+          else if (x >= SEA_START_X) {
+            row.push(TILES.SEA);
+          }
+          // River (sinuous path from north to south)
+          else if ((() => {
+            const riverCurve = RIVER_X_CENTER + Math.sin(y * 0.15) * 4 + Math.cos(y * 0.08) * 2;
+            return Math.abs(x - riverCurve) < RIVER_WIDTH;
+          })()) {
+            row.push(TILES.WATER);
+          }
+          // Sandy beach next to sea
+          else if (x >= SEA_START_X - 2) {
+            row.push(TILES.PATH);
+          }
           // Main wasteland area
           else {
             const rand = rng();
-            if (rand < 0.02) row.push(TILES.ROCK);
-            else if (rand < 0.04) row.push(TILES.BUSH);
+            if (rand < 0.015) row.push(TILES.TREE);
+            else if (rand < 0.03) row.push(TILES.ROCK);
+            else if (rand < 0.05) row.push(TILES.BUSH);
             else row.push(TILES.WASTELAND);
           }
         }
@@ -563,10 +589,17 @@
       // Add some garden trees visible behind the gate (left side)
       for (let y = 3; y < WASTELAND_MAP_HEIGHT - 3; y++) {
         for (let x = 0; x < GATE.x; x++) {
-          if (y >= GATE.y - 2 && y <= GATE.y + 2) continue; // keep garden peek clear
+          if (y >= GATE.y - 2 && y <= GATE.y + 2) continue;
           if (map[y]) map[y][x] = TILES.TREE;
         }
       }
+      // Place tilled soil patches near Adam for planting activity (between gate and river)
+      const tilledSpots = [
+        {x: 20, y: 22}, {x: 22, y: 24}, {x: 18, y: 26},
+        {x: 24, y: 20}, {x: 21, y: 32}, {x: 19, y: 34},
+        {x: 23, y: 30}, {x: 25, y: 34},
+      ];
+      tilledSpots.forEach(s => { if (map[s.y] && map[s.y][s.x] !== undefined) map[s.y][s.x] = TILES.TILLED_SOIL; });
       // Ensure the gate path tile exists
       map[GATE.y][GATE.x] = TILES.GOLDEN_GATE;
       return map;
@@ -648,6 +681,9 @@
       "In the sweat of my face shall I eat bread...",
       "Until I return unto the ground.",
       "For dust I am, and unto dust shall I return.",
+      "But we must still tend the earth, as YAHUAH commanded.",
+      "Traveler, help me create a garden in this wasteland!",
+      "Find seeds from the trees nearby, then plant them in the tilled soil.",
     ];
     const CHAVVAH_WASTELAND_DIALOGUE = [
       "We have been sent forth from the Garden of Eden...",
@@ -656,6 +692,9 @@
       "In sorrow shall I bring forth children.",
       "Yet YAHUAH spoke of my seed bruising the serpent's head.",
       "There is hope in the promise of YAHUAH.",
+      "But we need water to survive in this barren land.",
+      "There is a river that flows through this wasteland, and a sea to the east.",
+      "Could you gather water from the river for us? Walk to the water and press TALK.",
     ];
 
     // ── Malak dialogue: Wasteland gate guard (flaming sword) ────────
@@ -860,6 +899,18 @@
 
       const malakGuardingRef = useRef(false);
 
+      // ── Planting & water-gathering activity state ──────────────────
+      const [seedsCollected, setSeedsCollected] = useState(0);
+      const [spotsPlanted, setSpotsPlanted] = useState(0);
+      const [plantedTiles, setPlantedTiles] = useState([]); // [{x,y,emoji}]
+      const [waterCollected, setWaterCollected] = useState(0);
+      const [waterDelivered, setWaterDelivered] = useState(0);
+      const [hasWater, setHasWater] = useState(false); // carrying water
+      const [adamQuestGiven, setAdamQuestGiven] = useState(false);
+      const [chavvahQuestGiven, setChavvahQuestGiven] = useState(false);
+      const SEEDS_NEEDED = 5;
+      const WATER_TRIPS_NEEDED = 3;
+
       // Helper: get active map and dimensions based on current phase
       const isWastelandPhase = useCallback((phase) => phase === PHASES.WASTELAND_EXPLORE || phase === PHASES.COMPLETE, []);
       const getActiveMap = useCallback((phase) => isWastelandPhase(phase) ? wastelandMap : map, [map, wastelandMap, isWastelandPhase]);
@@ -888,6 +939,7 @@
           chapter3Slide,
           serpentDialogueIndex,
           gateOpen,
+          seedsCollected, spotsPlanted, plantedTiles, waterCollected, waterDelivered, hasWater, adamQuestGiven, chavvahQuestGiven,
           npcs: npcs.map(npc => ({
             id: npc.id, x: npc.x, y: npc.y, direction: npc.direction,
             hasSpoken: npc.hasSpoken, hasGlory: npc.hasGlory, hasClothes: npc.hasClothes,
@@ -901,7 +953,7 @@
           localStorage.setItem(SAVE_KEY, JSON.stringify(saveData));
           return true;
         } catch (e) { return false; }
-      }, [gamePhase, player, npcs, cutsceneSlide, chapter3Slide, serpentDialogueIndex, gateOpen]);
+      }, [gamePhase, player, npcs, cutsceneSlide, chapter3Slide, serpentDialogueIndex, gateOpen, seedsCollected, spotsPlanted, plantedTiles, waterCollected, waterDelivered, hasWater, adamQuestGiven, chavvahQuestGiven]);
 
       const loadGame = useCallback(() => {
         try {
@@ -914,6 +966,19 @@
           setChapter3Slide(save.chapter3Slide || 0);
           setSerpentDialogueIndex(save.serpentDialogueIndex || 0);
           setGateOpen(save.gateOpen || false);
+          // Restore quest state
+          if (save.seedsCollected !== undefined) setSeedsCollected(save.seedsCollected);
+          if (save.spotsPlanted !== undefined) setSpotsPlanted(save.spotsPlanted);
+          if (save.plantedTiles) {
+            setPlantedTiles(save.plantedTiles);
+            // Restore planted tiles on the wasteland map
+            save.plantedTiles.forEach(t => { if (wastelandMap[t.y] && wastelandMap[t.y][t.x] !== undefined) wastelandMap[t.y][t.x] = TILES.PLANTED; });
+          }
+          if (save.waterCollected !== undefined) setWaterCollected(save.waterCollected);
+          if (save.waterDelivered !== undefined) setWaterDelivered(save.waterDelivered);
+          if (save.hasWater !== undefined) setHasWater(save.hasWater);
+          if (save.adamQuestGiven !== undefined) setAdamQuestGiven(save.adamQuestGiven);
+          if (save.chavvahQuestGiven !== undefined) setChavvahQuestGiven(save.chavvahQuestGiven);
           setNpcs(prev => prev.map(npc => {
             const saved = save.npcs?.find(s => s.id === npc.id);
             if (!saved) return npc;
@@ -982,7 +1047,7 @@
       // Tiles that characters can walk over (ground-level decorations don't block)
       const isWalkable = useCallback((tile, inWasteland) => {
         if (tile === TILES.GOLDEN_GATE) return !inWasteland && gateOpen;
-        return tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND;
+        return tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND || tile === TILES.TILLED_SOIL || tile === TILES.PLANTED;
       }, [gateOpen]);
 
       const canNPCMoveTo = useCallback((x, y, phase) => {
@@ -1068,16 +1133,21 @@
             setShowDialogue(null);
             setNpcs(prev => {
               const updated = prev.map(npc => npc.id === currentNpc.id ? { ...npc, hasSpoken: true, currentDialogue: 0 } : npc);
-              // Check if both Adam and Chavvah have been spoken to in the wasteland
+              // In wasteland: trigger planting/water quests after dialogue
               if (gamePhase === PHASES.WASTELAND_EXPLORE) {
-                const adam = updated.find(n => n.id === 'adam');
-                const chavvah = updated.find(n => n.id === 'chavvah');
-                if (adam?.hasSpoken && chavvah?.hasSpoken) {
+                if (currentNpc.id === 'adam' && !adamQuestGiven) {
+                  setAdamQuestGiven(true);
                   setTimeout(() => {
-                    setGamePhase(PHASES.COMPLETE);
-                    setSceneText("Thus ends the account of the Garden of Eden...");
+                    setSceneText("A'dam has asked you to help plant a garden! Find seeds near trees (walk close and press TALK), then plant them in the tilled soil patches.");
                     setShowSceneText(true);
-                  }, 500);
+                  }, 300);
+                }
+                if (currentNpc.id === 'chavvah' && !chavvahQuestGiven) {
+                  setChavvahQuestGiven(true);
+                  setTimeout(() => {
+                    setSceneText("Chavvah has asked you to gather water! Walk to the river or sea and press TALK to collect water, then return to Chavvah to deliver it.");
+                    setShowSceneText(true);
+                  }, 300);
                 }
               }
               return updated;
@@ -1086,7 +1156,7 @@
             setShowDialogue({ ...showDialogue, currentDialogue: nextDialogue });
           }
         }
-      }, [showDialogue, npcs, gamePhase]);
+      }, [showDialogue, npcs, gamePhase, adamQuestGiven, chavvahQuestGiven]);
 
       const handleInteraction = useCallback(() => {
         if (showDialogue) { advanceDialogue(); return; }
@@ -1096,9 +1166,118 @@
             ? npcs.filter(n => n.id === 'adam' || n.id === 'chavvah' || n.id === 'malak')
             : npcs;
           const nearbyNpc = visibleNpcs.find(npc => Math.abs(npc.x - player.x) < 1.5 && Math.abs(npc.y - player.y) < 1.5);
+
+          // ── Wasteland activity interactions ───────────────────────
+          if (gamePhase === PHASES.WASTELAND_EXPLORE) {
+            const px = Math.floor(player.x), py = Math.floor(player.y);
+            const activeMap = wastelandMap;
+
+            // Seed collection: interact near trees in wasteland
+            if (adamQuestGiven && seedsCollected < SEEDS_NEEDED) {
+              // Check tiles around player for trees
+              let nearTree = false;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tx = px + dx, ty = py + dy;
+                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
+                    if (activeMap[ty][tx] === TILES.TREE) nearTree = true;
+                  }
+                }
+              }
+              if (nearTree && !nearbyNpc) {
+                setSeedsCollected(prev => {
+                  const next = Math.min(prev + 1, SEEDS_NEEDED);
+                  setSceneText(`You found seeds! (${next}/${SEEDS_NEEDED})`);
+                  setShowSceneText(true);
+                  return next;
+                });
+                return;
+              }
+            }
+
+            // Planting: interact on tilled soil when carrying seeds
+            if (adamQuestGiven && seedsCollected > spotsPlanted && spotsPlanted < SEEDS_NEEDED) {
+              if (activeMap[py] && activeMap[py][px] === TILES.TILLED_SOIL) {
+                // Check not already planted here
+                if (!plantedTiles.find(t => t.x === px && t.y === py)) {
+                  const emoji = spotsPlanted % 2 === 0
+                    ? CROP_EMOJIS[spotsPlanted % CROP_EMOJIS.length]
+                    : TREE_EMOJIS[spotsPlanted % TREE_EMOJIS.length];
+                  activeMap[py][px] = TILES.PLANTED;
+                  setPlantedTiles(prev => [...prev, { x: px, y: py, emoji }]);
+                  setSpotsPlanted(prev => {
+                    const next = prev + 1;
+                    if (next >= SEEDS_NEEDED) {
+                      setSceneText("The garden is planted! A'dam is pleased. Life springs forth from the cursed ground by the sweat of your labor.");
+                      setShowSceneText(true);
+                      // Check if both quests done
+                      if (waterDelivered >= WATER_TRIPS_NEEDED) {
+                        setTimeout(() => {
+                          setGamePhase(PHASES.COMPLETE);
+                          setSceneText("You have helped A'dam plant a garden and gathered water for Chavvah. Thus begins the toil of mankind outside Eden...");
+                          setShowSceneText(true);
+                        }, 2000);
+                      }
+                    } else {
+                      setSceneText(`Planted! 🌱 (${next}/${SEEDS_NEEDED}) — Find more tilled soil to plant.`);
+                      setShowSceneText(true);
+                    }
+                    return next;
+                  });
+                  return;
+                }
+              }
+            }
+
+            // Water gathering: interact near water/sea
+            if (chavvahQuestGiven && !hasWater && waterDelivered < WATER_TRIPS_NEEDED) {
+              let nearWater = false;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tx = px + dx, ty = py + dy;
+                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
+                    if (activeMap[ty][tx] === TILES.WATER || activeMap[ty][tx] === TILES.SEA) nearWater = true;
+                  }
+                }
+              }
+              if (nearWater && !nearbyNpc) {
+                setHasWater(true);
+                setWaterCollected(prev => prev + 1);
+                setSceneText("You collected water! 💧 Return to Chavvah to deliver it.");
+                setShowSceneText(true);
+                return;
+              }
+            }
+
+            // Water delivery: interact with Chavvah while carrying water
+            if (chavvahQuestGiven && hasWater && nearbyNpc && nearbyNpc.id === 'chavvah') {
+              setHasWater(false);
+              setWaterDelivered(prev => {
+                const next = prev + 1;
+                if (next >= WATER_TRIPS_NEEDED) {
+                  setSceneText("Chavvah has enough water now! She thanks you for your help. 💧");
+                  setShowSceneText(true);
+                  // Check if both quests done
+                  if (spotsPlanted >= SEEDS_NEEDED) {
+                    setTimeout(() => {
+                      setGamePhase(PHASES.COMPLETE);
+                      setSceneText("You have helped A'dam plant a garden and gathered water for Chavvah. Thus begins the toil of mankind outside Eden...");
+                      setShowSceneText(true);
+                    }, 2000);
+                  }
+                } else {
+                  setSceneText(`Water delivered! (${next}/${WATER_TRIPS_NEEDED}) — Gather more from the river or sea.`);
+                  setShowSceneText(true);
+                }
+                return next;
+              });
+              return;
+            }
+          }
+
           if (nearbyNpc) setShowDialogue({ ...nearbyNpc, currentDialogue: 0 });
         }
-      }, [showDialogue, showSceneText, gamePhase, npcs, player, advanceDialogue]);
+      }, [showDialogue, showSceneText, gamePhase, npcs, player, advanceDialogue, wastelandMap, adamQuestGiven, chavvahQuestGiven, seedsCollected, spotsPlanted, plantedTiles, hasWater, waterDelivered]);
 
       const advanceSerpentDialogue = useCallback(() => {
         const next = serpentDialogueIndex + 1;
@@ -1309,8 +1488,8 @@
                 setPlayer({ x: WASTELAND_PLAYER_START.x, y: WASTELAND_PLAYER_START.y, prevX: WASTELAND_PLAYER_START.x, prevY: WASTELAND_PLAYER_START.y, direction: 'right', isMoving: false, walkFrame: 0 });
                 // Position NPCs in wasteland and add Malak as gate guard
                 setNpcs(prev => prev.map(npc => {
-                  if (npc.id === 'adam') return { ...npc, x: WASTELAND_ADAM_POS.x, y: WASTELAND_ADAM_POS.y, prevX: WASTELAND_ADAM_POS.x, prevY: WASTELAND_ADAM_POS.y, direction: 'down', behavior: 'wander', homeX: WASTELAND_ADAM_POS.x, homeY: WASTELAND_ADAM_POS.y, targetX: null, targetY: null, isMoving: false, hasSpoken: false };
-                  if (npc.id === 'chavvah') return { ...npc, x: WASTELAND_CHAVVAH_POS.x, y: WASTELAND_CHAVVAH_POS.y, prevX: WASTELAND_CHAVVAH_POS.x, prevY: WASTELAND_CHAVVAH_POS.y, direction: 'down', behavior: 'wander', homeX: WASTELAND_CHAVVAH_POS.x, homeY: WASTELAND_CHAVVAH_POS.y, targetX: null, targetY: null, isMoving: false, hasSpoken: false };
+                  if (npc.id === 'adam') return { ...npc, x: WASTELAND_ADAM_POS.x, y: WASTELAND_ADAM_POS.y, prevX: WASTELAND_ADAM_POS.x, prevY: WASTELAND_ADAM_POS.y, direction: 'down', behavior: 'wander', homeX: WASTELAND_ADAM_POS.x, homeY: WASTELAND_ADAM_POS.y, targetX: null, targetY: null, isMoving: false, hasSpoken: false, dialogue: ADAM_WASTELAND_DIALOGUE, currentDialogue: 0 };
+                  if (npc.id === 'chavvah') return { ...npc, x: WASTELAND_CHAVVAH_POS.x, y: WASTELAND_CHAVVAH_POS.y, prevX: WASTELAND_CHAVVAH_POS.x, prevY: WASTELAND_CHAVVAH_POS.y, direction: 'down', behavior: 'wander', homeX: WASTELAND_CHAVVAH_POS.x, homeY: WASTELAND_CHAVVAH_POS.y, targetX: null, targetY: null, isMoving: false, hasSpoken: false, dialogue: CHAVVAH_WASTELAND_DIALOGUE, currentDialogue: 0 };
                   if (npc.id === 'malak') return { ...npc, x: WASTELAND_MALAK_POS.x, y: WASTELAND_MALAK_POS.y, prevX: WASTELAND_MALAK_POS.x, prevY: WASTELAND_MALAK_POS.y, direction: 'left', behavior: 'patrol', patrolPoints: [{x: WASTELAND_MALAK_POS.x, y: WASTELAND_MALAK_POS.y}, {x: WASTELAND_MALAK_POS.x, y: WASTELAND_MALAK_POS.y - 1}, {x: WASTELAND_MALAK_POS.x, y: WASTELAND_MALAK_POS.y + 1}], patrolIndex: 0, isMoving: false, targetX: null, targetY: null, dialogue: MALAK_WASTELAND_DIALOGUE, currentDialogue: 0, hasSpoken: false, thoughts: ["The flaming sword turns every way...", "None shall pass to the Ets Chayim...", "I guard the way of the Tree of Life."], currentThought: 0 };
                   return npc;
                 }));
@@ -3030,7 +3209,7 @@
               // ── Natural grass/ground base ─────────────────
               const gh = ((mapX * 1234567 + mapY * 891011) >>> 0) % 100;
               const inWastelandMap = isWastelandPhase(gamePhase);
-              if (tile === TILES.WASTELAND || (inWastelandMap && tile !== TILES.GRASS && tile !== TILES.TREE && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE && tile !== TILES.WATER && tile !== TILES.PATH && tile !== TILES.GOLDEN_GATE)) {
+              if (tile === TILES.WASTELAND || tile === TILES.TILLED_SOIL || (inWastelandMap && tile !== TILES.GRASS && tile !== TILES.TREE && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE && tile !== TILES.WATER && tile !== TILES.PATH && tile !== TILES.GOLDEN_GATE && tile !== TILES.SEA && tile !== TILES.PLANTED && tile !== TILES.TILLED_SOIL)) {
                 // Wasteland gets brown base, no grass
                 ctx.fillStyle = '#4a3a2a';
                 ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
@@ -3040,7 +3219,7 @@
                 ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
 
                 // Grass details only where grass is visible (skip water/path/gate)
-                if (tile !== TILES.WATER && tile !== TILES.PATH && tile !== TILES.GOLDEN_GATE) {
+                if (tile !== TILES.WATER && tile !== TILES.PATH && tile !== TILES.GOLDEN_GATE && tile !== TILES.SEA && tile !== TILES.PLANTED && tile !== TILES.TILLED_SOIL) {
                   if (gh < 18) {
                     ctx.fillStyle = 'rgba(90,62,28,0.18)';
                     ctx.fillRect(screenX + (gh * 5) % 44, screenY + (gh * 7) % 44, 14, 12);
@@ -3108,6 +3287,53 @@
                     ctx.stroke();
                     ctx.restore();
                   }
+                  break;
+                }
+                case TILES.TILLED_SOIL: {
+                  // Dark brown tilled soil with furrow lines
+                  ctx.fillStyle = '#3e2a15';
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  ctx.fillStyle = '#5a3d1e';
+                  for (let fi = 0; fi < 4; fi++) {
+                    ctx.fillRect(screenX + 4, screenY + 8 + fi * 14, TILE_SIZE - 8, 3);
+                  }
+                  // Subtle highlight
+                  ctx.fillStyle = 'rgba(139,90,43,0.3)';
+                  ctx.fillRect(screenX + 6, screenY + 6, TILE_SIZE - 12, TILE_SIZE - 12);
+                  break;
+                }
+                case TILES.PLANTED: {
+                  // Green grass base for planted area
+                  ctx.fillStyle = '#4a7828';
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  ctx.fillStyle = '#3a6020';
+                  for (let bi = 0; bi < 3; bi++) {
+                    ctx.fillRect(screenX + ((mapX*(bi+1)*13)%50)+4, screenY + ((mapY*(bi+1)*7)%50)+4, 2, 5);
+                  }
+                  // Draw the planted emoji
+                  const planted = plantedTiles.find(t => t.x === mapX && t.y === mapY);
+                  if (planted) {
+                    ctx.save();
+                    ctx.font = '36px serif';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    // Gentle bobbing animation
+                    const bob = Math.sin(gameTime * 0.05 + mapX + mapY) * 2;
+                    ctx.fillText(planted.emoji, screenX + TILE_SIZE / 2, screenY + TILE_SIZE / 2 + bob);
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+                    ctx.restore();
+                  }
+                  break;
+                }
+                case TILES.SEA: {
+                  // Deeper blue sea water
+                  const seaPhase = (gameTime + mapX * 2 + mapY * 3) % 30;
+                  ctx.fillStyle = seaPhase < 15 ? '#1a5276' : '#2471a3';
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  // Wave highlights
+                  ctx.fillStyle = 'rgba(255,255,255,0.08)';
+                  ctx.fillRect(screenX + ((gameTime + mapX * 5) % 52) + 4, screenY + ((gameTime * 2 + mapY * 7) % 52) + 4, 22, 4);
+                  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+                  ctx.fillRect(screenX + ((gameTime * 3 + mapX * 11) % 48) + 8, screenY + ((gameTime + mapY * 3) % 48) + 20, 16, 3);
                   break;
                 }
                 case TILES.GOLDEN_GATE:
@@ -3441,6 +3667,20 @@
             hairColor: '#1a1a1a', bodyColor: '#4169e1', skinColor: SKIN_COLOR,
             gameTime,
           });
+          // Water carrying indicator
+          if (hasWater && gamePhase === PHASES.WASTELAND_EXPLORE) {
+            ctx.font = '12px serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            ctx.fillText('💧', 16, -2);
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+          }
+          // Seed carrying indicator
+          if (adamQuestGiven && seedsCollected > spotsPlanted && gamePhase === PHASES.WASTELAND_EXPLORE) {
+            ctx.font = '10px serif';
+            ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+            ctx.fillText('🌱', 24, 2);
+            ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+          }
           ctx.restore();
         };
 
@@ -3489,7 +3729,7 @@
           });
         }
 
-      }, [map, wastelandMap, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide, chapter3Slide, gateOpen, getActiveMap, getMapDims]);
+      }, [map, wastelandMap, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide, chapter3Slide, gateOpen, getActiveMap, getMapDims, plantedTiles, hasWater, adamQuestGiven, seedsCollected, spotsPlanted]);
 
       const spokenCount = npcs.filter(n => ['adam', 'chavvah', 'nachash'].includes(n.id) && n.hasSpoken).length;
 
@@ -3676,7 +3916,33 @@
           )}
 
           {gamePhase === PHASES.WASTELAND_EXPLORE && !showDialogue && !showSceneText && (
-            <p className="quest-text">Speak to A'dam and Chavvah in the wasteland</p>
+            <div style={{position:'absolute',bottom:'140px',left:'50%',transform:'translateX(-50%)',textAlign:'center',zIndex:20}}>
+              {!adamQuestGiven && !chavvahQuestGiven && (
+                <p className="quest-text">Speak to A'dam and Chavvah in the wasteland</p>
+              )}
+              {adamQuestGiven && spotsPlanted < SEEDS_NEEDED && (
+                <p className="quest-text" style={{marginBottom:'4px'}}>
+                  🌱 Plant a garden: Seeds {seedsCollected}/{SEEDS_NEEDED} | Planted {spotsPlanted}/{SEEDS_NEEDED}
+                </p>
+              )}
+              {adamQuestGiven && spotsPlanted >= SEEDS_NEEDED && (
+                <p className="quest-text" style={{color:'#5aff5a',marginBottom:'4px'}}>✓ Garden planted!</p>
+              )}
+              {chavvahQuestGiven && waterDelivered < WATER_TRIPS_NEEDED && (
+                <p className="quest-text" style={{marginBottom:'4px'}}>
+                  💧 Gather water: {hasWater ? '🏺 Carrying water — return to Chavvah!' : `Delivered ${waterDelivered}/${WATER_TRIPS_NEEDED}`}
+                </p>
+              )}
+              {chavvahQuestGiven && waterDelivered >= WATER_TRIPS_NEEDED && (
+                <p className="quest-text" style={{color:'#5aff5a',marginBottom:'4px'}}>✓ Water gathered!</p>
+              )}
+              {!adamQuestGiven && chavvahQuestGiven && (
+                <p className="quest-text" style={{marginBottom:'4px'}}>Speak to A'dam for another task</p>
+              )}
+              {adamQuestGiven && !chavvahQuestGiven && (
+                <p className="quest-text" style={{marginBottom:'4px'}}>Speak to Chavvah for another task</p>
+              )}
+            </div>
           )}
 
           {(gamePhase === PHASES.EXPLORE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE) && !showDialogue && !showSceneText && (
