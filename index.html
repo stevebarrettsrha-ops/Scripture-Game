@@ -426,7 +426,7 @@
       GRASS: 0, WATER: 1, TREE: 2, FLOWER: 3, PATH: 4,
       TREE_OF_LIFE: 5, TREE_OF_KNOWLEDGE: 6, ROCK: 7, BUSH: 8, GOLDEN_GATE: 9,
       WASTELAND: 10, TILLED_SOIL: 11, PLANTED: 12, SEA: 13, CAVE: 14, BRIDGE: 15,
-      HILL_FACE: 16, HILL_TOP: 17, HILL_CAVE: 18, HILL_EDGE_L: 19, HILL_EDGE_R: 20, HILL_BASE: 21,
+      HILL_FACE: 16, HILL_TOP: 17, HILL_CAVE: 18, HILL_EDGE_L: 19, HILL_EDGE_R: 20, HILL_BASE: 21, HILL_STEPS: 22, HILL_CAVE_SIDE: 23,
     };
 
     // Emoji crops for planting activity
@@ -590,8 +590,11 @@
             if (y === hy1) row.push(TILES.HILL_TOP);
             else if (x === hx1 && y > hy1 && y <= hy2) row.push(TILES.HILL_EDGE_L);
             else if (x === hx2 && y > hy1 && y <= hy2) row.push(TILES.HILL_EDGE_R);
-            else if (y === caveY && x > hx1 + 1 && x < hx2 - 1) row.push(TILES.HILL_CAVE);
+            else if (y === caveY && x === CAVE_OF_TREASURES_POS.x) row.push(TILES.HILL_CAVE);
+            else if (y === caveY && x > hx1 + 1 && x < hx2 - 1) row.push(TILES.HILL_CAVE_SIDE);
+            else if (y === hy2 && x === CAVE_OF_TREASURES_POS.x) row.push(TILES.HILL_STEPS);
             else if (y === hy2) row.push(TILES.HILL_BASE);
+            else if (x === CAVE_OF_TREASURES_POS.x && y > hy1 && y < caveY) row.push(TILES.HILL_STEPS);
             else if (x > hx1 && x < hx2 && y > hy1 && y < caveY) row.push(TILES.HILL_FACE);
             else row.push(TILES.WASTELAND);
           }
@@ -635,7 +638,7 @@
         }
       }
       // Rocky border around Cave of Treasures hill
-      const hillTiles = new Set([TILES.HILL_FACE, TILES.HILL_TOP, TILES.HILL_CAVE, TILES.HILL_EDGE_L, TILES.HILL_EDGE_R, TILES.HILL_BASE, TILES.CAVE]);
+      const hillTiles = new Set([TILES.HILL_FACE, TILES.HILL_TOP, TILES.HILL_CAVE, TILES.HILL_CAVE_SIDE, TILES.HILL_EDGE_L, TILES.HILL_EDGE_R, TILES.HILL_BASE, TILES.HILL_STEPS, TILES.CAVE]);
       for (let dy = -7; dy <= 4; dy++) {
         for (let dx = -5; dx <= 5; dx++) {
           const cx = CAVE_OF_TREASURES_POS.x + dx, cy = CAVE_OF_TREASURES_POS.y + dy;
@@ -668,6 +671,15 @@
       // Path turning north to cave entrance
       const cavePathX = CAVE_OF_TREASURES_POS.x - 4;
       for (let y = Math.min(RIVER_BRIDGE_POS.y, CAVE_OF_TREASURES_POS.y + 2); y >= CAVE_OF_TREASURES_POS.y + 1; y--) {
+        if (map[y] && !hillTiles.has(map[y][cavePathX])) map[y][cavePathX] = TILES.PATH;
+      }
+      // Path connecting to cave staircase entrance (from cave path to bottom of steps)
+      const stairsBottomY = CAVE_OF_TREASURES_POS.y + 3; // just below the hill
+      for (let x = cavePathX; x <= CAVE_OF_TREASURES_POS.x; x++) {
+        if (map[stairsBottomY] && !hillTiles.has(map[stairsBottomY][x])) map[stairsBottomY][x] = TILES.PATH;
+      }
+      // Extend cave path down to connect
+      for (let y = CAVE_OF_TREASURES_POS.y + 1; y <= stairsBottomY; y++) {
         if (map[y] && !hillTiles.has(map[y][cavePathX])) map[y][cavePathX] = TILES.PATH;
       }
       // Place guaranteed seed trees near the planting area (accessible, not in borders)
@@ -1155,7 +1167,7 @@
       // Tiles that characters can walk over (ground-level decorations don't block)
       const isWalkable = useCallback((tile, inWasteland) => {
         if (tile === TILES.GOLDEN_GATE) return !inWasteland && gateOpen;
-        return tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND || tile === TILES.TILLED_SOIL || tile === TILES.PLANTED || tile === TILES.BRIDGE || tile === TILES.CAVE || tile === TILES.HILL_CAVE;
+        return tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND || tile === TILES.TILLED_SOIL || tile === TILES.PLANTED || tile === TILES.BRIDGE || tile === TILES.CAVE || tile === TILES.HILL_CAVE || tile === TILES.HILL_STEPS;
       }, [gateOpen]);
 
       const canNPCMoveTo = useCallback((x, y, phase) => {
@@ -3661,7 +3673,15 @@
                   ctx.beginPath(); ctx.moveTo(18, 0); ctx.lineTo(23, 0); ctx.lineTo(19, 32); ctx.lineTo(14, 32); ctx.closePath(); ctx.fill();
                   ctx.restore(); break;
                 }
+                case TILES.HILL_CAVE_SIDE:
                 case TILES.HILL_CAVE: {
+                  // Determine position relative to cave center for unified opening
+                  const caveRelX = mapX - CAVE_OF_TREASURES_POS.x;
+                  const isCOT = (mapY === CAVE_OF_TREASURES_POS.y + 1);
+                  // For small cave, relX is always 0
+                  const tileOffset = isCOT ? (caveRelX + 1) * 32 : 0;
+                  const totalWidth = isCOT ? 96 : 32; // 3 tiles wide for COT, 1 for small cave
+
                   ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
                   // Layered cliff background
                   ctx.fillStyle = '#6a5038'; ctx.fillRect(0, 0, 32, 8);
@@ -3670,36 +3690,46 @@
                   ctx.strokeStyle = '#3a2a18'; ctx.lineWidth = 0.6;
                   ctx.beginPath(); ctx.moveTo(0, 8); ctx.lineTo(32, 8.5); ctx.stroke();
                   ctx.beginPath(); ctx.moveTo(0, 16); ctx.lineTo(32, 15.5); ctx.stroke();
-                  // Dark cave opening — arched
+
+                  // Clip to this tile and draw unified cave opening
+                  ctx.save();
+                  ctx.beginPath(); ctx.rect(0, 0, 32, 32); ctx.clip();
+                  ctx.translate(-tileOffset, 0);
+
+                  // One big dark cave opening across all tiles
+                  const hw = totalWidth / 2;
                   ctx.fillStyle = '#0a0200';
                   ctx.beginPath(); ctx.moveTo(3, 32); ctx.lineTo(3, 14);
-                  ctx.quadraticCurveTo(3, 4, 16, 4);
-                  ctx.quadraticCurveTo(29, 4, 29, 14);
-                  ctx.lineTo(29, 32); ctx.closePath(); ctx.fill();
+                  ctx.quadraticCurveTo(3, 2, hw, 2);
+                  ctx.quadraticCurveTo(totalWidth - 3, 2, totalWidth - 3, 14);
+                  ctx.lineTo(totalWidth - 3, 32); ctx.closePath(); ctx.fill();
+                  // Inner darker fill
                   ctx.fillStyle = '#050100';
-                  ctx.beginPath(); ctx.moveTo(6, 32); ctx.lineTo(6, 16);
-                  ctx.quadraticCurveTo(6, 8, 16, 8);
-                  ctx.quadraticCurveTo(26, 8, 26, 16);
-                  ctx.lineTo(26, 32); ctx.closePath(); ctx.fill();
+                  ctx.beginPath(); ctx.moveTo(7, 32); ctx.lineTo(7, 16);
+                  ctx.quadraticCurveTo(7, 6, hw, 6);
+                  ctx.quadraticCurveTo(totalWidth - 7, 6, totalWidth - 7, 16);
+                  ctx.lineTo(totalWidth - 7, 32); ctx.closePath(); ctx.fill();
                   // Rock arch rim — tan highlight
                   ctx.strokeStyle = '#b89860'; ctx.lineWidth = 2.5;
                   ctx.beginPath(); ctx.moveTo(3, 32); ctx.lineTo(3, 14);
-                  ctx.quadraticCurveTo(3, 4, 16, 4);
-                  ctx.quadraticCurveTo(29, 4, 29, 14);
-                  ctx.lineTo(29, 32); ctx.stroke();
+                  ctx.quadraticCurveTo(3, 2, hw, 2);
+                  ctx.quadraticCurveTo(totalWidth - 3, 2, totalWidth - 3, 14);
+                  ctx.lineTo(totalWidth - 3, 32); ctx.stroke();
                   ctx.strokeStyle = '#d0b478'; ctx.lineWidth = 1;
                   ctx.beginPath(); ctx.moveTo(5, 30); ctx.lineTo(5, 15);
-                  ctx.quadraticCurveTo(5, 6, 16, 6);
-                  ctx.quadraticCurveTo(27, 6, 27, 15);
-                  ctx.lineTo(27, 30); ctx.stroke();
+                  ctx.quadraticCurveTo(5, 4, hw, 4);
+                  ctx.quadraticCurveTo(totalWidth - 5, 4, totalWidth - 5, 15);
+                  ctx.lineTo(totalWidth - 5, 30); ctx.stroke();
                   // Ground rubble
-                  ctx.fillStyle = '#7a6a50'; ctx.fillRect(3, 28, 26, 4);
-                  ctx.fillStyle = '#6a5a40'; ctx.fillRect(5, 26, 5, 3); ctx.fillRect(20, 27, 6, 3);
+                  ctx.fillStyle = '#7a6a50'; ctx.fillRect(3, 28, totalWidth - 6, 4);
+                  ctx.fillStyle = '#6a5a40'; ctx.fillRect(8, 26, 8, 3); ctx.fillRect(totalWidth - 18, 27, 8, 3);
                   // Stalactites
-                  ctx.fillStyle = '#4a3a28'; ctx.fillRect(9, 8, 2, 4); ctx.fillRect(19, 9, 2, 3);
+                  ctx.fillStyle = '#4a3a28'; ctx.fillRect(hw - 12, 7, 2, 5); ctx.fillRect(hw + 10, 8, 2, 4); ctx.fillRect(hw - 2, 5, 3, 4);
+
+                  ctx.restore();
                   ctx.restore();
                   // Cave label for Cave of Treasures
-                  if (mapY === CAVE_OF_TREASURES_POS.y + 1 && mapX === CAVE_OF_TREASURES_POS.x) {
+                  if (isCOT && mapX === CAVE_OF_TREASURES_POS.x) {
                     ctx.save();
                     ctx.font = 'bold 9px sans-serif';
                     ctx.fillStyle = '#daa520';
@@ -3733,6 +3763,32 @@
                   // Small gravel
                   ctx.fillStyle = '#8a7a68';
                   ctx.fillRect(3, 24, 2, 2); ctx.fillRect(10, 26, 2, 2); ctx.fillRect(18, 25, 2, 2); ctx.fillRect(25, 23, 2, 2); ctx.fillRect(28, 27, 2, 2);
+                  ctx.restore(); break;
+                }
+                case TILES.HILL_STEPS: {
+                  const hsh = ((mapX * 5678 + mapY * 3456) >>> 0) % 100;
+                  ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+                  // Staircase background — lighter tan path
+                  ctx.fillStyle = '#9a8060'; ctx.fillRect(0, 0, 32, 32);
+                  // Draw individual steps (horizontal lines across the tile)
+                  const stepH = 5;
+                  for (let s = 0; s < 7; s++) {
+                    const sy = s * stepH;
+                    // Step tread (lighter)
+                    ctx.fillStyle = '#b89860'; ctx.fillRect(0, sy, 32, 2);
+                    // Step riser (darker shadow)
+                    ctx.fillStyle = '#6a5038'; ctx.fillRect(0, sy + 2, 32, 1);
+                    // Subtle highlight on tread edge
+                    ctx.fillStyle = '#d0b478'; ctx.fillRect(0, sy, 32, 1);
+                  }
+                  // Rock wall borders on left and right sides
+                  ctx.fillStyle = '#5a4028'; ctx.fillRect(0, 0, 4, 32); ctx.fillRect(28, 0, 4, 32);
+                  ctx.fillStyle = '#6a5038'; ctx.fillRect(4, 0, 2, 32); ctx.fillRect(26, 0, 2, 32);
+                  // Edge highlight
+                  ctx.fillStyle = '#b89860'; ctx.fillRect(3, 0, 1, 32); ctx.fillRect(28, 0, 1, 32);
+                  // Some wear/variation
+                  ctx.fillStyle = '#8a7050';
+                  ctx.fillRect(8 + (hsh % 6), 3, 4, 2); ctx.fillRect(16 + (hsh % 5), 14, 5, 2); ctx.fillRect(10 + (hsh % 7), 24, 3, 2);
                   ctx.restore(); break;
                 }
                 case TILES.GOLDEN_GATE:
