@@ -721,7 +721,8 @@
       EYES_OPENED: 'eyes_opened', CHAPTER3_CUTSCENE: 'chapter3_cutscene',
       GATE_OPENS: 'gate_opens', EXPULSION_WALK: 'expulsion_walk', WASTELAND_EXPLORE: 'wasteland_explore',
       BARREN_EXPLORE: 'barren_explore',
-      COMPLETE: 'complete'
+      COMPLETE: 'complete',
+      CHAPTER_COMPLETE: 'chapter_complete'
     };
 
     // ── Serpent–Chavvah dialogue (Bere'shiyth 3:1-5) ──────────────────
@@ -1109,7 +1110,7 @@
       // Auto-save on significant phase changes
       useEffect(() => {
         if (!autoSave) return;
-        if (gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
+        if (gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS || gamePhase === PHASES.CHAPTER_COMPLETE) return;
         const timer = setTimeout(() => { saveGame(); }, 500);
         return () => clearTimeout(timer);
       }, [gamePhase, saveGame, autoSave]);
@@ -1176,7 +1177,7 @@
       }, [map, wastelandMap, barrenMap, isWalkable]);
 
       useEffect(() => {
-        if (gamePhase === PHASES.CUTSCENE || gamePhase === PHASES.CHAPTER3_CUTSCENE || gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
+        if (gamePhase === PHASES.CUTSCENE || gamePhase === PHASES.CHAPTER3_CUTSCENE || gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS || gamePhase === PHASES.CHAPTER_COMPLETE) return;
         const vp = getVP(canvasRef.current || { clientWidth: window.innerWidth, clientHeight: window.innerHeight });
         if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.BARREN_EXPLORE || gamePhase === PHASES.GATE_OPENS) {
           const dims = getMapDims(gamePhase);
@@ -1265,10 +1266,8 @@
                   setShowSceneText(true);
                   if (spotsPlanted >= SEEDS_NEEDED) {
                     setTimeout(() => {
-                      setGamePhase(PHASES.COMPLETE);
-                      setSceneText("You have helped A'dam plant a garden and gathered water for Chavvah. Thus begins the toil of mankind outside Eden...");
-                      setShowSceneText(true);
-                    }, 2000);
+                      setGamePhase(PHASES.CHAPTER_COMPLETE);
+                    }, 3000);
                   }
                 } else {
                   setSceneText(`Water delivered! (${next}/${WATER_TRIPS_NEEDED}) — Gather more from the river or sea.`);
@@ -1306,10 +1305,8 @@
                     setShowSceneText(true);
                     if (waterDelivered >= WATER_TRIPS_NEEDED) {
                       setTimeout(() => {
-                        setGamePhase(PHASES.COMPLETE);
-                        setSceneText("You have helped A'dam plant a garden and gathered water for Chavvah. Thus begins the toil of mankind outside Eden...");
-                        setShowSceneText(true);
-                      }, 2000);
+                        setGamePhase(PHASES.CHAPTER_COMPLETE);
+                      }, 3000);
                     }
                   } else {
                     setSceneText(`Planted! 🌱 (${next}/${SEEDS_NEEDED}) — Find more tilled soil to plant.`);
@@ -1499,7 +1496,7 @@
           keysPressed.current[e.key.toLowerCase()] = true;
           if (e.key === ' ' || e.key === 'Enter') {
             e.preventDefault();
-            if (gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
+            if (gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS || gamePhase === PHASES.CHAPTER_COMPLETE) return;
             if (gamePhase === PHASES.CUTSCENE) advanceCutscene();
             else if (gamePhase === PHASES.CHAPTER3_CUTSCENE) advanceChapter3();
             else if (gamePhase === PHASES.SERPENT_DIALOGUE) advanceSerpentDialogue();
@@ -1526,7 +1523,7 @@
           lastTime = timestamp;
 
           const phase = gamePhaseRef.current;
-          if (phase === PHASES.START_MENU || phase === PHASES.SETTINGS) return;
+          if (phase === PHASES.START_MENU || phase === PHASES.SETTINGS || phase === PHASES.CHAPTER_COMPLETE) return;
           const dlg   = showDialogueRef.current;
           const touch = touchDirRef.current;
           const currentNpcs = npcsRef.current;
@@ -3892,7 +3889,7 @@
           {gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && <h1 className="title">{gamePhase === PHASES.BARREN_EXPLORE ? "BERE'SHIYTH: The Barren Wilderness" : gamePhase === PHASES.WASTELAND_EXPLORE ? "BERE'SHIYTH: The Wasteland" : "BERE'SHIYTH: In The Beginning"}</h1>}
           <canvas ref={canvasRef} />
 
-          {gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && !showPauseMenu && (
+          {gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && gamePhase !== PHASES.CHAPTER_COMPLETE && !showPauseMenu && (
             <button className="menu-icon-btn" onClick={() => setShowPauseMenu(true)} title="Menu">&#9776;</button>
           )}
 
@@ -3986,6 +3983,23 @@
                   Back
                 </button>
               </div>
+            </div>
+          )}
+
+          {gamePhase === PHASES.CHAPTER_COMPLETE && (
+            <div className="menu-overlay" style={{background: 'linear-gradient(180deg, #000 0%, #0a0a0a 50%, #111 100%)'}}>
+              <p style={{color: '#c8a96e', fontSize: '14px', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '12px'}}>Chapter Complete</p>
+              <h1 style={{color: '#e8d8a8', fontSize: '28px', fontFamily: 'Georgia, serif', marginBottom: '8px', textAlign: 'center'}}>The Fall of Man</h1>
+              <p style={{color: '#888', fontSize: '14px', fontStyle: 'italic', marginBottom: '40px', textAlign: 'center', maxWidth: '400px', lineHeight: '1.6'}}>
+                Thus begins the toil of mankind outside Eden. A'dam tills the cursed ground by the sweat of his brow, and Chavvah bears the sorrow of life beyond the garden.
+              </p>
+              <p style={{color: '#aaa', fontSize: '13px', marginBottom: '20px', letterSpacing: '1px'}}>What would you like to explore next?</p>
+              <button className="menu-btn" style={{marginBottom: '12px', minWidth: '280px'}} onClick={() => {
+                alert('The Book of Adam and Eve — Coming Soon!');
+              }}>The Book of A'dam and Chavvah</button>
+              <button className="menu-btn" style={{minWidth: '280px'}} onClick={() => {
+                alert('Continue Genesis (Bere\'shiyth) — Coming Soon!');
+              }}>Continue Bere'shiyth (Genesis)</button>
             </div>
           )}
 
@@ -4120,11 +4134,11 @@
             </div>
           )}
 
-          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.EXPULSION_WALK && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.BARREN_EXPLORE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && (
+          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.EXPULSION_WALK && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.BARREN_EXPLORE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && gamePhase !== PHASES.CHAPTER_COMPLETE && (
             <p className="phase-indicator">{gamePhase === PHASES.COMPLETE ? '\uD83D\uDCD6 The Fall of Man' : '\uD83D\uDCD6 Scene in Progress...'}</p>
           )}
 
-          {gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && (
+          {gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && gamePhase !== PHASES.CHAPTER_COMPLETE && (
             <p className="help-text">WASD/Arrows to move • SPACE to interact</p>
           )}
         </div>
