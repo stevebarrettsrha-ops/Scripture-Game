@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>The First Book of A'dam and Chavvah</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #111827;
+      font-family: Georgia, 'Times New Roman', serif;
+      color: #f5e6c8;
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    #root { width: 100%; height: 100vh; }
+
+    /* ── Game container ─────────────────────────────────────── */
+    .game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+    canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    /* ── Top bar ────────────────────────────────────────────── */
+    .top-bar {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 44px;
+      background: rgba(0,0,0,0.7);
+      border-bottom: 1px solid #d4a01740;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      z-index: 50;
+    }
+    .top-bar .back-btn {
+      background: none; border: none;
+      color: #d4a017; font-size: 0.9rem;
+      cursor: pointer; font-family: Georgia, serif;
+    }
+    .top-bar .back-btn:hover { color: #ffd700; }
+    .top-bar .title-text {
+      color: #e8d8a8; font-size: 0.8rem;
+      letter-spacing: 1px;
+    }
+    .top-bar .read-btn {
+      background: none; border: none;
+      color: #d4a017; font-size: 0.8rem;
+      cursor: pointer; font-family: Georgia, serif;
+    }
+
+    /* ── Cutscene overlay ───────────────────────────────────── */
+    .cutscene-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      justify-content: flex-end;
+      z-index: 20; pointer-events: none;
+    }
+    .cutscene-header {
+      position: absolute;
+      top: 50px; left: 0; right: 0;
+      text-align: center; padding: 12px;
+      pointer-events: none;
+    }
+    .cutscene-day {
+      color: #d4a017; font-size: 0.75rem;
+      text-transform: uppercase; letter-spacing: 3px;
+      font-family: Georgia, serif;
+      text-shadow: 0 1px 6px #000;
+    }
+    .cutscene-counter {
+      position: absolute; top: 54px; right: 14px;
+      color: #6b7280; font-size: 0.7rem; z-index: 21;
+    }
+    .cutscene-box {
+      margin: 0 auto 12px;
+      width: calc(100% - 24px); max-width: 680px;
+      max-height: 40vh; overflow-y: auto;
+      background: rgba(0,0,0,0.88);
+      border: 2px solid #d4a017; border-radius: 10px;
+      padding: 14px 16px 10px; pointer-events: auto;
+    }
+    .cutscene-ref {
+      color: #8b7340; font-size: 0.7rem;
+      margin-bottom: 10px; font-family: Georgia, serif;
+      letter-spacing: 1px;
+    }
+    .cutscene-verse {
+      color: #f5e6c8; font-size: 0.88rem;
+      line-height: 1.55; font-family: Georgia, serif;
+      margin-bottom: 8px;
+    }
+    .cutscene-verse:last-of-type { margin-bottom: 14px; }
+    .cutscene-btn {
+      width: 100%;
+      background: linear-gradient(180deg, #b8860b, #8b6914);
+      color: #fff; font-weight: bold;
+      padding: 10px 16px; border-radius: 5px;
+      border: 1px solid #d4a017; cursor: pointer;
+      font-size: 0.9rem; letter-spacing: 1px;
+      transition: background 0.2s;
+    }
+    .cutscene-btn:hover { background: linear-gradient(180deg, #d4a017, #b8860b); }
+
+    /* ── Menu overlay ───────────────────────────────────────── */
+    .menu-overlay {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      z-index: 30;
+    }
+    .menu-title {
+      font-family: Georgia, serif; font-size: 2rem;
+      color: #ffd700;
+      text-shadow: 0 2px 12px rgba(255,215,0,0.4);
+      margin-bottom: 6px; text-align: center; letter-spacing: 2px;
+    }
+    .menu-subtitle {
+      font-family: Georgia, serif; font-size: 0.9rem;
+      color: #8b7340; margin-bottom: 40px; font-style: italic;
+    }
+    .menu-btn {
+      width: 260px; padding: 14px 20px; margin-bottom: 14px;
+      background: linear-gradient(180deg, #b8860b, #8b6914);
+      color: #fff; font-weight: bold; font-size: 1rem;
+      border-radius: 6px; border: 2px solid #d4a017;
+      cursor: pointer; letter-spacing: 1px;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .menu-btn:hover { background: linear-gradient(180deg, #d4a017, #b8860b); transform: scale(1.03); }
+    .menu-btn:active { background: #8b6914; transform: scale(0.98); }
+    .menu-btn.secondary {
+      background: rgba(30,30,30,0.8); border-color: #4b5563;
+    }
+    .menu-btn.secondary:hover { background: rgba(50,50,50,0.9); }
+
+    /* ── Dialogue box ───────────────────────────────────────── */
+    .dialogue-box {
+      position: absolute;
+      bottom: 90px; left: 50%; transform: translateX(-50%);
+      width: calc(100% - 24px); max-width: 640px;
+      background: rgba(0,0,0,0.92);
+      border: 2px solid #eab308; border-radius: 8px;
+      padding: 12px; z-index: 20;
+    }
+    .dialogue-box.scene-dialogue { bottom: auto; top: 50px; }
+    .dialogue-header {
+      display: flex; justify-content: space-between;
+      align-items: center; margin-bottom: 8px;
+    }
+    .dialogue-name { color: #facc15; font-weight: bold; }
+    .dialogue-counter { color: #6b7280; font-size: 0.75rem; }
+    .dialogue-text { color: white; font-size: 0.9rem; margin-bottom: 12px; line-height: 1.5; }
+    .scene-text {
+      color: #fde047; font-size: 0.9rem; font-style: italic;
+      margin-bottom: 12px; font-family: Georgia, serif;
+    }
+    .btn {
+      width: 100%; background: #ca8a04; color: white;
+      font-weight: bold; padding: 8px 16px;
+      border-radius: 4px; border: none; cursor: pointer;
+    }
+    .btn:hover { background: #eab308; }
+
+    /* ── Controls ────────────────────────────────────────────── */
+    .controls {
+      position: absolute;
+      bottom: 14px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 32px; align-items: center; z-index: 20;
+    }
+    .dpad {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+    }
+    .dpad-btn {
+      width: 56px; height: 56px;
+      background: rgba(31,41,55,0.85);
+      border: 2px solid #4b5563; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: #d1d5db; cursor: pointer;
+    }
+    .dpad-btn:active { background: #374151; border-color: #eab308; }
+    .talk-btn {
+      width: 72px; height: 72px;
+      background: #ca8a04; border: 4px solid #facc15;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-weight: bold; font-size: 0.85rem; cursor: pointer;
+    }
+    .talk-btn:active { background: #eab308; }
+
+    /* ── Pause icon ──────────────────────────────────────────── */
+    .menu-icon-btn {
+      position: absolute; top: 52px; right: 8px;
+      width: 36px; height: 36px;
+      background: rgba(0,0,0,0.7); border: 2px solid #d4a017;
+      border-radius: 6px; color: #facc15; font-size: 1.2rem;
+      cursor: pointer; display: flex; align-items: center;
+      justify-content: center; z-index: 25;
+    }
+
+    /* ── Quest text ──────────────────────────────────────────── */
+    .quest-text {
+      position: absolute; top: 50px; left: 50%;
+      transform: translateX(-50%);
+      color: #fde047; font-size: 0.8rem;
+      text-shadow: 0 1px 3px #000;
+      pointer-events: none; white-space: nowrap; z-index: 10;
+    }
+
+    /* ── Parchment read mode ─────────────────────────────────── */
+    .parchment-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg,
+        #e8dcc8 0%, #f0e6d2 8%, #f5edd9 20%,
+        #efe5cf 50%, #e8dcbf 80%, #dfd3b5 100%);
+      overflow-y: auto; z-index: 40;
+      padding: 60px 18px 40px;
+    }
+    .parchment-overlay .section-banner {
+      position: relative; width: calc(100% + 36px);
+      margin: -60px -18px 0; height: 140px;
+      overflow: hidden; display: flex;
+      align-items: center; justify-content: center;
+    }
+    .parchment-overlay .banner-bg {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg,
+        #2a3a2a 0%, #3d4a2d 30%, #4a5a35 50%, #3d4a2d 70%, #2a3a2a 100%);
+      opacity: 0.95;
+    }
+    .parchment-overlay .banner-overlay {
+      position: absolute; inset: 0; background: rgba(0,0,0,0.35);
+    }
+    .parchment-overlay .banner-title {
+      position: relative; z-index: 2;
+      color: #e8d8a8; font-size: 1.6rem;
+      font-style: italic;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+      letter-spacing: 2px;
+    }
+    .parchment-overlay .banner-subtitle {
+      position: relative; z-index: 2;
+      color: #c8b88a; font-size: 0.75rem;
+      font-style: italic;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+      text-align: center; max-width: 80%; line-height: 1.4;
+      margin-top: 6px;
+    }
+    .parchment-overlay .banner-content {
+      display: flex; flex-direction: column;
+      align-items: center; z-index: 2;
+    }
+    .parchment-overlay .icon-bar {
+      display: flex; justify-content: flex-end;
+      gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid rgba(180,160,120,0.3);
+    }
+    .parchment-overlay .icon-btn {
+      width: 32px; height: 32px; border-radius: 50%;
+      border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .parchment-overlay .icon-btn.check { background: #4a7a4a; color: white; }
+    .parchment-overlay .icon-btn.share { background: rgba(60,50,30,0.15); color: #5a4a30; }
+    .parchment-overlay .icon-btn.settings { background: rgba(60,50,30,0.15); color: #5a4a30; }
+    .parchment-overlay .content-body {
+      max-width: 680px; margin: 0 auto;
+      padding: 20px 0 40px;
+      line-height: 1.7; font-size: 0.95rem; color: #3b2f1e;
+    }
+    .parchment-overlay .content-body p { margin-bottom: 16px; }
+    .parchment-overlay .verse-num {
+      color: #8b7340; font-size: 0.85rem;
+      font-weight: bold; margin-right: 4px;
+    }
+    .parchment-overlay .nav-bar {
+      display: flex; justify-content: center; gap: 12px;
+      padding: 24px 0 40px; max-width: 680px; margin: 0 auto;
+    }
+    .parchment-overlay .nav-btn {
+      flex: 1; max-width: 220px;
+      padding: 14px 20px;
+      background: linear-gradient(180deg, #b8860b, #8b6914);
+      color: #fff; font-weight: bold; font-size: 0.9rem;
+      border-radius: 6px; border: 2px solid #d4a017;
+      cursor: pointer; letter-spacing: 1px; font-family: Georgia, serif;
+    }
+    .parchment-overlay .nav-btn:hover { background: linear-gradient(180deg, #d4a017, #b8860b); }
+    .parchment-overlay .nav-btn.secondary {
+      background: rgba(60,50,30,0.15); color: #5a4a30; border-color: #b8a88a;
+    }
+
+    /* ── Scrollbar styling ────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #b8a88a; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // THE FIRST BOOK OF A'DAM AND CHAVVAH — Interactive Scripture
+    // ═══════════════════════════════════════════════════════════════
+
+    const TILE = 64;
+    const SKIN = '#5D4037';
+
+    // ── Seeded RNG ──────────────────────────────────────────────
+    const seededRng = (seed) => {
+      let s = seed | 0;
+      return () => { s = (s + 0x6D2B79F5) | 0; let t = Math.imul(s ^ (s >>> 15), 1 | s); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    };
+
+    // ── Chapter Data ────────────────────────────────────────────
+    const CHAPTERS = [
+      {
+        id: 'ch1', num: 'I', title: 'The Cave of Treasures',
+        subtitle: 'The crystal sea. God commands A\'dam, expelled from Eden, to live in the Cave of Treasures.',
+        cutsceneSlides: [
+          { ref: 'First Book of A\'dam & Chavvah 1:1-2', lines: [
+            '1 On the third day, God planted the garden in the east of the earth, on the border of the world eastward, beyond which, towards the sun-rising, one finds nothing but water, that encompasses the whole world, and reaches to the borders of heaven.',
+            '2 And to the north of the garden there is a sea of water, clear and pure to the taste, unlike anything else; so that, through the clearness thereof, one may look into the depths of the earth.',
+          ]},
+          { ref: 'First Book of A\'dam & Chavvah 1:3-4', lines: [
+            '3 And when a man washes himself in it, he becomes clean of the cleanness thereof, and white of its whiteness\u2014even if he were dark.',
+            '4 And God created that sea of his own good pleasure, for He knew what would come of the man He would make; so that after he had left the garden, on account of his transgression, men should be born in the earth.',
+          ]},
+          { ref: 'First Book of A\'dam & Chavvah 1:5-7', lines: [
+            '5 But when God made A\u2019dam go out of the garden, He did not place him on the border of it northward. This was so that he and Chavvah would not be able to go near to the sea of water where they could wash themselves in it, be cleansed from their sins.',
+            '6 As to the southern side of the garden, God did not want A\u2019dam to live there either; because, when the wind blew from the north, it would bring him, on that southern side, the delicious smell of the trees of the garden.',
+            '7 Wherefore God did not put A\u2019dam there. This was so that he would not be able to smell the sweet smell of those trees, forget his transgression.',
+          ]},
+          { ref: 'First Book of A\'dam & Chavvah 1:8-9', lines: [
+            '8 Again, also, because God is merciful and of great pity, and governs all things in a way that He alone knows\u2014He made our father A\u2019dam live in the western border of the garden, because on that side the earth is very broad.',
+            '9 And God commanded him to live there in a cave in a rock\u2014the Cave of Treasures below the garden.',
+          ]},
+        ],
+        levelType: 'wasteland_to_cave',
+        quest: 'Find the Cave of Treasures west of the garden',
+        npcs: [
+          { id: 'adam', name: "A'dam", x: 12, y: 15, color: SKIN, hairColor: '#1a1a1a',
+            dialogue: [
+              "God has sent us from the garden...",
+              "He placed us here, west of Eden.",
+              "We must find the cave He spoke of.",
+              "The Cave of Treasures lies below the garden.",
+            ]},
+          { id: 'chavvah', name: "Chavvah", x: 14, y: 15, color: SKIN, hairColor: '#3d1f00',
+            dialogue: [
+              "The garden is behind us now...",
+              "We must follow God's command.",
+              "He said to dwell in the cave.",
+            ]},
+        ],
+        verses: [
+          '1 On the third day, God planted the garden in the east of the earth, on the border of the world eastward, beyond which, towards the sun-rising, one finds nothing but water, that encompasses the whole world, and reaches to the borders of heaven.',
+          '2 And to the north of the garden there is a sea of water, clear and pure to the taste, unlike anything else; so that, through the clearness thereof, one may look into the depths of the earth.',
+          '3 And when a man washes himself in it, he becomes clean of the cleanness thereof, and white of its whiteness\u2014even if he were dark.',
+          '4 And God created that sea of his own good pleasure, for He knew what would come of the man He would make; so that after he had left the garden, on account of his transgression, men should be born in the earth. Among them are righteous ones who will die, whose souls God would raise at the last day; when all of them will return to their flesh, bathe in the water of that sea, and repent of their sins.',
+          '5 But when God made A\u2019dam go out of the garden, He did not place him on the border of it northward. This was so that he and Chavvah would not be able to go near to the sea of water where they could wash themselves in it, be cleansed from their sins, erase the transgression they had committed, and be no longer reminded of it in the thought of their punishment.',
+          '6 As to the southern side of the garden, God did not want A\u2019dam to live there either; because, when the wind blew from the north, it would bring him, on that southern side, the delicious smell of the trees of the garden.',
+          '7 Wherefore God did not put A\u2019dam there. This was so that he would not be able to smell the sweet smell of those trees, forget his transgression, and find consolation for what he had done by taking delight in the smell of the trees and yet not be cleansed from his transgression.',
+          '8 Again, also, because God is merciful and of great pity, and governs all things in a way that He alone knows\u2014He made our father A\u2019dam live in the western border of the garden, because on that side the earth is very broad.',
+          '9 And God commanded him to live there in a cave in a rock\u2014the Cave of Treasures below the garden.',
+        ],
+      },
+      {
+        id: 'ch2', num: 'II', title: 'The Anguish of A\'dam',
+        subtitle: 'A\'dam and Chavvah enter the Cave of Treasures. A\'dam\'s sorrow and despair upon leaving the garden.',
+        cutsceneSlides: [
+          { ref: 'First Book of A\'dam & Chavvah 2:1-3', lines: [
+            '1 But A\u2019dam and Chavvah wept for having come out of the garden, their first home.',
+            '2 And indeed, when A\u2019dam looked at his flesh, that was altered, he wept bitterly, he and Chavvah, over what they had done. And they walked and went gently down into the Cave of Treasures.',
+            '3 And as they came to it, A\u2019dam wept over himself and said to Chavvah, "Look at this cave that is to be our prison in this world, and a place of punishment!',
+          ]},
+          { ref: 'First Book of A\'dam & Chavvah 2:4-7', lines: [
+            '4 "What is it compared with the garden? What is its narrowness compared with the space of the other?',
+            '5 "What is this rock, by the side of those groves? What is the gloom of this cavern, compared with the light of the garden?',
+            '6 "What is this overhanging ledge of rock to shelter us, compared with the mercy of YAHUAH that overshadowed us?',
+            '7 "What is the soil of this cave compared with the garden land? This earth, strewn with stones; and that, planted with delicious fruit trees?"',
+          ]},
+          { ref: 'First Book of A\'dam & Chavvah 2:8-12', lines: [
+            '8 And A\u2019dam said to Chavvah, "Look at your eyes, and at mine, which before beheld angels praising in heaven; and they, too, without ceasing.',
+            '9 "But now we do not see as we did; our eyes have become of flesh; they cannot see like they used to see before."',
+            '10 A\u2019dam said again to Chavvah, "What is our body today, compared to what it was in former days, when we lived in the garden?"',
+            '11 After this, A\u2019dam did not want to enter the cave, under the overhanging rock; nor would he ever want to enter it.',
+            '12 But he bowed to God\u2019s orders; and said to himself, "Unless I enter the cave, I shall again be a transgressor."',
+          ]},
+        ],
+        levelType: 'cave_interior',
+        quest: 'Explore the Cave of Treasures',
+        npcs: [
+          { id: 'adam', name: "A'dam", x: 10, y: 8, color: SKIN, hairColor: '#1a1a1a',
+            dialogue: [
+              "Look at this cave\u2014our prison in this world.",
+              "What is it compared with the garden?",
+              "What is this gloom, compared with the light of Eden?",
+              "Unless I enter this cave, I shall be a transgressor again.",
+            ]},
+          { id: 'chavvah', name: "Chavvah", x: 12, y: 8, color: SKIN, hairColor: '#3d1f00',
+            dialogue: [
+              "We wept for having come out of the garden...",
+              "Our first home is lost to us.",
+              "But we must obey God's command.",
+            ]},
+        ],
+        verses: [
+          '1 But A\u2019dam and Chavvah wept for having come out of the garden, their first home.',
+          '2 And indeed, when A\u2019dam looked at his flesh, that was altered, he wept bitterly, he and Chavvah, over what they had done. And they walked and went gently down into the Cave of Treasures.',
+          '3 And as they came to it, A\u2019dam wept over himself and said to Chavvah, "Look at this cave that is to be our prison in this world, and a place of punishment!',
+          '4 "What is it compared with the garden? What is its narrowness compared with the space of the other?',
+          '5 "What is this rock, by the side of those groves? What is the gloom of this cavern, compared with the light of the garden?',
+          '6 "What is this overhanging ledge of rock to shelter us, compared with the mercy of YAHUAH that overshadowed us?',
+          '7 "What is the soil of this cave compared with the garden land? This earth, strewn with stones; and that, planted with delicious fruit trees?"',
+          '8 And A\u2019dam said to Chavvah, "Look at your eyes, and at mine, which before beheld angels praising in heaven; and they, too, without ceasing.',
+          '9 "But now we do not see as we did; our eyes have become of flesh; they cannot see like they used to see before."',
+          '10 A\u2019dam said again to Chavvah, "What is our body today, compared to what it was in former days, when we lived in the garden?"',
+          '11 After this, A\u2019dam did not want to enter the cave, under the overhanging rock; nor would he ever want to enter it.',
+          '12 But he bowed to God\u2019s orders; and said to himself, "Unless I enter the cave, I shall again be a transgressor."',
+        ],
+      },
+      {
+        id: 'ch3', num: 'III', title: 'Mourning in Darkness',
+        subtitle: 'A\'dam and Chavvah grieve. The darkness of the cave. A\'dam\'s first prayer.',
+        cutsceneSlides: [
+          { ref: 'First Book of A\'dam & Chavvah 3:1-3', lines: [
+            '1 Then A\u2019dam and Chavvah entered the cave, and stood praying, in their own tongue, unknown to us, but which they knew well.',
+            '2 And as they prayed, A\u2019dam raised his eyes, and saw the rock and the roof of the cave that covered him overhead, so that he could see neither heaven, nor God\u2019s creatures. So he wept and smote heavily upon his breast, until he dropped down, and was as dead.',
+            '3 And Chavvah sat weeping; for she believed he was dead.',
+          ]},
+          { ref: 'First Book of A\'dam & Chavvah 3:4-7', lines: [
+            '4 Then she got up, spread her hands towards God, appealing to Him for mercy and pity, and said, "O God, forgive me my sin, the sin which I committed, and do not remember it against me.',
+            '5 "For I alone caused Your servant to fall from the garden into this condemned land; from light into this darkness; and from the house of joy into this prison."',
+            '6 And Chavvah said again, "O God, look upon this Your servant thus fallen, and raise him from his death, that he may weep and repent of his transgression which he committed through me.',
+            '7 "Do not take away his soul right now; but let him live that he may stand after the measure of his repentance, and then do with him according to Your mercy."',
+          ]},
+          { ref: 'First Book of A\'dam & Chavvah 3:8-13', lines: [
+            '8 Then God looked upon the words of Chavvah, and upon her weeping, and the Word of God came to her, raised up A\u2019dam from his death, and opened his eyes.',
+            '9 Then he got up in the cave and said, "O God, why has the light departed from us, and darkness come over us? Why did You leave us in this long darkness? Why do You plague us like this?',
+            '10 "And this darkness, O God, where was it before it covered us? It is because of this that we cannot see each other.',
+            '11 "For as long as we were in the garden, we neither saw nor even knew what darkness is."',
+            '12 "But now since we came into this cave, darkness has come over us, and separated us from each other, so that I do not see you, and you do not see me.',
+            '13 "My wish, O God, is that You would be so kind as to not plague us through this."',
+          ]},
+        ],
+        levelType: 'dark_cave',
+        quest: 'Pray in the darkness of the cave',
+        npcs: [
+          { id: 'adam', name: "A'dam", x: 8, y: 6, color: SKIN, hairColor: '#1a1a1a',
+            dialogue: [
+              "O God, why has the light departed from us?",
+              "And darkness come over us?",
+              "For as long as we were in the garden, we neither saw nor even knew what darkness is.",
+              "But now darkness has separated us from each other.",
+            ]},
+          { id: 'chavvah', name: "Chavvah", x: 10, y: 6, color: SKIN, hairColor: '#3d1f00',
+            dialogue: [
+              "O God, forgive me my sin...",
+              "For I alone caused Your servant to fall from the garden.",
+              "From light into this darkness.",
+              "Raise him from his death, that he may repent.",
+            ]},
+        ],
+        verses: [
+          '1 Then A\u2019dam and Chavvah entered the cave, and stood praying, in their own tongue, unknown to us, but which they knew well.',
+          '2 And as they prayed, A\u2019dam raised his eyes, and saw the rock and the roof of the cave that covered him overhead, so that he could see neither heaven, nor God\u2019s creatures. So he wept and smote heavily upon his breast, until he dropped down, and was as dead.',
+          '3 And Chavvah sat weeping; for she believed he was dead.',
+          '4 Then she got up, spread her hands towards God, appealing to Him for mercy and pity, and said, "O God, forgive me my sin, the sin which I committed, and do not remember it against me.',
+          '5 "For I alone caused Your servant to fall from the garden into this condemned land; from light into this darkness; and from the house of joy into this prison."',
+          '6 And Chavvah said again, "O God, look upon this Your servant thus fallen, and raise him from his death, that he may weep and repent of his transgression which he committed through me.',
+          '7 "Do not take away his soul right now; but let him live that he may stand after the measure of his repentance, and then do with him according to Your mercy."',
+          '8 Then God looked upon the words of Chavvah, and upon her weeping, and the Word of God came to her, raised up A\u2019dam from his death, and opened his eyes.',
+          '9 Then he got up in the cave and said, "O God, why has the light departed from us, and darkness come over us? Why did You leave us in this long darkness? Why do You plague us like this?',
+          '10 "And this darkness, O God, where was it before it covered us? It is because of this that we cannot see each other.',
+          '11 "For as long as we were in the garden, we neither saw nor even knew what darkness is. I was not hidden from Chavvah, neither was she hidden from me, until now that she cannot see me; and no darkness came upon us to separate us from each other.',
+          '12 "But now since we came into this cave, darkness has come over us, and separated us from each other, so that I do not see you, and you do not see me.',
+          '13 "My wish, O God, is that You would be so kind as to not plague us through this."',
+        ],
+      },
+    ];
+
+    // Prologue text
+    const PROLOGUE_TEXT = [
+      'The First Book of A\u2019dam and Chavvah details the life and times of A\u2019dam and Chavvah after they were expelled from the garden to the time that Qayin kills his brother Havel. It tells of A\u2019dam and Chavvah\u2019s first dwelling\u2014the Cave of Treasures; their trials and temptations; Satan\u2019s many apparitions to them; the birth of Qayin, Havel, and their twin sisters; and Qayin\u2019s love for his beautiful twin sister, Luluwa, whom A\u2019dam and Chavvah wished to join to Havel.',
+      'This book is considered by many scholars to be part of the "Pseudepigrapha" (soo-duh-pig-ruh-fuh). The "Pseudepigrapha" is a collection of historical biblical works that are considered to be fiction. Because of that stigma, this book was not included in the compilation of the Holy Bible. This book is a written history of what happened in the days of A\u2019dam and Chavvah after they were cast out of the garden. Although considered to be pseudepigraphic by some, it carries significant meaning and insight into events of that time. It is doubtful that these writings could have survived all the many centuries if there were no substance to them.',
+      'This book is simply a version of an account handed down by word of mouth, from generation to generation, linking the time that the first human life was created to the time when somebody finally decided to write it down. This particular version is the work of unknown Egyptians. The lack of historical allusion makes it difficult to precisely date the writing, however, using other pseudepigraphical works as a reference, it was probably written a few hundred years before the birth of Mashiach. Parts of this version are found in the Jewish Talmud, and the Islamic Koran, showing what a vital role it played in the original literature of human wisdom.',
+    ];
+
+    // ── GAME STATE ──────────────────────────────────────────────
+    // Phases: TITLE, PROLOGUE, CUTSCENE, LEVEL, READ, CHAPTER_COMPLETE
+    let phase = 'TITLE';
+    let currentChapter = 0;
+    let cutsceneSlide = 0;
+
+    // Player
+    let player = { x: 10, y: 20, dir: 'down', frame: 0, moving: false };
+    let keys = {};
+    let touchDir = null;
+
+    // Level state
+    let levelMap = null;
+    let levelW = 0, levelH = 0;
+    let cameraX = 0, cameraY = 0;
+    let dialogueActive = false;
+    let dialogueNpc = null;
+    let dialogueLine = 0;
+    let questComplete = false;
+    let interactTarget = null;
+    let caveFound = false;
+
+    // Canvas
+    let canvas, ctx;
+    let animFrame;
+    let lastTime = 0;
+    let moveTimer = 0;
+
+    // ── TILE TYPES ──────────────────────────────────────────────
+    const T = {
+      WASTELAND: 0, ROCK: 1, TREE: 2, CAVE: 3,
+      GRASS: 4, PATH: 5, WATER: 6, BUSH: 7,
+      CAVE_FLOOR: 8, CAVE_WALL: 9, CAVE_ENTRANCE: 10,
+      DARKNESS: 11,
+    };
+    const SOLID = new Set([T.ROCK, T.TREE, T.CAVE_WALL, T.WATER]);
+
+    // ── MAP GENERATORS ──────────────────────────────────────────
+    function generateWastelandMap() {
+      const rng = seededRng(77777);
+      const w = 40, h = 30;
+      const map = [];
+      for (let y = 0; y < h; y++) {
+        const row = [];
+        for (let x = 0; x < w; x++) {
+          // Border trees
+          if (x < 2 || x > w-3 || y < 2 || y > h-3) { row.push(T.TREE); continue; }
+          // Garden on the east (green wall)
+          if (x > w-6) { row.push(T.TREE); continue; }
+          // Water / sea to the north
+          if (y < 5 && x > 5 && x < w-8) { row.push(T.WATER); continue; }
+          // Path leading west toward cave
+          if (y >= 14 && y <= 16 && x >= 4 && x <= w-7) { row.push(T.PATH); continue; }
+          // Cave of Treasures (west side)
+          if (x >= 4 && x <= 7 && y >= 10 && y <= 13) { row.push(T.CAVE); continue; }
+          // Random terrain
+          const r = rng();
+          if (r < 0.03) row.push(T.ROCK);
+          else if (r < 0.05) row.push(T.BUSH);
+          else if (r < 0.08) row.push(T.TREE);
+          else row.push(T.WASTELAND);
+        }
+        map.push(row);
+      }
+      return { map, w, h, cavePos: { x: 5, y: 11 }, playerStart: { x: 30, y: 15 } };
+    }
+
+    function generateCaveMap() {
+      const rng = seededRng(88888);
+      const w = 24, h = 16;
+      const map = [];
+      for (let y = 0; y < h; y++) {
+        const row = [];
+        for (let x = 0; x < w; x++) {
+          // Walls around the perimeter
+          if (x < 2 || x > w-3 || y < 2 || y > h-3) { row.push(T.CAVE_WALL); continue; }
+          // Entrance at bottom center
+          if (y === h-3 && x >= 10 && x <= 13) { row.push(T.CAVE_ENTRANCE); continue; }
+          // Interior rocks
+          const r = rng();
+          if (r < 0.08) row.push(T.ROCK);
+          else row.push(T.CAVE_FLOOR);
+        }
+        map.push(row);
+      }
+      return { map, w, h, playerStart: { x: 11, y: h-4 } };
+    }
+
+    function generateDarkCaveMap() {
+      const rng = seededRng(99999);
+      const w = 20, h = 14;
+      const map = [];
+      for (let y = 0; y < h; y++) {
+        const row = [];
+        for (let x = 0; x < w; x++) {
+          if (x < 2 || x > w-3 || y < 2 || y > h-3) { row.push(T.CAVE_WALL); continue; }
+          const r = rng();
+          if (r < 0.06) row.push(T.ROCK);
+          else row.push(T.CAVE_FLOOR);
+        }
+        map.push(row);
+      }
+      return { map, w, h, playerStart: { x: 10, y: h-4 } };
+    }
+
+    // ── DRAWING ─────────────────────────────────────────────────
+    function drawTile(x, y, tile, screenX, screenY) {
+      const s = TILE;
+      switch (tile) {
+        case T.WASTELAND:
+          ctx.fillStyle = '#8b7d5a';
+          ctx.fillRect(screenX, screenY, s, s);
+          // Subtle dust texture
+          ctx.fillStyle = '#7a6c4a';
+          if ((x + y) % 3 === 0) ctx.fillRect(screenX + 10, screenY + 10, 4, 4);
+          break;
+        case T.ROCK:
+          ctx.fillStyle = '#8b7d5a';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#6b6b6b';
+          ctx.beginPath();
+          ctx.arc(screenX + s/2, screenY + s/2 + 6, 16, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#808080';
+          ctx.beginPath();
+          ctx.arc(screenX + s/2, screenY + s/2 + 2, 14, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case T.TREE:
+          ctx.fillStyle = '#5a7a3d';
+          ctx.fillRect(screenX, screenY, s, s);
+          // Trunk
+          ctx.fillStyle = '#6b4513';
+          ctx.fillRect(screenX + s/2 - 4, screenY + s/2, 8, s/2);
+          // Canopy
+          ctx.fillStyle = '#2d6a1d';
+          ctx.beginPath();
+          ctx.arc(screenX + s/2, screenY + s/3, 20, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#3d8a2d';
+          ctx.beginPath();
+          ctx.arc(screenX + s/2 - 4, screenY + s/3 + 2, 16, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case T.CAVE:
+          ctx.fillStyle = '#8b7d5a';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#3a2a1a';
+          ctx.fillRect(screenX + 4, screenY + 4, s-8, s-8);
+          ctx.fillStyle = '#4a3a2a';
+          ctx.fillRect(screenX + 8, screenY + 8, s-16, s-16);
+          // Dark opening
+          ctx.fillStyle = '#1a0a00';
+          ctx.fillRect(screenX + 12, screenY + 12, s-24, s-24);
+          break;
+        case T.GRASS:
+          ctx.fillStyle = '#5a8f3d';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#4a7f2d';
+          if ((x * 7 + y * 13) % 5 === 0) {
+            ctx.fillRect(screenX + 8, screenY + 20, 3, 12);
+            ctx.fillRect(screenX + 30, screenY + 14, 3, 10);
+          }
+          break;
+        case T.PATH:
+          ctx.fillStyle = '#c9a86c';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#b89a5c';
+          if ((x + y) % 4 === 0) ctx.fillRect(screenX + 16, screenY + 16, 6, 6);
+          break;
+        case T.WATER:
+          ctx.fillStyle = '#3d7aaf';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#5d9acf';
+          const waveOff = Math.sin(Date.now() / 600 + x * 0.8) * 3;
+          ctx.fillRect(screenX + 4, screenY + 20 + waveOff, s - 8, 4);
+          break;
+        case T.BUSH:
+          ctx.fillStyle = '#8b7d5a';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#4a6a2d';
+          ctx.beginPath();
+          ctx.arc(screenX + s/2, screenY + s/2 + 8, 14, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#3d5a2d';
+          ctx.beginPath();
+          ctx.arc(screenX + s/2 + 4, screenY + s/2 + 4, 10, 0, Math.PI * 2);
+          ctx.fill();
+          break;
+        case T.CAVE_FLOOR:
+          ctx.fillStyle = '#4a3a2a';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#3a2a1a';
+          if ((x * 3 + y * 7) % 5 === 0) ctx.fillRect(screenX + 20, screenY + 20, 6, 6);
+          break;
+        case T.CAVE_WALL:
+          ctx.fillStyle = '#2a1a0a';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#3a2a1a';
+          ctx.fillRect(screenX + 2, screenY + 2, s-4, s-4);
+          // Cracks
+          ctx.strokeStyle = '#1a0a00';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(screenX + 10, screenY + 8);
+          ctx.lineTo(screenX + 30, screenY + 20);
+          ctx.stroke();
+          break;
+        case T.CAVE_ENTRANCE:
+          ctx.fillStyle = '#4a3a2a';
+          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#6a5a4a';
+          ctx.fillRect(screenX + 8, screenY, s-16, s);
+          // Light from outside
+          ctx.fillStyle = 'rgba(255, 220, 150, 0.15)';
+          ctx.fillRect(screenX + 4, screenY, s-8, s);
+          break;
+        case T.DARKNESS:
+          ctx.fillStyle = '#0a0a0a';
+          ctx.fillRect(screenX, screenY, s, s);
+          break;
+        default:
+          ctx.fillStyle = '#8b7d5a';
+          ctx.fillRect(screenX, screenY, s, s);
+      }
+    }
+
+    function drawSprite(sx, sy, color, hairColor, dir, frame, isMoving) {
+      const s = TILE;
+      const bob = isMoving ? Math.sin(frame * 0.3) * 2 : 0;
+
+      // Body
+      ctx.fillStyle = '#8b6914';
+      ctx.fillRect(sx + 18, sy + 30 + bob, 28, 24);
+
+      // Head
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.arc(sx + s/2, sy + 20 + bob, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Hair
+      ctx.fillStyle = hairColor;
+      ctx.beginPath();
+      ctx.arc(sx + s/2, sy + 14 + bob, 14, Math.PI, Math.PI * 2);
+      ctx.fill();
+
+      // Eyes
+      ctx.fillStyle = '#fff';
+      const eyeOff = dir === 'left' ? -3 : dir === 'right' ? 3 : 0;
+      ctx.fillRect(sx + 26 + eyeOff, sy + 18 + bob, 4, 4);
+      ctx.fillRect(sx + 34 + eyeOff, sy + 18 + bob, 4, 4);
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(sx + 27 + eyeOff, sy + 19 + bob, 2, 2);
+      ctx.fillRect(sx + 35 + eyeOff, sy + 19 + bob, 2, 2);
+
+      // Legs
+      ctx.fillStyle = color;
+      const legOff = isMoving ? Math.sin(frame * 0.4) * 4 : 0;
+      ctx.fillRect(sx + 22, sy + 54 + bob - legOff, 8, 8);
+      ctx.fillRect(sx + 34, sy + 54 + bob + legOff, 8, 8);
+    }
+
+    function drawPlayerGlow(sx, sy) {
+      const gradient = ctx.createRadialGradient(sx + TILE/2, sy + 32, 0, sx + TILE/2, sy + 32, TILE * 1.5);
+      gradient.addColorStop(0, 'rgba(255, 220, 150, 0.12)');
+      gradient.addColorStop(1, 'rgba(255, 220, 150, 0)');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(sx - TILE, sy - TILE, TILE * 3, TILE * 3);
+    }
+
+    // ── LEVEL RENDERING ─────────────────────────────────────────
+    function renderLevel() {
+      if (!canvas || !ctx || !levelMap) return;
+
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+
+      const vpW = Math.ceil(canvas.width / TILE) + 2;
+      const vpH = Math.ceil(canvas.height / TILE) + 2;
+
+      // Camera follows player
+      cameraX = player.x - vpW / 2 + 0.5;
+      cameraY = player.y - vpH / 2 + 0.5;
+      cameraX = Math.max(0, Math.min(levelW - vpW, cameraX));
+      cameraY = Math.max(0, Math.min(levelH - vpH, cameraY));
+
+      const chapter = CHAPTERS[currentChapter];
+      const isDark = chapter && chapter.levelType === 'dark_cave';
+
+      // Draw tiles
+      for (let vy = 0; vy < vpH; vy++) {
+        for (let vx = 0; vx < vpW; vx++) {
+          const mx = Math.floor(cameraX + vx);
+          const my = Math.floor(cameraY + vy);
+          if (mx < 0 || my < 0 || mx >= levelW || my >= levelH) continue;
+          const sx = (mx - cameraX) * TILE;
+          const sy = (my - cameraY) * TILE;
+          drawTile(mx, my, levelMap[my][mx], sx, sy);
+        }
+      }
+
+      // Draw NPCs
+      if (chapter) {
+        chapter.npcs.forEach(npc => {
+          const sx = (npc.x - cameraX) * TILE;
+          const sy = (npc.y - cameraY) * TILE;
+          if (sx > -TILE && sx < canvas.width + TILE && sy > -TILE && sy < canvas.height + TILE) {
+            drawSprite(sx, sy, npc.color, npc.hairColor, 'down', 0, false);
+            // Name tag
+            ctx.fillStyle = '#facc15';
+            ctx.font = 'bold 12px Georgia';
+            ctx.textAlign = 'center';
+            ctx.fillText(npc.name, sx + TILE/2, sy - 4);
+          }
+        });
+      }
+
+      // Draw player
+      const px = (player.x - cameraX) * TILE;
+      const py = (player.y - cameraY) * TILE;
+      drawPlayerGlow(px, py);
+      drawSprite(px, py, SKIN, '#1a1a1a', player.dir, player.frame, player.moving);
+
+      // Dark cave: darkness vignette around player
+      if (isDark) {
+        const grad = ctx.createRadialGradient(
+          px + TILE/2, py + 32, TILE * 1.8,
+          px + TILE/2, py + 32, TILE * 4
+        );
+        grad.addColorStop(0, 'rgba(0,0,0,0)');
+        grad.addColorStop(1, 'rgba(0,0,0,0.92)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+    }
+
+    // ── GAME LOOP ───────────────────────────────────────────────
+    function gameLoop(timestamp) {
+      if (phase !== 'LEVEL') { animFrame = requestAnimationFrame(gameLoop); return; }
+
+      const dt = timestamp - lastTime;
+      lastTime = timestamp;
+      moveTimer += dt;
+
+      // Movement
+      if (!dialogueActive && moveTimer > 100) {
+        moveTimer = 0;
+        let dx = 0, dy = 0;
+        const dir = touchDir || (keys.ArrowUp || keys.w ? 'up' : keys.ArrowDown || keys.s ? 'down' : keys.ArrowLeft || keys.a ? 'left' : keys.ArrowRight || keys.d ? 'right' : null);
+        if (dir === 'up') dy = -1;
+        else if (dir === 'down') dy = 1;
+        else if (dir === 'left') dx = -1;
+        else if (dir === 'right') dx = 1;
+
+        if (dx || dy) {
+          player.dir = dir;
+          player.moving = true;
+          player.frame++;
+          const nx = player.x + dx;
+          const ny = player.y + dy;
+          if (nx >= 0 && nx < levelW && ny >= 0 && ny < levelH) {
+            const tile = levelMap[ny][nx];
+            if (!SOLID.has(tile)) {
+              player.x = nx;
+              player.y = ny;
+              // Check cave arrival
+              checkLevelTriggers();
+            }
+          }
+        } else {
+          player.moving = false;
+        }
+      }
+
+      renderLevel();
+      animFrame = requestAnimationFrame(gameLoop);
+    }
+
+    function checkLevelTriggers() {
+      const chapter = CHAPTERS[currentChapter];
+      if (!chapter || questComplete) return;
+
+      // Check if near cave in chapter 1
+      if (chapter.levelType === 'wasteland_to_cave') {
+        const tile = levelMap[player.y][player.x];
+        if (tile === T.CAVE && !caveFound) {
+          caveFound = true;
+          questComplete = true;
+          showNarration("You have found the Cave of Treasures! A dark opening in the rock, below the western border of the garden.", function() {
+            completeLevel();
+          });
+        }
+      }
+      // Check proximity to NPCs for interaction hint
+      updateInteractTarget();
+    }
+
+    function updateInteractTarget() {
+      const chapter = CHAPTERS[currentChapter];
+      if (!chapter) return;
+      interactTarget = null;
+      chapter.npcs.forEach(npc => {
+        const dist = Math.abs(npc.x - player.x) + Math.abs(npc.y - player.y);
+        if (dist <= 2) interactTarget = npc;
+      });
+    }
+
+    function interact() {
+      if (dialogueActive) {
+        advanceDialogue();
+        return;
+      }
+      if (interactTarget) {
+        startDialogue(interactTarget);
+        return;
+      }
+      // Check if standing on cave
+      if (levelMap && levelMap[player.y] && levelMap[player.y][player.x] === T.CAVE) {
+        if (!questComplete) {
+          caveFound = true;
+          questComplete = true;
+          showNarration("You have found the Cave of Treasures!", function() {
+            completeLevel();
+          });
+        }
+      }
+      // Check cave entrance in chapter 2
+      const ch = CHAPTERS[currentChapter];
+      if (ch && ch.levelType === 'cave_interior') {
+        if (!questComplete) {
+          // Just exploring
+          const tile = levelMap[player.y][player.x];
+          if (tile === T.CAVE_ENTRANCE) {
+            showNarration("The cave entrance. The light from outside barely reaches in here.", null);
+          }
+        }
+      }
+    }
+
+    // ── DIALOGUE SYSTEM ─────────────────────────────────────────
+    let narrationCallback = null;
+
+    function startDialogue(npc) {
+      dialogueActive = true;
+      dialogueNpc = npc;
+      dialogueLine = 0;
+      render();
+    }
+
+    function advanceDialogue() {
+      if (narrationCallback) {
+        const cb = narrationCallback;
+        narrationCallback = null;
+        dialogueActive = false;
+        dialogueNpc = null;
+        render();
+        cb();
+        return;
+      }
+      if (!dialogueNpc) { dialogueActive = false; render(); return; }
+      dialogueLine++;
+      if (dialogueLine >= dialogueNpc.dialogue.length) {
+        dialogueActive = false;
+        dialogueNpc = null;
+        dialogueLine = 0;
+        // After talking to both NPCs in cave chapters, complete
+        const ch = CHAPTERS[currentChapter];
+        if (ch && (ch.levelType === 'cave_interior' || ch.levelType === 'dark_cave')) {
+          if (!questComplete) {
+            const talked = ch.npcs.filter(n => n._talked);
+            dialogueNpc && (dialogueNpc._talked = true);
+            if (talked.length >= ch.npcs.length - 1) {
+              questComplete = true;
+              setTimeout(() => {
+                showNarration("You have heard their words. The chapter is complete.", function() {
+                  completeLevel();
+                });
+              }, 500);
+            }
+          }
+        }
+      }
+      if (dialogueNpc) dialogueNpc._talked = true;
+      render();
+    }
+
+    function showNarration(text, callback) {
+      dialogueActive = true;
+      dialogueNpc = { name: 'Narrator', dialogue: [text], _isNarrator: true };
+      dialogueLine = 0;
+      narrationCallback = callback;
+      render();
+    }
+
+    function completeLevel() {
+      phase = 'CHAPTER_COMPLETE';
+      render();
+    }
+
+    // ── START LEVEL ─────────────────────────────────────────────
+    function startLevel(chapterIndex) {
+      currentChapter = chapterIndex;
+      const chapter = CHAPTERS[chapterIndex];
+      questComplete = false;
+      caveFound = false;
+      dialogueActive = false;
+      dialogueNpc = null;
+      interactTarget = null;
+      chapter.npcs.forEach(n => n._talked = false);
+
+      let levelData;
+      if (chapter.levelType === 'wasteland_to_cave') {
+        levelData = generateWastelandMap();
+      } else if (chapter.levelType === 'cave_interior') {
+        levelData = generateCaveMap();
+      } else if (chapter.levelType === 'dark_cave') {
+        levelData = generateDarkCaveMap();
+      }
+
+      levelMap = levelData.map;
+      levelW = levelData.w;
+      levelH = levelData.h;
+      player.x = levelData.playerStart.x;
+      player.y = levelData.playerStart.y;
+      player.dir = 'down';
+      player.moving = false;
+      player.frame = 0;
+
+      phase = 'LEVEL';
+      render();
+
+      if (!animFrame) {
+        lastTime = performance.now();
+        animFrame = requestAnimationFrame(gameLoop);
+      }
+    }
+
+    // ── MAIN RENDER ─────────────────────────────────────────────
+    function render() {
+      const root = document.getElementById('root');
+      let html = '';
+
+      // ── TITLE SCREEN ──
+      if (phase === 'TITLE') {
+        html = `
+          <div class="game-container">
+            <canvas id="bgCanvas"></canvas>
+            <div class="menu-overlay" style="background: radial-gradient(ellipse at 50% 40%, #1a2a1a 0%, #0a0a05 70%);">
+              <h1 class="menu-title">The First Book of<br>A'dam &amp; Chavvah</h1>
+              <p class="menu-subtitle">The Forgotten Books of Eden</p>
+              <button class="menu-btn" onclick="startPrologue()">Begin Reading</button>
+              <button class="menu-btn secondary" onclick="window.location.href='index.html'">Return to Game</button>
+            </div>
+          </div>`;
+      }
+
+      // ── PROLOGUE ──
+      else if (phase === 'PROLOGUE') {
+        html = `
+          <div class="game-container">
+            <canvas id="bgCanvas"></canvas>
+            <div class="parchment-overlay">
+              <div class="section-banner">
+                <div class="banner-bg"></div>
+                <div class="banner-overlay"></div>
+                <div class="banner-content">
+                  <div class="banner-title">Prologue</div>
+                </div>
+              </div>
+              <div class="icon-bar">
+                <button class="icon-btn check" style="background:#4a7a4a;color:white;">&#10004;</button>
+                <button class="icon-btn share" style="background:rgba(60,50,30,0.15);color:#5a4a30;">&#9993;</button>
+                <button class="icon-btn settings" style="background:rgba(60,50,30,0.15);color:#5a4a30;">&#9881;</button>
+              </div>
+              <div class="content-body">
+                ${PROLOGUE_TEXT.map(p => `<p>${p}</p>`).join('')}
+              </div>
+              <div class="nav-bar">
+                <button class="nav-btn secondary" onclick="phase='TITLE';render();">&#9664; Back</button>
+                <button class="nav-btn" onclick="startChapterCutscene(0)">Begin Chapter I &#9654;</button>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // ── CUTSCENE ──
+      else if (phase === 'CUTSCENE') {
+        const chapter = CHAPTERS[currentChapter];
+        const slide = chapter.cutsceneSlides[cutsceneSlide];
+        const isLast = cutsceneSlide >= chapter.cutsceneSlides.length - 1;
+        html = `
+          <div class="game-container">
+            <canvas id="bgCanvas"></canvas>
+            <div class="top-bar">
+              <button class="back-btn" onclick="phase='PROLOGUE';render();">&#9664; Back</button>
+              <span class="title-text">Chapter ${chapter.num}</span>
+              <span style="color:#6b7280;font-size:0.8rem;">${cutsceneSlide + 1}/${chapter.cutsceneSlides.length}</span>
+            </div>
+            <div class="cutscene-overlay">
+              <div class="cutscene-header">
+                <p class="cutscene-day">${chapter.title}</p>
+              </div>
+              <div class="cutscene-box">
+                <p class="cutscene-ref">${slide.ref}</p>
+                ${slide.lines.map(l => `<p class="cutscene-verse">${l}</p>`).join('')}
+                <button class="cutscene-btn" onclick="advanceCutscene()">
+                  ${isLast ? 'Enter the Scene \u25B6' : 'Continue \u25B6'}
+                </button>
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // ── PLAYABLE LEVEL ──
+      else if (phase === 'LEVEL') {
+        const chapter = CHAPTERS[currentChapter];
+        html = `
+          <div class="game-container">
+            <canvas id="gameCanvas"></canvas>
+            <div class="top-bar">
+              <button class="back-btn" onclick="pauseLevel()">&#9664;</button>
+              <span class="title-text">Ch. ${chapter.num} — ${chapter.title}</span>
+              <button class="read-btn" onclick="openReadMode()">Read</button>
+            </div>
+            <p class="quest-text">${questComplete ? '&#10004; ' + chapter.quest : '\u2606 ' + chapter.quest}</p>
+            ${dialogueActive && dialogueNpc ? `
+              <div class="dialogue-box${dialogueNpc._isNarrator ? ' scene-dialogue' : ''}">
+                <div class="dialogue-header">
+                  <span class="dialogue-name" style="color:${dialogueNpc._isNarrator ? '#fde047' : '#facc15'};">${dialogueNpc.name}</span>
+                  <span class="dialogue-counter">${dialogueLine + 1}/${dialogueNpc.dialogue.length}</span>
+                </div>
+                <p class="${dialogueNpc._isNarrator ? 'scene-text' : 'dialogue-text'}">${dialogueNpc.dialogue[dialogueLine]}</p>
+                <button class="btn" onclick="advanceDialogue()">${dialogueLine < dialogueNpc.dialogue.length - 1 ? 'Next \u25B6' : 'Continue \u25B6'}</button>
+              </div>
+            ` : ''}
+            <div class="controls">
+              <div class="dpad">
+                <div></div>
+                <button class="dpad-btn" ontouchstart="touchDir='up'" ontouchend="touchDir=null" onmousedown="touchDir='up'" onmouseup="touchDir=null">\u25B2</button>
+                <div></div>
+                <button class="dpad-btn" ontouchstart="touchDir='left'" ontouchend="touchDir=null" onmousedown="touchDir='left'" onmouseup="touchDir=null">\u25C0</button>
+                <div></div>
+                <button class="dpad-btn" ontouchstart="touchDir='right'" ontouchend="touchDir=null" onmousedown="touchDir='right'" onmouseup="touchDir=null">\u25B6</button>
+                <div></div>
+                <button class="dpad-btn" ontouchstart="touchDir='down'" ontouchend="touchDir=null" onmousedown="touchDir='down'" onmouseup="touchDir=null">\u25BC</button>
+                <div></div>
+              </div>
+              <button class="talk-btn" onclick="interact()">TALK</button>
+            </div>
+          </div>`;
+      }
+
+      // ── READ MODE (parchment overlay) ──
+      else if (phase === 'READ') {
+        const chapter = CHAPTERS[currentChapter];
+        html = `
+          <div class="game-container">
+            <canvas id="bgCanvas"></canvas>
+            <div class="parchment-overlay">
+              <div class="section-banner">
+                <div class="banner-bg"></div>
+                <div class="banner-overlay"></div>
+                <div class="banner-content">
+                  <div class="banner-title">Chapter ${chapter.num}</div>
+                  <div class="banner-subtitle">${chapter.subtitle}</div>
+                </div>
+              </div>
+              <div class="icon-bar">
+                <button class="icon-btn check" style="background:#4a7a4a;color:white;">&#10004;</button>
+                <button class="icon-btn share" style="background:rgba(60,50,30,0.15);color:#5a4a30;">&#9993;</button>
+                <button class="icon-btn settings" style="background:rgba(60,50,30,0.15);color:#5a4a30;">&#9881;</button>
+              </div>
+              <div class="content-body">
+                ${chapter.verses.map(v => `<p><span class="verse-num">${v.match(/^\d+/)[0]}</span> ${v.replace(/^\d+\s*/, '')}</p>`).join('')}
+              </div>
+              <div class="nav-bar">
+                <button class="nav-btn secondary" onclick="closeReadMode()">&#9664; Return to Level</button>
+                ${currentChapter < CHAPTERS.length - 1 ? `<button class="nav-btn" onclick="startChapterCutscene(${currentChapter + 1})">Chapter ${CHAPTERS[currentChapter + 1].num} &#9654;</button>` : ''}
+              </div>
+            </div>
+          </div>`;
+      }
+
+      // ── CHAPTER COMPLETE ──
+      else if (phase === 'CHAPTER_COMPLETE') {
+        const chapter = CHAPTERS[currentChapter];
+        const hasNext = currentChapter < CHAPTERS.length - 1;
+        html = `
+          <div class="game-container">
+            <canvas id="bgCanvas"></canvas>
+            <div class="menu-overlay" style="background:linear-gradient(180deg, #000 0%, #0a0a0a 50%, #111 100%);">
+              <p style="color:#c8a96e;font-size:14px;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;">Chapter Complete</p>
+              <h1 style="color:#e8d8a8;font-size:28px;font-family:Georgia,serif;margin-bottom:8px;text-align:center;">${chapter.title}</h1>
+              <p style="color:#888;font-size:14px;font-style:italic;margin-bottom:40px;text-align:center;max-width:400px;line-height:1.6;">
+                ${chapter.subtitle}
+              </p>
+              <button class="menu-btn" style="margin-bottom:12px;min-width:280px;" onclick="openReadMode()">Read Full Chapter</button>
+              ${hasNext ? `<button class="menu-btn" style="margin-bottom:12px;min-width:280px;" onclick="startChapterCutscene(${currentChapter + 1})">Continue to Chapter ${CHAPTERS[currentChapter + 1].num} &#9654;</button>` : ''}
+              <button class="menu-btn secondary" style="min-width:280px;" onclick="phase='TITLE';render();">Table of Contents</button>
+            </div>
+          </div>`;
+      }
+
+      root.innerHTML = html;
+
+      // Setup canvas for level
+      if (phase === 'LEVEL') {
+        canvas = document.getElementById('gameCanvas');
+        if (canvas) {
+          ctx = canvas.getContext('2d');
+          canvas.width = canvas.clientWidth;
+          canvas.height = canvas.clientHeight;
+          renderLevel();
+        }
+      }
+      // Background canvas for non-level phases
+      else {
+        const bg = document.getElementById('bgCanvas');
+        if (bg) {
+          const bgCtx = bg.getContext('2d');
+          bg.width = bg.clientWidth;
+          bg.height = bg.clientHeight;
+          // Dark gradient background
+          const grad = bgCtx.createLinearGradient(0, 0, 0, bg.height);
+          grad.addColorStop(0, '#1a2a1a');
+          grad.addColorStop(1, '#0a0a05');
+          bgCtx.fillStyle = grad;
+          bgCtx.fillRect(0, 0, bg.width, bg.height);
+          // Stars
+          const rng = seededRng(42);
+          bgCtx.fillStyle = 'rgba(255,255,255,0.4)';
+          for (let i = 0; i < 60; i++) {
+            bgCtx.fillRect(rng() * bg.width, rng() * bg.height, 2, 2);
+          }
+        }
+      }
+    }
+
+    // ── PHASE TRANSITIONS ───────────────────────────────────────
+    function startPrologue() {
+      phase = 'PROLOGUE';
+      render();
+    }
+
+    function startChapterCutscene(chapterIndex) {
+      currentChapter = chapterIndex;
+      cutsceneSlide = 0;
+      phase = 'CUTSCENE';
+      render();
+    }
+
+    function advanceCutscene() {
+      const chapter = CHAPTERS[currentChapter];
+      cutsceneSlide++;
+      if (cutsceneSlide >= chapter.cutsceneSlides.length) {
+        startLevel(currentChapter);
+      } else {
+        render();
+      }
+    }
+
+    function openReadMode() {
+      phase = 'READ';
+      render();
+    }
+
+    function closeReadMode() {
+      phase = 'LEVEL';
+      render();
+      if (!animFrame) {
+        lastTime = performance.now();
+        animFrame = requestAnimationFrame(gameLoop);
+      }
+    }
+
+    function pauseLevel() {
+      phase = 'CHAPTER_COMPLETE';
+      render();
+    }
+
+    // ── INPUT ───────────────────────────────────────────────────
+    document.addEventListener('keydown', (e) => {
+      keys[e.key] = true;
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        if (phase === 'LEVEL') interact();
+        else if (phase === 'CUTSCENE') advanceCutscene();
+      }
+      if (e.key === 'Escape') {
+        if (phase === 'LEVEL') pauseLevel();
+        else if (phase === 'READ') closeReadMode();
+      }
+    });
+    document.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+    // Prevent default touch scrolling
+    document.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
+
+    // ── INIT ────────────────────────────────────────────────────
+    render();
+    lastTime = performance.now();
+    animFrame = requestAnimationFrame(gameLoop);
+  </script>
+</body>
+</html>
