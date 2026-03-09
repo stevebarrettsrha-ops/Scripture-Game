@@ -429,9 +429,9 @@
     };
 
     // Emoji crops for planting activity
-    const CROP_EMOJIS = ['🌱', '🌿', '🥕', '🌽', '🍅', '🌾', '🥬', '🫒'];
+    const CROP_EMOJIS = ['🌳', '🌲', '🌴', '🌳', '🌲', '🌴', '🌳', '🌲'];
     // Emoji trees for planted trees
-    const TREE_EMOJIS = ['🌳', '🌴', '🌲', '🍎', '🍊', '🫐'];
+    const TREE_EMOJIS = ['🌳', '🌴', '🌲', '🌳', '🌴', '🌲'];
 
     // ── Barren land constants (beyond the river) ─────────────────────
     const BARREN_MAP_WIDTH = 100;
@@ -3414,28 +3414,10 @@
                   ctx.fillRect(screenX + 6, screenY + 6, TILE_SIZE - 12, TILE_SIZE - 12);
                   break;
                 }
-                case TILES.PLANTED: {
-                  // Green grass base for planted area
-                  ctx.fillStyle = '#4a7828';
-                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
-                  ctx.fillStyle = '#3a6020';
-                  for (let bi = 0; bi < 3; bi++) {
-                    ctx.fillRect(screenX + ((mapX*(bi+1)*13)%50)+4, screenY + ((mapY*(bi+1)*7)%50)+4, 2, 5);
-                  }
-                  // Draw the planted emoji
-                  const planted = plantedTiles.find(t => t.x === mapX && t.y === mapY);
-                  if (planted) {
-                    ctx.save();
-                    ctx.font = '36px serif';
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    // Gentle bobbing animation
-                    const bob = Math.sin(gameTime * 0.05 + mapX + mapY) * 2;
-                    ctx.fillText(planted.emoji, screenX + TILE_SIZE / 2, screenY + TILE_SIZE / 2 + bob);
-                    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-                    ctx.restore();
-                  }
+                case TILES.PLANTED:
+                  // Defer to pass 2 so planted trees draw on top like normal trees
+                  tallObjects.push({ tile, screenX, screenY, mapX, mapY });
                   break;
-                }
                 case TILES.SEA: {
                   // Deeper blue sea water
                   const seaPhase = (gameTime + mapX * 2 + mapY * 3) % 30;
@@ -3546,6 +3528,21 @@
               ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
               ctx.restore();
               break;
+            case TILES.PLANTED: {
+              // Young planted tree — slightly smaller than normal tree
+              ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+              ctx.fillStyle = COLORS.treeTrunk; ctx.fillRect(13, 18, 6, 14);
+              ctx.fillStyle = COLORS.tree;
+              ctx.beginPath(); ctx.arc(16, 14, 11, 0, Math.PI * 2); ctx.fill();
+              ctx.fillStyle = 'rgba(255,255,255,0.12)';
+              ctx.beginPath(); ctx.arc(13, 10, 5, 0, Math.PI * 2); ctx.fill();
+              ctx.font = '16px serif';
+              ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+              ctx.fillText('🌳', 16, 14);
+              ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+              ctx.restore();
+              break;
+            }
             case TILES.TREE_OF_LIFE:
               ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
               ctx.fillStyle = '#654321'; ctx.fillRect(8, 10, 16, 22);
