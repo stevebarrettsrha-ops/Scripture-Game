@@ -315,7 +315,8 @@
     // ═══════════════════════════════════════════════════════════════
 
     const TILE = 64;
-    const SKIN = '#5D4037';
+    const SCALE = 2;
+    const SKIN_COLOR = '#5D4037';
 
     // ── Seeded RNG ──────────────────────────────────────────────
     const seededRng = (seed) => {
@@ -350,14 +351,14 @@
         levelType: 'wasteland_to_cave',
         quest: 'Find the Cave of Treasures west of the garden',
         npcs: [
-          { id: 'adam', name: "A'dam", x: 12, y: 15, color: SKIN, hairColor: '#1a1a1a',
+          { id: 'adam', name: "A'dam", x: 12, y: 15, color: SKIN_COLOR, hairColor: '#1a1a1a',
             dialogue: [
               "God has sent us from the garden...",
               "He placed us here, west of Eden.",
               "We must find the cave He spoke of.",
               "The Cave of Treasures lies below the garden.",
             ]},
-          { id: 'chavvah', name: "Chavvah", x: 14, y: 15, color: SKIN, hairColor: '#3d1f00',
+          { id: 'chavvah', name: "Chavvah", x: 14, y: 15, color: SKIN_COLOR, hairColor: '#3d1f00', isEve: true,
             dialogue: [
               "The garden is behind us now...",
               "We must follow God's command.",
@@ -402,14 +403,14 @@
         levelType: 'cave_interior',
         quest: 'Explore the Cave of Treasures',
         npcs: [
-          { id: 'adam', name: "A'dam", x: 10, y: 8, color: SKIN, hairColor: '#1a1a1a',
+          { id: 'adam', name: "A'dam", x: 10, y: 8, color: SKIN_COLOR, hairColor: '#1a1a1a',
             dialogue: [
               "Look at this cave\u2014our prison in this world.",
               "What is it compared with the garden?",
               "What is this gloom, compared with the light of Eden?",
               "Unless I enter this cave, I shall be a transgressor again.",
             ]},
-          { id: 'chavvah', name: "Chavvah", x: 12, y: 8, color: SKIN, hairColor: '#3d1f00',
+          { id: 'chavvah', name: "Chavvah", x: 12, y: 8, color: SKIN_COLOR, hairColor: '#3d1f00', isEve: true,
             dialogue: [
               "We wept for having come out of the garden...",
               "Our first home is lost to us.",
@@ -458,14 +459,14 @@
         levelType: 'dark_cave',
         quest: 'Pray in the darkness of the cave',
         npcs: [
-          { id: 'adam', name: "A'dam", x: 8, y: 6, color: SKIN, hairColor: '#1a1a1a',
+          { id: 'adam', name: "A'dam", x: 8, y: 6, color: SKIN_COLOR, hairColor: '#1a1a1a',
             dialogue: [
               "O God, why has the light departed from us?",
               "And darkness come over us?",
               "For as long as we were in the garden, we neither saw nor even knew what darkness is.",
               "But now darkness has separated us from each other.",
             ]},
-          { id: 'chavvah', name: "Chavvah", x: 10, y: 6, color: SKIN, hairColor: '#3d1f00',
+          { id: 'chavvah', name: "Chavvah", x: 10, y: 6, color: SKIN_COLOR, hairColor: '#3d1f00', isEve: true,
             dialogue: [
               "O God, forgive me my sin...",
               "For I alone caused Your servant to fall from the garden.",
@@ -603,170 +604,256 @@
       return { map, w, h, playerStart: { x: 10, y: h-4 } };
     }
 
-    // ── DRAWING ─────────────────────────────────────────────────
-    function drawTile(x, y, tile, screenX, screenY) {
-      const s = TILE;
+    // ── COLORS (matching main game) ──────────────────────────────
+    const COLORS = {
+      grass: '#5a8f3d', grassDark: '#4a7f2d', water: '#3d7aaf', waterLight: '#5d9acf',
+      tree: '#2d5a1d', treeTrunk: '#8b4513', flower: '#ff69b4', flowerYellow: '#ffd700',
+      path: '#c9a86c', rock: '#808080', bush: '#3d6f2d', treeOfLife: '#ffd700',
+      treeOfKnowledge: '#8b0000', sky: '#87ceeb',
+    };
+
+    let gameTime = 0;
+
+    // ── CHARACTER SPRITE (exact copy from main game) ────────────
+    const drawCharacterSprite = (ctx, screenX, screenY, opts) => {
+      const {
+        walkFrame = 0, isMoving = false, direction = 'down',
+        hairColor = '#1a1a1a', bodyColor = '#4169e1', skinColor = SKIN_COLOR,
+        isEve = false, showClothes = false, hasFigLeaves = false,
+        holdingFruit = false, isEating = false, hasGlory = false, gameTime: gt = 0,
+      } = opts;
+
+      const frame = Math.floor(walkFrame) % 4;
+      const bob   = isMoving && frame % 2 === 1 ? 1 : 0;
+      const cx    = screenX + 16;
+      const by    = screenY + bob;
+
+      const r = (dx, dy, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(cx + dx, by + dy, w, h); };
+
+      const DK   = '#0d0700';
+      const SH   = hasGlory ? '#ffdd44' : '#17100a';
+      const FIG  = '#3a7a2a';
+      const COAT = '#c4a882';
+      const glorySkin = hasGlory ? '#ffdd44' : null;
+      const bClr = showClothes ? COAT : (glorySkin || bodyColor);
+      const legClr = showClothes ? COAT : (hasFigLeaves ? FIG : (glorySkin || bodyColor));
+      const sClr = glorySkin || skinColor;
+
+      // GLORY AURA
+      if (hasGlory) {
+        const pulse = Math.sin((gt || 0) * 0.12) * 6;
+        ctx.shadowColor = '#ffe040';
+        ctx.shadowBlur  = 22 + pulse;
+        ctx.fillStyle   = 'rgba(255,225,50,0.18)';
+        ctx.beginPath(); ctx.ellipse(cx, by + 14, 18, 22, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(255,235,80,0.25)';
+        ctx.beginPath(); ctx.ellipse(cx, by + 14, 12, 15, 0, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur  = 14 + pulse * 0.5;
+      }
+
+      const isSide = direction === 'left' || direction === 'right';
+
+      // LEGS
+      if (isSide) {
+        const dir = direction === 'right' ? 1 : -1;
+        const fStep = !isMoving ? 0 : frame === 1 ?  2*dir : frame === 3 ? -2*dir : 0;
+        const bStep = !isMoving ? 0 : frame === 1 ? -2*dir : frame === 3 ?  2*dir : 0;
+        r(-3, 20, 6, 6, legClr);
+        r(-4 + bStep, 26, 7, 2, legClr);
+        r(-4 + fStep, 26, 7, 2, SH);
+      } else if (!isMoving) {
+        r(-5, 20, 4, 6, legClr);  r(-6, 26, 6, 2, SH);
+        r( 1, 20, 4, 6, legClr);  r( 0, 26, 6, 2, SH);
+      } else {
+        const fwdX = frame < 2 ? -5 :  1;
+        const bckX = frame < 2 ?  1 : -5;
+        r(bckX, 20, 4, 4, legClr);  r(bckX - 1, 24, 5, 2, SH);
+        r(fwdX, 20, 4, 6, legClr);  r(fwdX - 1, 26, 6, 2, SH);
+      }
+      if (hasFigLeaves && isEve && !showClothes) {
+        if (isSide) { r(-3, 23, 6, 3, skinColor); }
+        else if (!isMoving) { r(-5, 23, 4, 3, skinColor); r( 1, 23, 4, 3, skinColor); }
+        else { const fwdX = frame < 2 ? -5 : 1; const bckX = frame < 2 ? 1 : -5; r(bckX, 22, 4, 2, skinColor); r(fwdX, 23, 4, 3, skinColor); }
+      }
+
+      // BODY
+      r(-6, 12, 12, 9, DK);
+      r(-5, 13, 10, 7, bClr);
+      if (hasFigLeaves && isEve && !showClothes) { r(-5, 16, 10, 4, FIG); }
+
+      // ARMS
+      if (isSide) {
+        const aSwg = isMoving ? (frame < 2 ? 2 : -2) : 0;
+        r(-2, 13 + aSwg, 4, 8, DK);
+        r(-1, 14 + aSwg, 2, 6, sClr);
+      } else {
+        const armSwg = isMoving ? (frame < 2 ? 2 : -2) : 0;
+        r(-8, 13 + armSwg, 3, 7, DK);  r(-8, 14 + armSwg, 2, 5, sClr);
+        r( 5, 13 - armSwg, 3, 7, DK);  r( 5, 14 - armSwg, 2, 5, sClr);
+      }
+
+      // HEAD
+      r(-7, 0, 14, 14, DK);
+      r(-6, 1, 12, 12, sClr);
+
+      // HAIR
+      if (direction === 'up') {
+        r(-6, 1, 12, 12, hairColor);
+      } else if (direction === 'left') {
+        r(-6, 1, 12, 7, hairColor);
+        r( 3, 1,  3, 12, hairColor);
+      } else if (direction === 'right') {
+        r(-6, 1, 12, 7, hairColor);
+        r(-6, 1,  3, 12, hairColor);
+      } else {
+        r(-6, 1, 12, 7, hairColor);
+      }
+
+      // Eve long hair strands
+      if (isEve && direction !== 'up') {
+        r(-9, 5, 3, 10, hairColor);
+        r( 6, 5, 3, 10, hairColor);
+      }
+
+      // EYES
+      if (direction !== 'up') {
+        if (direction !== 'left') { r( 1, 9, 3, 3, '#f0f0f0'); r( 2, 10, 2, 2, DK); }
+        if (direction !== 'right') { r(-4, 9, 3, 3, '#f0f0f0'); r(-4, 10, 2, 2, DK); }
+      }
+
+      if (holdingFruit && !isEating) {
+        ctx.fillStyle = '#cc0000';
+        ctx.beginPath(); ctx.arc(cx + 10, by + 17, 4, 0, Math.PI * 2); ctx.fill();
+        r(8, 13, 2, 4, '#654321');
+      }
+
+      if (hasGlory) { ctx.shadowBlur = 0; }
+    };
+
+    // ── TILE DRAWING (matching main game) ───────────────────────
+    function drawTile(mapX, mapY, tile, screenX, screenY) {
+      const gh = ((mapX * 1234567 + mapY * 891011) >>> 0) % 100;
+      const isCaveTile = tile === T.CAVE_FLOOR || tile === T.CAVE_WALL || tile === T.CAVE_ENTRANCE;
+
+      // Ground base
+      if (isCaveTile) {
+        // Cave tiles get their own base
+      } else if (tile === T.WASTELAND || tile === T.ROCK || tile === T.BUSH) {
+        ctx.fillStyle = '#4a3a2a';
+        ctx.fillRect(screenX, screenY, TILE, TILE);
+      } else if (tile === T.GRASS || tile === T.TREE) {
+        const grassBases = ['#4e7c2b', '#527f2e', '#4a7828', '#568231', '#4c7a2c'];
+        ctx.fillStyle = grassBases[gh % 5];
+        ctx.fillRect(screenX, screenY, TILE, TILE);
+        if (tile !== T.WATER && tile !== T.PATH) {
+          if (gh < 18) {
+            ctx.fillStyle = 'rgba(90,62,28,0.18)';
+            ctx.fillRect(screenX + (gh * 5) % 44, screenY + (gh * 7) % 44, 14, 12);
+          }
+          ctx.fillStyle = '#3a6020';
+          for (let bi = 0; bi < 5; bi++) ctx.fillRect(screenX + (gh*(bi+1)*13+mapX)%58+2, screenY + (gh*(bi+1)*7+mapY)%56+2, 2, 5);
+          ctx.fillStyle = '#6aaa3e';
+          for (let bi = 0; bi < 3; bi++) ctx.fillRect(screenX + (gh*(bi+4)*17)%58+2, screenY + (gh*(bi+4)*11)%56+2, 2, 3);
+        }
+      }
+
       switch (tile) {
-        case T.WASTELAND:
-          ctx.fillStyle = '#8b7d5a';
-          ctx.fillRect(screenX, screenY, s, s);
-          // Subtle dust texture
-          ctx.fillStyle = '#7a6c4a';
-          if ((x + y) % 3 === 0) ctx.fillRect(screenX + 10, screenY + 10, 4, 4);
-          break;
-        case T.ROCK:
-          ctx.fillStyle = '#8b7d5a';
-          ctx.fillRect(screenX, screenY, s, s);
-          ctx.fillStyle = '#6b6b6b';
-          ctx.beginPath();
-          ctx.arc(screenX + s/2, screenY + s/2 + 6, 16, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#808080';
-          ctx.beginPath();
-          ctx.arc(screenX + s/2, screenY + s/2 + 2, 14, 0, Math.PI * 2);
-          ctx.fill();
-          break;
-        case T.TREE:
-          ctx.fillStyle = '#5a7a3d';
-          ctx.fillRect(screenX, screenY, s, s);
-          // Trunk
-          ctx.fillStyle = '#6b4513';
-          ctx.fillRect(screenX + s/2 - 4, screenY + s/2, 8, s/2);
-          // Canopy
-          ctx.fillStyle = '#2d6a1d';
-          ctx.beginPath();
-          ctx.arc(screenX + s/2, screenY + s/3, 20, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#3d8a2d';
-          ctx.beginPath();
-          ctx.arc(screenX + s/2 - 4, screenY + s/3 + 2, 16, 0, Math.PI * 2);
-          ctx.fill();
-          break;
-        case T.CAVE:
-          ctx.fillStyle = '#8b7d5a';
-          ctx.fillRect(screenX, screenY, s, s);
-          ctx.fillStyle = '#3a2a1a';
-          ctx.fillRect(screenX + 4, screenY + 4, s-8, s-8);
+        case T.WASTELAND: {
+          const wh = ((mapX * 3457 + mapY * 7891) >>> 0) % 100;
           ctx.fillStyle = '#4a3a2a';
-          ctx.fillRect(screenX + 8, screenY + 8, s-16, s-16);
-          // Dark opening
-          ctx.fillStyle = '#1a0a00';
-          ctx.fillRect(screenX + 12, screenY + 12, s-24, s-24);
-          break;
-        case T.GRASS:
-          ctx.fillStyle = '#5a8f3d';
-          ctx.fillRect(screenX, screenY, s, s);
-          ctx.fillStyle = '#4a7f2d';
-          if ((x * 7 + y * 13) % 5 === 0) {
-            ctx.fillRect(screenX + 8, screenY + 20, 3, 12);
-            ctx.fillRect(screenX + 30, screenY + 14, 3, 10);
+          ctx.fillRect(screenX, screenY, TILE, TILE);
+          ctx.fillStyle = '#3a2a1a';
+          for (let ci = 0; ci < 3; ci++) ctx.fillRect(screenX + (wh*(ci+1)*11)%56+4, screenY + (wh*(ci+1)*7)%56+4, 6, 2);
+          ctx.fillStyle = '#5a4a3a';
+          for (let ci = 0; ci < 2; ci++) ctx.fillRect(screenX + (wh*(ci+3)*17)%56+4, screenY + (wh*(ci+3)*13)%56+4, 4, 3);
+          if (wh < 15) {
+            ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+            ctx.strokeStyle = '#5a4a30'; ctx.lineWidth = 1.5;
+            ctx.beginPath(); ctx.moveTo(16, 24); ctx.lineTo(12, 16); ctx.moveTo(16, 24); ctx.lineTo(20, 16);
+            ctx.moveTo(16, 20); ctx.lineTo(10, 14); ctx.moveTo(16, 20); ctx.lineTo(22, 14);
+            ctx.stroke(); ctx.restore();
           }
           break;
-        case T.PATH:
-          ctx.fillStyle = '#c9a86c';
-          ctx.fillRect(screenX, screenY, s, s);
-          ctx.fillStyle = '#b89a5c';
-          if ((x + y) % 4 === 0) ctx.fillRect(screenX + 16, screenY + 16, 6, 6);
+        }
+        case T.ROCK:
+          ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+          ctx.fillStyle = COLORS.rock; ctx.beginPath(); ctx.ellipse(16, 20, 10, 8, 0, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
           break;
+        case T.TREE:
+          ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+          ctx.fillStyle = COLORS.treeTrunk; ctx.fillRect(12, 16, 8, 16);
+          ctx.fillStyle = COLORS.tree;
+          ctx.beginPath(); ctx.arc(16, 12, 14, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = 'rgba(255,255,255,0.10)';
+          ctx.beginPath(); ctx.arc(13, 8, 7, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
+          break;
+        case T.CAVE:
+          ctx.fillStyle = '#2a2a2a';
+          ctx.fillRect(screenX, screenY, TILE, TILE);
+          ctx.fillStyle = '#5a5a5a';
+          ctx.fillRect(screenX, screenY, TILE, 8);
+          ctx.fillRect(screenX, screenY, 8, TILE);
+          ctx.fillRect(screenX + TILE - 8, screenY, 8, TILE);
+          ctx.fillStyle = '#1a1a1a';
+          ctx.fillRect(screenX + 10, screenY + 10, TILE - 20, TILE - 14);
+          break;
+        case T.GRASS:
+          // Already drawn in ground base above
+          break;
+        case T.PATH: {
+          const ph = ((mapX * 2345 + mapY * 6789) >>> 0) % 100;
+          ctx.fillStyle = '#9b7d52';
+          ctx.fillRect(screenX, screenY, TILE, TILE);
+          ctx.fillStyle = '#7a6040';
+          for (let pi = 0; pi < 4; pi++) ctx.fillRect(screenX + (ph*(pi+1)*11)%56+4, screenY + (ph*(pi+1)*7)%56+4, 5, 3);
+          ctx.fillStyle = '#c0a070';
+          for (let pi = 0; pi < 3; pi++) ctx.fillRect(screenX + (ph*(pi+4)*17)%56+4, screenY + (ph*(pi+4)*13)%56+4, 3, 2);
+          break;
+        }
         case T.WATER:
-          ctx.fillStyle = '#3d7aaf';
-          ctx.fillRect(screenX, screenY, s, s);
-          ctx.fillStyle = '#5d9acf';
-          const waveOff = Math.sin(Date.now() / 600 + x * 0.8) * 3;
-          ctx.fillRect(screenX + 4, screenY + 20 + waveOff, s - 8, 4);
+          ctx.fillStyle = (gameTime + mapX + mapY) % 20 < 10 ? COLORS.water : COLORS.waterLight;
+          ctx.fillRect(screenX, screenY, TILE, TILE);
+          ctx.fillStyle = 'rgba(255,255,255,0.12)';
+          ctx.fillRect(screenX + ((gameTime + mapX*3)%48)+4, screenY + ((gameTime*2+mapY*5)%48)+4, 18, 4);
           break;
         case T.BUSH:
-          ctx.fillStyle = '#8b7d5a';
-          ctx.fillRect(screenX, screenY, s, s);
-          ctx.fillStyle = '#4a6a2d';
-          ctx.beginPath();
-          ctx.arc(screenX + s/2, screenY + s/2 + 8, 14, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#3d5a2d';
-          ctx.beginPath();
-          ctx.arc(screenX + s/2 + 4, screenY + s/2 + 4, 10, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.save(); ctx.translate(screenX, screenY); ctx.scale(SCALE, SCALE);
+          ctx.fillStyle = COLORS.bush; ctx.beginPath(); ctx.arc(16, 20, 10, 0, Math.PI * 2); ctx.fill();
+          ctx.restore();
           break;
-        case T.CAVE_FLOOR:
+        case T.CAVE_FLOOR: {
+          const wh = ((mapX * 3457 + mapY * 7891) >>> 0) % 100;
           ctx.fillStyle = '#4a3a2a';
-          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillRect(screenX, screenY, TILE, TILE);
           ctx.fillStyle = '#3a2a1a';
-          if ((x * 3 + y * 7) % 5 === 0) ctx.fillRect(screenX + 20, screenY + 20, 6, 6);
+          for (let ci = 0; ci < 3; ci++) ctx.fillRect(screenX + (wh*(ci+1)*11)%56+4, screenY + (wh*(ci+1)*7)%56+4, 6, 2);
+          ctx.fillStyle = '#5a4a3a';
+          for (let ci = 0; ci < 2; ci++) ctx.fillRect(screenX + (wh*(ci+3)*17)%56+4, screenY + (wh*(ci+3)*13)%56+4, 4, 3);
           break;
+        }
         case T.CAVE_WALL:
           ctx.fillStyle = '#2a1a0a';
-          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillRect(screenX, screenY, TILE, TILE);
           ctx.fillStyle = '#3a2a1a';
-          ctx.fillRect(screenX + 2, screenY + 2, s-4, s-4);
-          // Cracks
-          ctx.strokeStyle = '#1a0a00';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(screenX + 10, screenY + 8);
-          ctx.lineTo(screenX + 30, screenY + 20);
-          ctx.stroke();
+          ctx.fillRect(screenX + 2, screenY + 2, TILE-4, TILE-4);
+          ctx.fillStyle = '#5a5a5a';
+          ctx.fillRect(screenX, screenY, TILE, 8);
+          ctx.fillRect(screenX, screenY, 8, TILE);
+          ctx.fillRect(screenX + TILE - 8, screenY, 8, TILE);
           break;
         case T.CAVE_ENTRANCE:
           ctx.fillStyle = '#4a3a2a';
-          ctx.fillRect(screenX, screenY, s, s);
-          ctx.fillStyle = '#6a5a4a';
-          ctx.fillRect(screenX + 8, screenY, s-16, s);
-          // Light from outside
+          ctx.fillRect(screenX, screenY, TILE, TILE);
           ctx.fillStyle = 'rgba(255, 220, 150, 0.15)';
-          ctx.fillRect(screenX + 4, screenY, s-8, s);
-          break;
-        case T.DARKNESS:
-          ctx.fillStyle = '#0a0a0a';
-          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillRect(screenX + 8, screenY, TILE-16, TILE);
           break;
         default:
-          ctx.fillStyle = '#8b7d5a';
-          ctx.fillRect(screenX, screenY, s, s);
+          ctx.fillStyle = '#4a3a2a';
+          ctx.fillRect(screenX, screenY, TILE, TILE);
       }
-    }
-
-    function drawSprite(sx, sy, color, hairColor, dir, frame, isMoving) {
-      const s = TILE;
-      const bob = isMoving ? Math.sin(frame * 0.3) * 2 : 0;
-
-      // Body
-      ctx.fillStyle = '#8b6914';
-      ctx.fillRect(sx + 18, sy + 30 + bob, 28, 24);
-
-      // Head
-      ctx.fillStyle = color;
-      ctx.beginPath();
-      ctx.arc(sx + s/2, sy + 20 + bob, 14, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Hair
-      ctx.fillStyle = hairColor;
-      ctx.beginPath();
-      ctx.arc(sx + s/2, sy + 14 + bob, 14, Math.PI, Math.PI * 2);
-      ctx.fill();
-
-      // Eyes
-      ctx.fillStyle = '#fff';
-      const eyeOff = dir === 'left' ? -3 : dir === 'right' ? 3 : 0;
-      ctx.fillRect(sx + 26 + eyeOff, sy + 18 + bob, 4, 4);
-      ctx.fillRect(sx + 34 + eyeOff, sy + 18 + bob, 4, 4);
-      ctx.fillStyle = '#1a1a1a';
-      ctx.fillRect(sx + 27 + eyeOff, sy + 19 + bob, 2, 2);
-      ctx.fillRect(sx + 35 + eyeOff, sy + 19 + bob, 2, 2);
-
-      // Legs
-      ctx.fillStyle = color;
-      const legOff = isMoving ? Math.sin(frame * 0.4) * 4 : 0;
-      ctx.fillRect(sx + 22, sy + 54 + bob - legOff, 8, 8);
-      ctx.fillRect(sx + 34, sy + 54 + bob + legOff, 8, 8);
-    }
-
-    function drawPlayerGlow(sx, sy) {
-      const gradient = ctx.createRadialGradient(sx + TILE/2, sy + 32, 0, sx + TILE/2, sy + 32, TILE * 1.5);
-      gradient.addColorStop(0, 'rgba(255, 220, 150, 0.12)');
-      gradient.addColorStop(1, 'rgba(255, 220, 150, 0)');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(sx - TILE, sy - TILE, TILE * 3, TILE * 3);
     }
 
     // ── LEVEL RENDERING ─────────────────────────────────────────
@@ -787,6 +874,11 @@
 
       const chapter = CHAPTERS[currentChapter];
       const isDark = chapter && chapter.levelType === 'dark_cave';
+      const isCave = chapter && (chapter.levelType === 'cave_interior' || chapter.levelType === 'dark_cave');
+
+      // Sky / background color matching main game
+      ctx.fillStyle = isCave ? '#1a0a00' : '#5a4a3a';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       // Draw tiles
       for (let vy = 0; vy < vpH; vy++) {
@@ -800,27 +892,56 @@
         }
       }
 
-      // Draw NPCs
+      // Collect entities for Y-sorting (NPCs + player)
+      const sortedEntities = [];
+
+      // NPCs
       if (chapter) {
         chapter.npcs.forEach(npc => {
           const sx = (npc.x - cameraX) * TILE;
           const sy = (npc.y - cameraY) * TILE;
-          if (sx > -TILE && sx < canvas.width + TILE && sy > -TILE && sy < canvas.height + TILE) {
-            drawSprite(sx, sy, npc.color, npc.hairColor, 'down', 0, false);
-            // Name tag
-            ctx.fillStyle = '#facc15';
-            ctx.font = 'bold 12px Georgia';
-            ctx.textAlign = 'center';
-            ctx.fillText(npc.name, sx + TILE/2, sy - 4);
+          if (sx > -TILE * 2 && sx < canvas.width + TILE * 2 && sy > -TILE * 2 && sy < canvas.height + TILE * 2) {
+            sortedEntities.push({ type: 'npc', npc, screenX: sx, screenY: sy, mapY: npc.y });
           }
         });
       }
 
-      // Draw player
+      // Player
       const px = (player.x - cameraX) * TILE;
       const py = (player.y - cameraY) * TILE;
-      drawPlayerGlow(px, py);
-      drawSprite(px, py, SKIN, '#1a1a1a', player.dir, player.frame, player.moving);
+      sortedEntities.push({ type: 'player', screenX: px, screenY: py, mapY: player.y });
+
+      // Sort by Y for proper overlap
+      sortedEntities.sort((a, b) => a.mapY - b.mapY);
+
+      // Draw sorted entities
+      sortedEntities.forEach(ent => {
+        if (ent.type === 'npc') {
+          const npc = ent.npc;
+          ctx.save(); ctx.translate(ent.screenX, ent.screenY); ctx.scale(SCALE, SCALE);
+          drawCharacterSprite(ctx, 0, 0, {
+            walkFrame: 0, isMoving: false, direction: 'down',
+            hairColor: npc.hairColor, bodyColor: npc.isEve ? '#8b2252' : '#8b6914',
+            skinColor: npc.color, isEve: !!npc.isEve,
+            showClothes: true, gameTime,
+          });
+          ctx.restore();
+          // Name tag
+          ctx.fillStyle = '#facc15';
+          ctx.font = 'bold 12px Georgia';
+          ctx.textAlign = 'center';
+          ctx.fillText(npc.name, ent.screenX + TILE/2, ent.screenY - 4);
+          ctx.textAlign = 'left';
+        } else {
+          ctx.save(); ctx.translate(ent.screenX, ent.screenY); ctx.scale(SCALE, SCALE);
+          drawCharacterSprite(ctx, 0, 0, {
+            walkFrame: player.frame, isMoving: player.moving, direction: player.dir,
+            hairColor: '#1a1a1a', bodyColor: '#4169e1', skinColor: SKIN_COLOR,
+            gameTime,
+          });
+          ctx.restore();
+        }
+      });
 
       // Dark cave: darkness vignette around player
       if (isDark) {
@@ -842,6 +963,7 @@
       const dt = timestamp - lastTime;
       lastTime = timestamp;
       moveTimer += dt;
+      gameTime++;
 
       // Movement
       if (!dialogueActive && moveTimer > 100) {
