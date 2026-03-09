@@ -645,11 +645,17 @@
       for (let x = RIVER_BRIDGE_POS.x + RIVER_WIDTH + 1; x < Math.min(CAVE_OF_TREASURES_POS.x - 3, WASTELAND_MAP_WIDTH); x++) {
         if (map[RIVER_BRIDGE_POS.y]) map[RIVER_BRIDGE_POS.y][x] = TILES.PATH;
       }
+      // Place guaranteed seed trees near the planting area (accessible, not in borders)
+      const seedTrees = [
+        {x: 15, y: 20}, {x: 28, y: 22}, {x: 16, y: 30},
+        {x: 30, y: 26}, {x: 12, y: 35}, {x: 27, y: 35},
+      ];
+      seedTrees.forEach(s => { if (map[s.y] && map[s.y][s.x] !== undefined) map[s.y][s.x] = TILES.TREE; });
       // Place tilled soil patches near Adam for planting activity
       const tilledSpots = [
         {x: 20, y: 22}, {x: 22, y: 24}, {x: 18, y: 26},
         {x: 24, y: 20}, {x: 21, y: 32}, {x: 19, y: 34},
-        {x: 23, y: 30}, {x: 25, y: 34},
+        {x: 23, y: 33}, {x: 25, y: 36},
       ];
       tilledSpots.forEach(s => { if (map[s.y] && map[s.y][s.x] !== undefined) map[s.y][s.x] = TILES.TILLED_SOIL; });
       // Ensure the gate path tile exists
@@ -1249,84 +1255,7 @@
             const px = Math.floor(player.x), py = Math.floor(player.y);
             const activeMap = wastelandMap;
 
-            // Seed collection: interact near trees in wasteland
-            if (adamQuestGiven && seedsCollected < SEEDS_NEEDED) {
-              // Check tiles around player for trees
-              let nearTree = false;
-              for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                  const tx = px + dx, ty = py + dy;
-                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
-                    if (activeMap[ty][tx] === TILES.TREE) nearTree = true;
-                  }
-                }
-              }
-              if (nearTree && !nearbyNpc) {
-                setSeedsCollected(prev => {
-                  const next = Math.min(prev + 1, SEEDS_NEEDED);
-                  setSceneText(`You found seeds! (${next}/${SEEDS_NEEDED})`);
-                  setShowSceneText(true);
-                  return next;
-                });
-                return;
-              }
-            }
-
-            // Planting: interact on tilled soil when carrying seeds
-            if (adamQuestGiven && seedsCollected > spotsPlanted && spotsPlanted < SEEDS_NEEDED) {
-              if (activeMap[py] && activeMap[py][px] === TILES.TILLED_SOIL) {
-                // Check not already planted here
-                if (!plantedTiles.find(t => t.x === px && t.y === py)) {
-                  const emoji = spotsPlanted % 2 === 0
-                    ? CROP_EMOJIS[spotsPlanted % CROP_EMOJIS.length]
-                    : TREE_EMOJIS[spotsPlanted % TREE_EMOJIS.length];
-                  activeMap[py][px] = TILES.PLANTED;
-                  setPlantedTiles(prev => [...prev, { x: px, y: py, emoji }]);
-                  setSpotsPlanted(prev => {
-                    const next = prev + 1;
-                    if (next >= SEEDS_NEEDED) {
-                      setSceneText("The garden is planted! A'dam is pleased. Life springs forth from the cursed ground by the sweat of your labor.");
-                      setShowSceneText(true);
-                      // Check if both quests done
-                      if (waterDelivered >= WATER_TRIPS_NEEDED) {
-                        setTimeout(() => {
-                          setGamePhase(PHASES.COMPLETE);
-                          setSceneText("You have helped A'dam plant a garden and gathered water for Chavvah. Thus begins the toil of mankind outside Eden...");
-                          setShowSceneText(true);
-                        }, 2000);
-                      }
-                    } else {
-                      setSceneText(`Planted! 🌱 (${next}/${SEEDS_NEEDED}) — Find more tilled soil to plant.`);
-                      setShowSceneText(true);
-                    }
-                    return next;
-                  });
-                  return;
-                }
-              }
-            }
-
-            // Water gathering: interact near water/sea
-            if (chavvahQuestGiven && !hasWater && waterDelivered < WATER_TRIPS_NEEDED) {
-              let nearWater = false;
-              for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                  const tx = px + dx, ty = py + dy;
-                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
-                    if (activeMap[ty][tx] === TILES.WATER || activeMap[ty][tx] === TILES.SEA) nearWater = true;
-                  }
-                }
-              }
-              if (nearWater && !nearbyNpc) {
-                setHasWater(true);
-                setWaterCollected(prev => prev + 1);
-                setSceneText("You collected water! 💧 Return to Chavvah to deliver it.");
-                setShowSceneText(true);
-                return;
-              }
-            }
-
-            // Water delivery: interact with Chavvah while carrying water
+            // Water delivery: interact with Chavvah while carrying water (highest priority)
             if (chavvahQuestGiven && hasWater && nearbyNpc && nearbyNpc.id === 'chavvah') {
               setHasWater(false);
               setWaterDelivered(prev => {
@@ -1334,7 +1263,6 @@
                 if (next >= WATER_TRIPS_NEEDED) {
                   setSceneText("Chavvah has enough water now! She thanks you for your help. 💧");
                   setShowSceneText(true);
-                  // Check if both quests done
                   if (spotsPlanted >= SEEDS_NEEDED) {
                     setTimeout(() => {
                       setGamePhase(PHASES.COMPLETE);
@@ -1349,6 +1277,90 @@
                 return next;
               });
               return;
+            }
+
+            // Planting: standing on tilled soil with seeds (priority over seed collection)
+            if (adamQuestGiven && seedsCollected > spotsPlanted && spotsPlanted < SEEDS_NEEDED) {
+              // Check tile the player is standing on AND adjacent tiles
+              let plantX = -1, plantY = -1;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tx = px + dx, ty = py + dy;
+                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
+                    if (activeMap[ty][tx] === TILES.TILLED_SOIL && !plantedTiles.find(t => t.x === tx && t.y === ty)) {
+                      plantX = tx; plantY = ty;
+                    }
+                  }
+                }
+              }
+              if (plantX >= 0) {
+                const emoji = spotsPlanted % 2 === 0
+                  ? CROP_EMOJIS[spotsPlanted % CROP_EMOJIS.length]
+                  : TREE_EMOJIS[spotsPlanted % TREE_EMOJIS.length];
+                activeMap[plantY][plantX] = TILES.PLANTED;
+                setPlantedTiles(prev => [...prev, { x: plantX, y: plantY, emoji }]);
+                setSpotsPlanted(prev => {
+                  const next = prev + 1;
+                  if (next >= SEEDS_NEEDED) {
+                    setSceneText("The garden is planted! A'dam is pleased. Life springs forth from the cursed ground by the sweat of your labor.");
+                    setShowSceneText(true);
+                    if (waterDelivered >= WATER_TRIPS_NEEDED) {
+                      setTimeout(() => {
+                        setGamePhase(PHASES.COMPLETE);
+                        setSceneText("You have helped A'dam plant a garden and gathered water for Chavvah. Thus begins the toil of mankind outside Eden...");
+                        setShowSceneText(true);
+                      }, 2000);
+                    }
+                  } else {
+                    setSceneText(`Planted! 🌱 (${next}/${SEEDS_NEEDED}) — Find more tilled soil to plant.`);
+                    setShowSceneText(true);
+                  }
+                  return next;
+                });
+                return;
+              }
+            }
+
+            // Seed collection: interact near trees in wasteland
+            if (adamQuestGiven && seedsCollected < SEEDS_NEEDED) {
+              let nearTree = false;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tx = px + dx, ty = py + dy;
+                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
+                    if (activeMap[ty][tx] === TILES.TREE) nearTree = true;
+                  }
+                }
+              }
+              if (nearTree) {
+                setSeedsCollected(prev => {
+                  const next = Math.min(prev + 1, SEEDS_NEEDED);
+                  setSceneText(`You found seeds! 🌱 (${next}/${SEEDS_NEEDED}) — Now find tilled soil to plant them.`);
+                  setShowSceneText(true);
+                  return next;
+                });
+                return;
+              }
+            }
+
+            // Water gathering: interact near water/sea
+            if (chavvahQuestGiven && !hasWater && waterDelivered < WATER_TRIPS_NEEDED) {
+              let nearWater = false;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tx = px + dx, ty = py + dy;
+                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
+                    if (activeMap[ty][tx] === TILES.WATER || activeMap[ty][tx] === TILES.SEA) nearWater = true;
+                  }
+                }
+              }
+              if (nearWater) {
+                setHasWater(true);
+                setWaterCollected(prev => prev + 1);
+                setSceneText("You collected water! 💧 Return to Chavvah to deliver it.");
+                setShowSceneText(true);
+                return;
+              }
             }
           }
 
