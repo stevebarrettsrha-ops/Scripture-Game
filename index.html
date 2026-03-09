@@ -407,6 +407,16 @@
     });
 
     const GARDEN_BOUNDS = { minX: 10, maxX: 70, minY: 10, maxY: 48 };
+
+    // ── Wasteland level constants ───────────────────────────────────
+    const WASTELAND_MAP_WIDTH = 40;
+    const WASTELAND_MAP_HEIGHT = 30;
+    const WASTELAND_GATE_POS = { x: 3, y: 14 };  // Gate on west side
+    const WASTELAND_MALAK_POS = { x: 5, y: 14 };  // Malak guards near gate
+    const WASTELAND_ADAM_POS = { x: 15, y: 16 };
+    const WASTELAND_CHAVVAH_POS = { x: 15, y: 19 };
+    const WASTELAND_PLAYER_START = { x: 12, y: 14 };
+    const GATE_GUARD_DISTANCE = 3.5;  // How close before Malak appears with sword
     const TREE_OF_KNOWLEDGE = { x: 20, y: 22 };
     const TREE_OF_LIFE_POS = { x: 56, y: 20 };
     const MALAK_GATE_POS = { x: 61, y: 26 };
@@ -490,6 +500,73 @@
           if (map[TOK.y + dy] && map[TOK.y + dy][TOK.x + dx] !== undefined && map[TOK.y + dy][TOK.x + dx] !== TILES.TREE_OF_KNOWLEDGE) map[TOK.y + dy][TOK.x + dx] = TILES.GRASS;
         }
       }
+      return map;
+    };
+
+    // ── Generate the separate Wasteland level map ─────────────────
+    const generateWastelandMap = () => {
+      const rng = seededRandom(54321);
+      const map = [];
+      const GATE = WASTELAND_GATE_POS;
+      for (let y = 0; y < WASTELAND_MAP_HEIGHT; y++) {
+        const row = [];
+        for (let x = 0; x < WASTELAND_MAP_WIDTH; x++) {
+          // Dense tree border around edges
+          if (y < 3 || y > WASTELAND_MAP_HEIGHT - 4 || x > WASTELAND_MAP_WIDTH - 4) {
+            row.push(rng() > 0.2 ? TILES.TREE : TILES.WASTELAND);
+          }
+          // Left edge: garden peek (columns 0-2) with trees and grass behind the gate
+          else if (x < GATE.x) {
+            if (y >= GATE.y - 2 && y <= GATE.y + 2) {
+              // Visible garden grass behind the gate
+              row.push(TILES.GRASS);
+            } else {
+              row.push(TILES.TREE);
+            }
+          }
+          // Gate column
+          else if (x === GATE.x && y === GATE.y) {
+            row.push(TILES.GOLDEN_GATE);
+          }
+          // Tree walls flanking the gate (thick barrier)
+          else if (x >= GATE.x - 1 && x <= GATE.x + 1 && y !== GATE.y) {
+            if (Math.abs(y - GATE.y) <= 6) {
+              row.push(TILES.TREE);
+            } else {
+              row.push(TILES.WASTELAND);
+            }
+          }
+          // Path leading away from gate
+          else if (y === GATE.y && x > GATE.x && x <= GATE.x + 3) {
+            row.push(TILES.PATH);
+          }
+          // Main wasteland area
+          else {
+            const rand = rng();
+            if (rand < 0.02) row.push(TILES.ROCK);
+            else if (rand < 0.04) row.push(TILES.BUSH);
+            else row.push(TILES.WASTELAND);
+          }
+        }
+        map.push(row);
+      }
+      // Ensure tree walls flanking the gate are solid
+      for (let dx = -1; dx <= 1; dx++) {
+        const nx = GATE.x + dx;
+        for (let wallDy = 1; wallDy <= 5; wallDy++) {
+          if (map[GATE.y - wallDy] && nx >= 0) map[GATE.y - wallDy][nx] = TILES.TREE;
+          if (map[GATE.y + wallDy] && nx >= 0) map[GATE.y + wallDy][nx] = TILES.TREE;
+        }
+      }
+      // Add some garden trees visible behind the gate (left side)
+      for (let y = 3; y < WASTELAND_MAP_HEIGHT - 3; y++) {
+        for (let x = 0; x < GATE.x; x++) {
+          if (y >= GATE.y - 2 && y <= GATE.y + 2) continue; // keep garden peek clear
+          if (map[y]) map[y][x] = TILES.TREE;
+        }
+      }
+      // Ensure the gate path tile exists
+      map[GATE.y][GATE.x] = TILES.GOLDEN_GATE;
       return map;
     };
 
@@ -577,6 +654,16 @@
       "In sorrow shall I bring forth children.",
       "Yet YAHUAH spoke of my seed bruising the serpent's head.",
       "There is hope in the promise of YAHUAH.",
+    ];
+
+    // ── Malak dialogue: Wasteland gate guard (flaming sword) ────────
+    const MALAK_WASTELAND_DIALOGUE = [
+      "HALT! You may not approach the Sha'ar Zahav!",
+      "YAHUAH ELOHIYM has placed KERUVIYM at the east of the garden.",
+      "I bear the flaming sword which turns every way.",
+      "None shall pass to the Ets Chayim — the Tree of Life.",
+      "Turn back. The way to the garden is guarded.",
+      "Go forth and till the ground from whence you were taken.",
     ];
 
     // ── Chapter 3 continuation cutscene slides (Bere'shiyth 3:8-24) ─
@@ -741,6 +828,8 @@
     const GenesisGame = () => {
       const canvasRef = useRef(null);
       const [map] = useState(generateMap);
+      const [wastelandMap] = useState(generateWastelandMap);
+      const [malakGuarding, setMalakGuarding] = useState(false);
       const [player, setPlayer] = useState({ x: 35, y: 30, prevX: 35, prevY: 30, direction: 'down', walkFrame: 0, isMoving: false });
       const [npcs, setNpcs] = useState(createNPCs);
       const [camera, setCamera] = useState({ x: 0, y: 0 });
@@ -767,8 +856,16 @@
       const npcsRef = useRef(null);
       const playerRef = useRef(null);
 
+      const malakGuardingRef = useRef(false);
+
+      // Helper: get active map and dimensions based on current phase
+      const isWastelandPhase = useCallback((phase) => phase === PHASES.WASTELAND_EXPLORE || phase === PHASES.COMPLETE, []);
+      const getActiveMap = useCallback((phase) => isWastelandPhase(phase) ? wastelandMap : map, [map, wastelandMap, isWastelandPhase]);
+      const getMapDims = useCallback((phase) => isWastelandPhase(phase) ? { w: WASTELAND_MAP_WIDTH, h: WASTELAND_MAP_HEIGHT } : { w: MAP_WIDTH, h: MAP_HEIGHT }, [isWastelandPhase]);
+
       // Keep refs in sync with state for the game loop
       useEffect(() => { touchDirRef.current = touchDirection; }, [touchDirection]);
+      useEffect(() => { malakGuardingRef.current = malakGuarding; }, [malakGuarding]);
       useEffect(() => { showDialogueRef.current = showDialogue; }, [showDialogue]);
       useEffect(() => { gamePhaseRef.current = gamePhase; }, [gamePhase]);
       useEffect(() => { npcsRef.current = npcs; }, [npcs]);
@@ -795,6 +892,7 @@
             hasFigLeaves: npc.hasFigLeaves, holdingFruit: npc.holdingFruit,
             behavior: npc.behavior, dialogue: npc.dialogue, thoughts: npc.thoughts,
             currentDialogue: npc.currentDialogue, currentThought: npc.currentThought,
+            homeX: npc.homeX, homeY: npc.homeY,
           })),
         };
         try {
@@ -817,7 +915,7 @@
           setNpcs(prev => prev.map(npc => {
             const saved = save.npcs?.find(s => s.id === npc.id);
             if (!saved) return npc;
-            return { ...npc, x: saved.x, y: saved.y, prevX: saved.x, prevY: saved.y, direction: saved.direction, hasSpoken: saved.hasSpoken, hasGlory: saved.hasGlory, hasClothes: saved.hasClothes, hasFigLeaves: saved.hasFigLeaves || false, holdingFruit: saved.holdingFruit || false, behavior: saved.behavior || npc.behavior, dialogue: saved.dialogue || npc.dialogue, thoughts: saved.thoughts || npc.thoughts, currentDialogue: saved.currentDialogue || 0, currentThought: saved.currentThought || 0, isMoving: false, walkFrame: 0, targetX: null, targetY: null };
+            return { ...npc, x: saved.x, y: saved.y, prevX: saved.x, prevY: saved.y, direction: saved.direction, hasSpoken: saved.hasSpoken, hasGlory: saved.hasGlory, hasClothes: saved.hasClothes, hasFigLeaves: saved.hasFigLeaves || false, holdingFruit: saved.holdingFruit || false, behavior: saved.behavior || npc.behavior, dialogue: saved.dialogue || npc.dialogue, thoughts: saved.thoughts || npc.thoughts, currentDialogue: saved.currentDialogue || 0, currentThought: saved.currentThought || 0, homeX: saved.homeX ?? npc.homeX, homeY: saved.homeY ?? npc.homeY, isMoving: false, walkFrame: 0, targetX: null, targetY: null };
           }));
           setGamePhase(save.gamePhase);
           setShowSceneText(false);
@@ -880,15 +978,32 @@
       }, [npcs]);
 
       // Tiles that characters can walk over (ground-level decorations don't block)
-      const isWalkable = useCallback((tile) => tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND || (tile === TILES.GOLDEN_GATE && gateOpen), [gateOpen]);
+      const isWalkable = useCallback((tile, inWasteland) => {
+        if (tile === TILES.GOLDEN_GATE) return !inWasteland && gateOpen;
+        return tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND;
+      }, [gateOpen]);
 
-      const canNPCMoveTo = useCallback((x, y) => {
-        if (x < GARDEN_BOUNDS.minX || x > GARDEN_BOUNDS.maxX || y < GARDEN_BOUNDS.minY || y > GARDEN_BOUNDS.maxY) return false;
-        if (x < 0 || x >= MAP_WIDTH || y < 0 || y >= MAP_HEIGHT) return false;
-        return isWalkable(map[Math.floor(y)][Math.floor(x)]);
-      }, [map, isWalkable]);
+      const canNPCMoveTo = useCallback((x, y, phase) => {
+        const inWasteland = phase === PHASES.WASTELAND_EXPLORE;
+        const activeMap = inWasteland ? wastelandMap : map;
+        const mw = inWasteland ? WASTELAND_MAP_WIDTH : MAP_WIDTH;
+        const mh = inWasteland ? WASTELAND_MAP_HEIGHT : MAP_HEIGHT;
+        if (inWasteland) {
+          // In wasteland, NPCs can't go near the gate
+          if (x < WASTELAND_GATE_POS.x + 3) return false;
+          if (x < 3 || x > mw - 4 || y < 3 || y > mh - 4) return false;
+        } else {
+          if (x < GARDEN_BOUNDS.minX || x > GARDEN_BOUNDS.maxX || y < GARDEN_BOUNDS.minY || y > GARDEN_BOUNDS.maxY) return false;
+        }
+        if (x < 0 || x >= mw || y < 0 || y >= mh) return false;
+        return isWalkable(activeMap[Math.floor(y)]?.[Math.floor(x)], inWasteland);
+      }, [map, wastelandMap, isWalkable]);
 
-      const canMoveTo = useCallback((x, y, currentNpcs) => {
+      const canMoveTo = useCallback((x, y, currentNpcs, phase) => {
+        const inWasteland = phase === PHASES.WASTELAND_EXPLORE;
+        const activeMap = inWasteland ? wastelandMap : map;
+        const mw = inWasteland ? WASTELAND_MAP_WIDTH : MAP_WIDTH;
+        const mh = inWasteland ? WASTELAND_MAP_HEIGHT : MAP_HEIGHT;
         // Player collision box: check all four corners (±0.3 tiles from centre)
         const pad = 0.3;
         const corners = [
@@ -896,8 +1011,8 @@
           [x - pad, y + pad], [x + pad, y + pad],
         ];
         for (const [cx, cy] of corners) {
-          if (cx < 0 || cx >= MAP_WIDTH || cy < 0 || cy >= MAP_HEIGHT) return false;
-          if (!isWalkable(map[Math.floor(cy)][Math.floor(cx)])) return false;
+          if (cx < 0 || cx >= mw || cy < 0 || cy >= mh) return false;
+          if (!isWalkable(activeMap[Math.floor(cy)]?.[Math.floor(cx)], inWasteland)) return false;
         }
         // Block walking through NPCs and their speech bubble area
         if (currentNpcs) {
@@ -906,15 +1021,16 @@
           }
         }
         return true;
-      }, [map, isWalkable]);
+      }, [map, wastelandMap, isWalkable]);
 
       useEffect(() => {
         if (gamePhase === PHASES.CUTSCENE || gamePhase === PHASES.CHAPTER3_CUTSCENE || gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
         const vp = getVP(canvasRef.current || { clientWidth: window.innerWidth, clientHeight: window.innerHeight });
         if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.GATE_OPENS) {
+          const dims = getMapDims(gamePhase);
           setCamera({
-            x: Math.max(0, Math.min(player.x - vp.w / 2, MAP_WIDTH - vp.w)),
-            y: Math.max(0, Math.min(player.y - vp.h / 2, MAP_HEIGHT - vp.h))
+            x: Math.max(0, Math.min(player.x - vp.w / 2, dims.w - vp.w)),
+            y: Math.max(0, Math.min(player.y - vp.h / 2, dims.h - vp.h))
           });
         } else {
           // During scene phases, track midpoint of key characters so everyone stays in view
@@ -927,8 +1043,8 @@
             const trackY = (gamePhase === PHASES.CHAVVAH_WALKS_TO_ADAM || gamePhase === PHASES.ADAM_EATS || gamePhase === PHASES.ADAM_GLORY_FADES) && adam
               ? (chavvah.y + adam.y) / 2 : chavvah.y;
             setCamera(prev => {
-              const targetX = Math.max(0, Math.min(trackX - vp.w / 2, MAP_WIDTH - vp.w));
-              const targetY = Math.max(0, Math.min(trackY - vp.h / 2, MAP_HEIGHT - vp.h));
+              const targetX = Math.max(0, Math.min(trackX - vp.w / 2, getMapDims(gamePhase).w - vp.w));
+              const targetY = Math.max(0, Math.min(trackY - vp.h / 2, getMapDims(gamePhase).h - vp.h));
               const lerp = 0.08;
               return {
                 x: prev.x + (targetX - prev.x) * lerp,
@@ -937,7 +1053,7 @@
             });
           }
         }
-      }, [player, npcs, gamePhase]);
+      }, [player, npcs, gamePhase, getMapDims]);
 
       const advanceDialogue = useCallback(() => {
         if (!showDialogue) return;
@@ -972,7 +1088,10 @@
         if (showDialogue) { advanceDialogue(); return; }
         if (showSceneText) { setShowSceneText(false); return; }
         if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE) {
-          const nearbyNpc = npcs.find(npc => Math.abs(npc.x - player.x) < 1.5 && Math.abs(npc.y - player.y) < 1.5);
+          const visibleNpcs = gamePhase === PHASES.WASTELAND_EXPLORE
+            ? npcs.filter(n => n.id === 'adam' || n.id === 'chavvah' || n.id === 'malak')
+            : npcs;
+          const nearbyNpc = visibleNpcs.find(npc => Math.abs(npc.x - player.x) < 1.5 && Math.abs(npc.y - player.y) < 1.5);
           if (nearbyNpc) setShowDialogue({ ...nearbyNpc, currentDialogue: 0 });
         }
       }, [showDialogue, showSceneText, gamePhase, npcs, player, advanceDialogue]);
@@ -1170,18 +1289,28 @@
               if (right) { newX += speed; newDir = 'right'; }
               let finalX = prev.x, finalY = prev.y;
               const liveNpcs = npcsRef.current;
-              if (canMoveTo(newX, newY, liveNpcs)) { finalX = newX; finalY = newY; }
-              else if (canMoveTo(newX, prev.y, liveNpcs)) { finalX = newX; }
-              else if (canMoveTo(prev.x, newY, liveNpcs)) { finalY = newY; }
+              if (canMoveTo(newX, newY, liveNpcs, phase)) { finalX = newX; finalY = newY; }
+              else if (canMoveTo(newX, prev.y, liveNpcs, phase)) { finalX = newX; }
+              else if (canMoveTo(prev.x, newY, liveNpcs, phase)) { finalY = newY; }
               const isMoving = finalX !== prev.x || finalY !== prev.y;
               const walkFrame = isMoving ? (prev.walkFrame + 0.3) % 4 : 0;
               return { x: finalX, y: finalY, prevX: prev.x, prevY: prev.y, direction: newDir, walkFrame, isMoving };
             });
-            // Check if player crossed through the gate into the wasteland
+            // Check if player crossed through the gate into the wasteland — transition to separate wasteland level
             if (phase === PHASES.EXPULSION_WALK) {
               setPlayer(prev => {
                 if (prev.x >= 66) {
                   setGamePhase(PHASES.WASTELAND_EXPLORE);
+                  // Teleport player to wasteland map
+                  setPlayer(p => ({ ...p, x: WASTELAND_PLAYER_START.x, y: WASTELAND_PLAYER_START.y, prevX: WASTELAND_PLAYER_START.x, prevY: WASTELAND_PLAYER_START.y, direction: 'right', isMoving: false }));
+                  // Position NPCs in wasteland and add Malak as gate guard
+                  setNpcs(prev => prev.map(npc => {
+                    if (npc.id === 'adam') return { ...npc, x: WASTELAND_ADAM_POS.x, y: WASTELAND_ADAM_POS.y, prevX: WASTELAND_ADAM_POS.x, prevY: WASTELAND_ADAM_POS.y, direction: 'down', behavior: 'wander', homeX: WASTELAND_ADAM_POS.x, homeY: WASTELAND_ADAM_POS.y, targetX: null, targetY: null, isMoving: false, hasSpoken: false };
+                    if (npc.id === 'chavvah') return { ...npc, x: WASTELAND_CHAVVAH_POS.x, y: WASTELAND_CHAVVAH_POS.y, prevX: WASTELAND_CHAVVAH_POS.x, prevY: WASTELAND_CHAVVAH_POS.y, direction: 'down', behavior: 'wander', homeX: WASTELAND_CHAVVAH_POS.x, homeY: WASTELAND_CHAVVAH_POS.y, targetX: null, targetY: null, isMoving: false, hasSpoken: false };
+                    if (npc.id === 'malak') return { ...npc, x: WASTELAND_MALAK_POS.x, y: WASTELAND_MALAK_POS.y, prevX: WASTELAND_MALAK_POS.x, prevY: WASTELAND_MALAK_POS.y, direction: 'left', behavior: 'patrol', patrolPoints: [{x: WASTELAND_MALAK_POS.x, y: WASTELAND_MALAK_POS.y}, {x: WASTELAND_MALAK_POS.x, y: WASTELAND_MALAK_POS.y - 1}, {x: WASTELAND_MALAK_POS.x, y: WASTELAND_MALAK_POS.y + 1}], patrolIndex: 0, isMoving: false, targetX: null, targetY: null, dialogue: MALAK_WASTELAND_DIALOGUE, currentDialogue: 0, hasSpoken: false, thoughts: ["The flaming sword turns every way...", "None shall pass to the Ets Chayim...", "I guard the way of the Tree of Life."], currentThought: 0 };
+                    return npc;
+                  }));
+                  setMalakGuarding(false);
                   setSceneText("The barren land outside Eden... Speak to A'dam and Chavvah.");
                   setShowSceneText(true);
                 }
@@ -1241,13 +1370,13 @@
                 newNpc.targetX = TREE_OF_KNOWLEDGE.x + Math.cos(newNpc.circleAngle) * radius;
                 newNpc.targetY = TREE_OF_KNOWLEDGE.y + Math.sin(newNpc.circleAngle) * radius;
               }
-              if (npc.behavior === 'wander' && phase === PHASES.EXPLORE && newNpc.moveTimer > 90) {
+              if (npc.behavior === 'wander' && (phase === PHASES.EXPLORE || phase === PHASES.WASTELAND_EXPLORE) && newNpc.moveTimer > 90) {
                 if (!npc.targetX || (Math.abs(npc.x - npc.targetX) < 0.5 && Math.abs(npc.y - npc.targetY) < 0.5)) {
                   let attempts = 0, validTarget = false;
                   while (!validTarget && attempts < 10) {
                     const newTargetX = npc.homeX + (Math.random() - 0.5) * 8;
                     const newTargetY = npc.homeY + (Math.random() - 0.5) * 6;
-                    if (canNPCMoveTo(newTargetX, newTargetY)) { newNpc.targetX = newTargetX; newNpc.targetY = newTargetY; validTarget = true; }
+                    if (canNPCMoveTo(newTargetX, newTargetY, phase)) { newNpc.targetX = newTargetX; newNpc.targetY = newTargetY; validTarget = true; }
                     attempts++;
                   }
                   if (!validTarget) { newNpc.targetX = npc.homeX; newNpc.targetY = npc.homeY; }
@@ -1281,7 +1410,36 @@
                   newNpc.direction = 'left';
                 }
               }
-              if (npc.behavior === 'patrol' && npc.patrolPoints && !(npc.isAngel && phase === PHASES.EXPLORE)) {
+              // Wasteland: Malak guards the gate with flaming sword — appears when player approaches
+              if (npc.isAngel && phase === PHASES.WASTELAND_EXPLORE && playerRef.current) {
+                const pl = playerRef.current;
+                const distToGate = Math.sqrt(Math.pow(pl.x - WASTELAND_GATE_POS.x, 2) + Math.pow(pl.y - WASTELAND_GATE_POS.y, 2));
+                if (distToGate < GATE_GUARD_DISTANCE) {
+                  // Player approaching gate — Malak blocks the way
+                  const guardX = WASTELAND_GATE_POS.x + 2;
+                  const guardY = WASTELAND_GATE_POS.y;
+                  newNpc.x = guardX; newNpc.y = guardY;
+                  newNpc.prevX = guardX; newNpc.prevY = guardY;
+                  newNpc.targetX = null; newNpc.targetY = null;
+                  newNpc.isMoving = false; newNpc.walkFrame = 0;
+                  newNpc.direction = 'right'; // face the approaching player
+                  newNpc.dialogue = MALAK_WASTELAND_DIALOGUE;
+                  if (!malakGuardingRef.current) {
+                    setMalakGuarding(true);
+                    setSceneText("A Malak of YAHUAH appears with a flaming sword!");
+                    setShowSceneText(true);
+                  }
+                } else {
+                  // Player moved away — Malak returns to patrol position
+                  if (malakGuardingRef.current) {
+                    setMalakGuarding(false);
+                  }
+                  newNpc.x = WASTELAND_MALAK_POS.x; newNpc.y = WASTELAND_MALAK_POS.y;
+                  newNpc.prevX = WASTELAND_MALAK_POS.x; newNpc.prevY = WASTELAND_MALAK_POS.y;
+                  newNpc.direction = 'left';
+                }
+              }
+              if (npc.behavior === 'patrol' && npc.patrolPoints && !(npc.isAngel && phase === PHASES.EXPLORE) && !(npc.isAngel && phase === PHASES.WASTELAND_EXPLORE)) {
                 const target = npc.patrolPoints[npc.patrolIndex];
                 if (Math.abs(npc.x - target.x) < 0.3 && Math.abs(npc.y - target.y) < 0.3) newNpc.patrolIndex = (npc.patrolIndex + 1) % npc.patrolPoints.length;
                 newNpc.targetX = npc.patrolPoints[newNpc.patrolIndex].x;
@@ -1294,7 +1452,7 @@
                 if (dist > 0.1) {
                   const speed = (npc.id === 'chavvah' && phase !== PHASES.EXPLORE) ? 0.04 : 0.03;
                   const moveX = npc.x + (dx / dist) * speed, moveY = npc.y + (dy / dist) * speed;
-                  if (canNPCMoveTo(moveX, moveY) || npc.behavior === 'scene' || npc.behavior === 'circle_tree') {
+                  if (canNPCMoveTo(moveX, moveY, phase) || npc.behavior === 'scene' || npc.behavior === 'circle_tree') {
                     newNpc.x = moveX; newNpc.y = moveY; newNpc.isMoving = true; newNpc.walkFrame = (npc.walkFrame + 0.25) % 4;
                     newNpc.direction = Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up');
                   } else { newNpc.targetX = npc.homeX || npc.x; newNpc.targetY = npc.homeY || npc.y; newNpc.isMoving = false; newNpc.walkFrame = 0; }
@@ -2844,7 +3002,14 @@
           return;
         }
 
-        ctx.fillStyle = COLORS.sky;
+        // Use wasteland map when in wasteland phase
+        const activeMap = getActiveMap(gamePhase);
+        const mapDims = getMapDims(gamePhase);
+        const ACTIVE_MAP_WIDTH = mapDims.w;
+        const ACTIVE_MAP_HEIGHT = mapDims.h;
+
+        // Sky color: darker/murkier in wasteland
+        ctx.fillStyle = gamePhase === PHASES.WASTELAND_EXPLORE ? '#5a4a3a' : COLORS.sky;
         ctx.fillRect(0, 0, W, H);
 
         // ── PASS 1: Ground layer (flat tiles) ─────────────────────────────
@@ -2852,8 +3017,8 @@
         for (let y = 0; y < vp.h + 1; y++) {
           for (let x = 0; x < vp.w + 1; x++) {
             const mapX = Math.floor(camera.x) + x, mapY = Math.floor(camera.y) + y;
-            if (mapX >= 0 && mapX < MAP_WIDTH && mapY >= 0 && mapY < MAP_HEIGHT) {
-              const tile = map[mapY][mapX];
+            if (mapX >= 0 && mapX < ACTIVE_MAP_WIDTH && mapY >= 0 && mapY < ACTIVE_MAP_HEIGHT) {
+              const tile = activeMap[mapY][mapX];
               const screenX = (x - (camera.x % 1)) * TILE_SIZE, screenY = (y - (camera.y % 1)) * TILE_SIZE;
 
               // ── Natural grass base ─────────────────
@@ -2954,7 +3119,8 @@
         tallObjects.forEach(obj => sortedEntities.push({ type: 'tall', ...obj }));
         npcs.forEach(npc => {
           // During wasteland/expulsion phases, only show Adam and Chavvah
-          if ((gamePhase === PHASES.GATE_OPENS || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE) && npc.id !== 'adam' && npc.id !== 'chavvah') return;
+          if ((gamePhase === PHASES.GATE_OPENS || gamePhase === PHASES.EXPULSION_WALK) && npc.id !== 'adam' && npc.id !== 'chavvah') return;
+          if (gamePhase === PHASES.WASTELAND_EXPLORE && npc.id !== 'adam' && npc.id !== 'chavvah' && npc.id !== 'malak') return;
           const sx = (npc.x - camera.x) * TILE_SIZE, sy = (npc.y - camera.y) * TILE_SIZE;
           if (sx > -TILE_SIZE * 2 && sx < canvas.width + TILE_SIZE * 2 && sy > -TILE_SIZE * 2 && sy < canvas.height + TILE_SIZE * 2) {
             sortedEntities.push({ type: 'npc', npc, screenX: sx, screenY: sy, mapY: npc.y });
@@ -3183,6 +3349,48 @@
                   isEve: false, showClothes: false, gameTime,
                 });
               }
+              // Draw flaming sword in wasteland phase
+              if (gamePhase === PHASES.WASTELAND_EXPLORE) {
+                const swordFlicker = Math.sin(gameTime * 0.15) * 2;
+                const swordGlow = 0.5 + 0.5 * Math.sin(gameTime * 0.1);
+                // Sword blade
+                ctx.save();
+                ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 10 + swordGlow * 8;
+                // Sword position based on direction
+                const swordX = dir === 'left' ? -2 : dir === 'right' ? 28 : 24;
+                const swordBaseY = 8;
+                // Blade
+                const bladeGrad = ctx.createLinearGradient(swordX, swordBaseY - 16, swordX, swordBaseY);
+                bladeGrad.addColorStop(0, '#fff8dc');
+                bladeGrad.addColorStop(0.3, '#ffd700');
+                bladeGrad.addColorStop(0.7, '#ff8c00');
+                bladeGrad.addColorStop(1, '#cc4400');
+                ctx.fillStyle = bladeGrad;
+                ctx.fillRect(swordX, swordBaseY - 16 + swordFlicker, 3, 16);
+                // Blade tip
+                ctx.beginPath();
+                ctx.moveTo(swordX, swordBaseY - 16 + swordFlicker);
+                ctx.lineTo(swordX + 1.5, swordBaseY - 20 + swordFlicker);
+                ctx.lineTo(swordX + 3, swordBaseY - 16 + swordFlicker);
+                ctx.fill();
+                // Flame effect
+                ctx.fillStyle = `rgba(255, 100, 0, ${0.4 + swordGlow * 0.3})`;
+                ctx.beginPath();
+                ctx.ellipse(swordX + 1.5, swordBaseY - 10 + swordFlicker, 4, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = `rgba(255, 200, 0, ${0.3 + swordGlow * 0.2})`;
+                ctx.beginPath();
+                ctx.ellipse(swordX + 1.5, swordBaseY - 14 + swordFlicker, 3, 5, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Guard/hilt
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = '#8b6914';
+                ctx.fillRect(swordX - 2, swordBaseY, 7, 2);
+                // Handle
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(swordX, swordBaseY + 2, 3, 5);
+                ctx.restore();
+              }
               // (no halo)
             } else {
               const showClothes = npc.hasClothes || (npc.clothesBlink > 0 && Math.floor(npc.clothesBlink * 3) % 2 === 0);
@@ -3235,7 +3443,7 @@
           const margin = 40;
           npcs.forEach(npc => {
             if (npc.id === 'malak' || npc.id === 'nachash') return;
-            if (gamePhase === PHASES.WASTELAND_EXPLORE && npc.id !== 'adam' && npc.id !== 'chavvah') return;
+            if (gamePhase === PHASES.WASTELAND_EXPLORE && npc.id !== 'adam' && npc.id !== 'chavvah' && npc.id !== 'malak') return;
             if (npc.hasSpoken) return;       // already spoken to
             const sx = (npc.x - camera.x) * TILE_SIZE;
             const sy = (npc.y - camera.y) * TILE_SIZE;
@@ -3268,13 +3476,13 @@
           });
         }
 
-      }, [map, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide, chapter3Slide, gateOpen]);
+      }, [map, wastelandMap, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide, chapter3Slide, gateOpen, getActiveMap, getMapDims]);
 
       const spokenCount = npcs.filter(n => ['adam', 'chavvah', 'nachash'].includes(n.id) && n.hasSpoken).length;
 
       return (
         <div className="game-container">
-          {gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && <h1 className="title">BERE'SHIYTH: In The Beginning</h1>}
+          {gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && <h1 className="title">{gamePhase === PHASES.WASTELAND_EXPLORE ? "BERE'SHIYTH: The Wasteland" : "BERE'SHIYTH: In The Beginning"}</h1>}
           <canvas ref={canvasRef} />
 
           {gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && !showPauseMenu && (
@@ -3314,6 +3522,7 @@
                 setCutsceneSlide(0);
                 setChapter3Slide(0);
                 setGateOpen(false);
+                setMalakGuarding(false);
               }}>New Game</button>
               <button className="menu-btn" disabled={!hasSaveData()} onClick={() => { if (loadGame()) { /* loaded */ } }}>
                 Continue
