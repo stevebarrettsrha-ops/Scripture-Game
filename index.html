@@ -1134,7 +1134,7 @@
           case PHASES.CHAVVAH_EATS:
             setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, isEating: true } : npc));
             setTimeout(() => {
-              setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, isEating: false } : npc));
+              setNpcs(prev => prev.map(npc => npc.id === 'chavvah' ? { ...npc, isEating: false, holdingFruit: false } : npc));
               setGamePhase(PHASES.CHAVVAH_GLORY_FADES);
               setSceneText("...and did eat...");
               setShowSceneText(true);
@@ -1149,9 +1149,9 @@
             setShowSceneText(true);
             break;
           case PHASES.ADAM_EATS:
-            setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, holdingFruit: true, isEating: true } : npc));
+            setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, holdingFruit: true, isEating: true, direction: 'left' } : npc));
             setTimeout(() => {
-              setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, isEating: false } : npc));
+              setNpcs(prev => prev.map(npc => npc.id === 'adam' ? { ...npc, isEating: false, holdingFruit: false } : npc));
               setGamePhase(PHASES.ADAM_GLORY_FADES);
               setSceneText("...and he did eat.");
               setShowSceneText(true);
@@ -1658,8 +1658,12 @@
           }
         }
 
-        // Eating indicator
-        if (isEating) { r(-2, 11, 4, 2, '#8b0000'); }
+        // Eating indicator (mouth with fruit) — only visible when face is showing
+        if (isEating && direction !== 'up') {
+          if (direction === 'left') { r(-5, 11, 4, 2, '#8b0000'); }
+          else if (direction === 'right') { r(1, 11, 4, 2, '#8b0000'); }
+          else { r(-2, 11, 4, 2, '#8b0000'); }
+        }
 
         // Held fruit (held to the right of body)
         if (holdingFruit && !isEating) {
