@@ -425,13 +425,23 @@
     const TILES = {
       GRASS: 0, WATER: 1, TREE: 2, FLOWER: 3, PATH: 4,
       TREE_OF_LIFE: 5, TREE_OF_KNOWLEDGE: 6, ROCK: 7, BUSH: 8, GOLDEN_GATE: 9,
-      WASTELAND: 10, TILLED_SOIL: 11, PLANTED: 12, SEA: 13,
+      WASTELAND: 10, TILLED_SOIL: 11, PLANTED: 12, SEA: 13, CAVE: 14, BRIDGE: 15,
     };
 
     // Emoji crops for planting activity
     const CROP_EMOJIS = ['🌱', '🌿', '🥕', '🌽', '🍅', '🌾', '🥬', '🫒'];
     // Emoji trees for planted trees
     const TREE_EMOJIS = ['🌳', '🌴', '🌲', '🍎', '🍊', '🫐'];
+
+    // ── Barren land constants (beyond the river) ─────────────────────
+    const BARREN_MAP_WIDTH = 100;
+    const BARREN_MAP_HEIGHT = 80;
+    const BARREN_PLAYER_START = { x: 5, y: 40 };
+    // Cave of Treasures location in the wasteland
+    const CAVE_OF_TREASURES_POS = { x: 60, y: 8 };
+    const SMALL_CAVE_POS = { x: 35, y: 15 };
+    // River bridge crossing point
+    const RIVER_BRIDGE_POS = { x: 48, y: 30 };
 
     const COLORS = {
       grass: '#5a8f3d', grassDark: '#4a7f2d', water: '#3d7aaf', waterLight: '#5d9acf',
@@ -510,31 +520,38 @@
       return map;
     };
 
-    // ── Generate the separate Wasteland level map (80×60 with river & sea) ─────
+    // ── Generate the separate Wasteland level map (80×60 with river, sea south, caves) ─
     const generateWastelandMap = () => {
       const rng = seededRandom(54321);
       const map = [];
       const GATE = WASTELAND_GATE_POS;
-      // River flows roughly from north to south-east (around x=45-50)
+      // River flows north–south around x ≈ 48 (with gentle curves)
       const RIVER_X_CENTER = 48;
       const RIVER_WIDTH = 3;
-      // Sea along the eastern edge (x >= 68)
-      const SEA_START_X = 68;
+      // Sea covers the southern edge (y >= 52)
+      const SEA_START_Y = 52;
+
+      // Helper: is this tile in the river?
+      const isRiver = (x, y) => {
+        const riverCurve = RIVER_X_CENTER + Math.sin(y * 0.12) * 5 + Math.cos(y * 0.06) * 3;
+        return Math.abs(x - riverCurve) < RIVER_WIDTH;
+      };
+      // Helper: is this the bridge crossing?
+      const isBridge = (x, y) => {
+        const bx = RIVER_BRIDGE_POS.x, by = RIVER_BRIDGE_POS.y;
+        return y >= by - 1 && y <= by + 1 && isRiver(x, y);
+      };
 
       for (let y = 0; y < WASTELAND_MAP_HEIGHT; y++) {
         const row = [];
         for (let x = 0; x < WASTELAND_MAP_WIDTH; x++) {
-          // Dense tree border around edges
-          if (y < 3 || y > WASTELAND_MAP_HEIGHT - 4 || x > WASTELAND_MAP_WIDTH - 4) {
+          // Dense tree border top and left/right edges
+          if (y < 3 || x > WASTELAND_MAP_WIDTH - 4) {
             row.push(rng() > 0.2 ? TILES.TREE : TILES.WASTELAND);
           }
           // Left edge: garden peek (columns 0-2) with trees and grass behind the gate
           else if (x < GATE.x) {
-            if (y >= GATE.y - 2 && y <= GATE.y + 2) {
-              row.push(TILES.GRASS);
-            } else {
-              row.push(TILES.TREE);
-            }
+            row.push(y >= GATE.y - 2 && y <= GATE.y + 2 ? TILES.GRASS : TILES.TREE);
           }
           // Gate column
           else if (x === GATE.x && y === GATE.y) {
@@ -542,30 +559,35 @@
           }
           // Tree walls flanking the gate (thick barrier)
           else if (x >= GATE.x - 1 && x <= GATE.x + 1 && y !== GATE.y) {
-            if (Math.abs(y - GATE.y) <= 6) {
-              row.push(TILES.TREE);
-            } else {
-              row.push(TILES.WASTELAND);
-            }
+            row.push(Math.abs(y - GATE.y) <= 6 ? TILES.TREE : TILES.WASTELAND);
           }
           // Path leading away from gate
           else if (y === GATE.y && x > GATE.x && x <= GATE.x + 3) {
             row.push(TILES.PATH);
           }
-          // Sea on the eastern side
-          else if (x >= SEA_START_X) {
-            row.push(TILES.SEA);
+          // Sea at the south
+          else if (y >= SEA_START_Y) {
+            // Sandy beach strip
+            if (y === SEA_START_Y) row.push(TILES.PATH);
+            else row.push(TILES.SEA);
           }
-          // River (sinuous path from north to south)
-          else if ((() => {
-            const riverCurve = RIVER_X_CENTER + Math.sin(y * 0.15) * 4 + Math.cos(y * 0.08) * 2;
-            return Math.abs(x - riverCurve) < RIVER_WIDTH;
-          })()) {
+          // Bridge crossing over the river
+          else if (isBridge(x, y)) {
+            row.push(TILES.BRIDGE);
+          }
+          // River (sinuous path north to south, feeds into sea)
+          else if (isRiver(x, y)) {
             row.push(TILES.WATER);
           }
-          // Sandy beach next to sea
-          else if (x >= SEA_START_X - 2) {
-            row.push(TILES.PATH);
+          // Cave of Treasures (large, north-east beyond the river)
+          else if (x >= CAVE_OF_TREASURES_POS.x - 2 && x <= CAVE_OF_TREASURES_POS.x + 2 &&
+                   y >= CAVE_OF_TREASURES_POS.y - 1 && y <= CAVE_OF_TREASURES_POS.y + 1) {
+            row.push(TILES.CAVE);
+          }
+          // Small cave
+          else if (x >= SMALL_CAVE_POS.x - 1 && x <= SMALL_CAVE_POS.x + 1 &&
+                   y >= SMALL_CAVE_POS.y && y <= SMALL_CAVE_POS.y + 1) {
+            row.push(TILES.CAVE);
           }
           // Main wasteland area
           else {
@@ -586,22 +608,79 @@
           if (map[GATE.y + wallDy] && nx >= 0) map[GATE.y + wallDy][nx] = TILES.TREE;
         }
       }
-      // Add some garden trees visible behind the gate (left side)
+      // Add garden trees visible behind the gate (left side)
       for (let y = 3; y < WASTELAND_MAP_HEIGHT - 3; y++) {
         for (let x = 0; x < GATE.x; x++) {
           if (y >= GATE.y - 2 && y <= GATE.y + 2) continue;
           if (map[y]) map[y][x] = TILES.TREE;
         }
       }
-      // Place tilled soil patches near Adam for planting activity (between gate and river)
+      // Rocky border around Cave of Treasures
+      for (let dy = -2; dy <= 2; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
+          const cx = CAVE_OF_TREASURES_POS.x + dx, cy = CAVE_OF_TREASURES_POS.y + dy;
+          if (cy >= 0 && cy < WASTELAND_MAP_HEIGHT && cx >= 0 && cx < WASTELAND_MAP_WIDTH) {
+            if (map[cy][cx] !== TILES.CAVE && map[cy][cx] !== TILES.WATER && map[cy][cx] !== TILES.BRIDGE) {
+              map[cy][cx] = TILES.ROCK;
+            }
+          }
+        }
+      }
+      // Rocky border around small cave
+      for (let dy = -1; dy <= 2; dy++) {
+        for (let dx = -2; dx <= 2; dx++) {
+          const cx = SMALL_CAVE_POS.x + dx, cy = SMALL_CAVE_POS.y + dy;
+          if (cy >= 0 && cy < WASTELAND_MAP_HEIGHT && cx >= 0 && cx < WASTELAND_MAP_WIDTH) {
+            if (map[cy][cx] !== TILES.CAVE && map[cy][cx] !== TILES.WATER && map[cy][cx] !== TILES.BRIDGE) {
+              map[cy][cx] = TILES.ROCK;
+            }
+          }
+        }
+      }
+      // Path leading to bridge from the west side
+      for (let x = GATE.x + 4; x < RIVER_BRIDGE_POS.x; x++) {
+        if (map[RIVER_BRIDGE_POS.y]) map[RIVER_BRIDGE_POS.y][x] = TILES.PATH;
+      }
+      // Path leading east from bridge toward Cave of Treasures
+      for (let x = RIVER_BRIDGE_POS.x + RIVER_WIDTH + 1; x < Math.min(CAVE_OF_TREASURES_POS.x - 3, WASTELAND_MAP_WIDTH); x++) {
+        if (map[RIVER_BRIDGE_POS.y]) map[RIVER_BRIDGE_POS.y][x] = TILES.PATH;
+      }
+      // Place guaranteed seed trees near the planting area (accessible, not in borders)
+      const seedTrees = [
+        {x: 15, y: 20}, {x: 28, y: 22}, {x: 16, y: 30},
+        {x: 30, y: 26}, {x: 12, y: 35}, {x: 27, y: 35},
+      ];
+      seedTrees.forEach(s => { if (map[s.y] && map[s.y][s.x] !== undefined) map[s.y][s.x] = TILES.TREE; });
+      // Place tilled soil patches near Adam for planting activity
       const tilledSpots = [
         {x: 20, y: 22}, {x: 22, y: 24}, {x: 18, y: 26},
         {x: 24, y: 20}, {x: 21, y: 32}, {x: 19, y: 34},
-        {x: 23, y: 30}, {x: 25, y: 34},
+        {x: 23, y: 33}, {x: 25, y: 36},
       ];
       tilledSpots.forEach(s => { if (map[s.y] && map[s.y][s.x] !== undefined) map[s.y][s.x] = TILES.TILLED_SOIL; });
       // Ensure the gate path tile exists
       map[GATE.y][GATE.x] = TILES.GOLDEN_GATE;
+      return map;
+    };
+
+    // ── Generate the barren land map (beyond the river — completely desolate) ─
+    const generateBarrenMap = () => {
+      const rng = seededRandom(99999);
+      const map = [];
+      for (let y = 0; y < BARREN_MAP_HEIGHT; y++) {
+        const row = [];
+        for (let x = 0; x < BARREN_MAP_WIDTH; x++) {
+          // Completely barren — no grass, no trees
+          const rand = rng();
+          if (rand < 0.02) row.push(TILES.ROCK);
+          else row.push(TILES.WASTELAND);
+        }
+        map.push(row);
+      }
+      // Western edge: path entry point from the river crossing
+      for (let y = BARREN_PLAYER_START.y - 1; y <= BARREN_PLAYER_START.y + 1; y++) {
+        if (map[y]) { map[y][0] = TILES.PATH; map[y][1] = TILES.PATH; map[y][2] = TILES.PATH; }
+      }
       return map;
     };
 
@@ -641,6 +720,7 @@
       CHAVVAH_WALKS_TO_ADAM: 'chavvah_to_adam', ADAM_EATS: 'adam_eats', ADAM_GLORY_FADES: 'adam_glory_fades',
       EYES_OPENED: 'eyes_opened', CHAPTER3_CUTSCENE: 'chapter3_cutscene',
       GATE_OPENS: 'gate_opens', EXPULSION_WALK: 'expulsion_walk', WASTELAND_EXPLORE: 'wasteland_explore',
+      BARREN_EXPLORE: 'barren_explore',
       COMPLETE: 'complete'
     };
 
@@ -870,6 +950,7 @@
       const canvasRef = useRef(null);
       const [map] = useState(generateMap);
       const [wastelandMap] = useState(generateWastelandMap);
+      const [barrenMap] = useState(generateBarrenMap);
       const [malakGuarding, setMalakGuarding] = useState(false);
       const [player, setPlayer] = useState({ x: 35, y: 30, prevX: 35, prevY: 30, direction: 'down', walkFrame: 0, isMoving: false });
       const [npcs, setNpcs] = useState(createNPCs);
@@ -912,9 +993,10 @@
       const WATER_TRIPS_NEEDED = 3;
 
       // Helper: get active map and dimensions based on current phase
+      const isBarrenPhase = useCallback((phase) => phase === PHASES.BARREN_EXPLORE, []);
       const isWastelandPhase = useCallback((phase) => phase === PHASES.WASTELAND_EXPLORE || phase === PHASES.COMPLETE, []);
-      const getActiveMap = useCallback((phase) => isWastelandPhase(phase) ? wastelandMap : map, [map, wastelandMap, isWastelandPhase]);
-      const getMapDims = useCallback((phase) => isWastelandPhase(phase) ? { w: WASTELAND_MAP_WIDTH, h: WASTELAND_MAP_HEIGHT } : { w: MAP_WIDTH, h: MAP_HEIGHT }, [isWastelandPhase]);
+      const getActiveMap = useCallback((phase) => isBarrenPhase(phase) ? barrenMap : isWastelandPhase(phase) ? wastelandMap : map, [map, wastelandMap, barrenMap, isWastelandPhase, isBarrenPhase]);
+      const getMapDims = useCallback((phase) => isBarrenPhase(phase) ? { w: BARREN_MAP_WIDTH, h: BARREN_MAP_HEIGHT } : isWastelandPhase(phase) ? { w: WASTELAND_MAP_WIDTH, h: WASTELAND_MAP_HEIGHT } : { w: MAP_WIDTH, h: MAP_HEIGHT }, [isWastelandPhase, isBarrenPhase]);
 
       // Keep refs in sync with state for the game loop
       useEffect(() => { touchDirRef.current = touchDirection; }, [touchDirection]);
@@ -1015,7 +1097,7 @@
             adam_eats: 'Adam Eats', adam_glory_fades: 'Glory Fading',
             eyes_opened: 'Eyes Opened', chapter3_cutscene: 'The Fall of Man',
             gate_opens: 'Gate Opens', expulsion_walk: 'Expulsion',
-            wasteland_explore: 'Wasteland', complete: 'Complete',
+            wasteland_explore: 'Wasteland', barren_explore: 'Barren Wilderness', complete: 'Complete',
           };
           return {
             phase: phaseNames[save.gamePhase] || save.gamePhase,
@@ -1047,33 +1129,35 @@
       // Tiles that characters can walk over (ground-level decorations don't block)
       const isWalkable = useCallback((tile, inWasteland) => {
         if (tile === TILES.GOLDEN_GATE) return !inWasteland && gateOpen;
-        return tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND || tile === TILES.TILLED_SOIL || tile === TILES.PLANTED;
+        return tile === TILES.GRASS || tile === TILES.PATH || tile === TILES.FLOWER || tile === TILES.ROCK || tile === TILES.BUSH || tile === TILES.WASTELAND || tile === TILES.TILLED_SOIL || tile === TILES.PLANTED || tile === TILES.BRIDGE || tile === TILES.CAVE;
       }, [gateOpen]);
 
       const canNPCMoveTo = useCallback((x, y, phase) => {
         const inWasteland = phase === PHASES.WASTELAND_EXPLORE;
-        const activeMap = inWasteland ? wastelandMap : map;
-        const mw = inWasteland ? WASTELAND_MAP_WIDTH : MAP_WIDTH;
-        const mh = inWasteland ? WASTELAND_MAP_HEIGHT : MAP_HEIGHT;
+        const inBarren = phase === PHASES.BARREN_EXPLORE;
+        const activeMap = inBarren ? barrenMap : inWasteland ? wastelandMap : map;
+        const mw = inBarren ? BARREN_MAP_WIDTH : inWasteland ? WASTELAND_MAP_WIDTH : MAP_WIDTH;
+        const mh = inBarren ? BARREN_MAP_HEIGHT : inWasteland ? WASTELAND_MAP_HEIGHT : MAP_HEIGHT;
         if (inWasteland) {
-          // In wasteland, NPCs can't go near the gate
           if (x < WASTELAND_GATE_POS.x + 3) return false;
+          if (x < 3 || x > mw - 4 || y < 3 || y > mh - 4) return false;
+        } else if (inBarren) {
           if (x < 3 || x > mw - 4 || y < 3 || y > mh - 4) return false;
         } else {
           if (x < GARDEN_BOUNDS.minX || x > GARDEN_BOUNDS.maxX || y < GARDEN_BOUNDS.minY || y > GARDEN_BOUNDS.maxY) return false;
         }
         if (x < 0 || x >= mw || y < 0 || y >= mh) return false;
-        return isWalkable(activeMap[Math.floor(y)]?.[Math.floor(x)], inWasteland);
-      }, [map, wastelandMap, isWalkable]);
+        return isWalkable(activeMap[Math.floor(y)]?.[Math.floor(x)], inWasteland || inBarren);
+      }, [map, wastelandMap, barrenMap, isWalkable]);
 
       const canMoveTo = useCallback((x, y, currentNpcs, phase) => {
         const inWasteland = phase === PHASES.WASTELAND_EXPLORE;
-        const activeMap = inWasteland ? wastelandMap : map;
-        const mw = inWasteland ? WASTELAND_MAP_WIDTH : MAP_WIDTH;
-        const mh = inWasteland ? WASTELAND_MAP_HEIGHT : MAP_HEIGHT;
+        const inBarren = phase === PHASES.BARREN_EXPLORE;
+        const activeMap = inBarren ? barrenMap : inWasteland ? wastelandMap : map;
+        const mw = inBarren ? BARREN_MAP_WIDTH : inWasteland ? WASTELAND_MAP_WIDTH : MAP_WIDTH;
+        const mh = inBarren ? BARREN_MAP_HEIGHT : inWasteland ? WASTELAND_MAP_HEIGHT : MAP_HEIGHT;
         // In wasteland, player cannot approach the golden gate
         if (inWasteland && x < WASTELAND_GATE_POS.x + 2.5) return false;
-        // Player collision box: check all four corners (±0.3 tiles from centre)
         const pad = 0.3;
         const corners = [
           [x - pad, y - pad], [x + pad, y - pad],
@@ -1081,21 +1165,20 @@
         ];
         for (const [cx, cy] of corners) {
           if (cx < 0 || cx >= mw || cy < 0 || cy >= mh) return false;
-          if (!isWalkable(activeMap[Math.floor(cy)]?.[Math.floor(cx)], inWasteland)) return false;
+          if (!isWalkable(activeMap[Math.floor(cy)]?.[Math.floor(cx)], inWasteland || inBarren)) return false;
         }
-        // Block walking through NPCs and their speech bubble area
         if (currentNpcs) {
           for (const npc of currentNpcs) {
             if (Math.abs(x - npc.x) < 1.0 && Math.abs(y - npc.y) < 1.0) return false;
           }
         }
         return true;
-      }, [map, wastelandMap, isWalkable]);
+      }, [map, wastelandMap, barrenMap, isWalkable]);
 
       useEffect(() => {
         if (gamePhase === PHASES.CUTSCENE || gamePhase === PHASES.CHAPTER3_CUTSCENE || gamePhase === PHASES.START_MENU || gamePhase === PHASES.SETTINGS) return;
         const vp = getVP(canvasRef.current || { clientWidth: window.innerWidth, clientHeight: window.innerHeight });
-        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.GATE_OPENS) {
+        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.COMPLETE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.BARREN_EXPLORE || gamePhase === PHASES.GATE_OPENS) {
           const dims = getMapDims(gamePhase);
           setCamera({
             x: Math.max(0, Math.min(player.x - vp.w / 2, dims.w - vp.w)),
@@ -1161,10 +1244,10 @@
       const handleInteraction = useCallback(() => {
         if (showDialogue) { advanceDialogue(); return; }
         if (showSceneText) { setShowSceneText(false); return; }
-        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE) {
+        if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.BARREN_EXPLORE) {
           const visibleNpcs = gamePhase === PHASES.WASTELAND_EXPLORE
             ? npcs.filter(n => n.id === 'adam' || n.id === 'chavvah' || n.id === 'malak')
-            : npcs;
+            : gamePhase === PHASES.BARREN_EXPLORE ? [] : npcs;
           const nearbyNpc = visibleNpcs.find(npc => Math.abs(npc.x - player.x) < 1.5 && Math.abs(npc.y - player.y) < 1.5);
 
           // ── Wasteland activity interactions ───────────────────────
@@ -1172,84 +1255,7 @@
             const px = Math.floor(player.x), py = Math.floor(player.y);
             const activeMap = wastelandMap;
 
-            // Seed collection: interact near trees in wasteland
-            if (adamQuestGiven && seedsCollected < SEEDS_NEEDED) {
-              // Check tiles around player for trees
-              let nearTree = false;
-              for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                  const tx = px + dx, ty = py + dy;
-                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
-                    if (activeMap[ty][tx] === TILES.TREE) nearTree = true;
-                  }
-                }
-              }
-              if (nearTree && !nearbyNpc) {
-                setSeedsCollected(prev => {
-                  const next = Math.min(prev + 1, SEEDS_NEEDED);
-                  setSceneText(`You found seeds! (${next}/${SEEDS_NEEDED})`);
-                  setShowSceneText(true);
-                  return next;
-                });
-                return;
-              }
-            }
-
-            // Planting: interact on tilled soil when carrying seeds
-            if (adamQuestGiven && seedsCollected > spotsPlanted && spotsPlanted < SEEDS_NEEDED) {
-              if (activeMap[py] && activeMap[py][px] === TILES.TILLED_SOIL) {
-                // Check not already planted here
-                if (!plantedTiles.find(t => t.x === px && t.y === py)) {
-                  const emoji = spotsPlanted % 2 === 0
-                    ? CROP_EMOJIS[spotsPlanted % CROP_EMOJIS.length]
-                    : TREE_EMOJIS[spotsPlanted % TREE_EMOJIS.length];
-                  activeMap[py][px] = TILES.PLANTED;
-                  setPlantedTiles(prev => [...prev, { x: px, y: py, emoji }]);
-                  setSpotsPlanted(prev => {
-                    const next = prev + 1;
-                    if (next >= SEEDS_NEEDED) {
-                      setSceneText("The garden is planted! A'dam is pleased. Life springs forth from the cursed ground by the sweat of your labor.");
-                      setShowSceneText(true);
-                      // Check if both quests done
-                      if (waterDelivered >= WATER_TRIPS_NEEDED) {
-                        setTimeout(() => {
-                          setGamePhase(PHASES.COMPLETE);
-                          setSceneText("You have helped A'dam plant a garden and gathered water for Chavvah. Thus begins the toil of mankind outside Eden...");
-                          setShowSceneText(true);
-                        }, 2000);
-                      }
-                    } else {
-                      setSceneText(`Planted! 🌱 (${next}/${SEEDS_NEEDED}) — Find more tilled soil to plant.`);
-                      setShowSceneText(true);
-                    }
-                    return next;
-                  });
-                  return;
-                }
-              }
-            }
-
-            // Water gathering: interact near water/sea
-            if (chavvahQuestGiven && !hasWater && waterDelivered < WATER_TRIPS_NEEDED) {
-              let nearWater = false;
-              for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                  const tx = px + dx, ty = py + dy;
-                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
-                    if (activeMap[ty][tx] === TILES.WATER || activeMap[ty][tx] === TILES.SEA) nearWater = true;
-                  }
-                }
-              }
-              if (nearWater && !nearbyNpc) {
-                setHasWater(true);
-                setWaterCollected(prev => prev + 1);
-                setSceneText("You collected water! 💧 Return to Chavvah to deliver it.");
-                setShowSceneText(true);
-                return;
-              }
-            }
-
-            // Water delivery: interact with Chavvah while carrying water
+            // Water delivery: interact with Chavvah while carrying water (highest priority)
             if (chavvahQuestGiven && hasWater && nearbyNpc && nearbyNpc.id === 'chavvah') {
               setHasWater(false);
               setWaterDelivered(prev => {
@@ -1257,7 +1263,6 @@
                 if (next >= WATER_TRIPS_NEEDED) {
                   setSceneText("Chavvah has enough water now! She thanks you for your help. 💧");
                   setShowSceneText(true);
-                  // Check if both quests done
                   if (spotsPlanted >= SEEDS_NEEDED) {
                     setTimeout(() => {
                       setGamePhase(PHASES.COMPLETE);
@@ -1272,6 +1277,90 @@
                 return next;
               });
               return;
+            }
+
+            // Planting: standing on tilled soil with seeds (priority over seed collection)
+            if (adamQuestGiven && seedsCollected > spotsPlanted && spotsPlanted < SEEDS_NEEDED) {
+              // Check tile the player is standing on AND adjacent tiles
+              let plantX = -1, plantY = -1;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tx = px + dx, ty = py + dy;
+                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
+                    if (activeMap[ty][tx] === TILES.TILLED_SOIL && !plantedTiles.find(t => t.x === tx && t.y === ty)) {
+                      plantX = tx; plantY = ty;
+                    }
+                  }
+                }
+              }
+              if (plantX >= 0) {
+                const emoji = spotsPlanted % 2 === 0
+                  ? CROP_EMOJIS[spotsPlanted % CROP_EMOJIS.length]
+                  : TREE_EMOJIS[spotsPlanted % TREE_EMOJIS.length];
+                activeMap[plantY][plantX] = TILES.PLANTED;
+                setPlantedTiles(prev => [...prev, { x: plantX, y: plantY, emoji }]);
+                setSpotsPlanted(prev => {
+                  const next = prev + 1;
+                  if (next >= SEEDS_NEEDED) {
+                    setSceneText("The garden is planted! A'dam is pleased. Life springs forth from the cursed ground by the sweat of your labor.");
+                    setShowSceneText(true);
+                    if (waterDelivered >= WATER_TRIPS_NEEDED) {
+                      setTimeout(() => {
+                        setGamePhase(PHASES.COMPLETE);
+                        setSceneText("You have helped A'dam plant a garden and gathered water for Chavvah. Thus begins the toil of mankind outside Eden...");
+                        setShowSceneText(true);
+                      }, 2000);
+                    }
+                  } else {
+                    setSceneText(`Planted! 🌱 (${next}/${SEEDS_NEEDED}) — Find more tilled soil to plant.`);
+                    setShowSceneText(true);
+                  }
+                  return next;
+                });
+                return;
+              }
+            }
+
+            // Seed collection: interact near trees in wasteland
+            if (adamQuestGiven && seedsCollected < SEEDS_NEEDED) {
+              let nearTree = false;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tx = px + dx, ty = py + dy;
+                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
+                    if (activeMap[ty][tx] === TILES.TREE) nearTree = true;
+                  }
+                }
+              }
+              if (nearTree) {
+                setSeedsCollected(prev => {
+                  const next = Math.min(prev + 1, SEEDS_NEEDED);
+                  setSceneText(`You found seeds! 🌱 (${next}/${SEEDS_NEEDED}) — Now find tilled soil to plant them.`);
+                  setShowSceneText(true);
+                  return next;
+                });
+                return;
+              }
+            }
+
+            // Water gathering: interact near water/sea
+            if (chavvahQuestGiven && !hasWater && waterDelivered < WATER_TRIPS_NEEDED) {
+              let nearWater = false;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const tx = px + dx, ty = py + dy;
+                  if (ty >= 0 && ty < WASTELAND_MAP_HEIGHT && tx >= 0 && tx < WASTELAND_MAP_WIDTH) {
+                    if (activeMap[ty][tx] === TILES.WATER || activeMap[ty][tx] === TILES.SEA) nearWater = true;
+                  }
+                }
+              }
+              if (nearWater) {
+                setHasWater(true);
+                setWaterCollected(prev => prev + 1);
+                setSceneText("You collected water! 💧 Return to Chavvah to deliver it.");
+                setShowSceneText(true);
+                return;
+              }
             }
           }
 
@@ -1414,7 +1503,7 @@
             if (gamePhase === PHASES.CUTSCENE) advanceCutscene();
             else if (gamePhase === PHASES.CHAPTER3_CUTSCENE) advanceChapter3();
             else if (gamePhase === PHASES.SERPENT_DIALOGUE) advanceSerpentDialogue();
-            else if (showSceneText && gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.EXPULSION_WALK) advanceScene();
+            else if (showSceneText && gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.BARREN_EXPLORE && gamePhase !== PHASES.EXPULSION_WALK) advanceScene();
             else handleInteraction();
           }
         };
@@ -1458,7 +1547,7 @@
             }
           }
 
-          if (!dlg && (phase === PHASES.EXPLORE || phase === PHASES.EXPULSION_WALK || phase === PHASES.WASTELAND_EXPLORE)) {
+          if (!dlg && (phase === PHASES.EXPLORE || phase === PHASES.EXPULSION_WALK || phase === PHASES.WASTELAND_EXPLORE || phase === PHASES.BARREN_EXPLORE)) {
             setPlayer(prev => {
               let newX = prev.x, newY = prev.y, newDir = prev.direction;
               const speed = 0.15;
@@ -1495,6 +1584,29 @@
                 }));
                 setMalakGuarding(false);
                 setSceneText("The barren land outside Eden... Speak to A'dam and Chavvah.");
+                setShowSceneText(true);
+              }
+            }
+            // Check if player crossed the river bridge heading east → transition to barren land
+            if (phase === PHASES.WASTELAND_EXPLORE) {
+              const currentPlayer = playerRef.current;
+              // Player must be past the river (east of bridge) to trigger transition
+              const riverEastEdge = RIVER_BRIDGE_POS.x + 4;
+              if (currentPlayer && currentPlayer.x >= riverEastEdge &&
+                  Math.abs(currentPlayer.y - RIVER_BRIDGE_POS.y) < 3) {
+                setGamePhase(PHASES.BARREN_EXPLORE);
+                setPlayer({ x: BARREN_PLAYER_START.x, y: BARREN_PLAYER_START.y, prevX: BARREN_PLAYER_START.x, prevY: BARREN_PLAYER_START.y, direction: 'right', isMoving: false, walkFrame: 0 });
+                setSceneText("You cross the river into a vast barren wilderness... Not a single tree or blade of grass in sight. Only dust and rocks as far as the eye can see.");
+                setShowSceneText(true);
+              }
+            }
+            // Check if player walks back west in barren → return to wasteland
+            if (phase === PHASES.BARREN_EXPLORE) {
+              const currentPlayer = playerRef.current;
+              if (currentPlayer && currentPlayer.x <= 1) {
+                setGamePhase(PHASES.WASTELAND_EXPLORE);
+                setPlayer({ x: RIVER_BRIDGE_POS.x + 2, y: RIVER_BRIDGE_POS.y, prevX: RIVER_BRIDGE_POS.x + 2, prevY: RIVER_BRIDGE_POS.y, direction: 'left', isMoving: false, walkFrame: 0 });
+                setSceneText("You return across the river to the wasteland.");
                 setShowSceneText(true);
               }
             }
@@ -3194,7 +3306,7 @@
         const ACTIVE_MAP_HEIGHT = mapDims.h;
 
         // Sky color: darker/murkier in wasteland
-        ctx.fillStyle = gamePhase === PHASES.WASTELAND_EXPLORE ? '#5a4a3a' : COLORS.sky;
+        ctx.fillStyle = gamePhase === PHASES.BARREN_EXPLORE ? '#3a2a1a' : gamePhase === PHASES.WASTELAND_EXPLORE ? '#5a4a3a' : COLORS.sky;
         ctx.fillRect(0, 0, W, H);
 
         // ── PASS 1: Ground layer (flat tiles) ─────────────────────────────
@@ -3208,7 +3320,7 @@
 
               // ── Natural grass/ground base ─────────────────
               const gh = ((mapX * 1234567 + mapY * 891011) >>> 0) % 100;
-              const inWastelandMap = isWastelandPhase(gamePhase);
+              const inWastelandMap = isWastelandPhase(gamePhase) || isBarrenPhase(gamePhase);
               if (tile === TILES.WASTELAND || tile === TILES.TILLED_SOIL || (inWastelandMap && tile !== TILES.GRASS && tile !== TILES.TREE && tile !== TILES.TREE_OF_LIFE && tile !== TILES.TREE_OF_KNOWLEDGE && tile !== TILES.WATER && tile !== TILES.PATH && tile !== TILES.GOLDEN_GATE && tile !== TILES.SEA && tile !== TILES.PLANTED && tile !== TILES.TILLED_SOIL)) {
                 // Wasteland gets brown base, no grass
                 ctx.fillStyle = '#4a3a2a';
@@ -3336,6 +3448,50 @@
                   ctx.fillRect(screenX + ((gameTime * 3 + mapX * 11) % 48) + 8, screenY + ((gameTime + mapY * 3) % 48) + 20, 16, 3);
                   break;
                 }
+                case TILES.BRIDGE: {
+                  // Wooden bridge over water
+                  // Water underneath
+                  ctx.fillStyle = (gameTime + mapX + mapY) % 20 < 10 ? COLORS.water : COLORS.waterLight;
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  // Wooden planks
+                  ctx.fillStyle = '#8b6914';
+                  ctx.fillRect(screenX + 4, screenY, TILE_SIZE - 8, TILE_SIZE);
+                  // Plank lines
+                  ctx.fillStyle = '#6b4e0a';
+                  for (let pi = 0; pi < 4; pi++) {
+                    ctx.fillRect(screenX + 4, screenY + pi * 16 + 2, TILE_SIZE - 8, 2);
+                  }
+                  // Side rails
+                  ctx.fillStyle = '#5a3e08';
+                  ctx.fillRect(screenX + 2, screenY, 4, TILE_SIZE);
+                  ctx.fillRect(screenX + TILE_SIZE - 6, screenY, 4, TILE_SIZE);
+                  break;
+                }
+                case TILES.CAVE: {
+                  // Dark cave entrance with rocky border
+                  ctx.fillStyle = '#2a2a2a';
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
+                  // Rocky arch around the opening
+                  ctx.fillStyle = '#5a5a5a';
+                  ctx.fillRect(screenX, screenY, TILE_SIZE, 8);
+                  ctx.fillRect(screenX, screenY, 8, TILE_SIZE);
+                  ctx.fillRect(screenX + TILE_SIZE - 8, screenY, 8, TILE_SIZE);
+                  // Dark interior gradient
+                  ctx.fillStyle = '#1a1a1a';
+                  ctx.fillRect(screenX + 10, screenY + 10, TILE_SIZE - 20, TILE_SIZE - 14);
+                  // Cave label for Cave of Treasures
+                  if (mapX === CAVE_OF_TREASURES_POS.x && mapY === CAVE_OF_TREASURES_POS.y) {
+                    ctx.save();
+                    ctx.font = 'bold 9px sans-serif';
+                    ctx.fillStyle = '#daa520';
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+                    ctx.fillText('Cave of', screenX + TILE_SIZE / 2, screenY + TILE_SIZE + 2);
+                    ctx.fillText('Treasures', screenX + TILE_SIZE / 2, screenY + TILE_SIZE + 12);
+                    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+                    ctx.restore();
+                  }
+                  break;
+                }
                 case TILES.GOLDEN_GATE:
                   // Path ground under the gate (drawn in pass 1)
                   ctx.fillStyle = '#9b7d52'; ctx.fillRect(screenX, screenY, TILE_SIZE, TILE_SIZE);
@@ -3360,6 +3516,7 @@
           // During wasteland/expulsion phases, only show Adam and Chavvah
           if ((gamePhase === PHASES.GATE_OPENS || gamePhase === PHASES.EXPULSION_WALK) && npc.id !== 'adam' && npc.id !== 'chavvah') return;
           if ((gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.COMPLETE) && npc.id !== 'adam' && npc.id !== 'chavvah' && npc.id !== 'malak') return;
+          if (gamePhase === PHASES.BARREN_EXPLORE) return; // No NPCs in barren wilderness
           const sx = (npc.x - camera.x) * TILE_SIZE, sy = (npc.y - camera.y) * TILE_SIZE;
           if (sx > -TILE_SIZE * 2 && sx < canvas.width + TILE_SIZE * 2 && sy > -TILE_SIZE * 2 && sy < canvas.height + TILE_SIZE * 2) {
             sortedEntities.push({ type: 'npc', npc, screenX: sx, screenY: sy, mapY: npc.y });
@@ -3729,13 +3886,13 @@
           });
         }
 
-      }, [map, wastelandMap, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide, chapter3Slide, gateOpen, getActiveMap, getMapDims, plantedTiles, hasWater, adamQuestGiven, seedsCollected, spotsPlanted]);
+      }, [map, wastelandMap, barrenMap, player, npcs, camera, showDialogue, gameTime, gamePhase, cutsceneSlide, chapter3Slide, gateOpen, getActiveMap, getMapDims, plantedTiles, hasWater, adamQuestGiven, seedsCollected, spotsPlanted, isBarrenPhase]);
 
       const spokenCount = npcs.filter(n => ['adam', 'chavvah', 'nachash'].includes(n.id) && n.hasSpoken).length;
 
       return (
         <div className="game-container">
-          {gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && <h1 className="title">{gamePhase === PHASES.WASTELAND_EXPLORE ? "BERE'SHIYTH: The Wasteland" : "BERE'SHIYTH: In The Beginning"}</h1>}
+          {gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && <h1 className="title">{gamePhase === PHASES.BARREN_EXPLORE ? "BERE'SHIYTH: The Barren Wilderness" : gamePhase === PHASES.WASTELAND_EXPLORE ? "BERE'SHIYTH: The Wasteland" : "BERE'SHIYTH: In The Beginning"}</h1>}
           <canvas ref={canvasRef} />
 
           {gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && !showPauseMenu && (
@@ -3903,10 +4060,10 @@
           )}
 
           {showSceneText && !showDialogue && (
-            <div className={`dialogue-box${gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.WASTELAND_EXPLORE ? ' scene-dialogue' : ''}`}>
+            <div className={`dialogue-box${gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.BARREN_EXPLORE ? ' scene-dialogue' : ''}`}>
               <p className="scene-text">{sceneText}</p>
-              <button className="btn" onClick={() => { if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.EXPULSION_WALK) setShowSceneText(false); else advanceScene(); }}>
-                {gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.EXPULSION_WALK ? 'OK ▶' : 'Continue ▶'}
+              <button className="btn" onClick={() => { if (gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.BARREN_EXPLORE || gamePhase === PHASES.EXPULSION_WALK) setShowSceneText(false); else advanceScene(); }}>
+                {gamePhase === PHASES.EXPLORE || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.BARREN_EXPLORE || gamePhase === PHASES.EXPULSION_WALK ? 'OK ▶' : 'Continue ▶'}
               </button>
             </div>
           )}
@@ -3945,7 +4102,11 @@
             </div>
           )}
 
-          {(gamePhase === PHASES.EXPLORE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE) && !showDialogue && !showSceneText && (
+          {gamePhase === PHASES.BARREN_EXPLORE && !showDialogue && !showSceneText && (
+            <p className="quest-text">A vast barren wilderness... Walk west to return across the river.</p>
+          )}
+
+          {(gamePhase === PHASES.EXPLORE || gamePhase === PHASES.EXPULSION_WALK || gamePhase === PHASES.WASTELAND_EXPLORE || gamePhase === PHASES.BARREN_EXPLORE) && !showDialogue && !showSceneText && (
             <div className="controls">
               <div className="dpad">
                 <div></div>
@@ -3962,7 +4123,7 @@
             </div>
           )}
 
-          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.EXPULSION_WALK && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && (
+          {gamePhase !== PHASES.EXPLORE && gamePhase !== PHASES.CUTSCENE && gamePhase !== PHASES.CHAPTER3_CUTSCENE && gamePhase !== PHASES.EXPULSION_WALK && gamePhase !== PHASES.WASTELAND_EXPLORE && gamePhase !== PHASES.BARREN_EXPLORE && gamePhase !== PHASES.START_MENU && gamePhase !== PHASES.SETTINGS && (
             <p className="phase-indicator">{gamePhase === PHASES.COMPLETE ? '\uD83D\uDCD6 The Fall of Man' : '\uD83D\uDCD6 Scene in Progress...'}</p>
           )}
 
