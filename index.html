@@ -214,7 +214,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Beginnings</h2>
-    <div class="hint">Eight acts · the whole of BERĔSHITH, from the first light to the coffin in Mitsrayim</div>
+    <div class="hint">Eight acts · the whole of BERĔSHITH, with witness of the Book of YASHAR — from the first light to the coffin in Mitsrayim</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -450,6 +450,9 @@ const CHARS={
   builder2:{name:'Builder', skin:'#a06b40', hair:'#170e06', hairStyle:'short', robe:'#5f6e7e'},
   builder3:{name:'Builder', skin:'#d0a273', hair:'#5e482a', hairStyle:'short', robe:'#7e5f6e'},
   avram:   {name:'Aḇram',   skin:'#bd8a5c', hair:'#8d8074', hairStyle:'short', robe:'#7c6442', beard:'#a89c8c'},
+  avram_y: {name:'Aḇram',   skin:'#c98e5f', hair:'#46301a', hairStyle:'short', robe:'#7c6442'},
+  terah:   {name:'Teraḥ',   skin:'#bd8a5c', hair:'#9a9286', hairStyle:'short', robe:'#704a3a', beard:'#9a9286', headcover:'#8a3030'},
+  oldman:  {name:'An Old Man on the Road', skin:'#c0a080', hair:'#b8b2a4', hairStyle:'short', robe:'#6a665a', beard:'#b8b2a4'},
   avraham: {name:'Aḇraham', skin:'#bd8a5c', hair:'#cfc8b8', hairStyle:'short', robe:'#8a7048', beard:'#cfc8b8', headcover:'#c8b486'},
   sarah:   {name:'Sarah',   skin:'#d8ab78', hair:'#9c8e7c', hairStyle:'long', robe:'#9c7d8c', headcover:'#d4c4a2'},
   lot:     {name:'Lot',     skin:'#c08a55', hair:'#46301a', hairStyle:'short', robe:'#5d7080', beard:'#46301a'},
@@ -1027,6 +1030,31 @@ function drawProp(g,px,py,p,t){
       }
       g.fillStyle='rgba(232,118,42,.65)';
       g.beginPath(); g.arc(0,-u,3*u,0,Math.PI*2); g.fill();
+      break; }
+    case 'idol': {
+      g.scale(1.6,1.6);
+      shadow(3.2);
+      if(p.broken){
+        g.fillStyle='#8d8276'; g.fillRect(-3.6*u,-1.6*u,7.2*u,1.6*u);
+        g.fillStyle=p.col||'#caa23c';
+        g.save(); g.rotate(.9); g.fillRect(-1.2*u,-4.6*u,2.4*u,4.6*u); g.restore();
+        g.fillStyle=shade(p.col||'#caa23c',-30);
+        g.beginPath(); g.arc(2.6*u,-1*u,1.3*u,0,Math.PI*2); g.fill();
+        g.fillRect(-4.4*u,-.8*u,1.6*u,.8*u);
+      } else {
+        g.fillStyle='#8d8276'; g.fillRect(-2.6*u,-2.2*u,5.2*u,2.2*u);
+        g.fillStyle='#7a7468'; g.fillRect(-2.6*u,-2.2*u,5.2*u,.6*u);
+        const col=p.col||'#caa23c';
+        g.fillStyle=col;
+        g.fillRect(-1.7*u,-7.4*u,3.4*u,5.2*u);
+        g.beginPath(); g.arc(0,-8.4*u,1.7*u,0,Math.PI*2); g.fill();
+        g.fillStyle=shade(col,-35);
+        g.fillRect(-1.7*u,-5.4*u,3.4*u,.5*u);
+        g.fillRect(-.5*u,-8.8*u,1*u,.5*u);
+        if(p.hatchet){ g.fillStyle='#6e552f'; g.save(); g.rotate(-.5);
+          g.fillRect(1.2*u,-7.4*u,.7*u,3.4*u); g.restore();
+          g.fillStyle='#9a9488'; g.fillRect(2.6*u,-7.8*u,1.8*u,1.2*u); }
+      }
       break; }
     case 'timber': { shadow(3);
       g.fillStyle='#8d7048'; g.save(); g.rotate(-.3);
@@ -1797,10 +1825,12 @@ const Game={
     const w=this.world;
     if(tgt.npc){
       const n=tgt.npc;
-      const o=(this.objectives||[]).find(o=>!o.done&&o.type==='talk'&&o.npc===n.id);
+      const o=(this.objectives||[]).find(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
+              (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
       // face each other
       if(w.player){ n.dir=w.player.x<n.x?'left':'right'; }
-      if(n.script){ this.runScript(n.script.slice(),()=>{ if(o) this.completeObjective(o.idx); }); }
+      if(o&&o.script){ this.runScript(o.script.slice(),()=>this.completeObjective(o.idx)); }
+      else if(n.script){ this.runScript(n.script.slice(),()=>{ if(o) this.completeObjective(o.idx); }); }
       else if(n.dlg){
         const lines=Array.isArray(n.dlg[0])?n.dlg:[[n.id,n.dlg[Math.floor(Math.random()*n.dlg.length)]]];
         this.sayList(lines,()=>{ if(o) this.completeObjective(o.idx); });
@@ -1912,9 +1942,12 @@ const Game={
     if(p&&!this.script&&!this.dlgChar){
       let best=null,bd=1.45;
       for(const n of w.npcs){
-        if(n.hidden||n.noTalk) continue;
+        if(n.hidden) continue;
+        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
+                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        if(n.noTalk&&!hasObj) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(n.dlg||n.script||(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id))){ bd=d4; best={npc:n}; }
+        if(d4<bd&&(hasObj||n.dlg||n.script)){ bd=d4; best={npc:n}; }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
@@ -2376,6 +2409,46 @@ function drawSlideArt(g,key,st,t,slide){
       const dawn=clamp(st/6000,0,1);
       if(dawn>0){ g.fillStyle=`rgba(232,150,80,${dawn*.25})`; g.fillRect(0,0,VW,VH); }
       break; }
+    case 'furnace': {
+      Sky.paint(g,[[0,'#160c0a'],[.6,'#2c1410'],[1,'#3d1c12']]);
+      // crowd silhouettes
+      g.fillStyle='#0e0806';
+      for(let i=0;i<40;i++){ const h6=hash2(i*17,3);
+        const cx3=h6*VW, cy3=VH*(.86+hash2(i,9)*.1);
+        g.beginPath(); g.arc(cx3,cy3,7,0,Math.PI*2); g.fill();
+        g.fillRect(cx3-6,cy3,12,18); }
+      // brick furnace
+      const fw=VW*.4, fx0=VW*.3, fy0=VH*.3;
+      g.fillStyle='#5d3a28'; g.fillRect(fx0,fy0,fw,VH*.52);
+      g.fillStyle='#4a2c1c';
+      for(let r=0;r<7;r++)for(let cI=0;cI<8;cI++)
+        g.fillRect(fx0+cI*fw/8+(r%2?fw/16:0)+2,fy0+r*VH*.075+2,fw/8-4,VH*.075-4);
+      // mouth of furnace
+      g.fillStyle='#1c0c06';
+      g.beginPath(); g.moveTo(VW*.38,VH*.82); g.lineTo(VW*.38,VH*.5);
+      g.quadraticCurveTo(VW*.5,VH*.36,VW*.62,VH*.5); g.lineTo(VW*.62,VH*.82); g.closePath(); g.fill();
+      // flames inside
+      for(let i=0;i<8;i++){
+        const f2=t/90+i*1.7, fxx=VW*.4+i*VW*.028+Math.sin(f2)*6;
+        const fh2=VH*(.16+Math.sin(f2*1.2+i)*.06);
+        g.fillStyle=['#e8762a','#f5a623','#ffd54a','#c84a1c'][i%4];
+        g.beginPath(); g.moveTo(fxx-14,VH*.82);
+        g.quadraticCurveTo(fxx,VH*.82-fh2*2,fxx+14,VH*.82); g.fill();
+      }
+      // glow
+      const gl4=g.createRadialGradient(VW*.5,VH*.68,20,VW*.5,VH*.68,VW*.4);
+      gl4.addColorStop(0,'rgba(255,170,60,.45)'); gl4.addColorStop(1,'rgba(255,170,60,0)');
+      g.fillStyle=gl4; g.fillRect(0,0,VW,VH);
+      // Abram walking unharmed, clothed in light
+      const wx=VW*.5+Math.sin(t/1600)*VW*.04;
+      const gl5=g.createRadialGradient(wx,VH*.72,4,wx,VH*.72,60);
+      gl5.addColorStop(0,'rgba(255,255,235,.95)'); gl5.addColorStop(.5,'rgba(255,240,190,.5)');
+      gl5.addColorStop(1,'rgba(255,240,190,0)');
+      g.fillStyle=gl5; g.beginPath(); g.arc(wx,VH*.72,60,0,Math.PI*2); g.fill();
+      Sky.figure(g,wx,VH*.78,'avram_y',{t,scale:2,moving:true,dir:Math.sin(t/1600)>0?'right':'left'});
+      // embers
+      if(Math.random()<.5) Particles.spawn({x:VW*.4+Math.random()*VW*.2,y:VH*.8,vx:(Math.random()-.5)*.04,vy:-.08-Math.random()*.06,life:1800,max:1800,type:'spark',screen:true});
+      break; }
     case 'coat': {
       Sky.paint(g,[[0,'#a8c8d8'],[.6,'#c8dce0'],[1,'#a8c0a8']]);
       Sky.sun(g,VW*.8,VH*.16,26);
@@ -2736,6 +2809,7 @@ const STORY=[
 { id:'c5', title:'An Offering for YAHUAH', ref:'BERĔSHITH 4:1–7',
   intro:[
    {art:'journey', music:'desert', text:'And Aḏam knew Ḥawwah his wife and she conceived and bore Qayin… And again, she gave birth to his brother Heḇal. And Heḇal became a keeper of sheep, but Qayin became a tiller of the ground.', ref:'BERĔSHITH 4:1–2'},
+   {art:'offering', music:'tense', text:'And unto Qayin and his offering YAHUAH did not turn — for he had brought from the inferior fruit of the ground before YAHUAH. And Qayin was jealous against his brother Heḇal on account of this, and he sought a pretext to slay him.', ref:'YASHAR 1:16'},
   ],
   scene:{
    map:{biome:'plains', w:46, h:34, seed:21,
@@ -2794,7 +2868,7 @@ const STORY=[
   ],
   complete:'Sin is crouching at the door — and its desire is for you. But you should master it.'
 },
-{ id:'c6', title:'Am I My Brother’s Guard?', ref:'BERĔSHITH 4:8–26; 5',
+{ id:'c6', title:'Am I My Brother’s Guard?', ref:'BERĔSHITH 4–5 · YASHAR 1–3',
   intro:[
    {art:'offering', music:'tense', text:'And Qayin told Heḇal his brother. And it came to be, when they were in the field…', ref:'BERĔSHITH 4:8'},
   ],
@@ -2806,13 +2880,18 @@ const STORY=[
    player:'qayin', playerPos:[10,22],
    npcs:[
      {id:'hevel',char:'hevel',x:30,y:16,wander:false,noTalk:true},
+     {id:'fs1',animal:'sheep',x:29,y:15,range:2,noTalk:true},
+     {id:'fs2',animal:'sheep',x:31,y:17,range:2,noTalk:true},
    ],
    objectives:[
      {type:'goto',x:28,y:16,radius:2,text:'Walk out to your brother in the field',
       script:[
-       {say:['hevel','Brother! You came out to me. The evening is kind — sit, the flock is quiet.']},
-       {say:['qayin','I came… to speak. About the offering. About the looking, and the not-looking.']},
-       {say:['hevel','Qayin — do well, and it shall be well with you also. He told you so Himself—']},
+       {say:['narrator','They were both in the field, Qayin tilling and ploughing his ground, and Heḇal feeding his flock — and the flock passed over that part which Qayin had ploughed, and it sorely grieved Qayin.']},
+       {say:['qayin','What is there between me and you, that you come to dwell and bring your flock to feed in MY land?']},
+       {say:['hevel','And what is there between me and you — that you eat the flesh of my flock and clothe yourself with their wool? Put off the wool of my sheep with which you have clothed yourself, and recompense me for their fruit and flesh which you have eaten — and then I will go from your land, as you have said.']},
+       {say:['qayin','…And if I slay you this day — who will require your blood from me?']},
+       {say:['hevel','Aluahim, who made us in the earth — He will avenge my cause. He will require my blood from you if you slay me, for YAHUAH is the judge and arbiter, and He requites every man according to his evil. If you slay me here, surely Aluahim knows your secret thoughts, and will judge you for this evil.']},
+       {say:['narrator','And when Qayin heard the words his brother had spoken, behold — his anger was kindled. And he hurried and took the iron of his ploughing instrument…']},
        {fade:'out'},{sfx:'thunder'},{music:'sorrow'},{wait:1000},
        {despawn:'hevel'},{time:'night'},
        {fade:'in'},{wait:700},
@@ -2830,7 +2909,8 @@ const STORY=[
   },
   outro:[
    {art:'stars', music:'holy', text:'And Aḏam knew his wife again and she bore a son and called his name Shĕth — “for Aluahim has appointed me another seed in place of Heḇal.” …Then it was begun to call on the Name of YAHUAH.', ref:'BERĔSHITH 4:25–26'},
-   {art:'stars', text:'And Ḥanoḵ walked with Aluahim three hundred years… And Ḥanoḵ walked with Aluahim — and he was not, for Aluahim took him.', ref:'BERĔSHITH 5:22–24'},
+   {art:'stars', text:'And Ḥanoḵ walked with Aluahim three hundred years… and he taught the sons of men the ways of YAHUAH, and kings and princes came to hear his wisdom, and crowned him over them.', ref:'BERĔSHITH 5:22; YASHAR 3'},
+   {art:'ladder', music:'holy', text:'And they lifted up their eyes, and the likeness of a great horse descended from the shamayim, pacing in the air. And Ḥanoḵ said, “On my account does this horse descend. The time has come that I must go from you.” And he ascended into the shamayim in a whirlwind, with horses and chariots of fire — and he was not, for Aluahim took him.', ref:'YASHAR 3:27–36; BERĔSHITH 5:24'},
   ],
   complete:'The voice of your brother’s blood cries out to Me from the ground. Yet another seed was appointed — and men began to call on the Name of YAHUAH.'
 },
@@ -2875,6 +2955,7 @@ STORY.push(
        {fade:'out'},{prop:['ark',{stage:2}]},{fade:'in'},
        {toast:'The work of years is finished.'},{sfx:'chime'},{wait:700},
        {say:['noach','Three hundred cubits long, fifty wide, thirty high — exactly as He commanded. It is finished.']},
+       {say:['noach','And one bundle more goes aboard, wrapped and dear: the garments of skin which Aluahim made for Aḏam and his wife when they went out of the garden — handed down from Ḥanoḵ to Methushelaḥ, and from Methushelaḥ to me. The first mercy shall not drown with the world.']},
       ]},
    ],
    onStart:[
@@ -3030,8 +3111,10 @@ STORY.push(
 ]},
 /* ============ ACT V — THE SCATTERING ============ */
 { id:'act5', roman:'V', title:'The Scattering', ref:'BERĔSHITH 10–11', chapters:[
-{ id:'c11', title:'A Tower to the Shamayim', ref:'BERĔSHITH 11:1–9',
+{ id:'c11', title:'A Tower to the Shamayim', ref:'BERĔSHITH 10–11 · YASHAR 7; 9',
   intro:[
+   {art:'expulsion', music:'tense', text:'And the garments of skin which Aluahim made for Aḏam and his wife — in their going out of the ark, Ḥam stole them from Noaḥ his father, and hid them from his brothers. And Ḥam gave them in secret to Cush; and Cush gave them to Nimroḏ, through his love for him.', ref:'YASHAR 7:24–29'},
+   {art:'corrupt', music:'royal', text:'And Nimroḏ became strong when he put on the garments, and he was a mighty hunter in the earth… and he reigned upon the earth. Therefore it became a saying: “Like Nimroḏ, a mighty hunter before YAHUAH.”', ref:'YASHAR 7:30–33; BERĔSHITH 10:9'},
    {art:'babel', music:'royal', text:'And all the earth had one language and one speech… And they said, “Come, let us build ourselves a city and a tower whose top is in the shamayim, and make a name for ourselves, lest we be scattered over the face of all the earth.”', ref:'BERĔSHITH 11:1,4'},
   ],
   scene:{
@@ -3049,9 +3132,11 @@ STORY.push(
      {id:'nimrod',char:'nimrod',x:23,y:17,wander:false,
       dlg:[['nimrod','Burn the bricks thoroughly! Brick for stone, and bitumen for mortar. We shall reach the shamayim itself and make a name for ourselves — one people, one tongue, one tower!']]},
      {id:'b2',char:'builder2',x:18,y:20,wander:true,range:2,
-      dlg:[['builder2','Come, let us make bricks and burn them thoroughly! The tower rises higher every season — soon its head will touch the clouds.']]},
+      dlg:[['builder2','Come, let us make bricks and burn them thoroughly! Our company says: we will ascend to the shamayim and set up our own gods there, and serve them in the height!']]},
      {id:'b3',char:'builder3',x:28,y:21,wander:true,range:2,
-      dlg:[['builder3','Why should we be scattered abroad? Here we shall stay, all men together, and climb to the shamayim on steps of our own making.']]},
+      dlg:[['builder3','Why should we be scattered abroad? Our company says: we will ascend and make WAR upon Him who dwells above. Steps of brick, all the way up!']]},
+     {id:'b4',char:'builder',x:23,y:22,wander:true,range:2,
+      dlg:[['builder','Look at my bow! Our company says: we will smite the shamayim with arrows. Yesterday we shot from the top — and every arrow fell back to us dripping with blood! Surely we have slain all those that dwell in the shamayim!']]},
    ],
    objectives:[
      {type:'talk',npc:'nimrod',text:'Report to Nimroḏ before the tower'},
@@ -3061,6 +3146,7 @@ STORY.push(
        {toast:'The tower rises…'},{wait:800},
        {fade:'out'},{prop:['tower',{stage:3}]},{fade:'in'},
        {toast:'Its head reaches toward the clouds.'},{wait:800},
+       {say:['narrator','And from the top they cast arrows toward the shamayim — and the arrows fell back upon them filled with blood. And they said to one another, “Surely we have slain all those that are in the shamayim.” But this was from YAHUAH, to cause them to err, whose every thought was rebellion.']},
        {rays:.9,raysX:23},{sfx:'holy'},{music:'tense'},
        {say:['narrator','And YAHUAH came down to see the city and the tower which the sons of men had built. And YAHUAH said, “See, they are one people and they all have one language… now they are not going to be withheld from doing whatever they plan.”']},
        {say:['voice','Come, let Us go down and confuse their language, so that they do not understand one another’s speech.']},
@@ -3086,6 +3172,7 @@ STORY.push(
   },
   outro:[
    {art:'babel', music:'desert', text:'Therefore its name was called Baḇel, because there YAHUAH confused the language of all the earth — and from there YAHUAH scattered them over the face of all the earth.', ref:'BERĔSHITH 11:9'},
+   {art:'sodom', music:'sorrow', text:'And the three companies were judged, each according to its design — and as for the tower: the earth opened its mouth and swallowed a third of it, fire came down from the shamayim and burned a third, and a third stands to this day — its circumference three days’ walk.', ref:'YASHAR 9:35–39'},
   ],
   complete:'Come, let Us go down and confuse their language… and they ceased building the city.'
 },
@@ -3094,7 +3181,73 @@ STORY.push(
 
 /* ================= STORY DATA — ACT VI ================= */
 STORY.push(
-{ id:'act6', roman:'VI', title:'Aḇraham', ref:'BERĔSHITH 12–25', chapters:[
+{ id:'act6', roman:'VI', title:'Aḇraham', ref:'BERĔSHITH 12–25 · YASHAR 8–12', chapters:[
+{ id:'c11b', title:'The Furnace of Kasdim', ref:'YASHAR 8–12',
+  intro:[
+   {art:'stars', music:'night', text:'And in the night that Aḇram was born, the wise men of Nimroḏ lifted their eyes and saw one very large star come from the east and run through the shamayim — and it swallowed up four stars from the four sides of the shamayim. And they said, “This betokens the child born to Teraḥ this night, who will grow up and possess all the earth, he and his seed forever.”', ref:'YASHAR 8:1–4'},
+   {art:'journey', music:'desert', text:'And the child was hidden from the king in a cave. And when Aḇram came out from the cave, he went to Noaḥ and to Shĕm his son, and remained with them to learn the instruction of YAHUAH and His ways — and Aḇram was in Noaḥ’s house thirty-nine years, and he knew YAHUAH from three years old.', ref:'YASHAR 9:5–6'},
+   {art:'luminaries', music:'night', text:'And Aḇram saw the sun shining upon the earth and said, “Surely this sun is Aluahim — him I will serve.” But the sun set. And he saw the moon and the stars — and they darkened. And Aḇram said, “These are not Aluahim that made the earth and all mankind. These are His servants.”', ref:'YASHAR 9:13–19'},
+  ],
+  scene:{
+   map:{biome:'interior', floorCol:'#a08a66', w:26, h:16, seed:65,
+     features:[
+       {type:'idol',x:13,y:4.6,col:'#caa23c',solid:true,id:'idolbig'},
+       {type:'idol',x:8,y:5,col:'#9a9488',solid:true,id:'idol1'},
+       {type:'idol',x:10.5,y:5,col:'#b58a50',solid:true,id:'idol2'},
+       {type:'idol',x:15.5,y:5,col:'#8a9aa8',solid:true,id:'idol3'},
+       {type:'idol',x:18,y:5,col:'#9a9488',solid:true,id:'idol4'},
+       {type:'idol',x:6,y:7,col:'#b58a50',solid:true,id:'idol5'},
+       {type:'idol',x:20,y:7,col:'#8a9aa8',solid:true,id:'idol6'},
+       {type:'firepit',x:7,y:11,lit:true},
+       {type:'pot',x:8.4,y:11,fire:true},
+     ]},
+   time:'day', music:'tense',
+   player:'avram_y', playerPos:[13,11],
+   npcs:[
+     {id:'terah',char:'terah',x:24,y:13,wander:false,hidden:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'interact',prop:'idolbig',text:'Stand before the twelve gods of your father’s house',
+      script:[
+       {say:['avram_y','Twelve images of wood and stone, in their shrines, in my father’s own house. Teraḥ — captain of Nimroḏ’s host — bows to things his own hands carved.']},
+       {choice:{prompt:'The anger of Aḇram is kindled within him. What will he do?',options:[
+         {label:'Set savoury meat before them — and watch', script:[
+           {say:['narrator','And he set savoury meat before the images, and not one of them stretched out a hand to eat.']},
+           {say:['avram_y','Eat! You have mouths — eat! …Nothing. As nothing was yesterday, and nothing tomorrow. As YAHUAH lives, these images shall not remain in my father’s house!']},
+         ]},
+         {label:'Take up the hatchet at once', script:[
+           {say:['avram_y','As YAHUAH lives — He who created me, who kept me in the cave, whose ways Noaḥ and Shĕm taught me — these images shall not remain in my father’s house!']},
+         ]},
+       ]}},
+       {sfx:'thunder'},{shake:2},
+       {prop:['idol1',{broken:true,solid:false}]},{burst:[8,5,'ash',10]},{wait:250},
+       {prop:['idol2',{broken:true,solid:false}]},{burst:[10.5,5,'ash',10]},{wait:250},
+       {prop:['idol3',{broken:true,solid:false}]},{burst:[15.5,5,'ash',10]},{wait:250},
+       {prop:['idol4',{broken:true,solid:false}]},{burst:[18,5,'ash',10]},{wait:250},
+       {prop:['idol5',{broken:true,solid:false}]},{burst:[6,7,'ash',10]},{wait:250},
+       {prop:['idol6',{broken:true,solid:false}]},{burst:[20,7,'ash',10]},{wait:400},
+       {say:['narrator','And he broke them all — and when he had finished, he placed the hatchet in the hand of the great image that stood before them, and went out.']},
+       {prop:['idolbig',{hatchet:true}]},
+       {show:'terah'},{move:['terah',14.5,8,.06]},
+      ]},
+     {type:'talk',npc:'terah',text:'Face your father Teraḥ',hiddenUntil:1,
+      script:[
+       {say:['terah','What — WHAT is this deed?! My gods! Who has done this evil in my house?!']},
+       {say:['avram_y','I brought them savoury meat, father. And they all reached for it at once — and the great one was angered at their greed, and took the hatchet, and broke them all. See — the hatchet is still in his hand.']},
+       {say:['terah','You speak lies to me! Is there in these any ruach, any nephesh, any power to do such a thing? Are they not wood and stone? Did I not make them with my own hands?!']},
+       {say:['avram_y','Then how, father, can they deliver you? How can they hear your prayers — things of wood and stone that cannot save themselves from one hatchet? Far be it from you to serve them! Serve the Aluahim of the shamayim, who created the earth and all mankind, in whose hand is your breath!']},
+       {say:['narrator','And Teraḥ’s anger was kindled, and he went out and told the thing to Nimroḏ the king. And Aḇram was brought before the king and his princes and his wise men.']},
+       {fade:'out'},{music:'sorrow'},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'corrupt', music:'sorrow', text:'And the king said, “Cast him into the fire.” And the furnace of Kasdim was heated three days and three nights, and all the people of the land stood to see. And Haran his brother, whose heart was divided — “If Aḇram prevails, I am Aḇram’s; if the king prevails, I am the king’s” — was cast in with him, and died, for his heart was not perfect with YAHUAH.', ref:'YASHAR 12:6–26'},
+   {art:'furnace', music:'holy', sfx:'holy', text:'And Aḇram walked in the midst of the fire three days and three nights. And the servants ran to the king, saying, “Behold, we have seen Aḇram walking about in the midst of the fire, and not even the lower garments upon him are burned!”', ref:'YASHAR 12:27–28'},
+   {art:'furnace', music:'holy', text:'And the king called, “Servant of the Aluahim who is in the shamayim — come out, and stand before me!” And Aḇram came out of the fire and stood before the king with not a hair singed. And from that day, Aḇram walked free — and many of that land followed him, to learn the ways of YAHUAH.', ref:'YASHAR 12:30–42'},
+  ],
+  complete:'He brought one man through the fire of Kasdim — and the fire of kings was never again the measure of truth.'
+},
 { id:'c12', title:'Go From Your Land', ref:'BERĔSHITH 12',
   intro:[
    {art:'journey', music:'desert', text:'And YAHUAH said to Aḇram, “Go yourself out of your land, from your relatives and from your father’s house, to a land which I show you. And I shall make you a great nation and barak you and make your name great — and you shall be a blessing!”', ref:'BERĔSHITH 12:1–2'},
@@ -3357,7 +3510,7 @@ STORY.push(
   ],
   complete:'Aluahim has made laughter for me — at the appointed time, exactly as He had spoken.'
 },
-{ id:'c17', title:'YAHUAH Yireh', ref:'BERĔSHITH 22',
+{ id:'c17', title:'YAHUAH Yireh', ref:'BERĔSHITH 22 · YASHAR 23',
   intro:[
    {art:'moriah', music:'sorrow', text:'And it came to be after these matters that Aluahim tried Aḇraham… “Take your son, now, your only son Yahtsḥaq, whom you love… and offer him there as a burnt offering on one of the mountains which I command you.”', ref:'BERĔSHITH 22:1–2'},
    {art:'moriah', text:'And Aḇraham rose early in the morning… and the two of them went together, three days’ journey, to the land of Moriyah.', ref:'BERĔSHITH 22:3–4'},
@@ -3384,7 +3537,14 @@ STORY.push(
       ]},
      {type:'goto',x:22,y:17,radius:2,text:'Go on, higher up the mountain',hiddenUntil:1,
       script:[
-       {say:['narrator','Step after step, the old man and the son of the promise. Every step a prayer. Every step a trust: he reckoned that Aluahim was able to raise him, even from the dead.']},
+       {spawn:{id:'oldman',char:'oldman',x:22,y:15,wander:false,noTalk:true}},
+       {say:['oldman','Whither away, greybeard, so early and so grim? Are you a fool, to lose your heart’s delight? A word came to you in the night — and for a dream, you will slay the son given to you at a hundred years? The deceiver has spoken it; no Aluahim asks such a thing.']},
+       {say:['yitschaq','Father… do you hear what this man says?']},
+       {say:['avraham','Take heed of him, my son, and do not listen — for I know him. It was no dream and no deceiver that spoke to me; it was YAHUAH, whose voice I have known since the furnace of Kasdim. Away from us, Satan — we walk in the command of the living Aluahim.']},
+       {despawn:'oldman'},{sfx:'bad'},{burst:[22,15,'ash',14]},
+       {say:['narrator','And seeing he could not prevail, he hid himself — and passed before them on the road, and became a great brook of water where no brook had ever run. And they walked in, and the waters reached to their necks.']},
+       {say:['avraham','I know this mountain — and there was never water here! Be rebuked, and be dry, for we go at the word of YAHUAH!']},
+       {say:['narrator','And he rebuked the brook, and the place was dry land again. Step after step, the old man and the son of the promise — every step a trust: he reckoned that Aluahim was able to raise him, even from the dead.']},
       ]},
      {type:'interact',prop:'altar',text:'Build the altar at the place Aluahim had said',hiddenUntil:2,
       script:[
@@ -3413,7 +3573,7 @@ STORY.push(
 /* ================= STORY DATA — ACTS VII–VIII ================= */
 STORY.push(
 { id:'act7', roman:'VII', title:'Ya‘aqoḇ', ref:'BERĔSHITH 25–35', chapters:[
-{ id:'c18', title:'The Birthright', ref:'BERĔSHITH 25:19–34; 27',
+{ id:'c18', title:'The Birthright', ref:'BERĔSHITH 25; 27 · YASHAR 27',
   intro:[
    {art:'journey', music:'desert', text:'And Yahtsḥaq prayed to YAHUAH for his wife, because she was barren. And YAHUAH answered him, and Riḇqah his wife conceived… two nations are in your womb, and the older shall serve the younger.', ref:'BERĔSHITH 25:21,23'},
   ],
@@ -3442,6 +3602,7 @@ STORY.push(
        {spawn:{id:'esav',char:'esav',x:42,y:22,wander:false,noTalk:true}},
        {move:['esav',24,18,.06]},
        {say:['esav','Brother — feed me, I beg you, some of that red, red stew! I have been in the field. I am exhausted — I am about to die!']},
+       {say:['narrator','And weary he was indeed — for that very day, in the field, Ĕsaw had slain Nimroḏ king of Baḇel and fled from his mighty men; and he carried off the precious garments by which Nimroḏ prevailed in the earth — the garments of skin which Aluahim made for Aḏam, stolen long ago from Noaḥ in the going out of the ark.']},
        {choice:{prompt:'Ĕsaw the firstborn stands swaying with hunger. The words rise to your lips…',options:[
          {label:'“Sell me your birthright today.”', script:[
            {say:['yaaqov','Sell me your birthright — today.']},
