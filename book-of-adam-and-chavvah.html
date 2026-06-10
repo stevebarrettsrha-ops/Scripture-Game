@@ -304,7 +304,8 @@ const Sound={
     if(!this.ctx||mood===this.mood) return;
     this.mood=mood;
     const t=this.ctx.currentTime;
-    this.padNodes.forEach(n=>{ try{n.g.gain.linearRampToValueAtTime(0,t+1.8); n.o.stop(t+2);}catch(e){} });
+    this.padNodes.forEach(n=>{ try{n.g.gain.linearRampToValueAtTime(0,t+1.8); n.o.stop(t+2); n.lfo.stop(t+2);
+      setTimeout(()=>{try{n.o.disconnect();n.g.disconnect();n.lfo.disconnect();}catch(e){}},2200);}catch(e){} });
     this.padNodes=[];
     if(!mood) return;
     const m=this.MOODS[mood]||this.MOODS.eden;
@@ -1342,7 +1343,7 @@ function generateMap(cfg){
     // clear area around feature
     const rad=f.clear!==undefined?f.clear:2;
     for(let i=decor.length-1;i>=0;i--){
-      if(dist(decor[i].x,decor[i].y,f.x,f.y)<rad) decor.splice(i,1);
+      if(!decor[i].id&&dist(decor[i].x,decor[i].y,f.x,f.y)<rad) decor.splice(i,1);
     }
     if(f.flat){
       for(let y=Math.max(1,Math.floor(f.y-f.flat));y<=Math.min(h-2,Math.ceil(f.y+f.flat));y++)
@@ -1932,12 +1933,15 @@ const Game={
     if(s.sfx) Sound.sfx(s.sfx);
   },
   advanceSlide(){
+    if(this._slideEnding) return;
     this.slideIdx++;
     if(this.slideIdx>=this.slideList.length){
+      this._slideEnding=true;
       $('slide-ui').classList.remove('show');
       if(this.slidePhase==='intro'){
-        fadeOut(()=>{ this.startScene(); fadeIn(); });
+        fadeOut(()=>{ this._slideEnding=false; this.startScene(); fadeIn(); });
       } else {
+        this._slideEnding=false;
         this.finishChapter();
       }
       return;
