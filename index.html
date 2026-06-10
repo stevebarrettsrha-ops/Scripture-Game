@@ -225,6 +225,7 @@
     <div class="big" id="complete-title"></div>
     <div class="sub" id="complete-sub"></div>
     <div class="menu-buttons">
+      <button class="btn" id="btn-dlc" style="display:none">✦ New Story Unlocked: The Books of Aḏam &amp; Ḥawwah ✦</button>
       <button class="btn" id="btn-next-ch">Continue the Story →</button>
       <button class="btn small" id="btn-complete-menu">Chapter Select</button>
     </div>
@@ -1805,6 +1806,8 @@ const Game={
     $('complete-sub').textContent=ch.complete||'';
     const next=nextChapter(ch.id);
     $('btn-next-ch').style.display=next?'':'none';
+    $('btn-dlc').style.display=(ch.id==='c4')?'':'none';
+    if(ch.id==='c4') toast('✦ A new journey has been unlocked: The Books of Aḏam & Ḥawwah ✦');
     showScreen('complete-screen');
   },
 
@@ -4040,6 +4043,10 @@ function openTitle(){
   $('slide-ui').classList.remove('show');
   const hasSave=Save.data.current&&Object.keys(Save.data.done).length>0;
   $('btn-continue').style.display=hasSave?'':'none';
+  const dlcOpen=!!Save.data.done['c4'];
+  $('btn-book').innerHTML=dlcOpen?'✦ The Books of Aḏam &amp; Ḥawwah ✦':'🔒 The Books of Aḏam &amp; Ḥawwah';
+  $('btn-book').style.opacity=dlcOpen?'1':'.45';
+  $('btn-book').title=dlcOpen?'':'Unlocks after Act II — The Fall';
   showScreen('title-screen');
 }
 
@@ -4049,7 +4056,11 @@ $('btn-new').onclick=()=>{ Sound.init();
   Save.reset(); Game.startChapter(allChapters()[0]); };
 $('btn-continue').onclick=()=>{ Sound.init(); Game.startChapter(firstUnfinished()); };
 $('btn-chapters').onclick=()=>{ Sound.init(); openChapters(); };
-$('btn-book').onclick=()=>{ window.location.href='book-of-adam-and-chavvah.html'; };
+$('btn-book').onclick=()=>{
+  if(!Save.data.done['c4']){ Sound.init(); Sound.sfx('bad');
+    toast('Complete Act II — The Fall — to unlock this story.'); return; }
+  window.location.href='book-of-adam-and-chavvah.html'; };
+$('btn-dlc').onclick=()=>{ window.location.href='book-of-adam-and-chavvah.html'; };
 $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
