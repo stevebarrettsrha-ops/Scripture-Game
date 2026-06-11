@@ -1345,6 +1345,20 @@ function drawProp(g,px,py,p,t){
         g.fillStyle=gl7; g.beginPath(); g.arc(0,-TILE*.5,TILE*1.6,0,Math.PI*2); g.fill();
       }
       break; }
+    case 'fold': {
+      /* sheepfold: post-and-rail pen, open side facing down */
+      const pw2=TILE*(p.w||3.6), ph3=TILE*(p.h||2.6);
+      g.fillStyle='rgba(0,0,0,.12)';
+      g.fillRect(-pw2/2,-ph3,pw2,ph3);
+      const post=(x,y)=>{ g.fillStyle='#5d4426'; g.fillRect(x-3,y-TILE*.62,6,TILE*.62);
+        g.fillStyle='#6e552f'; g.fillRect(x-3,y-TILE*.62,6,4); };
+      const rail=(x1,y1,x2,y2)=>{ g.strokeStyle='#6e552f'; g.lineWidth=4;
+        g.beginPath(); g.moveTo(x1,y1-TILE*.42); g.lineTo(x2,y2-TILE*.42);
+        g.moveTo(x1,y1-TILE*.18); g.lineTo(x2,y2-TILE*.18); g.stroke(); };
+      rail(-pw2/2,-ph3,pw2/2,-ph3); rail(-pw2/2,-ph3,-pw2/2,0); rail(pw2/2,-ph3,pw2/2,0);
+      rail(-pw2/2,0,-pw2*.18,0); rail(pw2*.18,0,pw2/2,0);
+      for(const [fx6,fy6] of [[-pw2/2,-ph3],[pw2/2,-ph3],[-pw2/2,0],[pw2/2,0],[0,-ph3],[-pw2*.18,0],[pw2*.18,0]]) post(fx6,fy6);
+      break; }
     case 'doorway': {
       const dw=TILE*1.3, dh=TILE*1.8;
       // opening carved into the wall
