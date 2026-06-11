@@ -1173,20 +1173,58 @@ function drawProp(g,px,py,p,t){
       }
       break; }
     case 'tent': {
+      /* nomad tent: sagging woven canvas over a ridge pole, open flap, stakes */
       shadow(13);
       const col=p.col||'#b3a07f';
-      g.fillStyle=shade(col,-25);
-      g.beginPath(); g.moveTo(-14*u,0); g.lineTo(0,-17*u); g.lineTo(14*u,0); g.closePath(); g.fill();
+      // canvas body with concave, fabric-sag slopes
       g.fillStyle=col;
-      g.beginPath(); g.moveTo(-14*u,0); g.lineTo(0,-17*u); g.lineTo(0,0); g.closePath(); g.fill();
-      g.fillStyle=shade(col,8);
-      g.beginPath(); g.moveTo(-14*u,0); g.lineTo(-9*u,-6*u); g.lineTo(-4*u,0); g.closePath(); g.fill();
-      g.fillStyle='#2c2418';
-      g.beginPath(); g.moveTo(-4.4*u,0); g.lineTo(0,-8.4*u); g.lineTo(4.4*u,0); g.closePath(); g.fill();
-      g.strokeStyle=shade(col,-40); g.lineWidth=u*.6;
-      g.beginPath(); g.moveTo(0,-17*u); g.lineTo(0,0); g.stroke();
-      g.strokeStyle=shade(col,-30); g.lineWidth=u*.4;
-      g.beginPath(); g.moveTo(0,-17*u); g.lineTo(-17*u,2*u); g.moveTo(0,-17*u); g.lineTo(17*u,2*u); g.stroke();
+      g.beginPath();
+      g.moveTo(-15*u,0);
+      g.quadraticCurveTo(-12*u,-11.5*u,0,-15.5*u);
+      g.quadraticCurveTo(12*u,-11.5*u,15*u,0);
+      g.quadraticCurveTo(0,1.6*u,-15*u,0);
+      g.closePath(); g.fill();
+      // shaded right half for depth
+      g.fillStyle=shade(col,-16);
+      g.beginPath();
+      g.moveTo(0,-15.5*u);
+      g.quadraticCurveTo(12*u,-11.5*u,15*u,0);
+      g.quadraticCurveTo(7*u,1.2*u,1*u,0.4*u);
+      g.lineTo(0,-15.5*u); g.closePath(); g.fill();
+      // woven cloth bands following the sag
+      g.strokeStyle=shade(col,-26); g.lineWidth=u*.5;
+      for(let i=1;i<4;i++){
+        const yb=-i*3.9*u;
+        g.beginPath();
+        g.moveTo((-15+i*3.4)*u,yb*0+0 - i*0.2*u);
+        g.quadraticCurveTo(0,yb-4.2*u,(15-i*3.4)*u,-i*0.2*u);
+        g.stroke();
+      }
+      // ridge pole tip
+      g.strokeStyle='#5d4426'; g.lineWidth=u*.7;
+      g.beginPath(); g.moveTo(0,-15.5*u); g.lineTo(0,-17.5*u); g.stroke();
+      // entrance: dark opening with the flap drawn aside
+      g.fillStyle='#241c10';
+      g.beginPath();
+      g.moveTo(-4.6*u,0.4*u);
+      g.quadraticCurveTo(-3.4*u,-7.6*u,0,-8.6*u);
+      g.quadraticCurveTo(3.4*u,-7.6*u,4.6*u,0.4*u);
+      g.closePath(); g.fill();
+      g.fillStyle=shade(col,14);
+      g.beginPath();
+      g.moveTo(0,-8.6*u);
+      g.quadraticCurveTo(6.4*u,-6*u,7.6*u,0.4*u);
+      g.lineTo(4.2*u,0.4*u);
+      g.quadraticCurveTo(3.4*u,-6.4*u,0,-8.6*u);
+      g.closePath(); g.fill();
+      // guy ropes to stakes
+      g.strokeStyle=shade(col,-34); g.lineWidth=u*.4;
+      g.beginPath();
+      g.moveTo(-13*u,-3*u); g.lineTo(-18*u,1.6*u);
+      g.moveTo(13*u,-3*u); g.lineTo(18*u,1.6*u);
+      g.stroke();
+      g.fillStyle='#5d4426';
+      g.fillRect(-18.6*u,1.2*u,1.2*u,1.6*u); g.fillRect(17.4*u,1.2*u,1.2*u,1.6*u);
       break; }
     case 'well': {
       shadow(4.6);
@@ -4588,9 +4626,26 @@ STORY.push(
        {say:['yitschaq','Father… do you hear what this man says?']},
        {say:['avraham','Take heed of him, my son, and do not listen — for I know him. It was no dream and no deceiver that spoke to me; it was YAHUAH, whose voice I have known since the furnace of Kasdim. Away from us, Satan — we walk in the command of the living Aluahim.']},
        {despawn:'oldman'},{sfx:'bad'},{burst:[22,15,'ash',14]},
-       {say:['narrator','And seeing he could not prevail, he hid himself — and passed before them on the road, and became a great brook of water where no brook had ever run. And they walked in, and the waters reached to their necks.']},
+       {say:['narrator','And seeing he could not prevail, he hid himself — and passed before them on the road, and became a great brook of water where no brook had ever run.']},
+       {call:g=>{ const m=g.world.map; g._brookTiles=[];
+         for(let y=12;y<=14;y++)for(let x=17;x<=27;x++){
+           if(!SOLID.has(m.tiles[y*m.w+x])){ g._brookTiles.push([x,y,m.tiles[y*m.w+x]]); m.tiles[y*m.w+x]=(y===13)?6:5; } } }},
+       {sfx:'thunder'},{shake:1.5},{wait:800},
+       {say:['yitschaq','Father — water! A river across the whole mountainside, where the path climbed dry a moment ago!']},
+       {say:['avraham','Then we walk through it, my son. We go at the word of YAHUAH — and no water of his making shall turn us.']},
+       {move:['player',22,14.6,.035,'bg']},{move:['yitschaq',23.2,14.8,.035]},
+       {call:g=>{ g.world.player.submerged=true; const y=g.world.npcs.find(n=>n.id==='yitschaq'); if(y)y.submerged=true; }},
+       {move:['player',22,13.2,.025,'bg']},{move:['yitschaq',23.2,13.4,.025]},
+       {say:['narrator','And they entered the brook and passed through it — and the waters at first reached their legs; and they went deeper, and the waters reached up to their necks.']},
        {say:['avraham','I know this mountain — and there was never water here! Be rebuked, and be dry, for we go at the word of YAHUAH!']},
-       {say:['narrator','And he rebuked the brook, and the place was dry land again. Step after step, the old man and the son of the promise — every step a trust: he reckoned that Aluahim was able to raise him, even from the dead.']},
+       {rays:.8,raysX:22},{sfx:'holy'},
+       {call:g=>{ const m=g.world.map;
+         (g._brookTiles||[]).forEach(([x,y,tv])=>{ m.tiles[y*m.w+x]=tv; });
+         g._brookTiles=null;
+         g.world.player.submerged=false;
+         const y=g.world.npcs.find(n=>n.id==='yitschaq'); if(y)y.submerged=false; }},
+       {burst:[22,13,'mote',24]},{rays:0},
+       {say:['narrator','And he rebuked the brook, and the waters fled, and the place was dry land again. Step after step, the old man and the son of the promise — every step a trust: he reckoned that Aluahim was able to raise him, even from the dead.']},
       ]},
      {type:'interact',prop:'altar',text:'Build the mizbe’ach at the place Aluahim had said',hiddenUntil:2,
       script:[
