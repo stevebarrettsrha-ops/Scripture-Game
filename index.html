@@ -574,8 +574,10 @@ function drawChar(g,px,py,charId,o){
   g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined) g.globalAlpha=o.alpha;
   /* shadow */
-  g.fillStyle='rgba(0,0,0,.25)';
-  g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
+  if(!o.submerged){
+    g.fillStyle='rgba(0,0,0,.25)';
+    g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
+  }
   /* aura */
   if(c.glory||c.angel){
     const col=c.darkAngel?'120,80,140':(c.angel?'255,245,200':'255,222,120');
@@ -597,6 +599,12 @@ function drawChar(g,px,py,charId,o){
     }
   }
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(-Math.PI/2*flip); }
+  if(o.submerged){
+    /* waist-deep in water: clip everything below the waterline */
+    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
+    g._waterline=wl;
+  }
   const ops=[];
   const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
   const skin=c.skin||'#7a4e29', hairC=c.hair||'#2c1a0c', robe=c.robe;
@@ -731,6 +739,14 @@ function drawChar(g,px,py,charId,o){
     R(-0.6+k*1.5,-9.2+B,2.2,1.7,skin);
   }
   sprRender(g,ops,u,flip);
+  if(o.submerged){
+    /* ripples on the waterline */
+    const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
+    g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
+    g.strokeStyle='rgba(225,240,250,.32)';
+    g.beginPath(); g.ellipse(0,wl,(9.6+Math.sin(t/430)*1.2)*u,2.8*u,0,0,Math.PI*2); g.stroke();
+  }
   g.restore();
 }
 
@@ -1546,7 +1562,7 @@ function tileColor(map,id,x,y){
     case T.ROCK: return shadeC('#7d7468',v);
     case T.MTN: return shadeC('#5d564c',v);
     case T.WATER: return shadeC(b.water,v*.6);
-    case T.DEEP: return shadeC(shadeHex(b.water,-30),v*.5);
+    case T.DEEP: return shadeC(b.water,v*.5-30);
     case T.SNOW: return shadeC('#e8ecf0',v*.4);
   }
   return '#777';
@@ -1647,7 +1663,7 @@ function drawWorld(g,world,t){
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
