@@ -164,6 +164,21 @@
          transition:opacity .8s ease}
   .vneg{user-select:none}
 
+  /* ---------- slide back + story log ---------- */
+  #slide-back{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-back.show{display:inline-block}
+  #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
+  #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
+    scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  .log-entry{margin-bottom:1.4vh;line-height:1.5}
+  .log-entry .who{color:var(--gold);letter-spacing:.2em;font-size:clamp(10px,1.7vmin,13px);
+    text-transform:uppercase;display:block;margin-bottom:2px}
+  .log-entry .what{color:#e8dfc8;font-size:clamp(13px,2.2vmin,17px);font-style:italic}
+
   /* ---------- mobile fullscreen / rotation ---------- */
   @supports(height:100dvh){ html,body{height:100dvh} }
   #sys-buttons{top:calc(1.4vh + env(safe-area-inset-top,0px));right:calc(1.2vw + env(safe-area-inset-right,0px))}
@@ -184,6 +199,7 @@
   <div id="interact-tip">✦ &nbsp;Press <b>E</b> to interact</div>
 
   <div id="sys-buttons">
+    <div class="sys-btn" id="btn-log" title="The story so far">📜</div>
     <div class="sys-btn" id="btn-fs" title="Fullscreen">⛶</div>
     <div class="sys-btn" id="btn-sound" title="Sound">♪</div>
     <div class="sys-btn" id="btn-menu" title="Chapters">☰</div>
@@ -193,6 +209,7 @@
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
+    <button id="slide-back">⟨ &nbsp;Previous</button>
   </div>
 
   <div id="dlg">
@@ -231,6 +248,15 @@
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
     </div>
+  </div>
+
+  <div class="screen" id="log-screen">
+    <h2 style="color:var(--gold);letter-spacing:.3em;font-size:clamp(16px,3vmin,26px);
+        text-transform:uppercase;margin-bottom:.6vh">The Story So Far</h2>
+    <div class="hint" style="color:#8d8770;font-style:italic;font-size:clamp(11px,1.8vmin,15px);
+        margin-bottom:1.6vh">every word of this chapter, in case one slipped past</div>
+    <div id="log-list"></div>
+    <button class="btn small" id="btn-log-close" style="margin-top:1.4vh">← Return</button>
   </div>
 
   <div class="screen" id="complete-screen">
@@ -399,6 +425,7 @@ const Input={
       this.keys[e.code]=true;
       if(['Space','Enter','KeyE'].includes(e.code)){ Game.onAction(); }
       if(e.code==='Escape') Game.onEscape();
+      if((e.code==='Backspace'||e.code==='ArrowLeft')&&Game.state==='slides'){ Game.prevSlide(); e.preventDefault(); }
       if(['ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
     });
     addEventListener('keyup',e=>{ this.keys[e.code]=false; });
@@ -1757,6 +1784,7 @@ const Game={
     this.dlgChar=d.charId; this.dlgText=d.text; this.dlgShown=0; this.dlgDone=false;
     this.dlgCb=d.cb||null; this.dlgChoices=d.choices||null;
     const c=CHARS[d.charId]||{name:d.charId};
+    this.logLine(c.name||'',d.text);
     $('dlg-name').textContent=c.name||'';
     $('dlg-name').style.color=c.divine?'#fff3cf':'';
     $('dlg-text').style.color=c.divine?'#ffeebb':'';
@@ -1971,7 +1999,7 @@ const Game={
   startChapter(ch){
     if(document.body.classList.contains('touch')&&!isFullscreen()) goFullscreen();
     this.chapter=ch;
-    this.inv={}; this.flags={};
+    this.inv={}; this.flags={}; this.log=[];
     Save.data.current=ch.id; Save.write();
     fadeOut(()=>{
       hideAllScreens();
@@ -1994,8 +2022,23 @@ const Game={
     $('slide-text').textContent=s.text||'';
     $('slide-ref').textContent=s.ref||'';
     $('slide-ui').classList.add('show');
+    $('slide-back').classList.toggle('show',this.slideIdx>0);
+    this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
+  },
+  logLine(who,text){
+    if(!this.log) this.log=[];
+    const last=this.log[this.log.length-1];
+    if(last&&last.text===text) return;
+    this.log.push({who,text});
+    if(this.log.length>220) this.log.shift();
+  },
+  prevSlide(){
+    if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
+    Sound.sfx('blip');
+    this.slideIdx--;
+    this.showSlide();
   },
   advanceSlide(){
     if(this._slideEnding) return;
@@ -4420,6 +4463,25 @@ $('btn-hanok').onclick=()=>{
 $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
+$('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
+  const box=$('log-list'); box.innerHTML='';
+  if(!Game.log||!Game.log.length){
+    box.innerHTML='<div class="log-entry"><span class="what">Nothing yet — the story will be written here as it unfolds.</span></div>';
+  } else {
+    Game.log.forEach(l=>{
+      const d=document.createElement('div'); d.className='log-entry';
+      d.innerHTML=(l.who?`<span class="who"></span>`:'')+`<span class="what"></span>`;
+      if(l.who) d.querySelector('.who').textContent=l.who;
+      d.querySelector('.what').textContent=l.text;
+      box.appendChild(d);
+    });
+  }
+  $('log-screen').classList.add('show');
+  box.scrollTop=box.scrollHeight;
+};
+$('btn-log-close').onclick=()=>{ $('log-screen').classList.remove('show'); };
 /* ---------- fullscreen + orientation ---------- */
 function isFullscreen(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
 function lockLandscape(){
