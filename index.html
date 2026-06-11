@@ -3268,12 +3268,17 @@ function drawTitleBg(g,t){
   Sky.paint(g,[[0,'#04060f'],[.45,'#0a1228'],[.75,'#1c2c50'],[1,'#2c4268']]);
   Sky.stars(g,t,150,.9);
   // horizon light — "let light come to be"
-  const pulse=.85+Math.sin(t/2600)*.15;
+  const pulse=.9+Math.sin(t/2600)*.1;
   const gl=g.createRadialGradient(VW/2,VH*.78,8,VW/2,VH*.78,VW*.55*pulse);
-  gl.addColorStop(0,'rgba(255,242,190,.8)');
-  gl.addColorStop(.3,'rgba(232,198,106,.3)');
+  gl.addColorStop(0,'rgba(255,242,190,.42)');
+  gl.addColorStop(.3,'rgba(232,198,106,.15)');
   gl.addColorStop(1,'rgba(232,198,106,0)');
   g.fillStyle=gl; g.fillRect(0,0,VW,VH);
+  // soft scrim behind the title and menu text
+  const scrim=g.createRadialGradient(VW/2,VH*.66,20,VW/2,VH*.66,VW*.4);
+  scrim.addColorStop(0,'rgba(5,7,13,.42)');
+  scrim.addColorStop(1,'rgba(5,7,13,0)');
+  g.fillStyle=scrim; g.fillRect(0,0,VW,VH);
   // waters below
   Sky.sealine(g,'#101e36',VH*.78,t);
   g.fillStyle='rgba(255,235,170,.14)';
@@ -4257,6 +4262,10 @@ STORY.push(
       ]},
      {id:'camel1',animal:'camel',x:22,y:20,range:2,noTalk:true,rideable:true},
      {id:'donkey1',animal:'donkey',x:21,y:21,range:2,noTalk:true,rideable:true},
+     {id:'soul1',char:'servant',x:13,y:21,wander:true,range:1.5,noTalk:true},
+     {id:'soul2',char:'shepherd',x:19,y:22,wander:true,range:1.5,noTalk:true},
+     {id:'hsheep1',animal:'sheep',x:15,y:22.5,range:1.5,noTalk:true},
+     {id:'hsheep2',animal:'sheep',x:16.4,y:21.6,range:1.5,noTalk:true},
    ],
    objectives:[
      {type:'talk',npc:'sarah',text:'Tell Sarai what YAHUAH has said'},
@@ -4358,8 +4367,12 @@ STORY.push(
        {say:['narrator','And Lot chose for himself all the plain, and pitched his tent as far as Seḏom — but the men of Seḏom were evil and sinned before YAHUAH, exceedingly so.']},
       ]},
      {id:'sheep1',animal:'sheep',x:14,y:20,range:3,noTalk:true},
-     {id:'sheep2',animal:'sheep',x:31,y:20,range:3,noTalk:true},
+     {id:'sheep2',animal:'sheep',x:13,y:21.4,range:2,noTalk:true},
+     {id:'sheep3',animal:'sheep',x:31,y:20,range:3,noTalk:true},
+     {id:'sheep4',animal:'sheep',x:32.4,y:21,range:2,noTalk:true},
      {id:'cow1',animal:'cow',x:33,y:13,range:3,noTalk:true},
+     {id:'herd1',char:'shepherd',x:15.5,y:19.5,wander:true,range:1.5,noTalk:true},
+     {id:'herd2',char:'builder',x:30,y:21.5,wander:true,range:1.5,noTalk:true},
    ],
    objectives:[
      {type:'talk',npc:'lot',text:'Settle the strife with Lot'},
@@ -4704,10 +4717,15 @@ STORY.push(
    player:'avraham', playerPos:[22,30],
    npcs:[
      {id:'yitschaq',char:'yitschaq',x:21,y:31,wander:false,follow:true,noTalk:true},
+     {id:'lad1',char:'servant',x:19,y:29.5,wander:false,noTalk:true},
+     {id:'lad2',char:'shepherd',x:24.5,y:30,wander:false,noTalk:true},
+     {id:'mdonkey',animal:'donkey',x:23,y:31.5,wander:false,noTalk:true},
    ],
    objectives:[
      {type:'goto',x:22,y:26,radius:2,text:'Climb the mountain of Moriyah',
       script:[
+       {say:['avraham','Stay here with the donkey, while the boy and I go yonder and worship — and come back to you.']},
+       {say:['narrator','And Aḇraham took the wood of the burnt offering and laid it on Yahtsḥaq his son, and he took the fire in his hand, and the knife — and the two of them went together.']},
        {say:['yitschaq','My father! See, the fire and the wood — but where is the lamb for a burnt offering?']},
        {say:['avraham','My son… Aluahim does provide for Himself the lamb for a burnt offering.']},
        {say:['narrator','And the two of them went together.']},
@@ -4986,26 +5004,32 @@ STORY.push(
   scene:{
    map:{biome:'interior', floorCol:'#a89272', w:26, h:16, seed:106,
      features:[
-       {type:'doorway',x:13,y:1.9,id:'tentdoor',examine:'The door of the tent. Somewhere beyond it, Ĕsaw is hunting.'},
-       {type:'firepit',x:7,y:10,lit:true},
-       {type:'pot',x:8.5,y:10,id:'pot',examine:'Riḇqah’s cooking pot.'},
+       {type:'doorway',x:6,y:15.05,id:'tentdoor',examine:'The door of the tent. Somewhere beyond it, Ĕsaw is hunting.'},
+       {type:'doorway',x:13.5,y:9.95,id:'innerdoor',examine:'The curtained doorway of your father’s chamber.'},
+       {type:'firepit',x:6,y:12,lit:true},
+       {type:'pot',x:7.4,y:12,id:'pot',examine:'Riḇqah’s cooking pot.'},
      ]},
    time:'day', music:'tense',
-   player:'yaaqov', playerPos:[13,11],
+   player:'yaaqov', playerPos:[13,12],
    npcs:[
-     {id:'rivqah',char:'rivqah',x:9,y:9,wander:false,
+     {id:'rivqah',char:'rivqah',x:8,y:11.5,wander:false,
       script:[
        {say:['rivqah','Ya‘aqoḇ — listen. I heard your father speak to Ĕsaw: the blessing is to be given TODAY. Now, my son, obey my voice: go to the flock and bring me two choice young goats, and I shall make a tasty dish for your father, such as he loves — and you shall take it to him, so that he barak YOU before his death.']},
        {say:['yaaqov','But mother — Ĕsaw my brother is a hairy man, and I am smooth! My father will feel me, and I shall seem to be a deceiver in his eyes — and bring a curse on myself, and not a blessing.']},
        {say:['rivqah','Let your curse be on me, my son. Only obey my voice, and go.']},
       ]},
-     {id:'goat1',animal:'goat',x:22,y:12,range:1.5,group:'goats',noTalk:true},
-     {id:'goat2',animal:'goat',x:21,y:13.4,range:1.5,group:'goats',noTalk:true},
-     {id:'yitschaq',char:'yitschaq_o',x:18,y:5.5,wander:false,hidden:true,noTalk:true},
+     {id:'goat1',animal:'goat',x:20,y:12.5,range:1.2,group:'goats',noTalk:true},
+     {id:'goat2',animal:'goat',x:21.4,y:13.3,range:1.2,group:'goats',noTalk:true},
+     {id:'yitschaq',char:'yitschaq_o',x:15,y:5,wander:false,hidden:true,noTalk:true},
+   ],
+   onStart:[
+     {call:g=>{ const m=g.world.map;
+       for(let x=1;x<25;x++) if(x<13||x>14) m.tiles[9*m.w+x]=12;   /* dividing wall, gap at the door */
+     }},
    ],
    objectives:[
      {type:'talk',npc:'rivqah',text:'Your mother Riḇqah beckons urgently'},
-     {type:'goto',x:21.5,y:12.6,radius:2,text:'Fetch two choice young goats',hiddenUntil:1,
+     {type:'goto',x:20.5,y:12.8,radius:2,text:'Fetch two choice young goats',hiddenUntil:1,
       script:[
        {despawn:'goat1'},{despawn:'goat2'},{sfx:'pickup'},
        {toast:'Two choice young goats, taken to Riḇqah.'},
@@ -5032,19 +5056,22 @@ STORY.push(
        {rays:.6,raysX:18},{sfx:'holy'},{music:'holy'},
        {say:['yitschaq_o','See, the smell of my son is like the smell of a field which YAHUAH has baruk. And Aluahim give you of the dew of the shamayim, of the fatness of the earth, and plenty of grain and wine. Let peoples serve you, and nations bow down to you. Cursed be those cursing you, and baruk be those blessing you!']},
        {rays:0},{wait:500},
-       {move:['player',13,3.2,.06]},
+       {move:['player',13.5,11,.06]},
+       {move:['player',7,13.6,.06]},
        {say:['narrator','And it came to be, as soon as Ya‘aqoḇ had hardly gone out, that Ĕsaw his brother came in from his hunting.']},
        {hide:'player'},
-       {spawn:{id:'esav',char:'esav',x:13,y:13,wander:false,noTalk:true}},
-       {move:['esav',16,7,.06]},{music:'sorrow'},
+       {spawn:{id:'esav',char:'esav',x:6,y:13.5,wander:false,noTalk:true}},
+       {move:['esav',13.5,10.8,.06]},
+       {move:['esav',15,7,.06]},{music:'sorrow'},
        {say:['esav','Let my father arise, and eat of his son’s game, so that your being does barak me!']},
        {say:['yitschaq_o','Who — who are you? …Then who was it who hunted game and brought it to me, and I ate it all before you came — AND I HAVE BARUK HIM? Yes, and he shall be baruk!']},
        {shake:1.5},
        {say:['narrator','When Ĕsaw heard the words of his father, he cried with an exceedingly great and bitter cry.']},
        {say:['esav','Barak me — me too, O my father! …Is he not rightly called Ya‘aqoḇ? For he has caught me by the heel these two times: he took my birthright, and see, now he has taken my blessing! Have you not reserved a blessing for me?']},
        {say:['narrator','And Ĕsaw hated Ya‘aqoḇ because of the blessing — and said in his heart, “The days of mourning for my father draw near, then I am going to kill my brother.” And the words were reported to Riḇqah, and she sent and called Ya‘aqoḇ her younger son in secret.']},
-       {move:['esav',23,13,.07,'bg']},
-       {show:'player'},{teleport:['player',10.5,10]},
+       {move:['esav',13.5,11,.07]},
+       {move:['esav',6.5,13.8,.08,'bg']},
+       {show:'player'},{teleport:['player',10.5,11.5]},
        {say:['rivqah','Ya‘aqoḇ — flee! Arise, flee to my brother Laḇan in Ḥaran, and stay with him a few days, until your brother’s wrath turns away. Why should I be bereaved of you both in one day?']},
       ]},
    ],
@@ -5116,10 +5143,24 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:38,y:19,range:2,noTalk:true,hidden:true},
      {id:'sheep2',animal:'sheep',x:37,y:20,range:2,noTalk:true,hidden:true},
      {id:'lavan',char:'lavan',x:11,y:13,wander:false,hidden:true,noTalk:true},
+     {id:'shep1',char:'shepherd',x:21.5,y:17.5,wander:true,range:1.4,noTalk:true},
+     {id:'shep2',char:'builder',x:26.5,y:16.5,wander:true,range:1.4,noTalk:true},
+     {id:'shep3',char:'servant',x:25,y:18.5,wander:true,range:1.4,noTalk:true},
+     {id:'f1a',animal:'sheep',x:20,y:19,range:1.2,noTalk:true},
+     {id:'f1b',animal:'sheep',x:21.2,y:20,range:1.2,noTalk:true},
+     {id:'f2a',animal:'sheep',x:27.5,y:18.5,range:1.2,noTalk:true},
+     {id:'f2b',animal:'sheep',x:28.6,y:17.4,range:1.2,noTalk:true},
+     {id:'f3a',animal:'sheep',x:24,y:20.5,range:1.2,noTalk:true},
+     {id:'f3b',animal:'ram',x:25.4,y:21.2,range:1.2,noTalk:true},
    ],
    objectives:[
      {type:'interact',prop:'well',text:'Go to the well in the field',
       script:[
+       {say:['narrator','And he looked, and saw a well in the field — and three flocks of sheep lying by it, for out of that well they watered the flocks; and a great stone was on the well’s mouth.']},
+       {say:['yaaqov','My brothers — where are you from?']},
+       {say:['shepherd','We are from Ḥaran.']},
+       {say:['yaaqov','Do you know Laḇan, son of Naḥor?']},
+       {say:['shepherd','We know him. He is well — and see, Raḥal his daughter is coming with the sheep!']},
        {show:'rachel'},{show:'sheep1'},{show:'sheep2'},
        {move:['rachel',27,16,.045]},
        {say:['narrator','And while he was still speaking with the shepherds, see — Raḥal came with her father’s sheep, for she was a shepherdess.']},
@@ -5258,6 +5299,12 @@ STORY.push(
      {id:'yahudah',char:'yahudah',x:29,y:17,wander:true,range:2,noTalk:true},
      {id:'sheep1',animal:'sheep',x:35,y:18,range:3,noTalk:true},
      {id:'sheep2',animal:'sheep',x:36,y:15,range:3,noTalk:true},
+     {id:'sheep3',animal:'sheep',x:34,y:16.5,range:2,noTalk:true},
+     {id:'sheep4',animal:'sheep',x:37.4,y:17,range:2,noTalk:true},
+     {id:'bro1',char:'shepherd',x:27,y:13,wander:true,range:1.6,noTalk:true},
+     {id:'bro2',char:'builder',x:33,y:17.5,wander:true,range:1.6,noTalk:true},
+     {id:'bro3',char:'servant',x:28,y:18.5,wander:true,range:1.6,noTalk:true},
+     {id:'bro4',char:'builder2',x:31,y:12,wander:true,range:1.6,noTalk:true},
    ],
    objectives:[
      {type:'goto',x:30,y:17,radius:2.6,text:'Find your brothers near Dothan',
