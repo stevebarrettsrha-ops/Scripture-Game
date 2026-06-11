@@ -4805,14 +4805,42 @@ function firstUnfinished(){
   const chs=allChapters();
   return chs.find(c=>!Save.data.done[c.id])||chs[0];
 }
-function isUnlocked(ch){
+function continuityUnlocked(){
+  /* finishing the Books of Adam & Chawwah (or Hanok beyond them) unlocks
+     the shared early chapters here, so the player can pick up at Noah */
+  try{
+    const a=JSON.parse(localStorage.getItem('adamchavvah_v2'));
+    const h=JSON.parse(localStorage.getItem('hanok_v1'));
+    return !!((a&&a.done&&a.done.b18)||(h&&h.done&&h.done.h15));
+  }catch(e){ return false; }
+}
+const CONTINUITY_LAST='c7';   /* through 'Noah Found Favour' — the flood begins */
+function continuityCovers(ch){
+  const chs=allChapters();
+  return chs.findIndex(c=>c.id===ch.id)<=chs.findIndex(c=>c.id===CONTINUITY_LAST);
+}
+function naturallyUnlocked(ch){
   const chs=allChapters();
   const i=chs.findIndex(c=>c.id===ch.id);
   if(i===0) return true;
   return !!Save.data.done[chs[i-1].id];
 }
+function isUnlocked(ch){
+  if(naturallyUnlocked(ch)) return true;
+  return continuityUnlocked()&&continuityCovers(ch);
+}
 function buildChapterMenu(){
   const box=$('acts'); box.innerHTML='';
+  if(continuityUnlocked()&&!Save.data.done['c6']){
+    const ban=document.createElement('div');
+    ban.style.cssText='border:1px solid rgba(232,198,106,.4);border-radius:4px;padding:10px 14px;'+
+      'margin-bottom:2vh;color:#e8dfc8;font-style:italic;font-size:clamp(12px,2vmin,15px);'+
+      'background:rgba(232,198,106,.07);line-height:1.5';
+    ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
+      'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
+      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+    box.appendChild(ban);
+  }
   STORY.forEach(act=>{
     const blk=document.createElement('div'); blk.className='act-block';
     const head=document.createElement('div'); head.className='act-head';
@@ -4825,7 +4853,16 @@ function buildChapterMenu(){
       card.className='ch-card'+(done?' done':'')+(unlocked?'':' locked');
       const num=allChapters().findIndex(c=>c.id===ch.id)+1;
       card.innerHTML=`<div class="num">CHAPTER ${num}</div><div class="t">${ch.title}</div><div class="r">${ch.ref}</div>`;
-      if(unlocked) card.onclick=()=>{ Sound.init(); Sound.sfx('blip'); Game.startChapter(ch); };
+      if(unlocked) card.onclick=()=>{
+        Sound.init(); Sound.sfx('blip');
+        if(!naturallyUnlocked(ch)&&continuityUnlocked()){
+          if(!confirm('Continuing here through the Books of Aḏam & Ḥawwah and Ḥanoḵ.\n\n'+
+            'Beginning at this chapter, you will miss additional scenes of the BERĔSHITH story — '+
+            'the creation days, the garden, the fall, Qayin and Heḇal, and the witnesses of YASHAR and YOḆELIM.\n\n'+
+            'They stay unlocked in this chapter list, to play at any time.\n\nContinue here?')) return;
+        }
+        Game.startChapter(ch);
+      };
       grid.appendChild(card);
     });
     blk.appendChild(grid);
