@@ -1114,8 +1114,9 @@ function drawProp(g,px,py,p,t){
       }
       break; }
     case 'ark': {
-      // stage 0: keel, 1: hull, 2: complete; large structure ~ 14x6 tiles drawn around anchor
-      const W=TILE*11, H=TILE*3.4;
+      // stage 0: keel, 1: hull, 2: complete; monumental structure drawn around anchor
+      const sc=(p.scale||1);
+      const W=TILE*17*sc, H=TILE*5*sc;
       g.fillStyle='rgba(0,0,0,.25)';
       g.beginPath(); g.ellipse(0,TILE*1.7,W*.55,TILE*.5,0,0,Math.PI*2); g.fill();
       const st=p.stage||0;
@@ -1321,7 +1322,7 @@ function drawProp(g,px,py,p,t){
       g.beginPath(); g.arc(0,-u,3*u,0,Math.PI*2); g.fill();
       break; }
     case 'cave': {
-      const cw=TILE*3.2, chh=TILE*2.4;
+      const cw=TILE*5.4, chh=TILE*4;
       g.fillStyle='rgba(0,0,0,.3)';
       g.beginPath(); g.ellipse(0,4,cw*.62,TILE*.4,0,0,Math.PI*2); g.fill();
       // rock mound
@@ -1336,13 +1337,17 @@ function drawProp(g,px,py,p,t){
       g.beginPath(); g.moveTo(-cw*.3,-chh*.4); g.lineTo(-cw*.1,-chh*.9); g.lineTo(cw*.1,-chh*.55); g.closePath(); g.fill();
       // mouth
       g.fillStyle='#100a06';
-      g.beginPath(); g.moveTo(-TILE*.65,0);
-      g.quadraticCurveTo(-TILE*.65,-TILE*1.3,0,-TILE*1.35);
-      g.quadraticCurveTo(TILE*.65,-TILE*1.3,TILE*.65,0); g.closePath(); g.fill();
+      g.beginPath(); g.moveTo(-TILE*1.05,0);
+      g.quadraticCurveTo(-TILE*1.05,-TILE*2.1,0,-TILE*2.2);
+      g.quadraticCurveTo(TILE*1.05,-TILE*2.1,TILE*1.05,0); g.closePath(); g.fill();
+      g.strokeStyle='rgba(20,14,8,.5)'; g.lineWidth=3;
+      g.beginPath(); g.moveTo(-TILE*1.05,0);
+      g.quadraticCurveTo(-TILE*1.05,-TILE*2.1,0,-TILE*2.2);
+      g.quadraticCurveTo(TILE*1.05,-TILE*2.1,TILE*1.05,0); g.stroke();
       if(p.glow){
-        const gl7=g.createRadialGradient(0,-TILE*.5,4,0,-TILE*.5,TILE*1.6);
+        const gl7=g.createRadialGradient(0,-TILE*.8,6,0,-TILE*.8,TILE*2.4);
         gl7.addColorStop(0,`rgba(255,222,120,${.3+Math.sin(t/600)*.1})`); gl7.addColorStop(1,'rgba(255,222,120,0)');
-        g.fillStyle=gl7; g.beginPath(); g.arc(0,-TILE*.5,TILE*1.6,0,Math.PI*2); g.fill();
+        g.fillStyle=gl7; g.beginPath(); g.arc(0,-TILE*.8,TILE*2.4,0,Math.PI*2); g.fill();
       }
       break; }
     case 'fold': {
@@ -1545,7 +1550,18 @@ function tileAt(map,x,y){
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
-    if(d.solid&&Math.abs(d.x-x)<.55&&Math.abs(d.y-y)<.5) return false;
+    if(!d.solid) continue;
+    if(d.type==='ark'){
+      const dx=Math.abs(d.x-x);
+      if(dx<8.2&&y>d.y-2.6&&y<d.y+1.4&&dx>0.9) return false;   /* door gap at centre */
+      continue;
+    }
+    if(d.type==='cave'){
+      const dx=Math.abs(d.x-x);
+      if(dx<2.5&&y>d.y-2.2&&y<d.y+0.4&&!(dx<1&&y>d.y-1)) return false;  /* mouth open */
+      continue;
+    }
+    if(Math.abs(d.x-x)<.55&&Math.abs(d.y-y)<.5) return false;
   }
   return true;
 }
@@ -2127,6 +2143,8 @@ const Game={
     $('hud').style.display='none';
     $('interact-tip').style.display='none';
     $('hud-toast').style.opacity='0';
+    this.dlgQueue=[]; this.closeDlg();
+    $('dlg-choices').classList.remove('show');
     this.showSlide();
   },
   showSlide(){
@@ -2171,6 +2189,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    this.dlgQueue=[]; this.closeDlg();
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
     const map=generateMap(sc.map);
@@ -2206,6 +2225,7 @@ const Game={
     Save.data.done[ch.id]=true; Save.write();
     Sound.sfx('holy');
     this.state='complete';
+    this.dlgQueue=[]; this.closeDlg();
     $('hud').style.display='none';
     $('interact-tip').style.display='none';
     $('hud-toast').style.opacity='0';
@@ -2720,7 +2740,7 @@ function drawSlideArt(g,key,st,t,slide){
       // ark on waves
       const av=Math.sin(t/900)*10, ar=Math.sin(t/900+1)*.04;
       g.save(); g.translate(VW*.5,VH*.6+av); g.rotate(ar);
-      drawProp(g,0,0,{type:'ark',stage:2,doorOpen:false},t);
+      drawProp(g,0,0,{type:'ark',stage:2,doorOpen:false,scale:.8},t);
       g.restore();
       if(Math.sin(t/2400)>.93){ g.fillStyle='rgba(220,230,255,.25)'; g.fillRect(0,0,VW,VH); }
       break; }
@@ -2734,7 +2754,7 @@ function drawSlideArt(g,key,st,t,slide){
       });
       Sky.hills(g,'#5d8a4a',VH*.72,36,3);
       g.fillStyle='#4d7a3e'; g.fillRect(0,VH*.82,VW,VH*.18);
-      drawProp(g,VW*.34,VH*.86,{type:'ark',stage:2},t);
+      drawProp(g,VW*.34,VH*.86,{type:'ark',stage:2,scale:.5},t);
       drawProp(g,VW*.7,VH*.9,{type:'altar',stage:3},t);
       Sky.figure(g,VW*.62,VH*.97,'noach',{t,scale:2});
       break; }
@@ -3147,7 +3167,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:50, h:34, seed:301,
      features:[
-       {type:'cave',x:38,y:14,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',x:38,y:14,solid:true,clear:4,flat:4,id:'cave'},
        {type:'clearing',x:36,y:17,flat:2},
      ],
      path:[[10,20,36,16]]},
@@ -3189,7 +3209,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:46, h:30, seed:307, sea:8,
      features:[
-       {type:'cave',x:34,y:11,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',x:34,y:11,solid:true,clear:4,flat:4,id:'cave'},
        {type:'clearing',x:22,y:20,flat:2},
      ]},
    time:'dusk', music:'sorrow',
@@ -3285,7 +3305,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:46, h:32, seed:321,
      features:[
-       {type:'cave',x:36,y:13,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',x:36,y:13,solid:true,clear:4,flat:4,id:'cave'},
        {type:'clearing',x:20,y:20,flat:3},
      ]},
    time:'day', music:'tense',
@@ -3374,7 +3394,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:46, h:32, seed:341,
      features:[
-       {type:'cave',x:34,y:13,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',x:34,y:13,solid:true,clear:4,flat:4,id:'cave'},
        {type:'altar',stage:2,x:30,y:17,solid:true,clear:2,id:'altar2'},
        {type:'clearing',x:24,y:20,flat:3},
      ]},
@@ -3460,7 +3480,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:48, h:32, seed:355, sea:8,
      features:[
-       {type:'cave',glow:true,x:34,y:12,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:34,y:12,solid:true,clear:4,flat:4,id:'cave'},
        {type:'basket',full:true,x:31,y:14,id:'figs',examine:'The two figs from the garden — each the weight of a melon, for the fruit of the garden was greater than the fruit of this land.'},
        {type:'clearing',x:24,y:21,flat:2},
      ]},
@@ -3506,7 +3526,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:46, h:32, seed:361,
      features:[
-       {type:'cave',glow:true,x:23,y:13,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:23,y:13,solid:true,clear:4,flat:4,id:'cave'},
        {type:'firepit',big:true,x:18,y:16,lit:true,id:'f1'},
        {type:'firepit',big:true,x:28,y:16,lit:true,id:'f2'},
        {type:'firepit',big:true,x:23,y:19,lit:true,id:'f3'},
@@ -3551,7 +3571,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:48, h:32, seed:371,
      features:[
-       {type:'cave',glow:true,x:36,y:12,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:36,y:12,solid:true,clear:4,flat:4,id:'cave'},
        {type:'clearing',x:12,y:18,flat:2},{type:'clearing',x:13,y:25,flat:2},
      ]},
    time:'day', music:'desert',
@@ -3615,7 +3635,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:48, h:32, seed:381,
      features:[
-       {type:'cave',glow:true,x:38,y:12,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:38,y:12,solid:true,clear:4,flat:4,id:'cave'},
        {type:'tree',x:20,y:18,solid:true,col:'#5d7a35',fruit:'#7a5d9a',id:'tree1'},
        {type:'tree',x:23,y:19,solid:true,col:'#5d7a35',fruit:'#7a5d9a',id:'tree2'},
        {type:'clearing',x:14,y:24,flat:2},{type:'clearing',x:21,y:21,flat:2},
@@ -3670,7 +3690,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:48, h:32, seed:391, river:{x:14,width:5,curve:1.5},
      features:[
-       {type:'cave',glow:true,x:36,y:12,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:36,y:12,solid:true,clear:4,flat:4,id:'cave'},
        {type:'clearing',x:19,y:18,flat:2},
      ]},
    time:'day', music:'tense',
@@ -3741,7 +3761,7 @@ const STORY=[
   scene:{
    map:{biome:'plains', w:46, h:32, seed:401,
      features:[
-       {type:'cave',glow:true,x:34,y:11,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:34,y:11,solid:true,clear:4,flat:4,id:'cave'},
        {type:'tent',x:26,y:14,solid:true,clear:2,col:'#b3a07f'},
        {type:'firepit',x:29,y:16,lit:true},
        {type:'wheat',x:14,y:22},{type:'wheat',x:15,y:23},{type:'wheat',x:13,y:23},
@@ -3788,7 +3808,7 @@ const STORY=[
   scene:{
    map:{biome:'plains', w:44, h:30, seed:411,
      features:[
-       {type:'cave',glow:true,x:32,y:11,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:32,y:11,solid:true,clear:4,flat:4,id:'cave'},
        {type:'altar',stage:3,x:27,y:14,solid:true,clear:2,id:'altar'},
        {type:'clearing',x:14,y:21,flat:3},
      ]},
@@ -3831,7 +3851,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:44, h:30, seed:421,
      features:[
-       {type:'cave',glow:true,x:30,y:12,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:30,y:12,solid:true,clear:4,flat:4,id:'cave'},
        {type:'firepit',x:26,y:15,lit:true},
      ]},
    time:'morning', music:'eden',
@@ -3862,7 +3882,7 @@ const STORY=[
   scene:{
    map:{biome:'plains', w:46, h:32, seed:431,
      features:[
-       {type:'cave',glow:true,x:34,y:11,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:34,y:11,solid:true,clear:4,flat:4,id:'cave'},
        {type:'clearing',x:16,y:22,flat:3},
      ]},
    time:'day', music:'tense',
@@ -3965,7 +3985,7 @@ const STORY=[
   scene:{
    map:{biome:'ararat', w:48, h:34, seed:451,
      features:[
-       {type:'cave',glow:true,x:14,y:9,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'cave',glow:true,x:14,y:9,solid:true,clear:4,flat:4,id:'cave'},
        {type:'altar',stage:3,x:18,y:11,solid:true,clear:2},
        {type:'clearing',x:24,y:27,flat:3},
        {type:'firepit',x:23,y:29,lit:true},{type:'firepit',x:27,y:28,lit:true},
