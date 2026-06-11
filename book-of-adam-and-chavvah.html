@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0e1a">
 <title>The Books of Aḏam &amp; Ḥawwah</title>
 <style>
@@ -14,7 +17,7 @@
   html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
   body{font-family:Georgia,'Times New Roman',serif;color:var(--parch);
        display:flex;align-items:center;justify-content:center;position:fixed;inset:0}
-  #stage{position:relative;width:100%;height:100%;max-width:177.78vh;max-height:56.25vw;
+  #stage{position:relative;width:100%;height:100%;
          margin:auto;overflow:hidden;background:#05070d}
   canvas#game{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;
               image-rendering:crisp-edges;display:block}
@@ -160,6 +163,13 @@
   #fader{position:absolute;inset:0;background:#000;z-index:40;pointer-events:none;opacity:1;
          transition:opacity .8s ease}
   .vneg{user-select:none}
+
+  /* ---------- mobile fullscreen / rotation ---------- */
+  @supports(height:100dvh){ html,body{height:100dvh} }
+  #sys-buttons{top:calc(1.4vh + env(safe-area-inset-top,0px));right:calc(1.2vw + env(safe-area-inset-right,0px))}
+  #hud{top:calc(1.6vh + env(safe-area-inset-top,0px));left:calc(1.4vw + env(safe-area-inset-left,0px))}
+  #joy{left:calc(4vw + env(safe-area-inset-left,0px))}
+  #act-btn{right:calc(4.5vw + env(safe-area-inset-right,0px))}
 </style>
 </head>
 <body class="vneg">
@@ -174,6 +184,7 @@
   <div id="interact-tip">✦ &nbsp;Press <b>E</b> to interact</div>
 
   <div id="sys-buttons">
+    <div class="sys-btn" id="btn-fs" title="Fullscreen">⛶</div>
     <div class="sys-btn" id="btn-sound" title="Sound">♪</div>
     <div class="sys-btn" id="btn-menu" title="Chapters">☰</div>
   </div>
@@ -526,6 +537,7 @@ function sprRender(g,ops,u,flip){
 function drawChar(g,px,py,charId,o){
   o=o||{};
   const c=CHARS[charId]||CHARS.adam;
+  if(c.dragon){ drawDragon(g,px,py,o); return; }
   if(c.serpent){ drawSerpent(g,px,py,o); return; }
   const t=o.t||0;
   const u=(o.scale||1)*(c.child||o.child?1.9:(c.angel?3.3:2.6))*(TILE/40);
@@ -562,6 +574,7 @@ function drawChar(g,px,py,charId,o){
       g.fillStyle=gl; g.beginPath(); g.arc(0,-13*u,16*u,0,Math.PI*2); g.fill();
     }
   }
+  if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(-Math.PI/2*flip); }
   const ops=[];
   const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
   const skin=c.skin||'#7a4e29', hairC=c.hair||'#2c1a0c', robe=c.robe;
@@ -699,8 +712,58 @@ function drawChar(g,px,py,charId,o){
   g.restore();
 }
 
+
+function drawDragon(g,px,py,o){
+  /* the serpent before the curse: upright on two legs, with arms */
+  o=o||{}; const t=o.t||0, u=2.5*(TILE/40)*(o.scale||1);
+  const flip=o.dir==='left'?-1:1;     /* native facing right */
+  const moving=o.moving;
+  const ph=moving?Math.floor(t/170)%4:0;
+  const k=moving?[0,1,0,-1][ph]:0;
+  const bob=moving?(ph%2?-0.6:0):Math.sin(t/600)*.5;
+  g.save(); g.translate(Math.round(px),Math.round(py));
+  if(o.alpha!==undefined)g.globalAlpha=o.alpha;
+  g.fillStyle='rgba(0,0,0,.25)';
+  g.beginPath(); g.ellipse(0,1,7*u,2.3*u,0,0,Math.PI*2); g.fill();
+  const ops=[]; const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
+  const SC='#5d7a2e', SC2='#4a6322', BL='#d8c25a', B=bob;
+  /* tail: curves down-back */
+  R(-7.4,-6.2+B+Math.sin(t/400)*.6,2.6,1.8,SC2);
+  R(-5.6,-7+B,2.6,2,SC);
+  R(-3.8,-8+B,2.4,2.4,SC);
+  /* legs scissor */
+  R(-2.2-k*1.5,-6.4,2.4,5,SC2);
+  R(0.4+k*1.5,-6.4,2.4,5,SC);
+  /* claw feet */
+  R(-2.8-k*1.7,-1.6,3.4,1.7,SC2);
+  R(-0.2+k*1.7,-1.6,3.6,1.7,SC);
+  R(0.6-k*1.7,-1.4,1,1.5,BL); R(3.6+k*1.7,-1.4,1,1.5,BL);
+  /* body upright, leaning forward */
+  R(-3,-14.6+B,6,9,SC);
+  R(-1.4,-13.6+B,3.2,7.4,BL);          /* belly plates */
+  R(-1.4,-11.6+B,3.2,.7,shade(BL,-25));
+  R(-1.4,-9.4+B,3.2,.7,shade(BL,-25));
+  /* arms with claws */
+  R(1.4,-12.8+B+k*.6,2.4,1.6,SC2);
+  R(3.4,-12.6+B+k*.6,1.4,2,SC);
+  R(4,-11+B+k*.6,1.2,1,BL);
+  /* neck + head with snout */
+  R(-0.6,-19+B,3,5,SC);
+  R(-1.2,-22.4+B,5,4,SC);
+  R(3.4,-21.4+B,3.4,2.2,SC);           /* snout */
+  R(5.6,-20.6+B,1.2,.8,SC2);           /* nostril */
+  R(1.4,-21.6+B,1.4,1.4,'#e8c64a');    /* eye */
+  R(1.9,-21.2+B,.7,.7,'#160e08');
+  R(-1.2,-23.6+B,1.6,1.4,SC2);         /* crest */
+  R(0.6,-24.2+B,1.4,1.8,SC2);
+  if(Math.sin(t/500)>.6) R(6.6,-20.4+B,1.8,.5,'#c0392b');  /* tongue */
+  sprRender(g,ops,u,flip);
+  g.restore();
+}
+
 function drawSerpent(g,px,py,o){
   o=o||{}; const t=o.t||0, u=2.4*(TILE/40);
+  const flip=o.dir==='right'?-1:1;
   g.save(); g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined)g.globalAlpha=o.alpha;
   g.fillStyle='rgba(0,0,0,.2)';
@@ -720,14 +783,14 @@ function drawSerpent(g,px,py,o){
   R(hx-1.9,hy-1.1,1.3,1.3,'#e8c64a');
   R(hx-1.6,hy-.8,.7,.7,'#160e08');
   if(Math.sin(t/500)>.55) R(hx-4.8,hy-.2,1.6,.6,'#c0392b');
-  sprRender(g,ops,u,1);
+  sprRender(g,ops,u,flip);
   g.restore();
 }
 
 /* ================= ANIMALS v2 ================= */
 function drawAnimal(g,px,py,type,o){
   o=o||{}; const t=o.t||0, u=2.2*(TILE/40)*(o.scale||1);
-  const flip=o.dir==='left'?-1:1;
+  const flip=o.dir==='right'?-1:1;   /* builders face left natively */
   const moving=o.moving;
   const ph=moving?Math.floor(t/150)%2:0;          /* 2-phase gait */
   const k=moving?(ph?1:-1):0;
@@ -1210,6 +1273,39 @@ function drawProp(g,px,py,p,t){
         g.fillStyle=gl7; g.beginPath(); g.arc(0,-TILE*.5,TILE*1.6,0,Math.PI*2); g.fill();
       }
       break; }
+    case 'doorway': {
+      const dw=TILE*1.3, dh=TILE*1.8;
+      // opening carved into the wall
+      g.fillStyle='rgba(12,8,5,.95)';
+      g.beginPath(); g.moveTo(-dw/2,0);
+      g.lineTo(-dw/2,-dh*.62); g.quadraticCurveTo(0,-dh*1.08,dw/2,-dh*.62);
+      g.lineTo(dw/2,0); g.closePath(); g.fill();
+      g.strokeStyle='#6e5d48'; g.lineWidth=Math.max(2,TILE*.09);
+      g.beginPath(); g.moveTo(-dw/2,0);
+      g.lineTo(-dw/2,-dh*.62); g.quadraticCurveTo(0,-dh*1.08,dw/2,-dh*.62);
+      g.lineTo(dw/2,0); g.stroke();
+      if(p.bars){
+        g.fillStyle='#4a4038';
+        for(let i=0;i<3;i++) g.fillRect(-dw*.3+i*dw*.3-2,-dh*.92,4,dh*.92);
+      } else if(p.closed){
+        g.fillStyle='#6e552f';
+        g.fillRect(-dw/2+3,-dh*.86,dw-6,dh*.86);
+        g.fillStyle='#5d4426';
+        for(let i=1;i<4;i++) g.fillRect(-dw/2+3,-dh*.86+i*dh*.215,dw-6,2);
+      } else {
+        // light of the outside spilling in
+        const dgl=g.createLinearGradient(0,-dh,0,dh*.5);
+        dgl.addColorStop(0,`rgba(255,238,180,${.55+Math.sin(t/700)*.1})`);
+        dgl.addColorStop(1,'rgba(255,238,180,0)');
+        g.fillStyle=dgl;
+        g.beginPath(); g.moveTo(-dw/2+3,0);
+        g.lineTo(-dw/2+3,-dh*.6); g.quadraticCurveTo(0,-dh*1.02,dw/2-3,-dh*.6);
+        g.lineTo(dw/2-3,0); g.closePath(); g.fill();
+        g.fillStyle='rgba(255,238,180,.16)';
+        g.beginPath(); g.moveTo(-dw/2,0); g.lineTo(dw/2,0);
+        g.lineTo(dw*0.85,TILE*1.4); g.lineTo(-dw*0.85,TILE*1.4); g.closePath(); g.fill();
+      }
+      break; }
     case 'idol': {
       g.scale(1.6,1.6);
       shadow(3.2);
@@ -1554,7 +1650,7 @@ function drawWorld(g,world,t){
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -1907,6 +2003,7 @@ const Game={
 
   /* ---------- chapter flow ---------- */
   startChapter(ch){
+    if(document.body.classList.contains('touch')&&!isFullscreen()) goFullscreen();
     this.chapter=ch;
     this.inv={}; this.flags={};
     Save.data.current=ch.id; Save.write();
@@ -1921,6 +2018,8 @@ const Game={
     this.state='slides'; this.slideList=slides; this.slideIdx=0; this.slidePhase=phase;
     this.slideT=0;
     $('hud').style.display='none';
+    $('interact-tip').style.display='none';
+    $('hud-toast').style.opacity='0';
     this.showSlide();
   },
   showSlide(){
@@ -1986,6 +2085,8 @@ const Game={
     Sound.sfx('holy');
     this.state='complete';
     $('hud').style.display='none';
+    $('interact-tip').style.display='none';
+    $('hud-toast').style.opacity='0';
     $('slide-ui').classList.remove('show');
     $('complete-title').textContent=ch.title;
     $('complete-sub').textContent=ch.complete||'';
@@ -2511,9 +2612,9 @@ function drawSlideArt(g,key,st,t,slide){
       g.fillStyle='#c8a262'; g.fillRect(0,VH*.82,VW,VH*.18);
       Sky.figure(g,VW*.3,VH*.92,'avram',{t,scale:2,moving:true,dir:'right'});
       Sky.figure(g,VW*.38,VH*.95,'sarah',{t,scale:2,moving:true,dir:'right'});
-      drawAnimal(g,VW*.5,VH*.93,'donkey',{t,scale:2,moving:true});
-      drawAnimal(g,VW*.6,VH*.96,'camel',{t,scale:2,moving:true});
-      drawAnimal(g,VW*.18,VH*.95,'sheep',{t,scale:1.8,moving:true});
+      drawAnimal(g,VW*.5,VH*.93,'donkey',{t,scale:2,moving:true,dir:'right'});
+      drawAnimal(g,VW*.6,VH*.96,'camel',{t,scale:2,moving:true,dir:'right'});
+      drawAnimal(g,VW*.18,VH*.95,'sheep',{t,scale:1.8,moving:true,dir:'right'});
       break; }
     case 'stars': {
       Sky.paint(g,[[0,'#05081a'],[.7,'#0a1228'],[1,'#101a30']]);
@@ -2853,7 +2954,8 @@ const STORY=[
    map:{biome:'interior', floorCol:'#6e5d48', w:24, h:15, seed:311,
      features:[
        {type:'rock',x:5,y:5,solid:true},
-       {type:'stone',x:18,y:6,id:'mouth',examine:'The mouth of the cave. Outside, the world has gone utterly black.'},
+       {type:'doorway',x:18,y:1.9,id:'mouth',examine:'The mouth of the cave. Outside, the first night of the world.'},
+       {type:'firepit',x:9,y:8,lit:false},
      ]},
    time:'deepnight', music:'night',
    player:'adam_c', playerPos:[11,9],
@@ -3305,12 +3407,17 @@ const STORY=[
      {type:'goto',x:14,y:21,radius:2.6,text:'Heḇal has not come home — search the fields',
       script:[
        {time:'night'},{music:'sorrow'},{wait:600},
+       {spawn:{id:'hevelbody',char:'hevel',x:13,y:20,lying:true,wander:false,noTalk:true}},
+       {spawn:{id:'fsheep',animal:'sheep',x:15.5,y:21,wander:false,noTalk:true}},
+       {wait:500},
        {say:['narrator','And they found him in the field — Heḇal their son, the gentle one, lying still upon the ground he had never tilled, beside the flock that still knew his voice.']},
        {say:['chavvah_c','No — no, my son, my son… Heḇal! O Aluahim — is THIS the death? Is this what we bought in the garden? It was meant for us — not for him — not for my child—']},
        {say:['adam_c','…The first grave of the world, and we must dig it for our own son. O Master — let the promise come quickly. Let the five days and a half pass like a watch in the night.']},
        {rays:.7,raysX:14},{sfx:'holy'},{music:'holy'},
        {say:['voice','O Aḏam, weep — but do not despair. The blood of the innocent cries from the ground, and I have heard it; and Qayin shall bear his judgment. But your seed is not ended. I will give you another, in place of Heḇal — and in your seed the promise stands unbroken.']},
        {rays:0},
+       {fade:'out'},{despawn:'hevelbody'},
+       {addProp:{type:'stone',x:13,y:20,id:'grave'}},{fade:'in'},
        {say:['narrator','And they buried Heḇal, and mourned for him many days. So ends the First Book — in the dusk of the world’s first grave, with the promise burning on the far side of it.']},
       ]},
    ],
@@ -3404,12 +3511,13 @@ const STORY=[
    map:{biome:'interior', floorCol:'#6e5d48', w:24, h:15, seed:441,
      features:[
        {type:'firepit',x:7,y:9,lit:true},
+       {type:'doorway',x:12,y:1.9,id:'cavemouth',examine:'The mouth of the Cave of Treasures, open to the evening.'},
        {type:'pillar',oil:true,x:17,y:5,id:'tokens',examine:'The gold, the incense and the myrrh — glowing softly, as they have for nine hundred years.'},
      ]},
    time:'night', music:'sorrow',
    player:'sheth', playerPos:[12,11],
    npcs:[
-     {id:'adam',char:'adam_o',x:14,y:7,wander:false,
+     {id:'adam',char:'adam_o',x:14,y:7,wander:false,lying:true,
       script:[
        {say:['adam_o','Shĕth. Come close — my eyes are full of evening. Place yourself at the head of your people when I am gone; tend them and watch over them in the fear of Aluahim; and lead them in the good way.']},
        {say:['adam_o','Command them to fast and pray, and not to hearken to Satan — and let them not go down from this holy mountain to the children of Qayin, nor mingle with them; for from that mingling shall come the fall of the sons of light.']},
@@ -3580,6 +3688,26 @@ $('btn-dlc').onclick=()=>{ window.location.href='book-of-hanok.html'; };
 $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
+/* ---------- fullscreen + orientation ---------- */
+function isFullscreen(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+function lockLandscape(){
+  try{ if(screen.orientation&&screen.orientation.lock)
+    screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
+}
+function goFullscreen(){
+  const el=document.documentElement;
+  const req=el.requestFullscreen||el.webkitRequestFullscreen;
+  if(!req) return;
+  try{ const p=req.call(el);
+    if(p&&p.then) p.then(lockLandscape).catch(()=>{}); else lockLandscape();
+  }catch(e){}
+}
+function exitFs(){ const ex=document.exitFullscreen||document.webkitExitFullscreen;
+  if(ex) try{ex.call(document)}catch(e){} }
+$('btn-fs').onclick=()=>{ Sound.init(); if(isFullscreen()) exitFs(); else goFullscreen(); };
+['fullscreenchange','webkitfullscreenchange'].forEach(ev=>
+  document.addEventListener(ev,()=>{ $('btn-fs').textContent=isFullscreen()?'🗗':'⛶'; setTimeout(resize,120); }));
+addEventListener('orientationchange',()=>{ setTimeout(resize,250); });
 $('btn-next-ch').onclick=()=>{
   const next=nextChapter(Game.chapter.id);
   if(next) Game.startChapter(next); else openChapters();
