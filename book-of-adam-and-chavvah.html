@@ -495,6 +495,8 @@ const CHARS={
   terah:   {name:'Teraḥ',   skin:'#704a27', hair:'#9a9286', hairStyle:'short', robe:'#704a3a', beard:'#9a9286', headcover:'#8a3030'},
   oldman:  {name:'An Old Stranger', skin:'#6b4828', hair:'#b8b2a4', hairStyle:'short', robe:'#6a665a', beard:'#b8b2a4'},
   satan_a: {name:'A Shining One', angel:true, skin:'#6e4a28', hair:'#d8c8a0', hairStyle:'short', robe:'#e8e0d0'},
+  siren:   {name:'A Maiden of the River', skin:'#7a4e29', hair:'#1d1208', hairStyle:'long', robe:'#7a98a8'},
+  sirenman:{name:'A Man of the River', skin:'#6e4524', hair:'#221a10', hairStyle:'short', robe:'#5d7a88'},
   satan_d: {name:'Satan', skin:'#0e0a0a', hair:'#a31515', hairStyle:'short', robe:'#8a8a8e', robeLine:'#eceef0'},
   adam_o:  {name:'Aḏam', skin:'#6e4524', hair:'#d8d2c4', hairStyle:'short', robe:'#7d5d38', beard:'#d8d2c4', old:true},
   luluwa:  {name:'Luluwa', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#9c7d8c'},
@@ -1830,6 +1832,9 @@ function drawItem(g,sx,sy,kind,t){
       g.beginPath(); g.moveTo(-4,-3); g.quadraticCurveTo(0,-5.5,4,-3);
       g.quadraticCurveTo(5,1,2.5,3.5); g.lineTo(-2.5,3.5); g.quadraticCurveTo(-5,1,-4,-3); g.closePath(); g.fill();
       g.fillStyle='#8a6a45'; g.beginPath(); g.arc(-1,-.5,1.6,0,Math.PI*2); g.fill(); break;
+    case 'thorn': g.fillStyle='#8a6a38';
+      g.beginPath(); g.moveTo(-1,3.5); g.lineTo(-2.5,-3.5); g.lineTo(0,-1.5); g.lineTo(2.5,-4.5); g.lineTo(1,3.5); g.closePath(); g.fill();
+      g.fillStyle='#6e5226'; g.fillRect(-1,-1,2,4.5); break;
     case 'silver': g.fillStyle='#c8ccd4'; g.beginPath(); g.arc(0,0,4,0,Math.PI*2); g.fill();
       g.fillStyle='#e8ecf2'; g.beginPath(); g.arc(-1,-1,1.8,0,Math.PI*2); g.fill(); break;
     case 'flower': g.fillStyle='#d87a9a';
@@ -3071,6 +3076,52 @@ const STORY=[
   ],
   complete:'From light into this darkness — yet He sent His Word, and raised them from their fallen state.'
 },
+{ id:'b1a', title:'The Water by the Garden', ref:'1 AḎAM & ḤAWWAH 9–10',
+  intro:[
+   {art:'divide', music:'sorrow', text:'And Aḏam said, “Do you see this water, that was with us in the garden — that watered the trees of the garden, and flowed out from there? When we were in the garden we did not care for it; but in this strange land, we love it.” And when Ḥawwah heard these words, she cried.', ref:'1 AḎAM & ḤAWWAH 9'},
+  ],
+  scene:{
+   map:{biome:'wild', w:46, h:30, seed:307, sea:8,
+     features:[
+       {type:'cave',x:34,y:11,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'clearing',x:22,y:20,flat:2},
+     ]},
+   time:'dusk', music:'sorrow',
+   player:'adam_c', playerPos:[33,14],
+   npcs:[
+     {id:'chavvah',char:'chavvah_c',x:32,y:15,wander:false,follow:true,noTalk:true},
+     {id:'rescuer',char:'malak',x:24,y:26,wander:false,hidden:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'goto',x:22,y:21,radius:2.4,text:'Go down to the water that flows from toward the garden',
+      script:[
+       {say:['adam_c','This water once flowed past the tree of life, Ḥawwah. We never thirsted for it there… and now it is all we have left of the garden.']},
+       {say:['narrator','And from the soreness of their crying they fell into that water — and would have put an end to themselves in it, so as never again to behold the creation.']},
+       {move:['player',22,23.4,.045,'bg']},{move:['chavvah',23,23.4,.045]},
+       {call:g=>{ g.world.player.submerged=true; const c=g.world.npcs.find(n=>n.id==='chavvah'); if(c)c.submerged=true; }},
+       {shake:1},{sfx:'bad'},{wait:1200},
+       {say:['narrator','Then Aluahim, merciful and gracious, looked at them lying in the water, close to death — and sent a mal’ak, who brought them out of the water, and laid them on the shore as dead.']},
+       {show:'rescuer'},{move:['rescuer',23,21.5,.07]},
+       {call:g=>{ const p=g.world.player; p.submerged=false; p.x=21.5; p.y=21; p.lying=true;
+         const c=g.world.npcs.find(n=>n.id==='chavvah'); if(c){c.submerged=false; c.x=23.5; c.y=21.3; c.lying=true; c.target=null;} }},
+       {wait:900},
+       {say:['malak','O Aluahim, Your creatures have breathed their last.']},
+       {rays:.9,raysX:22},{sfx:'holy'},{music:'holy'},
+       {say:['narrator','Then Aluahim sent His Word to Aḏam and Ḥawwah — and raised them from their death.']},
+       {burst:[22,21,'holy',22]},
+       {call:g=>{ g.world.player.lying=false; const c=g.world.npcs.find(n=>n.id==='chavvah'); if(c)c.lying=false; }},
+       {say:['adam_c','O Aluahim… while we were in the garden we did not require this water, nor care for it. But since we came to this land, we cannot do without it.']},
+       {say:['voice','O Aḏam, in the garden you lived by My life; in this land your body is of the earth, and needs the water of the earth. But the breath in you is Mine — and it is not yours to drown. Live, and wait for the promise.']},
+       {rays:0},{music:'sorrow'},
+       {move:['rescuer',24,27,.06,'bg']},{despawn:'rescuer'},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'divide', music:'holy', text:'Then Aluahim sent His Word to Aḏam and Ḥawwah, who raised them from their death — for He did not make them for the water of despair, but for the Water of Life.', ref:'1 AḎAM & ḤAWWAH 10'},
+  ],
+  complete:'The breath in you is Mine — and it is not yours to drown.'
+},
 { id:'b2', title:'The Great Five Days and a Half', ref:'1 AḎAM & ḤAWWAH 3; 12–16',
   intro:[
    {art:'void', music:'night', text:'And when the sun set that first evening, darkness came over the cave. And Aḏam and Ḥawwah had never seen darkness — for in the garden there is no night.', ref:'1 AḎAM & ḤAWWAH 12'},
@@ -3188,16 +3239,16 @@ const STORY=[
    ],
    objectives:[
      {type:'collect',item:'stone',need:4,text:'Gather stones, as your heart stirs you'},
-     {type:'interact',prop:'altar',text:'Build the first altar that ever was built',hiddenUntil:1,item:'stone',need:4,
+     {type:'interact',prop:'altar',text:'Build the first mizbe’ach that ever was built',hiddenUntil:1,item:'stone',need:4,
       script:[
        {prop:['altar',{stage:2,offering:true}]},{sfx:'pickup'},
        {say:['adam_c','We have nothing to offer Him, Ḥawwah — no fruit of a garden that is no longer ours. Only ourselves. Then let it be ourselves.']},
-       {say:['narrator','And they offered upon the altar the blood of their own wounds, from the rocks of the mountain — and they sued for forgiveness through that blood, and prayed for mercy.']},
+       {say:['narrator','And they offered upon the mizbe’ach the blood of their own wounds, from the rocks of the mountain — and they sued for forgiveness through that blood, and prayed for mercy.']},
        {rays:.9,raysX:22},{sfx:'holy'},{music:'holy'},{wait:700},
        {say:['voice','O Aḏam — as you have shed your blood, so will I shed My own blood when I become flesh of your descendants; and as you died, O Aḏam, so also will I die.']},
-       {say:['voice','And as you built an altar, so also will I make for you an altar of the earth; and as you offered your blood on it, so also will I offer My blood on an altar on the earth. And as you sued for forgiveness through that blood, so also will I make My blood forgiveness of sins, and erase transgressions in it.']},
+       {say:['voice','And as you built an mizbe’ach, so also will I make for you an mizbe’ach of the earth; and as you offered your blood on it, so also will I offer My blood on an mizbe’ach on the earth. And as you sued for forgiveness through that blood, so also will I make My blood forgiveness of sins, and erase transgressions in it.']},
        {burst:[22,13,'holy',24]},{rays:0},
-       {say:['adam_c','Then keep us, Master, until that day. We will bring our prayer to this altar — morning and evening, all the days of our life.']},
+       {say:['adam_c','Then keep us, Master, until that day. We will bring our prayer to this mizbe’ach — morning and evening, all the days of our life.']},
        {say:['narrator','And thus worship was established on the earth, before the Cave of Treasures, in the land of exile.']},
       ]},
    ],
@@ -3205,7 +3256,7 @@ const STORY=[
   outro:[
    {art:'offering', music:'holy', text:'“As you have shed your blood, so will I shed My own blood… and as you sued for forgiveness through that blood, so also will I make My blood forgiveness of sins.”', ref:'1 AḎAM & ḤAWWAH 24'},
   ],
-  complete:'The first altar that ever was built — and over it, the promise of the blood that forgives.'
+  complete:'The first mizbe’ach that ever was built — and over it, the promise of the blood that forgives.'
 },
 ]},
 /* ============ ACT III — THE ADVERSARY ============ */
@@ -3235,7 +3286,7 @@ const STORY=[
      {type:'goto',x:14,y:23,radius:3,text:'Go and meet the three messengers',hiddenUntil:1,
       script:[
        {say:['malak','Peace, Aḏam. Aluahim has heard your grief over the gold of the land of Pishon, and sent us with tokens from the garden, to comfort you.']},
-       {say:['narrator','And the first angel gave him rods of GOLD; and the second, INCENSE; and the third, MYRRH. And Aḏam wondered at them, and took them with joy.']},
+       {say:['narrator','And the first mal’ak gave him rods of GOLD; and the second, INCENSE; and the third, MYRRH. And Aḏam wondered at them, and took them with joy.']},
        {give:['gold',1]},{give:['incense',1]},{give:['myrrh',1]},{sfx:'chime'},{burst:[14,23,'holy',20]},
        {say:['malak','Aluahim says: these three things I give you in token of the three days the Word shall remain in the heart of the earth — the gold, for His kingship; the incense, for His prayer; the myrrh, for His suffering. Keep them in the cave, for your sake and the sake of your children.']},
        {move:['m1',2,22,.06,'bg']},{move:['m2',2,24,.06,'bg']},{move:['m3',2,26,.06]},
@@ -3296,6 +3347,52 @@ const STORY=[
   ],
   complete:'The shining one had no light to give — but the figs of the garden were real, and so was the deliverance.'
 },
+{ id:'b6a', title:'Afraid to Eat and Drink', ref:'1 AḎAM & ḤAWWAH 38–42',
+  intro:[
+   {art:'cavehome', music:'sorrow', text:'And the figs from the garden lay before them — and their thoughts made them long to eat. But Aḏam said, “I am afraid to eat of this fig. I know not what may come over me from it.”', ref:'1 AḎAM & ḤAWWAH 38'},
+  ],
+  scene:{
+   map:{biome:'wild', w:48, h:32, seed:355, sea:8,
+     features:[
+       {type:'cave',glow:true,x:34,y:12,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'basket',full:true,x:31,y:14,id:'figs',examine:'The two figs from the garden — each the weight of a melon, for the fruit of the garden was greater than the fruit of this land.'},
+       {type:'clearing',x:24,y:21,flat:2},
+     ]},
+   time:'dusk', music:'sorrow',
+   player:'adam_c', playerPos:[33,16],
+   npcs:[
+     {id:'chavvah',char:'chavvah_c',x:32,y:15,wander:false,follow:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'interact',prop:'figs',text:'The figs wait by the cave — but dare you eat?',
+      script:[
+       {say:['adam_c','I am afraid to eat of this fig, Ḥawwah. I know not what may come over me from it.']},
+       {say:['adam_c','O Aluahim — satisfy my hunger without my having to eat this fig! For after I have eaten it, what will it profit me? And what shall I desire and ask of You when it is gone?']},
+       {rays:.8,raysX:33},{sfx:'holy'},{music:'holy'},
+       {say:['voice','O Aḏam, why did you not have this dread, or this fasting, or this care, before now? Why had you no such fear before you transgressed?']},
+       {say:['voice','But now you have come to live in this strange land, and your animal body cannot survive on the earth without earthly food — to strengthen it, and to restore its powers.']},
+       {rays:0},
+       {say:['narrator','And Aḏam took the fig and laid it on the rods of gold; and Ḥawwah laid her fig upon the incense. And they remained standing and fasting the whole of that night, until the morning dawned.']},
+       {fade:'out'},{time:'morning'},{toast:'They stood praying until the sun rose…'},{wait:1500},{fade:'in'},
+      ]},
+     {type:'goto',x:24,y:22,radius:2.4,text:'Go south, to the water that flows from toward the garden',hiddenUntil:1,
+      script:[
+       {say:['adam_c','O Aluahim — when I was in the garden and saw the water that flowed from under the tree of life, my heart did not desire it, neither did I know thirst — for I was living, above that which I am now.']},
+       {say:['adam_c','But now I am dying; my flesh is parched with thirst. Give me of the Water of Life, that I may drink of it and live! Of Your mercy, save us from these plagues — or bring us into another land, where there is rest.']},
+       {rays:.85,raysX:24},{sfx:'holy'},{music:'holy'},
+       {say:['voice','O Aḏam — as to the land of rest you ask for: it is not another land than this, but the kingdom of the shamayim, where alone there is rest. You cannot enter it now — but only after your judgment is past and fulfilled. Then I will make you go up into it, you and your righteous descendants.']},
+       {say:['voice','And the Water of Life that you ask — it cannot be this day, but on the day that I descend and break the gates of brass and bruise the kingdoms of iron in pieces. Then will I give your descendants and you the Water of Life, and you shall live forever.']},
+       {say:['voice','But now: eat the figs, and drink the water of this land, and do not be afraid — for your body is of this earth now, and I Myself have provided what it needs.']},
+       {rays:0},{music:'eden'},{sfx:'chime'},
+       {say:['narrator','And Aḏam and Ḥawwah ate of the figs, and drank of the water, and were strengthened — and the fear of eating and drinking left them, though the longing for the garden never did.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'divide', music:'holy', text:'“And the Water of Life — not this day, but on the day that I descend and break the gates of brass. Then will I give your descendants and you the Water of Life, and you shall live forever.” — the third prophecy of His coming.', ref:'1 AḎAM & ḤAWWAH 42'},
+  ],
+  complete:'The fear of eating and drinking left them — and the promise of the Water of Life remained.'
+},
 { id:'b7', title:'Fire Around the Cave', ref:'1 AḎAM & ḤAWWAH 43–46',
   intro:[
    {art:'corrupt', music:'tense', text:'Then Satan, the hater of all good, saw that Aḏam and Ḥawwah prayed and were comforted — and he gathered fire, and came to the Cave of Treasures to burn it over them.', ref:'1 AḎAM & ḤAWWAH 43'},
@@ -3341,35 +3438,57 @@ const STORY=[
 ]},
 /* ============ ACT IV — BREAD BY SWEAT ============ */
 { id:'aeact4', roman:'IV', title:'Bread by Sweat', ref:'1 AḎAM & ḤAWWAH 50–66', chapters:[
-{ id:'b8', title:'The First Garments', ref:'1 AḎAM & ḤAWWAH 50–53',
+{ id:'b8', title:'The Garments and the Mal’ak', ref:'1 AḎAM & ḤAWWAH 46; 50–53',
   intro:[
-   {art:'journey', music:'desert', text:'And Aḏam and Ḥawwah sought to cover themselves more fully against the cold and the heat of the land of exile — for the coats Aluahim made them at the gate were worn with their wandering.', ref:'1 AḎAM & ḤAWWAH 50–51'},
+   {art:'corrupt', music:'sorrow', text:'For when Satan had blown into the fire around the cave, their coverings were singed — and Aḏam and Ḥawwah sought how to cover themselves. And the Word of Aluahim came: “Go to the mountain-side; there you will find skins of sheep that were left after the lions ate the carcasses. Take them, and make garments for yourselves.”', ref:'1 AḎAM & ḤAWWAH 46; 50'},
   ],
   scene:{
    map:{biome:'wild', w:48, h:32, seed:371,
      features:[
        {type:'cave',glow:true,x:36,y:12,solid:true,clear:3,flat:3,id:'cave'},
-       {type:'clearing',x:12,y:24,flat:2},
+       {type:'clearing',x:12,y:18,flat:2},{type:'clearing',x:13,y:25,flat:2},
      ]},
    time:'day', music:'desert',
    player:'adam_c', playerPos:[34,15],
    npcs:[
      {id:'chavvah',char:'chavvah_c',x:35,y:16,wander:true,range:1.5,
-      dlg:[['chavvah_c','The beasts shed their skins upon the rocks, Aḏam — gather what they leave, and I shall learn to join them with thorn and sinew.']]},
+      dlg:[['chavvah_c','The Word spoke of skins of sheep on the mountain-side, Aḏam — left where the lions ate. Come, let us go and find them.']]},
+     {id:'satan',char:'satan_d',x:12,y:17,wander:false,hidden:true,noTalk:true},
+     {id:'malak',char:'malak',x:33,y:14,wander:false,hidden:true,noTalk:true},
    ],
    items:[
-     {kind:'skin',x:14,y:14},{kind:'skin',x:24,y:25},{kind:'skin',x:9,y:20},
+     {kind:'skin',x:11,y:17.5},{kind:'skin',x:13,y:19},{kind:'skin',x:12,y:20.5},
+     {kind:'thorn',x:20,y:26},{kind:'thorn',x:16,y:28},
    ],
    objectives:[
      {type:'talk',npc:'chavvah',text:'Take counsel with Ḥawwah'},
-     {type:'collect',item:'skin',need:3,text:'Gather skins that the beasts have shed',hiddenUntil:1},
-     {type:'interact',prop:'cave',text:'Sew the first garments',hiddenUntil:2,item:'skin',need:3,
+     {type:'goto',x:12,y:18,radius:2.6,text:'Go to the place of the sheep-skins',hiddenUntil:1,
       script:[
-       {sfx:'pickup'},
-       {say:['narrator','And they sewed the skins with thorns and sinew, and made for themselves garments — the first work of clothing wrought by human hands upon the earth.']},
-       {say:['adam_c','Not the glory we wore in the garden — but honest, and warm, and the work of our own fingers. We learn, Ḥawwah. Slowly, we learn to live.']},
+       {show:'satan'},{sfx:'bad'},{shake:1.5},
+       {say:['narrator','But Satan had heard the Word concerning the covering, and had hastened to the place of the skins, to take them and throw them into the sea, or to burn them — so that Aḏam and Ḥawwah should not find them. And as he was about to take them, the Word of Aluahim bound him by the side of those skins.']},
+       {say:['adam_c','Ḥawwah — that hideous figure by the skins — I am afraid of it!']},
+       {rays:.8,raysX:12},{sfx:'holy'},{music:'holy'},
+       {say:['voice','Do not fear. This is he who was hidden in the serpent, who deceived you, and stripped you of the garment of light in which you were. This is he who promised you majesty and divinity.']},
+       {say:['voice','Where, then, is the beauty that was on him? Where is his divinity? Where is his light? Now his figure is hideous, and he has come to be called SATAN. He wished to take from you even this earthly garment of sheep-skins — but he shall not prevail.']},
+       {despawn:'satan'},{burst:[12,17,'ash',22]},{rays:0},{music:'desert'},
+       {say:['narrator','And Satan was driven from the place, and the skins lay untouched where the lions had left them.']},
       ]},
-     {type:'goto',x:12,y:24,radius:2.4,text:'Walk westward and see the breadth of the land',hiddenUntil:3,
+     {type:'collect',item:'skin',need:3,text:'Gather the skins of the sheep',hiddenUntil:2},
+     {type:'goto',x:33,y:15,radius:2.6,text:'Carry them back — a shining one waits by the cave',hiddenUntil:3,
+      script:[
+       {show:'malak'},{burst:[33,14,'holy',16]},{sfx:'holy'},
+       {say:['malak','Peace, children of the cave. Aluahim has sent me to teach your hands what they do not yet know. Go forth, and bring some palm-thorns.']},
+      ]},
+     {type:'collect',item:'thorn',need:2,text:'Bring palm-thorns to the mal’ak',hiddenUntil:4},
+     {type:'interact',prop:'cave',text:'Watch the mal’ak work out the skins',hiddenUntil:5,item:'thorn',need:2,
+      script:[
+       {say:['narrator','Then the mal’ak began before them to work out the skins, after the manner of one who prepares a shirt — and he took the thorns and stuck them into the skins, before their eyes.']},
+       {say:['narrator','Then the mal’ak stood up and prayed Aluahim that the thorns in those skins should be hidden, so as to be as it were sewn with one thread. And so it was, by the order of Aluahim — and they became garments for Aḏam and Ḥawwah, and He clothed them with them.']},
+       {sfx:'chime'},{burst:[34,14,'holy',18]},
+       {say:['adam_c','From His hand at the gate, the coats of skin — and from His messenger’s hands now, garments again. Even our clothing is mercy taught from the shamayim.']},
+       {move:['malak',44,8,.06,'bg']},{despawn:'malak'},
+      ]},
+     {type:'goto',x:12,y:24,radius:2.4,text:'Walk westward and see the breadth of the land',hiddenUntil:6,
       script:[
        {say:['narrator','And they went exploring westward, and saw the land wide and great before them. And the Word of Aluahim came to Aḏam concerning the generations to come.']},
        {rays:.7,raysX:12},{sfx:'holy'},
@@ -3379,9 +3498,9 @@ const STORY=[
    ],
   },
   outro:[
-   {art:'land', music:'desert', text:'And they returned to the Cave of Treasures as the sun went down — clothed by their own labour, and carrying the long prophecy of the waters in their hearts.', ref:'1 AḎAM & ḤAWWAH 53'},
+   {art:'land', music:'desert', text:'And from that time the nakedness of their bodies was covered from each other’s sight, at the end of the fifty-first day — garments of skins, sewn with hidden thorns as with one thread, by the hands of a mal’ak of Aluahim.', ref:'1 AḎAM & ḤAWWAH 51'},
   ],
-  complete:'The first garments wrought by human hands — and the first prophecy of the flood.'
+  complete:'Even their clothing was mercy, taught from the shamayim by the hands of a mal’ak.'
 },
 { id:'b9', title:'The Old Man and the First Bread', ref:'1 AḎAM & ḤAWWAH 60–66',
   intro:[
@@ -3438,41 +3557,76 @@ const STORY=[
 ]},
 /* ============ ACT V — THE FAMILY OF AḎAM ============ */
 { id:'aeact5', roman:'V', title:'The Family of Aḏam', ref:'1 AḎAM & ḤAWWAH 73–79', chapters:[
-{ id:'b10', title:'The Marriage of Aḏam and Ḥawwah', ref:'1 AḎAM & ḤAWWAH 67–73',
+{ id:'b10', title:'The Maidens of the River', ref:'1 AḎAM & ḤAWWAH 71–73',
   intro:[
-   {art:'rest', music:'holy', text:'And when the days of mourning were fulfilled, the Word of Aluahim came to Aḏam concerning Ḥawwah — that they should be joined, husband and wife, in the order Aluahim appointed, with the blessing of the shamayim upon them.', ref:'1 AḎAM & ḤAWWAH 67–73'},
+   {art:'divide', music:'tense', text:'Then Satan thought within himself: “Aluahim commanded Aḏam concerning the fruit, and he ate, and yet was not slain — only decreed to die. But if I deceive him to marry Ḥawwah without Aluahim’s permission, then Aluahim will kill him.” Therefore he worked this apparition — for he sought to make Aḏam disappear from off the face of the earth.', ref:'1 AḎAM & ḤAWWAH 72:10–12'},
   ],
   scene:{
-   map:{biome:'wild', w:44, h:30, seed:391,
+   map:{biome:'wild', w:48, h:32, seed:391, river:{x:14,width:5,curve:1.5},
      features:[
-       {type:'cave',glow:true,x:30,y:12,solid:true,clear:3,flat:3,id:'cave'},
-       {type:'altar',stage:3,x:24,y:15,solid:true,clear:2,id:'altar'},
-       {type:'clearing',x:24,y:17,flat:2},
+       {type:'cave',glow:true,x:36,y:12,solid:true,clear:3,flat:3,id:'cave'},
+       {type:'clearing',x:19,y:18,flat:2},
      ]},
-   time:'dusk', music:'holy',
-   player:'adam_c', playerPos:[20,18],
+   time:'day', music:'tense',
+   player:'adam_c', playerPos:[34,15],
    npcs:[
-     {id:'chavvah',char:'chavvah_c',x:28,y:17,wander:false,noTalk:true},
+     {id:'chavvah',char:'chavvah_c',x:35,y:16,wander:false,follow:true,noTalk:true},
+     {id:'m1',char:'siren',x:14,y:16,submerged:true,wander:false,hidden:true,noTalk:true},
+     {id:'m2',char:'siren',x:13.4,y:18.5,submerged:true,wander:false,hidden:true,noTalk:true},
+     {id:'m3',char:'siren',x:15,y:20.5,submerged:true,wander:false,hidden:true,noTalk:true},
+     {id:'h1',char:'sirenman',x:12.6,y:17.4,submerged:true,wander:false,hidden:true,noTalk:true},
+     {id:'h2',char:'sirenman',x:14.4,y:19.6,submerged:true,wander:false,hidden:true,noTalk:true},
+     {id:'ch1',char:'siren',x:13.6,y:21.4,submerged:true,child:true,wander:false,hidden:true,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:24,y:17,radius:2,text:'Stand together before the altar of Aluahim',
+     {type:'goto',x:19,y:18,radius:2.4,text:'Strange voices are singing from the river',
       script:[
-       {move:['chavvah',25,17,.04]},
-       {say:['narrator','Satan had sought many times to defile the matter with his counsel — appearing in fair forms, whispering crooked words. But Aḏam waited for the command of Aluahim, and would do nothing without His word.']},
-       {rays:.9,raysX:24},{sfx:'holy'},
-       {say:['voice','O Aḏam, she is bone of your bones and flesh of your flesh — your counterpart, whom I made for you. Take her before Me as wife, in purity and in honour, and I will baruk you both, and give you children to fill the earth.']},
-       {burst:[24,15,'holy',26]},{sfx:'chime'},
-       {say:['adam_c','Before You, Aluahim, and before Your shamayim — she is my wife, and I am her husband, until the day we return to the dust, and beyond it, to the day of the promise.']},
-       {say:['chavvah_c','And I am his, as in the day You brought me to him in the garden. What we broke together, let us now carry together.']},
-       {say:['narrator','And the blessing of Aluahim was upon them, and the angels of the shamayim rejoiced over the first marriage that ever was upon the earth.']},
-       {rays:0},
+       {show:'m1'},{show:'m2'},{show:'m3'},
+       {burst:[14,17,'mote',12]},{sfx:'bad'},
+       {say:['narrator','Then Satan, and ten from his hosts, transformed themselves into maidens, unlike any others in the whole world for grace — and they came up out of the river in the presence of Aḏam and Ḥawwah.']},
+       {say:['siren','Come, sisters — look at the faces of Aḏam and Ḥawwah, who are of the men on earth! How beautiful they are — and how different their look from our own faces!']},
+       {say:['adam_c','Ḥawwah… is there then under us another world, with such beautiful creatures as these in it?']},
+       {say:['siren','Yes, indeed — we are an abundant creation.']},
+       {say:['adam_c','But… how do you multiply?']},
+       {say:['siren','We have husbands, who have married us; and we bear them children, who grow up and in their turn marry and are married, and bear children also — and thus we increase. And if you will not believe us, O Aḏam, we will show you our husbands and our children!']},
+       {say:['narrator','And they shouted over the river, as if to call their husbands and their children — and there came up from the river men and children, and every man came to his wife.']},
+       {show:'h1'},{show:'h2'},{show:'ch1'},
+       {burst:[13,18,'mote',16]},{wait:800},
+       {say:['siren','See all our husbands, and our children? You should marry Ḥawwah, as we have married our husbands — and you will have children, as we have.']},
+       {say:['narrator','This was a device of Satan to deceive Aḏam. And the fire of sin came over Aḏam, and he thought of committing sin — but he restrained himself, fearing that if he followed this counsel, Aluahim would put him to death.']},
+       {say:['adam_c','…No. My heart burns with what you show me — but I will do nothing without the permission of Aluahim. If He wills that I take Ḥawwah, He Himself shall say it.']},
+       {say:['narrator','Then Satan and his hosts went down into the river, in the presence of Aḏam and Ḥawwah — to let them see that they were going back to their own world.']},
+       {despawn:'m1'},{despawn:'m2'},{despawn:'m3'},{despawn:'h1'},{despawn:'h2'},{despawn:'ch1'},
+       {burst:[14,18,'mote',24]},{sfx:'bad'},{wait:600},
+       {say:['chavvah_c','The river is empty, Aḏam — as if they had never been. There is no people beneath the water. It was HIM again.']},
+      ]},
+     {type:'goto',x:35,y:15,radius:2.6,text:'Return to the cave, and bring the matter to Aluahim',hiddenUntil:1,
+      script:[
+       {time:'night'},{music:'night'},
+       {say:['narrator','And Aḏam remained standing in prayer that night, not knowing how to pray, by reason of the thoughts of his heart — and he continued so until morning.']},
+       {say:['chavvah_c','Why need we go down the mountain, Aḏam? Let us rather stand and pray here in our cave, that Aluahim may tell us whether this counsel is good or not.']},
+       {say:['adam_c','O Aluahim — You know that we transgressed against You, and from that moment we were stripped of our bright nature, and our body became brutish, requiring food and drink, and with animal desires. Command us, O Aluahim, not to give way to them without Your permission — for without it, we perish.']},
+       {time:'morning'},{rays:.9,raysX:35},{sfx:'holy'},{music:'holy'},
+       {say:['voice','O Aḏam — if only you had had this caution at first, before you came out of the garden into this land!']},
+       {say:['narrator','And Aluahim approved Aḏam in what he had thought, and in the prayer he had offered — and He sent the three mal’akim who had brought the gold, the incense and the myrrh, that they should inform him respecting his marriage to Ḥawwah.']},
+       {spawn:{id:'a1',char:'malak',x:33,y:13,wander:false,noTalk:true}},
+       {spawn:{id:'a2',char:'malak',x:35,y:12.4,wander:false,noTalk:true}},
+       {spawn:{id:'a3',char:'malak',x:37,y:13.2,wander:false,noTalk:true}},
+       {burst:[35,13,'holy',24]},
+       {say:['malak','O Aḏam: take the gold, and give it to Ḥawwah as a wedding gift, and promise to marry her. Then give her some incense and myrrh as a present — and be, you and she, one flesh.']},
+       {say:['narrator','And Aḏam obeyed the mal’akim, and took the gold and put it into Ḥawwah’s bosom in her garment, and promised to marry her with his hand.']},
+       {sfx:'chime'},{burst:[35,15,'mote',18]},
+       {say:['malak','Now rise, and pray forty days and forty nights — and after, come together as husband and wife; for then this shall be an act pure and undefiled, and you shall have children who will multiply, and replenish the face of the earth.']},
+       {fade:'out'},{toast:'And they fasted and prayed forty days and forty nights…'},{wait:1800},
+       {despawn:'a1'},{despawn:'a2'},{despawn:'a3'},{fade:'in'},{music:'holy'},
+       {say:['narrator','And so Aḏam wedded Ḥawwah — by the word of Aluahim and the witness of His mal’akim, in purity, against every device of the enemy. And the blessing of the shamayim was upon them.']},
       ]},
    ],
   },
   outro:[
-   {art:'rest', music:'holy', text:'And thus the house of Aḏam was established before Aluahim — by His word and His blessing, against every counsel of the enemy.', ref:'1 AḎAM & ḤAWWAH 73'},
+   {art:'rest', music:'holy', text:'“Take the gold, and give it to Ḥawwah as a wedding gift… and be, you and she, one flesh.” — And the first marriage on the earth was made by the word of Aluahim, and not by the counsel of the deceiver.', ref:'1 AḎAM & ḤAWWAH 73'},
   ],
-  complete:'What we broke together, let us now carry together.'
+  complete:'The first marriage was made by the word of Aluahim — not by the counsel from the river.'
 },
 { id:'b11', title:'Qayin and Luluwa, Heḇal and Aqlia', ref:'1 AḎAM & ḤAWWAH 74–77',
   intro:[
@@ -3498,7 +3652,7 @@ const STORY=[
       ]},
      {id:'hevel',char:'hevel',x:33,y:22,wander:true,range:2,
       script:[
-       {say:['hevel','Father, I took the firstlings to the altar at dawn — it seemed right, before any of us had eaten. The fire of the morning prayer is the best hour of the day.']},
+       {say:['hevel','Father, I took the firstlings to the mizbe’ach at dawn — it seemed right, before any of us had eaten. The fire of the morning prayer is the best hour of the day.']},
       ]},
      {id:'luluwa',char:'luluwa',x:25,y:20,wander:true,range:2,dlg:[['luluwa','Mother says I have her eyes, and grandfather-garden’s flowers in my cheeks — whatever that means.']]},
      {id:'aqlia',char:'aqlia',x:30,y:20,wander:true,range:2,dlg:[['aqlia','Heḇal lets me carry the smallest lamb home when the sun sets. Its heart beats faster than a bird’s.']]},
@@ -3632,7 +3786,7 @@ const STORY=[
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'And Shĕth was perfect of heart, and his children after him — a tribe of the just upon the holy mountain, keeping the altar, the tokens, and the promise.', ref:'2 AḎAM & ḤAWWAH 5–7'},
+   {art:'stars', music:'holy', text:'And Shĕth was perfect of heart, and his children after him — a tribe of the just upon the holy mountain, keeping the mizbe’ach, the tokens, and the promise.', ref:'2 AḎAM & ḤAWWAH 5–7'},
   ],
   complete:'Weigh every shining thing against the Word of Aluahim.'
 },
