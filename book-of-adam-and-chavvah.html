@@ -164,6 +164,21 @@
          transition:opacity .8s ease}
   .vneg{user-select:none}
 
+  /* ---------- slide back + story log ---------- */
+  #slide-back{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-back.show{display:inline-block}
+  #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
+  #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
+    scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  .log-entry{margin-bottom:1.4vh;line-height:1.5}
+  .log-entry .who{color:var(--gold);letter-spacing:.2em;font-size:clamp(10px,1.7vmin,13px);
+    text-transform:uppercase;display:block;margin-bottom:2px}
+  .log-entry .what{color:#e8dfc8;font-size:clamp(13px,2.2vmin,17px);font-style:italic}
+
   /* ---------- mobile fullscreen / rotation ---------- */
   @supports(height:100dvh){ html,body{height:100dvh} }
   #sys-buttons{top:calc(1.4vh + env(safe-area-inset-top,0px));right:calc(1.2vw + env(safe-area-inset-right,0px))}
@@ -184,6 +199,7 @@
   <div id="interact-tip">✦ &nbsp;Press <b>E</b> to interact</div>
 
   <div id="sys-buttons">
+    <div class="sys-btn" id="btn-log" title="The story so far">📜</div>
     <div class="sys-btn" id="btn-fs" title="Fullscreen">⛶</div>
     <div class="sys-btn" id="btn-sound" title="Sound">♪</div>
     <div class="sys-btn" id="btn-menu" title="Chapters">☰</div>
@@ -193,6 +209,7 @@
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
+    <button id="slide-back">⟨ &nbsp;Previous</button>
   </div>
 
   <div id="dlg">
@@ -231,6 +248,15 @@
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
     </div>
+  </div>
+
+  <div class="screen" id="log-screen">
+    <h2 style="color:var(--gold);letter-spacing:.3em;font-size:clamp(16px,3vmin,26px);
+        text-transform:uppercase;margin-bottom:.6vh">The Story So Far</h2>
+    <div class="hint" style="color:#8d8770;font-style:italic;font-size:clamp(11px,1.8vmin,15px);
+        margin-bottom:1.6vh">every word of this chapter, in case one slipped past</div>
+    <div id="log-list"></div>
+    <button class="btn small" id="btn-log-close" style="margin-top:1.4vh">← Return</button>
   </div>
 
   <div class="screen" id="complete-screen">
@@ -399,6 +425,7 @@ const Input={
       this.keys[e.code]=true;
       if(['Space','Enter','KeyE'].includes(e.code)){ Game.onAction(); }
       if(e.code==='Escape') Game.onEscape();
+      if((e.code==='Backspace'||e.code==='ArrowLeft')&&Game.state==='slides'){ Game.prevSlide(); e.preventDefault(); }
       if(['ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault();
     });
     addEventListener('keyup',e=>{ this.keys[e.code]=false; });
@@ -468,7 +495,7 @@ const CHARS={
   terah:   {name:'Teraḥ',   skin:'#704a27', hair:'#9a9286', hairStyle:'short', robe:'#704a3a', beard:'#9a9286', headcover:'#8a3030'},
   oldman:  {name:'An Old Stranger', skin:'#6b4828', hair:'#b8b2a4', hairStyle:'short', robe:'#6a665a', beard:'#b8b2a4'},
   satan_a: {name:'A Shining One', angel:true, skin:'#6e4a28', hair:'#d8c8a0', hairStyle:'short', robe:'#e8e0d0'},
-  satan_d: {name:'Satan', skin:'#544036', hair:'#1a1018', hairStyle:'short', robe:'#3d2c44'},
+  satan_d: {name:'Satan', skin:'#0e0a0a', hair:'#a31515', hairStyle:'short', robe:'#8a8a8e', robeLine:'#eceef0'},
   adam_o:  {name:'Aḏam', skin:'#6e4524', hair:'#d8d2c4', hairStyle:'short', robe:'#7d5d38', beard:'#d8d2c4', old:true},
   luluwa:  {name:'Luluwa', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#9c7d8c'},
   aqlia:   {name:'Aqlia', skin:'#7e5630', hair:'#46301a', hairStyle:'long', robe:'#7d8a6a'},
@@ -552,8 +579,10 @@ function drawChar(g,px,py,charId,o){
   g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined) g.globalAlpha=o.alpha;
   /* shadow */
-  g.fillStyle='rgba(0,0,0,.25)';
-  g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
+  if(!o.submerged){
+    g.fillStyle='rgba(0,0,0,.25)';
+    g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
+  }
   /* aura */
   if(c.glory||c.angel){
     const col=c.darkAngel?'120,80,140':(c.angel?'255,245,200':'255,222,120');
@@ -575,6 +604,12 @@ function drawChar(g,px,py,charId,o){
     }
   }
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(-Math.PI/2*flip); }
+  if(o.submerged){
+    /* waist-deep in water: clip everything below the waterline */
+    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
+    g._waterline=wl;
+  }
   const ops=[];
   const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
   const skin=c.skin||'#7a4e29', hairC=c.hair||'#2c1a0c', robe=c.robe;
@@ -605,6 +640,11 @@ function drawChar(g,px,py,charId,o){
     }
     if(c.collar) R(-4.5,-15+B,9,2.2,c.collar);
     if(robe&&!c.coat) R(-0.8,-15+B,1.6,7,shade(torso,10));
+    if(c.robeLine&&robe){
+      R(-3.4,-15+B,.8,12.8,c.robeLine);
+      R(2.6,-15+B,.8,12.8,c.robeLine);
+      R(-4.5,-3.6+B,9,.7,c.robeLine);
+    }
     /* arms swing vertically */
     R(-6.3,-14.6+B-k*0.9,2,5.4,armC);
     R(4.3,-14.6+B+k*0.9,2,5.4,armC);
@@ -676,6 +716,11 @@ function drawChar(g,px,py,charId,o){
       R(-3.8,-15+B,7.6,1,'#e8dcc0');
     }
     if(c.collar) R(-3.8,-15+B,7.6,2.2,c.collar);
+    if(c.robeLine&&robe){
+      R(-2.8,-15+B,.8,12.4,c.robeLine);
+      R(1.8,-15+B,.8,12.4,c.robeLine);
+      R(-3.8,-3.4+B,7.6,.7,c.robeLine);
+    }
     /* head */
     R(-4.6,-24.4+B,9.6,9.6,skin);
     R(5,-21+B,1.2,1.8,skin);                       /* nose */
@@ -709,6 +754,14 @@ function drawChar(g,px,py,charId,o){
     R(-0.6+k*1.5,-9.2+B,2.2,1.7,skin);
   }
   sprRender(g,ops,u,flip);
+  if(o.submerged){
+    /* ripples on the waterline */
+    const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
+    g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
+    g.strokeStyle='rgba(225,240,250,.32)';
+    g.beginPath(); g.ellipse(0,wl,(9.6+Math.sin(t/430)*1.2)*u,2.8*u,0,0,Math.PI*2); g.stroke();
+  }
   g.restore();
 }
 
@@ -1216,18 +1269,35 @@ function drawProp(g,px,py,p,t){
       }
       break; }
     case 'firepit': {
-      g.fillStyle='#3b3228'; g.beginPath(); g.ellipse(0,0,3.6*u,2.2*u,0,0,Math.PI*2); g.fill();
+      const fs=p.big?2.2:1.35;                   /* satan's blazes vs camp fires */
+      g.fillStyle='#3b3228'; g.beginPath(); g.ellipse(0,0,3.6*u*Math.min(fs,1.7),2.2*u*Math.min(fs,1.7),0,0,Math.PI*2); g.fill();
       g.fillStyle='#5d5246';
       for(let i=0;i<6;i++){ const a2=i/6*Math.PI*2;
-        g.beginPath(); g.arc(Math.cos(a2)*3.4*u,Math.sin(a2)*2*u,.9*u,0,Math.PI*2); g.fill(); }
+        g.beginPath(); g.arc(Math.cos(a2)*3.4*u*Math.min(fs,1.7),Math.sin(a2)*2*u*Math.min(fs,1.7),.9*u,0,Math.PI*2); g.fill(); }
       if(p.lit!==false){
         const f=t/85;
-        for(let i=0;i<4;i++){ g.fillStyle=['#e8762a','#f5a623','#ffd54a'][i%3];
-          const fx4=Math.sin(f+i*2.1)*1.4;
-          g.beginPath(); g.moveTo((fx4-1.6)*u,-1*u); g.quadraticCurveTo(fx4*u,(-5-Math.sin(f+i)*1.5)*u,(fx4+1.6)*u,-1*u); g.fill(); }
-        const gl2=g.createRadialGradient(0,-2*u,u,0,-2*u,12*u);
-        gl2.addColorStop(0,'rgba(255,170,80,.3)'); gl2.addColorStop(1,'rgba(255,170,80,0)');
-        g.fillStyle=gl2; g.beginPath(); g.arc(0,-2*u,12*u,0,Math.PI*2); g.fill();
+        const nF=p.big?7:5;
+        for(let i=0;i<nF;i++){
+          g.fillStyle=['#c84a1c','#e8762a','#f5a623','#ffd54a'][i%4];
+          const fx4=Math.sin(f+i*2.1)*1.6*fs;
+          const fw=1.8*fs, fh=(4.5+Math.sin(f*1.2+i)*1.8)*fs;
+          const ox=(i-(nF-1)/2)*1.5*fs*.8;
+          g.beginPath(); g.moveTo((ox+fx4-fw)*u,-1*u);
+          g.quadraticCurveTo((ox+fx4)*u,(-1-fh)*u,(ox+fx4+fw)*u,-1*u); g.fill();
+        }
+        if(p.big){ /* white-hot core + sparks for the great blaze */
+          g.fillStyle='rgba(255,240,190,.85)';
+          g.beginPath(); g.ellipse(Math.sin(f)*u,-2.2*u,2.6*u,1.6*u,0,0,Math.PI*2); g.fill();
+          g.fillStyle='#ffd54a';
+          for(let i=0;i<4;i++){
+            const sp=(f*1.6+i*1.7)%5;
+            g.fillRect((Math.sin(f*2+i*2.4)*4*fs)*u,(-3-sp*2.4)*u,2,2);
+          }
+        }
+        const gr2=12*u*fs;
+        const gl2=g.createRadialGradient(0,-2*u,u,0,-2*u,gr2);
+        gl2.addColorStop(0,`rgba(255,170,80,${p.big?.4:.3})`); gl2.addColorStop(1,'rgba(255,170,80,0)');
+        g.fillStyle=gl2; g.beginPath(); g.arc(0,-2*u,gr2,0,Math.PI*2); g.fill();
       }
       break; }
     case 'basket': { shadow(2.2);
@@ -1549,7 +1619,7 @@ function tileColor(map,id,x,y){
     case T.ROCK: return shadeC('#7d7468',v);
     case T.MTN: return shadeC('#5d564c',v);
     case T.WATER: return shadeC(b.water,v*.6);
-    case T.DEEP: return shadeC(shadeHex(b.water,-30),v*.5);
+    case T.DEEP: return shadeC(b.water,v*.5-30);
     case T.SNOW: return shadeC('#e8ecf0',v*.4);
   }
   return '#777';
@@ -1650,7 +1720,7 @@ function drawWorld(g,world,t){
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -1672,6 +1742,23 @@ function drawWorld(g,world,t){
     const mb=Math.sin(t/250)*5;
     g.beginPath(); g.moveTo(sx,sy-TILE*1.1-mb); g.lineTo(sx-7,sy-TILE*1.45-mb); g.lineTo(sx+7,sy-TILE*1.45-mb);
     g.closePath(); g.fill();
+  }
+  // guidance arrow orbiting the player, pointing toward the objective
+  if(world.guide&&world.player&&!world.player.hidden){
+    const p=world.player;
+    const a=Math.atan2(world.guide.y-p.y,world.guide.x-p.x);
+    const lead=Math.sin(t/300)*5;
+    const ax=p.x*TILE+offX+Math.cos(a)*(TILE*1.9+lead);
+    const ay=p.y*TILE+offY-TILE*0.9+Math.sin(a)*(TILE*1.9+lead);
+    const pul=.6+Math.sin(t/260)*.4;
+    g.save(); g.translate(ax,ay); g.rotate(a);
+    g.fillStyle=`rgba(232,198,106,${.5+pul*.4})`;
+    g.strokeStyle='rgba(26,15,9,.85)'; g.lineWidth=2;
+    g.beginPath();
+    g.moveTo(TILE*.46,0); g.lineTo(-TILE*.18,-TILE*.27);
+    g.lineTo(-TILE*.05,0); g.lineTo(-TILE*.18,TILE*.27);
+    g.closePath(); g.fill(); g.stroke();
+    g.restore();
   }
   Particles.draw(g);
   // god rays
@@ -1698,7 +1785,7 @@ function drawWorld(g,world,t){
     for(const d of map.decor){
       if((d.type==='firepit'&&d.lit!==false)||(d.type==='altar'&&d.stage>=3)||d.type==='treeLife'){
         const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
-        const r=d.type==='treeLife'?TILE*5:TILE*3.4;
+        const r=d.type==='treeLife'?TILE*5:(d.type==='firepit'&&d.big?TILE*5.6:TILE*3.4);
         const gl2=g.createRadialGradient(sx,sy-TILE*.5,TILE*.3,sx,sy-TILE*.5,r);
         gl2.addColorStop(0,'rgba(255,190,90,.32)'); gl2.addColorStop(1,'rgba(255,190,90,0)');
         g.fillStyle=gl2; g.beginPath(); g.arc(sx,sy-TILE*.5,r,0,Math.PI*2); g.fill();
@@ -1791,6 +1878,7 @@ const Game={
     this.dlgChar=d.charId; this.dlgText=d.text; this.dlgShown=0; this.dlgDone=false;
     this.dlgCb=d.cb||null; this.dlgChoices=d.choices||null;
     const c=CHARS[d.charId]||{name:d.charId};
+    this.logLine(c.name||'',d.text);
     $('dlg-name').textContent=c.name||'';
     $('dlg-name').style.color=c.divine?'#fff3cf':'';
     $('dlg-text').style.color=c.divine?'#ffeebb':'';
@@ -2005,7 +2093,7 @@ const Game={
   startChapter(ch){
     if(document.body.classList.contains('touch')&&!isFullscreen()) goFullscreen();
     this.chapter=ch;
-    this.inv={}; this.flags={};
+    this.inv={}; this.flags={}; this.log=[];
     Save.data.current=ch.id; Save.write();
     fadeOut(()=>{
       hideAllScreens();
@@ -2028,8 +2116,23 @@ const Game={
     $('slide-text').textContent=s.text||'';
     $('slide-ref').textContent=s.ref||'';
     $('slide-ui').classList.add('show');
+    $('slide-back').classList.toggle('show',this.slideIdx>0);
+    this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
+  },
+  logLine(who,text){
+    if(!this.log) this.log=[];
+    const last=this.log[this.log.length-1];
+    if(last&&last.text===text) return;
+    this.log.push({who,text});
+    if(this.log.length>220) this.log.shift();
+  },
+  prevSlide(){
+    if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
+    Sound.sfx('blip');
+    this.slideIdx--;
+    this.showSlide();
   },
   advanceSlide(){
     if(this._slideEnding) return;
@@ -2225,6 +2328,28 @@ const Game={
         if(cnt!==lo.count){ lo.count=cnt; this.renderObjectives(); }
         if(cnt>=lo.need) this.completeObjective(lo.idx);
       }
+    }
+    // guidance arrow: where should the player be heading?
+    {
+      let gt=null;
+      const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+      if(active&&p&&!this.script&&!this.dlgChar){
+        if(active.type==='goto'||active.type==='lead') gt={x:active.x,y:active.y};
+        else if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+          if(n&&!n.hidden) gt={x:n.x,y:n.y}; }
+        else if(active.type==='interact'){ const pr=w.map.decor.find(d=>d.id===active.prop);
+          if(pr) gt={x:pr.x,y:pr.y}; }
+        else if(active.type==='collect'){
+          let best=null,bd=1e9;
+          for(const it of w.items){ if(it.taken||it.kind!==active.item) continue;
+            const d6=dist(p.x,p.y,it.x,it.y); if(d6<bd){bd=d6;best=it;} }
+          if(!best){ for(const n of w.npcs){ if(active.item==='_raven'&&n.group==='ravens'&&!n.fled&&!n.hidden){
+            const d6=dist(p.x,p.y,n.x,n.y); if(d6<bd){bd=d6;best=n;} } } }
+          if(best) gt={x:best.x,y:best.y};
+        }
+        if(gt&&dist(p.x,p.y,gt.x,gt.y)<5.5) gt=null;   // close enough — markers take over
+      }
+      w.guide=gt;
     }
     // interact target detection
     this.interactTarget=null;
@@ -3144,7 +3269,10 @@ const STORY=[
    objectives:[
      {type:'goto',x:24,y:21,radius:2.2,text:'Go down and stand in the water of the sea',
       script:[
-       {say:['narrator','And Aḏam stood in the water, praying — day after day, while the waves went over him. Thirty-five days passed.']},
+       {move:['player',24,23.8,.03]},
+       {call:g=>{ g.world.player.submerged=true; g.world.player.moving=false; }},
+       {wait:700},
+       {say:['narrator','And Aḏam went down into the sea until the water stood about him, and he stood in it, praying — day after day, while the waves went over him. Thirty-five days passed.']},
        {fade:'out'},{toast:'Thirty-five days of penance in the water…'},{wait:1600},{fade:'in'},
        {show:'satan'},{move:['satan',27,19,.05]},
        {say:['satan_a','Aḏam — rejoice! Aluahim has heard your prayer, and has sent me, His messenger, to bring you the bright light you lost! Come up out of the water — come, follow me, and I will lead you to the garden.']},
@@ -3156,7 +3284,10 @@ const STORY=[
        {say:['satan_d','…You were MINE, son of dust. You followed once. You will follow again.']},
        {say:['voice','Be gone, accursed one. — O Aḏam, how many times have I delivered you out of his hand! Complete your penance in peace; and see, I send you figs from the garden, for your hunger.']},
        {despawn:'satan'},{rays:0},{music:'eden'},
-       {say:['narrator','And messengers brought them figs from the garden, the first comfort of food. And Aḏam completed the forty days, and came up out of the water — weak in body, and strong in heart.']},
+       {say:['narrator','And messengers brought them figs from the garden, the first comfort of food. And Aḏam completed the forty days.']},
+       {call:g=>{ g.world.player.submerged=false; }},
+       {move:['player',24,20.5,.035]},
+       {say:['narrator','And he came up out of the water — weak in body, and strong in heart.']},
       ]},
    ],
   },
@@ -3173,9 +3304,11 @@ const STORY=[
    map:{biome:'wild', w:46, h:32, seed:361,
      features:[
        {type:'cave',glow:true,x:23,y:13,solid:true,clear:3,flat:3,id:'cave'},
-       {type:'firepit',x:18,y:16,lit:true,id:'f1'},
-       {type:'firepit',x:28,y:16,lit:true,id:'f2'},
-       {type:'firepit',x:23,y:19,lit:true,id:'f3'},
+       {type:'firepit',big:true,x:18,y:16,lit:true,id:'f1'},
+       {type:'firepit',big:true,x:28,y:16,lit:true,id:'f2'},
+       {type:'firepit',big:true,x:23,y:19,lit:true,id:'f3'},
+       {type:'firepit',big:true,x:19,y:11,lit:true,id:'f4'},
+       {type:'firepit',big:true,x:27,y:11,lit:true,id:'f5'},
        {type:'clearing',x:23,y:16,flat:2},
      ]},
    time:'night', music:'storm',
@@ -3191,7 +3324,7 @@ const STORY=[
        {say:['adam_c','O Aluahim! The fire of the enemy is around the house You gave us! You who are a wall of fire to Your own — deliver us, for we have no deliverer but You!']},
        {rays:.9,raysX:23},{sfx:'holy'},{music:'holy'},{wait:600},
        {say:['narrator','And the Word of Aluahim came, and the fire parted, and a way opened through the midst of it. And the fire did not touch them, nor the cave, nor the treasures in it.']},
-       {prop:['f1',{lit:false}]},{prop:['f2',{lit:false}]},{prop:['f3',{lit:false}]},
+       {prop:['f1',{lit:false}]},{prop:['f2',{lit:false}]},{prop:['f3',{lit:false}]},{prop:['f4',{lit:false}]},{prop:['f5',{lit:false}]},
        {time:'deepnight'},{burst:[23,15,'holy',24]},
        {say:['voice','See, O Aḏam, the nature of this fire of Satan: it gives no light, but burning; this is the fire that is in his dwelling. He promised you his brightness — this is the whole of it. Such is the difference between his fire and My light.']},
        {say:['voice','How many times shall I deliver you out of his hand before you learn that he has nothing for you but death? Be of good heart: he may compass the cave, but he shall not enter it.']},
@@ -3688,6 +3821,25 @@ $('btn-dlc').onclick=()=>{ window.location.href='book-of-hanok.html'; };
 $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
+$('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
+  const box=$('log-list'); box.innerHTML='';
+  if(!Game.log||!Game.log.length){
+    box.innerHTML='<div class="log-entry"><span class="what">Nothing yet — the story will be written here as it unfolds.</span></div>';
+  } else {
+    Game.log.forEach(l=>{
+      const d=document.createElement('div'); d.className='log-entry';
+      d.innerHTML=(l.who?`<span class="who"></span>`:'')+`<span class="what"></span>`;
+      if(l.who) d.querySelector('.who').textContent=l.who;
+      d.querySelector('.what').textContent=l.text;
+      box.appendChild(d);
+    });
+  }
+  $('log-screen').classList.add('show');
+  box.scrollTop=box.scrollHeight;
+};
+$('btn-log-close').onclick=()=>{ $('log-screen').classList.remove('show'); };
 /* ---------- fullscreen + orientation ---------- */
 function isFullscreen(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
 function lockLandscape(){
