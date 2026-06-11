@@ -1282,6 +1282,23 @@ function drawProp(g,px,py,p,t){
       g.moveTo(-2.4*u,0); g.lineTo(-1.6*u,-2.6*u); g.lineTo(1.4*u,-3*u); g.lineTo(2.4*u,0); g.closePath(); g.fill();
       g.fillStyle='#a39a8c'; g.beginPath(); g.moveTo(-1.6*u,-2.6*u); g.lineTo(1.4*u,-3*u); g.lineTo(.6*u,-1.4*u); g.closePath(); g.fill();
       break; }
+    case 'vine': {
+      shadow(3);
+      g.fillStyle='#6e552f'; g.fillRect(-u*.5,-7*u,u,7*u);
+      g.strokeStyle='#6e552f'; g.lineWidth=u*.7;
+      g.beginPath(); g.moveTo(-4.4*u,-5.6*u); g.lineTo(4.4*u,-5.6*u); g.stroke();
+      const grd=g.createRadialGradient(-u,-6.4*u,u,0,-6*u,5*u);
+      grd.addColorStop(0,'#6e9a4a'); grd.addColorStop(1,'#41652e');
+      g.fillStyle=grd;
+      g.beginPath(); g.arc(-2.6*u,-6.2*u,2.4*u,0,Math.PI*2);
+      g.arc(0,-6.8*u,2.6*u,0,Math.PI*2); g.arc(2.6*u,-6.2*u,2.4*u,0,Math.PI*2); g.fill();
+      g.fillStyle='#5d3a6e';
+      [[-3,-4.6],[-1,-4.2],[1.4,-4.6],[3,-4.4]].forEach(([x,y])=>{
+        g.beginPath(); g.arc(x*u,y*u,1*u,0,Math.PI*2); g.fill();
+        g.beginPath(); g.arc((x-.5)*u,(y+.7)*u,.8*u,0,Math.PI*2); g.fill();
+        g.beginPath(); g.arc((x+.5)*u,(y+.7)*u,.8*u,0,Math.PI*2); g.fill();
+      });
+      break; }
     case 'wheat': {
       g.strokeStyle=p.thin?'#9d8a4a':'#caa84c'; g.lineWidth=u*.5;
       for(let i=-1;i<=1;i++){
@@ -1849,6 +1866,9 @@ function drawItem(g,sx,sy,kind,t){
       g.fillStyle='#4a90c2'; g.fillRect(-2.8,-4.2,5.6,1.8); break;
     case 'lentils': g.fillStyle='#9d4a2e'; g.beginPath(); g.arc(0,0,4.4,0,Math.PI*2); g.fill();
       g.fillStyle='#c2683e'; [[-1.5,-1.5],[1,-.4],[-.4,1.2]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,1.2,0,Math.PI*2);g.fill()}); break;
+    case 'garment': g.fillStyle='#b9a878';
+      g.fillRect(-4,-2.6,8,5.2); g.fillStyle='#a89262'; g.fillRect(-4,-2.6,8,1.2);
+      g.fillStyle='#cab98a'; g.fillRect(-4,-.4,8,.9); break;
     case 'thorn': g.fillStyle='#8a6a38';
       g.beginPath(); g.moveTo(-1,3.5); g.lineTo(-2.5,-3.5); g.lineTo(0,-1.5); g.lineTo(2.5,-4.5); g.lineTo(1,3.5); g.closePath(); g.fill();
       g.fillStyle='#6e5226'; g.fillRect(-1,-1,2,4.5); break;
@@ -3769,6 +3789,80 @@ STORY.push(
    {art:'cavehome', music:'holy', text:'And one of the mal’akim was commanded to teach Noaḥ all their medicines — how he might heal with the herbs of the earth. And Noaḥ wrote down all things in a book, and gave it to Shĕm his eldest son.', ref:'YOḆELIM 10:10–14'},
   ],
   complete:'I shall set My rainbow in the cloud, and it shall be for the sign of the covenant between Me and the earth.'
+},
+{ id:'c10a', title:'The Vineyard and the Lots', ref:'BERĔSHITH 9:18–27 · YOḆELIM 8–9',
+  intro:[
+   {art:'land', music:'eden', text:'And the sons of Noaḥ who went out of the ark were Shĕm, Ḥam and Yahpheth — and from these the whole earth was populated. And Noaḥ, a man of the soil, began and planted a vineyard.', ref:'BERĔSHITH 9:18–20'},
+  ],
+  scene:{
+   map:{biome:'plains', w:46, h:32, seed:76,
+     features:[
+       {type:'tent',x:29,y:11,solid:true,clear:2,col:'#b3a07f',id:'tent',examine:'The tent of Noaḥ.'},
+       {type:'vine',x:13,y:14},{type:'vine',x:15.5,y:14.2},{type:'vine',x:18,y:14},
+       {type:'vine',x:13,y:16.4},{type:'vine',x:15.5,y:16.6},{type:'vine',x:18,y:16.4},
+       {type:'vine',x:13,y:18.8},{type:'vine',x:15.5,y:19},{type:'vine',x:18,y:18.8},
+       {type:'basket',full:true,x:20,y:16,id:'vintage',examine:'The first vintage of the washed world.'},
+       {type:'firepit',x:25,y:18,lit:true},
+       {type:'clearing',x:25,y:19,flat:2},
+     ]},
+   time:'day', music:'eden',
+   player:'shem', playerPos:[22,18],
+   npcs:[
+     {id:'noach',char:'noach',x:15,y:17.5,wander:false,noTalk:true},
+     {id:'cham',char:'cham',x:31,y:16,wander:true,range:1.5,noTalk:true},
+     {id:'yepheth',char:'yepheth',x:27,y:20,wander:true,range:1.5,noTalk:true},
+   ],
+   items:[ {kind:'garment',x:24,y:13} ],
+   objectives:[
+     {type:'interact',prop:'vintage',text:'Help your father gather the first vintage',
+      script:[
+       {say:['noach','The first fruit of the washed earth, my sons. The vine remembers the world before — taste how sweet.']},
+       {say:['narrator','And Noaḥ drank of the wine — and was drunk, and became uncovered in his tent.']},
+       {move:['noach',29,13,.045]},{hide:'noach'},
+       {time:'dusk'},{music:'tense'},
+      ]},
+     {type:'talk',npc:'cham',text:'Ḥam comes from the tents, laughing',hiddenUntil:1,
+      script:[
+       {say:['cham','Ha! Brothers — come and see! Our father, the preacher of righteousness, the builder of the ark — sprawled bare in his tent, undone by his own wine! Come, look!']},
+       {say:['narrator','And Ḥam, the father of Kena‛an, saw the nakedness of his father — and told his two brothers outside.']},
+       {say:['shem','Cover your mouth, Ḥam. His shame is not a thing to tell. Yahpheth — the garment. Quickly.']},
+      ]},
+     {type:'collect',item:'garment',need:1,text:'Take up the garment',hiddenUntil:2},
+     {type:'goto',x:29,y:13.5,radius:2,text:'Go with Yahpheth — backward — and cover your father',hiddenUntil:3,
+      script:[
+       {call:g=>{ const y=g.world.npcs.find(n=>n.id==='yepheth'); if(y){y.wander=false; y.x=g.world.player.x+1.4; y.y=g.world.player.y;} }},
+       {say:['narrator','And Shĕm and Yahpheth took the garment and laid it on both their shoulders — and went backward, and covered the nakedness of their father; and their faces were turned away, and they did not see their father’s nakedness.']},
+       {call:g=>{ const p=g.world.player, y=g.world.npcs.find(n=>n.id==='yepheth');
+         p.x=28.4; p.y=12.6; p.dir='down'; if(y){y.x=29.8; y.y=12.6; y.dir='down';} }},
+       {wait:1100},{sfx:'chime'},
+       {call:g=>{ const p=g.world.player, y=g.world.npcs.find(n=>n.id==='yepheth');
+         p.x=27; p.y=15; p.dir='up'; if(y){y.x=30.5; y.y=15; y.dir='up'; y.wander=true; y.home={x:30.5,y:15};} }},
+       {fade:'out'},{toast:'And Noaḥ awoke from his wine…'},{time:'morning'},{wait:1400},{fade:'in'},
+       {show:'noach'},{teleport:['noach',29,13.5]},{move:['noach',27.5,15.5,.04]},
+       {say:['narrator','And Noaḥ awoke from his wine, and knew what his younger son had done to him.']},
+       {say:['noach','Cursed be Kena‛an — a servant of servants he becomes to his brothers.']},
+       {say:['noach','And baruk be YAHUAH, the Aluahim of Shĕm — and let Kena‛an be a servant to them. Aluahim enlarge Yahpheth, and let him dwell in the tents of Shĕm.']},
+      ]},
+     {type:'goto',x:25,y:19,radius:2.2,text:'Gather at the fire — your father divides the earth',hiddenUntil:4,
+      script:[
+       {call:g=>{ const n=g.world.npcs.find(n=>n.id==='noach'); if(n){n.target={x:24,y:18};}
+         const c=g.world.npcs.find(n=>n.id==='cham'); if(c){c.wander=false; c.target={x:26.2,y:19.6};}
+         const y=g.world.npcs.find(n=>n.id==='yepheth'); if(y){y.wander=false; y.target={x:23.6,y:20};} }},
+       {wait:1400},
+       {say:['narrator','And Noaḥ called his sons, and they drew close to him, they and their children — and he divided the earth into the lots which his three sons were to take in possession, and a mal’ak of the presence was with them.']},
+       {say:['noach','To you, Shĕm — the middle of the earth: for the Garden of Ĕḏen is the holy of holies and the dwelling of YAHUAH, and Mount Tsiyon the centre of the navel of the earth. Your portion holds the holy places.']},
+       {say:['noach','To you, Ḥam — all the land of the south, beyond the Giḥon, hot and wide, for you and your sons forever.']},
+       {say:['noach','And to you, Yahpheth — the north beyond the river Tina, cold and great, to the region of Goḡ and the mountains beyond. Aluahim enlarge you, as I have said.']},
+       {rays:.6,raysX:25},{sfx:'holy'},{music:'holy'},
+       {say:['narrator','And Noaḥ rejoiced that this portion came out for Shĕm and for his sons — and he remembered the word he had spoken: “Baruk be YAHUAH, the Aluahim of Shĕm, and may YAHUAH dwell in the dwelling of Shĕm.” And from these three the whole earth was populated.']},
+       {rays:0},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'land', music:'holy', text:'“Cursed be Kena‛an… Baruk be YAHUAH, the Aluahim of Shĕm — Aluahim enlarge Yahpheth, and let him dwell in the tents of Shĕm.” And the earth was divided by lot among the three, with a mal’ak of the presence among them.', ref:'BERĔSHITH 9:25–27 · YOḆELIM 8:10–19'},
+  ],
+  complete:'The garment on two shoulders, the faces turned away — and the earth divided into three lots before YAHUAH.'
 },
 ]},
 /* ============ ACT V — THE SCATTERING ============ */
