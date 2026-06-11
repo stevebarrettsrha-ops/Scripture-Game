@@ -503,6 +503,11 @@ const CHARS={
   avraham: {name:'Aḇraham', skin:'#704a27', hair:'#cfc8b8', hairStyle:'short', robe:'#8a7048', beard:'#cfc8b8', headcover:'#c8b486'},
   sarah:   {name:'Sarah',   skin:'#815631', hair:'#9c8e7c', hairStyle:'long', robe:'#9c7d8c', headcover:'#d4c4a2'},
   lot:     {name:'Lot',     skin:'#6f4b27', hair:'#46301a', hairStyle:'short', robe:'#5d7080', beard:'#46301a'},
+  lot_w:   {name:'Lot’s Wife', skin:'#7e5630', hair:'#2c1a0c', hairStyle:'long', robe:'#8c7a9c', headcover:'#cabd9a'},
+  lotd1:   {name:'Daughter of Lot', skin:'#83552d', hair:'#46301a', hairStyle:'long', robe:'#9c8a6a'},
+  lotd2:   {name:'Daughter of Lot', skin:'#7a4e29', hair:'#23150b', hairStyle:'long', robe:'#7a8a9c'},
+  soninlaw:{name:'Son-in-law of Lot', skin:'#6e4926', hair:'#33230f', hairStyle:'short', robe:'#7d6a52'},
+  sodomite:{name:'Men of Seḏom', skin:'#644323', hair:'#221504', hairStyle:'short', robe:'#5a5a5e'},
   hagar:   {name:'Haḡar',   skin:'#573920', hair:'#120b04', hairStyle:'long', robe:'#7d6a52', headcover:'#a5895f'},
   yitschaq:{name:'Yahtsḥaq', skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#b9a878'},
   yitschaq_o:{name:'Yahtsḥaq', skin:'#7a4e29', hair:'#d8d2c4', hairStyle:'short', robe:'#8d7c58', beard:'#d8d2c4', old:true},
@@ -1211,6 +1216,12 @@ function drawProp(g,px,py,p,t){
       break; }
     case 'pillar': {
       shadow(2.6);
+      if(p.salt){
+        R(-1.8,-8.6,3.6,8.6,'#e8e6df'); R(-2.4,-9.4,4.8,1.4,'#f2f0ea'); R(-1.8,-8.6,1,8.6,'#f7f5f0');
+        R(-1.2,-9.8,2.4,1.6,'#e8e6df');
+        g.fillStyle='rgba(255,255,255,.5)'; g.fillRect(-.4*u,-6*u,.8*u,1*u); g.fillRect(.6*u,-3.5*u,.6*u,.8*u);
+        break;
+      }
       R(-1.6,-7,3.2,7,'#9a9488'); R(-2.2,-8,4.4,1.4,'#a8a298'); R(-1.6,-7,1,7,'#b8b2a4');
       if(p.oil){ const gl=g.createRadialGradient(0,-8*u,u,0,-8*u,6*u);
         gl.addColorStop(0,'rgba(255,222,120,.5)'); gl.addColorStop(1,'rgba(255,222,120,0)');
@@ -4350,10 +4361,120 @@ STORY.push(
   ],
   complete:'Is any matter too hard for YAHUAH? …Shall the Judge of all the earth not do right?'
 },
+{ id:'c14b', title:'Two Mal’akim at the Gate', ref:'BERĔSHITH 19:1–26 · YASHAR 19',
+  intro:[
+   {art:'corrupt', music:'tense', text:'And the men of Seḏom set beds in the streets — and a traveller they would seize and stretch upon them. And when a poor man came to their land, they gave him silver and gold, and proclaimed through the city that no one give him a morsel of bread — until he died of hunger; and at his death they came and took back their silver and gold.', ref:'YASHAR 19:3–9'},
+   {art:'corrupt', music:'sorrow', text:'And a young woman who pitied a starving stranger and carried him bread was judged by their judges, anointed with honey from head to foot, and given to the bees — and her cry ascended to the shamayim. And YAHUAH was provoked at this, and at all the works of the cities of Seḏom: “The cry of it has grown great before Me.”', ref:'YASHAR 19:41–44'},
+  ],
+  scene:{
+   map:{biome:'city', w:50, h:30, seed:119,
+     features:[
+       {type:'doorway',x:24.5,y:14.05,id:'lotdoor',examine:'The door of Lot’s house in Seḏom.'},
+       {type:'firepit',x:21,y:16,lit:true},
+       {type:'pot',x:22.4,y:16,id:'lotpot',examine:'Flour and a fire — enough for unleavened bread.'},
+       {type:'idol',x:34,y:10,col:'#9a9488',solid:true},
+       {type:'clearing',x:24,y:21,flat:2},{type:'clearing',x:24.5,y:16,flat:2},
+     ]},
+   time:'dusk', music:'tense',
+   player:'lot', playerPos:[24,20],
+   npcs:[
+     {id:'m1',char:'malak',x:24,y:27,wander:false,hidden:true,noTalk:true},
+     {id:'m2',char:'malak',x:25.6,y:27.4,wander:false,hidden:true,noTalk:true},
+     {id:'wife',char:'lot_w',x:22.5,y:15,wander:true,range:1.2,noTalk:true},
+     {id:'d1',char:'lotd1',x:26.5,y:15.4,wander:true,range:1.2,noTalk:true},
+     {id:'d2',char:'lotd2',x:25.5,y:16.2,wander:true,range:1.2,noTalk:true},
+     {id:'soninlaw',char:'soninlaw',x:35,y:19,wander:true,range:1.5,noTalk:true},
+   ],
+   onStart:[
+     {call:g=>{ const m=g.world.map;
+       for(let y=10;y<=13;y++)for(let x=22;x<=27;x++) m.tiles[y*m.w+x]=12;
+       for(let i=m.decor.length-1;i>=0;i--){ const d=m.decor[i];
+         if(!d.id&&d.x>=21&&d.x<=28&&d.y>=9&&d.y<=14) m.decor.splice(i,1); } }},
+   ],
+   objectives:[
+     {type:'goto',x:24,y:22,radius:2.2,text:'Evening: sit in the gate of Seḏom',
+      script:[
+       {show:'m1'},{show:'m2'},
+       {move:['m1',23.5,22.5,.045,'bg']},{move:['m2',25.2,22.8,.045]},
+       {say:['narrator','And the two mal’akim came to Seḏom in the evening, and Lot was sitting in the gate of Seḏom. And Lot saw, and rose to meet them, and bowed himself with his face to the ground.']},
+       {say:['lot','Look, please my masters — please turn in to your servant’s house and spend the night, and wash your feet. Then rise early and go your way.']},
+       {say:['malak','No — we shall spend the night in the open square.']},
+       {say:['lot','I beg you — not in this city’s square. Not at night. Come, my house is near.']},
+       {say:['narrator','But he urged them strongly, and they turned in to him and entered his house.']},
+       {move:['m1',23.5,15.3,.05,'bg']},{move:['m2',25.6,15.3,.05]},
+      ]},
+     {type:'interact',prop:'lotpot',text:'Make them a feast — bake unleavened bread',hiddenUntil:1,
+      script:[
+       {prop:['lotpot',{fire:true}]},{sfx:'pickup'},
+       {say:['narrator','And he made them a feast, and baked unleavened bread — and they ate.']},
+       {time:'night'},{music:'storm'},{wait:600},
+       {spawn:{id:'s1',char:'sodomite',x:20,y:18,wander:false,noTalk:true}},
+       {spawn:{id:'s2',char:'sodomite',x:23,y:19,wander:false,noTalk:true}},
+       {spawn:{id:'s3',char:'sodomite',x:26,y:19,wander:false,noTalk:true}},
+       {spawn:{id:'s4',char:'sodomite',x:29,y:18,wander:false,noTalk:true}},
+       {spawn:{id:'s5',char:'sodomite',x:21.5,y:17,wander:false,noTalk:true}},
+       {spawn:{id:'s6',char:'sodomite',x:27.5,y:17,wander:false,noTalk:true}},
+       {say:['narrator','Before they lay down, the men of the city — the men of Seḏom, both old and young, all the people from every part — surrounded the house.']},
+       {say:['sodomite','LOT! Where are the men who came to you tonight? Bring them out to us, that we may know them!']},
+       {say:['lot','Please, my brothers, do not do evil! Look — I have two daughters who have not known a man; let me bring them out to you, and do to them as you wish — only do nothing to these men, since they have come under the shadow of my roof.']},
+       {say:['sodomite','Stand back! This one came in to sojourn — and now he keeps acting as a judge! Now we shall do more evil to you than to them!']},
+       {shake:2},{sfx:'bad'},
+       {say:['narrator','And they pressed hard against Lot, and came near to break down the door. But the men inside reached out their hands and pulled Lot into the house with them, and shut the door —']},
+       {teleport:['player',24.5,15.2]},
+       {burst:[24.5,16.5,'holy',26]},{sfx:'holy'},
+       {say:['narrator','— and they struck the men who were at the doorway of the house with blindness, both small and great, so that they wearied themselves trying to find the door.']},
+       {move:['s1',14,22,.03,'bg']},{move:['s2',20,24,.025,'bg']},{move:['s3',30,23,.028,'bg']},
+       {move:['s4',36,21,.03,'bg']},{move:['s5',17,19,.025,'bg']},{move:['s6',33,16,.027,'bg']},
+       {wait:1200},
+       {despawn:'s1'},{despawn:'s2'},{despawn:'s3'},{despawn:'s4'},{despawn:'s5'},{despawn:'s6'},
+       {say:['malak','Have you anyone else here? A son-in-law, your sons, your daughters — whomever you have in the city — bring them out of this place! For we are going to destroy it: the cry against them has grown great before the face of YAHUAH, and YAHUAH has sent us to destroy it.']},
+      ]},
+     {type:'talk',npc:'soninlaw',text:'Warn the men betrothed to your daughters',hiddenUntil:2,
+      script:[
+       {say:['lot','Get up! Get out of this place — for YAHUAH is going to destroy this city!']},
+       {say:['soninlaw','Ha! Destroy Seḏom? The richest plain under the shamayim? Go home, Lot — you have drunk too well tonight.']},
+       {say:['narrator','But to his sons-in-law he seemed to be joking.']},
+      ]},
+     {type:'goto',x:24.5,y:16,radius:2.2,text:'Dawn breaks — go to your family',hiddenUntil:3,
+      script:[
+       {time:'morning'},
+       {say:['malak','Arise! Take your wife and your two daughters who are here, lest you be consumed in the punishment of the city!']},
+       {say:['narrator','And while he lingered, the men grasped his hand, and his wife’s hand, and the hands of his two daughters — YAHUAH having compassion on him — and they brought him out, and set him outside the city.']},
+       {call:g=>{ ['wife','d1','d2','m1','m2'].forEach(id=>{ const n=g.world.npcs.find(n=>n.id===id);
+          if(n){ n.wander=false; n.follow=true; } }); }},
+       {say:['malak','Escape for your life! Do not look behind you, nor stay anywhere in the plain. Escape to the mountains, lest you be consumed!']},
+       {say:['lot','Oh no, my masters — I am unable to escape so far. Look, this city Tso‛ar is near — it is a little one. Please let me escape there, and let my life be saved!']},
+       {say:['malak','See, I have favoured you concerning this matter also. Hurry — for I am unable to do anything until you arrive there.']},
+      ]},
+     {type:'goto',x:45,y:19,radius:2.4,text:'FLEE east to Tso‛ar — and do not look back',hiddenUntil:4,
+      script:[
+       {call:g=>{ ['m1','m2'].forEach(id=>{ const n=g.world.npcs.find(n=>n.id===id);
+          if(n){ n.follow=false; n.hidden=true; } }); }},
+       {time:'storm'},{music:'storm'},{shake:3},{sfx:'thunder'},
+       {addProp:{type:'cloud_pillar',x:24,y:11}},{addProp:{type:'cloud_pillar',x:21,y:13}},{addProp:{type:'cloud_pillar',x:28,y:12}},
+       {burst:[24,12,'spark',30]},{burst:[27,13,'spark',24]},{burst:[21,12,'spark',24]},
+       {say:['narrator','Then YAHUAH rained sulphur and fire on Seḏom and Amorah, from YAHUAH out of the shamayim — and He overthrew those cities, and all the plain, and all the inhabitants of the cities, and that which grew on the ground.']},
+       {call:g=>{ const w2=g.world.npcs.find(n=>n.id==='wife');
+          if(w2){ w2.follow=false; w2.target=null; w2.dir='left'; } }},
+       {wait:900},{sfx:'bad'},
+       {say:['narrator','But his wife looked back from behind him — and she became a pillar of salt.']},
+       {call:g=>{ const w2=g.world.npcs.find(n=>n.id==='wife');
+          if(w2){ g.world.map.decor.push({type:'pillar',salt:true,x:w2.x,y:w2.y,id:'saltpillar',solid:true});
+            g.world.map.decor.sort((a,b)=>a.y-b.y); w2.hidden=true; } }},
+       {burst:[42,19,'ash',16]},
+       {say:['lotd1','Mother—! Father, mother has— she is—']},
+       {say:['lot','Do not look back! DO NOT LOOK BACK. Walk, my daughters. Walk.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'sodom', music:'sorrow', text:'And the sun had risen upon the earth when Lot entered Tso‛ar… and see, the smoke of the land went up like the smoke of a furnace.', ref:'BERĔSHITH 19:23,28'},
+  ],
+  complete:'The cry of the city had grown great before YAHUAH — and only four went out, and only three went on.'
+},
 { id:'c15', title:'Seḏom', ref:'BERĔSHITH 19',
   intro:[
-   {art:'sodom', music:'storm', text:'The two messengers came to Seḏom in the evening… “Escape for your life! Do not look behind you nor stay anywhere in the plain. Escape to the mountains, lest you be consumed.”', ref:'BERĔSHITH 19:1,17'},
-   {art:'sodom', sfx:'thunder', text:'And YAHUAH rained sulphur and fire on Seḏom and Amorah, from YAHUAH out of the shamayim… But his wife looked back from behind him, and she became a pillar of salt.', ref:'BERĔSHITH 19:24,26'},
+   {art:'sodom', music:'storm', sfx:'thunder', text:'And YAHUAH rained sulphur and fire on Seḏom and Amorah, from YAHUAH out of the shamayim — and Aḇraham arose early in the morning, and went to the place where he had stood before YAHUAH.', ref:'BERĔSHITH 19:24,27'},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:30, seed:101,
@@ -4380,6 +4501,8 @@ STORY.push(
   },
   outro:[
    {art:'sodom', music:'sorrow', text:'And it came to be, when Aluahim destroyed the cities of the plain, that Aluahim remembered Aḇraham, and sent Lot out of the midst of the overthrow.', ref:'BERĔSHITH 19:29'},
+   {art:'mountain', music:'sorrow', text:'And Lot went up out of Tso‛ar and dwelt in the mountains, and his two daughters with him, and they dwelt in a cave — for he was afraid to stay in Tso‛ar. And the first-born said to the younger, “Our father is old, and there is no man on the earth to come in to us as is the way of all the earth.”', ref:'BERĔSHITH 19:30–31'},
+   {art:'cavehome', music:'sorrow', text:'Believing the world ended as in the days of the flood, they made their father drink wine, and lay with him — and he did not know. And both the daughters of Lot conceived by their father: the first-born bore Mo‛aḇ, father of the Mo‛aḇites; and the younger bore Ben-Ammi, father of the children of Ammon, to this day.', ref:'BERĔSHITH 19:32–38'},
   ],
   complete:'The smoke of the land went up like the smoke of a furnace — but Aluahim remembered Aḇraham.'
 },
