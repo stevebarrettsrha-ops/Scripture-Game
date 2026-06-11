@@ -2567,6 +2567,11 @@ const Game={
       } else if(e.chase&&p&&!e.lying&&!this.dlgChar&&!this.script){
         /* pursuer: runs after the player */
         e.target={x:p.x,y:p.y}; e.speed=e.chaseSpeed||.095;
+      } else if(e.route&&!e.lying&&!blocked){
+        /* working npc: walks its task route in a loop */
+        e._ri=((e._ri||0)+1)%e.route.length;
+        const wp=e.route[e._ri];
+        e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;
@@ -3434,6 +3439,8 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[10,20],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:20,y:20,range:3,noTalk:true},
+     {id:'amb_bird1',animal:'bird',x:24,y:16,range:4,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:9,y:21,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
@@ -3631,6 +3638,7 @@ const STORY=[
    time:'morning', music:'sorrow',
    player:'adam_c', playerPos:[14,20],
    npcs:[
+     {id:'amb_bird1',animal:'bird',x:18,y:16,range:4,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:13,y:21,wander:false,follow:true,noTalk:true},
    ],
    items:[
@@ -3674,6 +3682,7 @@ const STORY=[
    time:'day', music:'eden',
    player:'adam_c', playerPos:[33,17],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:22,y:22,range:3,noTalk:true},
      {id:'m1',char:'malak',x:10,y:22,wander:false,noTalk:true},
      {id:'m2',char:'malak',x:8,y:24,wander:false,noTalk:true},
      {id:'m3',char:'malak',x:12,y:25,wander:false,noTalk:true},
@@ -3762,6 +3771,7 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[33,16],
    npcs:[
+     {id:'amb_bird1',animal:'bird',x:26,y:18,range:4,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:32,y:15,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
@@ -3852,6 +3862,8 @@ const STORY=[
    time:'day', music:'desert',
    player:'adam_c', playerPos:[34,15],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:20,y:20,range:2,noTalk:true},
+     {id:'amb_sheep2',animal:'sheep',x:22,y:21,range:2,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:35,y:16,wander:true,range:1.5,
       dlg:[['chavvah_c','The Word spoke of skins of sheep on the mountain-side, Aḏam — left where the lions ate. Come, let us go and find them.']]},
      {id:'satan',char:'satan_d',x:12,y:17,wander:false,hidden:true,noTalk:true},
@@ -3918,6 +3930,7 @@ const STORY=[
    time:'day', music:'tense',
    player:'adam_c', playerPos:[36,15],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:24,y:20,range:3,noTalk:true},
      {id:'oldman',char:'oldman',x:30,y:18,wander:false,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:37,y:16,wander:false,follow:true,noTalk:true},
    ],
@@ -3971,6 +3984,7 @@ const STORY=[
    time:'day', music:'tense',
    player:'adam_c', playerPos:[34,15],
    npcs:[
+     {id:'amb_bird1',animal:'bird',x:22,y:18,range:4,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:35,y:16,wander:false,follow:true,noTalk:true},
      {id:'m1',char:'siren',x:14,y:16,submerged:true,wander:false,hidden:true,noTalk:true},
      {id:'m2',char:'siren',x:13.4,y:18.5,submerged:true,wander:false,hidden:true,noTalk:true},
@@ -4090,6 +4104,8 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[30,16],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:18,y:18,range:2,noTalk:true},
+     {id:'amb_sheep2',animal:'sheep',x:20,y:19.4,range:2,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:31,y:17,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
@@ -4132,6 +4148,7 @@ const STORY=[
    time:'morning', music:'eden',
    player:'adam_c', playerPos:[24,17],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:20,y:19,range:2,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:28,y:15,wander:false,
       script:[
        {say:['chavvah_c','Aḏam — come. Come and see your son.']},
@@ -4163,6 +4180,7 @@ const STORY=[
    time:'day', music:'tense',
    player:'sheth', playerPos:[31,15],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:24,y:18,range:3,noTalk:true},
      {id:'satan',char:'satan_a',x:16,y:22,wander:false,noTalk:true},
      {id:'adam',char:'adam_c',x:33,y:14,wander:false,hidden:true,noTalk:true},
    ],
@@ -4319,6 +4337,8 @@ const STORY=[
    time:'dusk', music:'tense',
    player:'yared', playerPos:[16,12],
    npcs:[
+     {id:'amb_goat1',animal:'goat',x:18,y:16,range:2,noTalk:true},
+     {id:'amb_goat2',animal:'goat',x:20,y:17.5,range:2,noTalk:true},
      {id:'s1',char:'builder',x:20,y:18,wander:true,range:2,
       script:[
        {say:['builder','Father Yared — do you hear it? Every night, from below the mountain — the horns, the strings, the laughter. The sound comes up the rocks like the smell of a feast. Why must holiness be so quiet?']},
@@ -4375,6 +4395,7 @@ const STORY=[
    time:'morning', music:'holy',
    player:'noach', playerPos:[14,19],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:16,y:20,range:2,noTalk:true},
      {id:'chanok',char:'chanok',x:13,y:17,wander:false,
       script:[
        {say:['chanok','Noaḥ, son of Lemeḵ. Come close, and hear — for my days among you are counted, and what I say now, say to your sons after you.']},

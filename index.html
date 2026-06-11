@@ -2626,6 +2626,11 @@ const Game={
       } else if(e.chase&&p&&!e.lying&&!this.dlgChar&&!this.script){
         /* pursuer: runs after the player */
         e.target={x:p.x,y:p.y}; e.speed=e.chaseSpeed||.095;
+      } else if(e.route&&!e.lying&&!blocked){
+        /* working npc: walks its task route in a loop */
+        e._ri=((e._ri||0)+1)%e.route.length;
+        const wp=e.route[e._ri];
+        e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;
@@ -3831,6 +3836,9 @@ STORY.push(
    time:'night', music:'tense',
    player:'noach', playerPos:[24,28],
    npcs:[
+     {id:'amb_goat',animal:'goat',x:28,y:21,range:2,noTalk:true},
+     {id:'amb_dk',animal:'donkey',x:31,y:23,range:2,noTalk:true},
+     {id:'amb_hauler',char:'builder3',route:[[26,20],[33,24],[29,26]],noTalk:true,x:26,y:20},
      {id:'fking',char:'fallenking',x:12,y:8.4,wander:false,noTalk:true},
      {id:'servile1',char:'shepherd',x:10.5,y:11,wander:false,noTalk:true},
      {id:'servile2',char:'servant',x:13.5,y:11.2,wander:false,noTalk:true},
@@ -3897,6 +3905,9 @@ STORY.push(
    time:'day', music:'desert',
    player:'noach', playerPos:[10,28],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:14,y:22,range:2,noTalk:true},
+     {id:'amb_sheep2',animal:'sheep',x:15.4,y:23.2,range:2,noTalk:true},
+     {id:'amb_bird1',animal:'bird',x:20,y:20,range:4,noTalk:true},
      {id:'shem',char:'shem',x:20,y:18,wander:true,range:2,dlg:[['shem','Father, the beams are heavy — but your hands do not tremble. Tell us again what He said: a window above, the door in the side…']]},
      {id:'cham',char:'cham',x:30,y:18,wander:true,range:2,dlg:[['cham','A hundred and twenty years YAHUAH has given them, father — and day after day you and Methushelaḥ proclaim it: “Return from your evil ways!” And still they will not hearken.']]},
      {id:'yepheth',char:'yepheth',x:25,y:20,wander:true,range:2,dlg:[['yepheth','Pitch within and without, you said. I have set the kettles boiling.']]},
@@ -4118,6 +4129,8 @@ STORY.push(
    time:'day', music:'eden',
    player:'shem', playerPos:[22,18],
    npcs:[
+     {id:'amb_goat1',animal:'goat',x:18,y:20,range:2,noTalk:true},
+     {id:'amb_sheep1',animal:'sheep',x:20,y:21.5,range:2,noTalk:true},
      {id:'noach',char:'noach',x:15,y:17.5,wander:false,noTalk:true},
      {id:'cham',char:'cham',x:31,y:16,wander:true,range:1.5,noTalk:true},
      {id:'yepheth',char:'yepheth',x:27,y:20,wander:true,range:1.5,noTalk:true},
@@ -4195,6 +4208,9 @@ STORY.push(
    time:'day', music:'royal',
    player:'builder', playerPos:[10,25],
    npcs:[
+     {id:'amb_dk1',animal:'donkey',x:18,y:20,range:2,noTalk:true},
+     {id:'amb_hauler1',char:'builder',route:[[16,18],[23,14],[19,21]],noTalk:true,x:16,y:18},
+     {id:'amb_hauler2',char:'builder2',route:[[28,18],[24,13],[30,21]],noTalk:true,x:28,y:18},
      {id:'nimrod',char:'nimrod',x:23,y:17,wander:false,
       dlg:[['nimrod','Burn the bricks thoroughly! Brick for stone, and bitumen for mortar. We shall reach the shamayim itself and make a name for ourselves — one people, one tongue, one tower!']]},
      {id:'b2',char:'builder2',x:18,y:20,wander:true,range:2,
@@ -4627,6 +4643,9 @@ STORY.push(
    time:'day', music:'desert',
    player:'avraham', playerPos:[15,18],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:11,y:19,range:2,noTalk:true},
+     {id:'amb_sheep2',animal:'sheep',x:12.6,y:20,range:2,noTalk:true},
+     {id:'amb_srv',char:'servant',route:[[13,16],[17,18],[14,19]],noTalk:true,x:13,y:16},
      {id:'m1',char:'malak',x:30,y:18,wander:false,noTalk:true},
      {id:'m2',char:'malak',x:31.6,y:18.8,wander:false,noTalk:true},
      {id:'m3',char:'malak',x:29,y:19.4,wander:false,noTalk:true},
@@ -4844,6 +4863,9 @@ STORY.push(
    time:'day', music:'eden',
    player:'avraham', playerPos:[18,19],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:22,y:19,range:2,noTalk:true},
+     {id:'amb_goat1',animal:'goat',x:24,y:20.4,range:2,noTalk:true},
+     {id:'amb_guest',char:'shepherd',wander:true,range:2,noTalk:true,x:18,y:17},
      {id:'sarah',char:'sarah',x:17,y:15,wander:true,range:1.5,
       script:[
        {say:['sarah','Aluahim has made laughter for me — everyone who hears will laugh with me! Who would have said to Aḇraham that Sarah would nurse a son? Yet I have borne him a son in his old age.']},
@@ -5018,6 +5040,7 @@ STORY.push(
    time:'dusk', music:'sorrow',
    player:'yitschaq', playerPos:[18,17],
    npcs:[
+     {id:'amb_cam1',animal:'camel',x:8,y:18,range:2,noTalk:true},
      {id:'rivqah',char:'rivqah',x:46,y:18,mount:'camel',wander:false,hidden:true,noTalk:true},
      {id:'servant',char:'abservant',x:46,y:21,mount:'camel',wander:false,hidden:true,noTalk:true},
    ],
@@ -5133,6 +5156,9 @@ STORY.push(
    time:'dusk', music:'desert',
    player:'yaaqov', playerPos:[20,20],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:30,y:18,range:3,noTalk:true},
+     {id:'amb_deer2',animal:'deer',x:33,y:20,range:3,noTalk:true},
+     {id:'amb_sheep1',animal:'sheep',x:14,y:18,range:2,noTalk:true},
      {id:'rivqah',char:'rivqah',x:17,y:15,wander:true,range:1.5,
       dlg:[['rivqah','Two nations wrestled in my womb, Ya‘aqoḇ — and YAHUAH said the older shall serve the younger. Do not forget who spoke it.']]},
    ],
@@ -5586,6 +5612,8 @@ STORY.push(
    time:'day', music:'tense',
    player:'shimon', playerPos:[10,21],
    npcs:[
+     {id:'amb_goat1',animal:'goat',x:24,y:17.5,range:1.6,noTalk:true},
+     {id:'amb_dk1',animal:'donkey',x:26.5,y:15,range:1.6,noTalk:true},
      {id:'levi',char:'levi',x:11.5,y:20.5,wander:false,follow:true,noTalk:true},
      {id:'yaaqov',char:'yaaqov_o',x:8.5,y:20,wander:false,noTalk:true},
      {id:'hamor',char:'hamor',x:24,y:19,wander:false,
@@ -5915,6 +5943,9 @@ STORY.push(
    time:'day', music:'desert',
    player:'yahudah', playerPos:[11,17],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:27,y:16.5,range:2,noTalk:true},
+     {id:'amb_sheep2',animal:'sheep',x:29,y:15.4,range:2,noTalk:true},
+     {id:'amb_shearer',char:'shepherd',route:[[26,16],[31,17],[28,18]],noTalk:true,x:26,y:16},
      {id:'hirah',char:'hirah',x:13,y:16.5,wander:false,
       script:[
        {say:['hirah','The days of mourning for your wife are past, friend. Your sheepshearers are at Timnah — come, let us go up to the shearing.']},
