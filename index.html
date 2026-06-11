@@ -512,6 +512,8 @@ const CHARS={
   yitschaq:{name:'Yahtsḥaq', skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#b9a878'},
   yitschaq_o:{name:'Yahtsḥaq', skin:'#7a4e29', hair:'#d8d2c4', hairStyle:'short', robe:'#8d7c58', beard:'#d8d2c4', old:true},
   rivqah:  {name:'Riḇqah',  skin:'#83552d', hair:'#2c1a0c', hairStyle:'long', robe:'#8c6a7d', headcover:'#caa881'},
+  rivqah_v:{name:'Riḇqah',  skin:'#83552d', hair:'#2c1a0c', hairStyle:'long', robe:'#8c6a7d', headcover:'#d8c8a8', veil:'#d8c8a8'},
+  yishmael:{name:'Yishma‛Al', skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#7d6a52', beard:'#170e06'},
   esav:    {name:'Ĕsaw',    skin:'#643f1c', hair:'#7a3318', hairStyle:'short', robe:'#8a5436', beard:'#7a3318', hairy:true},
   yaaqov:  {name:'Ya‘aqoḇ', skin:'#7a4e29', hair:'#33230f', hairStyle:'short', robe:'#6a7a8c'},
   yaaqov_o:{name:'Yasharal',skin:'#704a27', hair:'#cfc8b8', hairStyle:'short', robe:'#6a7a8c', beard:'#cfc8b8', old:true},
@@ -701,6 +703,10 @@ function drawChar(g,px,py,charId,o){
       R(-3.6,-16.4+B,7.2,3,c.beard);
       R(-2.4,-13.6+B,4.8,1.6,c.beard);
     }
+    if(c.veil&&dir!=='up'){
+      R(-5,-19.4+B,10,4.6,c.veil);
+      R(-5,-19.4+B,10,1,shade(c.veil,-14));
+    }
     if(c.hairy&&dir!=='up'){ R(-5,-17+B,1.4,2.6,hairC); R(3.6,-17+B,1.4,2.6,hairC); }
   } else {
     /* ---------- SIDE PROFILE (faces right; flip for left) ---------- */
@@ -759,6 +765,7 @@ function drawChar(g,px,py,charId,o){
       R(-5.4,-26+B,11,1,shade(c.headcover,-22));
     }
     if(c.beard){ R(0.4,-16.6+B,4.4,2.8,c.beard); R(1.4,-14+B,3,1.4,c.beard); }
+    if(c.veil){ R(-4.6,-19.4+B,10.4,4.6,c.veil); }
     if(c.hairy){ R(-4.6,-17+B,1.4,2.6,hairC); }
     /* front arm swings */
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
@@ -4782,10 +4789,117 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'And they called Riḇqah and said to her, “Are you going with this man?” And she said, “I shall go.” …And Yahtsḥaq went out to meditate in the field in the evening, and lifted his eyes and saw camels coming. And Riḇqah saw Yahtsḥaq, and took her veil and covered herself.', ref:'BERĔSHITH 24:58,63–65'},
-   {art:'rest', text:'And Yahtsḥaq brought her into his mother Sarah’s tent. And he took Riḇqah and she became his wife, and he loved her — and Yahtsḥaq was comforted after his mother’s death.', ref:'BERĔSHITH 24:67'},
+   {art:'journey', music:'holy', text:'And they called Riḇqah and said to her, “Are you going with this man?” And she said, “I shall go.” And they sent away Riḇqah their sister, with her nurse — and baruk her: “Become the mother of thousands of ten thousands.”', ref:'BERĔSHITH 24:58–60'},
   ],
-  complete:'Being on the way, YAHUAH led me. — And he loved her, and was comforted.'
+  complete:'Being on the way, YAHUAH led me. — “Are you going with this man?” “I shall go.”'
+},
+{ id:'c17b', title:'Comfort at Evening', ref:'BERĔSHITH 24:62–67',
+  intro:[
+   {art:'rest', music:'desert', text:'And Yahtsḥaq came from the way of Be’ĕr Laḥai Ro’i, for he dwelt in the South — and Yahtsḥaq went out to meditate in the field, toward evening.', ref:'BERĔSHITH 24:62–63'},
+  ],
+  scene:{
+   map:{biome:'plains', w:48, h:30, seed:98,
+     features:[
+       {type:'tent',x:13,y:12,solid:true,clear:3,col:'#c8b486',id:'sarahtent',examine:'The tent of Sarah his mother — quiet since her death.'},
+       {type:'tent',x:19,y:13,solid:true,clear:2,col:'#b3a07f'},
+       {type:'firepit',x:16,y:15,lit:true},
+       {type:'clearing',x:30,y:19,flat:3},
+     ]},
+   time:'dusk', music:'sorrow',
+   player:'yitschaq', playerPos:[18,17],
+   npcs:[
+     {id:'rivqah',char:'rivqah',x:46,y:18,mount:'camel',wander:false,hidden:true,noTalk:true},
+     {id:'servant',char:'abservant',x:46,y:21,mount:'camel',wander:false,hidden:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'goto',x:30,y:19,radius:2.4,text:'Walk out into the field to meditate, toward evening',
+      script:[
+       {say:['yitschaq','Three years, and the tent is still quiet, mother. The Aluahim of my father has been my comfort — but the evening fields are long alone.']},
+       {wait:600},
+       {show:'rivqah'},{show:'servant'},
+       {say:['narrator','And he lifted his eyes and looked — and saw: camels coming.']},
+       {move:['rivqah',34,18.5,.04,'bg']},{move:['servant',35,20.5,.04]},
+       {say:['narrator','And Riḇqah lifted her eyes, and saw Yahtsḥaq — and she came down from the camel.']},
+       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
+         if(r){ r.mount=null; }
+         g.world.npcs.push(makeNpc({id:'rcam',animal:'camel',x:35.5,y:17.5,wander:false,noTalk:true})); }},
+       {say:['rivqah','Who is this man, walking in the field to meet us?']},
+       {say:['abservant','It is my master.']},
+       {say:['narrator','And she took her veil, and covered herself.']},
+       {charSwap:['rivqah','rivqah_v']},{burst:[34,18.5,'mote',10]},
+      ]},
+     {type:'talk',npc:'servant',text:'Hear all that the servant has done',hiddenUntil:1,
+      script:[
+       {say:['abservant','My master Yahtsḥaq — YAHUAH has led me all the way. I prayed at the well of Naḥor, and before I had finished speaking, she came — and she watered the camels also, as I had asked of Aluahim. She is Riḇqah, daughter of Bethu’ĕl, your father’s kin. And she said with her own mouth: “I shall go.”']},
+       {say:['yitschaq','Then YAHUAH has not left my father’s house without His kindness and His truth. Come — the camp is near, and the evening is kind.']},
+      ]},
+     {type:'goto',x:15,y:14,radius:2.4,text:'Bring her to the tent of Sarah your mother',hiddenUntil:2,
+      script:[
+       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
+         if(r){ r.wander=false; r.follow=true; }
+         const sv=g.world.npcs.find(n=>n.id==='servant'); if(sv){ sv.follow=false; sv.target={x:18,y:16}; } }},
+       {wait:400},
+       {say:['narrator','And Yahtsḥaq brought her into the tent of Sarah his mother. And he took Riḇqah, and she became his wife — and he loved her.']},
+       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
+         if(r){ r.follow=false; r.hidden=true; } g.world.player.hidden=true; }},
+       {sfx:'chime'},{burst:[13,12,'mote',16]},{music:'holy'},
+       {say:['narrator','And Yahtsḥaq was comforted after his mother’s death.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'rest', music:'holy', text:'And he took Riḇqah, and she became his wife, and he loved her — and Yahtsḥaq was comforted after his mother’s death.', ref:'BERĔSHITH 24:67'},
+  ],
+  complete:'She covered herself with the veil — and the quiet tent of Sarah was filled again.'
+},
+{ id:'c17c', title:'The Death of Aḇraham', ref:'BERĔSHITH 25:7–10 · YOḆELIM 22–23',
+  intro:[
+   {art:'rest', music:'sorrow', text:'And Aḇraham was old and full of days. And in the night of the feast, he called young Ya‘aqoḇ, the son of his son, to his bed — for he loved him, and saw that the blessing would run through him.', ref:'YOḆELIM 22:1–10'},
+  ],
+  scene:{
+   map:{biome:'interior', floorCol:'#a89272', w:24, h:15, seed:108,
+     features:[
+       {type:'doorway',x:12,y:1.9,id:'tentdoor',examine:'The door of Aḇraham’s tent, open to the night.'},
+       {type:'firepit',x:6,y:9,lit:true},
+     ]},
+   time:'night', music:'sorrow',
+   player:'yaaqov', playerPos:[12,11],
+   npcs:[
+     {id:'avraham',char:'avraham',x:15,y:6.5,wander:false,lying:true,
+      script:[
+       {say:['avraham','Ya‘aqoḇ, my son… come near. Let an old man bless you. May the Aluahim of all be with you, and strengthen you to do His will — may He cleanse you from all unrighteousness, and raise from you a people who will stand for the Name of YAHUAH in all the earth.']},
+       {say:['avraham','I held one promise through everything, child — the furnace, the famine, the long childless years, the mountain. He keeps covenant. Hold it after me. Now… lie here beside me, my son, and warm these old bones, for the night is long.']},
+       {call:g=>{ const p=g.world.player; p.x=13.4; p.y=6.8; p.lying=true; p.moving=false; }},
+       {wait:1200},
+       {say:['narrator','And he placed two of Ya‘aqoḇ’s fingers upon his eyes, and he baruk the Aluahim of Aluahim — and he covered his face, and stretched out his feet, and slept the sleep of eternity, and was gathered to his fathers.']},
+       {fade:'out'},{music:'night'},{wait:1300},{fade:'in'},
+       {say:['narrator','And in spite of all this, Ya‘aqoḇ was lying in his embracing arms — and knew not that Aḇraham, his father’s father, was dead.']},
+       {call:g=>{ g.world.player.lying=false; }},
+       {say:['yaaqov','…Grandfather? The fire has burned low — grandfather? Father… FATHER! He is cold — he is cold as ice! Father, father!']},
+       {say:['narrator','But there was no answer. And Ya‘aqoḇ rose from his embracing arms and ran and told Riḇqah his mother.']},
+       {spawn:{id:'rivqah',char:'rivqah',x:12,y:13,wander:false,noTalk:true}},
+       {spawn:{id:'yitschaq',char:'yitschaq_o',x:10.5,y:13.5,wander:false,noTalk:true}},
+       {move:['rivqah',13,8,.05,'bg']},{move:['yitschaq',15,8.5,.05]},
+       {say:['narrator','And Riḇqah went to Yahtsḥaq in the night, and told him — and they went together, and Ya‘aqoḇ with them, and a lamp was in his hand. And they found Aḇraham lying dead.']},
+       {say:['yitschaq_o','Father… my father.']},
+       {say:['narrator','And Yahtsḥaq fell on the face of his father, and kissed him, and wept.']},
+       {wait:700},
+       {spawn:{id:'yishmael',char:'yishmael',x:12,y:13.5,wander:false,noTalk:true}},
+       {move:['yishmael',17,8.5,.05]},
+       {say:['narrator','And Aḇraham breathed his last and died in a good old age, aged and satisfied — one hundred and seventy-five years — and was gathered to his people. And his sons Yahtsḥaq and Yishma‛Al — together — buried him in the cave of Maḵpĕlah, beside Sarah his wife.']},
+       {rays:.6,raysX:15},{sfx:'holy'},{music:'holy'},
+       {say:['voice','And after the death of Aḇraham, I baruk Yahtsḥaq his son — and he dwelt by Be’ĕr Laḥai Ro’i, the well of the Living One who sees.']},
+       {rays:0},
+      ]},
+   ],
+   objectives:[
+     {type:'talk',npc:'avraham',text:'Your grandfather calls you to his bedside'},
+   ],
+  },
+  outro:[
+   {art:'rest', music:'holy', text:'These are the days of the years of Aḇraham’s life: one hundred and seventy-five years. And he breathed his last and died in a good old age, aged and satisfied, and was gathered to his people.', ref:'BERĔSHITH 25:7–8'},
+  ],
+  complete:'“Father, father!” — but there was no answer. And his sons buried him together, beside Sarah.'
 },
 ]},
 );
@@ -4795,8 +4909,6 @@ STORY.push(
 { id:'act7', roman:'VII', title:'Ya‘aqoḇ', ref:'BERĔSHITH 25–35', chapters:[
 { id:'c18', title:'The Birthright', ref:'BERĔSHITH 25; 27 · YASHAR 27',
   intro:[
-   {art:'rest', music:'sorrow', text:'And Aḇraham, old and full of days, called young Ya‘aqoḇ near and baruk him — and he placed two of Ya‘aqoḇ’s fingers on his eyes, and covered his face, and stretched out his feet, and slept the sleep of eternity, and was gathered to his fathers — while Ya‘aqoḇ lay in his embracing arms, and knew not that Aḇraham was dead.', ref:'YOḆELIM 22–23:2'},
-   {art:'rest', text:'And Ya‘aqoḇ awoke, and Aḇraham was cold as ice, and he said, “Father, father!” — but there was no answer. And he ran and told Riḇqah his mother, and they went in the night, and a lamp was in his hand, and they found Aḇraham lying dead. And Yahtsḥaq fell on the face of his father and wept.', ref:'YOḆELIM 23:3–5'},
    {art:'journey', music:'desert', text:'And Yahtsḥaq prayed to YAHUAH for his wife, because she was barren. And YAHUAH answered him, and Riḇqah his wife conceived… two nations are in your womb, and the older shall serve the younger.', ref:'BERĔSHITH 25:21,23'},
    {art:'journey', text:'And there was a famine, and Yahtsḥaq went to Gerar — and YAHUAH appeared to him: “Do not go down to Mitsrayim; dwell in this land, and I shall be with you.” And he dug again the wells of his father: over Ĕseq they strove, and over Sitnah — but the third he called REḤOḆOTH, “for now YAHUAH has made room for us, and we shall bear fruit in the land.”', ref:'BERĔSHITH 26:1–3,18–22'},
   ],
