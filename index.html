@@ -503,10 +503,17 @@ const CHARS={
   avraham: {name:'Aḇraham', skin:'#704a27', hair:'#cfc8b8', hairStyle:'short', robe:'#8a7048', beard:'#cfc8b8', headcover:'#c8b486'},
   sarah:   {name:'Sarah',   skin:'#815631', hair:'#9c8e7c', hairStyle:'long', robe:'#9c7d8c', headcover:'#d4c4a2'},
   lot:     {name:'Lot',     skin:'#6f4b27', hair:'#46301a', hairStyle:'short', robe:'#5d7080', beard:'#46301a'},
+  lot_w:   {name:'Lot’s Wife', skin:'#7e5630', hair:'#2c1a0c', hairStyle:'long', robe:'#8c7a9c', headcover:'#cabd9a'},
+  lotd1:   {name:'Daughter of Lot', skin:'#83552d', hair:'#46301a', hairStyle:'long', robe:'#9c8a6a'},
+  lotd2:   {name:'Daughter of Lot', skin:'#7a4e29', hair:'#23150b', hairStyle:'long', robe:'#7a8a9c'},
+  soninlaw:{name:'Son-in-law of Lot', skin:'#6e4926', hair:'#33230f', hairStyle:'short', robe:'#7d6a52'},
+  sodomite:{name:'Men of Seḏom', skin:'#644323', hair:'#221504', hairStyle:'short', robe:'#5a5a5e'},
   hagar:   {name:'Haḡar',   skin:'#573920', hair:'#120b04', hairStyle:'long', robe:'#7d6a52', headcover:'#a5895f'},
   yitschaq:{name:'Yahtsḥaq', skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#b9a878'},
   yitschaq_o:{name:'Yahtsḥaq', skin:'#7a4e29', hair:'#d8d2c4', hairStyle:'short', robe:'#8d7c58', beard:'#d8d2c4', old:true},
   rivqah:  {name:'Riḇqah',  skin:'#83552d', hair:'#2c1a0c', hairStyle:'long', robe:'#8c6a7d', headcover:'#caa881'},
+  rivqah_v:{name:'Riḇqah',  skin:'#83552d', hair:'#2c1a0c', hairStyle:'long', robe:'#8c6a7d', headcover:'#d8c8a8', veil:'#d8c8a8'},
+  yishmael:{name:'Yishma‛Al', skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#7d6a52', beard:'#170e06'},
   esav:    {name:'Ĕsaw',    skin:'#643f1c', hair:'#7a3318', hairStyle:'short', robe:'#8a5436', beard:'#7a3318', hairy:true},
   yaaqov:  {name:'Ya‘aqoḇ', skin:'#7a4e29', hair:'#33230f', hairStyle:'short', robe:'#6a7a8c'},
   yaaqov_o:{name:'Yasharal',skin:'#704a27', hair:'#cfc8b8', hairStyle:'short', robe:'#6a7a8c', beard:'#cfc8b8', old:true},
@@ -581,7 +588,7 @@ function drawChar(g,px,py,charId,o){
   g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined) g.globalAlpha=o.alpha;
   /* shadow */
-  if(!o.submerged){
+  if(!o.submerged&&!o.riding){
     g.fillStyle='rgba(0,0,0,.25)';
     g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
   }
@@ -606,6 +613,10 @@ function drawChar(g,px,py,charId,o){
     }
   }
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(-Math.PI/2*flip); }
+  if(o.riding){
+    /* seated on a mount: draw from the hip up */
+    g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip();
+  }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
     const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
@@ -692,6 +703,10 @@ function drawChar(g,px,py,charId,o){
       R(-3.6,-16.4+B,7.2,3,c.beard);
       R(-2.4,-13.6+B,4.8,1.6,c.beard);
     }
+    if(c.veil&&dir!=='up'){
+      R(-5,-19.4+B,10,4.6,c.veil);
+      R(-5,-19.4+B,10,1,shade(c.veil,-14));
+    }
     if(c.hairy&&dir!=='up'){ R(-5,-17+B,1.4,2.6,hairC); R(3.6,-17+B,1.4,2.6,hairC); }
   } else {
     /* ---------- SIDE PROFILE (faces right; flip for left) ---------- */
@@ -750,6 +765,7 @@ function drawChar(g,px,py,charId,o){
       R(-5.4,-26+B,11,1,shade(c.headcover,-22));
     }
     if(c.beard){ R(0.4,-16.6+B,4.4,2.8,c.beard); R(1.4,-14+B,3,1.4,c.beard); }
+    if(c.veil){ R(-4.6,-19.4+B,10.4,4.6,c.veil); }
     if(c.hairy){ R(-4.6,-17+B,1.4,2.6,hairC); }
     /* front arm swings */
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
@@ -843,7 +859,7 @@ function drawSerpent(g,px,py,o){
 }
 
 /* ================= ANIMALS v2 ================= */
-const ANIMAL_SCALE={camel:1.8,cow:1.45,donkey:1.3,lion:1.4,deer:1.2,ram:1.15,goat:1.05,sheep:1.05};
+const ANIMAL_SCALE={camel:1.8,horse:1.6,cow:1.45,donkey:1.3,lion:1.4,deer:1.2,ram:1.15,goat:1.05,sheep:1.05};
 function drawAnimal(g,px,py,type,o){
   o=o||{}; const t=o.t||0, u=2.2*(TILE/40)*(o.scale||1)*(ANIMAL_SCALE[type]||1);
   const flip=o.dir==='right'?-1:1;   /* builders face left natively */
@@ -975,6 +991,19 @@ function drawAnimal(g,px,py,type,o){
       R(-1,-3.6+w2*.4,2,1,shade(o.col||'#7aa8c8',-12));   /* fin */
       R(-2.8,-2+w2*.3,.7,.7,'#160e08');
       break; }
+    case 'horse': {
+      R(-3.8-k*1,-6.2,1.5,6.2,'#5d4434'); R(2.6+k*1,-6.2,1.5,6.2,'#5d4434');
+      R(-1.7+k*1,-6.2,1.5,6.2,'#4d3729'); R(0.7-k*1,-6.2,1.5,6.2,'#4d3729');
+      R(-5.6,-10.8+B,11.2,5,'#7a5234');
+      R(-5.6,-10.8+B,11.2,1.3,'#8a5f3e');
+      R(-7.6,-14.6+B,2.6,5.2,'#7a5234');           /* neck */
+      R(-9.4,-15.8+B,3.4,2.6,'#7a5234');           /* head */
+      R(-10.4,-14.8+B,1.4,1.4,'#6a462c');          /* muzzle */
+      R(-8.6,-15.2+B,.8,.8,'#160e08');
+      R(-8.2,-17.2+B,1,1.8,'#4d3322');             /* ears */
+      R(-6.4,-16.4+B,1.4,6,'#3b2a1c');             /* mane */
+      R(5.2,-10.4+B,1.2,5.6,'#3b2a1c');            /* tail */
+      break; }
     case 'lizard': {
       const w3=k*0.8;
       R(-2.6,-1.6+B,5.2,1.6,'#6e8a3e');
@@ -1003,12 +1032,18 @@ function drawAnimal(g,px,py,type,o){
       break; }
   }
   sprRender(g,ops,u,flip);
+  if(o.rider){
+    const seat={camel:-12.2,horse:-9.6,donkey:-7.6}[type];
+    if(seat!==undefined)
+      drawChar(g,px,py+seat*u,o.rider,{t,dir:o.dir,moving:o.moving,riding:true,scale:o.riderScale||1});
+  }
   g.restore();
 }
 
 /* ================= PROPS ================= */
+const PROP_SCALE={tree:1.45,palm:1.5,treeLife:1.3,treeKnow:1.3,tent:1.55,bush:1.2,vine:1.25};
 function drawProp(g,px,py,p,t){
-  const u=2.6*(TILE/40);
+  const u=2.6*(TILE/40)*(PROP_SCALE[p.type]||1);
   const sway=Math.sin(t/900+(p.x||0)*2.1)*1.5;
   g.save(); g.translate(px,py);
   const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(x*u,y*u,w*u,h*u)};
@@ -1167,20 +1202,58 @@ function drawProp(g,px,py,p,t){
       }
       break; }
     case 'tent': {
+      /* nomad tent: sagging woven canvas over a ridge pole, open flap, stakes */
       shadow(13);
       const col=p.col||'#b3a07f';
-      g.fillStyle=shade(col,-25);
-      g.beginPath(); g.moveTo(-14*u,0); g.lineTo(0,-17*u); g.lineTo(14*u,0); g.closePath(); g.fill();
+      // canvas body with concave, fabric-sag slopes
       g.fillStyle=col;
-      g.beginPath(); g.moveTo(-14*u,0); g.lineTo(0,-17*u); g.lineTo(0,0); g.closePath(); g.fill();
-      g.fillStyle=shade(col,8);
-      g.beginPath(); g.moveTo(-14*u,0); g.lineTo(-9*u,-6*u); g.lineTo(-4*u,0); g.closePath(); g.fill();
-      g.fillStyle='#2c2418';
-      g.beginPath(); g.moveTo(-4.4*u,0); g.lineTo(0,-8.4*u); g.lineTo(4.4*u,0); g.closePath(); g.fill();
-      g.strokeStyle=shade(col,-40); g.lineWidth=u*.6;
-      g.beginPath(); g.moveTo(0,-17*u); g.lineTo(0,0); g.stroke();
-      g.strokeStyle=shade(col,-30); g.lineWidth=u*.4;
-      g.beginPath(); g.moveTo(0,-17*u); g.lineTo(-17*u,2*u); g.moveTo(0,-17*u); g.lineTo(17*u,2*u); g.stroke();
+      g.beginPath();
+      g.moveTo(-15*u,0);
+      g.quadraticCurveTo(-12*u,-11.5*u,0,-15.5*u);
+      g.quadraticCurveTo(12*u,-11.5*u,15*u,0);
+      g.quadraticCurveTo(0,1.6*u,-15*u,0);
+      g.closePath(); g.fill();
+      // shaded right half for depth
+      g.fillStyle=shade(col,-16);
+      g.beginPath();
+      g.moveTo(0,-15.5*u);
+      g.quadraticCurveTo(12*u,-11.5*u,15*u,0);
+      g.quadraticCurveTo(7*u,1.2*u,1*u,0.4*u);
+      g.lineTo(0,-15.5*u); g.closePath(); g.fill();
+      // woven cloth bands following the sag
+      g.strokeStyle=shade(col,-26); g.lineWidth=u*.5;
+      for(let i=1;i<4;i++){
+        const yb=-i*3.9*u;
+        g.beginPath();
+        g.moveTo((-15+i*3.4)*u,yb*0+0 - i*0.2*u);
+        g.quadraticCurveTo(0,yb-4.2*u,(15-i*3.4)*u,-i*0.2*u);
+        g.stroke();
+      }
+      // ridge pole tip
+      g.strokeStyle='#5d4426'; g.lineWidth=u*.7;
+      g.beginPath(); g.moveTo(0,-15.5*u); g.lineTo(0,-17.5*u); g.stroke();
+      // entrance: dark opening with the flap drawn aside
+      g.fillStyle='#241c10';
+      g.beginPath();
+      g.moveTo(-4.6*u,0.4*u);
+      g.quadraticCurveTo(-3.4*u,-7.6*u,0,-8.6*u);
+      g.quadraticCurveTo(3.4*u,-7.6*u,4.6*u,0.4*u);
+      g.closePath(); g.fill();
+      g.fillStyle=shade(col,14);
+      g.beginPath();
+      g.moveTo(0,-8.6*u);
+      g.quadraticCurveTo(6.4*u,-6*u,7.6*u,0.4*u);
+      g.lineTo(4.2*u,0.4*u);
+      g.quadraticCurveTo(3.4*u,-6.4*u,0,-8.6*u);
+      g.closePath(); g.fill();
+      // guy ropes to stakes
+      g.strokeStyle=shade(col,-34); g.lineWidth=u*.4;
+      g.beginPath();
+      g.moveTo(-13*u,-3*u); g.lineTo(-18*u,1.6*u);
+      g.moveTo(13*u,-3*u); g.lineTo(18*u,1.6*u);
+      g.stroke();
+      g.fillStyle='#5d4426';
+      g.fillRect(-18.6*u,1.2*u,1.2*u,1.6*u); g.fillRect(17.4*u,1.2*u,1.2*u,1.6*u);
       break; }
     case 'well': {
       shadow(4.6);
@@ -1211,6 +1284,12 @@ function drawProp(g,px,py,p,t){
       break; }
     case 'pillar': {
       shadow(2.6);
+      if(p.salt){
+        R(-1.8,-8.6,3.6,8.6,'#e8e6df'); R(-2.4,-9.4,4.8,1.4,'#f2f0ea'); R(-1.8,-8.6,1,8.6,'#f7f5f0');
+        R(-1.2,-9.8,2.4,1.6,'#e8e6df');
+        g.fillStyle='rgba(255,255,255,.5)'; g.fillRect(-.4*u,-6*u,.8*u,1*u); g.fillRect(.6*u,-3.5*u,.6*u,.8*u);
+        break;
+      }
       R(-1.6,-7,3.2,7,'#9a9488'); R(-2.2,-8,4.4,1.4,'#a8a298'); R(-1.6,-7,1,7,'#b8b2a4');
       if(p.oil){ const gl=g.createRadialGradient(0,-8*u,u,0,-8*u,6*u);
         gl.addColorStop(0,'rgba(255,222,120,.5)'); gl.addColorStop(1,'rgba(255,222,120,0)');
@@ -1362,6 +1441,36 @@ function drawProp(g,px,py,p,t){
       }
       g.fillStyle='rgba(232,118,42,.65)';
       g.beginPath(); g.arc(0,-u,3*u,0,Math.PI*2); g.fill();
+      break; }
+    case 'chariot': {
+      /* horse-drawn chariot / wagon */
+      const ch2=TILE*.052;
+      g.fillStyle='rgba(0,0,0,.22)';
+      g.beginPath(); g.ellipse(TILE*.2,2,TILE*1.9,TILE*.4,0,0,Math.PI*2); g.fill();
+      if(p.horses){
+        drawAnimal(g,px*0-TILE*1.7,-TILE*.18,'horse',{t,dir:'left'});
+        drawAnimal(g,px*0-TILE*2.25,TILE*.12,'horse',{t:t+300,dir:'left'});
+        g.strokeStyle='#5d4426'; g.lineWidth=3;
+        g.beginPath(); g.moveTo(-TILE*1.5,-TILE*.5); g.lineTo(-TILE*.4,-TILE*.3); g.stroke();
+      }
+      // cart body
+      const grd=g.createLinearGradient(0,-TILE*1.1,0,0);
+      grd.addColorStop(0,p.gold?'#caa23c':'#8d7048'); grd.addColorStop(1,p.gold?'#8a6a1c':'#5d4426');
+      g.fillStyle=grd;
+      g.beginPath(); g.moveTo(-TILE*.5,-TILE*1.05);
+      g.quadraticCurveTo(TILE*.55,-TILE*1.2,TILE*1.05,-TILE*.95);
+      g.lineTo(TILE*1.1,-TILE*.15); g.lineTo(-TILE*.5,-TILE*.15); g.closePath(); g.fill();
+      g.fillStyle=p.gold?'#e8c66a':'#9a8458';
+      g.fillRect(-TILE*.5,-TILE*1.08,TILE*1.6,TILE*.1);
+      // wheel
+      g.strokeStyle='#4a3522'; g.lineWidth=Math.max(3,TILE*.1);
+      g.beginPath(); g.arc(TILE*.35,0,TILE*.42,0,Math.PI*2); g.stroke();
+      g.beginPath();
+      for(let i=0;i<4;i++){ const a=i*Math.PI/4+t/400*(p.moving?1:0);
+        g.moveTo(TILE*.35-Math.cos(a)*TILE*.38,-Math.sin(a)*TILE*.38);
+        g.lineTo(TILE*.35+Math.cos(a)*TILE*.38,Math.sin(a)*TILE*.38); }
+      g.stroke();
+      if(p.rider) drawChar(g,TILE*.3,-TILE*.95,p.rider,{t,dir:'left',riding:true});
       break; }
     case 'fold': {
       /* sheepfold: post-and-rail pen, open side facing down */
@@ -1764,6 +1873,10 @@ function drawWorld(g,world,t){
     if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
+    else if(d.mount){
+      drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale});
+      if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
+    }
     else {
       drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
@@ -2059,6 +2172,7 @@ const Game={
     if(op.show){ const ent=findEnt(op.show); if(ent) ent.hidden=false; return true; }
     if(op.emote){ const ent=findEnt(op.emote[0]); if(ent) ent.emote=op.emote[1]; return true; }
     if(op.charSwap){ const ent=findEnt(op.charSwap[0]); if(ent) ent.char=op.charSwap[1]; return true; }
+    if(op.mount){ const ent=findEnt(op.mount[0]); if(ent) ent.mount=op.mount[1]; return true; }
     if(op.wait!==undefined){ this.scriptWait=op.wait; return false; }
     if(op.fade==='out'){ $('fader').style.opacity='1'; this.scriptWait=850; return false; }
     if(op.fade==='in'){ $('fader').style.opacity='0'; this.scriptWait=850; return false; }
@@ -2207,7 +2321,7 @@ const Game={
     const map=generateMap(sc.map);
     const player=sc.player?{
       char:sc.player, x:sc.playerPos[0], y:sc.playerPos[1],
-      dir:'down', moving:false, speed:.085
+      dir:'down', moving:false, speed:.085, mount:sc.playerMount||null
     }:null;
     this.world={
       map, player, npcs:(sc.npcs||[]).map(makeNpc),
@@ -2259,6 +2373,13 @@ const Game={
     if(this.state==='play'&&!this.script){
       const tgt=this.interactTarget;
       if(tgt) this.doInteract(tgt);
+      else if(this.world&&this.world.player&&this.world.player.mount){
+        const p=this.world.player;
+        p.mount=null;
+        if(this.world._mountSrc){ const n=this.world._mountSrc;
+          n.x=p.x+1.1; n.y=p.y; n.hidden=false; this.world._mountSrc=null; }
+        Sound.sfx('blip'); toast('Dismounted.');
+      }
     }
   },
   onEscape(){
@@ -2268,6 +2389,11 @@ const Game={
     const w=this.world;
     if(tgt.npc){
       const n=tgt.npc;
+      if(n.rideable&&w.player&&!w.player.mount){
+        w.player.mount=n.animal; n.hidden=true; w._mountSrc=n;
+        Sound.sfx('pickup'); toast('Riding the '+n.animal+' — press E to dismount.');
+        return;
+      }
       const o=(this.objectives||[]).find(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
               (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
       // face each other
@@ -2310,7 +2436,8 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const nx=p.x+v.x*p.speed*dt*.06, ny=p.y+v.y*p.speed*dt*.06;
+        const ms=p.speed*(p.mount?1.65:1);
+        const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
         if(walkable(w.map,nx,p.y)) p.x=nx;
         if(walkable(w.map,p.x,ny)) p.y=ny;
         p.moving=true;
@@ -2412,9 +2539,9 @@ const Game={
         if(n.hidden) continue;
         const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
                      (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
-        if(n.noTalk&&!hasObj) continue;
+        if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script)){ bd=d4; best={npc:n}; }
+        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
@@ -4112,8 +4239,8 @@ STORY.push(
       script:[
        {say:['lot','Uncle — I am coming with you. My herds, my tents, all that I have.']},
       ]},
-     {id:'camel1',animal:'camel',x:22,y:20,range:2,noTalk:true},
-     {id:'donkey1',animal:'donkey',x:21,y:21,range:2,noTalk:true},
+     {id:'camel1',animal:'camel',x:22,y:20,range:2,noTalk:true,rideable:true},
+     {id:'donkey1',animal:'donkey',x:21,y:21,range:2,noTalk:true,rideable:true},
    ],
    objectives:[
      {type:'talk',npc:'sarah',text:'Tell Sarai what YAHUAH has said'},
@@ -4350,10 +4477,120 @@ STORY.push(
   ],
   complete:'Is any matter too hard for YAHUAH? …Shall the Judge of all the earth not do right?'
 },
+{ id:'c14b', title:'Two Mal’akim at the Gate', ref:'BERĔSHITH 19:1–26 · YASHAR 19',
+  intro:[
+   {art:'corrupt', music:'tense', text:'And the men of Seḏom set beds in the streets — and a traveller they would seize and stretch upon them. And when a poor man came to their land, they gave him silver and gold, and proclaimed through the city that no one give him a morsel of bread — until he died of hunger; and at his death they came and took back their silver and gold.', ref:'YASHAR 19:3–9'},
+   {art:'corrupt', music:'sorrow', text:'And a young woman who pitied a starving stranger and carried him bread was judged by their judges, anointed with honey from head to foot, and given to the bees — and her cry ascended to the shamayim. And YAHUAH was provoked at this, and at all the works of the cities of Seḏom: “The cry of it has grown great before Me.”', ref:'YASHAR 19:41–44'},
+  ],
+  scene:{
+   map:{biome:'city', w:50, h:30, seed:119,
+     features:[
+       {type:'doorway',x:24.5,y:14.05,id:'lotdoor',examine:'The door of Lot’s house in Seḏom.'},
+       {type:'firepit',x:21,y:16,lit:true},
+       {type:'pot',x:22.4,y:16,id:'lotpot',examine:'Flour and a fire — enough for unleavened bread.'},
+       {type:'idol',x:34,y:10,col:'#9a9488',solid:true},
+       {type:'clearing',x:24,y:21,flat:2},{type:'clearing',x:24.5,y:16,flat:2},
+     ]},
+   time:'dusk', music:'tense',
+   player:'lot', playerPos:[24,20],
+   npcs:[
+     {id:'m1',char:'malak',x:24,y:27,wander:false,hidden:true,noTalk:true},
+     {id:'m2',char:'malak',x:25.6,y:27.4,wander:false,hidden:true,noTalk:true},
+     {id:'wife',char:'lot_w',x:22.5,y:15,wander:true,range:1.2,noTalk:true},
+     {id:'d1',char:'lotd1',x:26.5,y:15.4,wander:true,range:1.2,noTalk:true},
+     {id:'d2',char:'lotd2',x:25.5,y:16.2,wander:true,range:1.2,noTalk:true},
+     {id:'soninlaw',char:'soninlaw',x:35,y:19,wander:true,range:1.5,noTalk:true},
+   ],
+   onStart:[
+     {call:g=>{ const m=g.world.map;
+       for(let y=10;y<=13;y++)for(let x=22;x<=27;x++) m.tiles[y*m.w+x]=12;
+       for(let i=m.decor.length-1;i>=0;i--){ const d=m.decor[i];
+         if(!d.id&&d.x>=21&&d.x<=28&&d.y>=9&&d.y<=14) m.decor.splice(i,1); } }},
+   ],
+   objectives:[
+     {type:'goto',x:24,y:22,radius:2.2,text:'Evening: sit in the gate of Seḏom',
+      script:[
+       {show:'m1'},{show:'m2'},
+       {move:['m1',23.5,22.5,.045,'bg']},{move:['m2',25.2,22.8,.045]},
+       {say:['narrator','And the two mal’akim came to Seḏom in the evening, and Lot was sitting in the gate of Seḏom. And Lot saw, and rose to meet them, and bowed himself with his face to the ground.']},
+       {say:['lot','Look, please my masters — please turn in to your servant’s house and spend the night, and wash your feet. Then rise early and go your way.']},
+       {say:['malak','No — we shall spend the night in the open square.']},
+       {say:['lot','I beg you — not in this city’s square. Not at night. Come, my house is near.']},
+       {say:['narrator','But he urged them strongly, and they turned in to him and entered his house.']},
+       {move:['m1',23.5,15.3,.05,'bg']},{move:['m2',25.6,15.3,.05]},
+      ]},
+     {type:'interact',prop:'lotpot',text:'Make them a feast — bake unleavened bread',hiddenUntil:1,
+      script:[
+       {prop:['lotpot',{fire:true}]},{sfx:'pickup'},
+       {say:['narrator','And he made them a feast, and baked unleavened bread — and they ate.']},
+       {time:'night'},{music:'storm'},{wait:600},
+       {spawn:{id:'s1',char:'sodomite',x:20,y:18,wander:false,noTalk:true}},
+       {spawn:{id:'s2',char:'sodomite',x:23,y:19,wander:false,noTalk:true}},
+       {spawn:{id:'s3',char:'sodomite',x:26,y:19,wander:false,noTalk:true}},
+       {spawn:{id:'s4',char:'sodomite',x:29,y:18,wander:false,noTalk:true}},
+       {spawn:{id:'s5',char:'sodomite',x:21.5,y:17,wander:false,noTalk:true}},
+       {spawn:{id:'s6',char:'sodomite',x:27.5,y:17,wander:false,noTalk:true}},
+       {say:['narrator','Before they lay down, the men of the city — the men of Seḏom, both old and young, all the people from every part — surrounded the house.']},
+       {say:['sodomite','LOT! Where are the men who came to you tonight? Bring them out to us, that we may know them!']},
+       {say:['lot','Please, my brothers, do not do evil! Look — I have two daughters who have not known a man; let me bring them out to you, and do to them as you wish — only do nothing to these men, since they have come under the shadow of my roof.']},
+       {say:['sodomite','Stand back! This one came in to sojourn — and now he keeps acting as a judge! Now we shall do more evil to you than to them!']},
+       {shake:2},{sfx:'bad'},
+       {say:['narrator','And they pressed hard against Lot, and came near to break down the door. But the men inside reached out their hands and pulled Lot into the house with them, and shut the door —']},
+       {teleport:['player',24.5,15.2]},
+       {burst:[24.5,16.5,'holy',26]},{sfx:'holy'},
+       {say:['narrator','— and they struck the men who were at the doorway of the house with blindness, both small and great, so that they wearied themselves trying to find the door.']},
+       {move:['s1',14,22,.03,'bg']},{move:['s2',20,24,.025,'bg']},{move:['s3',30,23,.028,'bg']},
+       {move:['s4',36,21,.03,'bg']},{move:['s5',17,19,.025,'bg']},{move:['s6',33,16,.027,'bg']},
+       {wait:1200},
+       {despawn:'s1'},{despawn:'s2'},{despawn:'s3'},{despawn:'s4'},{despawn:'s5'},{despawn:'s6'},
+       {say:['malak','Have you anyone else here? A son-in-law, your sons, your daughters — whomever you have in the city — bring them out of this place! For we are going to destroy it: the cry against them has grown great before the face of YAHUAH, and YAHUAH has sent us to destroy it.']},
+      ]},
+     {type:'talk',npc:'soninlaw',text:'Warn the men betrothed to your daughters',hiddenUntil:2,
+      script:[
+       {say:['lot','Get up! Get out of this place — for YAHUAH is going to destroy this city!']},
+       {say:['soninlaw','Ha! Destroy Seḏom? The richest plain under the shamayim? Go home, Lot — you have drunk too well tonight.']},
+       {say:['narrator','But to his sons-in-law he seemed to be joking.']},
+      ]},
+     {type:'goto',x:24.5,y:16,radius:2.2,text:'Dawn breaks — go to your family',hiddenUntil:3,
+      script:[
+       {time:'morning'},
+       {say:['malak','Arise! Take your wife and your two daughters who are here, lest you be consumed in the punishment of the city!']},
+       {say:['narrator','And while he lingered, the men grasped his hand, and his wife’s hand, and the hands of his two daughters — YAHUAH having compassion on him — and they brought him out, and set him outside the city.']},
+       {call:g=>{ ['wife','d1','d2','m1','m2'].forEach(id=>{ const n=g.world.npcs.find(n=>n.id===id);
+          if(n){ n.wander=false; n.follow=true; } }); }},
+       {say:['malak','Escape for your life! Do not look behind you, nor stay anywhere in the plain. Escape to the mountains, lest you be consumed!']},
+       {say:['lot','Oh no, my masters — I am unable to escape so far. Look, this city Tso‛ar is near — it is a little one. Please let me escape there, and let my life be saved!']},
+       {say:['malak','See, I have favoured you concerning this matter also. Hurry — for I am unable to do anything until you arrive there.']},
+      ]},
+     {type:'goto',x:45,y:19,radius:2.4,text:'FLEE east to Tso‛ar — and do not look back',hiddenUntil:4,
+      script:[
+       {call:g=>{ ['m1','m2'].forEach(id=>{ const n=g.world.npcs.find(n=>n.id===id);
+          if(n){ n.follow=false; n.hidden=true; } }); }},
+       {time:'storm'},{music:'storm'},{shake:3},{sfx:'thunder'},
+       {addProp:{type:'cloud_pillar',x:24,y:11}},{addProp:{type:'cloud_pillar',x:21,y:13}},{addProp:{type:'cloud_pillar',x:28,y:12}},
+       {burst:[24,12,'spark',30]},{burst:[27,13,'spark',24]},{burst:[21,12,'spark',24]},
+       {say:['narrator','Then YAHUAH rained sulphur and fire on Seḏom and Amorah, from YAHUAH out of the shamayim — and He overthrew those cities, and all the plain, and all the inhabitants of the cities, and that which grew on the ground.']},
+       {call:g=>{ const w2=g.world.npcs.find(n=>n.id==='wife');
+          if(w2){ w2.follow=false; w2.target=null; w2.dir='left'; } }},
+       {wait:900},{sfx:'bad'},
+       {say:['narrator','But his wife looked back from behind him — and she became a pillar of salt.']},
+       {call:g=>{ const w2=g.world.npcs.find(n=>n.id==='wife');
+          if(w2){ g.world.map.decor.push({type:'pillar',salt:true,x:w2.x,y:w2.y,id:'saltpillar',solid:true});
+            g.world.map.decor.sort((a,b)=>a.y-b.y); w2.hidden=true; } }},
+       {burst:[42,19,'ash',16]},
+       {say:['lotd1','Mother—! Father, mother has— she is—']},
+       {say:['lot','Do not look back! DO NOT LOOK BACK. Walk, my daughters. Walk.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'sodom', music:'sorrow', text:'And the sun had risen upon the earth when Lot entered Tso‛ar… and see, the smoke of the land went up like the smoke of a furnace.', ref:'BERĔSHITH 19:23,28'},
+  ],
+  complete:'The cry of the city had grown great before YAHUAH — and only four went out, and only three went on.'
+},
 { id:'c15', title:'Seḏom', ref:'BERĔSHITH 19',
   intro:[
-   {art:'sodom', music:'storm', text:'The two messengers came to Seḏom in the evening… “Escape for your life! Do not look behind you nor stay anywhere in the plain. Escape to the mountains, lest you be consumed.”', ref:'BERĔSHITH 19:1,17'},
-   {art:'sodom', sfx:'thunder', text:'And YAHUAH rained sulphur and fire on Seḏom and Amorah, from YAHUAH out of the shamayim… But his wife looked back from behind him, and she became a pillar of salt.', ref:'BERĔSHITH 19:24,26'},
+   {art:'sodom', music:'storm', sfx:'thunder', text:'And YAHUAH rained sulphur and fire on Seḏom and Amorah, from YAHUAH out of the shamayim — and Aḇraham arose early in the morning, and went to the place where he had stood before YAHUAH.', ref:'BERĔSHITH 19:24,27'},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:30, seed:101,
@@ -4380,6 +4617,8 @@ STORY.push(
   },
   outro:[
    {art:'sodom', music:'sorrow', text:'And it came to be, when Aluahim destroyed the cities of the plain, that Aluahim remembered Aḇraham, and sent Lot out of the midst of the overthrow.', ref:'BERĔSHITH 19:29'},
+   {art:'mountain', music:'sorrow', text:'And Lot went up out of Tso‛ar and dwelt in the mountains, and his two daughters with him, and they dwelt in a cave — for he was afraid to stay in Tso‛ar. And the first-born said to the younger, “Our father is old, and there is no man on the earth to come in to us as is the way of all the earth.”', ref:'BERĔSHITH 19:30–31'},
+   {art:'cavehome', music:'sorrow', text:'Believing the world ended as in the days of the flood, they made their father drink wine, and lay with him — and he did not know. And both the daughters of Lot conceived by their father: the first-born bore Mo‛aḇ, father of the Mo‛aḇites; and the younger bore Ben-Ammi, father of the children of Ammon, to this day.', ref:'BERĔSHITH 19:32–38'},
   ],
   complete:'The smoke of the land went up like the smoke of a furnace — but Aluahim remembered Aḇraham.'
 },
@@ -4464,9 +4703,26 @@ STORY.push(
        {say:['yitschaq','Father… do you hear what this man says?']},
        {say:['avraham','Take heed of him, my son, and do not listen — for I know him. It was no dream and no deceiver that spoke to me; it was YAHUAH, whose voice I have known since the furnace of Kasdim. Away from us, Satan — we walk in the command of the living Aluahim.']},
        {despawn:'oldman'},{sfx:'bad'},{burst:[22,15,'ash',14]},
-       {say:['narrator','And seeing he could not prevail, he hid himself — and passed before them on the road, and became a great brook of water where no brook had ever run. And they walked in, and the waters reached to their necks.']},
+       {say:['narrator','And seeing he could not prevail, he hid himself — and passed before them on the road, and became a great brook of water where no brook had ever run.']},
+       {call:g=>{ const m=g.world.map; g._brookTiles=[];
+         for(let y=12;y<=14;y++)for(let x=17;x<=27;x++){
+           if(!SOLID.has(m.tiles[y*m.w+x])){ g._brookTiles.push([x,y,m.tiles[y*m.w+x]]); m.tiles[y*m.w+x]=(y===13)?6:5; } } }},
+       {sfx:'thunder'},{shake:1.5},{wait:800},
+       {say:['yitschaq','Father — water! A river across the whole mountainside, where the path climbed dry a moment ago!']},
+       {say:['avraham','Then we walk through it, my son. We go at the word of YAHUAH — and no water of his making shall turn us.']},
+       {move:['player',22,14.6,.035,'bg']},{move:['yitschaq',23.2,14.8,.035]},
+       {call:g=>{ g.world.player.submerged=true; const y=g.world.npcs.find(n=>n.id==='yitschaq'); if(y)y.submerged=true; }},
+       {move:['player',22,13.2,.025,'bg']},{move:['yitschaq',23.2,13.4,.025]},
+       {say:['narrator','And they entered the brook and passed through it — and the waters at first reached their legs; and they went deeper, and the waters reached up to their necks.']},
        {say:['avraham','I know this mountain — and there was never water here! Be rebuked, and be dry, for we go at the word of YAHUAH!']},
-       {say:['narrator','And he rebuked the brook, and the place was dry land again. Step after step, the old man and the son of the promise — every step a trust: he reckoned that Aluahim was able to raise him, even from the dead.']},
+       {rays:.8,raysX:22},{sfx:'holy'},
+       {call:g=>{ const m=g.world.map;
+         (g._brookTiles||[]).forEach(([x,y,tv])=>{ m.tiles[y*m.w+x]=tv; });
+         g._brookTiles=null;
+         g.world.player.submerged=false;
+         const y=g.world.npcs.find(n=>n.id==='yitschaq'); if(y)y.submerged=false; }},
+       {burst:[22,13,'mote',24]},{rays:0},
+       {say:['narrator','And he rebuked the brook, and the waters fled, and the place was dry land again. Step after step, the old man and the son of the promise — every step a trust: he reckoned that Aluahim was able to raise him, even from the dead.']},
       ]},
      {type:'interact',prop:'altar',text:'Build the mizbe’ach at the place Aluahim had said',hiddenUntil:2,
       script:[
@@ -4504,7 +4760,7 @@ STORY.push(
        {type:'clearing',x:24,y:16,flat:2},
      ]},
    time:'dusk', music:'desert',
-   player:'abservant', playerPos:[10,22],
+   player:'abservant', playerPos:[10,22], playerMount:'camel',
    npcs:[
      {id:'rivqah',char:'rivqah',x:36,y:15,wander:false,hidden:true,noTalk:true},
      {id:'cam1',animal:'camel',x:12,y:23,follow:true,noTalk:true},
@@ -4513,6 +4769,9 @@ STORY.push(
    objectives:[
      {type:'goto',x:24,y:16.5,radius:2.2,text:'Bring the camels to the well outside the city',
       script:[
+       {say:['narrator','And the servant came down from his camel, and made the camels kneel down outside the city, by the well of water, at evening time — the time when the women go out to draw water.']},
+       {mount:['player',null]},
+       {spawn:{id:'cam0',animal:'camel',x:22,y:18.5,wander:false,noTalk:true,rideable:true}},
        {say:['abservant','O YAHUAH, Aluahim of my master Aḇraham — please cause her to meet before me this day, and show kindness to my master. Let it be that the young woman to whom I say, “Please let down your jar and let me drink,” and she says, “Drink — and let me water your camels too” — let her be the one You have appointed for Your servant Yahtsḥaq.']},
        {show:'rivqah'},{move:['rivqah',25.5,15.5,.05]},
        {say:['narrator','And it came to be, before he had ended speaking, that see — Riḇqah came out, with her jar on her shoulder; and the young woman was very good-looking.']},
@@ -4530,10 +4789,117 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'And they called Riḇqah and said to her, “Are you going with this man?” And she said, “I shall go.” …And Yahtsḥaq went out to meditate in the field in the evening, and lifted his eyes and saw camels coming. And Riḇqah saw Yahtsḥaq, and took her veil and covered herself.', ref:'BERĔSHITH 24:58,63–65'},
-   {art:'rest', text:'And Yahtsḥaq brought her into his mother Sarah’s tent. And he took Riḇqah and she became his wife, and he loved her — and Yahtsḥaq was comforted after his mother’s death.', ref:'BERĔSHITH 24:67'},
+   {art:'journey', music:'holy', text:'And they called Riḇqah and said to her, “Are you going with this man?” And she said, “I shall go.” And they sent away Riḇqah their sister, with her nurse — and baruk her: “Become the mother of thousands of ten thousands.”', ref:'BERĔSHITH 24:58–60'},
   ],
-  complete:'Being on the way, YAHUAH led me. — And he loved her, and was comforted.'
+  complete:'Being on the way, YAHUAH led me. — “Are you going with this man?” “I shall go.”'
+},
+{ id:'c17b', title:'Comfort at Evening', ref:'BERĔSHITH 24:62–67',
+  intro:[
+   {art:'rest', music:'desert', text:'And Yahtsḥaq came from the way of Be’ĕr Laḥai Ro’i, for he dwelt in the South — and Yahtsḥaq went out to meditate in the field, toward evening.', ref:'BERĔSHITH 24:62–63'},
+  ],
+  scene:{
+   map:{biome:'plains', w:48, h:30, seed:98,
+     features:[
+       {type:'tent',x:13,y:12,solid:true,clear:3,col:'#c8b486',id:'sarahtent',examine:'The tent of Sarah his mother — quiet since her death.'},
+       {type:'tent',x:19,y:13,solid:true,clear:2,col:'#b3a07f'},
+       {type:'firepit',x:16,y:15,lit:true},
+       {type:'clearing',x:30,y:19,flat:3},
+     ]},
+   time:'dusk', music:'sorrow',
+   player:'yitschaq', playerPos:[18,17],
+   npcs:[
+     {id:'rivqah',char:'rivqah',x:46,y:18,mount:'camel',wander:false,hidden:true,noTalk:true},
+     {id:'servant',char:'abservant',x:46,y:21,mount:'camel',wander:false,hidden:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'goto',x:30,y:19,radius:2.4,text:'Walk out into the field to meditate, toward evening',
+      script:[
+       {say:['yitschaq','Three years, and the tent is still quiet, mother. The Aluahim of my father has been my comfort — but the evening fields are long alone.']},
+       {wait:600},
+       {show:'rivqah'},{show:'servant'},
+       {say:['narrator','And he lifted his eyes and looked — and saw: camels coming.']},
+       {move:['rivqah',34,18.5,.04,'bg']},{move:['servant',35,20.5,.04]},
+       {say:['narrator','And Riḇqah lifted her eyes, and saw Yahtsḥaq — and she came down from the camel.']},
+       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
+         if(r){ r.mount=null; }
+         g.world.npcs.push(makeNpc({id:'rcam',animal:'camel',x:35.5,y:17.5,wander:false,noTalk:true})); }},
+       {say:['rivqah','Who is this man, walking in the field to meet us?']},
+       {say:['abservant','It is my master.']},
+       {say:['narrator','And she took her veil, and covered herself.']},
+       {charSwap:['rivqah','rivqah_v']},{burst:[34,18.5,'mote',10]},
+      ]},
+     {type:'talk',npc:'servant',text:'Hear all that the servant has done',hiddenUntil:1,
+      script:[
+       {say:['abservant','My master Yahtsḥaq — YAHUAH has led me all the way. I prayed at the well of Naḥor, and before I had finished speaking, she came — and she watered the camels also, as I had asked of Aluahim. She is Riḇqah, daughter of Bethu’ĕl, your father’s kin. And she said with her own mouth: “I shall go.”']},
+       {say:['yitschaq','Then YAHUAH has not left my father’s house without His kindness and His truth. Come — the camp is near, and the evening is kind.']},
+      ]},
+     {type:'goto',x:15,y:14,radius:2.4,text:'Bring her to the tent of Sarah your mother',hiddenUntil:2,
+      script:[
+       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
+         if(r){ r.wander=false; r.follow=true; }
+         const sv=g.world.npcs.find(n=>n.id==='servant'); if(sv){ sv.follow=false; sv.target={x:18,y:16}; } }},
+       {wait:400},
+       {say:['narrator','And Yahtsḥaq brought her into the tent of Sarah his mother. And he took Riḇqah, and she became his wife — and he loved her.']},
+       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
+         if(r){ r.follow=false; r.hidden=true; } g.world.player.hidden=true; }},
+       {sfx:'chime'},{burst:[13,12,'mote',16]},{music:'holy'},
+       {say:['narrator','And Yahtsḥaq was comforted after his mother’s death.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'rest', music:'holy', text:'And he took Riḇqah, and she became his wife, and he loved her — and Yahtsḥaq was comforted after his mother’s death.', ref:'BERĔSHITH 24:67'},
+  ],
+  complete:'She covered herself with the veil — and the quiet tent of Sarah was filled again.'
+},
+{ id:'c17c', title:'The Death of Aḇraham', ref:'BERĔSHITH 25:7–10 · YOḆELIM 22–23',
+  intro:[
+   {art:'rest', music:'sorrow', text:'And Aḇraham was old and full of days. And in the night of the feast, he called young Ya‘aqoḇ, the son of his son, to his bed — for he loved him, and saw that the blessing would run through him.', ref:'YOḆELIM 22:1–10'},
+  ],
+  scene:{
+   map:{biome:'interior', floorCol:'#a89272', w:24, h:15, seed:108,
+     features:[
+       {type:'doorway',x:12,y:1.9,id:'tentdoor',examine:'The door of Aḇraham’s tent, open to the night.'},
+       {type:'firepit',x:6,y:9,lit:true},
+     ]},
+   time:'night', music:'sorrow',
+   player:'yaaqov', playerPos:[12,11],
+   npcs:[
+     {id:'avraham',char:'avraham',x:15,y:6.5,wander:false,lying:true,
+      script:[
+       {say:['avraham','Ya‘aqoḇ, my son… come near. Let an old man bless you. May the Aluahim of all be with you, and strengthen you to do His will — may He cleanse you from all unrighteousness, and raise from you a people who will stand for the Name of YAHUAH in all the earth.']},
+       {say:['avraham','I held one promise through everything, child — the furnace, the famine, the long childless years, the mountain. He keeps covenant. Hold it after me. Now… lie here beside me, my son, and warm these old bones, for the night is long.']},
+       {call:g=>{ const p=g.world.player; p.x=13.4; p.y=6.8; p.lying=true; p.moving=false; }},
+       {wait:1200},
+       {say:['narrator','And he placed two of Ya‘aqoḇ’s fingers upon his eyes, and he baruk the Aluahim of Aluahim — and he covered his face, and stretched out his feet, and slept the sleep of eternity, and was gathered to his fathers.']},
+       {fade:'out'},{music:'night'},{wait:1300},{fade:'in'},
+       {say:['narrator','And in spite of all this, Ya‘aqoḇ was lying in his embracing arms — and knew not that Aḇraham, his father’s father, was dead.']},
+       {call:g=>{ g.world.player.lying=false; }},
+       {say:['yaaqov','…Grandfather? The fire has burned low — grandfather? Father… FATHER! He is cold — he is cold as ice! Father, father!']},
+       {say:['narrator','But there was no answer. And Ya‘aqoḇ rose from his embracing arms and ran and told Riḇqah his mother.']},
+       {spawn:{id:'rivqah',char:'rivqah',x:12,y:13,wander:false,noTalk:true}},
+       {spawn:{id:'yitschaq',char:'yitschaq_o',x:10.5,y:13.5,wander:false,noTalk:true}},
+       {move:['rivqah',13,8,.05,'bg']},{move:['yitschaq',15,8.5,.05]},
+       {say:['narrator','And Riḇqah went to Yahtsḥaq in the night, and told him — and they went together, and Ya‘aqoḇ with them, and a lamp was in his hand. And they found Aḇraham lying dead.']},
+       {say:['yitschaq_o','Father… my father.']},
+       {say:['narrator','And Yahtsḥaq fell on the face of his father, and kissed him, and wept.']},
+       {wait:700},
+       {spawn:{id:'yishmael',char:'yishmael',x:12,y:13.5,wander:false,noTalk:true}},
+       {move:['yishmael',17,8.5,.05]},
+       {say:['narrator','And Aḇraham breathed his last and died in a good old age, aged and satisfied — one hundred and seventy-five years — and was gathered to his people. And his sons Yahtsḥaq and Yishma‛Al — together — buried him in the cave of Maḵpĕlah, beside Sarah his wife.']},
+       {rays:.6,raysX:15},{sfx:'holy'},{music:'holy'},
+       {say:['voice','And after the death of Aḇraham, I baruk Yahtsḥaq his son — and he dwelt by Be’ĕr Laḥai Ro’i, the well of the Living One who sees.']},
+       {rays:0},
+      ]},
+   ],
+   objectives:[
+     {type:'talk',npc:'avraham',text:'Your grandfather calls you to his bedside'},
+   ],
+  },
+  outro:[
+   {art:'rest', music:'holy', text:'These are the days of the years of Aḇraham’s life: one hundred and seventy-five years. And he breathed his last and died in a good old age, aged and satisfied, and was gathered to his people.', ref:'BERĔSHITH 25:7–8'},
+  ],
+  complete:'“Father, father!” — but there was no answer. And his sons buried him together, beside Sarah.'
 },
 ]},
 );
@@ -4543,8 +4909,6 @@ STORY.push(
 { id:'act7', roman:'VII', title:'Ya‘aqoḇ', ref:'BERĔSHITH 25–35', chapters:[
 { id:'c18', title:'The Birthright', ref:'BERĔSHITH 25; 27 · YASHAR 27',
   intro:[
-   {art:'rest', music:'sorrow', text:'And Aḇraham, old and full of days, called young Ya‘aqoḇ near and baruk him — and he placed two of Ya‘aqoḇ’s fingers on his eyes, and covered his face, and stretched out his feet, and slept the sleep of eternity, and was gathered to his fathers — while Ya‘aqoḇ lay in his embracing arms, and knew not that Aḇraham was dead.', ref:'YOḆELIM 22–23:2'},
-   {art:'rest', text:'And Ya‘aqoḇ awoke, and Aḇraham was cold as ice, and he said, “Father, father!” — but there was no answer. And he ran and told Riḇqah his mother, and they went in the night, and a lamp was in his hand, and they found Aḇraham lying dead. And Yahtsḥaq fell on the face of his father and wept.', ref:'YOḆELIM 23:3–5'},
    {art:'journey', music:'desert', text:'And Yahtsḥaq prayed to YAHUAH for his wife, because she was barren. And YAHUAH answered him, and Riḇqah his wife conceived… two nations are in your womb, and the older shall serve the younger.', ref:'BERĔSHITH 25:21,23'},
    {art:'journey', text:'And there was a famine, and Yahtsḥaq went to Gerar — and YAHUAH appeared to him: “Do not go down to Mitsrayim; dwell in this land, and I shall be with you.” And he dug again the wells of his father: over Ĕseq they strove, and over Sitnah — but the third he called REḤOḆOTH, “for now YAHUAH has made room for us, and we shall bear fruit in the land.”', ref:'BERĔSHITH 26:1–3,18–22'},
   ],
@@ -4947,7 +5311,10 @@ STORY.push(
        {say:['yoseph_s','See, seven years of great plenty are coming in all the land of Mitsrayim — and after them seven years of scarcity of food shall arise, and all the plenty be forgotten. Now, let Pharaoh look for a discerning and wise man, and store up grain in the years of plenty.']},
        {say:['pharaoh','Could we find another like this — a man in whom is the Ruach of Aluahim? Since Aluahim has shown you all this, there is no one as discerning and wise as you. See — I have set you over all the land of Mitsrayim. Only in the throne shall I be greater than you.']},
        {sfx:'chime'},{charSwap:['player','yoseph_r']},{burst:[13,12,'mote',16]},
-       {say:['narrator','And Pharaoh took his seal-ring off his hand and put it on Yosĕph’s hand, dressed him in garments of fine linen, and put a gold chain around his neck. Thirty years old — from the pit, to the prison, to the right hand of the throne.']},
+       {say:['narrator','And Pharaoh took his seal-ring off his hand and put it on Yosĕph’s hand, dressed him in garments of fine linen, and put a gold chain around his neck.']},
+       {addProp:{type:'chariot',horses:true,gold:true,x:20,y:13.5,id:'chariot2'}},
+       {wait:600},
+       {say:['narrator','And he had him ride in the second chariot which he had — and they cried out before him, “Bow the knee!” — and he set him over all the land of Mitsrayim. Thirty years old: from the pit, to the prison, to the right hand of the throne.']},
       ]},
    ],
   },
@@ -5025,6 +5392,7 @@ STORY.push(
        {type:'tent',x:20,y:11,solid:true,clear:2,col:'#b3a07f'},
        {type:'tent',x:26,y:13,solid:true,clear:2,col:'#bda884'},
        {type:'firepit',x:20,y:15,lit:true},
+       {type:'chariot',horses:true,x:35,y:25,id:'chariot',examine:'Yosĕph’s chariot, harnessed for the road to Goshen to meet his father (BERĔSHITH 46:29).'},
        {type:'clearing',x:20,y:18,flat:3},
      ]},
    time:'morning', music:'eden',
