@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0e1a">
 <title>The Books of Aḏam &amp; Ḥawwah</title>
 <style>
@@ -14,7 +17,7 @@
   html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
   body{font-family:Georgia,'Times New Roman',serif;color:var(--parch);
        display:flex;align-items:center;justify-content:center;position:fixed;inset:0}
-  #stage{position:relative;width:100%;height:100%;max-width:177.78vh;max-height:56.25vw;
+  #stage{position:relative;width:100%;height:100%;
          margin:auto;overflow:hidden;background:#05070d}
   canvas#game{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;
               image-rendering:crisp-edges;display:block}
@@ -160,6 +163,13 @@
   #fader{position:absolute;inset:0;background:#000;z-index:40;pointer-events:none;opacity:1;
          transition:opacity .8s ease}
   .vneg{user-select:none}
+
+  /* ---------- mobile fullscreen / rotation ---------- */
+  @supports(height:100dvh){ html,body{height:100dvh} }
+  #sys-buttons{top:calc(1.4vh + env(safe-area-inset-top,0px));right:calc(1.2vw + env(safe-area-inset-right,0px))}
+  #hud{top:calc(1.6vh + env(safe-area-inset-top,0px));left:calc(1.4vw + env(safe-area-inset-left,0px))}
+  #joy{left:calc(4vw + env(safe-area-inset-left,0px))}
+  #act-btn{right:calc(4.5vw + env(safe-area-inset-right,0px))}
 </style>
 </head>
 <body class="vneg">
@@ -174,6 +184,7 @@
   <div id="interact-tip">✦ &nbsp;Press <b>E</b> to interact</div>
 
   <div id="sys-buttons">
+    <div class="sys-btn" id="btn-fs" title="Fullscreen">⛶</div>
     <div class="sys-btn" id="btn-sound" title="Sound">♪</div>
     <div class="sys-btn" id="btn-menu" title="Chapters">☰</div>
   </div>
@@ -1992,6 +2003,7 @@ const Game={
 
   /* ---------- chapter flow ---------- */
   startChapter(ch){
+    if(document.body.classList.contains('touch')&&!isFullscreen()) goFullscreen();
     this.chapter=ch;
     this.inv={}; this.flags={};
     Save.data.current=ch.id; Save.write();
@@ -3676,6 +3688,26 @@ $('btn-dlc').onclick=()=>{ window.location.href='book-of-hanok.html'; };
 $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
+/* ---------- fullscreen + orientation ---------- */
+function isFullscreen(){ return !!(document.fullscreenElement||document.webkitFullscreenElement); }
+function lockLandscape(){
+  try{ if(screen.orientation&&screen.orientation.lock)
+    screen.orientation.lock('landscape').catch(()=>{}); }catch(e){}
+}
+function goFullscreen(){
+  const el=document.documentElement;
+  const req=el.requestFullscreen||el.webkitRequestFullscreen;
+  if(!req) return;
+  try{ const p=req.call(el);
+    if(p&&p.then) p.then(lockLandscape).catch(()=>{}); else lockLandscape();
+  }catch(e){}
+}
+function exitFs(){ const ex=document.exitFullscreen||document.webkitExitFullscreen;
+  if(ex) try{ex.call(document)}catch(e){} }
+$('btn-fs').onclick=()=>{ Sound.init(); if(isFullscreen()) exitFs(); else goFullscreen(); };
+['fullscreenchange','webkitfullscreenchange'].forEach(ev=>
+  document.addEventListener(ev,()=>{ $('btn-fs').textContent=isFullscreen()?'🗗':'⛶'; setTimeout(resize,120); }));
+addEventListener('orientationchange',()=>{ setTimeout(resize,250); });
 $('btn-next-ch').onclick=()=>{
   const next=nextChapter(Game.chapter.id);
   if(next) Game.startChapter(next); else openChapters();
