@@ -553,6 +553,10 @@ const CHARS={
   tamar_v: {name:'The Woman at the Gate', skin:'#83552d', hair:'#1d1208', hairStyle:'long', robe:'#8c7a9c', veil:'#b8a8c2', headcover:'#b8a8c2'},
   hirah:   {name:'Ḥirah the Aḏullamite', skin:'#6e4926', hair:'#33230f', hairStyle:'short', robe:'#7a6a48', beard:'#33230f'},
   midwife: {name:'The Midwife', skin:'#7c5430', hair:'#9a9286', hairStyle:'long', robe:'#8d7a5f', headcover:'#b3a07f'},
+  victim:  {name:'A Robbed Man', skin:'#6e4926', hair:'#33230f', hairStyle:'short', robe:'#8d8062'},
+  abimelek:{name:'Aḇimeleḵ of Gerar', skin:'#6f4b27', hair:'#46301a', hairStyle:'short', robe:'#7d5d6e', beard:'#46301a', headcover:'#caa23c'},
+  phikol:  {name:'Piḵol, Commander of his Army', skin:'#644323', hair:'#221504', hairStyle:'short', robe:'#6e5d48', beard:'#221504'},
+  gerarman:{name:'Herdsman of Gerar', skin:'#6e4524', hair:'#221504', hairStyle:'short', robe:'#5a5a5e'},
   steward: {name:'The Steward', skin:'#674626', hair:'#000', hairStyle:'egypt', robe:'#cac4b0'},
   butler:  {name:'The Cupbearer', skin:'#644323', hair:'#000', hairStyle:'egypt', robe:'#b8ab8a'},
   baker:   {name:'The Baker', skin:'#6f4b27', hair:'#000', hairStyle:'egypt', robe:'#a89a78'},
@@ -2068,11 +2072,11 @@ function drawMashUI(g,m,t){
   g.fillStyle='#bcd2f0'; g.fillRect(x,y+19,w*clamp(m.prog,0,1),8);
   g.strokeStyle='rgba(170,200,255,.35)'; g.strokeRect(x+.5,y+19.5,w,8);
   g.font='11px Georgia'; g.textAlign='left'; g.fillStyle='#9d987f';
-  g.fillText('YOUR GRIP',x,y+40);
-  g.textAlign='right'; g.fillText('UNTIL DAY BREAKS',x+w,y+40);
+  g.fillText(m.barA||'YOUR GRIP',x,y+40);
+  g.textAlign='right'; g.fillText(m.barB||'UNTIL DAY BREAKS',x+w,y+40);
   const pul=.5+Math.sin(t/220)*.5;
   g.textAlign='center'; g.fillStyle=`rgba(255,243,207,${.4+pul*.55})`; g.font='12px Georgia';
-  g.fillText('— press ✦ / E again and again —',VW/2,y+40);
+  g.fillText(m.hint||'— press ✦ / E again and again —',VW/2,y+40);
   g.restore();
 }
 /* ---------- battle overlay ---------- */
@@ -2567,8 +2571,8 @@ const Game={
       const mp=this.world.player, mw=m.vs?this.world.npcs.find(n=>n.id===m.vs):null;
       if(mp) mp.moving=true;
       if(mw) mw.moving=true;
-      if(!m._m1&&m.prog>.34){ m._m1=true; toast('The night wears on — do not let go!'); }
-      if(!m._m2&&m.prog>.7){ m._m2=true; toast('The east begins to grey…'); }
+      if(!m._m1&&m.prog>.34){ m._m1=true; toast(m.msg1||'The night wears on — do not let go!'); }
+      if(!m._m2&&m.prog>.7){ m._m2=true; toast(m.msg2||'The east begins to grey…'); }
       if(m.prog>=1){
         const cb=m.onDone; this.mash=null;
         if(mp) mp.moving=false; if(mw) mw.moving=false;
@@ -5169,6 +5173,94 @@ STORY.push(
   ],
   complete:'Thus Ĕsaw despised his birthright — and the heel-holder grasped what YAHUAH had promised, by his own crooked strength.'
 },
+{ id:'c18b', title:'Wells of Strife', ref:'BERĔSHITH 26',
+  intro:[
+   {art:'wilderness', music:'desert', text:'And there was a scarcity of food in the land. And YAHUAH appeared to Yahtsḥaq and said, “Do not go down to Mitsrayim. Dwell in this land, and I am with you and shall barak you — for I give all these lands to you and your seed, because Aḇraham obeyed My voice, and guarded My Charge: My commands, My laws, and My Torot.”', ref:'BERĔSHITH 26:1–5'},
+   {art:'journey', music:'tense', text:'And Yahtsḥaq dwelt in Gerar. And like his father before him he said of his wife, “She is my sister” — but Aḇimeleḵ sovereign of the Philistines looked through a window, and saw, and called him: “She is your wife! How could you say she is my sister? One of the people might well have lain with her, and you would have brought guilt on us!” And he commanded: whoever touches this man or his wife shall certainly be put to death.', ref:'BERĔSHITH 26:6–11'},
+  ],
+  scene:{
+   map:{biome:'desert', w:50, h:30, seed:148,
+     features:[
+       {type:'tent',x:9,y:15,solid:true,clear:2,col:'#c8b486'},
+       {type:'firepit',x:11,y:16.5,lit:true},
+       {type:'wheat',x:14,y:13},{type:'wheat',x:15.2,y:13.8},{type:'wheat',x:14.6,y:14.8},
+       {type:'wheat',x:16,y:12.8},{type:'wheat',x:13.2,y:13.9},
+       {type:'sheaf',x:15,y:14,id:'field',examine:'The field Yahtsḥaq sowed in the land of Gerar.'},
+       {type:'clearing',x:22,y:18,flat:2},
+       {type:'clearing',x:30,y:14,flat:2},
+       {type:'clearing',x:39,y:20,flat:2},
+     ]},
+   time:'day', music:'desert',
+   player:'yitschaq', playerPos:[10,18],
+   npcs:[
+     {id:'rivqah',char:'rivqah',x:9.5,y:17,wander:true,range:1.2,noTalk:true},
+     {id:'herd1',char:'gerarman',x:24,y:19,wander:false,hidden:true,noTalk:true},
+     {id:'herd2',char:'gerarman',x:31.5,y:15,wander:false,hidden:true,noTalk:true},
+     {id:'abimelek',char:'abimelek',x:48,y:20,wander:false,hidden:true,noTalk:true},
+     {id:'phikol',char:'phikol',x:48.5,y:21.5,wander:false,hidden:true,noTalk:true},
+     {id:'sheep1',animal:'sheep',x:12,y:19.5,range:2,noTalk:true},
+     {id:'sheep2',animal:'sheep',x:13.4,y:20.4,range:2,noTalk:true},
+   ],
+   objectives:[
+     {type:'interact',prop:'field',text:'Reap what you sowed in the land of Gerar',
+      script:[
+       {sfx:'pickup'},{burst:[15,14,'mote',14]},
+       {say:['narrator','And Yahtsḥaq sowed in that land, and reaped in the same year a hundredfold — and YAHUAH baruk him. And the man grew great, until he became very great: flocks, herds, and a great body of servants — and the Philistines envied him.']},
+       {say:['narrator','And the Philistines had stopped all the wells which his father’s servants had dug in the days of Aḇraham, and filled them with dirt. And Aḇimeleḵ said to Yahtsḥaq, “Go away from us, for you are much mightier than we.”']},
+      ]},
+     {type:'goto',x:22,y:18,radius:2,text:'Dig again the first well of your father, in the wadi of Gerar',hiddenUntil:1,
+      script:[
+       {mash:{duration:5500,gain:.16,decay:.0003,text:'Dig the well of your father again!',barA:'YOUR STRENGTH',barB:'THE WELL',msg1:'Dirt and stone — keep digging!',msg2:'The sand darkens — water is near!'}},
+       {addProp:{type:'well',x:22,y:17.4,solid:true,id:'well1'}},
+       {sfx:'pickup'},{burst:[22,17.4,'mote',16]},
+       {say:['narrator','And Yahtsḥaq’s servants dug in the wadi, and found a well of running water there.']},
+       {show:'herd1'},{move:['herd1',23.2,18.2,.08]},
+       {say:['gerarman','The water is ours! This wadi is ours, and the water is ours!']},
+       {say:['yitschaq','…Then it shall be called Ĕseq — strife — because you strove with me. Come, servants. We do not strive for water. We dig again.']},
+       {move:['herd1',23.5,17,.04,'bg']},
+      ]},
+     {type:'goto',x:30,y:14,radius:2,text:'Dig another well',hiddenUntil:2,
+      script:[
+       {mash:{duration:5500,gain:.16,decay:.0003,text:'Dig another well!',barA:'YOUR STRENGTH',barB:'THE WELL',msg1:'Dirt and stone — keep digging!',msg2:'The sand darkens — water is near!'}},
+       {addProp:{type:'well',x:30,y:13.4,solid:true,id:'well2'}},
+       {sfx:'pickup'},{burst:[30,13.4,'mote',16]},
+       {show:'herd2'},{move:['herd2',31,14.4,.08]},
+       {say:['gerarman','This one also is ours!']},
+       {say:['yitschaq','Sitnah — opposition. So be it. The land is wide, and my Aluahim is wider. We move on — and we dig again.']},
+       {move:['herd2',31.5,13,.04,'bg']},
+      ]},
+     {type:'goto',x:39,y:20,radius:2,text:'Move from there — and dig once more',hiddenUntil:3,
+      script:[
+       {mash:{duration:5500,gain:.16,decay:.0003,text:'Dig once more!',barA:'YOUR STRENGTH',barB:'THE WELL',msg1:'Dirt and stone — keep digging!',msg2:'The sand darkens — water is near!'}},
+       {addProp:{type:'well',x:39,y:19.4,solid:true,id:'well3'}},
+       {sfx:'chime'},{burst:[39,19.4,'mote',20]},
+       {say:['narrator','And he moved from there and dug another well — and they did not strive over it.']},
+       {say:['yitschaq','Reḥoḇoth! — for now YAHUAH has made room for us, and we shall bear fruit in the land.']},
+       {time:'night'},{music:'night'},{rays:.7,raysX:39},{sfx:'holy'},
+       {say:['voice','I am the Aluahim of your father Aḇraham. Do not fear, for I am with you, and shall barak you and increase your seed, for the sake of My servant Aḇraham.']},
+       {rays:0},
+       {say:['narrator','And he built a mizbe’ach there, and called on the Name of YAHUAH, and pitched his tent there — at Be’ĕrsheḇa.']},
+       {addProp:{type:'altar',stage:3,x:41,y:18.6,solid:true,id:'bsaltar'}},
+       {time:'day'},{music:'desert'},
+       {show:'abimelek'},{show:'phikol'},
+       {move:['phikol',41,20.8,.06,'bg']},{move:['abimelek',40.5,19.8,.06,'bg']},
+       {say:['narrator','Then Aḇimeleḵ came to him from Gerar, with Aḥuzzath his friend and Piḵol the commander of his army.']},
+      ]},
+     {type:'talk',npc:'abimelek',text:'Aḇimeleḵ comes from Gerar — hear him',hiddenUntil:4,
+      script:[
+       {say:['yitschaq','Why have you come to me, seeing you have hated me, and sent me away from you?']},
+       {say:['abimelek','We have clearly seen that YAHUAH is with you. Let there now be an oath between us, and let us make a covenant with you: that you do us no evil, as we have not touched you, and as we have sent you away in peace. You are now baruk of YAHUAH.']},
+       {say:['narrator','And he made them a feast, and they ate and drank. And they rose early in the morning and swore an oath, each to his brother — and they departed from him in peace.']},
+       {sfx:'chime'},{burst:[40,20,'mote',14]},
+       {say:['narrator','And on that same day Yahtsḥaq’s servants came and told him about the well they had dug: “We have found water!” And he called it Shiḇah — therefore the name of the city is Be’ĕrsheḇa, to this day.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'night', text:'And Ĕsaw was forty years old when he took as wives Yahuḏith and Basemath, daughters of the Ḥittites — and they were a bitterness of spirit to Yahtsḥaq and Riḇqah.', ref:'BERĔSHITH 26:34–35'},
+  ],
+  complete:'Ĕseq, Sitnah — Reḥoḇoth: for now YAHUAH has made room for us. He did not strive; he dug again.'
+},
 { id:'c18a', title:'The Voice and the Hands', ref:'BERĔSHITH 27',
   intro:[
    {art:'rest', music:'tense', text:'And it came to be, when Yahtsḥaq was old and his eyes were too dim to see, that he called Ĕsaw and said: “Hunt me game, and make me a tasty dish, and bring it to me to eat — so that my being does barak you before I die.” And Riḇqah was listening.', ref:'BERĔSHITH 27:1–5'},
@@ -5668,6 +5760,7 @@ STORY.push(
   },
   outro:[
    {art:'rest', music:'sorrow', text:'So Raḥal died, and was buried on the way to Ephrath, that is Bĕyth Leḥem — and Ya‘aqoḇ set a standing column on her grave, which is there to this day.', ref:'BERĔSHITH 35:19–20'},
+   {art:'mountain', music:'desert', text:'And Ĕsaw took his wives and his sons and all his possessions, and went to a land away from the face of his brother Ya‘aqoḇ — for their possessions were too great for them to dwell together. So Ĕsaw dwelt in Mount Sĕ‛ir. Ĕsaw is Eḏom — and these are the generations of Ĕsaw, fathers of sovereigns, before any sovereign reigned over the children of Yasharal.', ref:'BERĔSHITH 36'},
   ],
   complete:'No longer Ya‘aqoḇ, but Yasharal — and the column stands on Raḥal’s grave to this day.'
 },
@@ -6023,6 +6116,7 @@ STORY.push(
   intro:[
    {art:'goshen', music:'eden', text:'And Yasharal set out with all that he had… And Aluahim spoke in the visions of the night: “Do not be afraid to go down to Mitsrayim, for I shall make you there into a great nation. I Myself am going down with you — and I shall certainly bring you up again.”', ref:'BERĔSHITH 46:1–4'},
    {art:'reunion', music:'royal', text:'And Yosĕph brought in Ya‘aqoḇ his father and set him before Pharaoh — and Ya‘aqoḇ baruk Pharaoh. And Pharaoh said, “How old are you?” And Ya‘aqoḇ said, “The days of the years of my sojournings are one hundred and thirty years. Few and evil have been the days of the years of my life, and they have not reached the days of my fathers.”', ref:'BERĔSHITH 47:7–10'},
+   {art:'egypt', music:'tense', text:'And the scarcity was severe, and there was no bread in all the land. And Yosĕph gathered all the silver for the grain, and then the livestock, and then the ground — so Yosĕph bought all the land of Mitsrayim for Pharaoh; only the ground of the priests he did not buy. And he set a law over the land: a fifth of the harvest is Pharaoh’s. But Yasharal dwelt in Goshen, and acquired property, and bore fruit, and increased exceedingly.', ref:'BERĔSHITH 47:13–27'},
   ],
   scene:{
    map:{biome:'plains', w:46, h:32, seed:201,
@@ -6072,10 +6166,24 @@ STORY.push(
        {fade:'out'},{time:'dusk'},{music:'sorrow'},{toast:'And Ya‘aqoḇ lived in the land of Mitsrayim seventeen years…'},{wait:1700},{fade:'in'},
        {say:['narrator','And Yosĕph brought his two sons, Menashsheh and Ephrayim, to his father’s bed. And Yasharal stretched out his right hand and laid it on EPHRAYIM’S head, who was the younger — crossing his hands knowingly, though Menashsheh was the first-born — and Yosĕph was displeased.']},
        {say:['yaaqov','I know, my son, I know. He also becomes a people, and he also is great — but indeed his younger brother is greater than he. In you shall Yasharal barak, saying: Aluahim make you as Ephrayim and as Menashsheh.']},
-       {say:['yaaqov','Gather together, sons of Ya‘aqoḇ, and hear Yasharal your father… Yahuḏah — the sceptre shall not turn aside from Yahuḏah, nor the Lawgiver from between his feet, until Shiloh comes, and to Him is the obedience of peoples.']},
-       {say:['yaaqov','I wait for Your deliverance, O YAHUAH… I am to be gathered to my people. Bury me with my fathers in the cave that is in the field of Maḵpĕlah, in the land of Kena‛an.']},
-       {fade:'out'},{toast:'And when Ya‘aqoḇ finished commanding his sons, he was gathered to his people.'},{wait:1800},{time:'day'},{music:'sorrow'},{fade:'in'},
+       {say:['yaaqov','Gather together, sons of Ya‘aqoḇ — and hear Yasharal your father, what shall befall you in the last days.']},
+       {say:['yaaqov','Re’uḇĕn, my first-born, my power — boiling like water, you do not excel, for you went up to your father’s bed. Shim‛on and Lĕwi, brothers — instruments of violence are their weapons; I divide them in Ya‘aqoḇ, and scatter them in Yasharal.']},
+       {say:['yaaqov','Yahuḏah — your brothers praise you. A lion’s cub is Yahuḏah. The sceptre shall not turn aside from Yahuḏah, nor the Lawgiver from between his feet, until SHILOH comes — and to Him is the obedience of peoples.']},
+       {say:['yaaqov','Zeḇulun dwells at the seashore, a haven for ships. Yissasḵar, a strong donkey between two burdens — he bowed his shoulder to bear. Dan rightly rules his people, as one of the tribes of Yasharal. Gaḏ — a raiding band raids him, but he raids its heel. Bread from Ashĕr is rich; he gives delicacies of a sovereign. Naphtali is a deer let loose, giving words of elegance.']},
+       {say:['yaaqov','Yosĕph — a fruit-bearing son by a fountain, whose branches run over a wall. The archers bitterly grieved him, and shot at him — but his bow remained in strength, by the hands of the Mighty One of Ya‘aqoḇ, by the Aluahim of your father who helps you. The barakoth of your father are upon the head of Yosĕph, the one separated from his brothers.']},
+       {say:['yaaqov','And Binyamin — a wolf that tears: in the morning he eats prey, and at night he divides the spoil. …All these are the twelve tribes of Yasharal.']},
+       {say:['yaaqov','I wait for Your deliverance, O YAHUAH… I am to be gathered to my people. Bury me with my fathers in the cave that is in the field of Maḵpĕlah, in the land of Kena‛an — there they buried Aḇraham and Sarah, there they buried Yahtsḥaq and Riḇqah, and there I buried Lĕ’ah.']},
+       {fade:'out'},{toast:'And when Ya‘aqoḇ finished commanding his sons, he drew his feet up into the bed — and was gathered to his people.'},{wait:1800},{time:'day'},{music:'sorrow'},{fade:'in'},
        {despawn:'yaaqov'},
+       {say:['narrator','And Yosĕph fell on his father’s face, and wept over him, and kissed him. And he commanded the physicians to embalm his father — forty days were completed for him — and the Mitsrites wept for him seventy days.']},
+       {spawn:{id:'fwagon1',propType:'chariot',horses:true,gold:true,x:44,y:24,wander:false,noTalk:true}},
+       {spawn:{id:'fwagon2',propType:'chariot',horses:true,x:44,y:27,wander:false,noTalk:true}},
+       {spawn:{id:'frider',char:'steward',mount:'horse',x:45,y:25.5,wander:false,noTalk:true}},
+       {move:['fwagon1',26,24,.05,'bg']},{move:['frider',28,25.5,.05,'bg']},{move:['fwagon2',29,27,.05]},
+       {say:['narrator','And Yosĕph went up to bury his father, and with him went up all the servants of Pharaoh, and the elders of the land of Mitsrayim — and there went up with him both chariots and horsemen, a very great company.']},
+       {say:['narrator','And they lamented at the threshing-floor of Atad, beyond the Yardĕn, a great and very heavy lamentation — seven days. Therefore the place was called Aḇĕl Mitsrayim. And his sons carried him into the land of Kena‛an, and buried him in the cave of the field of Maḵpĕlah, as he had commanded them.']},
+       {fade:'out'},{despawn:'fwagon1'},{despawn:'fwagon2'},{despawn:'frider'},
+       {toast:'And after he had buried his father, Yosĕph returned to Mitsrayim, he and his brothers.'},{wait:1800},{fade:'in'},
        {say:['narrator','And when the brothers saw that their father was dead, they said, “What if Yosĕph hates us and pays us back all the evil which we did to him?” And they fell down before his face, saying, “See, we are your servants.”']},
        {move:['yahudah',19,21,.05]},
        {say:['yahudah','Brother… before he died, father commanded: “Forgive, I beg you, the transgression of your brothers and their sin.” …We are your servants.']},
