@@ -1259,18 +1259,35 @@ function drawProp(g,px,py,p,t){
       }
       break; }
     case 'firepit': {
-      g.fillStyle='#3b3228'; g.beginPath(); g.ellipse(0,0,3.6*u,2.2*u,0,0,Math.PI*2); g.fill();
+      const fs=p.big?2.2:1.35;                   /* satan's blazes vs camp fires */
+      g.fillStyle='#3b3228'; g.beginPath(); g.ellipse(0,0,3.6*u*Math.min(fs,1.7),2.2*u*Math.min(fs,1.7),0,0,Math.PI*2); g.fill();
       g.fillStyle='#5d5246';
       for(let i=0;i<6;i++){ const a2=i/6*Math.PI*2;
-        g.beginPath(); g.arc(Math.cos(a2)*3.4*u,Math.sin(a2)*2*u,.9*u,0,Math.PI*2); g.fill(); }
+        g.beginPath(); g.arc(Math.cos(a2)*3.4*u*Math.min(fs,1.7),Math.sin(a2)*2*u*Math.min(fs,1.7),.9*u,0,Math.PI*2); g.fill(); }
       if(p.lit!==false){
         const f=t/85;
-        for(let i=0;i<4;i++){ g.fillStyle=['#e8762a','#f5a623','#ffd54a'][i%3];
-          const fx4=Math.sin(f+i*2.1)*1.4;
-          g.beginPath(); g.moveTo((fx4-1.6)*u,-1*u); g.quadraticCurveTo(fx4*u,(-5-Math.sin(f+i)*1.5)*u,(fx4+1.6)*u,-1*u); g.fill(); }
-        const gl2=g.createRadialGradient(0,-2*u,u,0,-2*u,12*u);
-        gl2.addColorStop(0,'rgba(255,170,80,.3)'); gl2.addColorStop(1,'rgba(255,170,80,0)');
-        g.fillStyle=gl2; g.beginPath(); g.arc(0,-2*u,12*u,0,Math.PI*2); g.fill();
+        const nF=p.big?7:5;
+        for(let i=0;i<nF;i++){
+          g.fillStyle=['#c84a1c','#e8762a','#f5a623','#ffd54a'][i%4];
+          const fx4=Math.sin(f+i*2.1)*1.6*fs;
+          const fw=1.8*fs, fh=(4.5+Math.sin(f*1.2+i)*1.8)*fs;
+          const ox=(i-(nF-1)/2)*1.5*fs*.8;
+          g.beginPath(); g.moveTo((ox+fx4-fw)*u,-1*u);
+          g.quadraticCurveTo((ox+fx4)*u,(-1-fh)*u,(ox+fx4+fw)*u,-1*u); g.fill();
+        }
+        if(p.big){ /* white-hot core + sparks for the great blaze */
+          g.fillStyle='rgba(255,240,190,.85)';
+          g.beginPath(); g.ellipse(Math.sin(f)*u,-2.2*u,2.6*u,1.6*u,0,0,Math.PI*2); g.fill();
+          g.fillStyle='#ffd54a';
+          for(let i=0;i<4;i++){
+            const sp=(f*1.6+i*1.7)%5;
+            g.fillRect((Math.sin(f*2+i*2.4)*4*fs)*u,(-3-sp*2.4)*u,2,2);
+          }
+        }
+        const gr2=12*u*fs;
+        const gl2=g.createRadialGradient(0,-2*u,u,0,-2*u,gr2);
+        gl2.addColorStop(0,`rgba(255,170,80,${p.big?.4:.3})`); gl2.addColorStop(1,'rgba(255,170,80,0)');
+        g.fillStyle=gl2; g.beginPath(); g.arc(0,-2*u,gr2,0,Math.PI*2); g.fill();
       }
       break; }
     case 'basket': { shadow(2.2);
@@ -1741,7 +1758,7 @@ function drawWorld(g,world,t){
     for(const d of map.decor){
       if((d.type==='firepit'&&d.lit!==false)||(d.type==='altar'&&d.stage>=3)||d.type==='treeLife'){
         const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
-        const r=d.type==='treeLife'?TILE*5:TILE*3.4;
+        const r=d.type==='treeLife'?TILE*5:(d.type==='firepit'&&d.big?TILE*5.6:TILE*3.4);
         const gl2=g.createRadialGradient(sx,sy-TILE*.5,TILE*.3,sx,sy-TILE*.5,r);
         gl2.addColorStop(0,'rgba(255,190,90,.32)'); gl2.addColorStop(1,'rgba(255,190,90,0)');
         g.fillStyle=gl2; g.beginPath(); g.arc(sx,sy-TILE*.5,r,0,Math.PI*2); g.fill();
@@ -3238,9 +3255,11 @@ const STORY=[
    map:{biome:'wild', w:46, h:32, seed:361,
      features:[
        {type:'cave',glow:true,x:23,y:13,solid:true,clear:3,flat:3,id:'cave'},
-       {type:'firepit',x:18,y:16,lit:true,id:'f1'},
-       {type:'firepit',x:28,y:16,lit:true,id:'f2'},
-       {type:'firepit',x:23,y:19,lit:true,id:'f3'},
+       {type:'firepit',big:true,x:18,y:16,lit:true,id:'f1'},
+       {type:'firepit',big:true,x:28,y:16,lit:true,id:'f2'},
+       {type:'firepit',big:true,x:23,y:19,lit:true,id:'f3'},
+       {type:'firepit',big:true,x:19,y:11,lit:true,id:'f4'},
+       {type:'firepit',big:true,x:27,y:11,lit:true,id:'f5'},
        {type:'clearing',x:23,y:16,flat:2},
      ]},
    time:'night', music:'storm',
@@ -3256,7 +3275,7 @@ const STORY=[
        {say:['adam_c','O Aluahim! The fire of the enemy is around the house You gave us! You who are a wall of fire to Your own — deliver us, for we have no deliverer but You!']},
        {rays:.9,raysX:23},{sfx:'holy'},{music:'holy'},{wait:600},
        {say:['narrator','And the Word of Aluahim came, and the fire parted, and a way opened through the midst of it. And the fire did not touch them, nor the cave, nor the treasures in it.']},
-       {prop:['f1',{lit:false}]},{prop:['f2',{lit:false}]},{prop:['f3',{lit:false}]},
+       {prop:['f1',{lit:false}]},{prop:['f2',{lit:false}]},{prop:['f3',{lit:false}]},{prop:['f4',{lit:false}]},{prop:['f5',{lit:false}]},
        {time:'deepnight'},{burst:[23,15,'holy',24]},
        {say:['voice','See, O Aḏam, the nature of this fire of Satan: it gives no light, but burning; this is the fire that is in his dwelling. He promised you his brightness — this is the whole of it. Such is the difference between his fire and My light.']},
        {say:['voice','How many times shall I deliver you out of his hand before you learn that he has nothing for you but death? Be of good heart: he may compass the cave, but he shall not enter it.']},
