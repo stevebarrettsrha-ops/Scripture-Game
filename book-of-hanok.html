@@ -535,6 +535,7 @@ function sprRender(g,ops,u,flip){
 function drawChar(g,px,py,charId,o){
   o=o||{};
   const c=CHARS[charId]||CHARS.adam;
+  if(c.dragon){ drawDragon(g,px,py,o); return; }
   if(c.serpent){ drawSerpent(g,px,py,o); return; }
   const t=o.t||0;
   const u=(o.scale||1)*(c.child||o.child?1.9:(c.angel?3.3:2.6))*(TILE/40);
@@ -571,6 +572,7 @@ function drawChar(g,px,py,charId,o){
       g.fillStyle=gl; g.beginPath(); g.arc(0,-13*u,16*u,0,Math.PI*2); g.fill();
     }
   }
+  if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(-Math.PI/2*flip); }
   const ops=[];
   const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
   const skin=c.skin||'#7a4e29', hairC=c.hair||'#2c1a0c', robe=c.robe;
@@ -704,6 +706,55 @@ function drawChar(g,px,py,charId,o){
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
     R(-0.6+k*1.5,-9.2+B,2.2,1.7,skin);
   }
+  sprRender(g,ops,u,flip);
+  g.restore();
+}
+
+
+function drawDragon(g,px,py,o){
+  /* the serpent before the curse: upright on two legs, with arms */
+  o=o||{}; const t=o.t||0, u=2.5*(TILE/40)*(o.scale||1);
+  const flip=o.dir==='left'?-1:1;     /* native facing right */
+  const moving=o.moving;
+  const ph=moving?Math.floor(t/170)%4:0;
+  const k=moving?[0,1,0,-1][ph]:0;
+  const bob=moving?(ph%2?-0.6:0):Math.sin(t/600)*.5;
+  g.save(); g.translate(Math.round(px),Math.round(py));
+  if(o.alpha!==undefined)g.globalAlpha=o.alpha;
+  g.fillStyle='rgba(0,0,0,.25)';
+  g.beginPath(); g.ellipse(0,1,7*u,2.3*u,0,0,Math.PI*2); g.fill();
+  const ops=[]; const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
+  const SC='#5d7a2e', SC2='#4a6322', BL='#d8c25a', B=bob;
+  /* tail: curves down-back */
+  R(-7.4,-6.2+B+Math.sin(t/400)*.6,2.6,1.8,SC2);
+  R(-5.6,-7+B,2.6,2,SC);
+  R(-3.8,-8+B,2.4,2.4,SC);
+  /* legs scissor */
+  R(-2.2-k*1.5,-6.4,2.4,5,SC2);
+  R(0.4+k*1.5,-6.4,2.4,5,SC);
+  /* claw feet */
+  R(-2.8-k*1.7,-1.6,3.4,1.7,SC2);
+  R(-0.2+k*1.7,-1.6,3.6,1.7,SC);
+  R(0.6-k*1.7,-1.4,1,1.5,BL); R(3.6+k*1.7,-1.4,1,1.5,BL);
+  /* body upright, leaning forward */
+  R(-3,-14.6+B,6,9,SC);
+  R(-1.4,-13.6+B,3.2,7.4,BL);          /* belly plates */
+  R(-1.4,-11.6+B,3.2,.7,shade(BL,-25));
+  R(-1.4,-9.4+B,3.2,.7,shade(BL,-25));
+  /* arms with claws */
+  R(1.4,-12.8+B+k*.6,2.4,1.6,SC2);
+  R(3.4,-12.6+B+k*.6,1.4,2,SC);
+  R(4,-11+B+k*.6,1.2,1,BL);
+  /* neck + head with snout */
+  R(-0.6,-19+B,3,5,SC);
+  R(-1.2,-22.4+B,5,4,SC);
+  R(3.4,-21.4+B,3.4,2.2,SC);           /* snout */
+  R(5.6,-20.6+B,1.2,.8,SC2);           /* nostril */
+  R(1.4,-21.6+B,1.4,1.4,'#e8c64a');    /* eye */
+  R(1.9,-21.2+B,.7,.7,'#160e08');
+  R(-1.2,-23.6+B,1.6,1.4,SC2);         /* crest */
+  R(0.6,-24.2+B,1.4,1.8,SC2);
+  if(Math.sin(t/500)>.6) R(6.6,-20.4+B,1.8,.5,'#c0392b');  /* tongue */
   sprRender(g,ops,u,flip);
   g.restore();
 }
@@ -1253,6 +1304,39 @@ function drawProp(g,px,py,p,t){
         g.fillStyle=gl7; g.beginPath(); g.arc(0,-TILE*.5,TILE*1.6,0,Math.PI*2); g.fill();
       }
       break; }
+    case 'doorway': {
+      const dw=TILE*1.3, dh=TILE*1.8;
+      // opening carved into the wall
+      g.fillStyle='rgba(12,8,5,.95)';
+      g.beginPath(); g.moveTo(-dw/2,0);
+      g.lineTo(-dw/2,-dh*.62); g.quadraticCurveTo(0,-dh*1.08,dw/2,-dh*.62);
+      g.lineTo(dw/2,0); g.closePath(); g.fill();
+      g.strokeStyle='#6e5d48'; g.lineWidth=Math.max(2,TILE*.09);
+      g.beginPath(); g.moveTo(-dw/2,0);
+      g.lineTo(-dw/2,-dh*.62); g.quadraticCurveTo(0,-dh*1.08,dw/2,-dh*.62);
+      g.lineTo(dw/2,0); g.stroke();
+      if(p.bars){
+        g.fillStyle='#4a4038';
+        for(let i=0;i<3;i++) g.fillRect(-dw*.3+i*dw*.3-2,-dh*.92,4,dh*.92);
+      } else if(p.closed){
+        g.fillStyle='#6e552f';
+        g.fillRect(-dw/2+3,-dh*.86,dw-6,dh*.86);
+        g.fillStyle='#5d4426';
+        for(let i=1;i<4;i++) g.fillRect(-dw/2+3,-dh*.86+i*dh*.215,dw-6,2);
+      } else {
+        // light of the outside spilling in
+        const dgl=g.createLinearGradient(0,-dh,0,dh*.5);
+        dgl.addColorStop(0,`rgba(255,238,180,${.55+Math.sin(t/700)*.1})`);
+        dgl.addColorStop(1,'rgba(255,238,180,0)');
+        g.fillStyle=dgl;
+        g.beginPath(); g.moveTo(-dw/2+3,0);
+        g.lineTo(-dw/2+3,-dh*.6); g.quadraticCurveTo(0,-dh*1.02,dw/2-3,-dh*.6);
+        g.lineTo(dw/2-3,0); g.closePath(); g.fill();
+        g.fillStyle='rgba(255,238,180,.16)';
+        g.beginPath(); g.moveTo(-dw/2,0); g.lineTo(dw/2,0);
+        g.lineTo(dw*0.85,TILE*1.4); g.lineTo(-dw*0.85,TILE*1.4); g.closePath(); g.fill();
+      }
+      break; }
     case 'idol': {
       g.scale(1.6,1.6);
       shadow(3.2);
@@ -1597,7 +1681,7 @@ function drawWorld(g,world,t){
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -1964,6 +2048,8 @@ const Game={
     this.state='slides'; this.slideList=slides; this.slideIdx=0; this.slidePhase=phase;
     this.slideT=0;
     $('hud').style.display='none';
+    $('interact-tip').style.display='none';
+    $('hud-toast').style.opacity='0';
     this.showSlide();
   },
   showSlide(){
@@ -2029,6 +2115,8 @@ const Game={
     Sound.sfx('holy');
     this.state='complete';
     $('hud').style.display='none';
+    $('interact-tip').style.display='none';
+    $('hud-toast').style.opacity='0';
     $('slide-ui').classList.remove('show');
     $('complete-title').textContent=ch.title;
     $('complete-sub').textContent=ch.complete||'';
@@ -2981,6 +3069,7 @@ const STORY=[
    map:{biome:'interior', floorCol:'#e8e0c8', wallCol:'#b8c4d8', w:28, h:17, seed:521,
      features:[
        {type:'pillar',oil:true,x:14,y:4.5,id:'glory'},
+       {type:'doorway',x:14,y:16.2,id:'gate',examine:'The gate by which you were brought up in vision.'},
      ]},
    time:'day', music:'holy',
    player:'chanok', playerPos:[14,13],
@@ -3055,6 +3144,8 @@ const STORY=[
       script:[
        {time:'deepnight'},{music:'night'},
        {say:['narrator','And Ḥanoḵ went and sat down by the waters of Dan, and read the petition until he fell asleep. And behold — a dream came to him, and visions fell down upon him.']},
+       {call:g=>{ g.world.player.lying=true; g.world.player.moving=false; }},
+       {wait:1100},
        {fade:'out'},{sfx:'holy'},{wait:900},
       ]},
    ],
@@ -3073,6 +3164,7 @@ const STORY=[
    map:{biome:'interior', floorCol:'#dde4ec', wallCol:'#b8c4d8', w:26, h:16, seed:541,
      features:[
        {type:'throne',x:13,y:4.6,solid:true,id:'throne'},
+       {type:'doorway',x:13,y:15.2,id:'gate',examine:'The way you entered, through the tongues of fire.'},
        {type:'firepit',x:9,y:7,lit:true},{type:'firepit',x:17,y:7,lit:true},
      ]},
    time:'day', music:'holy',
@@ -3139,6 +3231,7 @@ const STORY=[
      features:[
        {type:'pit',x:8,y:6,id:'p1'},{type:'pit',x:13,y:6,id:'p2'},
        {type:'pit',x:18,y:6,id:'p3'},{type:'pit',x:23,y:6,id:'p4'},
+       {type:'doorway',x:4,y:16.2,id:'gate',examine:'The cleft in the mountain by which Raphaal led you in.'},
        {type:'firepit',x:14,y:11,lit:true},
      ]},
    time:'deepnight', music:'sorrow',
@@ -3269,6 +3362,7 @@ const STORY=[
      features:[
        {type:'portal',x:7,y:5,id:'sunportal'},
        {type:'portal',x:21,y:5,id:'moonportal'},
+       {type:'doorway',x:14,y:16.2,id:'gate',examine:'The gate of the observatory of the shamayim.'},
      ]},
    time:'day', music:'holy',
    player:'chanok', playerPos:[14,12],

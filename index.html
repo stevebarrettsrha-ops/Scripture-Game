@@ -436,7 +436,8 @@ const CHARS={
   chavvah: {name:'Ḥawwah',  skin:'#83552d', hair:'#23150b', hairStyle:'long',  robe:null, glory:true},
   chavvah_f:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#7a8a4a', leaf:true},
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
-  serpent: {name:'The Serpent', serpent:true},
+  serpent: {name:'The Serpent', dragon:true},
+  serpent_c:{name:'The Serpent', serpent:true},
   cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
   malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
@@ -520,6 +521,7 @@ function sprRender(g,ops,u,flip){
 function drawChar(g,px,py,charId,o){
   o=o||{};
   const c=CHARS[charId]||CHARS.adam;
+  if(c.dragon){ drawDragon(g,px,py,o); return; }
   if(c.serpent){ drawSerpent(g,px,py,o); return; }
   const t=o.t||0;
   const u=(o.scale||1)*(c.child||o.child?1.9:(c.angel?3.3:2.6))*(TILE/40);
@@ -556,6 +558,7 @@ function drawChar(g,px,py,charId,o){
       g.fillStyle=gl; g.beginPath(); g.arc(0,-13*u,16*u,0,Math.PI*2); g.fill();
     }
   }
+  if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(-Math.PI/2*flip); }
   const ops=[];
   const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
   const skin=c.skin||'#7a4e29', hairC=c.hair||'#2c1a0c', robe=c.robe;
@@ -689,6 +692,55 @@ function drawChar(g,px,py,charId,o){
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
     R(-0.6+k*1.5,-9.2+B,2.2,1.7,skin);
   }
+  sprRender(g,ops,u,flip);
+  g.restore();
+}
+
+
+function drawDragon(g,px,py,o){
+  /* the serpent before the curse: upright on two legs, with arms */
+  o=o||{}; const t=o.t||0, u=2.5*(TILE/40)*(o.scale||1);
+  const flip=o.dir==='left'?-1:1;     /* native facing right */
+  const moving=o.moving;
+  const ph=moving?Math.floor(t/170)%4:0;
+  const k=moving?[0,1,0,-1][ph]:0;
+  const bob=moving?(ph%2?-0.6:0):Math.sin(t/600)*.5;
+  g.save(); g.translate(Math.round(px),Math.round(py));
+  if(o.alpha!==undefined)g.globalAlpha=o.alpha;
+  g.fillStyle='rgba(0,0,0,.25)';
+  g.beginPath(); g.ellipse(0,1,7*u,2.3*u,0,0,Math.PI*2); g.fill();
+  const ops=[]; const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
+  const SC='#5d7a2e', SC2='#4a6322', BL='#d8c25a', B=bob;
+  /* tail: curves down-back */
+  R(-7.4,-6.2+B+Math.sin(t/400)*.6,2.6,1.8,SC2);
+  R(-5.6,-7+B,2.6,2,SC);
+  R(-3.8,-8+B,2.4,2.4,SC);
+  /* legs scissor */
+  R(-2.2-k*1.5,-6.4,2.4,5,SC2);
+  R(0.4+k*1.5,-6.4,2.4,5,SC);
+  /* claw feet */
+  R(-2.8-k*1.7,-1.6,3.4,1.7,SC2);
+  R(-0.2+k*1.7,-1.6,3.6,1.7,SC);
+  R(0.6-k*1.7,-1.4,1,1.5,BL); R(3.6+k*1.7,-1.4,1,1.5,BL);
+  /* body upright, leaning forward */
+  R(-3,-14.6+B,6,9,SC);
+  R(-1.4,-13.6+B,3.2,7.4,BL);          /* belly plates */
+  R(-1.4,-11.6+B,3.2,.7,shade(BL,-25));
+  R(-1.4,-9.4+B,3.2,.7,shade(BL,-25));
+  /* arms with claws */
+  R(1.4,-12.8+B+k*.6,2.4,1.6,SC2);
+  R(3.4,-12.6+B+k*.6,1.4,2,SC);
+  R(4,-11+B+k*.6,1.2,1,BL);
+  /* neck + head with snout */
+  R(-0.6,-19+B,3,5,SC);
+  R(-1.2,-22.4+B,5,4,SC);
+  R(3.4,-21.4+B,3.4,2.2,SC);           /* snout */
+  R(5.6,-20.6+B,1.2,.8,SC2);           /* nostril */
+  R(1.4,-21.6+B,1.4,1.4,'#e8c64a');    /* eye */
+  R(1.9,-21.2+B,.7,.7,'#160e08');
+  R(-1.2,-23.6+B,1.6,1.4,SC2);         /* crest */
+  R(0.6,-24.2+B,1.4,1.8,SC2);
+  if(Math.sin(t/500)>.6) R(6.6,-20.4+B,1.8,.5,'#c0392b');  /* tongue */
   sprRender(g,ops,u,flip);
   g.restore();
 }
@@ -1180,6 +1232,39 @@ function drawProp(g,px,py,p,t){
       g.fillStyle='rgba(232,118,42,.65)';
       g.beginPath(); g.arc(0,-u,3*u,0,Math.PI*2); g.fill();
       break; }
+    case 'doorway': {
+      const dw=TILE*1.3, dh=TILE*1.8;
+      // opening carved into the wall
+      g.fillStyle='rgba(12,8,5,.95)';
+      g.beginPath(); g.moveTo(-dw/2,0);
+      g.lineTo(-dw/2,-dh*.62); g.quadraticCurveTo(0,-dh*1.08,dw/2,-dh*.62);
+      g.lineTo(dw/2,0); g.closePath(); g.fill();
+      g.strokeStyle='#6e5d48'; g.lineWidth=Math.max(2,TILE*.09);
+      g.beginPath(); g.moveTo(-dw/2,0);
+      g.lineTo(-dw/2,-dh*.62); g.quadraticCurveTo(0,-dh*1.08,dw/2,-dh*.62);
+      g.lineTo(dw/2,0); g.stroke();
+      if(p.bars){
+        g.fillStyle='#4a4038';
+        for(let i=0;i<3;i++) g.fillRect(-dw*.3+i*dw*.3-2,-dh*.92,4,dh*.92);
+      } else if(p.closed){
+        g.fillStyle='#6e552f';
+        g.fillRect(-dw/2+3,-dh*.86,dw-6,dh*.86);
+        g.fillStyle='#5d4426';
+        for(let i=1;i<4;i++) g.fillRect(-dw/2+3,-dh*.86+i*dh*.215,dw-6,2);
+      } else {
+        // light of the outside spilling in
+        const dgl=g.createLinearGradient(0,-dh,0,dh*.5);
+        dgl.addColorStop(0,`rgba(255,238,180,${.55+Math.sin(t/700)*.1})`);
+        dgl.addColorStop(1,'rgba(255,238,180,0)');
+        g.fillStyle=dgl;
+        g.beginPath(); g.moveTo(-dw/2+3,0);
+        g.lineTo(-dw/2+3,-dh*.6); g.quadraticCurveTo(0,-dh*1.02,dw/2-3,-dh*.6);
+        g.lineTo(dw/2-3,0); g.closePath(); g.fill();
+        g.fillStyle='rgba(255,238,180,.16)';
+        g.beginPath(); g.moveTo(-dw/2,0); g.lineTo(dw/2,0);
+        g.lineTo(dw*0.85,TILE*1.4); g.lineTo(-dw*0.85,TILE*1.4); g.closePath(); g.fill();
+      }
+      break; }
     case 'idol': {
       g.scale(1.6,1.6);
       shadow(3.2);
@@ -1524,7 +1609,7 @@ function drawWorld(g,world,t){
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -1887,6 +1972,8 @@ const Game={
     this.state='slides'; this.slideList=slides; this.slideIdx=0; this.slidePhase=phase;
     this.slideT=0;
     $('hud').style.display='none';
+    $('interact-tip').style.display='none';
+    $('hud-toast').style.opacity='0';
     this.showSlide();
   },
   showSlide(){
@@ -1952,6 +2039,8 @@ const Game={
     Sound.sfx('holy');
     this.state='complete';
     $('hud').style.display='none';
+    $('interact-tip').style.display='none';
+    $('hud-toast').style.opacity='0';
     $('slide-ui').classList.remove('show');
     $('complete-title').textContent=ch.title;
     $('complete-sub').textContent=ch.complete||'';
@@ -2823,12 +2912,16 @@ const STORY=[
    ],
    onComplete:[
      {say:['voice','It is not good for the man to be alone. I shall make a helper as his counterpart.']},
+     {say:['narrator','And YAHUAH Aluahim caused a deep sleep to fall on the man, and he slept.']},
+     {call:g=>{ g.world.player.lying=true; g.world.player.moving=false; }},
+     {wait:1300},
      {fade:'out'},{sfx:'holy'},
      {call:g=>{ const w=g.world; w.time='dusk'; }},
      {spawn:{id:'chavvah',char:'chavvah',x:25,y:19,wander:false}},
      {teleport:['player',23,19]},
-     {fade:'in'},
-     {say:['narrator','And YAHUAH Aluahim caused a deep sleep to fall on the man… and He took one of his ribs… And the rib which He had taken from the man He made into a woman, and He brought her to the man.']},
+     {fade:'in'},{wait:600},
+     {say:['narrator','And He took one of his ribs, and closed up the flesh in its place. And the rib which He had taken from the man He made into a woman, and He brought her to the man.']},
+     {call:g=>{ g.world.player.lying=false; }},
      {face:['player','right']},{burst:[25,19,'holy',18]},
      {say:['adam','This is now bone of my bones and flesh of my flesh! She is called ‘woman’, for she was taken out of man.']},
      {say:['narrator','And they were both naked, the man and his wife, yet they were not ashamed.']},
@@ -2898,6 +2991,12 @@ const STORY=[
      {say:['adam','The woman whom You gave to be with me — she gave me of the tree, and I ate.']},
      {say:['voice','Ḥawwah — what is this you have done?']},
      {say:['chavvah','The serpent deceived me, and I ate.']},
+     {say:['voice','Because you have done this, you are cursed more than all livestock and more than every beast of the field. On your belly you shall go, and eat dust all the days of your life.']},
+     {sfx:'thunder'},{shake:2},{burst:[28,15,'ash',24]},
+     {charSwap:['serpent','serpent_c']},{wait:700},
+     {say:['narrator','And the legs of the serpent were taken from it, and it fell upon its belly in the dust — and from that day it goes upon its belly, as YAHUAH spoke.']},
+     {move:['serpent',44,15,.05,'bg']},
+     {say:['voice','And I put enmity between you and the woman, and between your seed and her Seed. He shall crush your head, and you shall bruise His heel.']},
      {rays:0},
    ],
   },
@@ -3173,6 +3272,7 @@ STORY.push(
    map:{biome:'interior', floorCol:'#6e5638', w:26, h:16, seed:41,
      features:[
        {type:'firepit',x:6,y:9,lit:true},
+       {type:'doorway',closed:true,x:13,y:1.9,id:'arkdoor',examine:'The door of the ark — shut from the outside, by the hand of YAHUAH.'},
        {type:'stone',x:20,y:6,id:'window',examine:'The window of the ark, which Noaḥ had made.'},
      ]},
    time:'night', music:'night', rain:true,
@@ -3867,6 +3967,9 @@ STORY.push(
      {type:'goto',x:24,y:15,radius:2,text:'Find a place to sleep as the sun sets'},
      {type:'interact',prop:'stone',text:'Lay your head on the stone',hiddenUntil:1,
       script:[
+       {say:['narrator','And he took one of the stones of the place and put it at his head — and he lay down in that place to sleep.']},
+       {call:g=>{ g.world.player.lying=true; g.world.player.moving=false; }},
+       {wait:1100},
        {fade:'out'},{sfx:'holy'},{music:'holy'},{wait:800},
        {fade:'in'},{rays:1,raysX:24},{time:'dream'},
        {say:['narrator','And he dreamed — and see, a ladder set up on the earth, and its top reached to the shamayim, and the mal’akim of Aluahim were going up and coming down on it. And see, YAHUAH stood above it.']},
@@ -3876,7 +3979,9 @@ STORY.push(
        {say:['voice','I am YAHUAH, Aluahim of Aḇraham your father and the Aluahim of Yahtsḥaq. The land on which you are lying, I give it to you and your seed… and in you and in your seed all the families of the earth shall be baruk.']},
        {say:['voice','And see, I am with you and shall guard you wherever you go, and shall bring you back to this land. For I am not going to leave you until I have done what I have spoken to you.']},
        {despawn:'ml1'},{despawn:'ml2'},{rays:0},
-       {fade:'out'},{time:'morning'},{music:'eden'},{fade:'in'},
+       {fade:'out'},{time:'morning'},{music:'eden'},
+       {call:g=>{ g.world.player.lying=false; }},
+       {fade:'in'},
        {say:['yaaqov','Truly, YAHUAH is in this place — and I did not know it! How awesome is this place! This is none other than the house of Aluahim, and this is the gate of the shamayim!']},
        {removeProp:'stone'},
        {addProp:{type:'pillar',oil:true,x:24,y:14,id:'pillar',solid:true}},
@@ -4066,6 +4171,7 @@ STORY.push(
    map:{biome:'interior', w:26, h:18, seed:181,
      features:[
        {type:'firepit',x:7,y:9,lit:true},
+       {type:'doorway',bars:true,x:13,y:1.9,id:'prisondoor',examine:'The barred door of the prison of the sovereign’s captives.'},
        {type:'basket',x:19,y:6,full:true},
      ]},
    time:'night', music:'sorrow',
@@ -4119,6 +4225,7 @@ STORY.push(
    map:{biome:'interior', w:30, h:18, seed:191,
      features:[
        {type:'throne',x:15,y:5.4,solid:true,id:'throne'},
+       {type:'doorway',x:24,y:1.9,id:'halldoor',examine:'The great doorway of the hall, open to the courts of Pharaoh.'},
        {type:'basket',x:7,y:6,full:true},{type:'basket',x:23,y:6,full:true},
      ]},
    time:'day', music:'tense',
