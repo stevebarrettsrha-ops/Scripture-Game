@@ -484,10 +484,15 @@ const CHARS={
   chanok:  {name:'Ḥanoḵ',   skin:'#7a4e29', hair:'#5a4326', hairStyle:'short', robe:'#ddd6bf', beard:'#5a4326'},
   noach:   {name:'Noaḥ',    skin:'#f0e2d6', hair:'#f7f4ec', hairStyle:'short', robe:'#6e5b3e', beard:'#f7f4ec'},
   noach_w: {name:'Wife of Noaḥ', skin:'#7c5430', hair:'#8a8074', hairStyle:'long', robe:'#8d7a5f', headcover:'#b3a07f'},
+  shem_w:  {name:'Wife of Shĕm', skin:'#83552d', hair:'#2c1a0c', hairStyle:'long', robe:'#9c7d8c', headcover:'#c8b486'},
+  cham_w:  {name:'Wife of Ḥam', skin:'#5c3a1f', hair:'#170e06', hairStyle:'long', robe:'#7d8a6a', headcover:'#a5895f'},
+  yepheth_w:{name:'Wife of Yahpheth', skin:'#7e5630', hair:'#46301a', hairStyle:'long', robe:'#8a6a9c', headcover:'#d4c4a2'},
   shem:    {name:'Shĕm',    skin:'#7a4e29', hair:'#2d1d0e', hairStyle:'short', robe:'#7a6a48', beard:'#2d1d0e'},
   cham:    {name:'Ḥam',     skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#5d6e50', beard:'#170e06'},
   yepheth: {name:'Yahpheth', skin:'#7e5630', hair:'#5e482a', hairStyle:'short', robe:'#6b5d70', beard:'#5e482a'},
   nimrod:  {name:'Nimroḏ',  skin:'#5f3e20', hair:'#120b04', hairStyle:'short', robe:'#8a3030', beard:'#120b04', headcover:'#caa23c'},
+  fallenking:{name:'A Watcher Enthroned', angel:true, darkAngel:true, skin:'#5e4434', hair:'#2c2030', hairStyle:'short', robe:'#4a3a52', collar:'#caa23c'},
+  giant:   {name:'A Giant', skin:'#e8c9a4', hair:'#7a5a36', hairStyle:'short', robe:'#5d4a3a', hairy:true, beard:'#7a5a36'},
   builder: {name:'Builder', skin:'#6e4926', hair:'#33230f', hairStyle:'short', robe:'#79653f'},
   builder2:{name:'Builder', skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#5f6e7e'},
   builder3:{name:'Builder', skin:'#7e5630', hair:'#5e482a', hairStyle:'short', robe:'#7e5f6e'},
@@ -1109,34 +1114,55 @@ function drawProp(g,px,py,p,t){
       }
       break; }
     case 'ark': {
-      // stage 0: keel, 1: hull, 2: complete; large structure ~ 14x6 tiles drawn around anchor
-      const W=TILE*11, H=TILE*3.4;
+      // stage 0: keel, 1: hull, 2: complete; monumental structure drawn around anchor
+      const sc=(p.scale||1), U2=TILE*sc;
+      const W=U2*17, H=U2*5;
       g.fillStyle='rgba(0,0,0,.25)';
-      g.beginPath(); g.ellipse(0,TILE*1.7,W*.55,TILE*.5,0,0,Math.PI*2); g.fill();
+      g.beginPath(); g.ellipse(0,U2*1.7,W*.55,U2*.5,0,0,Math.PI*2); g.fill();
       const st=p.stage||0;
       // hull
       g.fillStyle='#6e552f';
       g.beginPath();
-      g.moveTo(-W/2,0); g.quadraticCurveTo(-W/2-TILE*.8,H*.5,-W/2+TILE*.9,H);
-      g.lineTo(W/2-TILE*.9,H); g.quadraticCurveTo(W/2+TILE*.8,H*.5,W/2,0);
+      g.moveTo(-W/2,0); g.quadraticCurveTo(-W/2-U2*.8,H*.5,-W/2+U2*.9,H);
+      g.lineTo(W/2-U2*.9,H); g.quadraticCurveTo(W/2+U2*.8,H*.5,W/2,0);
       g.closePath(); g.fill();
       g.fillStyle='#5d4426';
-      for(let i=0;i<5;i++){ g.fillRect(-W/2+TILE*.4,H*.18*i+H*.12,W-TILE*.8,2); }
+      for(let i=0;i<7;i++){ g.fillRect(-W/2+U2*.4,H*.13*i+H*.1,W-U2*.8,Math.max(2,2*sc)); }
       if(st>=1){
-        g.fillStyle='#8d7048'; g.fillRect(-W/2+TILE*.6,-TILE*1.5,W-TILE*1.2,TILE*1.55);
+        g.fillStyle='#8d7048'; g.fillRect(-W/2+U2*.6,-U2*1.5,W-U2*1.2,U2*1.55);
         g.fillStyle='#7a6038';
-        for(let i=0;i<9;i++) g.fillRect(-W/2+TILE*.6+i*(W-TILE*1.2)/9,-TILE*1.5,2,TILE*1.5);
+        for(let i=0;i<11;i++) g.fillRect(-W/2+U2*.6+i*(W-U2*1.2)/11,-U2*1.5,Math.max(2,2*sc),U2*1.5);
         // door
         g.fillStyle=p.doorOpen===false?'#4a3522':'#241a0e';
-        g.fillRect(-TILE*.7,-TILE*1.1,TILE*1.4,TILE*1.15);
-        if(p.doorOpen!==false){ g.fillStyle='#4a3522'; g.fillRect(-TILE*.7,-TILE*1.1,TILE*.18,TILE*1.15); }
+        g.fillRect(-U2*.7,-U2*1.1,U2*1.4,U2*1.15);
+        if(p.doorOpen!==false){
+          g.fillStyle='#4a3522'; g.fillRect(-U2*.7,-U2*1.1,U2*.18,U2*1.15);
+          /* boarding ramp with ladder rungs, from the ground up to the door */
+          g.save();
+          g.fillStyle='#9a8458';
+          g.beginPath();
+          g.moveTo(-U2*.7,0); g.lineTo(U2*.7,0);
+          g.lineTo(U2*1.5,U2*2.1); g.lineTo(-U2*1.5,U2*2.1);
+          g.closePath(); g.fill();
+          g.strokeStyle='#5d4426'; g.lineWidth=Math.max(2,3*sc);
+          g.beginPath();
+          g.moveTo(-U2*.7,0); g.lineTo(-U2*1.5,U2*2.1);
+          g.moveTo(U2*.7,0); g.lineTo(U2*1.5,U2*2.1);
+          g.stroke();
+          g.strokeStyle='#6e552f'; g.lineWidth=Math.max(2,2.4*sc);
+          for(let i=1;i<6;i++){
+            const ry=U2*2.1*i/6, rw=U2*(0.7+0.8*i/6);
+            g.beginPath(); g.moveTo(-rw,ry); g.lineTo(rw,ry); g.stroke();
+          }
+          g.restore();
+        }
       }
       if(st>=2){
-        g.fillStyle='#9a8458'; g.fillRect(-W/2+TILE*1.4,-TILE*2.3,W-TILE*2.8,TILE*.85);
-        g.fillStyle='#6e552f'; g.fillRect(-W/2+TILE*1.4,-TILE*2.42,W-TILE*2.8,TILE*.16);
+        g.fillStyle='#9a8458'; g.fillRect(-W/2+U2*1.4,-U2*2.3,W-U2*2.8,U2*.85);
+        g.fillStyle='#6e552f'; g.fillRect(-W/2+U2*1.4,-U2*2.42,W-U2*2.8,U2*.16);
         // window strip
         g.fillStyle='#241a0e';
-        for(let i=0;i<7;i++) g.fillRect(-W/2+TILE*1.9+i*(W-TILE*3.8)/7,-TILE*2.15,TILE*.34,TILE*.3);
+        for(let i=0;i<9;i++) g.fillRect(-W/2+U2*1.9+i*(W-U2*3.8)/9,-U2*2.15,U2*.34,U2*.3);
       }
       break; }
     case 'tent': {
@@ -1255,6 +1281,23 @@ function drawProp(g,px,py,p,t){
       g.fillStyle='#8d8276'; g.beginPath();
       g.moveTo(-2.4*u,0); g.lineTo(-1.6*u,-2.6*u); g.lineTo(1.4*u,-3*u); g.lineTo(2.4*u,0); g.closePath(); g.fill();
       g.fillStyle='#a39a8c'; g.beginPath(); g.moveTo(-1.6*u,-2.6*u); g.lineTo(1.4*u,-3*u); g.lineTo(.6*u,-1.4*u); g.closePath(); g.fill();
+      break; }
+    case 'vine': {
+      shadow(3);
+      g.fillStyle='#6e552f'; g.fillRect(-u*.5,-7*u,u,7*u);
+      g.strokeStyle='#6e552f'; g.lineWidth=u*.7;
+      g.beginPath(); g.moveTo(-4.4*u,-5.6*u); g.lineTo(4.4*u,-5.6*u); g.stroke();
+      const grd=g.createRadialGradient(-u,-6.4*u,u,0,-6*u,5*u);
+      grd.addColorStop(0,'#6e9a4a'); grd.addColorStop(1,'#41652e');
+      g.fillStyle=grd;
+      g.beginPath(); g.arc(-2.6*u,-6.2*u,2.4*u,0,Math.PI*2);
+      g.arc(0,-6.8*u,2.6*u,0,Math.PI*2); g.arc(2.6*u,-6.2*u,2.4*u,0,Math.PI*2); g.fill();
+      g.fillStyle='#5d3a6e';
+      [[-3,-4.6],[-1,-4.2],[1.4,-4.6],[3,-4.4]].forEach(([x,y])=>{
+        g.beginPath(); g.arc(x*u,y*u,1*u,0,Math.PI*2); g.fill();
+        g.beginPath(); g.arc((x-.5)*u,(y+.7)*u,.8*u,0,Math.PI*2); g.fill();
+        g.beginPath(); g.arc((x+.5)*u,(y+.7)*u,.8*u,0,Math.PI*2); g.fill();
+      });
       break; }
     case 'wheat': {
       g.strokeStyle=p.thin?'#9d8a4a':'#caa84c'; g.lineWidth=u*.5;
@@ -1515,7 +1558,18 @@ function tileAt(map,x,y){
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
-    if(d.solid&&Math.abs(d.x-x)<.55&&Math.abs(d.y-y)<.5) return false;
+    if(!d.solid) continue;
+    if(d.type==='ark'){
+      const dx=Math.abs(d.x-x);
+      if(dx<8.2&&y>d.y-2.6&&y<d.y+1.4&&dx>0.9) return false;   /* door gap at centre */
+      continue;
+    }
+    if(d.type==='cave'){
+      const dx=Math.abs(d.x-x);
+      if(dx<2.5&&y>d.y-2.2&&y<d.y+0.4&&!(dx<1&&y>d.y-1)) return false;  /* mouth open */
+      continue;
+    }
+    if(Math.abs(d.x-x)<.55&&Math.abs(d.y-y)<.5) return false;
   }
   return true;
 }
@@ -1812,6 +1866,9 @@ function drawItem(g,sx,sy,kind,t){
       g.fillStyle='#4a90c2'; g.fillRect(-2.8,-4.2,5.6,1.8); break;
     case 'lentils': g.fillStyle='#9d4a2e'; g.beginPath(); g.arc(0,0,4.4,0,Math.PI*2); g.fill();
       g.fillStyle='#c2683e'; [[-1.5,-1.5],[1,-.4],[-.4,1.2]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,1.2,0,Math.PI*2);g.fill()}); break;
+    case 'garment': g.fillStyle='#b9a878';
+      g.fillRect(-4,-2.6,8,5.2); g.fillStyle='#a89262'; g.fillRect(-4,-2.6,8,1.2);
+      g.fillStyle='#cab98a'; g.fillRect(-4,-.4,8,.9); break;
     case 'thorn': g.fillStyle='#8a6a38';
       g.beginPath(); g.moveTo(-1,3.5); g.lineTo(-2.5,-3.5); g.lineTo(0,-1.5); g.lineTo(2.5,-4.5); g.lineTo(1,3.5); g.closePath(); g.fill();
       g.fillStyle='#6e5226'; g.fillRect(-1,-1,2,4.5); break;
@@ -2093,6 +2150,8 @@ const Game={
     $('hud').style.display='none';
     $('interact-tip').style.display='none';
     $('hud-toast').style.opacity='0';
+    this.dlgQueue=[]; this.closeDlg();
+    $('dlg-choices').classList.remove('show');
     this.showSlide();
   },
   showSlide(){
@@ -2137,6 +2196,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    this.dlgQueue=[]; this.closeDlg();
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
     const map=generateMap(sc.map);
@@ -2172,6 +2232,7 @@ const Game={
     Save.data.done[ch.id]=true; Save.write();
     Sound.sfx('holy');
     this.state='complete';
+    this.dlgQueue=[]; this.closeDlg();
     $('hud').style.display='none';
     $('interact-tip').style.display='none';
     $('hud-toast').style.opacity='0';
@@ -2688,7 +2749,7 @@ function drawSlideArt(g,key,st,t,slide){
       // ark on waves
       const av=Math.sin(t/900)*10, ar=Math.sin(t/900+1)*.04;
       g.save(); g.translate(VW*.5,VH*.6+av); g.rotate(ar);
-      drawProp(g,0,0,{type:'ark',stage:2,doorOpen:false},t);
+      drawProp(g,0,0,{type:'ark',stage:2,doorOpen:false,scale:.8},t);
       g.restore();
       if(Math.sin(t/2400)>.93){ g.fillStyle='rgba(220,230,255,.25)'; g.fillRect(0,0,VW,VH); }
       break; }
@@ -2702,7 +2763,7 @@ function drawSlideArt(g,key,st,t,slide){
       });
       Sky.hills(g,'#5d8a4a',VH*.72,36,3);
       g.fillStyle='#4d7a3e'; g.fillRect(0,VH*.82,VW,VH*.18);
-      drawProp(g,VW*.34,VH*.86,{type:'ark',stage:2},t);
+      drawProp(g,VW*.34,VH*.86,{type:'ark',stage:2,scale:.5},t);
       drawProp(g,VW*.7,VH*.9,{type:'altar',stage:3},t);
       Sky.figure(g,VW*.62,VH*.97,'noach',{t,scale:2});
       break; }
@@ -2806,6 +2867,98 @@ function drawSlideArt(g,key,st,t,slide){
       Sky.figure(g,VW*.56-sway2,VH*.71,'wrestler',{t,scale:2.4,dir:'left',moving:true});
       const dawn=clamp(st/6000,0,1);
       if(dawn>0){ g.fillStyle=`rgba(232,150,80,${dawn*.25})`; g.fillRect(0,0,VW,VH); }
+      break; }
+    case 'chariots': {
+      /* taken up in a whirlwind, with horses and chariots of fire */
+      Sky.paint(g,[[0,'#0a0e26'],[.6,'#141a3c'],[1,'#222a52']]);
+      Sky.stars(g,t,140,.9);
+      Sky.hills(g,'#0c1024',VH*.86,30,3);
+      const wx2=VW*.55, rise=((t/30)%(VH*1.3));
+      for(let i=0;i<13;i++){
+        const wy2=VH*.92-i*VH*.06;
+        const ww=(36+i*9)*(1+Math.sin(t/300+i)*.08);
+        g.strokeStyle=`rgba(200,210,240,${.28-i*.015})`;
+        g.lineWidth=4;
+        g.beginPath(); g.ellipse(wx2+Math.sin(t/200+i*1.2)*8,wy2,ww,10+i*1.1,0,0,Math.PI*2); g.stroke();
+      }
+      const cy=VH*.85-rise*.55;
+      g.save(); g.translate(wx2+Math.sin(t/300)*10,cy); g.rotate(-.28);
+      const fl3=t/70;
+      for(let h7=0;h7<2;h7++){
+        const hx3=-70-h7*44, hy3=-6+h7*9;
+        const grd7=g.createLinearGradient(hx3-26,hy3,hx3+26,hy3);
+        grd7.addColorStop(0,'#ffd54a'); grd7.addColorStop(1,'#e8762a');
+        g.fillStyle=grd7;
+        g.fillRect(hx3-22,hy3-9,40,16);
+        g.fillRect(hx3+14,hy3-22,9,16);
+        g.fillRect(hx3+12,hy3-28,18,9);
+        for(let l=0;l<4;l++) g.fillRect(hx3-20+l*11,hy3+7+Math.sin(fl3+l+h7)*4,5,12);
+        g.fillStyle='rgba(255,213,74,.7)';
+        g.beginPath(); g.moveTo(hx3-22,hy3-6);
+        g.quadraticCurveTo(hx3-44,hy3-16+Math.sin(fl3+h7)*6,hx3-52,hy3+2);
+        g.quadraticCurveTo(hx3-38,hy3+6,hx3-22,hy3+4); g.fill();
+      }
+      const grd8=g.createLinearGradient(0,-26,0,14);
+      grd8.addColorStop(0,'#ffd54a'); grd8.addColorStop(1,'#c84a1c');
+      g.fillStyle=grd8;
+      g.beginPath(); g.moveTo(-26,-22); g.lineTo(26,-22); g.lineTo(34,12); g.lineTo(-34,12); g.closePath(); g.fill();
+      g.strokeStyle='#ffd54a'; g.lineWidth=4;
+      g.beginPath(); g.arc(-16,16,13,0,Math.PI*2); g.arc(18,16,13,0,Math.PI*2); g.stroke();
+      drawChar(g,0,-20,CHARS.chanok?'chanok':'adam_c',{t,scale:1.1,dir:'down'});
+      for(let i=0;i<7;i++){
+        g.fillStyle=`rgba(255,${150+i*12|0},60,${.5-i*.06})`;
+        g.beginPath(); g.arc(44+i*16+Math.sin(fl3+i)*4,18+i*8,9-i,0,Math.PI*2); g.fill();
+      }
+      g.restore();
+      const gl13=g.createRadialGradient(wx2,cy,8,wx2,cy,170);
+      gl13.addColorStop(0,'rgba(255,200,90,.4)'); gl13.addColorStop(1,'rgba(255,200,90,0)');
+      g.fillStyle=gl13; g.beginPath(); g.arc(wx2,cy,170,0,Math.PI*2); g.fill();
+      break; }
+    case 'wilderness': {
+      Sky.paint(g,[[0,'#cfe0e8'],[.55,'#d8cba4'],[1,'#b8a070']]);
+      Sky.sun(g,VW*.72,VH*.2,28,'rgba(255,245,210,.9)');
+      Sky.hills(g,'#9d8a62',VH*.55,44,2);
+      Sky.hills(g,'#8a7550',VH*.68,36,5);
+      g.fillStyle='#a89064'; g.fillRect(0,VH*.78,VW,VH*.22);
+      for(let i=0;i<7;i++){
+        const x4=(hash2(i,11)*.9+.05)*VW, y4=VH*(.8+hash2(i,17)*.16);
+        if(hash2(i,3)>.5) drawProp(g,x4,y4,{type:'tree',dead:true},t);
+        else drawProp(g,x4,y4,{type:'rock'},t);
+      }
+      drawProp(g,VW*.3,VH*.86,{type:'bush',col:'#7a7a45'},t);
+      break; }
+    case 'camp': {
+      Sky.paint(g,[[0,'#3d3250'],[.55,'#6a4a52'],[1,'#8a5d4a']]);
+      Sky.stars(g,t,40,.4);
+      Sky.hills(g,'#3d3228',VH*.6,40,4);
+      g.fillStyle='#4d4030'; g.fillRect(0,VH*.72,VW,VH*.28);
+      drawProp(g,VW*.26,VH*.78,{type:'tent',col:'#b3a07f'},t);
+      drawProp(g,VW*.5,VH*.74,{type:'tent',col:'#a39070'},t);
+      drawProp(g,VW*.72,VH*.8,{type:'tent',col:'#bda884'},t);
+      drawProp(g,VW*.42,VH*.88,{type:'firepit',lit:true},t);
+      Sky.figure(g,VW*.34,VH*.95,'shepherd',{t,scale:2});
+      Sky.figure(g,VW*.56,VH*.93,'servant',{t,scale:2,dir:'left'});
+      Sky.figure(g,VW*.47,VH*.985,'builder',{t,scale:1.4,child:true});
+      drawAnimal(g,VW*.84,VH*.92,'sheep',{t,scale:1.8,dir:'left'});
+      drawAnimal(g,VW*.12,VH*.94,'goat',{t,scale:1.8});
+      break; }
+    case 'mountain': {
+      Sky.paint(g,[[0,'#8aa4bc'],[.55,'#b8c4c8'],[1,'#c8c4b4']]);
+      Sky.sun(g,VW*.2,VH*.16,22,'rgba(255,245,215,.8)');
+      for(let i=0;i<4;i++){
+        const cx4=(hash2(i,7)*.8+.1)*VW+Math.sin(t/4000+i)*30, cy4=VH*(.16+hash2(i,13)*.18);
+        g.fillStyle='rgba(245,248,250,.6)';
+        g.beginPath(); g.ellipse(cx4,cy4,70,16,0,0,Math.PI*2);
+        g.ellipse(cx4+40,cy4+6,46,13,0,0,Math.PI*2); g.fill();
+      }
+      Sky.hills(g,'#6a7a72',VH*.6,50,2);
+      g.fillStyle='#5d564c';
+      g.beginPath(); g.moveTo(VW*.22,VH); g.lineTo(VW*.52,VH*.18); g.lineTo(VW*.85,VH); g.closePath(); g.fill();
+      g.fillStyle='rgba(255,255,255,.16)';
+      g.beginPath(); g.moveTo(VW*.44,VH*.4); g.lineTo(VW*.52,VH*.18); g.lineTo(VW*.6,VH*.4); g.closePath(); g.fill();
+      g.fillStyle='#4d463c';
+      g.beginPath(); g.moveTo(VW*.52,VH*.18); g.lineTo(VW*.85,VH); g.lineTo(VW*.62,VH); g.closePath(); g.fill();
+      g.fillStyle='#6a8052'; g.fillRect(0,VH*.9,VW,VH*.1);
       break; }
     case 'furnace': {
       Sky.paint(g,[[0,'#160c0a'],[.6,'#2c1410'],[1,'#3d1c12']]);
@@ -3210,7 +3363,7 @@ const STORY=[
 { id:'act3', roman:'III', title:'Brothers', ref:'BERĔSHITH 4–5', chapters:[
 { id:'c5', title:'An Offering for YAHUAH', ref:'BERĔSHITH 4:1–7',
   intro:[
-   {art:'journey', music:'desert', text:'And Aḏam knew Ḥawwah his wife and she conceived and bore Qayin… And again, she gave birth to his brother Heḇal. And Heḇal became a keeper of sheep, but Qayin became a tiller of the ground.', ref:'BERĔSHITH 4:1–2'},
+   {art:'wilderness', music:'desert', text:'And Aḏam knew Ḥawwah his wife and she conceived and bore Qayin… And again, she gave birth to his brother Heḇal. And Heḇal became a keeper of sheep, but Qayin became a tiller of the ground.', ref:'BERĔSHITH 4:1–2'},
    {art:'offering', music:'tense', text:'And unto Qayin and his offering YAHUAH did not turn — for he had brought from the inferior fruit of the ground before YAHUAH. And Qayin was jealous against his brother Heḇal on account of this, and he sought a pretext to slay him.', ref:'YASHAR 1:16'},
   ],
   scene:{
@@ -3334,10 +3487,10 @@ const STORY=[
   },
   outro:[
    {art:'stars', music:'holy', text:'And Aḏam knew his wife again and she bore a son and called his name Shĕth — “for Aluahim has appointed me another seed in place of Heḇal.” …Then it was begun to call on the Name of YAHUAH.', ref:'BERĔSHITH 4:25–26'},
-   {art:'goshen', text:'And Qayin took Awan his sister to be his wife, and she bore Ḥanoḵ his son; and Qayin built a city, and called its name after the name of his son. And to Aḏam and Ḥawwah was also born the daughter Azura, who became wife to Shĕth.', ref:'YOḆELIM 4:1–11'},
+   {art:'camp', text:'And Qayin took Awan his sister to be his wife, and she bore Ḥanoḵ his son; and Qayin built a city, and called its name after the name of his son. And to Aḏam and Ḥawwah was also born the daughter Azura, who became wife to Shĕth.', ref:'YOḆELIM 4:1–11'},
    {art:'corrupt', music:'sorrow', text:'And at the close of that Yoḇel, Qayin was killed: his house fell on him, and he died in the middle of his house, killed by its stones. For with a stone he had killed Heḇal, and by a stone he was killed in righteous mishpat — therefore it is ordained on the heavenly tablets: with the instrument with which a man kills his neighbor, with the same shall he be killed.', ref:'YOḆELIM 4:31–32'},
    {art:'stars', text:'And Ḥanoḵ walked with Aluahim three hundred years… and he taught the sons of men the ways of YAHUAH, and kings and princes came to hear his wisdom, and crowned him over them.', ref:'BERĔSHITH 5:22; YASHAR 3'},
-   {art:'ladder', music:'holy', text:'And they lifted up their eyes, and the likeness of a great horse descended from the shamayim, pacing in the air. And Ḥanoḵ said, “On my account does this horse descend. The time has come that I must go from you.” And he ascended into the shamayim in a whirlwind, with horses and chariots of fire — and he was not, for Aluahim took him.', ref:'YASHAR 3:27–36; BERĔSHITH 5:24'},
+   {art:'chariots', music:'holy', text:'And they lifted up their eyes, and the likeness of a great horse descended from the shamayim, pacing in the air. And Ḥanoḵ said, “On my account does this horse descend. The time has come that I must go from you.” And he ascended into the shamayim in a whirlwind, with horses and chariots of fire — and he was not, for Aluahim took him.', ref:'YASHAR 3:27–36; BERĔSHITH 5:24'},
   ],
   complete:'The voice of your brother’s blood cries out to Me from the ground. Yet another seed was appointed — and men began to call on the Name of YAHUAH.'
 },
@@ -3348,6 +3501,77 @@ const STORY=[
 STORY.push(
 /* ============ ACT IV — THE FLOOD ============ */
 { id:'act4', roman:'IV', title:'The Flood', ref:'BERĔSHITH 6–9', chapters:[
+{ id:'c6b', title:'The Earth Was Filled With Violence', ref:'BERĔSHITH 6 · ḤANOḴ 7–8 · YASHAR 4',
+  intro:[
+   {art:'watchers', music:'tense', text:'And it came to be, when men began to increase on the face of the earth… that the sons of Aluahim saw the daughters of men, that they were good, and they took wives for themselves of all whom they chose. And the Nephilim were on the earth in those days — the mighty men of old, the men of name.', ref:'BERĔSHITH 6:1–4'},
+   {art:'corrupt', music:'sorrow', text:'And the sons of men turned from YAHUAH; they corrupted the earth, they robbed and plundered every man his neighbour as well as his relative — and the earth was filled with violence. And their judges and rulers took the wives of men by force.', ref:'YASHAR 4:17–18'},
+  ],
+  scene:{
+   map:{biome:'city', w:48, h:32, seed:66,
+     features:[
+       {type:'tower',stage:2,scaffold:true,x:38,y:10,solid:true,clear:4,flat:4,id:'forgeworks',examine:'A tower of burnt brick, hung with scaffolds — the works of the teaching of Azazal.'},
+       {type:'firepit',big:true,x:35,y:14,lit:true},
+       {type:'firepit',x:40,y:15,lit:true},
+       {type:'idol',x:42,y:12,col:'#caa23c',solid:true},
+       {type:'throne',x:12,y:9,solid:true,id:'darkthrone'},
+       {type:'tent',x:22,y:22,solid:true,clear:2,col:'#8a7a62'},
+       {type:'basket',full:true,x:24,y:23,id:'goods'},
+       {type:'clearing',x:24,y:16,flat:3},{type:'clearing',x:12,y:12,flat:2},
+     ]},
+   time:'night', music:'tense',
+   player:'noach', playerPos:[24,28],
+   npcs:[
+     {id:'fking',char:'fallenking',x:12,y:8.4,wander:false,noTalk:true},
+     {id:'servile1',char:'shepherd',x:10.5,y:11,wander:false,noTalk:true},
+     {id:'servile2',char:'servant',x:13.5,y:11.2,wander:false,noTalk:true},
+     {id:'giant',char:'giant',x:30,y:13,scale:1.9,wander:false,noTalk:true},
+     {id:'flee1',char:'builder',x:28,y:14.5,wander:false,noTalk:true},
+     {id:'f1',char:'builder2',x:23,y:16,wander:false,noTalk:true},
+     {id:'f2',char:'builder3',x:25,y:16,wander:false,noTalk:true},
+     {id:'robber',char:'shepherd',x:23,y:22.5,wander:false,noTalk:true},
+     {id:'victim',char:'servant',x:25,y:22.8,wander:false,noTalk:true},
+   ],
+   objectives:[
+     {type:'goto',x:24,y:21,radius:2.4,text:'Pass through the city by night — see what men have become',
+      script:[
+       {move:['robber',24.6,23,.07,'bg']},{wait:400},
+       {say:['victim','My grain! My garments! — Thief! THIEF! Will no one—']},
+       {move:['robber',4,26,.09,'bg']},
+       {say:['narrator','And no one rose to help, for every man robbed and plundered his neighbour, as well as his relative — and would not hearken to the voice of Methushelaḥ, but rebelled against him.']},
+       {say:['noach','Lock your door, friend, and pray. There is no judge left in the land who is not worse than the thief.']},
+      ]},
+     {type:'goto',x:24,y:17,radius:2.4,text:'Shouting in the square ahead',hiddenUntil:1,
+      script:[
+       {shake:1},{sfx:'bad'},
+       {say:['narrator','In the square, two men fought over a wage — with the new blades of the forges, for Azazal had taught men to make swords and knives, and shields and breastplates, and the metals of the earth and the art of working them.']},
+       {face:['f1','right']},{face:['f2','left']},{shake:1.5},{wait:700},
+       {fade:'out'},{sfx:'thunder'},{wait:500},
+       {call:g=>{ const n=g.world.npcs.find(n=>n.id==='f2'); if(n){n.lying=true;} }},
+       {fade:'in'},
+       {say:['narrator','And one struck down the other, and walked away — and the blood cried from the ground, and no one heard it but the shamayim.']},
+       {move:['f1',45,28,.07,'bg']},
+       {wait:600},
+       {move:['giant',26,15.5,.05]},
+       {say:['narrator','And the giants — for the Nephilim were on the earth in those days — consumed all the work and toil of men. And when men could no longer sustain them, the giants turned against them, and devoured mankind.']},
+       {move:['flee1',44,24,.095,'bg']},
+       {say:['noach','…Even the mighty hide from the mightier. The whole order of the world is devoured, from the least to the greatest.']},
+      ]},
+     {type:'goto',x:12,y:12,radius:2.4,text:'A throne stands where the judgement seat once was',hiddenUntil:2,
+      script:[
+       {say:['narrator','And on the high seat of the city — not a judge of the sons of men, but one of the fallen watchers, enthroned as sovereign: and men bowed to him, and served him, and brought him their daughters and their tribute.']},
+       {say:['noach','You are no king. You left the shamayim for this — a chair of gold in a city of blood. My fathers’ Aluahim is witness: this shall not stand.']},
+       {time:'deepnight'},{rays:.9,raysX:12},{sfx:'holy'},{music:'sorrow'},
+       {say:['voice','YAHUAH saw that the wickedness of man was great in the earth, and that every inclination of the thoughts of his heart was only evil continually. The earth is corrupt before Me, and filled with violence through them.']},
+       {say:['voice','The end of all flesh has come before Me… But you, Noaḥ — you have found favour in My eyes. Walk before Me. The work I give you is not a sword, but an ark.']},
+       {rays:0},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'corrupt', music:'sorrow', text:'And YAHUAH was sorry that He had made man on the earth, and He was grieved in His heart… But Noaḥ found favour in the eyes of YAHUAH.', ref:'BERĔSHITH 6:6,8'},
+  ],
+  complete:'The earth was filled with violence — and one man walked with Aluahim through the middle of it.'
+},
 { id:'c7', title:'Noaḥ Found Favour', ref:'BERĔSHITH 6',
   intro:[
    {art:'corrupt', music:'sorrow', text:'And YAHUAH saw that the wickedness of man was great in the earth and that every inclination of the thoughts of his heart was only evil continually… and the earth was filled with violence.', ref:'BERĔSHITH 6:5,11'},
@@ -3356,7 +3580,7 @@ STORY.push(
   scene:{
    map:{biome:'wild', w:50, h:36, seed:31,
      features:[
-       {type:'ark',stage:0,x:25,y:13,solid:true,clear:7,flat:6,id:'ark'},
+       {type:'ark',stage:0,x:25,y:13,solid:true,clear:10,flat:9,id:'ark'},
        {type:'tent',x:9,y:26,solid:true,clear:2},
        {type:'firepit',x:11,y:27,lit:true},
      ]},
@@ -3405,7 +3629,7 @@ STORY.push(
   scene:{
    map:{biome:'wild', w:50, h:36, seed:31,
      features:[
-       {type:'ark',stage:2,x:25,y:13,solid:true,clear:7,flat:6,id:'ark'},
+       {type:'ark',stage:2,x:25,y:13,solid:true,clear:10,flat:9,id:'ark'},
        {type:'tent',x:9,y:26,solid:true,clear:2},
      ]},
    time:'dusk', music:'tense',
@@ -3420,6 +3644,12 @@ STORY.push(
      {id:'a7',animal:'goat',x:8,y:10,follow:false,group:'pairs',noTalk:true},
      {id:'a8',animal:'goat',x:9,y:9,follow:false,group:'pairs',noTalk:true},
      {id:'shem',char:'shem',x:27,y:17,wander:false,dlg:[['shem','The stalls are ready, father. Walk near the creatures and they shall follow you — He has made them willing.']]},
+     {id:'cham',char:'cham',x:21,y:18,wander:true,range:1.6,noTalk:true},
+     {id:'yepheth',char:'yepheth',x:29,y:19,wander:true,range:1.6,noTalk:true},
+     {id:'wife',char:'noach_w',x:23,y:18.5,wander:true,range:1.4,noTalk:true},
+     {id:'shem_w',char:'shem_w',x:26,y:19.5,wander:true,range:1.4,noTalk:true},
+     {id:'cham_w',char:'cham_w',x:20,y:19.6,wander:true,range:1.4,noTalk:true},
+     {id:'yepheth_w',char:'yepheth_w',x:28,y:20.6,wander:true,range:1.4,noTalk:true},
    ],
    objectives:[
      {type:'lead',group:'pairs',need:8,x:25,y:16,radius:3.4,text:'Lead the pairs to the ark — walk near them and they will follow'},
@@ -3430,8 +3660,24 @@ STORY.push(
    ],
    onComplete:[
      {say:['noach','Sons! Wives! The hour has come — into the ark, all of us. Seven days, and the rain begins.']},
-     {move:['shem',25,15,.06]},{hide:'shem'},
-     {move:['player',25,15.4,.05]},
+     {say:['narrator','And of the clean beasts, and of the beasts that are not clean, and of the birds — two by two they went in to Noaḥ into the ark, male and female, as Aluahim had commanded Noaḥ.']},
+     {call:g=>{ let i=0; g.world.npcs.forEach(n=>{ if(n.group==='pairs'){
+         n.follow=false; n.wander=false; n.arrived=false;
+         n.target={x:25+((i%2)?0.6:-0.6), y:14.8}; n.speed=.045+(i%4)*.009; i++; } }); }},
+     {wait:3000},
+     {call:g=>{ g.world.npcs.forEach(n=>{ if(n.group==='pairs') n.hidden=true; }); }},
+     {burst:[25,14.8,'mote',18]},
+     {say:['narrator','On that same day Noaḥ went into the ark — and Shĕm and Ḥam and Yahpheth, the sons of Noaḥ, and Noaḥ’s wife, and the three wives of his sons with them.']},
+     {move:['shem',25,15,.06,'bg']},
+     {move:['shem_w',25.4,15.5,.052,'bg']},
+     {move:['cham',24.6,15.8,.047,'bg']},
+     {move:['cham_w',25.2,16.2,.043,'bg']},
+     {move:['yepheth',24.8,16.6,.04,'bg']},
+     {move:['yepheth_w',25.3,17,.037,'bg']},
+     {move:['wife',24.6,17.5,.034]},
+     {call:g=>{ ['shem','shem_w','cham','cham_w','yepheth','yepheth_w','wife'].forEach(id=>{
+         const n=g.world.npcs.find(n=>n.id===id); if(n){ n.hidden=true; n.target=null; } }); }},
+     {move:['player',25,15.2,.05]},
      {sfx:'thunder'},{wait:500},
      {say:['narrator','And those entering, male and female of all flesh, went in as Aluahim had commanded him. And YAHUAH shut him in.']},
      {hide:'player'},{prop:['ark',{doorOpen:false}]},
@@ -3504,7 +3750,7 @@ STORY.push(
   scene:{
    map:{biome:'ararat', w:46, h:32, seed:51,
      features:[
-       {type:'ark',stage:2,x:34,y:11,solid:true,clear:7,flat:6,id:'ark'},
+       {type:'ark',stage:2,x:30,y:11,solid:true,clear:10,flat:9,id:'ark'},
        {type:'altar',stage:0,x:16,y:16,solid:true,clear:2,flat:2,id:'altar'},
        {type:'clearing',x:16,y:19,flat:3},
      ]},
@@ -3543,6 +3789,80 @@ STORY.push(
    {art:'cavehome', music:'holy', text:'And one of the mal’akim was commanded to teach Noaḥ all their medicines — how he might heal with the herbs of the earth. And Noaḥ wrote down all things in a book, and gave it to Shĕm his eldest son.', ref:'YOḆELIM 10:10–14'},
   ],
   complete:'I shall set My rainbow in the cloud, and it shall be for the sign of the covenant between Me and the earth.'
+},
+{ id:'c10a', title:'The Vineyard and the Lots', ref:'BERĔSHITH 9:18–27 · YOḆELIM 8–9',
+  intro:[
+   {art:'land', music:'eden', text:'And the sons of Noaḥ who went out of the ark were Shĕm, Ḥam and Yahpheth — and from these the whole earth was populated. And Noaḥ, a man of the soil, began and planted a vineyard.', ref:'BERĔSHITH 9:18–20'},
+  ],
+  scene:{
+   map:{biome:'plains', w:46, h:32, seed:76,
+     features:[
+       {type:'tent',x:29,y:11,solid:true,clear:2,col:'#b3a07f',id:'tent',examine:'The tent of Noaḥ.'},
+       {type:'vine',x:13,y:14},{type:'vine',x:15.5,y:14.2},{type:'vine',x:18,y:14},
+       {type:'vine',x:13,y:16.4},{type:'vine',x:15.5,y:16.6},{type:'vine',x:18,y:16.4},
+       {type:'vine',x:13,y:18.8},{type:'vine',x:15.5,y:19},{type:'vine',x:18,y:18.8},
+       {type:'basket',full:true,x:20,y:16,id:'vintage',examine:'The first vintage of the washed world.'},
+       {type:'firepit',x:25,y:18,lit:true},
+       {type:'clearing',x:25,y:19,flat:2},
+     ]},
+   time:'day', music:'eden',
+   player:'shem', playerPos:[22,18],
+   npcs:[
+     {id:'noach',char:'noach',x:15,y:17.5,wander:false,noTalk:true},
+     {id:'cham',char:'cham',x:31,y:16,wander:true,range:1.5,noTalk:true},
+     {id:'yepheth',char:'yepheth',x:27,y:20,wander:true,range:1.5,noTalk:true},
+   ],
+   items:[ {kind:'garment',x:24,y:13} ],
+   objectives:[
+     {type:'interact',prop:'vintage',text:'Help your father gather the first vintage',
+      script:[
+       {say:['noach','The first fruit of the washed earth, my sons. The vine remembers the world before — taste how sweet.']},
+       {say:['narrator','And Noaḥ drank of the wine — and was drunk, and became uncovered in his tent.']},
+       {move:['noach',29,13,.045]},{hide:'noach'},
+       {time:'dusk'},{music:'tense'},
+      ]},
+     {type:'talk',npc:'cham',text:'Ḥam comes from the tents, laughing',hiddenUntil:1,
+      script:[
+       {say:['cham','Ha! Brothers — come and see! Our father, the preacher of righteousness, the builder of the ark — sprawled bare in his tent, undone by his own wine! Come, look!']},
+       {say:['narrator','And Ḥam, the father of Kena‛an, saw the nakedness of his father — and told his two brothers outside.']},
+       {say:['shem','Cover your mouth, Ḥam. His shame is not a thing to tell. Yahpheth — the garment. Quickly.']},
+      ]},
+     {type:'collect',item:'garment',need:1,text:'Take up the garment',hiddenUntil:2},
+     {type:'goto',x:29,y:13.5,radius:2,text:'Go with Yahpheth — backward — and cover your father',hiddenUntil:3,
+      script:[
+       {call:g=>{ const y=g.world.npcs.find(n=>n.id==='yepheth'); if(y){y.wander=false; y.x=g.world.player.x+1.4; y.y=g.world.player.y;} }},
+       {say:['narrator','And Shĕm and Yahpheth took the garment and laid it on both their shoulders — and went backward, and covered the nakedness of their father; and their faces were turned away, and they did not see their father’s nakedness.']},
+       {call:g=>{ const p=g.world.player, y=g.world.npcs.find(n=>n.id==='yepheth');
+         p.x=28.4; p.y=12.6; p.dir='down'; if(y){y.x=29.8; y.y=12.6; y.dir='down';} }},
+       {wait:1100},{sfx:'chime'},
+       {call:g=>{ const p=g.world.player, y=g.world.npcs.find(n=>n.id==='yepheth');
+         p.x=27; p.y=15; p.dir='up'; if(y){y.x=30.5; y.y=15; y.dir='up'; y.wander=true; y.home={x:30.5,y:15};} }},
+       {fade:'out'},{toast:'And Noaḥ awoke from his wine…'},{time:'morning'},{wait:1400},{fade:'in'},
+       {show:'noach'},{teleport:['noach',29,13.5]},{move:['noach',27.5,15.5,.04]},
+       {say:['narrator','And Noaḥ awoke from his wine, and knew what his younger son had done to him.']},
+       {say:['noach','Cursed be Kena‛an — a servant of servants he becomes to his brothers.']},
+       {say:['noach','And baruk be YAHUAH, the Aluahim of Shĕm — and let Kena‛an be a servant to them. Aluahim enlarge Yahpheth, and let him dwell in the tents of Shĕm.']},
+      ]},
+     {type:'goto',x:25,y:19,radius:2.2,text:'Gather at the fire — your father divides the earth',hiddenUntil:4,
+      script:[
+       {call:g=>{ const n=g.world.npcs.find(n=>n.id==='noach'); if(n){n.target={x:24,y:18};}
+         const c=g.world.npcs.find(n=>n.id==='cham'); if(c){c.wander=false; c.target={x:26.2,y:19.6};}
+         const y=g.world.npcs.find(n=>n.id==='yepheth'); if(y){y.wander=false; y.target={x:23.6,y:20};} }},
+       {wait:1400},
+       {say:['narrator','And Noaḥ called his sons, and they drew close to him, they and their children — and he divided the earth into the lots which his three sons were to take in possession, and a mal’ak of the presence was with them.']},
+       {say:['noach','To you, Shĕm — the middle of the earth: for the Garden of Ĕḏen is the holy of holies and the dwelling of YAHUAH, and Mount Tsiyon the centre of the navel of the earth. Your portion holds the holy places.']},
+       {say:['noach','To you, Ḥam — all the land of the south, beyond the Giḥon, hot and wide, for you and your sons forever.']},
+       {say:['noach','And to you, Yahpheth — the north beyond the river Tina, cold and great, to the region of Goḡ and the mountains beyond. Aluahim enlarge you, as I have said.']},
+       {rays:.6,raysX:25},{sfx:'holy'},{music:'holy'},
+       {say:['narrator','And Noaḥ rejoiced that this portion came out for Shĕm and for his sons — and he remembered the word he had spoken: “Baruk be YAHUAH, the Aluahim of Shĕm, and may YAHUAH dwell in the dwelling of Shĕm.” And from these three the whole earth was populated.']},
+       {rays:0},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'land', music:'holy', text:'“Cursed be Kena‛an… Baruk be YAHUAH, the Aluahim of Shĕm — Aluahim enlarge Yahpheth, and let him dwell in the tents of Shĕm.” And the earth was divided by lot among the three, with a mal’ak of the presence among them.', ref:'BERĔSHITH 9:25–27 · YOḆELIM 8:10–19'},
+  ],
+  complete:'The garment on two shoulders, the faces turned away — and the earth divided into three lots before YAHUAH.'
 },
 ]},
 /* ============ ACT V — THE SCATTERING ============ */
@@ -4713,14 +5033,42 @@ function firstUnfinished(){
   const chs=allChapters();
   return chs.find(c=>!Save.data.done[c.id])||chs[0];
 }
-function isUnlocked(ch){
+function continuityUnlocked(){
+  /* finishing the Books of Adam & Chawwah (or Hanok beyond them) unlocks
+     the shared early chapters here, so the player can pick up at Noah */
+  try{
+    const a=JSON.parse(localStorage.getItem('adamchavvah_v2'));
+    const h=JSON.parse(localStorage.getItem('hanok_v1'));
+    return !!((a&&a.done&&a.done.b18)||(h&&h.done&&h.done.h15));
+  }catch(e){ return false; }
+}
+const CONTINUITY_LAST='c7';   /* through 'Noah Found Favour' — the flood begins */
+function continuityCovers(ch){
+  const chs=allChapters();
+  return chs.findIndex(c=>c.id===ch.id)<=chs.findIndex(c=>c.id===CONTINUITY_LAST);
+}
+function naturallyUnlocked(ch){
   const chs=allChapters();
   const i=chs.findIndex(c=>c.id===ch.id);
   if(i===0) return true;
   return !!Save.data.done[chs[i-1].id];
 }
+function isUnlocked(ch){
+  if(naturallyUnlocked(ch)) return true;
+  return continuityUnlocked()&&continuityCovers(ch);
+}
 function buildChapterMenu(){
   const box=$('acts'); box.innerHTML='';
+  if(continuityUnlocked()&&!Save.data.done['c6']){
+    const ban=document.createElement('div');
+    ban.style.cssText='border:1px solid rgba(232,198,106,.4);border-radius:4px;padding:10px 14px;'+
+      'margin-bottom:2vh;color:#e8dfc8;font-style:italic;font-size:clamp(12px,2vmin,15px);'+
+      'background:rgba(232,198,106,.07);line-height:1.5';
+    ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
+      'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
+      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+    box.appendChild(ban);
+  }
   STORY.forEach(act=>{
     const blk=document.createElement('div'); blk.className='act-block';
     const head=document.createElement('div'); head.className='act-head';
@@ -4733,7 +5081,16 @@ function buildChapterMenu(){
       card.className='ch-card'+(done?' done':'')+(unlocked?'':' locked');
       const num=allChapters().findIndex(c=>c.id===ch.id)+1;
       card.innerHTML=`<div class="num">CHAPTER ${num}</div><div class="t">${ch.title}</div><div class="r">${ch.ref}</div>`;
-      if(unlocked) card.onclick=()=>{ Sound.init(); Sound.sfx('blip'); Game.startChapter(ch); };
+      if(unlocked) card.onclick=()=>{
+        Sound.init(); Sound.sfx('blip');
+        if(!naturallyUnlocked(ch)&&continuityUnlocked()){
+          if(!confirm('Continuing here through the Books of Aḏam & Ḥawwah and Ḥanoḵ.\n\n'+
+            'Beginning at this chapter, you will miss additional scenes of the BERĔSHITH story — '+
+            'the creation days, the garden, the fall, Qayin and Heḇal, and the witnesses of YASHAR and YOḆELIM.\n\n'+
+            'They stay unlocked in this chapter list, to play at any time.\n\nContinue here?')) return;
+        }
+        Game.startChapter(ch);
+      };
       grid.appendChild(card);
     });
     blk.appendChild(grid);
