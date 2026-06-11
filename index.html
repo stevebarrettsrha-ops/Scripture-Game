@@ -530,15 +530,20 @@ const CHARS={
   lavan:   {name:'Laḇan',   skin:'#7c5430', hair:'#9a9286', hairStyle:'short', robe:'#9a8a4f', beard:'#9a9286'},
   leah:    {name:'Lĕ’ah',   skin:'#815631', hair:'#46301a', hairStyle:'long', robe:'#7d8a6a', headcover:'#c8b88e'},
   rachel:  {name:'Raḥal',   skin:'#855a33', hair:'#1d1208', hairStyle:'long', robe:'#8a6a9c', headcover:'#d8c8a8'},
-  wrestler:{name:'The Man', angel:true, skin:'#6e4a28', hair:'#d8cba6', hairStyle:'short', robe:'#e9e2cc'},
+  wrestler:{name:'The Man', glow:true, skin:'#6e4a28', hair:'#f7f4ec', hairStyle:'short', robe:'#7d6a52'},
   yoseph:  {name:'Yosĕph',  skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#b9a878', coat:true},
   yoseph_s:{name:'Yosĕph',  skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#9d9484'},
+  yoseph_t:{name:'Yosĕph',  skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#cfc8b2'},
   yoseph_r:{name:'Yosĕph',  skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'egypt', robe:'#e8e2ce', collar:'#caa23c'},
   reuven:  {name:'Re’uḇĕn', skin:'#704a27', hair:'#33230f', hairStyle:'short', robe:'#7d6a52', beard:'#33230f'},
   yahudah: {name:'Yahuḏah', skin:'#704a27', hair:'#1d1208', hairStyle:'short', robe:'#8a5436', beard:'#1d1208'},
   shimon:  {name:'Shim‘on', skin:'#6e4524', hair:'#2c1a0c', hairStyle:'short', robe:'#6e6048', beard:'#2c1a0c'},
   binyamin:{name:'Binyamin',skin:'#7e5630', hair:'#46301a', hairStyle:'short', robe:'#90a09c'},
   potiphar:{name:'Potiphar',skin:'#5f3e20', hair:'#000000', hairStyle:'egypt', robe:'#d8d2c0', collar:'#caa23c'},
+  potiphar_w:{name:'The Wife of Potiphar', skin:'#6f4b27', hair:'#11100e', hairStyle:'egypt', robe:'#c89ab0', collar:'#caa23c'},
+  raider:  {name:'Soldier of the Kings', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#7a3b30', headcover:'#5a4a38'},
+  raider2: {name:'Soldier of the Kings', skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#55504a', headcover:'#3e3a34'},
+  amorite: {name:'Amorite Fighter', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#5d6e50', beard:'#1d1208'},
   steward: {name:'The Steward', skin:'#674626', hair:'#000', hairStyle:'egypt', robe:'#cac4b0'},
   butler:  {name:'The Cupbearer', skin:'#644323', hair:'#000', hairStyle:'egypt', robe:'#b8ab8a'},
   baker:   {name:'The Baker', skin:'#6f4b27', hair:'#000', hairStyle:'egypt', robe:'#a89a78'},
@@ -603,9 +608,9 @@ function drawChar(g,px,py,charId,o){
     g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
   }
   /* aura */
-  if(c.glory||c.angel){
-    const col=c.darkAngel?'120,80,140':(c.angel?'255,245,200':'255,222,120');
-    if(c.angel){
+  if(c.glory||c.angel||c.glow){
+    const col=c.darkAngel?'120,80,140':((c.angel||c.glow)?'255,245,200':'255,222,120');
+    if(c.angel||c.glow){
       const gl=g.createRadialGradient(0,-13*u,2*u,0,-13*u,22*u);
       gl.addColorStop(0,`rgba(${col},${.5+Math.sin(t/400)*.12})`);
       gl.addColorStop(.55,`rgba(${col},${.18+Math.sin(t/400)*.05})`);
@@ -1699,6 +1704,15 @@ function walkable(map,x,y){
   }
   return true;
 }
+const TINY_ANIMALS=new Set(['bird','dove','raven','fish','lizard','beetle','frog']);
+function npcBlocked(world,x,y){
+  /* the player cannot walk through the animals */
+  for(const n of world.npcs){
+    if(n.hidden||!n.animal||n.flying||TINY_ANIMALS.has(n.animal)) continue;
+    if(Math.abs(n.x-x)<.62&&Math.abs(n.y-y)<.52) return true;
+  }
+  return false;
+}
 
 /* ================= WORLD RENDER ================= */
 const Camera={x:0,y:0,shake:0,
@@ -1884,6 +1898,7 @@ function drawWorld(g,world,t){
     const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
     if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
+    else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
     else if(d.mount){
       drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale});
@@ -2023,13 +2038,53 @@ function drawEmote(g,sx,sy,kind,t){
   g.restore();
 }
 
+/* ---------- struggle (button-mash) overlay ---------- */
+function drawMashUI(g,m,t){
+  const w=Math.min(520,VW*.72), x=VW/2-w/2, y=VH-Math.max(96,VH*.18);
+  g.save();
+  g.fillStyle='rgba(10,14,26,.84)';
+  g.strokeStyle='rgba(232,198,106,.5)'; g.lineWidth=1.5;
+  g.beginPath(); g.rect(x-16,y-40,w+32,92); g.fill(); g.stroke();
+  g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 15px Georgia';
+  g.fillText(m.text||'Hold him down until the day breaks!',VW/2,y-18);
+  /* grip */
+  g.fillStyle='rgba(232,198,106,.16)'; g.fillRect(x,y,w,11);
+  g.fillStyle=m.grip>.3?'#e8c66a':'#c84a3a'; g.fillRect(x,y,w*clamp(m.grip,0,1),11);
+  g.strokeStyle='rgba(232,198,106,.4)'; g.strokeRect(x+.5,y+.5,w,11);
+  /* daybreak */
+  g.fillStyle='rgba(170,200,255,.14)'; g.fillRect(x,y+19,w,8);
+  g.fillStyle='#bcd2f0'; g.fillRect(x,y+19,w*clamp(m.prog,0,1),8);
+  g.strokeStyle='rgba(170,200,255,.35)'; g.strokeRect(x+.5,y+19.5,w,8);
+  g.font='11px Georgia'; g.textAlign='left'; g.fillStyle='#9d987f';
+  g.fillText('YOUR GRIP',x,y+40);
+  g.textAlign='right'; g.fillText('UNTIL DAY BREAKS',x+w,y+40);
+  const pul=.5+Math.sin(t/220)*.5;
+  g.textAlign='center'; g.fillStyle=`rgba(255,243,207,${.4+pul*.55})`; g.font='12px Georgia';
+  g.fillText('— press ✦ / E again and again —',VW/2,y+40);
+  g.restore();
+}
+/* ---------- battle overlay ---------- */
+function drawBattleUI(g,b,t){
+  const w=Math.min(580,VW*.84), x=VW/2-w/2, y=Math.max(52,VH*.09);
+  g.save();
+  g.fillStyle='rgba(10,14,26,.8)';
+  g.strokeStyle='rgba(200,74,58,.6)'; g.lineWidth=1.5;
+  g.beginPath(); g.rect(x,y,w,48); g.fill(); g.stroke();
+  g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 14px Georgia';
+  g.fillText(b.text||'Fight!',VW/2,y+19);
+  const pul=.5+Math.sin(t/260)*.5;
+  g.fillStyle=`rgba(232,198,106,${.55+pul*.4})`; g.font='12px Georgia';
+  g.fillText('Foes standing: '+b.left+'   —   press ✦ / E beside a foe to strike',VW/2,y+38);
+  g.restore();
+}
+
 /* ================= GAME CORE ================= */
 const Game={
   state:'boot',        // boot,title,chapters,slides,play,complete,finale
   world:null, chapter:null, slideIdx:0, slideList:null, slidePhase:null,
   script:null, scriptIdx:0, scriptWait:0, scriptBlocked:false,
   dlgQueue:[], dlgChar:null, dlgText:'', dlgShown:0, dlgDone:false, dlgCb:null, dlgChoices:null,
-  inv:{}, flags:{}, t:0, lastTime:0, fadeT:0,
+  inv:{}, flags:{}, t:0, lastTime:0, fadeT:0, mash:null, battle:null,
   interactTarget:null,
 
   /* ---------- dialogue ---------- */
@@ -2208,6 +2263,23 @@ const Game={
     if(op.complete!==undefined){ this.completeObjective(op.complete); return true; }
     if(op.give){ this.inv[op.give[0]]=(this.inv[op.give[0]]||0)+(op.give[1]||1); return true; }
     if(op.flag){ this.flags[op.flag[0]]=op.flag[1]; return true; }
+    if(op.mash){
+      /* button-mash struggle: hold on until the timer runs its course */
+      this.scriptBlocked=true;
+      this.mash=Object.assign({grip:.6,prog:0,duration:9000},op.mash);
+      this.mash.onDone=()=>{this.scriptBlocked=false};
+      return false;
+    }
+    if(op.battle){
+      /* fight a group of npcs: they close in on the player, strike them down one by one */
+      this.scriptBlocked=true;
+      let left=0;
+      for(const n of w.npcs) if(op.battle.foes.includes(n.id)){
+        n.foe=true; n.hp=op.battle.hits||2; n.wander=false; n.noTalk=true; left++;
+      }
+      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,onDone:()=>{this.scriptBlocked=false}};
+      return false;
+    }
     if(op.call){ op.call(this); return true; }
     if(op.end){ this.endScene(); return true; }
     return true;
@@ -2328,6 +2400,7 @@ const Game={
   startScene(){
     const ch=this.chapter;
     this.dlgQueue=[]; this.closeDlg();
+    this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
     const map=generateMap(sc.map);
@@ -2382,6 +2455,38 @@ const Game={
     Sound.init();
     if(this.state==='slides'){ if(this.slideT>350){ Sound.sfx('blip'); this.advanceSlide(); } return; }
     if(this.dlgChar){ this.advanceDlg(); return; }
+    if(this.mash){
+      this.mash.grip=Math.min(1,this.mash.grip+(this.mash.gain||.14));
+      Sound.sfx('blip');
+      return;
+    }
+    if(this.battle&&this.state==='play'&&this.world&&this.world.player){
+      const p=this.world.player;
+      let best=null,bd=1.6;
+      for(const n of this.world.npcs){
+        if(!n.foe||n.hidden||n.lying) continue;
+        const d7=dist(p.x,p.y,n.x,n.y); if(d7<bd){bd=d7;best=n;}
+      }
+      if(best){
+        best.hp=(best.hp||1)-1;
+        Sound.sfx('bad'); Particles.burst(best.x*TILE,best.y*TILE,'spark',10);
+        const a=Math.atan2(best.y-p.y,best.x-p.x);
+        best.x=clamp(best.x+Math.cos(a)*.9,1.2,this.world.map.w-2.2);
+        best.y=clamp(best.y+Math.sin(a)*.9,1.2,this.world.map.h-2.2);
+        best.target=null;
+        if(best.hp<=0){
+          best.foe=false; best.lying=true; best.moving=false; best.noTalk=true;
+          this.battle.left--;
+          if(this.battle.left>0) toast(this.battle.left+' of the foes still stand');
+          else {
+            const cb=this.battle.onDone, won=this.battle.won; this.battle=null;
+            toast(won||'The foes are fallen'); Sound.sfx('chime');
+            if(cb)cb();
+          }
+        }
+      }
+      return;
+    }
     if(this.state==='play'&&!this.script){
       const tgt=this.interactTarget;
       if(tgt) this.doInteract(tgt);
@@ -2442,20 +2547,36 @@ const Game={
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
+    if(this.mash){
+      const m=this.mash;
+      m.grip=Math.max(0,m.grip-dt*(m.decay||.00026));
+      if(m.grip>.12){ m.prog=Math.min(1,m.prog+dt/(m.duration||9000)); Camera.shake=Math.max(Camera.shake,1.1); }
+      else m.prog=Math.max(0,m.prog-dt*.35/(m.duration||9000));
+      const mp=this.world.player, mw=m.vs?this.world.npcs.find(n=>n.id===m.vs):null;
+      if(mp) mp.moving=true;
+      if(mw) mw.moving=true;
+      if(!m._m1&&m.prog>.34){ m._m1=true; toast('The night wears on — do not let go!'); }
+      if(!m._m2&&m.prog>.7){ m._m2=true; toast('The east begins to grey…'); }
+      if(m.prog>=1){
+        const cb=m.onDone; this.mash=null;
+        if(mp) mp.moving=false; if(mw) mw.moving=false;
+        if(cb)cb();
+      }
+    }
     if(this.chapter&&this.chapter.scene&&this.chapter.scene.tick&&!this.script&&!this.dlgChar)
       this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
     // player movement
     const p=w.player;
-    const blocked=this.script||this.dlgChar;
+    const blocked=(this.script&&!this.battle)||this.dlgChar;
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
         const ms=p.speed*(p.mount?1.65:1);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        if(walkable(w.map,nx,p.y)) p.x=nx;
-        if(walkable(w.map,p.x,ny)) p.y=ny;
+        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y)) p.x=nx;
+        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
@@ -2471,6 +2592,24 @@ const Game={
           const cb=e.onArrive; e.onArrive=null; if(cb)cb(); }
         else { e.x+=dx/m*step; e.y+=dy/m*step; e.moving=true;
           e.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'); }
+      } else if(e.foe&&p&&!e.lying&&!this.dlgChar){
+        /* battle foe: close in on the player, shove when adjacent */
+        const df=dist(e.x,e.y,p.x,p.y);
+        if(df>1){ e.target={x:p.x,y:p.y}; e.speed=e.foeSpeed||.045; }
+        else {
+          e.moving=false;
+          e.dir=Math.abs(p.x-e.x)>Math.abs(p.y-e.y)?(p.x<e.x?'left':'right'):(p.y<e.y?'up':'down');
+          if(!e._st||this.t>e._st){
+            e._st=this.t+1400; Camera.shake=Math.max(Camera.shake,2); Sound.sfx('bad');
+            const a2=Math.atan2(p.y-e.y,p.x-e.x);
+            const sx2=p.x+Math.cos(a2)*.55, sy2=p.y+Math.sin(a2)*.55;
+            if(walkable(w.map,sx2,p.y)) p.x=sx2;
+            if(walkable(w.map,p.x,sy2)) p.y=sy2;
+          }
+        }
+      } else if(e.chase&&p&&!e.lying&&!this.dlgChar&&!this.script){
+        /* pursuer: runs after the player */
+        e.target={x:p.x,y:p.y}; e.speed=e.chaseSpeed||.095;
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;
@@ -2605,6 +2744,8 @@ const Game={
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
+      if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
     }
     drawTitleBg(ctx,this.t);
@@ -4379,7 +4520,26 @@ STORY.push(
      {type:'goto',x:24,y:26,radius:2.4,text:'At nightfall, walk out beneath the open sky',hiddenUntil:1,
       script:[
        {time:'deepnight'},{music:'night'},{fade:'out'},{fade:'in'},
-       {say:['narrator','And in those days four sovereigns made war in the plain, and they took Lot captive. And when Aḇram heard that his brother was taken, he armed his three hundred and eighteen trained servants, born in his own house, and pursued — and he brought back all the goods, and also brought back his brother Lot.']},
+       {say:['narrator','And in those days Keḏorla‛omer and the sovereigns with him made war in the plain — and they took Lot, Aḇram’s brother’s son, and his goods, and left. And one who had escaped came and told Aḇram the Iḇri.']},
+       {say:['avram','They have taken my brother. Arm yourselves — the three hundred and eighteen trained ones, born in my house! We pursue them, even to Dan!']},
+       {spawn:{id:'aly1',char:'servant',x:22,y:25,wander:false,noTalk:true}},
+       {spawn:{id:'aly2',char:'shepherd',x:26,y:25,wander:false,noTalk:true}},
+       {spawn:{id:'foe1',char:'raider',x:24,y:31,wander:false,noTalk:true,foeSpeed:.05}},
+       {spawn:{id:'foe2',char:'raider2',x:30,y:29,wander:false,noTalk:true,foeSpeed:.042}},
+       {spawn:{id:'foe3',char:'raider',x:18,y:29,wander:false,noTalk:true,foeSpeed:.046}},
+       {spawn:{id:'foe4',char:'raider2',x:27,y:32,wander:false,noTalk:true,foeSpeed:.055}},
+       {spawn:{id:'lotc',char:'lot',x:24,y:32,wander:false,noTalk:true}},
+       {sfx:'thunder'},{shake:2},{music:'storm'},
+       {say:['narrator','And he divided his men against them by night, he and his servants — and he smote them.']},
+       {battle:{foes:['foe1','foe2','foe3','foe4'],hits:2,text:'By night — smite the army of the four sovereigns and free Lot!',won:'The camp of the kings is broken — they flee before you'}},
+       {music:'night'},
+       {move:['lotc',24,27,.06]},
+       {say:['lot','Uncle — you came. Three hundred and eighteen, against the armies of four sovereigns… and you came for me.']},
+       {say:['narrator','And he brought back all the goods, and also brought back his brother Lot and his goods, and the women and the people.']},
+       {fade:'out'},
+       {despawn:'foe1'},{despawn:'foe2'},{despawn:'foe3'},{despawn:'foe4'},
+       {despawn:'aly1'},{despawn:'aly2'},{despawn:'lotc'},
+       {fade:'in'},
        {say:['narrator','And Malkitseḏeq, sovereign of Shalĕm, kohen of the Most High Ăl, brought out bread and wine, and baruk him: “Baruk be Aḇram of the Most High Ăl, Possessor of the shamayim and earth.” And Aḇram gave him a tenth of all — and would not take for himself a thread or a sandal strap from the spoil.']},
        {say:['narrator','After these matters the word of YAHUAH came to Aḇram in a vision, saying:']},
        {rays:.7,raysX:24},{sfx:'holy'},
@@ -5015,7 +5175,7 @@ STORY.push(
      {id:'rivqah',char:'rivqah',x:8,y:11.5,wander:false,
       script:[
        {say:['rivqah','Ya‘aqoḇ — listen. I heard your father speak to Ĕsaw: the blessing is to be given TODAY. Now, my son, obey my voice: go to the flock and bring me two choice young goats, and I shall make a tasty dish for your father, such as he loves — and you shall take it to him, so that he barak YOU before his death.']},
-       {say:['yaaqov','But mother — Ĕsaw my brother is a hairy man, and I am smooth! My father will feel me, and I shall seem to be a deceiver in his eyes — and bring a curse on myself, and not a blessing.']},
+       {say:['yaaqov','But mother — Ĕsaw my brother is a hairy man, and I am smooth! My father will feel me, and I shall seem to be a trickster in his eyes — and bring a curse on myself, and not a blessing.']},
        {say:['rivqah','Let your curse be on me, my son. Only obey my voice, and go.']},
       ]},
      {id:'goat1',animal:'goat',x:20,y:12.5,range:1.2,group:'goats',noTalk:true},
@@ -5182,7 +5342,7 @@ STORY.push(
        {say:['narrator','And it came to be in the morning, after the wedding feast and the veiled bride — that see, it was Lĕ’ah!']},
        {say:['yaaqov','What is this you have done to me?! Was it not for Raḥal that I served you? Why then have you deceived me?']},
        {say:['lavan','It is not done this way in our place, to give the younger before the first-born. Complete the week of this one — then we give you the other also, for the service of yet another seven years.']},
-       {say:['narrator','The deceiver was deceived, measure for measure — and he served seven years more. And YAHUAH gave him children, and flocks beyond counting: speckled, spotted and streaked.']},
+       {say:['narrator','The trickster was tricked, measure for measure — and he served seven years more. And YAHUAH gave him children, and flocks beyond counting: speckled, spotted and streaked.']},
       ]},
      {type:'goto',x:42,y:26,radius:2.4,text:'After twenty years — set out for home',hiddenUntil:2,
       script:[
@@ -5210,30 +5370,57 @@ STORY.push(
    player:'yaaqov', playerPos:[16,15],
    npcs:[
      {id:'wrestler',char:'wrestler',x:27,y:15,wander:false,hidden:true,noTalk:true},
+     {id:'giftsrv',char:'servant',x:19,y:16,wander:false},
+     {id:'leah',char:'leah',x:15,y:17,wander:true,range:1.4,noTalk:true},
+     {id:'rachel',char:'rachel',x:17,y:17.5,wander:true,range:1.4,noTalk:true},
+     {id:'hm1',char:'lotd1',x:14,y:16,wander:true,range:1.2,noTalk:true},
+     {id:'hm2',char:'lotd2',x:16.6,y:18.2,wander:true,range:1.2,noTalk:true},
+     {id:'boy1',char:'sheth',child:true,x:15.8,y:16.6,wander:true,range:1.4,noTalk:true},
+     {id:'boy2',char:'hevel',child:true,x:17.6,y:16.2,wander:true,range:1.4,noTalk:true},
+     {id:'g1',animal:'goat',x:21,y:17,range:1.2,noTalk:true},
+     {id:'g2',animal:'goat',x:21.8,y:18.4,range:1.2,noTalk:true},
+     {id:'cam1',animal:'camel',x:23,y:18,range:1.2,noTalk:true},
+     {id:'cow1',animal:'cow',x:22,y:19.6,range:1.2,noTalk:true},
+     {id:'dk1',animal:'donkey',x:20.6,y:19.4,range:1.2,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:26,y:15,radius:2.4,text:'Send all you have over the stream — and remain alone in the dark',
+     {type:'talk',npc:'giftsrv',text:'Send a present ahead of you, to Ĕsaw your brother',
+      script:[
+       {say:['yaaqov','Take of what comes to my hand: goats and rams, camels and cows and donkeys — drove after drove. Pass over before me, and put space between drove and drove.']},
+       {say:['yaaqov','When Ĕsaw my brother meets you and asks, “Whose are you, and where do you go, and whose are these before you?” — then you shall say: “They are your servant Ya‘aqoḇ’s. It is a present, sent to my master Ĕsaw. And see, he himself is behind us.”']},
+       {say:['narrator','For he said, “Let me cover his face with the present that goes before my face — and after that see his face. It might be that he lifts up my face.”']},
+       {move:['giftsrv',43,16,.13,'bg']},{move:['g1',43,15,.13,'bg']},{move:['g2',43,17,.13,'bg']},
+       {move:['cam1',43.5,18,.12,'bg']},{move:['cow1',43.5,16.5,.12,'bg']},{move:['dk1',43,18.5,.12]},
+       {despawn:'giftsrv'},{despawn:'g1'},{despawn:'g2'},{despawn:'cam1'},{despawn:'cow1'},{despawn:'dk1'},
+       {say:['narrator','So the present passed over before him — and he himself spent the night in the camp.']},
+      ]},
+     {type:'goto',x:10,y:15,radius:1.8,text:'Take your wives and your sons over the ford of Yabboq',hiddenUntil:1,
+      script:[
+       {say:['narrator','And he rose up that night and took his two wives, and his two female servants, and his eleven sons, and passed over the ford of Yabboq.']},
+       {move:['leah',6,14.2,.07,'bg']},{move:['hm1',5.4,14.8,.07,'bg']},{move:['boy1',6.2,16,.07,'bg']},
+       {move:['boy2',5.6,14.1,.07,'bg']},{move:['hm2',6.8,15.8,.07,'bg']},{move:['rachel',6.4,15.2,.07]},
+       {call:G=>{ for(const id of ['leah','rachel','hm1','hm2','boy1','boy2']){
+         const n=G.world.npcs.find(n=>n.id===id);
+         if(n){ n.wander=true; n.home={x:n.x,y:n.y}; n.range=1.2; } } }},
+       {say:['narrator','And he sent them over the stream, and sent over all that he had — for he said, “If Ĕsaw comes to the one camp and smites it, then the camp which is left shall escape.” And Ya‘aqoḇ was left alone.']},
+      ]},
+     {type:'goto',x:26,y:15,radius:2.4,text:'Remain alone in the dark',hiddenUntil:2,
       script:[
        {say:['yaaqov','Aluahim of my father Aḇraham… deliver me, I pray, from the hand of my brother, from the hand of Ĕsaw — for I fear him. You Yourself said: I shall certainly do good with you…']},
-       {show:'wrestler'},{wait:500},
+       {move:['player',26,15,.05]},
+       {teleport:['wrestler',26.9,15]},{show:'wrestler'},
+       {face:['wrestler','left']},{face:['player','right']},{wait:500},
        {say:['narrator','And out of the darkness — a Man. And He wrestled with him.']},
        {shake:2},{sfx:'thunder'},
-       {choice:{prompt:'The struggle goes hour after hour. Your strength is failing…',options:[
-         {label:'Hold on', script:[
-           {say:['narrator','Hour into hour, breath against breath. The deceiver who had wrestled all his life — with Ĕsaw in the womb, with Yahtsḥaq by trickery, with Laḇan for twenty years — wrestled now in the dark with One he could not trick.']},
-         ]},
-         {label:'Let go', script:[
-           {say:['narrator','His grip loosened — and everything in him cried out that to let go now was to lose everything he had ever truly wanted.']},
-           {say:['yaaqov','No. NO. I will not let You go!']},
-         ]},
-       ]}},
+       {mash:{vs:'wrestler',duration:11000,text:'Hold the Man down until the day breaks!'}},
+       {say:['narrator','Hour into hour, breath against breath. The trickster who had wrestled all his life — with Ĕsaw in the womb, with Yahtsḥaq by trickery, with Laḇan for twenty years — wrestled now in the dark with One he could not trick.']},
        {shake:3},{wait:600},
        {say:['narrator','And when He saw that He did not overcome him, He touched the socket of his hip — and the socket of Ya‘aqoḇ’s hip was wrenched as He wrestled with him.']},
        {sfx:'bad'},{shake:1},
        {say:['wrestler','Let Me go, for the day breaks.']},
        {say:['yaaqov','I am not letting You go until You barak me!']},
        {say:['wrestler','What is your name?']},
-       {say:['yaaqov','…Ya‘aqoḇ. Heel-holder. Deceiver.']},
+       {say:['yaaqov','…Ya‘aqoḇ. Heel-holder. Trickster.']},
        {say:['wrestler','Your name is no longer called Ya‘aqoḇ, but Yasharal — because you have striven with Aluahim and with men, and have overcome.']},
        {time:'morning'},{music:'holy'},{rays:.8,raysX:26},{sfx:'holy'},
        {charSwap:['player','yaaqov_o']},
@@ -5242,8 +5429,12 @@ STORY.push(
        {rays:0},
        {say:['narrator','And the sun rose on him as he passed over Penu’al — and he limped on his hip.']},
       ]},
-     {type:'goto',x:40,y:15,radius:2.4,text:'Cross over and meet Ĕsaw',hiddenUntil:1,
+     {type:'goto',x:40,y:15,radius:2.4,text:'Cross over and meet Ĕsaw',hiddenUntil:3,
       script:[
+       {say:['narrator','And he put the female servants and their children in front, and Lĕ’ah and her children behind, and Raḥal and Yosĕph last — and he himself passed over before them.']},
+       {call:G=>{ for(const id of ['leah','rachel','hm1','hm2','boy1','boy2']){
+         const n=G.world.npcs.find(n=>n.id===id);
+         if(n){ n.wander=false; n.target={x:33+Math.random()*2.4,y:14+Math.random()*2}; n.speed=.09; } } }},
        {spawn:{id:'esav',char:'esav',x:42,y:14,wander:false,noTalk:true}},
        {spawn:{id:'em1',char:'shepherd',x:43,y:13,wander:false,noTalk:true}},
        {spawn:{id:'em2',char:'builder',x:43.5,y:15,wander:false,noTalk:true}},
@@ -5251,11 +5442,19 @@ STORY.push(
        {spawn:{id:'em4',char:'builder2',x:43.8,y:14,wander:false,noTalk:true}},
        {spawn:{id:'em5',char:'shepherd',x:42.8,y:12,wander:false,noTalk:true}},
        {move:['em1',41.6,13.6,.05,'bg']},{move:['em2',42,15.4,.05,'bg']},{move:['em3',41.4,16.6,.05,'bg']},
-       {move:['esav',41,15,.06]},
        {say:['narrator','And Ya‘aqoḇ lifted his eyes and looked, and see — Ĕsaw was coming, and with him four hundred men. And he bowed himself to the ground seven times, until he came near to his brother.']},
-       {say:['narrator','And Ĕsaw ran to meet him, and embraced him, and fell on his neck and kissed him — and they wept.']},
-       {say:['esav','Brother. Twenty years. Keep your droves — I have enough, my brother. Let what you have be yours.']},
-       {say:['yaaqov','No, please — take the blessing from my hand. For I have seen your face, and it is like seeing the face of Aluahim — and you were pleased with me.']},
+       {say:['narrator','And Ĕsaw ran to meet him—']},
+       {call:G=>{ const p=G.world.player, n=G.world.npcs.find(n=>n.id==='esav');
+         if(n&&p){ n.target={x:p.x+.85,y:p.y}; n.speed=.13; } }},
+       {wait:1100},
+       {emote:['esav','love']},
+       {call:G=>{ const p=G.world.player; if(p) Particles.burst(p.x*TILE,p.y*TILE,'mote',14); }},
+       {say:['narrator','—and embraced him, and fell on his neck and kissed him. And they wept.']},
+       {say:['esav','Brother. Twenty years… And what do you mean by all this camp which I met on the way?']},
+       {say:['yaaqov','To find favour in the eyes of my master.']},
+       {say:['esav','I have enough, my brother. Let what you have be yours.']},
+       {say:['yaaqov','No, please — if I have found favour in your eyes, take the present from my hand. For I have seen your face, and it is like seeing the face of Aluahim — and you were pleased with me. Please take my barakah that is brought to you, because Aluahim has favoured me, and because I have all.']},
+       {say:['narrator','And he urged him — and he took it. And the female servants came near, they and their children, and bowed themselves; and Lĕ’ah also; and afterward Yosĕph and Raḥal came near, and they bowed.']},
       ]},
    ],
   },
@@ -5267,13 +5466,51 @@ STORY.push(
 { id:'c21a', title:'Bĕyth Al and Ephrath', ref:'BERĔSHITH 35',
   intro:[
    {art:'camp', music:'sorrow', text:'And at Sheḵem, Dinah the daughter of Lĕ’ah was taken and humbled by Sheḵem son of Ḥamor — and her brothers burned with grief. And Shim‛on and Lĕwi avenged her with the sword upon the city; and Ya‘aqoḇ said, “You have troubled me” — a grief remembered to the last blessing.', ref:'BERĔSHITH 34'},
+   {art:'camp', music:'tense', text:'And when the kings of the Amorites heard what was done to the city of Sheḵem, they gathered themselves together against the sons of Ya‘aqoḇ, to slay them in the valley. But Yahuḏah and his brothers went out against them, and prevailed — and the dread of Aluahim fell upon the cities all around, so that they did not pursue after the sons of Ya‘aqoḇ.', ref:'YOḆELIM 34:1–9 · YASHAR 37–40 · BERĔSHITH 35:5'},
    {art:'ladder', music:'holy', text:'And Aluahim said to Ya‘aqoḇ, “Arise, go up to Bĕyth Al and dwell there, and make a mizbe’ach there to the Ăl who appeared to you when you fled from Ĕsaw.” And Ya‘aqoḇ said to his house, “Put away the foreign mighty ones among you — and let us arise and go up to Bĕyth Al.” And they gave him all they had, and he hid them under the terebinth tree.', ref:'BERĔSHITH 35:1–4'},
    {art:'stars', music:'holy', text:'And Aluahim appeared to Ya‘aqoḇ again and baruk him: “Your name is Ya‘aqoḇ — no longer is your name called Ya‘aqoḇ, but YASHARAL is your name. I am Ăl Shaddai: bear fruit and increase. The land I gave Aḇraham and Yahtsḥaq, I give to you and your seed.”', ref:'BERĔSHITH 35:9–12'},
    {art:'rest', music:'sorrow', text:'And they set out from Bĕyth Al — and when there was but little distance to Ephrath, Raḥal began to give birth, and had great difficulty. And the midwife said, “Do not fear — this one is also a son for you.” And as her life was going out, she called his name Ben-Oni — but his father called him BINYAMIN, son of the right hand.', ref:'BERĔSHITH 35:16–18'},
    {art:'rest', music:'sorrow', text:'So Raḥal died, and was buried on the way to Ephrath, that is Bĕyth Leḥem — and Ya‘aqoḇ set a standing column on her grave, which is there to this day.', ref:'BERĔSHITH 35:19–20'},
    {art:'rest', music:'holy', text:'And Ya‘aqoḇ came to Yahtsḥaq his father at Mamrĕ. And the days of Yahtsḥaq were one hundred and eighty years — and he breathed his last and died, and was gathered to his people, old and satisfied of days. And his sons Ĕsaw and Ya‘aqoḇ buried him — together.', ref:'BERĔSHITH 35:27–29'},
   ],
-  scene:null,
+  scene:{
+   map:{biome:'plains', w:40, h:28, seed:166,
+     features:[
+       {type:'tent',x:14,y:12,solid:true,clear:2,col:'#c8b486'},
+       {type:'tent',x:19,y:10,solid:true,clear:2,col:'#b3a07f'},
+       {type:'firepit',x:17,y:14,lit:true},
+       {type:'clearing',x:21,y:16,flat:3},
+     ]},
+   time:'dusk', music:'tense',
+   player:'yahudah', playerPos:[18,16],
+   npcs:[
+     {id:'yaaqovw',char:'yaaqov_o',x:14,y:14,wander:false,noTalk:true},
+     {id:'shimon',char:'shimon',x:20,y:14,wander:true,range:1.4,noTalk:true},
+     {id:'reuven',char:'reuven',x:16,y:17,wander:true,range:1.4,noTalk:true},
+     {id:'sheep1',animal:'sheep',x:12,y:17,range:2,noTalk:true},
+     {id:'sheep2',animal:'sheep',x:13.2,y:18.2,range:2,noTalk:true},
+   ],
+   objectives:[
+     {type:'goto',x:25,y:18,radius:2.2,text:'The kings of the Amorites gather — stand between them and the camp',
+      script:[
+       {say:['narrator','And when the kings of the Amorites heard what was done at Sheḵem, they gathered themselves together — and came to smite the sons of Ya‘aqoḇ.']},
+       {spawn:{id:'am1',char:'amorite',x:36,y:16,wander:false,noTalk:true,foeSpeed:.05}},
+       {spawn:{id:'am2',char:'raider',x:35,y:20,wander:false,noTalk:true,foeSpeed:.044}},
+       {spawn:{id:'am3',char:'amorite',x:37,y:22,wander:false,noTalk:true,foeSpeed:.052}},
+       {spawn:{id:'am4',char:'raider2',x:34,y:13,wander:false,noTalk:true,foeSpeed:.046}},
+       {spawn:{id:'am5',char:'amorite',x:36.5,y:18.6,wander:false,noTalk:true,foeSpeed:.048}},
+       {sfx:'thunder'},{shake:2},{music:'storm'},
+       {say:['yahudah','Brothers — to me! They shall not touch our father’s tents!']},
+       {battle:{foes:['am1','am2','am3','am4','am5'],hits:2,text:'Drive back the armies of the Amorite kings!',won:'The Amorites break and flee before the sons of Ya‘aqoḇ'}},
+       {music:'eden'},
+       {say:['narrator','And Yahuḏah was mighty in the battle, and his brothers with him — and the Amorites fled before them.']},
+       {fade:'out'},
+       {despawn:'am1'},{despawn:'am2'},{despawn:'am3'},{despawn:'am4'},{despawn:'am5'},
+       {time:'day'},{fade:'in'},
+       {say:['narrator','And they journeyed on — and the fear of Aluahim was upon the cities that were all around them, so that they did not pursue the sons of Ya‘aqoḇ.']},
+      ]},
+   ],
+  },
   complete:'No longer Ya‘aqoḇ, but Yasharal — and the column stands on Raḥal’s grave to this day.'
 },
 ]},
@@ -5315,14 +5552,20 @@ STORY.push(
        {say:['yoseph','Brothers — it is I, your brother! What are you—']},
        {fade:'out'},{sfx:'bad'},{music:'sorrow'},{wait:700},
        {teleport:['player',33,14]},{charSwap:['player','yoseph_s']},
+       {call:G=>{ G.world.player.hidden=true; }},
        {toast:'They stripped the robe from him and cast him into the pit. The pit was empty — no water in it.'},
        {fade:'in'},{wait:900},
        {say:['yahudah','And they sat down to eat bread. …Look there — a caravan of Yishma‛Alites, coming from Gil‛aḏ, going down to Mitsrayim.']},
-       {spawn:{id:'cam1',animal:'camel',x:48,y:20,noTalk:true,wander:false}},
-       {spawn:{id:'cam2',animal:'camel',x:48,y:22,noTalk:true,wander:false}},
-       {move:['cam1',38,19,.04,'bg']},{move:['cam2',39,21,.04]},
+       {spawn:{id:'trader1',char:'yishmael',mount:'camel',x:48,y:20,noTalk:true,wander:false}},
+       {spawn:{id:'trader2',char:'shepherd',mount:'donkey',x:48.5,y:22.5,noTalk:true,wander:false}},
+       {spawn:{id:'cam2',animal:'camel',x:47,y:21.5,noTalk:true,wander:false}},
+       {move:['trader1',38,19,.04,'bg']},{move:['cam2',39.5,21,.04,'bg']},{move:['trader2',39,22,.04]},
        {say:['yahudah','What gain is there if we kill our brother and cover his blood? Come, let us sell him to the Yishma‛Alites — and let not our hand be upon him, for he is our brother, our flesh.']},
-       {say:['narrator','And they sold Yosĕph for twenty pieces of silver. And the Miḏyanites took him down to Mitsrayim. And the brothers dipped the long robe in the blood of a goat, and carried it to their father.']},
+       {say:['narrator','And they drew Yosĕph up, and lifted him out of the pit—']},
+       {call:G=>{ G.world.player.hidden=false; }},
+       {teleport:['player',33,15.2]},{burst:[33,15,'ash',10]},
+       {move:['player',37,19.4,.05]},{face:['player','right']},
+       {say:['narrator','—and sold him to the Yishma‛Alites for twenty pieces of silver. And the Miḏyanites took him down to Mitsrayim. And the brothers dipped the long robe in the blood of a goat, and carried it to their father.']},
        {fade:'out'},
        {toast:'And Ya‘aqoḇ tore his garments… and mourned for his son many days.'},{wait:1700},
       ]},
@@ -5334,10 +5577,80 @@ STORY.push(
   ],
   complete:'Then we shall see what becomes of his dreams. — But YAHUAH was with Yosĕph.'
 },
+{ id:'c22a', title:'The House of Potiphar', ref:'BERĔSHITH 39',
+  intro:[
+   {art:'egypt', music:'tense', text:'And Yosĕph was taken down to Mitsrayim, and Potiphar, an officer of Pharaoh, captain of the guard, bought him from the Yishma‛Alites. And YAHUAH was with Yosĕph, and he became a prosperous man in the house of his master the Mitsrite.', ref:'BERĔSHITH 39:1–2'},
+  ],
+  scene:{
+   map:{biome:'interior', w:26, h:16, seed:176,
+     features:[
+       {type:'doorway',x:13,y:1.9,id:'housedoor',examine:'The door of the house, open to the courtyard.'},
+       {type:'basket',x:6,y:5,full:true},{type:'basket',x:20,y:5,full:true},
+       {type:'pot',x:22,y:9},
+     ]},
+   time:'day', music:'tense',
+   player:'yoseph_s', playerPos:[13,11],
+   npcs:[
+     {id:'potiphar',char:'potiphar',x:8,y:7,wander:false,
+      script:[
+       {say:['potiphar','Iḇri — since you came into my house, YAHUAH your Aluahim has baruk all that I have, in the house and in the field. See: I have appointed you over my house, and all that I have I give into your hand.']},
+       {say:['narrator','And he left all that he had in Yosĕph’s hand, and did not know what he had, except the bread that he ate. And Yosĕph was handsome in form and appearance.']},
+       {say:['narrator','And after these matters it came to be that his master’s wife lifted up her eyes to Yosĕph…']},
+      ]},
+     {id:'wife',char:'potiphar_w',x:18,y:8,wander:true,range:1.4,noTalk:true},
+   ],
+   objectives:[
+     {type:'talk',npc:'potiphar',text:'Hear your master Potiphar'},
+     {type:'goto',x:18,y:9,radius:2,text:'See to the work of the house',hiddenUntil:1,
+      script:[
+       {face:['wife','down']},
+       {say:['potiphar_w','Yosĕph. Lie with me.']},
+       {say:['yoseph_s','See, my master does not know what is in the house because of me, and all he has he has given into my hand. There is no one greater in this house than I, and he has withheld nothing from me except you, because you are his wife. How then shall I do this great evil — and sin against Aluahim?']},
+       {say:['narrator','And it came to be, as she spoke to Yosĕph day by day, that he did not listen to her, to lie beside her or to be with her. But on a certain day he went into the house to do his work — and none of the men of the house was inside—']},
+       {say:['potiphar_w','Lie with me!']},
+       {sfx:'bad'},{music:'storm'},
+       {call:G=>{ const ptf=G.world.npcs.find(n=>n.id==='potiphar'); if(ptf) ptf.hidden=true;
+         const wf=G.world.npcs.find(n=>n.id==='wife');
+         if(wf){ wf.wander=false; wf.chase=true; wf.chaseSpeed=.105; }
+         G.flags.chase=true; }},
+      ]},
+     {type:'goto',x:13,y:3,radius:1.5,text:'Flee! Run for the door!',hiddenUntil:2,
+      script:[
+       {call:G=>{ const wf=G.world.npcs.find(n=>n.id==='wife');
+         if(wf){ wf.chase=false; wf.target=null; wf.moving=false; }
+         G.flags.chase=false; }},
+       {say:['narrator','And he fled, and went outside. And she called to the men of her house: “See, he brought in to us an Iḇri to mock us! He came in to me, to lie with me — and I cried with a loud voice, and he left his garment beside me and fled outside!”']},
+       {fade:'out'},{wait:600},{time:'dusk'},{fade:'in'},
+       {call:G=>{ const ptf=G.world.npcs.find(n=>n.id==='potiphar');
+         if(ptf){ ptf.hidden=false; ptf.x=13; ptf.y=6; ptf.dir='down'; } }},
+       {say:['potiphar','“So your servant did to me”?! …']},
+       {say:['narrator','And it came to be, when his master heard the words of his wife, that his displeasure burned — and Yosĕph’s master took him and put him into the prison, the place where the sovereign’s prisoners were confined. But YAHUAH was with Yosĕph, and extended kindness to him.']},
+       {fade:'out'},{toast:'And the prison warden gave into Yosĕph’s hand all the prisoners — whatever was done there, he was the doer of it.'},{wait:1900},
+      ]},
+   ],
+   tick(G){
+     /* the chase: if she lays hold of him, the garment is left in her hand */
+     if(G.flags.chase&&!G.flags.caught){
+       const w2=G.world, p=w2.player, wf=w2.npcs.find(n=>n.id==='wife');
+       if(p&&wf&&!wf.hidden&&dist(p.x,p.y,wf.x,wf.y)<.85){
+         G.flags.caught=true;
+         Sound.sfx('bad');
+         p.char='yoseph_t';
+         wf.chase=false; wf.target=null; wf.moving=false;
+         toast('She caught him by his garment — and he left his garment in her hand, and fled!');
+       }
+     }
+   },
+  },
+  outro:[
+   {art:'egypt', music:'sorrow', text:'But YAHUAH was with Yosĕph and extended kindness to him, and gave him favour in the eyes of the prison warden — and whatever they did there, it was his doing, because YAHUAH was with him; and what he did, YAHUAH made it prosper.', ref:'BERĔSHITH 39:21–23'},
+  ],
+  complete:'How shall I do this great evil and sin against Aluahim? — He fled and left his garment behind; and YAHUAH was with him, even in the prison.'
+},
 { id:'c23', title:'Dreams in the Dungeon', ref:'BERĔSHITH 39–41',
   intro:[
    {art:'journey', music:'sorrow', text:'And in those days Yahuḏah went down from his brothers — and through Tamar his widowed daughter-in-law, wronged and waiting, whom he at last confessed “more righteous than I,” were born Perets and Zeraḥ. And from Perets runs the line of the Sceptre that shall not turn aside from Yahuḏah.', ref:'BERĔSHITH 38'},
-   {art:'egypt', music:'tense', text:'And YAHUAH was with Yosĕph, and he became a prosperous man in the house of his master, Potiphar the Mitsrite. But the wife of his master lied against him — and Yosĕph was put in the prison of the sovereign’s captives. Yet even there, YAHUAH was with him, and showed him kindness.', ref:'BERĔSHITH 39'},
+   {art:'egypt', music:'tense', text:'And Yosĕph was in the prison of the sovereign’s captives, and the warden gave all the prisoners into his hand. And after these matters, the cupbearer and the baker of the sovereign of Mitsrayim offended their master — and Pharaoh put them in the prison, the place where Yosĕph was confined.', ref:'BERĔSHITH 39:22–40:4'},
   ],
   scene:{
    map:{biome:'interior', w:26, h:18, seed:181,
@@ -5372,8 +5685,13 @@ STORY.push(
        {fade:'out'},{toast:'They hurried him out of the dungeon. He shaved, changed garments — and stood before Pharaoh.'},
        {music:'royal'},{wait:1500},{time:'day'},{fade:'in'},
        {teleport:['player',13,12]},
+       {despawn:'butler'},{despawn:'baker'},
+       {removeProp:'prisondoor'},
+       {addProp:{type:'doorway',x:13,y:1.9,id:'halldoor'}},
        {spawn:{id:'pharaoh',char:'pharaoh',x:13,y:7,wander:false,noTalk:true}},
        {addProp:{type:'throne',x:13,y:6.4,solid:true,id:'throne'}},
+       {spawn:{id:'cup2',char:'butler',x:15.6,y:7.6,wander:false,noTalk:true}},
+       {say:['butler','I remember my sins this day. A young Iḇri was with us in the prison — and he interpreted our dreams to us, and as he interpreted, so it came to be: I was restored to my office, and the baker was hanged.']},
        {say:['pharaoh','I have dreamed a dream and there is no one to interpret it. Seven fat cows devoured by seven gaunt ones; seven plump heads of grain swallowed by seven scorched. I have heard it said of you that you hear a dream, to interpret it.']},
        {say:['yoseph_s','It is not in me. Aluahim shall answer Pharaoh with peace. …The dream of Pharaoh is one: Aluahim has shown Pharaoh what He is about to do.']},
        {say:['yoseph_s','See, seven years of great plenty are coming in all the land of Mitsrayim — and after them seven years of scarcity of food shall arise, and all the plenty be forgotten. Now, let Pharaoh look for a discerning and wise man, and store up grain in the years of plenty.']},
@@ -5406,23 +5724,54 @@ STORY.push(
      ]},
    time:'day', music:'tense',
    player:'yoseph_r', playerPos:[15,7],
+   onStart:[
+     {say:['narrator','And the scarcity was over all the face of the earth, and all lands came to Mitsrayim, to Yosĕph, to buy grain. And ten of Yosĕph’s brothers came down — and bowed themselves before him, with their faces to the earth. And Yosĕph recognised them, but they did not recognise him.']},
+     {show:'yahudah'},{show:'reuven'},{show:'shimon'},
+     {show:'br1'},{show:'br2'},{show:'br3'},{show:'br4'},{show:'br5'},{show:'br6'},{show:'br7'},
+     {face:['yahudah','up']},{face:['reuven','up']},{face:['shimon','up']},
+     {say:['yoseph_r','Where do you come from?']},
+     {say:['reuven','From the land of Kena‛an, my master — to buy food.']},
+     {say:['yoseph_r','No — you are spies! You have come to see the nakedness of the land!']},
+     {say:['yahudah','No, my master. Your servants are twelve brothers, sons of one man in the land of Kena‛an. See, the youngest is with our father today — and one is no more.']},
+     {say:['yoseph_r','By this you shall be proven: by the life of Pharaoh, you do not leave here unless your youngest brother comes here! Let one of you be bound in the prison — and you, go, carry grain for the scarcity of your houses.']},
+     {say:['reuven','Did I not speak to you, saying, “Do not sin against the boy” — and you would not listen? …Truly we are guilty concerning our brother. We saw the distress of his being when he pleaded with us, and we did not listen. That is why this distress has come upon us.']},
+     {say:['narrator','And they did not know that Yosĕph understood them, for an interpreter stood between them. And he turned away from them — and wept. And he took Shim‛on from them, and bound him before their eyes.']},
+     {fade:'out'},
+     {hide:'yahudah'},{hide:'reuven'},{hide:'shimon'},
+     {hide:'br1'},{hide:'br2'},{hide:'br3'},{hide:'br4'},{hide:'br5'},{hide:'br6'},{hide:'br7'},
+     {toast:'And their silver was returned, each man’s in the mouth of his sack — and their hearts failed them.'},{wait:1900},
+     {toast:'And the scarcity was severe. And Yasharal said at last: “Take also your brother — and may Ăl Shaddai give you compassion before the man.”'},{wait:2100},
+     {fade:'in'},
+     {show:'yahudah'},{show:'reuven'},{show:'shimon'},{show:'binyamin'},
+     {show:'br1'},{show:'br2'},{show:'br3'},{show:'br4'},{show:'br5'},{show:'br6'},{show:'br7'},
+     {say:['narrator','And they came again, and Binyamin with them — and Yosĕph saw his mother’s son, and his compassion burned, and he hurried out and wept in his chamber. And Shim‛on was restored to them; and they ate and drank with him, and Binyamin’s portion was five times greater than any of theirs.']},
+     {say:['narrator','Then his cup, the silver cup, was put in the mouth of Binyamin’s sack. And at morning light they were sent away — and the steward overtook them on the way: “Why have you repaid evil for good?” And the cup was found in the sack of Binyamin.']},
+     {say:['narrator','And they tore their garments, and returned to the city, and fell before him to the ground.']},
+     {say:['yoseph_r','What deed is this you have done? The man in whose hand the cup was found — he becomes my slave. And you — go up in peace to your father.']},
+   ],
    npcs:[
-     {id:'yahudah',char:'yahudah',x:15,y:12,wander:false,
+     {id:'yahudah',char:'yahudah',x:15,y:12,wander:false,hidden:true,
       script:[
+       {call:G=>{ const p=G.world.player;
+         for(const n of G.world.npcs){
+           if(n.hidden||!['yahudah','binyamin','reuven','shimon','br1','br2','br3','br4','br5','br6','br7'].includes(n.id)) continue;
+           const dx=p.x-n.x, dy=p.y-n.y;
+           n.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down');
+         } }},
        {say:['yahudah','O my master, please let your servant speak a word in my master’s hearing… My father said, “If you take this one from me too, and harm comes to him, you shall bring down my grey hair in evil to the grave.”']},
        {say:['yahudah','Now, please, let your servant remain instead of the boy as a slave to my master — and let the boy go up with his brothers. For how shall I go up to my father if the boy is not with me — lest I see the evil that would come upon my father?']},
        {say:['narrator','Twenty-two years before, this same Yahuḏah had said, “Come, let us sell him.” Now he stood offering his own life for the other son of Raḥal. And Yosĕph could not restrain himself.']},
       ]},
-     {id:'binyamin',char:'binyamin',x:13.4,y:12.4,wander:false,noTalk:true},
-     {id:'reuven',char:'reuven',x:16.8,y:12.8,wander:false,noTalk:true},
-     {id:'shimon',char:'shimon',x:14,y:13.6,wander:false,noTalk:true},
-     {id:'br1',char:'shepherd',x:12,y:13.2,wander:false,noTalk:true},
-     {id:'br2',char:'builder',x:17.8,y:13.8,wander:false,noTalk:true},
-     {id:'br3',char:'servant',x:11.2,y:12,wander:false,noTalk:true},
-     {id:'br4',char:'builder2',x:18.6,y:12.2,wander:false,noTalk:true},
-     {id:'br5',char:'builder3',x:16,y:14.4,wander:false,noTalk:true},
-     {id:'br6',char:'shepherd',x:13,y:14.6,wander:false,noTalk:true},
-     {id:'br7',char:'builder',x:10.4,y:13.4,wander:false,noTalk:true},
+     {id:'binyamin',char:'binyamin',x:13.4,y:12.4,wander:false,noTalk:true,hidden:true},
+     {id:'reuven',char:'reuven',x:16.8,y:12.8,wander:false,noTalk:true,hidden:true},
+     {id:'shimon',char:'shimon',x:14,y:13.6,wander:false,noTalk:true,hidden:true},
+     {id:'br1',char:'shepherd',x:12,y:13.2,wander:false,noTalk:true,hidden:true},
+     {id:'br2',char:'builder',x:17.8,y:13.8,wander:false,noTalk:true,hidden:true},
+     {id:'br3',char:'servant',x:11.2,y:12,wander:false,noTalk:true,hidden:true},
+     {id:'br4',char:'builder2',x:18.6,y:12.2,wander:false,noTalk:true,hidden:true},
+     {id:'br5',char:'builder3',x:16,y:14.4,wander:false,noTalk:true,hidden:true},
+     {id:'br6',char:'shepherd',x:13,y:14.6,wander:false,noTalk:true,hidden:true},
+     {id:'br7',char:'builder',x:10.4,y:13.4,wander:false,noTalk:true,hidden:true},
      {id:'steward',char:'steward',x:20,y:8,wander:false,noTalk:true},
    ],
    objectives:[
@@ -5438,6 +5787,12 @@ STORY.push(
        {say:['yoseph_r','It was not you who sent me here, but Aluahim. He has set me for a father to Pharaoh, and master of all his house, and a ruler in all the land of Mitsrayim.']},
        {say:['yoseph_r','Hurry — go up to my father and say to him, “Thus said your son Yosĕph: Aluahim has made me master of all Mitsrayim. Come down to me, do not delay. And you shall dwell in the land of Goshen, you and your children and your children’s children — and I shall provide for you there.”']},
        {move:['player',14,12,.05]},
+       {call:G=>{ const p=G.world.player;
+         for(const n of G.world.npcs){
+           if(n.hidden||!['yahudah','binyamin','reuven','shimon','br1','br2','br3','br4','br5','br6','br7'].includes(n.id)) continue;
+           const dx=p.x-n.x, dy=p.y-n.y;
+           n.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down');
+         } }},
        {say:['narrator','And he fell on his brother Binyamin’s neck and wept, and Binyamin wept on his neck. And he kissed all his brothers and wept over them — and after that his brothers spoke with him.']},
        {burst:[15,12,'mote',20]},{sfx:'chime'},
       ]},
@@ -5465,8 +5820,17 @@ STORY.push(
      ]},
    time:'morning', music:'eden',
    player:'yoseph_r', playerPos:[34,24],
+   onStart:[
+     {say:['narrator','And Yasharal set out with all that he had, and came to Be’ĕrsheḇa, and offered slaughterings to the Aluahim of his father Yahtsḥaq. And his sons carried Ya‘aqoḇ their father, and their little ones and their wives, in the wagons which Pharaoh had sent to carry him.']},
+     {show:'wagon'},{camera:['ent','wagon']},
+     {move:['wagon',24,17.5,.055]},
+     {hide:'wagon'},{teleport:['yaaqov',24,17.5]},{show:'yaaqov'},
+     {move:['yaaqov',20,17,.035,'bg']},
+     {camera:'player'},
+   ],
    npcs:[
-     {id:'yaaqov',char:'yaaqov_o',x:20,y:17,wander:false,
+     {id:'wagon',propType:'chariot',horses:true,rider:'yaaqov_o',x:45,y:17.5,wander:false,noTalk:true,hidden:true},
+     {id:'yaaqov',char:'yaaqov_o',x:20,y:17,wander:false,hidden:true,
       script:[
        {say:['narrator','And Yosĕph harnessed his chariot and went up to Goshen to meet his father — and he appeared to him, and fell on his neck, and wept on his neck a long time.']},
        {say:['yaaqov','Now let me die, since I have seen your face — that you are still alive. My son. My son.']},
@@ -5502,12 +5866,17 @@ STORY.push(
        {say:['yoseph_r','Do not be afraid. Am I in the place of Aluahim? You — you meant evil against me. But Aluahim meant it for good, in order to do as it is this day: to keep a great many people alive.']},
        {say:['yoseph_r','And now, do not be afraid. I shall provide for you and your little ones. So he comforted them, and spoke kindly to them.']},
        {sfx:'holy'},{burst:[20,21,'holy',20]},
+       {fade:'out'},{toast:'And Yosĕph dwelt in Mitsrayim, he and his father’s house — and Yosĕph lived one hundred and ten years.'},{wait:1900},{time:'dusk'},{fade:'in'},
+       {say:['yoseph_r','I am dying. But Aluahim shall certainly visit you, and bring you up from this land to the land of which He swore to Aḇraham, to Yahtsḥaq, and to Ya‘aqoḇ.']},
+       {say:['narrator','And Yosĕph made the sons of Yasharal swear, commanding them concerning his bones:']},
+       {say:['yoseph_r','Aluahim shall certainly visit you — and you shall bring up my bones from here.']},
+       {sfx:'holy'},
       ]},
    ],
   },
   outro:[
    {art:'goshen', music:'holy', text:'“You meant evil against me — but Aluahim meant it for good, in order to do as it is this day: to keep a great many people alive.”', ref:'BERĔSHITH 50:20'},
-   {art:'coffin', music:'night', text:'And Yosĕph said to his brothers, “I am dying, but Aluahim shall certainly visit you and bring you up from this land, to the land of which He swore to Aḇraham, to Yahtsḥaq and to Ya‘aqoḇ.” …So Yosĕph died, one hundred and ten years old; and they embalmed him, and he was placed in a coffin in Mitsrayim.', ref:'BERĔSHITH 50:24–26'},
+   {art:'coffin', music:'night', text:'And Yosĕph said to his brothers, “I am dying, but Aluahim shall certainly visit you and bring you up from this land, to the land of which He swore to Aḇraham, to Yahtsḥaq and to Ya‘aqoḇ.” And Yosĕph made the sons of Yasharal swear, saying, “Aluahim shall certainly visit you, and you shall bring up my bones from here.” So Yosĕph died, one hundred and ten years old; and they embalmed him, and he was placed in a coffin in Mitsrayim.', ref:'BERĔSHITH 50:24–26'},
    {art:'coffin', music:'holy', text:'So ends the Book of Beginnings — with a coffin in Mitsrayim, and a promise that would not stay buried. The Seed of the woman, the Seed of Aḇraham, the Sceptre of Yahuḏah — the story has only begun.', ref:'BERĔSHITH — THE END OF THE BEGINNING'},
   ],
   complete:'You meant evil against me, but Aluahim meant it for good. — Here ends BERĔSHITH: every promise alive, every road open.'
