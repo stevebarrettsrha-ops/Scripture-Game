@@ -491,6 +491,8 @@ const CHARS={
   cham:    {name:'Ḥam',     skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#5d6e50', beard:'#170e06'},
   yepheth: {name:'Yahpheth', skin:'#7e5630', hair:'#5e482a', hairStyle:'short', robe:'#6b5d70', beard:'#5e482a'},
   nimrod:  {name:'Nimroḏ',  skin:'#5f3e20', hair:'#120b04', hairStyle:'short', robe:'#8a3030', beard:'#120b04', headcover:'#caa23c'},
+  fallenking:{name:'A Watcher Enthroned', angel:true, darkAngel:true, skin:'#5e4434', hair:'#2c2030', hairStyle:'short', robe:'#4a3a52', collar:'#caa23c'},
+  giant:   {name:'A Giant', skin:'#e8c9a4', hair:'#7a5a36', hairStyle:'short', robe:'#5d4a3a', hairy:true, beard:'#7a5a36'},
   builder: {name:'Builder', skin:'#6e4926', hair:'#33230f', hairStyle:'short', robe:'#79653f'},
   builder2:{name:'Builder', skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#5f6e7e'},
   builder3:{name:'Builder', skin:'#7e5630', hair:'#5e482a', hairStyle:'short', robe:'#7e5f6e'},
@@ -1113,34 +1115,54 @@ function drawProp(g,px,py,p,t){
       break; }
     case 'ark': {
       // stage 0: keel, 1: hull, 2: complete; monumental structure drawn around anchor
-      const sc=(p.scale||1);
-      const W=TILE*17*sc, H=TILE*5*sc;
+      const sc=(p.scale||1), U2=TILE*sc;
+      const W=U2*17, H=U2*5;
       g.fillStyle='rgba(0,0,0,.25)';
-      g.beginPath(); g.ellipse(0,TILE*1.7,W*.55,TILE*.5,0,0,Math.PI*2); g.fill();
+      g.beginPath(); g.ellipse(0,U2*1.7,W*.55,U2*.5,0,0,Math.PI*2); g.fill();
       const st=p.stage||0;
       // hull
       g.fillStyle='#6e552f';
       g.beginPath();
-      g.moveTo(-W/2,0); g.quadraticCurveTo(-W/2-TILE*.8,H*.5,-W/2+TILE*.9,H);
-      g.lineTo(W/2-TILE*.9,H); g.quadraticCurveTo(W/2+TILE*.8,H*.5,W/2,0);
+      g.moveTo(-W/2,0); g.quadraticCurveTo(-W/2-U2*.8,H*.5,-W/2+U2*.9,H);
+      g.lineTo(W/2-U2*.9,H); g.quadraticCurveTo(W/2+U2*.8,H*.5,W/2,0);
       g.closePath(); g.fill();
       g.fillStyle='#5d4426';
-      for(let i=0;i<5;i++){ g.fillRect(-W/2+TILE*.4,H*.18*i+H*.12,W-TILE*.8,2); }
+      for(let i=0;i<7;i++){ g.fillRect(-W/2+U2*.4,H*.13*i+H*.1,W-U2*.8,Math.max(2,2*sc)); }
       if(st>=1){
-        g.fillStyle='#8d7048'; g.fillRect(-W/2+TILE*.6,-TILE*1.5,W-TILE*1.2,TILE*1.55);
+        g.fillStyle='#8d7048'; g.fillRect(-W/2+U2*.6,-U2*1.5,W-U2*1.2,U2*1.55);
         g.fillStyle='#7a6038';
-        for(let i=0;i<9;i++) g.fillRect(-W/2+TILE*.6+i*(W-TILE*1.2)/9,-TILE*1.5,2,TILE*1.5);
+        for(let i=0;i<11;i++) g.fillRect(-W/2+U2*.6+i*(W-U2*1.2)/11,-U2*1.5,Math.max(2,2*sc),U2*1.5);
         // door
         g.fillStyle=p.doorOpen===false?'#4a3522':'#241a0e';
-        g.fillRect(-TILE*.7,-TILE*1.1,TILE*1.4,TILE*1.15);
-        if(p.doorOpen!==false){ g.fillStyle='#4a3522'; g.fillRect(-TILE*.7,-TILE*1.1,TILE*.18,TILE*1.15); }
+        g.fillRect(-U2*.7,-U2*1.1,U2*1.4,U2*1.15);
+        if(p.doorOpen!==false){
+          g.fillStyle='#4a3522'; g.fillRect(-U2*.7,-U2*1.1,U2*.18,U2*1.15);
+          /* boarding ramp with ladder rungs, from the ground up to the door */
+          g.save();
+          g.fillStyle='#9a8458';
+          g.beginPath();
+          g.moveTo(-U2*.7,0); g.lineTo(U2*.7,0);
+          g.lineTo(U2*1.5,U2*2.1); g.lineTo(-U2*1.5,U2*2.1);
+          g.closePath(); g.fill();
+          g.strokeStyle='#5d4426'; g.lineWidth=Math.max(2,3*sc);
+          g.beginPath();
+          g.moveTo(-U2*.7,0); g.lineTo(-U2*1.5,U2*2.1);
+          g.moveTo(U2*.7,0); g.lineTo(U2*1.5,U2*2.1);
+          g.stroke();
+          g.strokeStyle='#6e552f'; g.lineWidth=Math.max(2,2.4*sc);
+          for(let i=1;i<6;i++){
+            const ry=U2*2.1*i/6, rw=U2*(0.7+0.8*i/6);
+            g.beginPath(); g.moveTo(-rw,ry); g.lineTo(rw,ry); g.stroke();
+          }
+          g.restore();
+        }
       }
       if(st>=2){
-        g.fillStyle='#9a8458'; g.fillRect(-W/2+TILE*1.4,-TILE*2.3,W-TILE*2.8,TILE*.85);
-        g.fillStyle='#6e552f'; g.fillRect(-W/2+TILE*1.4,-TILE*2.42,W-TILE*2.8,TILE*.16);
+        g.fillStyle='#9a8458'; g.fillRect(-W/2+U2*1.4,-U2*2.3,W-U2*2.8,U2*.85);
+        g.fillStyle='#6e552f'; g.fillRect(-W/2+U2*1.4,-U2*2.42,W-U2*2.8,U2*.16);
         // window strip
         g.fillStyle='#241a0e';
-        for(let i=0;i<7;i++) g.fillRect(-W/2+TILE*1.9+i*(W-TILE*3.8)/7,-TILE*2.15,TILE*.34,TILE*.3);
+        for(let i=0;i<9;i++) g.fillRect(-W/2+U2*1.9+i*(W-U2*3.8)/9,-U2*2.15,U2*.34,U2*.3);
       }
       break; }
     case 'tent': {
@@ -3459,6 +3481,77 @@ const STORY=[
 STORY.push(
 /* ============ ACT IV — THE FLOOD ============ */
 { id:'act4', roman:'IV', title:'The Flood', ref:'BERĔSHITH 6–9', chapters:[
+{ id:'c6b', title:'The Earth Was Filled With Violence', ref:'BERĔSHITH 6 · ḤANOḴ 7–8 · YASHAR 4',
+  intro:[
+   {art:'watchers', music:'tense', text:'And it came to be, when men began to increase on the face of the earth… that the sons of Aluahim saw the daughters of men, that they were good, and they took wives for themselves of all whom they chose. And the Nephilim were on the earth in those days — the mighty men of old, the men of name.', ref:'BERĔSHITH 6:1–4'},
+   {art:'corrupt', music:'sorrow', text:'And the sons of men turned from YAHUAH; they corrupted the earth, they robbed and plundered every man his neighbour as well as his relative — and the earth was filled with violence. And their judges and rulers took the wives of men by force.', ref:'YASHAR 4:17–18'},
+  ],
+  scene:{
+   map:{biome:'city', w:48, h:32, seed:66,
+     features:[
+       {type:'tower',stage:2,scaffold:true,x:38,y:10,solid:true,clear:4,flat:4,id:'forgeworks',examine:'A tower of burnt brick, hung with scaffolds — the works of the teaching of Azazal.'},
+       {type:'firepit',big:true,x:35,y:14,lit:true},
+       {type:'firepit',x:40,y:15,lit:true},
+       {type:'idol',x:42,y:12,col:'#caa23c',solid:true},
+       {type:'throne',x:12,y:9,solid:true,id:'darkthrone'},
+       {type:'tent',x:22,y:22,solid:true,clear:2,col:'#8a7a62'},
+       {type:'basket',full:true,x:24,y:23,id:'goods'},
+       {type:'clearing',x:24,y:16,flat:3},{type:'clearing',x:12,y:12,flat:2},
+     ]},
+   time:'night', music:'tense',
+   player:'noach', playerPos:[24,28],
+   npcs:[
+     {id:'fking',char:'fallenking',x:12,y:8.4,wander:false,noTalk:true},
+     {id:'servile1',char:'shepherd',x:10.5,y:11,wander:false,noTalk:true},
+     {id:'servile2',char:'servant',x:13.5,y:11.2,wander:false,noTalk:true},
+     {id:'giant',char:'giant',x:30,y:13,scale:1.9,wander:false,noTalk:true},
+     {id:'flee1',char:'builder',x:28,y:14.5,wander:false,noTalk:true},
+     {id:'f1',char:'builder2',x:23,y:16,wander:false,noTalk:true},
+     {id:'f2',char:'builder3',x:25,y:16,wander:false,noTalk:true},
+     {id:'robber',char:'shepherd',x:23,y:22.5,wander:false,noTalk:true},
+     {id:'victim',char:'servant',x:25,y:22.8,wander:false,noTalk:true},
+   ],
+   objectives:[
+     {type:'goto',x:24,y:21,radius:2.4,text:'Pass through the city by night — see what men have become',
+      script:[
+       {move:['robber',24.6,23,.07,'bg']},{wait:400},
+       {say:['victim','My grain! My garments! — Thief! THIEF! Will no one—']},
+       {move:['robber',4,26,.09,'bg']},
+       {say:['narrator','And no one rose to help, for every man robbed and plundered his neighbour, as well as his relative — and would not hearken to the voice of Methushelaḥ, but rebelled against him.']},
+       {say:['noach','Lock your door, friend, and pray. There is no judge left in the land who is not worse than the thief.']},
+      ]},
+     {type:'goto',x:24,y:17,radius:2.4,text:'Shouting in the square ahead',hiddenUntil:1,
+      script:[
+       {shake:1},{sfx:'bad'},
+       {say:['narrator','In the square, two men fought over a wage — with the new blades of the forges, for Azazal had taught men to make swords and knives, and shields and breastplates, and the metals of the earth and the art of working them.']},
+       {face:['f1','right']},{face:['f2','left']},{shake:1.5},{wait:700},
+       {fade:'out'},{sfx:'thunder'},{wait:500},
+       {call:g=>{ const n=g.world.npcs.find(n=>n.id==='f2'); if(n){n.lying=true;} }},
+       {fade:'in'},
+       {say:['narrator','And one struck down the other, and walked away — and the blood cried from the ground, and no one heard it but the shamayim.']},
+       {move:['f1',45,28,.07,'bg']},
+       {wait:600},
+       {move:['giant',26,15.5,.05]},
+       {say:['narrator','And the giants — for the Nephilim were on the earth in those days — consumed all the work and toil of men. And when men could no longer sustain them, the giants turned against them, and devoured mankind.']},
+       {move:['flee1',44,24,.095,'bg']},
+       {say:['noach','…Even the mighty hide from the mightier. The whole order of the world is devoured, from the least to the greatest.']},
+      ]},
+     {type:'goto',x:12,y:12,radius:2.4,text:'A throne stands where the judgement seat once was',hiddenUntil:2,
+      script:[
+       {say:['narrator','And on the high seat of the city — not a judge of the sons of men, but one of the fallen watchers, enthroned as sovereign: and men bowed to him, and served him, and brought him their daughters and their tribute.']},
+       {say:['noach','You are no king. You left the shamayim for this — a chair of gold in a city of blood. My fathers’ Aluahim is witness: this shall not stand.']},
+       {time:'deepnight'},{rays:.9,raysX:12},{sfx:'holy'},{music:'sorrow'},
+       {say:['voice','YAHUAH saw that the wickedness of man was great in the earth, and that every inclination of the thoughts of his heart was only evil continually. The earth is corrupt before Me, and filled with violence through them.']},
+       {say:['voice','The end of all flesh has come before Me… But you, Noaḥ — you have found favour in My eyes. Walk before Me. The work I give you is not a sword, but an ark.']},
+       {rays:0},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'corrupt', music:'sorrow', text:'And YAHUAH was sorry that He had made man on the earth, and He was grieved in His heart… But Noaḥ found favour in the eyes of YAHUAH.', ref:'BERĔSHITH 6:6,8'},
+  ],
+  complete:'The earth was filled with violence — and one man walked with Aluahim through the middle of it.'
+},
 { id:'c7', title:'Noaḥ Found Favour', ref:'BERĔSHITH 6',
   intro:[
    {art:'corrupt', music:'sorrow', text:'And YAHUAH saw that the wickedness of man was great in the earth and that every inclination of the thoughts of his heart was only evil continually… and the earth was filled with violence.', ref:'BERĔSHITH 6:5,11'},

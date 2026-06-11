@@ -1122,34 +1122,54 @@ function drawProp(g,px,py,p,t){
       break; }
     case 'ark': {
       // stage 0: keel, 1: hull, 2: complete; monumental structure drawn around anchor
-      const sc=(p.scale||1);
-      const W=TILE*17*sc, H=TILE*5*sc;
+      const sc=(p.scale||1), U2=TILE*sc;
+      const W=U2*17, H=U2*5;
       g.fillStyle='rgba(0,0,0,.25)';
-      g.beginPath(); g.ellipse(0,TILE*1.7,W*.55,TILE*.5,0,0,Math.PI*2); g.fill();
+      g.beginPath(); g.ellipse(0,U2*1.7,W*.55,U2*.5,0,0,Math.PI*2); g.fill();
       const st=p.stage||0;
       // hull
       g.fillStyle='#6e552f';
       g.beginPath();
-      g.moveTo(-W/2,0); g.quadraticCurveTo(-W/2-TILE*.8,H*.5,-W/2+TILE*.9,H);
-      g.lineTo(W/2-TILE*.9,H); g.quadraticCurveTo(W/2+TILE*.8,H*.5,W/2,0);
+      g.moveTo(-W/2,0); g.quadraticCurveTo(-W/2-U2*.8,H*.5,-W/2+U2*.9,H);
+      g.lineTo(W/2-U2*.9,H); g.quadraticCurveTo(W/2+U2*.8,H*.5,W/2,0);
       g.closePath(); g.fill();
       g.fillStyle='#5d4426';
-      for(let i=0;i<5;i++){ g.fillRect(-W/2+TILE*.4,H*.18*i+H*.12,W-TILE*.8,2); }
+      for(let i=0;i<7;i++){ g.fillRect(-W/2+U2*.4,H*.13*i+H*.1,W-U2*.8,Math.max(2,2*sc)); }
       if(st>=1){
-        g.fillStyle='#8d7048'; g.fillRect(-W/2+TILE*.6,-TILE*1.5,W-TILE*1.2,TILE*1.55);
+        g.fillStyle='#8d7048'; g.fillRect(-W/2+U2*.6,-U2*1.5,W-U2*1.2,U2*1.55);
         g.fillStyle='#7a6038';
-        for(let i=0;i<9;i++) g.fillRect(-W/2+TILE*.6+i*(W-TILE*1.2)/9,-TILE*1.5,2,TILE*1.5);
+        for(let i=0;i<11;i++) g.fillRect(-W/2+U2*.6+i*(W-U2*1.2)/11,-U2*1.5,Math.max(2,2*sc),U2*1.5);
         // door
         g.fillStyle=p.doorOpen===false?'#4a3522':'#241a0e';
-        g.fillRect(-TILE*.7,-TILE*1.1,TILE*1.4,TILE*1.15);
-        if(p.doorOpen!==false){ g.fillStyle='#4a3522'; g.fillRect(-TILE*.7,-TILE*1.1,TILE*.18,TILE*1.15); }
+        g.fillRect(-U2*.7,-U2*1.1,U2*1.4,U2*1.15);
+        if(p.doorOpen!==false){
+          g.fillStyle='#4a3522'; g.fillRect(-U2*.7,-U2*1.1,U2*.18,U2*1.15);
+          /* boarding ramp with ladder rungs, from the ground up to the door */
+          g.save();
+          g.fillStyle='#9a8458';
+          g.beginPath();
+          g.moveTo(-U2*.7,0); g.lineTo(U2*.7,0);
+          g.lineTo(U2*1.5,U2*2.1); g.lineTo(-U2*1.5,U2*2.1);
+          g.closePath(); g.fill();
+          g.strokeStyle='#5d4426'; g.lineWidth=Math.max(2,3*sc);
+          g.beginPath();
+          g.moveTo(-U2*.7,0); g.lineTo(-U2*1.5,U2*2.1);
+          g.moveTo(U2*.7,0); g.lineTo(U2*1.5,U2*2.1);
+          g.stroke();
+          g.strokeStyle='#6e552f'; g.lineWidth=Math.max(2,2.4*sc);
+          for(let i=1;i<6;i++){
+            const ry=U2*2.1*i/6, rw=U2*(0.7+0.8*i/6);
+            g.beginPath(); g.moveTo(-rw,ry); g.lineTo(rw,ry); g.stroke();
+          }
+          g.restore();
+        }
       }
       if(st>=2){
-        g.fillStyle='#9a8458'; g.fillRect(-W/2+TILE*1.4,-TILE*2.3,W-TILE*2.8,TILE*.85);
-        g.fillStyle='#6e552f'; g.fillRect(-W/2+TILE*1.4,-TILE*2.42,W-TILE*2.8,TILE*.16);
+        g.fillStyle='#9a8458'; g.fillRect(-W/2+U2*1.4,-U2*2.3,W-U2*2.8,U2*.85);
+        g.fillStyle='#6e552f'; g.fillRect(-W/2+U2*1.4,-U2*2.42,W-U2*2.8,U2*.16);
         // window strip
         g.fillStyle='#241a0e';
-        for(let i=0;i<7;i++) g.fillRect(-W/2+TILE*1.9+i*(W-TILE*3.8)/7,-TILE*2.15,TILE*.34,TILE*.3);
+        for(let i=0;i<9;i++) g.fillRect(-W/2+U2*1.9+i*(W-U2*3.8)/9,-U2*2.15,U2*.34,U2*.3);
       }
       break; }
     case 'tent': {
