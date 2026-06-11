@@ -581,7 +581,7 @@ function drawChar(g,px,py,charId,o){
   g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined) g.globalAlpha=o.alpha;
   /* shadow */
-  if(!o.submerged){
+  if(!o.submerged&&!o.riding){
     g.fillStyle='rgba(0,0,0,.25)';
     g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
   }
@@ -606,6 +606,10 @@ function drawChar(g,px,py,charId,o){
     }
   }
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(-Math.PI/2*flip); }
+  if(o.riding){
+    /* seated on a mount: draw from the hip up */
+    g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip();
+  }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
     const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
@@ -843,7 +847,7 @@ function drawSerpent(g,px,py,o){
 }
 
 /* ================= ANIMALS v2 ================= */
-const ANIMAL_SCALE={camel:1.8,cow:1.45,donkey:1.3,lion:1.4,deer:1.2,ram:1.15,goat:1.05,sheep:1.05};
+const ANIMAL_SCALE={camel:1.8,horse:1.6,cow:1.45,donkey:1.3,lion:1.4,deer:1.2,ram:1.15,goat:1.05,sheep:1.05};
 function drawAnimal(g,px,py,type,o){
   o=o||{}; const t=o.t||0, u=2.2*(TILE/40)*(o.scale||1)*(ANIMAL_SCALE[type]||1);
   const flip=o.dir==='right'?-1:1;   /* builders face left natively */
@@ -975,6 +979,19 @@ function drawAnimal(g,px,py,type,o){
       R(-1,-3.6+w2*.4,2,1,shade(o.col||'#7aa8c8',-12));   /* fin */
       R(-2.8,-2+w2*.3,.7,.7,'#160e08');
       break; }
+    case 'horse': {
+      R(-3.8-k*1,-6.2,1.5,6.2,'#5d4434'); R(2.6+k*1,-6.2,1.5,6.2,'#5d4434');
+      R(-1.7+k*1,-6.2,1.5,6.2,'#4d3729'); R(0.7-k*1,-6.2,1.5,6.2,'#4d3729');
+      R(-5.6,-10.8+B,11.2,5,'#7a5234');
+      R(-5.6,-10.8+B,11.2,1.3,'#8a5f3e');
+      R(-7.6,-14.6+B,2.6,5.2,'#7a5234');           /* neck */
+      R(-9.4,-15.8+B,3.4,2.6,'#7a5234');           /* head */
+      R(-10.4,-14.8+B,1.4,1.4,'#6a462c');          /* muzzle */
+      R(-8.6,-15.2+B,.8,.8,'#160e08');
+      R(-8.2,-17.2+B,1,1.8,'#4d3322');             /* ears */
+      R(-6.4,-16.4+B,1.4,6,'#3b2a1c');             /* mane */
+      R(5.2,-10.4+B,1.2,5.6,'#3b2a1c');            /* tail */
+      break; }
     case 'lizard': {
       const w3=k*0.8;
       R(-2.6,-1.6+B,5.2,1.6,'#6e8a3e');
@@ -1003,6 +1020,11 @@ function drawAnimal(g,px,py,type,o){
       break; }
   }
   sprRender(g,ops,u,flip);
+  if(o.rider){
+    const seat={camel:-12.2,horse:-9.6,donkey:-7.6}[type];
+    if(seat!==undefined)
+      drawChar(g,px,py+seat*u,o.rider,{t,dir:o.dir,moving:o.moving,riding:true,scale:o.riderScale||1});
+  }
   g.restore();
 }
 
@@ -1815,6 +1837,10 @@ function drawWorld(g,world,t){
     if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
+    else if(d.mount){
+      drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale});
+      if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
+    }
     else {
       drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
@@ -2111,6 +2137,7 @@ const Game={
     if(op.show){ const ent=findEnt(op.show); if(ent) ent.hidden=false; return true; }
     if(op.emote){ const ent=findEnt(op.emote[0]); if(ent) ent.emote=op.emote[1]; return true; }
     if(op.charSwap){ const ent=findEnt(op.charSwap[0]); if(ent) ent.char=op.charSwap[1]; return true; }
+    if(op.mount){ const ent=findEnt(op.mount[0]); if(ent) ent.mount=op.mount[1]; return true; }
     if(op.wait!==undefined){ this.scriptWait=op.wait; return false; }
     if(op.fade==='out'){ $('fader').style.opacity='1'; this.scriptWait=850; return false; }
     if(op.fade==='in'){ $('fader').style.opacity='0'; this.scriptWait=850; return false; }
@@ -2259,7 +2286,7 @@ const Game={
     const map=generateMap(sc.map);
     const player=sc.player?{
       char:sc.player, x:sc.playerPos[0], y:sc.playerPos[1],
-      dir:'down', moving:false, speed:.085
+      dir:'down', moving:false, speed:.085, mount:sc.playerMount||null
     }:null;
     this.world={
       map, player, npcs:(sc.npcs||[]).map(makeNpc),
@@ -2311,6 +2338,13 @@ const Game={
     if(this.state==='play'&&!this.script){
       const tgt=this.interactTarget;
       if(tgt) this.doInteract(tgt);
+      else if(this.world&&this.world.player&&this.world.player.mount){
+        const p=this.world.player;
+        p.mount=null;
+        if(this.world._mountSrc){ const n=this.world._mountSrc;
+          n.x=p.x+1.1; n.y=p.y; n.hidden=false; this.world._mountSrc=null; }
+        Sound.sfx('blip'); toast('Dismounted.');
+      }
     }
   },
   onEscape(){
@@ -2320,6 +2354,11 @@ const Game={
     const w=this.world;
     if(tgt.npc){
       const n=tgt.npc;
+      if(n.rideable&&w.player&&!w.player.mount){
+        w.player.mount=n.animal; n.hidden=true; w._mountSrc=n;
+        Sound.sfx('pickup'); toast('Riding the '+n.animal+' — press E to dismount.');
+        return;
+      }
       const o=(this.objectives||[]).find(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
               (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
       // face each other
@@ -2360,7 +2399,8 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const nx=p.x+v.x*p.speed*dt*.06, ny=p.y+v.y*p.speed*dt*.06;
+        const ms=p.speed*(p.mount?1.65:1);
+        const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
         if(walkable(w.map,nx,p.y)) p.x=nx;
         if(walkable(w.map,p.x,ny)) p.y=ny;
         p.moving=true;
@@ -2462,9 +2502,9 @@ const Game={
         if(n.hidden) continue;
         const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
                      (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
-        if(n.noTalk&&!hasObj) continue;
+        if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script)){ bd=d4; best={npc:n}; }
+        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
