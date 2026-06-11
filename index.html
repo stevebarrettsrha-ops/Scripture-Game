@@ -1703,6 +1703,23 @@ function drawWorld(g,world,t){
     g.beginPath(); g.moveTo(sx,sy-TILE*1.1-mb); g.lineTo(sx-7,sy-TILE*1.45-mb); g.lineTo(sx+7,sy-TILE*1.45-mb);
     g.closePath(); g.fill();
   }
+  // guidance arrow orbiting the player, pointing toward the objective
+  if(world.guide&&world.player&&!world.player.hidden){
+    const p=world.player;
+    const a=Math.atan2(world.guide.y-p.y,world.guide.x-p.x);
+    const lead=Math.sin(t/300)*5;
+    const ax=p.x*TILE+offX+Math.cos(a)*(TILE*1.9+lead);
+    const ay=p.y*TILE+offY-TILE*0.9+Math.sin(a)*(TILE*1.9+lead);
+    const pul=.6+Math.sin(t/260)*.4;
+    g.save(); g.translate(ax,ay); g.rotate(a);
+    g.fillStyle=`rgba(232,198,106,${.5+pul*.4})`;
+    g.strokeStyle='rgba(26,15,9,.85)'; g.lineWidth=2;
+    g.beginPath();
+    g.moveTo(TILE*.46,0); g.lineTo(-TILE*.18,-TILE*.27);
+    g.lineTo(-TILE*.05,0); g.lineTo(-TILE*.18,TILE*.27);
+    g.closePath(); g.fill(); g.stroke();
+    g.restore();
+  }
   Particles.draw(g);
   // god rays
   if(world.rays>0){
@@ -2269,6 +2286,28 @@ const Game={
         if(cnt!==lo.count){ lo.count=cnt; this.renderObjectives(); }
         if(cnt>=lo.need) this.completeObjective(lo.idx);
       }
+    }
+    // guidance arrow: where should the player be heading?
+    {
+      let gt=null;
+      const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+      if(active&&p&&!this.script&&!this.dlgChar){
+        if(active.type==='goto'||active.type==='lead') gt={x:active.x,y:active.y};
+        else if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+          if(n&&!n.hidden) gt={x:n.x,y:n.y}; }
+        else if(active.type==='interact'){ const pr=w.map.decor.find(d=>d.id===active.prop);
+          if(pr) gt={x:pr.x,y:pr.y}; }
+        else if(active.type==='collect'){
+          let best=null,bd=1e9;
+          for(const it of w.items){ if(it.taken||it.kind!==active.item) continue;
+            const d6=dist(p.x,p.y,it.x,it.y); if(d6<bd){bd=d6;best=it;} }
+          if(!best){ for(const n of w.npcs){ if(active.item==='_raven'&&n.group==='ravens'&&!n.fled&&!n.hidden){
+            const d6=dist(p.x,p.y,n.x,n.y); if(d6<bd){bd=d6;best=n;} } } }
+          if(best) gt={x:best.x,y:best.y};
+        }
+        if(gt&&dist(p.x,p.y,gt.x,gt.y)<5.5) gt=null;   // close enough — markers take over
+      }
+      w.guide=gt;
     }
     // interact target detection
     this.interactTarget=null;
