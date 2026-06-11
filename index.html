@@ -2807,6 +2807,98 @@ function drawSlideArt(g,key,st,t,slide){
       const dawn=clamp(st/6000,0,1);
       if(dawn>0){ g.fillStyle=`rgba(232,150,80,${dawn*.25})`; g.fillRect(0,0,VW,VH); }
       break; }
+    case 'chariots': {
+      /* taken up in a whirlwind, with horses and chariots of fire */
+      Sky.paint(g,[[0,'#0a0e26'],[.6,'#141a3c'],[1,'#222a52']]);
+      Sky.stars(g,t,140,.9);
+      Sky.hills(g,'#0c1024',VH*.86,30,3);
+      const wx2=VW*.55, rise=((t/30)%(VH*1.3));
+      for(let i=0;i<13;i++){
+        const wy2=VH*.92-i*VH*.06;
+        const ww=(36+i*9)*(1+Math.sin(t/300+i)*.08);
+        g.strokeStyle=`rgba(200,210,240,${.28-i*.015})`;
+        g.lineWidth=4;
+        g.beginPath(); g.ellipse(wx2+Math.sin(t/200+i*1.2)*8,wy2,ww,10+i*1.1,0,0,Math.PI*2); g.stroke();
+      }
+      const cy=VH*.85-rise*.55;
+      g.save(); g.translate(wx2+Math.sin(t/300)*10,cy); g.rotate(-.28);
+      const fl3=t/70;
+      for(let h7=0;h7<2;h7++){
+        const hx3=-70-h7*44, hy3=-6+h7*9;
+        const grd7=g.createLinearGradient(hx3-26,hy3,hx3+26,hy3);
+        grd7.addColorStop(0,'#ffd54a'); grd7.addColorStop(1,'#e8762a');
+        g.fillStyle=grd7;
+        g.fillRect(hx3-22,hy3-9,40,16);
+        g.fillRect(hx3+14,hy3-22,9,16);
+        g.fillRect(hx3+12,hy3-28,18,9);
+        for(let l=0;l<4;l++) g.fillRect(hx3-20+l*11,hy3+7+Math.sin(fl3+l+h7)*4,5,12);
+        g.fillStyle='rgba(255,213,74,.7)';
+        g.beginPath(); g.moveTo(hx3-22,hy3-6);
+        g.quadraticCurveTo(hx3-44,hy3-16+Math.sin(fl3+h7)*6,hx3-52,hy3+2);
+        g.quadraticCurveTo(hx3-38,hy3+6,hx3-22,hy3+4); g.fill();
+      }
+      const grd8=g.createLinearGradient(0,-26,0,14);
+      grd8.addColorStop(0,'#ffd54a'); grd8.addColorStop(1,'#c84a1c');
+      g.fillStyle=grd8;
+      g.beginPath(); g.moveTo(-26,-22); g.lineTo(26,-22); g.lineTo(34,12); g.lineTo(-34,12); g.closePath(); g.fill();
+      g.strokeStyle='#ffd54a'; g.lineWidth=4;
+      g.beginPath(); g.arc(-16,16,13,0,Math.PI*2); g.arc(18,16,13,0,Math.PI*2); g.stroke();
+      drawChar(g,0,-20,CHARS.chanok?'chanok':'adam_c',{t,scale:1.1,dir:'down'});
+      for(let i=0;i<7;i++){
+        g.fillStyle=`rgba(255,${150+i*12|0},60,${.5-i*.06})`;
+        g.beginPath(); g.arc(44+i*16+Math.sin(fl3+i)*4,18+i*8,9-i,0,Math.PI*2); g.fill();
+      }
+      g.restore();
+      const gl13=g.createRadialGradient(wx2,cy,8,wx2,cy,170);
+      gl13.addColorStop(0,'rgba(255,200,90,.4)'); gl13.addColorStop(1,'rgba(255,200,90,0)');
+      g.fillStyle=gl13; g.beginPath(); g.arc(wx2,cy,170,0,Math.PI*2); g.fill();
+      break; }
+    case 'wilderness': {
+      Sky.paint(g,[[0,'#cfe0e8'],[.55,'#d8cba4'],[1,'#b8a070']]);
+      Sky.sun(g,VW*.72,VH*.2,28,'rgba(255,245,210,.9)');
+      Sky.hills(g,'#9d8a62',VH*.55,44,2);
+      Sky.hills(g,'#8a7550',VH*.68,36,5);
+      g.fillStyle='#a89064'; g.fillRect(0,VH*.78,VW,VH*.22);
+      for(let i=0;i<7;i++){
+        const x4=(hash2(i,11)*.9+.05)*VW, y4=VH*(.8+hash2(i,17)*.16);
+        if(hash2(i,3)>.5) drawProp(g,x4,y4,{type:'tree',dead:true},t);
+        else drawProp(g,x4,y4,{type:'rock'},t);
+      }
+      drawProp(g,VW*.3,VH*.86,{type:'bush',col:'#7a7a45'},t);
+      break; }
+    case 'camp': {
+      Sky.paint(g,[[0,'#3d3250'],[.55,'#6a4a52'],[1,'#8a5d4a']]);
+      Sky.stars(g,t,40,.4);
+      Sky.hills(g,'#3d3228',VH*.6,40,4);
+      g.fillStyle='#4d4030'; g.fillRect(0,VH*.72,VW,VH*.28);
+      drawProp(g,VW*.26,VH*.78,{type:'tent',col:'#b3a07f'},t);
+      drawProp(g,VW*.5,VH*.74,{type:'tent',col:'#a39070'},t);
+      drawProp(g,VW*.72,VH*.8,{type:'tent',col:'#bda884'},t);
+      drawProp(g,VW*.42,VH*.88,{type:'firepit',lit:true},t);
+      Sky.figure(g,VW*.34,VH*.95,'shepherd',{t,scale:2});
+      Sky.figure(g,VW*.56,VH*.93,'servant',{t,scale:2,dir:'left'});
+      Sky.figure(g,VW*.47,VH*.985,'builder',{t,scale:1.4,child:true});
+      drawAnimal(g,VW*.84,VH*.92,'sheep',{t,scale:1.8,dir:'left'});
+      drawAnimal(g,VW*.12,VH*.94,'goat',{t,scale:1.8});
+      break; }
+    case 'mountain': {
+      Sky.paint(g,[[0,'#8aa4bc'],[.55,'#b8c4c8'],[1,'#c8c4b4']]);
+      Sky.sun(g,VW*.2,VH*.16,22,'rgba(255,245,215,.8)');
+      for(let i=0;i<4;i++){
+        const cx4=(hash2(i,7)*.8+.1)*VW+Math.sin(t/4000+i)*30, cy4=VH*(.16+hash2(i,13)*.18);
+        g.fillStyle='rgba(245,248,250,.6)';
+        g.beginPath(); g.ellipse(cx4,cy4,70,16,0,0,Math.PI*2);
+        g.ellipse(cx4+40,cy4+6,46,13,0,0,Math.PI*2); g.fill();
+      }
+      Sky.hills(g,'#6a7a72',VH*.6,50,2);
+      g.fillStyle='#5d564c';
+      g.beginPath(); g.moveTo(VW*.22,VH); g.lineTo(VW*.52,VH*.18); g.lineTo(VW*.85,VH); g.closePath(); g.fill();
+      g.fillStyle='rgba(255,255,255,.16)';
+      g.beginPath(); g.moveTo(VW*.44,VH*.4); g.lineTo(VW*.52,VH*.18); g.lineTo(VW*.6,VH*.4); g.closePath(); g.fill();
+      g.fillStyle='#4d463c';
+      g.beginPath(); g.moveTo(VW*.52,VH*.18); g.lineTo(VW*.85,VH); g.lineTo(VW*.62,VH); g.closePath(); g.fill();
+      g.fillStyle='#6a8052'; g.fillRect(0,VH*.9,VW,VH*.1);
+      break; }
     case 'furnace': {
       Sky.paint(g,[[0,'#160c0a'],[.6,'#2c1410'],[1,'#3d1c12']]);
       // crowd silhouettes
@@ -3210,7 +3302,7 @@ const STORY=[
 { id:'act3', roman:'III', title:'Brothers', ref:'BERĔSHITH 4–5', chapters:[
 { id:'c5', title:'An Offering for YAHUAH', ref:'BERĔSHITH 4:1–7',
   intro:[
-   {art:'journey', music:'desert', text:'And Aḏam knew Ḥawwah his wife and she conceived and bore Qayin… And again, she gave birth to his brother Heḇal. And Heḇal became a keeper of sheep, but Qayin became a tiller of the ground.', ref:'BERĔSHITH 4:1–2'},
+   {art:'wilderness', music:'desert', text:'And Aḏam knew Ḥawwah his wife and she conceived and bore Qayin… And again, she gave birth to his brother Heḇal. And Heḇal became a keeper of sheep, but Qayin became a tiller of the ground.', ref:'BERĔSHITH 4:1–2'},
    {art:'offering', music:'tense', text:'And unto Qayin and his offering YAHUAH did not turn — for he had brought from the inferior fruit of the ground before YAHUAH. And Qayin was jealous against his brother Heḇal on account of this, and he sought a pretext to slay him.', ref:'YASHAR 1:16'},
   ],
   scene:{
@@ -3334,10 +3426,10 @@ const STORY=[
   },
   outro:[
    {art:'stars', music:'holy', text:'And Aḏam knew his wife again and she bore a son and called his name Shĕth — “for Aluahim has appointed me another seed in place of Heḇal.” …Then it was begun to call on the Name of YAHUAH.', ref:'BERĔSHITH 4:25–26'},
-   {art:'goshen', text:'And Qayin took Awan his sister to be his wife, and she bore Ḥanoḵ his son; and Qayin built a city, and called its name after the name of his son. And to Aḏam and Ḥawwah was also born the daughter Azura, who became wife to Shĕth.', ref:'YOḆELIM 4:1–11'},
+   {art:'camp', text:'And Qayin took Awan his sister to be his wife, and she bore Ḥanoḵ his son; and Qayin built a city, and called its name after the name of his son. And to Aḏam and Ḥawwah was also born the daughter Azura, who became wife to Shĕth.', ref:'YOḆELIM 4:1–11'},
    {art:'corrupt', music:'sorrow', text:'And at the close of that Yoḇel, Qayin was killed: his house fell on him, and he died in the middle of his house, killed by its stones. For with a stone he had killed Heḇal, and by a stone he was killed in righteous mishpat — therefore it is ordained on the heavenly tablets: with the instrument with which a man kills his neighbor, with the same shall he be killed.', ref:'YOḆELIM 4:31–32'},
    {art:'stars', text:'And Ḥanoḵ walked with Aluahim three hundred years… and he taught the sons of men the ways of YAHUAH, and kings and princes came to hear his wisdom, and crowned him over them.', ref:'BERĔSHITH 5:22; YASHAR 3'},
-   {art:'ladder', music:'holy', text:'And they lifted up their eyes, and the likeness of a great horse descended from the shamayim, pacing in the air. And Ḥanoḵ said, “On my account does this horse descend. The time has come that I must go from you.” And he ascended into the shamayim in a whirlwind, with horses and chariots of fire — and he was not, for Aluahim took him.', ref:'YASHAR 3:27–36; BERĔSHITH 5:24'},
+   {art:'chariots', music:'holy', text:'And they lifted up their eyes, and the likeness of a great horse descended from the shamayim, pacing in the air. And Ḥanoḵ said, “On my account does this horse descend. The time has come that I must go from you.” And he ascended into the shamayim in a whirlwind, with horses and chariots of fire — and he was not, for Aluahim took him.', ref:'YASHAR 3:27–36; BERĔSHITH 5:24'},
   ],
   complete:'The voice of your brother’s blood cries out to Me from the ground. Yet another seed was appointed — and men began to call on the Name of YAHUAH.'
 },
