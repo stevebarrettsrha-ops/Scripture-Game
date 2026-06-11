@@ -586,8 +586,8 @@ function drawChar(g,px,py,charId,o){
   const t=o.t||0;
   const u=(o.scale||1)*(c.child||o.child?1.9:(c.angel?3.3:2.6))*(TILE/40);
   const dir=o.dir||'down';
-  const side=(dir==='left'||dir==='right');
-  const flip=dir==='left'?-1:1;
+  const side=(dir==='left'||dir==='right')&&!o.lying;
+  const flip=(dir==='left'&&!o.lying)?-1:1;
   const moving=o.moving;
   const ph=moving?Math.floor(t/160)%4:0;
   const k=moving?[0,1,0,-1][ph]:0;                 // swing sign
@@ -620,7 +620,7 @@ function drawChar(g,px,py,charId,o){
       g.fillStyle=gl; g.beginPath(); g.arc(0,-13*u,16*u,0,Math.PI*2); g.fill();
     }
   }
-  if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(-Math.PI/2*flip); }
+  if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){
     /* seated on a mount: draw from the hip up */
     g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip();
@@ -2412,8 +2412,12 @@ const Game={
       }
       const o=(this.objectives||[]).find(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
               (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
-      // face each other
-      if(w.player){ n.dir=w.player.x<n.x?'left':'right'; }
+      // face each other (dominant axis), never disturb the lying
+      if(w.player){
+        const fdx=w.player.x-n.x, fdy=w.player.y-n.y;
+        if(!n.lying) n.dir=Math.abs(fdx)>Math.abs(fdy)?(fdx<0?'left':'right'):(fdy<0?'up':'down');
+        if(!w.player.lying) w.player.dir=Math.abs(fdx)>Math.abs(fdy)?(fdx>0?'left':'right'):(fdy>0?'up':'down');
+      }
       if(o&&o.script){ this.runScript(o.script.slice(),()=>this.completeObjective(o.idx)); }
       else if(n.script){ this.runScript(n.script.slice(),()=>{ if(o) this.completeObjective(o.idx); }); }
       else if(n.dlg){
