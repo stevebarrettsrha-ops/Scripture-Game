@@ -1933,6 +1933,44 @@ function npcBlocked(world,x,y,px,py){
   return false;
 }
 
+
+function campRing(G,n,o){
+  /* pitch a camp: rows of dwellings around the playable space, with lanes between,
+     auto-avoiding objectives, items and marked props */
+  o=o||{};
+  const m=G.world.map;
+  const houses=o.houses;
+  const gx=o.gx||(houses?6.4:4.6), gy=o.gy||(houses?4.4:3.6);
+  const x0=o.x0!==undefined?o.x0:3, y0=o.y0!==undefined?o.y0:3;
+  const x1=o.x1!==undefined?o.x1:m.w-4, y1=o.y1!==undefined?o.y1:m.h-3;
+  const keep=o.keep||[];
+  const tcols=['#c8b486','#b3a07f','#bda884','#a89a78','#cbb591'];
+  const hcols=['#b58a50','#a87f48','#ad8248'];
+  const avoid=[];
+  for(const ob of (G.objectives||[])) if(ob.x!==undefined) avoid.push([ob.x,ob.y,3.2]);
+  for(const d of m.decor) if(d.id||d.examine||d.type==='mishkan'||d.type==='altar'||d.type==='well') avoid.push([d.x,d.y,3.2]);
+  for(const it of (G.world.items||[])) if(!it.taken) avoid.push([it.x,it.y,2.4]);
+  if(G.world.player) avoid.push([G.world.player.x,G.world.player.y,2.6]);
+  let placed=0;
+  const cols=Math.max(1,Math.floor((x1-x0)/gx));
+  for(let i=0;i<cols*40&&placed<n;i++){
+    const r=Math.floor(i/cols);
+    const xx=x0+(i%cols)*gx+(r%2?gx*.5:0)+hash2(i,7)*1.4;
+    const yy=y0+r*gy+hash2(i,13)*1.1;
+    if(yy>y1) break;
+    if(xx>m.w-3||xx<2) continue;
+    let bad=SOLID.has(tileAt(m,xx,yy));
+    if(!bad) for(const k of keep){ if(xx>k[0]&&xx<k[2]&&yy>k[1]&&yy<k[3]){bad=true;break;} }
+    if(!bad) for(const a of avoid){ if(Math.abs(a[0]-xx)<a[2]&&Math.abs(a[1]-yy)<a[2]){bad=true;break;} }
+    if(bad) continue;
+    m.decor.push(houses?{type:'house',solid:true,x:xx,y:yy,col:hcols[placed%3]}
+                       :{type:'tent',solid:true,x:xx,y:yy,col:tcols[placed%5]});
+    if(placed%5===4) m.decor.push({type:'firepit',x:xx+1.9,y:yy+1.1,lit:true});
+    placed++;
+  }
+  m.decor.sort((a,b)=>a.y-b.y);
+}
+
 /* ================= WORLD RENDER ================= */
 const Camera={x:0,y:0,shake:0,
   follow(tx,ty,map,instant){
@@ -3984,6 +4022,9 @@ STORY.push(
    items:[
      {kind:'straw',x:18,y:16},{kind:'straw',x:25,y:19},{kind:'straw',x:30,y:16.5},{kind:'straw',x:22,y:13.5},
    ],
+   onStart:[
+     {call:G=>campRing(G,8,{houses:true,y0:20,keep:[[16,14,26,22]]})},
+   ],
    objectives:[
      {type:'collect',item:'straw',need:4,text:'Gather straw for the day’s tale of bricks'},
      {type:'interact',prop:'storecity',need:4,item:'straw',needText:'The taskmasters demand the full tale — gather all the straw.',
@@ -4508,6 +4549,7 @@ STORY.push(
          }
          for(let i=0;i<4;i++) w.npcs.push(makeNpc({id:'goshsheep'+i,animal:i%2?'sheep':'goat',x:31+i*1.4,y:18+(i%2)*1.5,range:1.4,noTalk:true}));
        }},
+       {call:G=>campRing(G,12,{houses:true,y1:13})},
        {teleport:['player',18,21]},{teleport:['aharon',19.5,21.3]},
        {teleport:['tsipporah',16.5,22]},{teleport:['boy1',15.5,22.6]},
        {time:'dusk'},{music:'holy'},{fade:'in'},{camera:'player'},
@@ -4875,6 +4917,9 @@ STORY.push(
      {id:'lamb1',animal:'sheep',x:14,y:13.5,range:1,noTalk:true},
      {id:'lamb2',animal:'sheep',x:15,y:14.5,range:1,noTalk:true},
    ],
+   onStart:[
+     {call:G=>campRing(G,14,{houses:true,keep:[[10,10,33,18]]})},
+   ],
    objectives:[
      {type:'talk',npc:'mosheh',text:'Hear the ordinance of the Pesach from Mosheh'},
      {type:'interact',prop:'fold',text:'Take the lamb from the fold — perfect, a male, a year old',hiddenUntil:1,
@@ -4921,6 +4966,9 @@ STORY.push(
    ],
    items:[
      {kind:'gold',x:13,y:17},{kind:'silver',x:11.5,y:19},{kind:'gold',x:14,y:19.5},
+   ],
+   onStart:[
+     {call:G=>campRing(G,14,{houses:true,keep:[[10,10,33,18]]})},
    ],
    objectives:[
      {type:'goto',x:26,y:15.5,radius:1.6,text:'Midnight. Stay within the blood-marked door — and listen',
@@ -5046,6 +5094,7 @@ STORY.push(
      {id:'miryam',char:'miryam',x:25,y:17.5,wander:true,range:1.4,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,20,{y1:12,x1:33})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<60;i++) G.world.npcs.push(makeNpc({id:'xc'+i,char:cs[i%4],child:i%8===7,
          x:13+(i%13)*1.9+Math.random(),y:13.5+Math.floor(i/13)*1.6+Math.random(),
@@ -5208,6 +5257,9 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:16,y:21.5,range:2,noTalk:true},
      {id:'dk1',animal:'donkey',x:11,y:21,range:2,noTalk:true},
    ],
+   onStart:[
+     {call:G=>campRing(G,12,{x0:31,y0:6,x1:43,y1:13})},
+   ],
    objectives:[
      {type:'interact',prop:'marah',text:'Three days without water — the wells of Marah at last',
       script:[
@@ -5262,6 +5314,9 @@ STORY.push(
      {kind:'manna',x:22,y:15},{kind:'manna',x:26,y:17},{kind:'manna',x:24,y:19},
      {kind:'manna',x:28,y:14.5},{kind:'manna',x:21,y:18.5},
    ],
+   onStart:[
+     {call:G=>campRing(G,32,{keep:[[8,11,36,21]]})},
+   ],
    objectives:[
      {type:'talk',npc:'mosheh',text:'Hear what YAHUAH shall do with your grumbling'},
      {type:'collect',item:'manna',need:5,text:'Gather it, an omer a head — “Man hu? What is it?”',hiddenUntil:1},
@@ -5299,6 +5354,9 @@ STORY.push(
      {id:'heb2',char:'hebrew2',x:14.5,y:19.5,wander:true,range:1.6,noTalk:true},
      {id:'elder1',char:'elder',x:17,y:19.5,wander:true,range:1.4,noTalk:true},
      {id:'sheep1',animal:'sheep',x:18,y:21,range:2,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>campRing(G,24,{y0:15,keep:[[21,8,31,17]]})},
    ],
    objectives:[
      {type:'goto',x:16,y:18.5,radius:2.2,text:'The people strive with you for water',
@@ -5341,6 +5399,9 @@ STORY.push(
      {id:'hur',char:'hur',x:15.4,y:8.6,wander:false,noTalk:true},
      {id:'sold1',char:'hebrew',x:22,y:20,wander:false,noTalk:true},
      {id:'sold2',char:'hebrew2',x:21,y:21.5,wander:false,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>campRing(G,20,{x1:18,y0:15})},
    ],
    objectives:[
      {type:'goto',x:25,y:18,radius:2.4,text:'Lead the chosen men out against Amaleq',
@@ -5420,6 +5481,9 @@ STORY.push(
      {id:'q2',char:'hebrew2',x:27.5,y:20.5,wander:false,hidden:true,noTalk:true},
      {id:'cam2',animal:'camel',x:44,y:21,range:2,noTalk:true},
    ],
+   onStart:[
+     {call:G=>campRing(G,26,{keep:[[14,9,32,22],[36,14,46,24]]})},
+   ],
    objectives:[
      {type:'talk',npc:'yithro',text:'Go out and meet Yithro your father-in-law'},
      {type:'goto',x:22,y:17,radius:2,text:'The next day — sit to judge the people from morning to evening',hiddenUntil:1,
@@ -5468,6 +5532,7 @@ STORY.push(
      {id:'dk1',animal:'donkey',x:10,y:25,range:2,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,30,{y0:18,keep:[[17,18,30,27]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<48;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
          x:10+(i%14)*1.9+Math.random(),y:19+Math.floor(i/14)*1.7+Math.random(),
@@ -5513,6 +5578,7 @@ STORY.push(
      {id:'elder1',char:'elder',x:18,y:23,wander:false,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,30,{y0:19,keep:[[15,19,31,27]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<48;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
          x:11+(i%14)*1.8+Math.random(),y:20+Math.floor(i/14)*1.6+Math.random(),
@@ -5569,6 +5635,7 @@ STORY.push(
      {id:'heb2',char:'hebreww',x:25,y:22.5,wander:false,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,24,{y0:20,keep:[[15,20,31,27]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<36;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
          x:12+(i%12)*1.9+Math.random(),y:18.5+Math.floor(i/12)*1.7+Math.random(),
@@ -5633,6 +5700,7 @@ STORY.push(
      {id:'lev2',char:'levite',x:13.5,y:23,wander:false,hidden:true,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,24,{y0:15,keep:[[16,14,32,25],[19,5,28,15]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','hebreww'];
        for(let i=0;i<12;i++) G.world.npcs.push(makeNpc({id:'rev_x'+i,char:cs[i%4],
          x:20+(i%6)*1.6+Math.random(),y:19.5+Math.floor(i/6)*2+Math.random(),
@@ -5691,6 +5759,9 @@ STORY.push(
      {id:'yahoshua',char:'yahoshua',x:35.5,y:21,wander:false,noTalk:true},
      {id:'heb1',char:'hebrew',x:22,y:22,wander:true,range:1.4,noTalk:true},
      {id:'heb2',char:'hebreww',x:25.5,y:22.5,wander:true,range:1.4,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>campRing(G,22,{x1:27,y0:13,keep:[[12,8,17,13],[20,13,28,25]]})},
    ],
    objectives:[
      {type:'goto',x:24,y:16,radius:2.2,text:'Go up again to YAHUAH — to make atonement, if you may',
@@ -5799,6 +5870,7 @@ STORY.push(
      {kind:'gold',x:13,y:18},{kind:'gold',x:17,y:20.5},{kind:'bluecloth',x:21,y:20},{kind:'bluecloth',x:29,y:18},
    ],
    onStart:[
+     {call:G=>campRing(G,20,{keep:[[9,12,33,23]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','hebreww'];
        for(let i=0;i<22;i++) G.world.npcs.push(makeNpc({id:'wil'+i,char:cs[i%4],
          x:12+(i%7)*2+Math.random(),y:19+Math.floor(i/7)*2+Math.random(),
@@ -5843,6 +5915,7 @@ STORY.push(
      {id:'heb1',char:'hebrew',route:[[28,18],[22,20]],noTalk:true,x:28,y:18},
    ],
    onStart:[
+     {call:G=>campRing(G,18,{y0:21,keep:[[12,14,33,23]]})},
      {call:G=>{ const cs=['hebrew','hebrew2','hebreww','hebrew'];
        for(let i=0;i<16;i++) G.world.npcs.push(makeNpc({id:'wrk'+i,char:cs[i%4],
          x:15+(i%5)*2.4+Math.random(),y:19+Math.floor(i/5)*2.2+Math.random(),
@@ -5902,6 +5975,7 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:31,y:23,range:2,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,26,{y0:21,keep:[[15,21,33,27]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<44;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
          x:11+(i%12)*2+Math.random(),y:20+Math.floor(i/12)*1.8+Math.random(),
