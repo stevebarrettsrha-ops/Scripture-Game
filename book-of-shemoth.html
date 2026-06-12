@@ -1557,6 +1557,39 @@ function drawProp(g,px,py,p,t){
       rail(-pw2/2,0,-pw2*.18,0); rail(pw2*.18,0,pw2/2,0);
       for(const [fx6,fy6] of [[-pw2/2,-ph3],[pw2/2,-ph3],[-pw2/2,0],[pw2/2,0],[0,-ph3],[-pw2*.18,0],[pw2*.18,0]]) post(fx6,fy6);
       break; }
+    case 'house': {
+      /* mudbrick house of Goshen: flat roof, lintel and two doorposts */
+      shadow(12);
+      const hc=p.col||'#b58a50';
+      g.fillStyle=hc; g.fillRect(-13*u,-16*u,26*u,16*u);
+      g.fillStyle=shade(hc,-14); g.fillRect(1*u,-16*u,12*u,16*u);
+      g.fillStyle=shade(hc,16); g.fillRect(-14*u,-17.5*u,28*u,2.2*u);
+      g.fillStyle=shade(hc,-26);
+      for(let i=0;i<4;i++) g.fillRect(-13*u,(-13.5+i*3.4)*u,26*u,.5*u);
+      for(let i=0;i<5;i++) g.fillRect((-10+i*5)*u,-16*u,.5*u,16*u);
+      /* window */
+      g.fillStyle='#241c10'; g.fillRect(6*u,-12*u,3.4*u,3*u);
+      g.fillStyle=shade(hc,22); g.fillRect(5.6*u,-12.4*u,4.2*u,.6*u);
+      /* the door: lintel and two posts, slightly proud of the wall */
+      g.fillStyle='#241c10';
+      g.fillRect(-2.6*u,-9.6*u,5.2*u,9.6*u);
+      g.fillStyle='#8a6a38';
+      g.fillRect(-3.6*u,-10.6*u,7.2*u,1.4*u);
+      g.fillRect(-3.6*u,-9.6*u,1.2*u,9.6*u);
+      g.fillRect(2.4*u,-9.6*u,1.2*u,9.6*u);
+      if(p.blood){
+        g.strokeStyle='#9d2a1c'; g.lineWidth=u*.9; g.lineCap='round';
+        g.beginPath();
+        g.moveTo(-2.8*u,-10*u); g.lineTo(2.8*u,-9.9*u);
+        g.moveTo(-3*u,-8.6*u); g.lineTo(-3*u,-2*u);
+        g.moveTo(3*u,-8.6*u); g.lineTo(3*u,-2*u);
+        g.stroke();
+      }
+      const wgl=g.createLinearGradient(0,-9*u,0,0);
+      wgl.addColorStop(0,`rgba(255,200,110,${p.lit===false?0:.35}`+')');
+      wgl.addColorStop(1,'rgba(255,200,110,0)');
+      g.fillStyle=wgl; g.fillRect(-2.4*u,-9.4*u,4.8*u,9.4*u);
+      break; }
     case 'burningbush': {
       shadow(3.6);
       const grd9=g.createRadialGradient(-u,-3.4*u,u,0,-3*u,4.2*u);
@@ -1872,6 +1905,11 @@ function walkable(map,x,y){
     if(d.type==='cave'){
       const dx=Math.abs(d.x-x);
       if(dx<2.5&&y>d.y-2.2&&y<d.y+0.4&&!(dx<1&&y>d.y-1)) return false;  /* mouth open */
+      continue;
+    }
+    if(d.type==='house'){
+      const dx=Math.abs(d.x-x);
+      if(dx<2.3&&y>d.y-2.6&&y<d.y+0.3&&!(dx<.7&&y>d.y-.7)) return false;  /* door gap */
       continue;
     }
     if(Math.abs(d.x-x)<.55&&Math.abs(d.y-y)<.5) return false;
@@ -2872,10 +2910,31 @@ const Game={
           }
         }
       }
-      // follower (lead mechanic)
-      if(e.follow&&p&&!e.target){
-        const d3=dist(e.x,e.y,p.x,p.y);
-        if(d3<2.6&&d3>1.1){ e.target={x:p.x+(e.x-p.x)/d3*.9,y:p.y+(e.y-p.y)/d3*.9}; e.speed=.06; }
+      // follower (lead mechanic): each one keeps their own place in the line
+      if(e.follow&&p){
+        if(e._fa===undefined){
+          let h9=0; const s9=String(e.id||'');
+          for(let i9=0;i9<s9.length;i9++) h9=(h9*31+s9.charCodeAt(i9))|0;
+          h9=Math.abs(h9);
+          e._fa=((h9%100)/100-.5)*1.5;       /* personal angle off the line of march */
+          e._fd=1+((h9>>3)%100)/100*1.1;     /* personal following distance */
+        }
+        if(!e.target){
+          const d3=dist(e.x,e.y,p.x,p.y);
+          if(d3<3.4&&d3>e._fd+.25){
+            const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
+            e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd}; e.speed=.06;
+          }
+        }
+        /* spacing: two followers never merge into one */
+        for(const o9 of w.npcs){
+          if(o9===e||!o9.follow||o9.hidden) continue;
+          const ds9=dist(e.x,e.y,o9.x,o9.y);
+          if(ds9<.62&&ds9>.001){
+            e.x+=(e.x-o9.x)/ds9*.008*dt*.06;
+            e.y+=(e.y-o9.y)/ds9*.008*dt*.06;
+          }
+        }
       }
     }
     // item pickup
@@ -3882,6 +3941,8 @@ STORY.push(
    map:{biome:'city', w:48, h:30, seed:801,
      features:[
        {type:'tower',stage:1,scaffold:true,x:36,y:10,solid:true,clear:4,flat:4,id:'storecity',examine:'Pithom and Ra‛amses — store cities for Pharaoh, built with the blood of slaves.'},
+       {type:'house',solid:true,x:11,y:14,clear:3,col:'#a87f48',examine:'A slave-quarter house of Goshen — mudbrick, like everything the bondage touches.'},
+       {type:'house',solid:true,x:17,y:12.5,clear:3,col:'#b58a50'},
        {type:'firepit',x:20,y:18,lit:true},
        {type:'pot',x:21.6,y:18,fire:true},
        {type:'clearing',x:24,y:16,flat:2},
@@ -4412,8 +4473,8 @@ STORY.push(
        {fade:'out'},{toast:'And Mosheh and Aharon went on, into Goshen — and gathered ALL the elders of the children of Yasharal…'},{wait:1700},
        {call:G=>{ const w=G.world;
          /* the stage becomes the camp of Yasharal in Goshen — and they are many */
-         for(const [tx,ty,tc] of [[10,14,'#c8b486'],[15,12.5,'#b3a07f'],[21,13.5,'#bda884'],[26,12.5,'#b3a07f'],[30,14.5,'#c8b486']])
-           w.map.decor.push({type:'tent',x:tx,y:ty,solid:true,col:tc});
+         for(const [tx,ty,tc] of [[10,14,'#a87f48'],[15,12.5,'#b58a50'],[21,13.5,'#ad8248'],[26,12.5,'#b58a50'],[30,14.5,'#a87f48']])
+           w.map.decor.push({type:'house',solid:true,x:tx,y:ty,col:tc});
          w.map.decor.push({type:'firepit',x:13,y:16,lit:true});
          w.map.decor.push({type:'firepit',x:24,y:16.5,lit:true});
          w.map.decor.sort((a,b)=>a.y-b.y);
@@ -4428,7 +4489,7 @@ STORY.push(
        {teleport:['player',18,21]},{teleport:['aharon',19.5,21.3]},
        {teleport:['tsipporah',16.5,22]},{teleport:['boy1',15.5,22.6]},
        {time:'dusk'},{music:'holy'},{fade:'in'},{camera:'player'},
-       {say:['narrator','And the camp of Goshen spread out before them — tents beyond counting, the children of Yasharal as the stars for multitude, just as He had sworn to the fathers.']},
+       {say:['narrator','And Goshen spread out before them — low brick houses, street upon street, lintel and doorposts without number: the children of Yasharal as the stars for multitude, just as He had sworn to the fathers.']},
        {say:['aharon','Elders of Yasharal — hear the words of YAHUAH, the Aluahim of Aḇraham, of Yahtsḥaq and of Ya‘aqoḇ: I HAVE INDEED VISITED YOU. I have seen what is done to you in Mitsrayim.']},
        {say:['narrator','And Aharon spoke all the words which YAHUAH had spoken to Mosheh, and did the signs before the eyes of the people.']},
        {burst:[18,20,'holy',22]},{sfx:'holy'},
@@ -4773,8 +4834,7 @@ STORY.push(
    map:{biome:'plains', w:44, h:26, seed:869,
      features:[
        {type:'fold',x:14,y:14,w:4,h:3,id:'fold'},
-       {type:'tent',x:26,y:13,solid:true,clear:2,col:'#c8b486',id:'house',examine:'Your house in Goshen — the lintel and the two doorposts wait.'},
-       {type:'doorway',x:26,y:14.6,id:'doorpost',examine:'The door of the house: a lintel and two doorposts.'},
+       {type:'house',solid:true,x:26,y:13,clear:3,id:'house',examine:'Your house in Goshen — mudbrick of the bondage; the lintel and the two doorposts wait.'},
        {type:'firepit',x:28.5,y:15.5,lit:true},
        {type:'pot',x:30,y:15.5,fire:true},
        {type:'clearing',x:26,y:16,flat:2},
@@ -4801,9 +4861,10 @@ STORY.push(
        {sfx:'bad'},{wait:400},
        {say:['narrator','WITNESS — For this is the night of which it was written in the tablets of the shamayim: that all the powers of Mastema be bound and shut up, and not able to accuse the children of Yasharal — from the fourteenth day until the eighteenth. On this night the accuser has no voice.']},
       ]},
-     {type:'interact',prop:'doorpost',text:'Strike the blood on the lintel and the two doorposts',hiddenUntil:2,
+     {type:'interact',prop:'house',text:'Strike the blood on the lintel and the two doorposts',hiddenUntil:2,
       script:[
-       {burst:[26,14.6,'spark',8]},{sfx:'pickup'},
+       {prop:['house',{blood:true}]},
+       {burst:[26,13.4,'spark',8]},{sfx:'pickup'},
        {say:['narrator','And they struck the lintel and the two doorposts with the hyssop dipped in blood — and the lamb was roasted with fire, with unleavened bread and with bitter herbs they ate it: loins girded, sandals on their feet, staff in hand — in haste. IT IS THE PESACH OF YAHUAH.']},
        {say:['hebreww','The little ones are inside. The bread is unleavened — there was no time for rising, and there shall be no time. Whatever passes through Mitsrayim tonight… the blood is over our heads.']},
        {time:'deepnight'},{music:'night'},
@@ -4823,8 +4884,7 @@ STORY.push(
   scene:{
    map:{biome:'plains', w:44, h:26, seed:873,
      features:[
-       {type:'tent',x:26,y:13,solid:true,clear:2,col:'#c8b486',id:'house'},
-       {type:'doorway',x:26,y:14.6,id:'doorpost'},
+       {type:'house',solid:true,x:26,y:13,clear:3,id:'house',blood:true,examine:'The blood is on the lintel and the two doorposts — the destroyer cannot cross it.'},
        {type:'firepit',x:28.5,y:15.5,lit:true},
        {type:'clearing',x:26,y:16,flat:2},
      ]},
@@ -4894,11 +4954,20 @@ STORY.push(
      {id:'dk1',animal:'donkey',x:24,y:22.5,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<26;i++) G.world.npcs.push(makeNpc({id:'mar'+i,char:cs[i%4],child:i%7===6,
-         x:14+(i%9)*2.2+Math.random(),y:19+Math.floor(i/9)*2+Math.random(),
-         route:[[38+(i%4),14+(i%5)],[16+(i%6),19+(i%4)]],routeSpeed:.016,noTalk:true}));
-       for(let i=0;i<6;i++) G.world.npcs.push(makeNpc({id:'maran'+i,animal:['sheep','goat','cow','donkey','sheep','goat'][i],x:20+i*2,y:23+(i%2),range:1.6,noTalk:true}));
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder','hebreww','hebrew'];
+       /* six hundred thousand on foot — the screen is full of the going-out */
+       for(let i=0;i<58;i++){
+         const lane=i%6, col=Math.floor(i/6);
+         G.world.npcs.push(makeNpc({id:'mar'+i,char:cs[i%6],child:i%8===7,
+           x:6+col*4.2+Math.random()*2,y:11.5+lane*2.3+Math.random()*1.4,
+           route:[[42+(i%5),11+lane*2.4],[7+(i%7),11.5+lane*2.3]],routeSpeed:.013+(i%5)*.002,noTalk:true}));
+       }
+       const an=['sheep','goat','cow','donkey','sheep','goat','camel','sheep','donkey','goat','sheep','cow'];
+       for(let i=0;i<12;i++) G.world.npcs.push(makeNpc({id:'maran'+i,animal:an[i],
+         x:8+(i%6)*6+Math.random()*2,y:21.5+Math.floor(i/6)*2.2+Math.random(),
+         route:[[40+(i%4),21+(i%3)*1.8],[9+(i%5),21.5+(i%3)*1.6]],routeSpeed:.012,noTalk:true}));
+       G.world.npcs.push(makeNpc({id:'famcart1',propType:'chariot',x:10,y:24,wander:false,noTalk:true,route:[[42,24],[8,24]],routeSpeed:.011}));
+       G.world.npcs.push(makeNpc({id:'famrider1',char:'hebreww',mount:'donkey',x:12,y:13,wander:false,noTalk:true,route:[[42,12.5],[8,13]],routeSpeed:.013}));
      }},
    ],
    objectives:[
@@ -4907,6 +4976,17 @@ STORY.push(
        {sfx:'holy'},{burst:[14,16,'mote',16]},
        {say:['mosheh_o','“Aluahim shall certainly visit you — and you shall bring up my bones from here with you.” Three hundred years in a coffin in Mitsrayim, Yosĕph — and the visitation has come. Yasharal keeps its oath: you go up with us.']},
        {say:['narrator','And Mosheh took the bones of Yosĕph with him. The dreamer who was sold into Mitsrayim went out of Mitsrayim at the head of the nation his dreams had saved.']},
+       {removeProp:'bonewagon'},
+       {spawn:{id:'bonecart',propType:'chariot',x:14,y:16,wander:false,noTalk:true}},
+       {spawn:{id:'cartman',char:'hebrew2',x:12.6,y:16.4,wander:false,noTalk:true}},
+       {spawn:{id:'cartman2',char:'hebrew',x:12.4,y:15.4,wander:false,noTalk:true}},
+       {call:G=>{ const c9=G.world.npcs.find(n=>n.id==='bonecart');
+         const m9=G.world.npcs.find(n=>n.id==='cartman');
+         const m8=G.world.npcs.find(n=>n.id==='cartman2');
+         if(c9){ c9.target={x:44,y:15.7}; c9.speed=.012; }
+         if(m9){ m9.target={x:42.6,y:16.1}; m9.speed=.012; }
+         if(m8){ m8.target={x:42.4,y:15.1}; m8.speed=.012; } }},
+       {say:['narrator','And the coffin was set upon the wagon, and men of the sons of Ephrayim put their shoulders to it — and the bones of the dreamer rolled east in the midst of the host, before the eyes of all Yasharal.']},
        {call:G=>{ for(const n of G.world.npcs){ if(n.group==='host'){ n.follow=true; } } }},
       ]},
      {type:'lead',group:'host',x:38,y:16,radius:3.4,need:4,text:'Lead the families after the pillar of cloud',hiddenUntil:1},
@@ -4951,10 +5031,20 @@ STORY.push(
    objectives:[
      {type:'goto',x:24,y:20,radius:2.2,text:'Camp by the sea — and look back toward Mitsrayim',
       script:[
-       {spawn:{id:'war1',propType:'chariot',horses:true,gold:true,x:44,y:8,wander:false,noTalk:true}},
-       {spawn:{id:'war2',propType:'chariot',horses:true,x:44,y:11,wander:false,noTalk:true}},
-       {spawn:{id:'rider1',char:'taskmaster',mount:'horse',x:45,y:9.5,wander:false,noTalk:true}},
-       {move:['war1',36,9,.04,'bg']},{move:['war2',37,11.5,.04,'bg']},{move:['rider1',36.5,10.5,.04,'bg']},
+       {call:G=>{ const w9=G.world;
+         /* six hundred chosen chariots, and all the chariots of Mitsrayim */
+         for(let i=0;i<8;i++) w9.npcs.push(makeNpc({id:'war'+(i+1),propType:'chariot',horses:true,gold:i%3===0,
+           x:43+(i%3)*2,y:6.5+i*1.6,wander:false,noTalk:true}));
+         for(let i=0;i<5;i++) w9.npcs.push(makeNpc({id:'rider'+(i+1),char:i%2?'sorcerer':'taskmaster',mount:'horse',
+           x:45+(i%2)*1.5,y:7.5+i*2.4,wander:false,noTalk:true}));
+         for(let i=0;i<5;i++) w9.npcs.push(makeNpc({id:'foot'+(i+1),char:'taskmaster',
+           x:46,y:8+i*2.2,wander:false,noTalk:true}));
+       }},
+       {call:G=>{ for(const n of G.world.npcs){
+         if(/^war\d/.test(n.id)){ n.target={x:33+Math.random()*4,y:7+Math.random()*8}; n.speed=.04; }
+         else if(/^rider\d/.test(n.id)){ n.target={x:35+Math.random()*3,y:8+Math.random()*7}; n.speed=.044; }
+         else if(/^foot\d/.test(n.id)){ n.target={x:37+Math.random()*3,y:8+Math.random()*7}; n.speed=.038; }
+       } }},
        {sfx:'thunder'},{shake:2},{music:'storm'},
        {say:['hebrew','Chariots! The chariots of Pharaoh — all of Mitsrayim is upon us! Were there no graves in Mitsrayim, that you have taken us away to die in the wilderness?! Did we not say: leave us alone, and let us serve the Mitsrites?']},
        {say:['mosheh_o','DO NOT FEAR. Stand still — and see the deliverance of YAHUAH, which He does for you today. For the Mitsrites whom you see today, you are never, never to see again. YAHUAH FIGHTS FOR YOU — and you keep silent.']},
@@ -4972,20 +5062,42 @@ STORY.push(
        {say:['narrator','And the children of Yasharal went into the midst of the sea on dry ground — and the waters were a wall to them on their right and on their left.']},
        {call:G=>{ for(const n of G.world.npcs){
          if(['heb1','heb2','heb3','miryam','aharon'].includes(n.id)||String(n.id).startsWith('xc')){
-           n.wander=false; n.target={x:22.5+Math.random()*3,y:29+Math.random()*3.5}; n.speed=.04+Math.random()*.02; } } }},
+           n.wander=false; n.target={x:21.6+Math.random()*4.8,y:30+Math.random()*2.6}; n.speed=.042+Math.random()*.022; } } }},
       ]},
      {type:'goto',x:24,y:31,radius:2.4,text:'Cross between the walls of water',hiddenUntil:2,
       script:[
        {say:['narrator','And the Mitsrites pursued, and went in after them into the midst of the sea — all Pharaoh’s horses, his chariots and his horsemen.']},
-       {move:['war1',24,26,.05,'bg']},{move:['rider1',25,27,.05,'bg']},{move:['war2',23.5,24,.05,'bg']},
-       {wait:1500},{shake:2},
+       {call:G=>{ for(const n of G.world.npcs){
+         if(/^(war|rider|foot)\d/.test(n.id)){
+           n.target={x:21.8+Math.random()*4.4,y:18+Math.random()*9};
+           n.speed=.042+Math.random()*.014;
+         } } }},
+       {wait:2200},{shake:2},
        {say:['narrator','And in the morning watch YAHUAH looked down on the camp of the Mitsrites through the pillar of fire and cloud, and confused them — He took off their chariot wheels, so that they drove them with difficulty. And the Mitsrites said, “Let us flee from the face of Yasharal, for YAHUAH fights for them against the Mitsrites!”']},
+       {say:['narrator','And all Yasharal came up out of the midst of the sea onto the far shore — every soul of them, and not one left between the walls of water.']},
+       {call:G=>{ const w9=G.world, m9=w9.map;
+         for(const n of w9.npcs){
+           const cross=['heb1','heb2','heb3','miryam','aharon'].includes(n.id)||String(n.id).startsWith('xc');
+           if(!cross) continue;
+           n.target=null; n.moving=false;
+           n.x=10+Math.random()*28; n.y=m9.h-3.6+Math.random()*2.2;
+           n.home={x:n.x,y:n.y}; n.wander=true; n.range=1.2; n.dir='up';
+         }
+         const p9=w9.player; if(p9&&p9.y<m9.h-4){ p9.y=m9.h-3.4; }
+       }},
        {say:['voice','Stretch out your hand over the sea — and let the waters come back on the Mitsrites, on their chariots, and on their horsemen.']},
        {sfx:'thunder'},{shake:3},
        {call:G=>{ const m=G.world.map;
          for(let y=m.h-12;y<m.h-4;y++) for(let x=21;x<=27;x++) m.tiles[y*m.w+x]=(y>m.h-11?T.DEEP:T.WATER); }},
-       {despawn:'war1'},{despawn:'war2'},{despawn:'rider1'},
-       {burst:[24,26,'mote',34]},{music:'holy'},{time:'morning'},
+       {call:G=>{ const w9=G.world;
+         for(let i=w9.npcs.length-1;i>=0;i--){
+           const n=w9.npcs[i];
+           if(/^(war|rider|foot)\d/.test(n.id)){
+             Particles.burst(n.x*TILE,n.y*TILE,'mote',12);
+             w9.npcs.splice(i,1);
+           } } }},
+       {burst:[24,22,'mote',30]},{burst:[23,26,'mote',30]},{burst:[26,24,'mote',26]},
+       {music:'holy'},{time:'morning'},
        {say:['narrator','And the sea returned to its usual flow at the break of morning — and the waters returned and covered the chariots and the horsemen, all the army of Pharaoh that came into the sea after them. NOT EVEN ONE OF THEM WAS LEFT. And Yasharal saw the great work which YAHUAH had done — and the people feared YAHUAH, and believed YAHUAH and His servant Mosheh.']},
       ]},
    ],
