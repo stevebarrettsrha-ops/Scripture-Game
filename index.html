@@ -531,6 +531,8 @@ const CHARS={
   lavan:   {name:'Laḇan',   skin:'#7c5430', hair:'#9a9286', hairStyle:'short', robe:'#9a8a4f', beard:'#9a9286'},
   leah:    {name:'Lĕ’ah',   skin:'#815631', hair:'#46301a', hairStyle:'long', robe:'#7d8a6a', headcover:'#c8b88e'},
   rachel:  {name:'Raḥal',   skin:'#855a33', hair:'#1d1208', hairStyle:'long', robe:'#8a6a9c', headcover:'#d8c8a8'},
+  leah_v:  {name:'The Bride', skin:'#815631', hair:'#46301a', hairStyle:'long', robe:'#cab98a', headcover:'#e0d6b4', veil:'#e0d6b4'},
+  lavanson:{name:'Sons of Laḇan', skin:'#7c5430', hair:'#5e482a', hairStyle:'short', robe:'#9a8a4f'},
   wrestler:{name:'The Man', glow:true, skin:'#6e4a28', hair:'#f7f4ec', hairStyle:'short', robe:'#7d6a52'},
   yoseph:  {name:'Yosĕph',  skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#b9a878', coat:true},
   yoseph_s:{name:'Yosĕph',  skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#9d9484'},
@@ -921,6 +923,7 @@ function drawAnimal(g,px,py,type,o){
       R(-6.4,-9+B,.5,.5,'#160e08');
       R(-4.6,-10.6+B,1.4,1.4,'#e8e2d2');         /* wool cap */
       if(type==='ram'){ R(-5.4,-11+B,1.6,1.2,'#9a8458'); R(-4.4,-11.8+B,1.2,1.2,'#9a8458'); R(-3.6,-11+B,1,1,'#9a8458'); }
+      if(o.spotted){ R(-3.4,-8+B,1.8,1.6,'#5d4a38'); R(0,-7+B,1.6,1.8,'#5d4a38'); R(2.6,-8.2+B,1.5,1.4,'#5d4a38'); R(-1.2,-5+B,1.4,1.2,'#5d4a38'); }
       break; }
     case 'goat': {
       R(-3.4-k*0.9,-4,1.3,4,'#6e5b48'); R(2.2+k*0.9,-4,1.3,4,'#6e5b48');
@@ -933,6 +936,7 @@ function drawAnimal(g,px,py,type,o){
       R(-6.2,-9.8+B,.8,.8,'#160e08');
       R(-6.6,-7.4+B,1,1.6,'#7a6a54');            /* beard */
       R(-5.6,-11.8+B,.8,1.8,'#5d4d38'); R(-4.6,-12.4+B,.8,2.2,'#5d4d38');
+      if(o.spotted){ R(-3.2,-7.6+B,1.8,1.6,'#e8e2d2'); R(0.2,-6.6+B,1.6,1.6,'#e8e2d2'); R(2.6,-7.8+B,1.4,1.3,'#e8e2d2'); }
       break; }
     case 'cow': {
       R(-4.2-k*0.9,-4.4,1.7,4.4,'#5d4434'); R(2.6+k*0.9,-4.4,1.7,4.4,'#5d4434');
@@ -1118,6 +1122,8 @@ function drawQuadVert(g,px,py,type,o){
   R(-hw/2+0.8,-2.4-q.L+B,hw-1.6,1.6,q.top);
   if(q.patch) R(-hw/2+1,-q.L+1+B,hw*.45,2.6,q.patch);
   if(q.humps){ R(-1.6,-q.L+1.5+B,3.2,2.2,q.humps); R(-1.6,-q.L+5+B,3.2,2.2,q.humps); }
+  if(o.spotted){ const sc9=(type==='goat')?'#e8e2d2':'#5d4a38';
+    R(-hw/2+1,-q.L+2+B,1.8,1.6,sc9); R(0.2,-q.L+5+B,1.6,1.6,sc9); R(-1,-5.5+B,1.5,1.4,sc9); }
   if(q.mane) R(-0.7,-2.4-q.L+B,1.4,q.L*.8,q.mane);
   const hy=down?-3.6:-q.L-3.6;
   R(-hw*.32,hy+B,hw*.64,3.2,q.head);
@@ -1594,6 +1600,22 @@ function drawProp(g,px,py,p,t){
       g.stroke();
       if(p.rider) drawChar(g,TILE*.3,-TILE*.95,p.rider,{t,dir:'left',riding:true});
       break; }
+    case 'trough': {
+      g.fillStyle='rgba(0,0,0,.18)';
+      g.beginPath(); g.ellipse(0,2,6.4*u,1.8*u,0,0,Math.PI*2); g.fill();
+      g.fillStyle='#8a6a45'; g.fillRect(-6*u,-2.8*u,12*u,3*u);
+      g.fillStyle='#6e552f'; g.fillRect(-6*u,-2.8*u,12*u,.8*u);
+      g.fillStyle='#4a90c2'; g.fillRect(-5.2*u,-2.2*u,10.4*u,1.6*u);
+      g.fillStyle='rgba(255,255,255,.3)'; g.fillRect((-4+Math.sin(t/600)*2)*u,-2*u,2.4*u,.5*u);
+      if(p.rods){
+        for(let i=0;i<3;i++){
+          g.strokeStyle='#e8e2d2'; g.lineWidth=u*.7;
+          g.beginPath(); g.moveTo((-4+i*3.4)*u,-3.4*u); g.lineTo((-2.6+i*3.4)*u,-.6*u); g.stroke();
+          g.strokeStyle='#8a6a45'; g.lineWidth=u*.3;
+          g.beginPath(); g.moveTo((-3.7+i*3.4)*u,-2.8*u); g.lineTo((-3.1+i*3.4)*u,-1.6*u); g.stroke();
+        }
+      }
+      break; }
     case 'fold': {
       /* sheepfold: post-and-rail pen, open side facing down */
       const pw2=TILE*(p.w||3.6), ph3=TILE*(p.h||2.6);
@@ -2011,7 +2033,7 @@ function drawWorld(g,world,t){
     if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
-    else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
+    else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale,spotted:d.spotted});
     else if(d.mount){
       drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale});
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
@@ -2123,6 +2145,11 @@ function drawItem(g,sx,sy,kind,t){
       g.fillStyle='#4a90c2'; g.fillRect(-2.8,-4.2,5.6,1.8); break;
     case 'lentils': g.fillStyle='#9d4a2e'; g.beginPath(); g.arc(0,0,4.4,0,Math.PI*2); g.fill();
       g.fillStyle='#c2683e'; [[-1.5,-1.5],[1,-.4],[-.4,1.2]].forEach(([x,y])=>{g.beginPath();g.arc(x,y,1.2,0,Math.PI*2);g.fill()}); break;
+    case 'rod': g.strokeStyle='#8a6a45'; g.lineWidth=2.4;
+      g.beginPath(); g.moveTo(-4,4); g.lineTo(4,-4); g.stroke();
+      g.strokeStyle='#ece6da'; g.lineWidth=2.4;
+      g.beginPath(); g.moveTo(-1.6,1.6); g.lineTo(0.8,-0.8); g.stroke();
+      g.beginPath(); g.moveTo(2.4,-2.4); g.lineTo(4,-4); g.stroke(); break;
     case 'garment': g.fillStyle='#b9a878';
       g.fillRect(-4,-2.6,8,5.2); g.fillStyle='#a89262'; g.fillRect(-4,-2.6,8,1.2);
       g.fillStyle='#cab98a'; g.fillRect(-4,-.4,8,.9); break;
@@ -5644,15 +5671,19 @@ STORY.push(
   ],
   complete:'Truly, YAHUAH is in this place — and I did not know it. This is the gate of the shamayim.'
 },
-{ id:'c20', title:'Seven Years for Raḥal', ref:'BERĔSHITH 29–31',
+{ id:'c20', title:'Seven Years for Raḥal', ref:'BERĔSHITH 29',
   intro:[
-   {art:'journey', music:'desert', text:'Then Ya‘aqoḇ moved on and came to the land of the people of the East — and see, a well in the field, and a great stone on the well’s mouth.', ref:'BERĔSHITH 29:1–2'},
+   {art:'journey', music:'desert', text:'Then Ya‘aqoḇ moved on and came to the land of the people of the East — and see, a well in the field, and three flocks of sheep lying by it, and a great stone on the well’s mouth.', ref:'BERĔSHITH 29:1–2'},
   ],
   scene:{
-   map:{biome:'desert', w:46, h:32, seed:151,
+   map:{biome:'plains', w:46, h:32, seed:151,
      features:[
        {type:'well',x:24,y:15,solid:true,clear:2,id:'well',examine:'A great stone lies over the mouth of the well.'},
-       {type:'tent',x:10,y:12,solid:true,clear:2,col:'#b3a07f'},
+       {type:'tent',x:10,y:11,solid:true,clear:3,col:'#b3a07f'},
+       {type:'tent',x:15,y:9,solid:true,clear:2,col:'#c8b486'},
+       {type:'fold',x:9,y:18,clear:3,flat:3,id:'fold'},
+       {type:'firepit',x:13,y:14,lit:true,id:'feastfire'},
+       {type:'clearing',x:13,y:16,flat:2},
      ]},
    time:'day', music:'desert',
    player:'yaaqov', playerPos:[18,20],
@@ -5661,6 +5692,7 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:38,y:19,range:2,noTalk:true,hidden:true},
      {id:'sheep2',animal:'sheep',x:37,y:20,range:2,noTalk:true,hidden:true},
      {id:'lavan',char:'lavan',x:11,y:13,wander:false,hidden:true,noTalk:true},
+     {id:'leah',char:'leah_v',x:15,y:10.5,wander:false,hidden:true,noTalk:true},
      {id:'shep1',char:'shepherd',x:21.5,y:17.5,wander:true,range:1.4,noTalk:true},
      {id:'shep2',char:'builder',x:26.5,y:16.5,wander:true,range:1.4,noTalk:true},
      {id:'shep3',char:'servant',x:25,y:18.5,wander:true,range:1.4,noTalk:true},
@@ -5670,6 +5702,10 @@ STORY.push(
      {id:'f2b',animal:'sheep',x:28.6,y:17.4,range:1.2,noTalk:true},
      {id:'f3a',animal:'sheep',x:24,y:20.5,range:1.2,noTalk:true},
      {id:'f3b',animal:'ram',x:25.4,y:21.2,range:1.2,noTalk:true},
+     {id:'lg1',animal:'goat',x:8,y:17.5,range:1,noTalk:true},
+     {id:'lg2',animal:'goat',x:10,y:18.2,range:1,noTalk:true},
+     {id:'lg3',animal:'goat',x:9,y:16.8,range:1,noTalk:true},
+     {id:'lserv',char:'servant',x:12,y:18,wander:true,range:1.5,noTalk:true},
    ],
    objectives:[
      {type:'interact',prop:'well',text:'Go to the well in the field',
@@ -5696,26 +5732,124 @@ STORY.push(
        {say:['lavan','Better that I give her to you than to another man. Stay with me. Seven years.']},
        {fade:'out'},{toast:'And Ya‘aqoḇ served seven years for Raḥal…'},{wait:1400},
        {toast:'…and they seemed to him but a few days, because of his love for her.'},{wait:1600},
-       {time:'deepnight'},{music:'night'},{fade:'in'},
-       {say:['narrator','And it came to be in the morning, after the wedding feast and the veiled bride — that see, it was Lĕ’ah!']},
+       {time:'night'},{music:'royal'},{fade:'in'},
+       {say:['narrator','And Ya‘aqoḇ said to Laḇan, “Give me my wife, for my days are completed.” And Laḇan gathered together all the men of the place — and made a feast.']},
+       {spawn:{id:'g1',char:'shepherd',x:11,y:15.5,wander:true,range:1,noTalk:true}},
+       {spawn:{id:'g2',char:'builder',x:14.5,y:16,wander:true,range:1,noTalk:true}},
+       {spawn:{id:'g3',char:'builder2',x:12,y:17,wander:true,range:1,noTalk:true}},
+       {spawn:{id:'g4',char:'builder3',x:15.5,y:14.5,wander:true,range:1,noTalk:true}},
+       {spawn:{id:'g5',char:'servant',x:10.5,y:14,wander:true,range:1,noTalk:true}},
+       {addProp:{type:'basket',full:true,x:12.5,y:15.2}},
+       {addProp:{type:'pot',fire:true,x:14,y:15}},
+       {burst:[13,15,'mote',18]},{sfx:'chime'},
+       {say:['narrator','And there was eating and drinking and rejoicing around the fire, late into the night.']},
+       {move:['player',13,16.5,.05]},
+       {show:'leah'},
+       {say:['lavan','And now, my son — the bride! Veiled, as is the custom of our place, and given with my blessing. Take her in, and rejoice!']},
+       {move:['leah',13.8,15.8,.04]},
+       {say:['narrator','And in the evening — veiled, in the dark of the feast — the bride was brought to him.']},
+       {fade:'out'},{music:'night'},{toast:'And it came to be in the morning…'},{wait:1700},
+       {time:'morning'},{music:'tense'},{fade:'in'},
+       {charSwap:['leah','leah']},
+       {say:['narrator','— that see: it was Lĕ’ah!']},
        {say:['yaaqov','What is this you have done to me?! Was it not for Raḥal that I served you? Why then have you deceived me?']},
        {say:['lavan','It is not done this way in our place, to give the younger before the first-born. Complete the week of this one — then we give you the other also, for the service of yet another seven years.']},
-       {say:['narrator','The trickster was tricked, measure for measure — and he served seven years more. And YAHUAH gave him children, and flocks beyond counting: speckled, spotted and streaked.']},
-      ]},
-     {type:'goto',x:42,y:26,radius:2.4,text:'After twenty years — set out for home',hiddenUntil:2,
-      script:[
-       {time:'morning'},{music:'desert'},
-       {say:['voice','Return to the land of your fathers and to your relatives. And I am with you.']},
-       {say:['yaaqov','Twenty years, Laḇan. Wives, children, flocks — all of it under His hand. Now we go back… to face Ĕsaw.']},
+       {say:['narrator','And Ya‘aqoḇ did so, and completed her week — and Laḇan gave him Raḥal his daughter as wife also. And he loved Raḥal more than Lĕ’ah — and served Laḇan yet another seven years. The trickster was tricked, measure for measure.']},
+       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rachel'); if(r){ r.target={x:12,y:16}; r.speed=.05; } }},
+       {sfx:'chime'},
       ]},
    ],
   },
   outro:[
    {art:'camp', music:'eden', text:'And in Ḥaran were born to Ya‘aqoḇ eleven sons and a daughter: of Lĕ’ah — Re’uḇĕn, Shim‛on, Lĕwi, Yahuḏah, Yissasḵar, Zeḇulun, and Dinah; of Bilhah — Dan and Naphtali; of Zilpah — Gaḏ and Ashĕr; and of Raḥal — Yosĕph. Twelve heads of a nation yet to be.', ref:'BERĔSHITH 29:31–30:24'},
-   {art:'mountain', music:'tense', text:'And Laḇan pursued and overtook him in the mountains of Gil‛aḏ — but Aluahim came to Laḇan in a dream by night: “Guard yourself, that you speak to Ya‘aqoḇ neither good nor evil.” And they heaped a heap of witness — Gal‛ĕḏ, and Mitspah — “May YAHUAH watch between you and me when we are out of each other’s sight.”', ref:'BERĔSHITH 31:22–49'},
+  ],
+  complete:'Veiled in the dark of the feast — and the trickster was tricked, measure for measure.'
+},
+{ id:'c20a', title:'Speckled and Spotted', ref:'BERĔSHITH 30:25–31:21',
+  intro:[
+   {art:'camp', music:'desert', text:'And it came to be, when Raḥal had borne Yosĕph, that Ya‘aqoḇ said to Laḇan, “Send me away, that I may go to my own place and to my land… for you know my service which I have served you — your livestock has been with me, and YAHUAH has baruk you since my coming.”', ref:'BERĔSHITH 30:25–30'},
+  ],
+  scene:{
+   map:{biome:'plains', w:48, h:32, seed:153,
+     features:[
+       {type:'tent',x:10,y:10,solid:true,clear:3,col:'#b3a07f'},
+       {type:'fold',x:9,y:17,clear:3,flat:3,id:'labanfold'},
+       {type:'fold',x:38,y:20,clear:3,flat:3,id:'myfold'},
+       {type:'trough',x:34,y:16,id:'trough1'},
+       {type:'trough',x:38,y:15,id:'trough2'},
+       {type:'clearing',x:24,y:22,flat:2},{type:'clearing',x:14,y:13,flat:2},
+     ]},
+   time:'day', music:'desert',
+   player:'yaaqov', playerPos:[20,18],
+   npcs:[
+     {id:'lavan',char:'lavan',x:12,y:12.5,wander:true,range:1.2,
+      script:[
+       {say:['yaaqov','Send me away, Laḇan, that I may go to my own place and my own land. Give me my wives and my children, for whom I have served you — for you know my service.']},
+       {say:['lavan','If I have found favour in your eyes — stay! I have learned by experience that YAHUAH has baruk me for your sake. Appoint me your wages, and I give it.']},
+       {say:['yaaqov','You shall not give me whatever. Let me pass through all your flock today, removing from there all the speckled and spotted sheep, and all the black ones among the lambs, and the spotted and speckled among the goats — and THESE shall be my wages. So shall my righteousness answer for me in time to come.']},
+       {say:['lavan','See — let it be according to your word!']},
+       {say:['narrator','But that day Laḇan removed the speckled and spotted himself, and gave them into the hand of his sons, and set three days’ journey between himself and Ya‘aqoḇ. And Ya‘aqoḇ fed the rest of Laḇan’s flocks.']},
+     ]},
+     {id:'rachel',char:'rachel',x:36,y:21,wander:true,range:1.4,noTalk:true},
+     {id:'leah',char:'leah',x:39.5,y:21.5,wander:true,range:1.4,noTalk:true},
+     {id:'lg1',animal:'goat',x:8,y:16.5,range:1,noTalk:true},
+     {id:'lg2',animal:'goat',x:10,y:17.2,range:1,noTalk:true},
+     {id:'lg3',animal:'sheep',x:9,y:18,range:1,noTalk:true},
+     {id:'mg1',animal:'goat',x:37,y:19.5,range:1,noTalk:true},
+     {id:'mg2',animal:'sheep',x:39,y:19,range:1,noTalk:true},
+     {id:'ls1',char:'lavanson',x:14,y:11,wander:true,range:1.4,hidden:true,noTalk:true},
+     {id:'ls2',char:'builder2',x:12.5,y:10.5,wander:true,range:1.4,hidden:true,noTalk:true},
+   ],
+   items:[
+     {kind:'rod',x:25,y:10},{kind:'rod',x:30,y:25},{kind:'rod',x:18,y:24},
+   ],
+   objectives:[
+     {type:'talk',npc:'lavan',text:'Ask Laḇan to send you home — and name your wages'},
+     {type:'collect',item:'rod',need:3,text:'Take rods of green poplar, almond and chestnut',hiddenUntil:1},
+     {type:'interact',prop:'trough1',text:'Peel the rods, and set them in the watering troughs',hiddenUntil:2,item:'rod',need:3,
+      script:[
+       {say:['narrator','And Ya‘aqoḇ peeled white strips in the rods, exposing the white which was in them — and set the rods which he had peeled before the flocks, in the gutters, in the watering troughs where the flocks came to drink.']},
+       {prop:['trough1',{rods:true}]},{prop:['trough2',{rods:true}]},{sfx:'pickup'},
+       {fade:'out'},{toast:'And the flocks conceived before the rods…'},{wait:1500},
+       {toast:'…season after season, in the strength of the flock.'},{wait:1500},{fade:'in'},
+       {spawn:{id:'sp1',animal:'goat',x:36,y:18,spotted:true,range:1.2,noTalk:true,wander:true}},
+       {spawn:{id:'sp2',animal:'goat',x:38.5,y:17.5,spotted:true,range:1.2,noTalk:true,wander:true}},
+       {spawn:{id:'sp3',animal:'sheep',x:37,y:22.5,spotted:true,range:1.2,noTalk:true,wander:true}},
+       {spawn:{id:'sp4',animal:'goat',x:40,y:19,spotted:true,range:1.2,noTalk:true,wander:true}},
+       {spawn:{id:'sp5',animal:'sheep',x:35,y:20.5,spotted:true,range:1.2,noTalk:true,wander:true}},
+       {spawn:{id:'spcam',animal:'camel',x:42,y:23,range:1.5,noTalk:true,wander:true}},
+       {spawn:{id:'spserv',char:'servant',x:41,y:21,range:1.4,noTalk:true,wander:true}},
+       {say:['narrator','And the flocks brought forth streaked, speckled and spotted — and the man increased very much, and had large flocks, and female and male servants, and camels and donkeys.']},
+      ]},
+     {type:'goto',x:14,y:13,radius:2.2,text:'Voices near Laḇan’s tent — draw near quietly',hiddenUntil:3,
+      script:[
+       {show:'ls1'},{show:'ls2'},
+       {say:['lavanson','Ya‘aqoḇ has taken all that was our father’s — and from what belonged to our father he has made all this wealth!']},
+       {say:['narrator','And Ya‘aqoḇ saw the face of Laḇan — and see, it was not toward him as before.']},
+      ]},
+     {type:'goto',x:24,y:22,radius:2.4,text:'Go out to the field, away from every ear',hiddenUntil:4,
+      script:[
+       {time:'night'},{music:'night'},{rays:.8,raysX:24},{sfx:'holy'},
+       {say:['voice','Lift your eyes and see: all the rams leaping on the flock are streaked, speckled and mottled — for I have seen all that Laḇan is doing to you. I am the Ăl of Bĕyth Ăl, where you anointed the standing column, where you made a vow to Me. Now rise, leave this land, and return to the land of your relatives — and I am with you.']},
+       {rays:0},{time:'morning'},{music:'tense'},
+       {call:g=>{ ['rachel','leah'].forEach(id=>{ const n=g.world.npcs.find(n=>n.id===id);
+          if(n){ n.wander=false; n.target={x:24+(id==='leah'?1.6:-1.6),y:22}; n.speed=.05; } }); }},
+       {wait:1500},
+       {say:['rachel','Is there yet any portion or inheritance for us in our father’s house? Are we not reckoned by him as strangers? For he has sold us, and has also entirely eaten up our silver. Whatever Aluahim has said to you — do it.']},
+       {say:['narrator','And Laḇan had gone to shear his sheep — and Raḥal stole the house idols that were her father’s. And Ya‘aqoḇ rose, and set his sons and his wives on camels, and drove off all his livestock — and fled, he and all that he had, toward the mountains of Gil‛aḏ.']},
+       {call:g=>{ g.world.npcs.forEach(n=>{ if(['rachel','leah','sp1','sp2','sp3','sp4','sp5','spcam','spserv','mg1','mg2'].includes(n.id)){
+          n.wander=false; n.target={x:46,y:24+Math.random()*3-1.5}; n.speed=.04+Math.random()*.02; } }); }},
+       {wait:2000},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'mountain', music:'tense', text:'And Laḇan pursued and overtook him in the mountains of Gil‛aḏ — but Aluahim came to Laḇan in a dream by night: “Guard yourself, that you speak to Ya‘aqoḇ neither good nor evil.”', ref:'BERĔSHITH 31:22–24'},
+   {art:'camp', music:'tense', text:'And Laḇan searched all the tents for his house idols, and did not find them — for Raḥal had put them in the camel’s saddle and sat on them, saying, “Let it not displease my master that I am unable to rise before you, for the way of women is with me.” And he searched, but did not find.', ref:'BERĔSHITH 31:33–35'},
+   {art:'mountain', music:'holy', text:'And they heaped a heap of witness — Gal‛ĕḏ, and Mitspah — “May YAHUAH watch between you and me when we are out of each other’s sight.” And Laḇan kissed his daughters and baruk them, and returned to his place.', ref:'BERĔSHITH 31:45–55'},
    {art:'journey', music:'tense', text:'And messengers returned to Ya‘aqoḇ, saying, “We came to your brother Ĕsaw — and he is coming to meet you, and four hundred men with him.” And Ya‘aqoḇ was greatly afraid and distressed.', ref:'BERĔSHITH 32:6–7'},
   ],
-  complete:'And they seemed to him but a few days, because of his love for her. Twenty years — and now, home, and Ĕsaw.'
+  complete:'The rods in the troughs, the spotted wages, the stolen idols — and the long road home begun.'
 },
 { id:'c21', title:'Peni’al', ref:'BERĔSHITH 32–33',
   intro:[
