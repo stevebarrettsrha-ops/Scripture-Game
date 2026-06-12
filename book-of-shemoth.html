@@ -5258,7 +5258,18 @@ STORY.push(
      {id:'dk1',animal:'donkey',x:11,y:21,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,12,{x0:31,y0:6,x1:43,y1:13})},
+     {call:G=>campRing(G,12,{x0:28,y0:17,x1:43,y1:24,keep:[[36,16,44,21]]})},
+     {call:G=>{ const m=G.world.map;
+       /* Eylim: twelve fountains of water, and seventy palm trees */
+       let pl=0;
+       for(let r=0;r<6&&pl<70;r++) for(let c=0;c<13&&pl<70;c++){
+         const xx=27.6+c*1.42+(r%2?.7:0)+hash2(r*13+c,5)*.5, yy=3.4+r*1.55+hash2(r*13+c,9)*.5;
+         if(xx>m.w-2.5||SOLID.has(tileAt(m,xx,yy))) continue;
+         m.decor.push({type:'palm',solid:true,x:xx,y:yy}); pl++;
+       }
+       for(let i=0;i<12;i++) m.decor.push({type:'well',solid:true,x:29.4+(i%6)*2.5+(i>5?1.2:0),y:13.6+Math.floor(i/6)*2});
+       m.decor.sort((a,b)=>a.y-b.y);
+     }},
    ],
    objectives:[
      {type:'interact',prop:'marah',text:'Three days without water — the wells of Marah at last',
@@ -5621,7 +5632,9 @@ STORY.push(
    map:{biome:'rocky', w:46, h:30, seed:917,
      features:[
        {type:'altar',stage:3,x:23,y:13,solid:true,clear:2,id:'altar'},
-       {type:'pillar',x:19,y:14},{type:'pillar',x:21,y:15},{type:'pillar',x:25,y:15},{type:'pillar',x:27,y:14},
+       {type:'pillar',x:16.5,y:11.5},{type:'pillar',x:17.5,y:13.3},{type:'pillar',x:19,y:14.7},{type:'pillar',x:20.7,y:15.7},
+       {type:'pillar',x:29.5,y:11.5},{type:'pillar',x:28.5,y:13.3},{type:'pillar',x:27,y:14.7},{type:'pillar',x:25.3,y:15.7},
+       {type:'pillar',x:18,y:10},{type:'pillar',x:20.5,y:9},{type:'pillar',x:25.5,y:9},{type:'pillar',x:28,y:10},
        {type:'clearing',x:23,y:17,flat:3},
      ]},
    time:'morning', music:'holy',
@@ -5652,6 +5665,11 @@ STORY.push(
       ]},
      {type:'goto',x:23,y:12,radius:2.2,text:'Go up — you, Aharon, Naḏaḇ, Aḇihu, and seventy of the elders',hiddenUntil:1,
       script:[
+       {call:G=>{ for(let i=0;i<70;i++){
+         const e9=makeNpc({id:'eld70_'+i,char:'elder',x:8+(i%14)*2.2+Math.random()*.8,y:18+Math.floor(i/14)*1.6+Math.random()*.6,wander:false,noTalk:true});
+         G.world.npcs.push(e9);
+         e9.target={x:9.5+(i%14)*1.9+Math.random()*.6,y:8.6+Math.floor(i/14)*1.5+Math.random()*.5}; e9.speed=.026+Math.random()*.01; } }},
+       {say:['narrator','And Mosheh went up, and Aharon, Naḏaḇ and Aḇihu — and SEVENTY of the elders of Yasharal climbed with them.']},
        {rays:.85,raysX:23},{music:'holy'},{sfx:'holy'},
        {say:['narrator','And they saw the Aluahim of Yasharal — and under His feet like a paved work of sapphire stone, and like the very shamayim for brightness. Yet upon the nobles of the children of Yasharal He did not lay His hand: and they saw Aluahim, and they ate and drank.']},
        {say:['voice','Come up to Me on the mountain, and be there — and I shall give you the tablets of stone, and the Torah and the command which I have written, to teach them.']},
