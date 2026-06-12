@@ -1041,11 +1041,25 @@ function drawAnimal(g,px,py,type,o){
   }
   sprRender(g,ops,u,flip);
   if(o.rider){
-    const seat={camel:-12.2,horse:-9.6,donkey:-7.6}[type];
-    /* the mount always renders in side view - seat the rider in matching profile */
+    const seat={camel:-10.6,horse:-8.4,donkey:-6.4}[type];
+    /* the mount always renders in side view - seat the rider LOW on its back */
     const rdir=o.dir==='right'?'right':'left';
-    if(seat!==undefined)
+    if(seat!==undefined){
+      const rc=CHARS[o.rider]||{};
+      const lu=(o.riderScale||1)*(rc.child?1.9:(rc.angel?3.3:2.6))*(TILE/40);
       drawChar(g,0,Math.round(seat*u),o.rider,{t,dir:rdir,moving:o.moving,riding:true,scale:o.riderScale||1});
+      /* the near leg hangs over the flank, foot against the animal's side */
+      const robe9=rc.robe||rc.skin||'#7a4e29', skin9=rc.skin||'#7a4e29';
+      const ly=Math.round(seat*u-5.5*lu);
+      g.fillStyle='rgba(26,15,9,.95)';
+      g.fillRect(Math.round(-1.4*lu)-1,ly-1,Math.round(2.8*lu)+2,Math.round(6.4*lu)+2);
+      g.fillStyle=shade(robe9,-10);
+      g.fillRect(Math.round(-1.4*lu),ly,Math.round(2.8*lu),Math.round(3.6*lu));
+      g.fillStyle=skin9;
+      g.fillRect(Math.round(-1.2*lu),ly+Math.round(3.6*lu),Math.round(2.4*lu),Math.round(1.5*lu));
+      g.fillStyle=shade(skin9,-32);
+      g.fillRect(Math.round(-1.4*lu),ly+Math.round(5*lu),Math.round(2.8*lu),Math.round(1.4*lu));
+    }
   }
   g.restore();
 }
@@ -1707,11 +1721,18 @@ function walkable(map,x,y){
   return true;
 }
 const TINY_ANIMALS=new Set(['bird','dove','raven','fish','lizard','beetle','frog']);
-function npcBlocked(world,x,y){
-  /* the player cannot walk through the animals */
+function npcBlocked(world,x,y,px,py){
+  /* the player cannot walk through people or animals.
+     escape rule: movement that takes you AWAY from whoever blocks you is always allowed,
+     so a wandering npc can never pin the player. */
   for(const n of world.npcs){
-    if(n.hidden||!n.animal||n.flying||TINY_ANIMALS.has(n.animal)) continue;
-    if(Math.abs(n.x-x)<.62&&Math.abs(n.y-y)<.52) return true;
+    if(n.hidden||n.lying) continue;
+    if(n.flying||(n.animal&&TINY_ANIMALS.has(n.animal))) continue;
+    const big=n.animal||n.propType;
+    if(Math.abs(n.x-x)<(big?.62:.5)&&Math.abs(n.y-y)<(big?.52:.42)){
+      if(px!==undefined&&Math.hypot(n.x-x,n.y-y)>Math.hypot(n.x-px,n.y-py)) continue;
+      return true;
+    }
   }
   return false;
 }
@@ -2072,10 +2093,10 @@ function drawBattleUI(g,b,t){
   g.strokeStyle='rgba(200,74,58,.6)'; g.lineWidth=1.5;
   g.beginPath(); g.rect(x,y,w,48); g.fill(); g.stroke();
   g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 14px Georgia';
-  g.fillText(b.text||'Fight!',VW/2,y+19);
+  g.fillText(b.phase==='rally'?'The fight is over.':(b.text||'Fight!'),VW/2,y+19);
   const pul=.5+Math.sin(t/260)*.5;
   g.fillStyle=`rgba(232,198,106,${.55+pul*.4})`; g.font='12px Georgia';
-  g.fillText('Foes standing: '+b.left+'   \u2014   press \u2726 / E beside a foe to strike',VW/2,y+38);
+  g.fillText(b.phase==='rally'?'Regroup — walk to the gold marker to continue':'Foes standing: '+b.left+' — press ✦ / E beside a foe to strike',VW/2,y+38);
   g.restore();
 }
 
@@ -2206,8 +2227,24 @@ const Game={
     };
     if(op.say){
       this.scriptBlocked=true;
-      this.say(op.say[0],op.say[1],()=>{this.scriptBlocked=false});
-      const ent=findEnt(op.say[0]); if(ent) ent.emote=null;
+      /* every line plays on stage: if the speaker is off-screen, the camera goes to them */
+      let spk=findEnt(op.say[0]);
+      if(!spk||spk.hidden){
+        let bd=1e9;
+        for(const n of w.npcs){ if(n.hidden||n.char!==op.say[0]) continue;
+          const d=w.player?dist(n.x,n.y,w.player.x,w.player.y):0;
+          if(d<bd){ bd=d; spk=n; } }
+      }
+      let camRestore=null;
+      if(spk&&spk!==w.player&&!spk.hidden&&spk.id){
+        if(Math.abs(spk.x*TILE-Camera.x)>VW*.44||Math.abs(spk.y*TILE-Camera.y)>VH*.42){
+          camRestore={f:w.camFollow,t:w.camTarget};
+          w.camFollow=null; w.camTarget=['ent',spk.id];
+        }
+      }
+      this.say(op.say[0],op.say[1],()=>{ this.scriptBlocked=false;
+        if(camRestore){ w.camFollow=camRestore.f; w.camTarget=camRestore.t; } });
+      if(spk) spk.emote=null;
       return false;
     }
     if(op.sayList){
@@ -2278,7 +2315,8 @@ const Game={
       for(const n of w.npcs) if(op.battle.foes.includes(n.id)){
         n.foe=true; n.hp=op.battle.hits||2; n.wander=false; n.noTalk=true; left++;
       }
-      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,onDone:()=>{this.scriptBlocked=false}};
+      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,
+        rally:op.battle.rally||null,onDone:()=>{this.scriptBlocked=false}};
       return false;
     }
     if(op.call){ op.call(this); return true; }
@@ -2460,6 +2498,7 @@ const Game={
       return;
     }
     if(this.battle&&this.state==='play'&&this.world&&this.world.player){
+      if(this.battle.phase==='rally') return;
       const p=this.world.player;
       let best=null,bd=1.6;
       for(const n of this.world.npcs){
@@ -2477,9 +2516,16 @@ const Game={
           best.foe=false; best.lying=true; best.moving=false; best.noTalk=true;
           this.battle.left--;
           if(this.battle.left>0) toast(this.battle.left+' of the foes still stand');
+          else if(this.battle.rally){
+            /* the fight is over — but the story waits until the player regroups */
+            this.battle.phase='rally'; this.battle.deadUntil=this.t+800;
+            toast(this.battle.won||'The foes are fallen'); Sound.sfx('chime');
+            this.world.gotoMark={x:this.battle.rally[0],y:this.battle.rally[1]};
+          }
           else {
             const cb=this.battle.onDone, won=this.battle.won; this.battle=null;
             toast(won||'The foes are fallen'); Sound.sfx('chime');
+            this.endSkirmish();
             if(cb)cb();
           }
         }
@@ -2500,6 +2546,14 @@ const Game={
   },
   onEscape(){
     if(this.state==='play'||this.state==='complete'){ openChapters(); }
+  },
+  endSkirmish(){
+    /* the battle is decided: enemy skirmishers fall, allies stand down */
+    if(!this.world) return;
+    for(const n of this.world.npcs){
+      if(n.sparFoe&&!n.lying){ n.lying=true; n.moving=false; n.spar=null; n.target=null; }
+      else if(n.spar){ n.spar=null; n.moving=false; n.target=null; }
+    }
   },
   doInteract(tgt){
     const w=this.world;
@@ -2562,6 +2616,15 @@ const Game={
         if(cb)cb();
       }
     }
+    if(this.battle&&this.battle.phase==='rally'&&this.world.player){
+      const b9=this.battle, p9=this.world.player;
+      if(this.t>(b9.deadUntil||0)&&b9.rally&&dist(p9.x,p9.y,b9.rally[0],b9.rally[1])<1.7){
+        this.battle=null; this.world.gotoMark=null;
+        this.endSkirmish();
+        const cb9=b9.onDone; if(cb9)cb9();
+        this.updateMarkers();
+      }
+    }
     if(this.chapter&&this.chapter.scene&&this.chapter.scene.tick&&!this.script&&!this.dlgChar)
       this.chapter.scene.tick(this);
     const w=this.world;
@@ -2574,8 +2637,8 @@ const Game={
       if(v.x||v.y){
         const ms=p.speed*(p.mount?1.65:1);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y)) p.x=nx;
-        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny)) p.y=ny;
+        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
@@ -2591,6 +2654,19 @@ const Game={
           const cb=e.onArrive; e.onArrive=null; if(cb)cb(); }
         else { e.x+=dx/m*step; e.y+=dy/m*step; e.moving=true;
           e.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'); }
+      } else if(e.spar&&!e.lying&&!this.dlgChar){
+        /* locked in melee with a partner: press in, jostle, sparks fly */
+        const o9=w.npcs.find(n=>n.id===e.spar);
+        if(o9&&!o9.lying&&!o9.hidden){
+          const d9=dist(e.x,e.y,o9.x,o9.y);
+          if(d9>1){ e.target={x:o9.x,y:o9.y}; e.speed=.04; }
+          else {
+            e.moving=true;
+            e.dir=Math.abs(o9.x-e.x)>Math.abs(o9.y-e.y)?(o9.x<e.x?'left':'right'):(o9.y<e.y?'up':'down');
+            e.x+=(Math.random()-.5)*.05; e.y+=(Math.random()-.5)*.04;
+            if(Math.random()<.012) Particles.burst((e.x+o9.x)/2*TILE,(e.y+o9.y)/2*TILE,'spark',3);
+          }
+        } else { e.spar=null; e.moving=false; }
       } else if(e.foe&&p&&!e.lying&&!this.dlgChar){
         /* battle foe: close in on the player, shove when adjacent */
         const df=dist(e.x,e.y,p.x,p.y);
