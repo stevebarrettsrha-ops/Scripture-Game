@@ -1094,11 +1094,25 @@ function drawAnimal(g,px,py,type,o){
   }
   sprRender(g,ops,u,flip);
   if(o.rider){
-    const seat={camel:-12.2,horse:-9.6,donkey:-7.6}[type];
-    /* the mount always renders in side view - seat the rider in matching profile */
+    const seat={camel:-10.6,horse:-8.4,donkey:-6.4}[type];
+    /* the mount always renders in side view - seat the rider LOW on its back */
     const rdir=o.dir==='right'?'right':'left';
-    if(seat!==undefined)
+    if(seat!==undefined){
+      const rc=CHARS[o.rider]||{};
+      const lu=(o.riderScale||1)*(rc.child?1.9:(rc.angel?3.3:2.6))*(TILE/40);
       drawChar(g,0,Math.round(seat*u),o.rider,{t,dir:rdir,moving:o.moving,riding:true,scale:o.riderScale||1});
+      /* the near leg hangs over the flank, foot against the animal's side */
+      const robe9=rc.robe||rc.skin||'#7a4e29', skin9=rc.skin||'#7a4e29';
+      const ly=Math.round(seat*u-5.5*lu);
+      g.fillStyle='rgba(26,15,9,.95)';
+      g.fillRect(Math.round(-1.4*lu)-1,ly-1,Math.round(2.8*lu)+2,Math.round(6.4*lu)+2);
+      g.fillStyle=shade(robe9,-10);
+      g.fillRect(Math.round(-1.4*lu),ly,Math.round(2.8*lu),Math.round(3.6*lu));
+      g.fillStyle=skin9;
+      g.fillRect(Math.round(-1.2*lu),ly+Math.round(3.6*lu),Math.round(2.4*lu),Math.round(1.5*lu));
+      g.fillStyle=shade(skin9,-32);
+      g.fillRect(Math.round(-1.4*lu),ly+Math.round(5*lu),Math.round(2.8*lu),Math.round(1.4*lu));
+    }
   }
   g.restore();
 }
@@ -2421,8 +2435,24 @@ const Game={
     };
     if(op.say){
       this.scriptBlocked=true;
-      this.say(op.say[0],op.say[1],()=>{this.scriptBlocked=false});
-      const ent=findEnt(op.say[0]); if(ent) ent.emote=null;
+      /* every line plays on stage: if the speaker is off-screen, the camera goes to them */
+      let spk=findEnt(op.say[0]);
+      if(!spk||spk.hidden){
+        let bd=1e9;
+        for(const n of w.npcs){ if(n.hidden||n.char!==op.say[0]) continue;
+          const d=w.player?dist(n.x,n.y,w.player.x,w.player.y):0;
+          if(d<bd){ bd=d; spk=n; } }
+      }
+      let camRestore=null;
+      if(spk&&spk!==w.player&&!spk.hidden&&spk.id){
+        if(Math.abs(spk.x*TILE-Camera.x)>VW*.44||Math.abs(spk.y*TILE-Camera.y)>VH*.42){
+          camRestore={f:w.camFollow,t:w.camTarget};
+          w.camFollow=null; w.camTarget=['ent',spk.id];
+        }
+      }
+      this.say(op.say[0],op.say[1],()=>{ this.scriptBlocked=false;
+        if(camRestore){ w.camFollow=camRestore.f; w.camTarget=camRestore.t; } });
+      if(spk) spk.emote=null;
       return false;
     }
     if(op.sayList){
@@ -3992,6 +4022,12 @@ STORY.push(
      {id:'crowd2',char:'hebreww',x:27,y:20,wander:true,range:1.4,noTalk:true},
      {id:'crowd3',char:'elder',x:22,y:21.5,wander:true,range:1.4,noTalk:true},
    ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<16;i++) G.world.npcs.push(makeNpc({id:'cong'+i,char:cs[i%4],child:i%9===8,
+         x:15+(i%8)*2+Math.random(),y:20+Math.floor(i/8)*1.8+Math.random(),
+         wander:true,range:1.1,noTalk:true})); }},
+   ],
    objectives:[
      {type:'interact',prop:'laver',text:'Bring Aharon and his sons — and wash them with water',
       script:[
@@ -4045,6 +4081,12 @@ STORY.push(
      {id:'crowd3',char:'hebrew2',x:22,y:21.5,wander:true,range:1.4,noTalk:true},
      {id:'crowd4',char:'elder',x:19,y:21,wander:true,range:1.4,noTalk:true},
    ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<18;i++) G.world.npcs.push(makeNpc({id:'cong'+i,char:cs[i%4],child:i%9===8,
+         x:14+(i%9)*2.1+Math.random(),y:20+Math.floor(i/9)*1.7+Math.random(),
+         wander:true,range:1.1,noTalk:true})); }},
+   ],
    objectives:[
      {type:'interact',prop:'altar',text:'Offer the sin offering and the ascending offering — for yourself and for the people',
       script:[
@@ -4058,7 +4100,7 @@ STORY.push(
        {rays:.95,raysX:22},{sfx:'holy'},{shake:1.5},{music:'holy'},
        {say:['narrator','—AND THE ESTEEM OF YAHUAH APPEARED TO ALL THE PEOPLE: and fire came out from before YAHUAH and consumed the ascending offering and the fat on the altar. And all the people SAW — and SHOUTED — and fell on their faces.']},
        {burst:[22,15,'holy',36]},
-       {call:G=>{ for(const n of G.world.npcs){ if(String(n.id).startsWith('crowd')){ n.wander=false; n.lying=true; n.moving=false; } } }},
+       {call:G=>{ for(const n of G.world.npcs){ if(String(n.id).startsWith('crowd')||String(n.id).startsWith('cong')){ n.wander=false; n.lying=true; n.moving=false; n.target=null; } } }},
        {wait:900},{rays:0},
        {say:['mosheh_o','This is what YAHUAH spoke: “By those who come near Me, I am set apart — and before all the people I am esteemed.” The fire that fell is His amen on the kohenship. Guard it, brother. Guard it exactly.']},
       ]},
@@ -4258,6 +4300,12 @@ STORY.push(
      {id:'fitman',char:'hebrew',x:24,y:18,wander:false,noTalk:true},
      {id:'crowd1',char:'hebrew2',x:14,y:20.5,wander:true,range:1.4,noTalk:true},
      {id:'crowd2',char:'hebreww',x:22,y:21.5,wander:true,range:1.4,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<14;i++) G.world.npcs.push(makeNpc({id:'cong'+i,char:cs[i%4],child:i%9===8,
+         x:12+(i%7)*2+Math.random(),y:20.5+Math.floor(i/7)*1.7+Math.random(),
+         wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
      {type:'interact',prop:'lots',text:'Take the two goats — and cast lots over them',

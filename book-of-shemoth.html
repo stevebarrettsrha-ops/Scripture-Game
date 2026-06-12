@@ -1088,11 +1088,25 @@ function drawAnimal(g,px,py,type,o){
   }
   sprRender(g,ops,u,flip);
   if(o.rider){
-    const seat={camel:-12.2,horse:-9.6,donkey:-7.6}[type];
-    /* the mount always renders in side view - seat the rider in matching profile */
+    const seat={camel:-10.6,horse:-8.4,donkey:-6.4}[type];
+    /* the mount always renders in side view - seat the rider LOW on its back */
     const rdir=o.dir==='right'?'right':'left';
-    if(seat!==undefined)
+    if(seat!==undefined){
+      const rc=CHARS[o.rider]||{};
+      const lu=(o.riderScale||1)*(rc.child?1.9:(rc.angel?3.3:2.6))*(TILE/40);
       drawChar(g,0,Math.round(seat*u),o.rider,{t,dir:rdir,moving:o.moving,riding:true,scale:o.riderScale||1});
+      /* the near leg hangs over the flank, foot against the animal's side */
+      const robe9=rc.robe||rc.skin||'#7a4e29', skin9=rc.skin||'#7a4e29';
+      const ly=Math.round(seat*u-5.5*lu);
+      g.fillStyle='rgba(26,15,9,.95)';
+      g.fillRect(Math.round(-1.4*lu)-1,ly-1,Math.round(2.8*lu)+2,Math.round(6.4*lu)+2);
+      g.fillStyle=shade(robe9,-10);
+      g.fillRect(Math.round(-1.4*lu),ly,Math.round(2.8*lu),Math.round(3.6*lu));
+      g.fillStyle=skin9;
+      g.fillRect(Math.round(-1.2*lu),ly+Math.round(3.6*lu),Math.round(2.4*lu),Math.round(1.5*lu));
+      g.fillStyle=shade(skin9,-32);
+      g.fillRect(Math.round(-1.4*lu),ly+Math.round(5*lu),Math.round(2.8*lu),Math.round(1.4*lu));
+    }
   }
   g.restore();
 }
@@ -2382,8 +2396,24 @@ const Game={
     };
     if(op.say){
       this.scriptBlocked=true;
-      this.say(op.say[0],op.say[1],()=>{this.scriptBlocked=false});
-      const ent=findEnt(op.say[0]); if(ent) ent.emote=null;
+      /* every line plays on stage: if the speaker is off-screen, the camera goes to them */
+      let spk=findEnt(op.say[0]);
+      if(!spk||spk.hidden){
+        let bd=1e9;
+        for(const n of w.npcs){ if(n.hidden||n.char!==op.say[0]) continue;
+          const d=w.player?dist(n.x,n.y,w.player.x,w.player.y):0;
+          if(d<bd){ bd=d; spk=n; } }
+      }
+      let camRestore=null;
+      if(spk&&spk!==w.player&&!spk.hidden&&spk.id){
+        if(Math.abs(spk.x*TILE-Camera.x)>VW*.44||Math.abs(spk.y*TILE-Camera.y)>VH*.42){
+          camRestore={f:w.camFollow,t:w.camTarget};
+          w.camFollow=null; w.camTarget=['ent',spk.id];
+        }
+      }
+      this.say(op.say[0],op.say[1],()=>{ this.scriptBlocked=false;
+        if(camRestore){ w.camFollow=camRestore.f; w.camTarget=camRestore.t; } });
+      if(spk) spk.emote=null;
       return false;
     }
     if(op.sayList){
@@ -4358,8 +4388,8 @@ STORY.push(
    time:'dusk', music:'desert',
    player:'mosheh', playerPos:[8,18], playerMount:'donkey',
    npcs:[
-     {id:'tsipporah',char:'tsipporah',x:9.5,y:19,wander:false,follow:true,noTalk:true},
-     {id:'boy1',char:'sheth',child:true,x:8.5,y:20,wander:false,follow:true,noTalk:true},
+     {id:'tsipporah',char:'tsipporah',mount:'donkey',x:9.5,y:19,wander:false,follow:true,noTalk:true},
+     {id:'boy1',char:'sheth',mount:'donkey',scale:.72,x:8.5,y:20,wander:false,follow:true,noTalk:true},
      {id:'mastema',char:'mastema',x:41,y:15,wander:false,hidden:true,noTalk:true},
      {id:'aharon',char:'aharon',x:48,y:18,wander:false,hidden:true,noTalk:true},
    ],
@@ -4379,9 +4409,38 @@ STORY.push(
        {show:'aharon'},{move:['aharon',44,19,.06]},{time:'morning'},{music:'eden'},
        {say:['aharon','Mosheh? …MOSHEH! Brother! Forty years — and the word of Aluahim came to me: “Go into the wilderness to meet Mosheh.” Let me look at you. The palace is gone out of your face — good. Goshen never left it.']},
        {say:['narrator','And he met him on the mountain of Aluahim, and kissed him. And Mosheh told Aharon all the words of YAHUAH who had sent him, and all the signs.']},
-       {fade:'out'},{toast:'And they gathered the elders of Yasharal in Goshen…'},{wait:1700},{fade:'in'},
-       {say:['narrator','And Aharon spoke all the words which YAHUAH had spoken to Mosheh, and did the signs before the eyes of the people. And the people believed — and when they heard that YAHUAH had visited the children of Yasharal, and that He had looked on their affliction, they bowed their heads and worshipped.']},
-       {sfx:'holy'},{burst:[46,19,'holy',20]},
+       {fade:'out'},{toast:'And Mosheh and Aharon went on, into Goshen — and gathered ALL the elders of the children of Yasharal…'},{wait:1700},
+       {call:G=>{ const w=G.world;
+         /* the stage becomes the camp of Yasharal in Goshen — and they are many */
+         for(const [tx,ty,tc] of [[10,14,'#c8b486'],[15,12.5,'#b3a07f'],[21,13.5,'#bda884'],[26,12.5,'#b3a07f'],[30,14.5,'#c8b486']])
+           w.map.decor.push({type:'tent',x:tx,y:ty,solid:true,col:tc});
+         w.map.decor.push({type:'firepit',x:13,y:16,lit:true});
+         w.map.decor.push({type:'firepit',x:24,y:16.5,lit:true});
+         w.map.decor.sort((a,b)=>a.y-b.y);
+         const cs=['hebrew','hebreww','hebrew2','elder','hebreww','hebrew'];
+         for(let i=0;i<42;i++){
+           w.npcs.push(makeNpc({id:'gosh'+i,char:cs[i%6],child:i%9===8,
+             x:9+(i%11)*2.1+Math.random(),y:16.5+Math.floor(i/11)*1.9+Math.random(),
+             wander:true,range:1.1,noTalk:true}));
+         }
+         for(let i=0;i<4;i++) w.npcs.push(makeNpc({id:'goshsheep'+i,animal:i%2?'sheep':'goat',x:31+i*1.4,y:18+(i%2)*1.5,range:1.4,noTalk:true}));
+       }},
+       {teleport:['player',18,21]},{teleport:['aharon',19.5,21.3]},
+       {teleport:['tsipporah',16.5,22]},{teleport:['boy1',15.5,22.6]},
+       {time:'dusk'},{music:'holy'},{fade:'in'},{camera:'player'},
+       {say:['narrator','And the camp of Goshen spread out before them — tents beyond counting, the children of Yasharal as the stars for multitude, just as He had sworn to the fathers.']},
+       {say:['aharon','Elders of Yasharal — hear the words of YAHUAH, the Aluahim of Aḇraham, of Yahtsḥaq and of Ya‘aqoḇ: I HAVE INDEED VISITED YOU. I have seen what is done to you in Mitsrayim.']},
+       {say:['narrator','And Aharon spoke all the words which YAHUAH had spoken to Mosheh, and did the signs before the eyes of the people.']},
+       {burst:[18,20,'holy',22]},{sfx:'holy'},
+       {call:G=>{ const p=G.world.player;
+         for(const n of G.world.npcs){
+           if(!String(n.id).startsWith('gosh')||n.animal) continue;
+           n.wander=false; n.target=null; n.moving=false;
+           const dx=p.x-n.x, dy=p.y-n.y;
+           n.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down');
+         } }},
+       {say:['narrator','And the people BELIEVED — and when they heard that YAHUAH had visited the children of Yasharal, and that He had looked on their affliction, they bowed their heads and worshipped.']},
+       {sfx:'holy'},
       ]},
    ],
   },
@@ -4431,14 +4490,26 @@ STORY.push(
        {say:['taskmaster','Why have you not completed your task in making bricks, both yesterday and today, as before?!']},
        {sfx:'bad'},{shake:1},
        {say:['narrator','And the officers of the children of Yasharal, whom Pharaoh’s taskmasters had set over them, were beaten. And they cried to Pharaoh — and he said, “You are idle! Idle! Therefore you say, ‘Let us go and slaughter to YAHUAH.’”']},
-       {say:['hebrew2','Let YAHUAH look on you and judge, Mosheh — you have made us stink in the eyes of Pharaoh, and put a sword in their hand to kill us!']},
+       {teleport:['mosheh',30,16]},{teleport:['aharon',31.5,16.5]},
        {show:'mosheh'},{show:'aharon'},
+       {move:['mosheh',32,14.5,.06,'bg']},{move:['aharon',33,15.2,.06]},
+       {face:['officer','right']},
+       {say:['hebrew2','Let YAHUAH look on you and judge, Mosheh — you have made us stink in the eyes of Pharaoh, and put a sword in their hand to kill us!']},
        {say:['narrator','And Mosheh returned to YAHUAH and said: “YAHUAH, why have You done evil to this people? Why did You send me? Since I came to Pharaoh, he has done evil to this people — and You have not delivered Your people at all!”']},
        {music:'holy'},{rays:.7,raysX:33},{sfx:'holy'},
        {say:['voice','Now you shall see what I do to Pharaoh: with a strong hand he shall let them go. I am YAHUAH. I appeared to Aḇraham, to Yahtsḥaq, and to Ya‘aqoḇ as Ăl Shaddai — and by My Name, YAHUAH, was I not known to them? And I have heard the groaning of the children of Yasharal, and I have remembered My covenant.']},
        {say:['voice','Say to the children of Yasharal: I am YAHUAH. I SHALL BRING YOU OUT from under the burdens of the Mitsrites. I SHALL DELIVER YOU from their bondage. I SHALL REDEEM YOU with an outstretched arm and with great judgments. I SHALL TAKE YOU as My people, and I shall be your Aluahim. And I SHALL BRING YOU IN to the land which I swore to give to Aḇraham — I am YAHUAH.']},
        {rays:0},
+       {call:G=>{ const cs=['hebrew','hebrew2','hebreww'];
+         for(let i=0;i<8;i++) G.world.npcs.push(makeNpc({id:'disp'+i,char:cs[i%3],
+           x:30+(i%4)*1.7+Math.random(),y:16.5+Math.floor(i/4)*1.8+Math.random(),
+           wander:false,noTalk:true,dir:'down'}));
+       }},
+       {wait:600},
        {say:['narrator','And Mosheh spoke thus to the children of Yasharal — but they did not listen to Mosheh, because of shortness of spirit, and from hard bondage.']},
+       {call:G=>{ for(const n of G.world.npcs){ if(String(n.id).startsWith('disp')){
+         n.dir=['down','left','down','right'][Math.floor(Math.random()*4)];
+         n.target={x:n.x+(Math.random()-.5)*6,y:n.y+2+Math.random()*2}; n.speed=.03; } } }},
       ]},
    ],
   },
@@ -4782,6 +4853,12 @@ STORY.push(
      {type:'goto',x:20,y:18.5,radius:2.4,text:'Join Mosheh — the divisions of YAHUAH go out of Mitsrayim',hiddenUntil:2,
       script:[
        {show:'mosheh'},{show:'aharon'},{music:'holy'},
+       {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+         for(let i=0;i<30;i++) G.world.npcs.push(makeNpc({id:'dep'+i,char:cs[i%4],child:i%8===7,
+           x:12+(i%10)*2+Math.random(),y:14+Math.floor(i/10)*2+Math.random(),
+           wander:true,range:1,noTalk:true}));
+         for(let i=0;i<5;i++) G.world.npcs.push(makeNpc({id:'depan'+i,animal:['sheep','goat','donkey','sheep','cow'][i],x:30+i*1.6,y:20+(i%2)*1.6,range:1.4,noTalk:true}));
+       }},
        {say:['mosheh_o','It is the night of watches unto YAHUAH — kept through four hundred and thirty years, to the very day. Take up your dough before it is leavened. We go out — six hundred thousand men on foot, besides the little ones, and a mixed multitude with us, and flocks and herds, very much livestock.']},
        {say:['narrator','And it came to be at the end of the four hundred and thirty years, on that same day, that all the divisions of YAHUAH went out from the land of Mitsrayim. It is a night of watches unto YAHUAH — this night is unto YAHUAH, of watches for all the children of Yasharal, throughout their generations.']},
        {sfx:'holy'},{burst:[20,18,'holy',24]},
@@ -4815,6 +4892,14 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:25,y:21,range:2,noTalk:true},
      {id:'cow1',animal:'cow',x:26.5,y:19.5,range:2,noTalk:true},
      {id:'dk1',animal:'donkey',x:24,y:22.5,range:2,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<26;i++) G.world.npcs.push(makeNpc({id:'mar'+i,char:cs[i%4],child:i%7===6,
+         x:14+(i%9)*2.2+Math.random(),y:19+Math.floor(i/9)*2+Math.random(),
+         route:[[38+(i%4),14+(i%5)],[16+(i%6),19+(i%4)]],routeSpeed:.016,noTalk:true}));
+       for(let i=0;i<6;i++) G.world.npcs.push(makeNpc({id:'maran'+i,animal:['sheep','goat','cow','donkey','sheep','goat'][i],x:20+i*2,y:23+(i%2),range:1.6,noTalk:true}));
+     }},
    ],
    objectives:[
      {type:'interact',prop:'bonewagon',text:'Take the bones of Yosĕph with you — for he made Yasharal swear',
@@ -4857,6 +4942,12 @@ STORY.push(
      {id:'heb3',char:'hebrew2',x:23,y:17,wander:true,range:1.4,noTalk:true},
      {id:'miryam',char:'miryam',x:25,y:17.5,wander:true,range:1.4,noTalk:true},
    ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<24;i++) G.world.npcs.push(makeNpc({id:'xc'+i,char:cs[i%4],child:i%9===8,
+         x:18+(i%10)*1.9+Math.random(),y:15.5+Math.floor(i/10)*1.6+Math.random(),
+         wander:true,range:1.1,noTalk:true})); }},
+   ],
    objectives:[
      {type:'goto',x:24,y:20,radius:2.2,text:'Camp by the sea — and look back toward Mitsrayim',
       script:[
@@ -4879,7 +4970,9 @@ STORY.push(
          for(let y=m.h-12;y<m.h;y++) for(let x=21;x<=27;x++) m.tiles[y*m.w+x]=T.SAND; }},
        {burst:[24,24,'mote',30]},{sfx:'holy'},
        {say:['narrator','And the children of Yasharal went into the midst of the sea on dry ground — and the waters were a wall to them on their right and on their left.']},
-       {call:G=>{ for(const n of G.world.npcs){ if(['heb1','heb2','heb3','miryam','aharon'].includes(n.id)){ n.wander=false; n.target={x:23+Math.random()*2,y:30+Math.random()*2}; n.speed=.05; } } }},
+       {call:G=>{ for(const n of G.world.npcs){
+         if(['heb1','heb2','heb3','miryam','aharon'].includes(n.id)||String(n.id).startsWith('xc')){
+           n.wander=false; n.target={x:22.5+Math.random()*3,y:29+Math.random()*3.5}; n.speed=.04+Math.random()*.02; } } }},
       ]},
      {type:'goto',x:24,y:31,radius:2.4,text:'Cross between the walls of water',hiddenUntil:2,
       script:[
@@ -4925,6 +5018,14 @@ STORY.push(
      {id:'w2',char:'hebreww',route:[[23,16.5],[21,18],[24,17.5]],noTalk:true,x:23,y:16.5},
      {id:'heb1',char:'hebrew',x:25.5,y:14.5,wander:true,range:1.6,noTalk:true},
      {id:'heb2',char:'hebrew2',x:21,y:13,wander:true,range:1.6,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ const cs=['hebreww','hebrew','hebreww','hebrew2'];
+       for(let i=0;i<16;i++){ const w9=i%2===0;
+         G.world.npcs.push(makeNpc({id:'sng'+i,char:cs[i%4],child:i%8===7,
+           x:16+(i%8)*1.9+Math.random(),y:14+Math.floor(i/8)*2+Math.random(),
+           route:w9?[[17+(i%5)*2,16],[19+(i%4)*2,18],[16+(i%6),17]]:null,routeSpeed:.02,
+           wander:!w9,range:1.2,noTalk:true})); } }},
    ],
    objectives:[
      {type:'talk',npc:'mosheh',text:'Sing the Song of the Sea with Mosheh and all Yasharal'},
@@ -5229,6 +5330,12 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:35,y:25,range:2,noTalk:true},
      {id:'dk1',animal:'donkey',x:10,y:25,range:2,noTalk:true},
    ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<24;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
+         x:14+(i%9)*2+Math.random(),y:20+Math.floor(i/9)*1.8+Math.random(),
+         wander:true,range:1.1,noTalk:true})); }},
+   ],
    objectives:[
      {type:'goto',x:23,y:13,radius:2.4,text:'Set bounds for the people around the mountain — none may touch it',
       script:[
@@ -5267,6 +5374,12 @@ STORY.push(
      {id:'heb2',char:'hebreww',x:26,y:22.5,wander:false,noTalk:true},
      {id:'heb3',char:'hebrew2',x:23,y:23.5,wander:false,noTalk:true},
      {id:'elder1',char:'elder',x:18,y:23,wander:false,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<24;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
+         x:15+(i%9)*1.9+Math.random(),y:21+Math.floor(i/9)*1.6+Math.random(),
+         wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
      {type:'goto',x:23,y:16,radius:2,text:'Stand at the foot of the mountain — Aluahim speaks all these Words',
@@ -5317,6 +5430,12 @@ STORY.push(
      {id:'elder2',char:'elder',x:27,y:21,wander:false,noTalk:true},
      {id:'heb1',char:'hebrew',x:23,y:22,wander:false,noTalk:true},
      {id:'heb2',char:'hebreww',x:25,y:22.5,wander:false,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<18;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
+         x:16+(i%8)*1.9+Math.random(),y:19.5+Math.floor(i/8)*1.7+Math.random(),
+         wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
      {type:'goto',x:23,y:15.5,radius:2,text:'Build the altar and twelve standing columns — and read the Book of the Covenant',
@@ -5376,6 +5495,12 @@ STORY.push(
      {id:'lev1',char:'levite',x:12,y:22,wander:false,hidden:true,noTalk:true},
      {id:'lev2',char:'levite',x:13.5,y:23,wander:false,hidden:true,noTalk:true},
    ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','hebreww'];
+       for(let i=0;i<12;i++) G.world.npcs.push(makeNpc({id:'rev_x'+i,char:cs[i%4],
+         x:20+(i%6)*1.6+Math.random(),y:19.5+Math.floor(i/6)*2+Math.random(),
+         route:[[21+(i%4),20.5+(i%3)],[26+(i%3),21+(i%2)],[24,22.5]],routeSpeed:.024,noTalk:true})); }},
+   ],
    objectives:[
      {type:'goto',x:23,y:12,radius:2.2,text:'Come down from the mountain — the tablets in your hands',
       script:[
@@ -5391,7 +5516,7 @@ STORY.push(
        {say:['narrator','And as he came near the camp and saw the calf and the dancing — Mosheh’s displeasure burned, and he THREW THE TABLETS out of his hands and BROKE THEM at the foot of the mountain.']},
        {addProp:{type:'tablets',x:23,y:21.5,id:'broken'}},
        {burst:[23,21.5,'ash',20]},{sfx:'bad'},
-       {call:G=>{ for(const n of G.world.npcs){ if(['rev1','rev2','rev3'].includes(n.id)){ n.route=null; n.wander=false; n.moving=false; } } }},
+       {call:G=>{ for(const n of G.world.npcs){ if(String(n.id).startsWith('rev')){ n.route=null; n.wander=false; n.moving=false; } } }},
        {say:['narrator','And he took the calf which they had made, and burned it in the fire, and ground it to powder, and scattered it on the water — and made the children of Yasharal drink it.']},
        {prop:['calf',{broken:true,solid:false}]},{burst:[24,18,'spark',20]},
        {say:['mosheh_o','Aharon. What did this people do to you — that you have brought so great a sin upon them?']},
@@ -5536,6 +5661,12 @@ STORY.push(
    items:[
      {kind:'gold',x:13,y:18},{kind:'gold',x:17,y:20.5},{kind:'bluecloth',x:21,y:20},{kind:'bluecloth',x:29,y:18},
    ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','hebreww'];
+       for(let i=0;i<14;i++) G.world.npcs.push(makeNpc({id:'wil'+i,char:cs[i%4],
+         x:12+(i%7)*2+Math.random(),y:19+Math.floor(i/7)*2+Math.random(),
+         route:[[13+(i%5)*2,20],[24,15.5],[16+(i%4)*2,21]],routeSpeed:.02,noTalk:true})); }},
+   ],
    objectives:[
      {type:'talk',npc:'betsalel',text:'Betsal’ĕl and Oholiaḇ — called by name, filled with the Ruach'},
      {type:'collect',item:'gold',need:2,text:'Receive the freewill offerings of all whose hearts are willing',hiddenUntil:1},
@@ -5573,6 +5704,12 @@ STORY.push(
      {id:'mosheh',char:'mosheh_r',x:18,y:17,wander:false,noTalk:true},
      {id:'w1',char:'hebreww',route:[[20,19.5],[27,19]],noTalk:true,x:20,y:19.5},
      {id:'heb1',char:'hebrew',route:[[28,18],[22,20]],noTalk:true,x:28,y:18},
+   ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebrew2','hebreww','hebrew'];
+       for(let i=0;i<10;i++) G.world.npcs.push(makeNpc({id:'wrk'+i,char:cs[i%4],
+         x:15+(i%5)*2.4+Math.random(),y:19+Math.floor(i/5)*2.2+Math.random(),
+         route:[[17+(i%4)*2,19.5],[24+(i%3),16],[20+(i%5),21]],routeSpeed:.022,noTalk:true})); }},
    ],
    objectives:[
      {type:'interact',prop:'mishkan',text:'Raise the boards and spread the curtains of the Dwelling Place',
@@ -5626,6 +5763,12 @@ STORY.push(
      {id:'heb2',char:'hebreww',x:28,y:22,wander:true,range:1.6,noTalk:true},
      {id:'heb3',char:'hebrew2',x:24,y:23.5,wander:true,range:1.6,noTalk:true},
      {id:'sheep1',animal:'sheep',x:31,y:23,range:2,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<22;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
+         x:15+(i%8)*2+Math.random(),y:21+Math.floor(i/8)*1.8+Math.random(),
+         wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
      {type:'interact',prop:'mishkan',text:'Raise up the Dwelling Place — the first day of the first month',

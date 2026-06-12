@@ -1030,11 +1030,25 @@ function drawAnimal(g,px,py,type,o){
   }
   sprRender(g,ops,u,flip);
   if(o.rider){
-    const seat={camel:-12.2,horse:-9.6,donkey:-7.6}[type];
-    /* the mount always renders in side view - seat the rider in matching profile */
+    const seat={camel:-10.6,horse:-8.4,donkey:-6.4}[type];
+    /* the mount always renders in side view - seat the rider LOW on its back */
     const rdir=o.dir==='right'?'right':'left';
-    if(seat!==undefined)
+    if(seat!==undefined){
+      const rc=CHARS[o.rider]||{};
+      const lu=(o.riderScale||1)*(rc.child?1.9:(rc.angel?3.3:2.6))*(TILE/40);
       drawChar(g,0,Math.round(seat*u),o.rider,{t,dir:rdir,moving:o.moving,riding:true,scale:o.riderScale||1});
+      /* the near leg hangs over the flank, foot against the animal's side */
+      const robe9=rc.robe||rc.skin||'#7a4e29', skin9=rc.skin||'#7a4e29';
+      const ly=Math.round(seat*u-5.5*lu);
+      g.fillStyle='rgba(26,15,9,.95)';
+      g.fillRect(Math.round(-1.4*lu)-1,ly-1,Math.round(2.8*lu)+2,Math.round(6.4*lu)+2);
+      g.fillStyle=shade(robe9,-10);
+      g.fillRect(Math.round(-1.4*lu),ly,Math.round(2.8*lu),Math.round(3.6*lu));
+      g.fillStyle=skin9;
+      g.fillRect(Math.round(-1.2*lu),ly+Math.round(3.6*lu),Math.round(2.4*lu),Math.round(1.5*lu));
+      g.fillStyle=shade(skin9,-32);
+      g.fillRect(Math.round(-1.4*lu),ly+Math.round(5*lu),Math.round(2.8*lu),Math.round(1.4*lu));
+    }
   }
   g.restore();
 }
@@ -2169,8 +2183,24 @@ const Game={
     };
     if(op.say){
       this.scriptBlocked=true;
-      this.say(op.say[0],op.say[1],()=>{this.scriptBlocked=false});
-      const ent=findEnt(op.say[0]); if(ent) ent.emote=null;
+      /* every line plays on stage: if the speaker is off-screen, the camera goes to them */
+      let spk=findEnt(op.say[0]);
+      if(!spk||spk.hidden){
+        let bd=1e9;
+        for(const n of w.npcs){ if(n.hidden||n.char!==op.say[0]) continue;
+          const d=w.player?dist(n.x,n.y,w.player.x,w.player.y):0;
+          if(d<bd){ bd=d; spk=n; } }
+      }
+      let camRestore=null;
+      if(spk&&spk!==w.player&&!spk.hidden&&spk.id){
+        if(Math.abs(spk.x*TILE-Camera.x)>VW*.44||Math.abs(spk.y*TILE-Camera.y)>VH*.42){
+          camRestore={f:w.camFollow,t:w.camTarget};
+          w.camFollow=null; w.camTarget=['ent',spk.id];
+        }
+      }
+      this.say(op.say[0],op.say[1],()=>{ this.scriptBlocked=false;
+        if(camRestore){ w.camFollow=camRestore.f; w.camTarget=camRestore.t; } });
+      if(spk) spk.emote=null;
       return false;
     }
     if(op.sayList){
