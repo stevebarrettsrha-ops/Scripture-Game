@@ -2720,10 +2720,31 @@ const Game={
           }
         }
       }
-      // follower (lead mechanic)
-      if(e.follow&&p&&!e.target){
-        const d3=dist(e.x,e.y,p.x,p.y);
-        if(d3<2.6&&d3>1.1){ e.target={x:p.x+(e.x-p.x)/d3*.9,y:p.y+(e.y-p.y)/d3*.9}; e.speed=.06; }
+      // follower (lead mechanic): each one keeps their own place in the line
+      if(e.follow&&p){
+        if(e._fa===undefined){
+          let h9=0; const s9=String(e.id||'');
+          for(let i9=0;i9<s9.length;i9++) h9=(h9*31+s9.charCodeAt(i9))|0;
+          h9=Math.abs(h9);
+          e._fa=((h9%100)/100-.5)*1.5;       /* personal angle off the line of march */
+          e._fd=1+((h9>>3)%100)/100*1.1;     /* personal following distance */
+        }
+        if(!e.target){
+          const d3=dist(e.x,e.y,p.x,p.y);
+          if(d3<3.4&&d3>e._fd+.25){
+            const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
+            e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd}; e.speed=.06;
+          }
+        }
+        /* spacing: two followers never merge into one */
+        for(const o9 of w.npcs){
+          if(o9===e||!o9.follow||o9.hidden) continue;
+          const ds9=dist(e.x,e.y,o9.x,o9.y);
+          if(ds9<.62&&ds9>.001){
+            e.x+=(e.x-o9.x)/ds9*.008*dt*.06;
+            e.y+=(e.y-o9.y)/ds9*.008*dt*.06;
+          }
+        }
       }
     }
     // item pickup

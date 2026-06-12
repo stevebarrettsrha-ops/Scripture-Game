@@ -2910,10 +2910,31 @@ const Game={
           }
         }
       }
-      // follower (lead mechanic)
-      if(e.follow&&p&&!e.target){
-        const d3=dist(e.x,e.y,p.x,p.y);
-        if(d3<2.6&&d3>1.1){ e.target={x:p.x+(e.x-p.x)/d3*.9,y:p.y+(e.y-p.y)/d3*.9}; e.speed=.06; }
+      // follower (lead mechanic): each one keeps their own place in the line
+      if(e.follow&&p){
+        if(e._fa===undefined){
+          let h9=0; const s9=String(e.id||'');
+          for(let i9=0;i9<s9.length;i9++) h9=(h9*31+s9.charCodeAt(i9))|0;
+          h9=Math.abs(h9);
+          e._fa=((h9%100)/100-.5)*1.5;       /* personal angle off the line of march */
+          e._fd=1+((h9>>3)%100)/100*1.1;     /* personal following distance */
+        }
+        if(!e.target){
+          const d3=dist(e.x,e.y,p.x,p.y);
+          if(d3<3.4&&d3>e._fd+.25){
+            const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
+            e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd}; e.speed=.06;
+          }
+        }
+        /* spacing: two followers never merge into one */
+        for(const o9 of w.npcs){
+          if(o9===e||!o9.follow||o9.hidden) continue;
+          const ds9=dist(e.x,e.y,o9.x,o9.y);
+          if(ds9<.62&&ds9>.001){
+            e.x+=(e.x-o9.x)/ds9*.008*dt*.06;
+            e.y+=(e.y-o9.y)/ds9*.008*dt*.06;
+          }
+        }
       }
     }
     // item pickup
@@ -4933,11 +4954,20 @@ STORY.push(
      {id:'dk1',animal:'donkey',x:24,y:22.5,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<26;i++) G.world.npcs.push(makeNpc({id:'mar'+i,char:cs[i%4],child:i%7===6,
-         x:14+(i%9)*2.2+Math.random(),y:19+Math.floor(i/9)*2+Math.random(),
-         route:[[38+(i%4),14+(i%5)],[16+(i%6),19+(i%4)]],routeSpeed:.016,noTalk:true}));
-       for(let i=0;i<6;i++) G.world.npcs.push(makeNpc({id:'maran'+i,animal:['sheep','goat','cow','donkey','sheep','goat'][i],x:20+i*2,y:23+(i%2),range:1.6,noTalk:true}));
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder','hebreww','hebrew'];
+       /* six hundred thousand on foot — the screen is full of the going-out */
+       for(let i=0;i<58;i++){
+         const lane=i%6, col=Math.floor(i/6);
+         G.world.npcs.push(makeNpc({id:'mar'+i,char:cs[i%6],child:i%8===7,
+           x:6+col*4.2+Math.random()*2,y:11.5+lane*2.3+Math.random()*1.4,
+           route:[[42+(i%5),11+lane*2.4],[7+(i%7),11.5+lane*2.3]],routeSpeed:.013+(i%5)*.002,noTalk:true}));
+       }
+       const an=['sheep','goat','cow','donkey','sheep','goat','camel','sheep','donkey','goat','sheep','cow'];
+       for(let i=0;i<12;i++) G.world.npcs.push(makeNpc({id:'maran'+i,animal:an[i],
+         x:8+(i%6)*6+Math.random()*2,y:21.5+Math.floor(i/6)*2.2+Math.random(),
+         route:[[40+(i%4),21+(i%3)*1.8],[9+(i%5),21.5+(i%3)*1.6]],routeSpeed:.012,noTalk:true}));
+       G.world.npcs.push(makeNpc({id:'famcart1',propType:'chariot',x:10,y:24,wander:false,noTalk:true,route:[[42,24],[8,24]],routeSpeed:.011}));
+       G.world.npcs.push(makeNpc({id:'famrider1',char:'hebreww',mount:'donkey',x:12,y:13,wander:false,noTalk:true,route:[[42,12.5],[8,13]],routeSpeed:.013}));
      }},
    ],
    objectives:[
@@ -4946,6 +4976,17 @@ STORY.push(
        {sfx:'holy'},{burst:[14,16,'mote',16]},
        {say:['mosheh_o','“Aluahim shall certainly visit you — and you shall bring up my bones from here with you.” Three hundred years in a coffin in Mitsrayim, Yosĕph — and the visitation has come. Yasharal keeps its oath: you go up with us.']},
        {say:['narrator','And Mosheh took the bones of Yosĕph with him. The dreamer who was sold into Mitsrayim went out of Mitsrayim at the head of the nation his dreams had saved.']},
+       {removeProp:'bonewagon'},
+       {spawn:{id:'bonecart',propType:'chariot',x:14,y:16,wander:false,noTalk:true}},
+       {spawn:{id:'cartman',char:'hebrew2',x:12.6,y:16.4,wander:false,noTalk:true}},
+       {spawn:{id:'cartman2',char:'hebrew',x:12.4,y:15.4,wander:false,noTalk:true}},
+       {call:G=>{ const c9=G.world.npcs.find(n=>n.id==='bonecart');
+         const m9=G.world.npcs.find(n=>n.id==='cartman');
+         const m8=G.world.npcs.find(n=>n.id==='cartman2');
+         if(c9){ c9.target={x:44,y:15.7}; c9.speed=.012; }
+         if(m9){ m9.target={x:42.6,y:16.1}; m9.speed=.012; }
+         if(m8){ m8.target={x:42.4,y:15.1}; m8.speed=.012; } }},
+       {say:['narrator','And the coffin was set upon the wagon, and men of the sons of Ephrayim put their shoulders to it — and the bones of the dreamer rolled east in the midst of the host, before the eyes of all Yasharal.']},
        {call:G=>{ for(const n of G.world.npcs){ if(n.group==='host'){ n.follow=true; } } }},
       ]},
      {type:'lead',group:'host',x:38,y:16,radius:3.4,need:4,text:'Lead the families after the pillar of cloud',hiddenUntil:1},
@@ -4990,10 +5031,20 @@ STORY.push(
    objectives:[
      {type:'goto',x:24,y:20,radius:2.2,text:'Camp by the sea — and look back toward Mitsrayim',
       script:[
-       {spawn:{id:'war1',propType:'chariot',horses:true,gold:true,x:44,y:8,wander:false,noTalk:true}},
-       {spawn:{id:'war2',propType:'chariot',horses:true,x:44,y:11,wander:false,noTalk:true}},
-       {spawn:{id:'rider1',char:'taskmaster',mount:'horse',x:45,y:9.5,wander:false,noTalk:true}},
-       {move:['war1',36,9,.04,'bg']},{move:['war2',37,11.5,.04,'bg']},{move:['rider1',36.5,10.5,.04,'bg']},
+       {call:G=>{ const w9=G.world;
+         /* six hundred chosen chariots, and all the chariots of Mitsrayim */
+         for(let i=0;i<8;i++) w9.npcs.push(makeNpc({id:'war'+(i+1),propType:'chariot',horses:true,gold:i%3===0,
+           x:43+(i%3)*2,y:6.5+i*1.6,wander:false,noTalk:true}));
+         for(let i=0;i<5;i++) w9.npcs.push(makeNpc({id:'rider'+(i+1),char:i%2?'sorcerer':'taskmaster',mount:'horse',
+           x:45+(i%2)*1.5,y:7.5+i*2.4,wander:false,noTalk:true}));
+         for(let i=0;i<5;i++) w9.npcs.push(makeNpc({id:'foot'+(i+1),char:'taskmaster',
+           x:46,y:8+i*2.2,wander:false,noTalk:true}));
+       }},
+       {call:G=>{ for(const n of G.world.npcs){
+         if(/^war\d/.test(n.id)){ n.target={x:33+Math.random()*4,y:7+Math.random()*8}; n.speed=.04; }
+         else if(/^rider\d/.test(n.id)){ n.target={x:35+Math.random()*3,y:8+Math.random()*7}; n.speed=.044; }
+         else if(/^foot\d/.test(n.id)){ n.target={x:37+Math.random()*3,y:8+Math.random()*7}; n.speed=.038; }
+       } }},
        {sfx:'thunder'},{shake:2},{music:'storm'},
        {say:['hebrew','Chariots! The chariots of Pharaoh — all of Mitsrayim is upon us! Were there no graves in Mitsrayim, that you have taken us away to die in the wilderness?! Did we not say: leave us alone, and let us serve the Mitsrites?']},
        {say:['mosheh_o','DO NOT FEAR. Stand still — and see the deliverance of YAHUAH, which He does for you today. For the Mitsrites whom you see today, you are never, never to see again. YAHUAH FIGHTS FOR YOU — and you keep silent.']},
@@ -5011,20 +5062,42 @@ STORY.push(
        {say:['narrator','And the children of Yasharal went into the midst of the sea on dry ground — and the waters were a wall to them on their right and on their left.']},
        {call:G=>{ for(const n of G.world.npcs){
          if(['heb1','heb2','heb3','miryam','aharon'].includes(n.id)||String(n.id).startsWith('xc')){
-           n.wander=false; n.target={x:22.5+Math.random()*3,y:29+Math.random()*3.5}; n.speed=.04+Math.random()*.02; } } }},
+           n.wander=false; n.target={x:21.6+Math.random()*4.8,y:30+Math.random()*2.6}; n.speed=.042+Math.random()*.022; } } }},
       ]},
      {type:'goto',x:24,y:31,radius:2.4,text:'Cross between the walls of water',hiddenUntil:2,
       script:[
        {say:['narrator','And the Mitsrites pursued, and went in after them into the midst of the sea — all Pharaoh’s horses, his chariots and his horsemen.']},
-       {move:['war1',24,26,.05,'bg']},{move:['rider1',25,27,.05,'bg']},{move:['war2',23.5,24,.05,'bg']},
-       {wait:1500},{shake:2},
+       {call:G=>{ for(const n of G.world.npcs){
+         if(/^(war|rider|foot)\d/.test(n.id)){
+           n.target={x:21.8+Math.random()*4.4,y:18+Math.random()*9};
+           n.speed=.042+Math.random()*.014;
+         } } }},
+       {wait:2200},{shake:2},
        {say:['narrator','And in the morning watch YAHUAH looked down on the camp of the Mitsrites through the pillar of fire and cloud, and confused them — He took off their chariot wheels, so that they drove them with difficulty. And the Mitsrites said, “Let us flee from the face of Yasharal, for YAHUAH fights for them against the Mitsrites!”']},
+       {say:['narrator','And all Yasharal came up out of the midst of the sea onto the far shore — every soul of them, and not one left between the walls of water.']},
+       {call:G=>{ const w9=G.world, m9=w9.map;
+         for(const n of w9.npcs){
+           const cross=['heb1','heb2','heb3','miryam','aharon'].includes(n.id)||String(n.id).startsWith('xc');
+           if(!cross) continue;
+           n.target=null; n.moving=false;
+           n.x=10+Math.random()*28; n.y=m9.h-3.6+Math.random()*2.2;
+           n.home={x:n.x,y:n.y}; n.wander=true; n.range=1.2; n.dir='up';
+         }
+         const p9=w9.player; if(p9&&p9.y<m9.h-4){ p9.y=m9.h-3.4; }
+       }},
        {say:['voice','Stretch out your hand over the sea — and let the waters come back on the Mitsrites, on their chariots, and on their horsemen.']},
        {sfx:'thunder'},{shake:3},
        {call:G=>{ const m=G.world.map;
          for(let y=m.h-12;y<m.h-4;y++) for(let x=21;x<=27;x++) m.tiles[y*m.w+x]=(y>m.h-11?T.DEEP:T.WATER); }},
-       {despawn:'war1'},{despawn:'war2'},{despawn:'rider1'},
-       {burst:[24,26,'mote',34]},{music:'holy'},{time:'morning'},
+       {call:G=>{ const w9=G.world;
+         for(let i=w9.npcs.length-1;i>=0;i--){
+           const n=w9.npcs[i];
+           if(/^(war|rider|foot)\d/.test(n.id)){
+             Particles.burst(n.x*TILE,n.y*TILE,'mote',12);
+             w9.npcs.splice(i,1);
+           } } }},
+       {burst:[24,22,'mote',30]},{burst:[23,26,'mote',30]},{burst:[26,24,'mote',26]},
+       {music:'holy'},{time:'morning'},
        {say:['narrator','And the sea returned to its usual flow at the break of morning — and the waters returned and covered the chariots and the horsemen, all the army of Pharaoh that came into the sea after them. NOT EVEN ONE OF THEM WAS LEFT. And Yasharal saw the great work which YAHUAH had done — and the people feared YAHUAH, and believed YAHUAH and His servant Mosheh.']},
       ]},
    ],
