@@ -15,6 +15,7 @@ Each game is a single file and works offline:
 | `book-of-adam-and-chavvah.html` | **The Books of Aḏam & Ḥawwah** (20 chapters) | finishing Act II of BERĔSHITH |
 | `book-of-hanok.html` | **The Book of Ḥanoḵ** (15 chapters) | finishing the Books of Aḏam & Ḥawwah |
 | `book-of-shemoth.html` | **SHEMOTH — These Are The Names** (Exodus, 8 acts, 37 chapters) | finishing BERĔSHITH |
+| `book-of-vayiqra.html` | **VAYIQRA — And He Called** (Leviticus, 7 acts, 18 chapters) | finishing SHEMOTH |
 
 Progress is saved automatically in the browser (localStorage). Finishing the
 Books of Aḏam & Ḥawwah also unlocks "continuity" mode in BERĔSHITH, letting you
@@ -44,7 +45,11 @@ Beyond walking and talking, scenes use mechanics fitted to their stories:
 - **Chase** — flee a pursuer: Potiphar's wife to the door, the serpent to the
   cave, a giant on Mount Ḥermon, Pharaoh's chariots at the Sea of Reeds.
 - **Collect / build / lead** — gather pitch for the ark, idols for the
-  terebinth, lead the animals two by two, ride camels, and more.
+  terebinth, lead the animals two by two, ride camels, lead the bull to the
+  altar and the Azazel goat into the wilderness, build the sukkah, and more.
+- **Discern / choose** — judge the creatures clean or unclean by their signs,
+  examine the leper as the kohen, cast the lots of Yom haKippurim, and hear
+  the blessing and the curse of the covenant.
 
 ## Source texts
 
