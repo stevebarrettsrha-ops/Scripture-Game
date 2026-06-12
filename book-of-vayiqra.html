@@ -583,7 +583,7 @@ const CHARS={
   kushite: {name:'Fighter of Kush', skin:'#3e2614', hair:'#120b04', hairStyle:'short', robe:'#5d6e50'},
   kushite2:{name:'Fighter of Kush', skin:'#46291a', hair:'#120b04', hairStyle:'short', robe:'#55504a'},
   sorcerer:{name:'Sorcerer of Mitsrayim', skin:'#644323', hair:'#000', hairStyle:'egypt', robe:'#4a3a52', collar:'#caa23c'},
-  yahoshua:{name:'Yahoshua son of Nun', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#6a7a8c'},
+  yahoshua:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#6a7a8c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
   betsalel:{name:'Betsal’ĕl son of Uri', skin:'#7a4e29', hair:'#33230f', hairStyle:'short', robe:'#79653f'},
   oholiab: {name:'Oholiaḇ son of Aḥisamaḵ', skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7e5f6e'},
@@ -1932,6 +1932,44 @@ function npcBlocked(world,x,y,px,py){
     }
   }
   return false;
+}
+
+
+function campRing(G,n,o){
+  /* pitch a camp: rows of dwellings around the playable space, with lanes between,
+     auto-avoiding objectives, items and marked props */
+  o=o||{};
+  const m=G.world.map;
+  const houses=o.houses;
+  const gx=o.gx||(houses?6.4:4.6), gy=o.gy||(houses?4.4:3.6);
+  const x0=o.x0!==undefined?o.x0:3, y0=o.y0!==undefined?o.y0:3;
+  const x1=o.x1!==undefined?o.x1:m.w-4, y1=o.y1!==undefined?o.y1:m.h-3;
+  const keep=o.keep||[];
+  const tcols=['#c8b486','#b3a07f','#bda884','#a89a78','#cbb591'];
+  const hcols=['#b58a50','#a87f48','#ad8248'];
+  const avoid=[];
+  for(const ob of (G.objectives||[])) if(ob.x!==undefined) avoid.push([ob.x,ob.y,3.2]);
+  for(const d of m.decor) if(d.id||d.examine||d.type==='mishkan'||d.type==='altar'||d.type==='well') avoid.push([d.x,d.y,3.2]);
+  for(const it of (G.world.items||[])) if(!it.taken) avoid.push([it.x,it.y,2.4]);
+  if(G.world.player) avoid.push([G.world.player.x,G.world.player.y,2.6]);
+  let placed=0;
+  const cols=Math.max(1,Math.floor((x1-x0)/gx));
+  for(let i=0;i<cols*40&&placed<n;i++){
+    const r=Math.floor(i/cols);
+    const xx=x0+(i%cols)*gx+(r%2?gx*.5:0)+hash2(i,7)*1.4;
+    const yy=y0+r*gy+hash2(i,13)*1.1;
+    if(yy>y1) break;
+    if(xx>m.w-3||xx<2) continue;
+    let bad=SOLID.has(tileAt(m,xx,yy));
+    if(!bad) for(const k of keep){ if(xx>k[0]&&xx<k[2]&&yy>k[1]&&yy<k[3]){bad=true;break;} }
+    if(!bad) for(const a of avoid){ if(Math.abs(a[0]-xx)<a[2]&&Math.abs(a[1]-yy)<a[2]){bad=true;break;} }
+    if(bad) continue;
+    m.decor.push(houses?{type:'house',solid:true,x:xx,y:yy,col:hcols[placed%3]}
+                       :{type:'tent',solid:true,x:xx,y:yy,col:tcols[placed%5]});
+    if(placed%5===4) m.decor.push({type:'firepit',x:xx+1.9,y:yy+1.1,lit:true});
+    placed++;
+  }
+  m.decor.sort((a,b)=>a.y-b.y);
 }
 
 /* ================= WORLD RENDER ================= */
@@ -3853,6 +3891,9 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:14.8,y:21.2,range:1,noTalk:true},
      {id:'heb1',char:'hebrew2',route:[[18,17],[28,18.5]],noTalk:true,x:18,y:17},
    ],
+   onStart:[
+     {call:G=>campRing(G,16,{keep:[[9,16,34,24],[16,6,32,18]]})},
+   ],
    objectives:[
      {type:'goto',x:14,y:21,radius:2.2,text:'Bring your offering of the herd — a male, a perfect one',
       script:[
@@ -3900,6 +3941,9 @@ STORY.push(
    items:[
      {kind:'wheat',x:14,y:18},{kind:'wheat',x:17,y:21.5},{kind:'water',x:12.5,y:20.5},
    ],
+   onStart:[
+     {call:G=>campRing(G,14,{keep:[[12,12,32,22],[18,4,28,12]]})},
+   ],
    objectives:[
      {type:'collect',item:'wheat',need:2,text:'Fine flour for the minchah — the work of your own hands'},
      {type:'collect',item:'water',need:1,text:'And oil poured on it, and frankincense laid on it',hiddenUntil:1},
@@ -3941,13 +3985,16 @@ STORY.push(
      {id:'mosheh',char:'mosheh_o',x:19.5,y:17,wander:false,
       script:[
        {say:['yahoshua','Mosheh my master — a matter from the rulers of hundreds. A ruler of the tribe set a boundary stone wrongly, in honest error; the matter has now become known to him. He asks: it was a MISTAKE — is there guilt for what a man never meant?']},
-       {say:['mosheh_o','Hear the Torah: WHEN A RULER SINS BY MISTAKE, and it becomes known to him — he himself shall bring his offering: a male goat, a perfect one. Not his servant’s goat, and not in secret: his own hand on its head, before the door, before the people he leads. Error does not stain less for being honest, Yahoshua — but see the kindness of it: for the unknowing sin there is a known altar.']},
+       {say:['mosheh_o','Hear the Torah: WHEN A RULER SINS BY MISTAKE, and it becomes known to him — he himself shall bring his offering: a male goat, a perfect one. Not his servant’s goat, and not in secret: his own hand on its head, before the door, before the people he leads. Error does not stain less for being honest, Yahusha — but see the kindness of it: for the unknowing sin there is a known altar.']},
        {say:['mosheh_o','And if any being of the people sins by mistake — a female goat or a lamb; and if his hand cannot reach a lamb — two turtledoves; and if not even that — fine flour. The atonement bends down to the poorest hand. NO ONE in Yasharal is too poor to be forgiven.']},
       ]},
      {id:'ruler',char:'elder',x:28,y:18.5,wander:false,noTalk:true},
      {id:'goat1',animal:'goat',x:30.5,y:19.5,range:1,noTalk:true,group:'sin',follow:false},
      {id:'aharon',char:'aharon_k',x:22,y:16.8,wander:false,noTalk:true},
      {id:'firepriest',char:'elazar',route:[[20.5,15.5],[23.5,15.5]],noTalk:true,x:20.5,y:15.5},
+   ],
+   onStart:[
+     {call:G=>campRing(G,14,{keep:[[16,8,34,22]]})},
    ],
    objectives:[
      {type:'talk',npc:'mosheh',text:'Bring the ruler’s question to Mosheh'},
@@ -3998,6 +4045,9 @@ STORY.push(
    items:[
      {kind:'silver',x:14,y:18.5},{kind:'silver',x:15.5,y:20.5},{kind:'silver',x:13,y:20},
    ],
+   onStart:[
+     {call:G=>campRing(G,14,{keep:[[16,8,36,23]]})},
+   ],
    objectives:[
      {type:'collect',item:'silver',need:3,text:'Count out what you wrongly kept — and add the fifth'},
      {type:'talk',npc:'neighbour',text:'Restore it to your neighbour, on the day of your guilt offering',hiddenUntil:1},
@@ -4044,6 +4094,7 @@ STORY.push(
      {id:'crowd3',char:'elder',x:22,y:21.5,wander:true,range:1.4,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,14,{keep:[[14,8,30,20]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<28;i++) G.world.npcs.push(makeNpc({id:'cong'+i,char:cs[i%4],child:i%9===8,
          x:15+(i%8)*2+Math.random(),y:20+Math.floor(i/8)*1.8+Math.random(),
@@ -4103,6 +4154,7 @@ STORY.push(
      {id:'crowd4',char:'elder',x:19,y:21,wander:true,range:1.4,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,12,{keep:[[12,8,32,24]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<30;i++) G.world.npcs.push(makeNpc({id:'cong'+i,char:cs[i%4],child:i%9===8,
          x:14+(i%9)*2.1+Math.random(),y:20+Math.floor(i/9)*1.7+Math.random(),
@@ -4153,6 +4205,9 @@ STORY.push(
      {id:'ithamar',char:'ithamar',x:27,y:18.5,wander:false,noTalk:true},
      {id:'cousin1',char:'levite',x:14,y:21,wander:false,hidden:true,noTalk:true},
      {id:'cousin2',char:'levite',x:15.5,y:21.5,wander:false,hidden:true,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>campRing(G,12,{keep:[[10,8,30,24]]})},
    ],
    objectives:[
      {type:'goto',x:21,y:17,radius:2.2,text:'Naḏaḇ and Aḇihu come with their fire holders — and the fire is not from the altar',
@@ -4323,6 +4378,7 @@ STORY.push(
      {id:'crowd2',char:'hebreww',x:22,y:21.5,wander:true,range:1.4,noTalk:true},
    ],
    onStart:[
+     {call:G=>campRing(G,14,{keep:[[12,12,30,24],[30,14,48,24]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<24;i++) G.world.npcs.push(makeNpc({id:'cong'+i,char:cs[i%4],child:i%9===8,
          x:12+(i%7)*2+Math.random(),y:20.5+Math.floor(i/7)*1.7+Math.random(),
@@ -4400,6 +4456,9 @@ STORY.push(
       ]},
      {id:'firepriest',char:'ithamar',route:[[14.5,15.5],[17.5,15.5]],noTalk:true,x:14.5,y:15.5},
      {id:'deer1',animal:'deer',x:33,y:21,range:2,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>campRing(G,12,{keep:[[10,10,36,23]]})},
    ],
    objectives:[
      {type:'talk',npc:'hunter',text:'A hunter asks the Torah of the blood'},
@@ -4501,6 +4560,9 @@ STORY.push(
    ],
    items:[
      {kind:'flower',x:40,y:17},{kind:'flower',x:43.5,y:18},{kind:'flower',x:41,y:21},{kind:'flower',x:44,y:20.5},
+   ],
+   onStart:[
+     {call:G=>campRing(G,12,{keep:[[6,10,46,22]]})},
    ],
    objectives:[
      {type:'interact',prop:'shabbat',text:'The first appointed time: the seventh day',
@@ -4612,6 +4674,9 @@ STORY.push(
    items:[
      {kind:'silver',x:16,y:21},{kind:'silver',x:19.5,y:21.5},
    ],
+   onStart:[
+     {call:G=>campRing(G,14,{keep:[[12,10,34,24]]})},
+   ],
    objectives:[
      {type:'goto',x:22,y:14.5,radius:2,text:'The Day of Atonement of the fiftieth year — sound the shophar through the land',
       script:[
@@ -4648,6 +4713,9 @@ STORY.push(
      {id:'elder1',char:'elder',x:20,y:19.5,wander:false,noTalk:true},
      {id:'heb1',char:'hebrew',x:25,y:20,wander:false,noTalk:true},
      {id:'heb2',char:'hebreww',x:21,y:21,wander:false,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>campRing(G,12,{keep:[[14,8,32,24]]})},
    ],
    objectives:[
      {type:'goto',x:22,y:15.5,radius:2,text:'Stand before the Dwelling — and hear the two ways set before Yasharal',
