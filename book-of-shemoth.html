@@ -1557,6 +1557,39 @@ function drawProp(g,px,py,p,t){
       rail(-pw2/2,0,-pw2*.18,0); rail(pw2*.18,0,pw2/2,0);
       for(const [fx6,fy6] of [[-pw2/2,-ph3],[pw2/2,-ph3],[-pw2/2,0],[pw2/2,0],[0,-ph3],[-pw2*.18,0],[pw2*.18,0]]) post(fx6,fy6);
       break; }
+    case 'house': {
+      /* mudbrick house of Goshen: flat roof, lintel and two doorposts */
+      shadow(12);
+      const hc=p.col||'#b58a50';
+      g.fillStyle=hc; g.fillRect(-13*u,-16*u,26*u,16*u);
+      g.fillStyle=shade(hc,-14); g.fillRect(1*u,-16*u,12*u,16*u);
+      g.fillStyle=shade(hc,16); g.fillRect(-14*u,-17.5*u,28*u,2.2*u);
+      g.fillStyle=shade(hc,-26);
+      for(let i=0;i<4;i++) g.fillRect(-13*u,(-13.5+i*3.4)*u,26*u,.5*u);
+      for(let i=0;i<5;i++) g.fillRect((-10+i*5)*u,-16*u,.5*u,16*u);
+      /* window */
+      g.fillStyle='#241c10'; g.fillRect(6*u,-12*u,3.4*u,3*u);
+      g.fillStyle=shade(hc,22); g.fillRect(5.6*u,-12.4*u,4.2*u,.6*u);
+      /* the door: lintel and two posts, slightly proud of the wall */
+      g.fillStyle='#241c10';
+      g.fillRect(-2.6*u,-9.6*u,5.2*u,9.6*u);
+      g.fillStyle='#8a6a38';
+      g.fillRect(-3.6*u,-10.6*u,7.2*u,1.4*u);
+      g.fillRect(-3.6*u,-9.6*u,1.2*u,9.6*u);
+      g.fillRect(2.4*u,-9.6*u,1.2*u,9.6*u);
+      if(p.blood){
+        g.strokeStyle='#9d2a1c'; g.lineWidth=u*.9; g.lineCap='round';
+        g.beginPath();
+        g.moveTo(-2.8*u,-10*u); g.lineTo(2.8*u,-9.9*u);
+        g.moveTo(-3*u,-8.6*u); g.lineTo(-3*u,-2*u);
+        g.moveTo(3*u,-8.6*u); g.lineTo(3*u,-2*u);
+        g.stroke();
+      }
+      const wgl=g.createLinearGradient(0,-9*u,0,0);
+      wgl.addColorStop(0,`rgba(255,200,110,${p.lit===false?0:.35}`+')');
+      wgl.addColorStop(1,'rgba(255,200,110,0)');
+      g.fillStyle=wgl; g.fillRect(-2.4*u,-9.4*u,4.8*u,9.4*u);
+      break; }
     case 'burningbush': {
       shadow(3.6);
       const grd9=g.createRadialGradient(-u,-3.4*u,u,0,-3*u,4.2*u);
@@ -1872,6 +1905,11 @@ function walkable(map,x,y){
     if(d.type==='cave'){
       const dx=Math.abs(d.x-x);
       if(dx<2.5&&y>d.y-2.2&&y<d.y+0.4&&!(dx<1&&y>d.y-1)) return false;  /* mouth open */
+      continue;
+    }
+    if(d.type==='house'){
+      const dx=Math.abs(d.x-x);
+      if(dx<2.3&&y>d.y-2.6&&y<d.y+0.3&&!(dx<.7&&y>d.y-.7)) return false;  /* door gap */
       continue;
     }
     if(Math.abs(d.x-x)<.55&&Math.abs(d.y-y)<.5) return false;
@@ -3882,6 +3920,8 @@ STORY.push(
    map:{biome:'city', w:48, h:30, seed:801,
      features:[
        {type:'tower',stage:1,scaffold:true,x:36,y:10,solid:true,clear:4,flat:4,id:'storecity',examine:'Pithom and Ra‛amses — store cities for Pharaoh, built with the blood of slaves.'},
+       {type:'house',solid:true,x:11,y:14,clear:3,col:'#a87f48',examine:'A slave-quarter house of Goshen — mudbrick, like everything the bondage touches.'},
+       {type:'house',solid:true,x:17,y:12.5,clear:3,col:'#b58a50'},
        {type:'firepit',x:20,y:18,lit:true},
        {type:'pot',x:21.6,y:18,fire:true},
        {type:'clearing',x:24,y:16,flat:2},
@@ -4412,8 +4452,8 @@ STORY.push(
        {fade:'out'},{toast:'And Mosheh and Aharon went on, into Goshen — and gathered ALL the elders of the children of Yasharal…'},{wait:1700},
        {call:G=>{ const w=G.world;
          /* the stage becomes the camp of Yasharal in Goshen — and they are many */
-         for(const [tx,ty,tc] of [[10,14,'#c8b486'],[15,12.5,'#b3a07f'],[21,13.5,'#bda884'],[26,12.5,'#b3a07f'],[30,14.5,'#c8b486']])
-           w.map.decor.push({type:'tent',x:tx,y:ty,solid:true,col:tc});
+         for(const [tx,ty,tc] of [[10,14,'#a87f48'],[15,12.5,'#b58a50'],[21,13.5,'#ad8248'],[26,12.5,'#b58a50'],[30,14.5,'#a87f48']])
+           w.map.decor.push({type:'house',solid:true,x:tx,y:ty,col:tc});
          w.map.decor.push({type:'firepit',x:13,y:16,lit:true});
          w.map.decor.push({type:'firepit',x:24,y:16.5,lit:true});
          w.map.decor.sort((a,b)=>a.y-b.y);
@@ -4428,7 +4468,7 @@ STORY.push(
        {teleport:['player',18,21]},{teleport:['aharon',19.5,21.3]},
        {teleport:['tsipporah',16.5,22]},{teleport:['boy1',15.5,22.6]},
        {time:'dusk'},{music:'holy'},{fade:'in'},{camera:'player'},
-       {say:['narrator','And the camp of Goshen spread out before them — tents beyond counting, the children of Yasharal as the stars for multitude, just as He had sworn to the fathers.']},
+       {say:['narrator','And Goshen spread out before them — low brick houses, street upon street, lintel and doorposts without number: the children of Yasharal as the stars for multitude, just as He had sworn to the fathers.']},
        {say:['aharon','Elders of Yasharal — hear the words of YAHUAH, the Aluahim of Aḇraham, of Yahtsḥaq and of Ya‘aqoḇ: I HAVE INDEED VISITED YOU. I have seen what is done to you in Mitsrayim.']},
        {say:['narrator','And Aharon spoke all the words which YAHUAH had spoken to Mosheh, and did the signs before the eyes of the people.']},
        {burst:[18,20,'holy',22]},{sfx:'holy'},
@@ -4773,8 +4813,7 @@ STORY.push(
    map:{biome:'plains', w:44, h:26, seed:869,
      features:[
        {type:'fold',x:14,y:14,w:4,h:3,id:'fold'},
-       {type:'tent',x:26,y:13,solid:true,clear:2,col:'#c8b486',id:'house',examine:'Your house in Goshen — the lintel and the two doorposts wait.'},
-       {type:'doorway',x:26,y:14.6,id:'doorpost',examine:'The door of the house: a lintel and two doorposts.'},
+       {type:'house',solid:true,x:26,y:13,clear:3,id:'house',examine:'Your house in Goshen — mudbrick of the bondage; the lintel and the two doorposts wait.'},
        {type:'firepit',x:28.5,y:15.5,lit:true},
        {type:'pot',x:30,y:15.5,fire:true},
        {type:'clearing',x:26,y:16,flat:2},
@@ -4801,9 +4840,10 @@ STORY.push(
        {sfx:'bad'},{wait:400},
        {say:['narrator','WITNESS — For this is the night of which it was written in the tablets of the shamayim: that all the powers of Mastema be bound and shut up, and not able to accuse the children of Yasharal — from the fourteenth day until the eighteenth. On this night the accuser has no voice.']},
       ]},
-     {type:'interact',prop:'doorpost',text:'Strike the blood on the lintel and the two doorposts',hiddenUntil:2,
+     {type:'interact',prop:'house',text:'Strike the blood on the lintel and the two doorposts',hiddenUntil:2,
       script:[
-       {burst:[26,14.6,'spark',8]},{sfx:'pickup'},
+       {prop:['house',{blood:true}]},
+       {burst:[26,13.4,'spark',8]},{sfx:'pickup'},
        {say:['narrator','And they struck the lintel and the two doorposts with the hyssop dipped in blood — and the lamb was roasted with fire, with unleavened bread and with bitter herbs they ate it: loins girded, sandals on their feet, staff in hand — in haste. IT IS THE PESACH OF YAHUAH.']},
        {say:['hebreww','The little ones are inside. The bread is unleavened — there was no time for rising, and there shall be no time. Whatever passes through Mitsrayim tonight… the blood is over our heads.']},
        {time:'deepnight'},{music:'night'},
@@ -4823,8 +4863,7 @@ STORY.push(
   scene:{
    map:{biome:'plains', w:44, h:26, seed:873,
      features:[
-       {type:'tent',x:26,y:13,solid:true,clear:2,col:'#c8b486',id:'house'},
-       {type:'doorway',x:26,y:14.6,id:'doorpost'},
+       {type:'house',solid:true,x:26,y:13,clear:3,id:'house',blood:true,examine:'The blood is on the lintel and the two doorposts — the destroyer cannot cross it.'},
        {type:'firepit',x:28.5,y:15.5,lit:true},
        {type:'clearing',x:26,y:16,flat:2},
      ]},
