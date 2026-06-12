@@ -916,7 +916,9 @@ function drawSerpent(g,px,py,o){
 /* ================= ANIMALS v2 ================= */
 const ANIMAL_SCALE={camel:1.8,horse:1.6,cow:1.45,donkey:1.3,lion:1.4,deer:1.2,ram:1.15,goat:1.05,sheep:1.05};
 function drawAnimal(g,px,py,type,o){
-  o=o||{}; const t=o.t||0, u=2.2*(TILE/40)*(o.scale||1)*(ANIMAL_SCALE[type]||1);
+  o=o||{};
+  if((o.dir==='up'||o.dir==='down')&&QUADV[type]&&!o.flying) return drawQuadVert(g,px,py,type,o);
+  const t=o.t||0, u=2.2*(TILE/40)*(o.scale||1)*(ANIMAL_SCALE[type]||1);
   const flip=o.dir==='right'?-1:1;   /* builders face left natively */
   const moving=o.moving;
   const ph=moving?Math.floor(t/150)%2:0;          /* 2-phase gait */
@@ -1107,6 +1109,58 @@ function drawAnimal(g,px,py,type,o){
       g.fillStyle=shade(skin9,-32);
       g.fillRect(Math.round(-1.4*lu),ly+Math.round(5*lu),Math.round(2.8*lu),Math.round(1.4*lu));
     }
+  }
+  g.restore();
+}
+
+/* ---------- four-direction quadrupeds: front/back views ---------- */
+const QUADV={
+ sheep:{L:9,W:6.4,body:'#e8e2d2',top:'#f2eee2',head:'#3b2f22',leg:'#3b2f22'},
+ ram:{L:9,W:6.4,body:'#e8e2d2',top:'#f2eee2',head:'#3b2f22',leg:'#3b2f22',horns:'#9a8458'},
+ goat:{L:8.6,W:5.8,body:'#8d7a60',top:'#9a8870',head:'#8d7a60',leg:'#6e5b48',horns:'#5d4d38'},
+ cow:{L:11,W:7.6,body:'#7a5a42',top:'#8a6a50',head:'#7a5a42',leg:'#5d4434',horns:'#d8d2c4',patch:'#e8dcc8'},
+ donkey:{L:10,W:6.2,body:'#8d8276',top:'#9a8f84',head:'#8d8276',leg:'#6e6258',ears:'#7a7066'},
+ camel:{L:12,W:7,body:'#c2a872',top:'#c2a872',head:'#b59a68',leg:'#b59a68',humps:'#b59a68'},
+ horse:{L:11.4,W:7,body:'#7a5234',top:'#8a5f3e',head:'#7a5234',leg:'#5d4434',mane:'#3b2a1c'},
+ deer:{L:9.6,W:5.8,body:'#b08a5c',top:'#bd9866',head:'#b08a5c',leg:'#9d7a52',antlers:'#6e5638'},
+ lion:{L:10.4,W:7.2,body:'#c29a52',top:'#d0a85e',head:'#c29a52',leg:'#b08a48',mane:'#8a5f28'},
+};
+function drawQuadVert(g,px,py,type,o){
+  const q=QUADV[type]; o=o||{};
+  const t=o.t||0, u=2.2*(TILE/40)*(o.scale||1)*(ANIMAL_SCALE[type]||1);
+  const down=o.dir==='down';
+  const moving=o.moving;
+  const ph=moving?Math.floor(t/150)%2:0, k=moving?(ph?1:-1):0;
+  const B=moving?(ph?-.5:0):0;
+  g.save(); g.translate(Math.round(px),Math.round(py));
+  if(o.alpha!==undefined)g.globalAlpha=o.alpha;
+  g.fillStyle='rgba(0,0,0,.2)';
+  g.beginPath(); g.ellipse(0,1,q.W*.62*u,1.9*u,0,0,Math.PI*2); g.fill();
+  const ops=[]; const R=(x,y,w,h,c)=>ops.push([x,y,w,h,c]);
+  const hw=q.W;
+  R(-hw/2+0.4,-2.2-(k>0?.8:0),1.6,2.4,q.leg);
+  R(hw/2-2.0,-2.2-(k<0?.8:0),1.6,2.4,q.leg);
+  R(-hw/2,-2.4-q.L+B,hw,q.L,q.body);
+  R(-hw/2+0.8,-2.4-q.L+B,hw-1.6,1.6,q.top);
+  if(q.patch) R(-hw/2+1,-q.L+1+B,hw*.45,2.6,q.patch);
+  if(q.humps){ R(-1.6,-q.L+1.5+B,3.2,2.2,q.humps); R(-1.6,-q.L+5+B,3.2,2.2,q.humps); }
+  if(q.mane) R(-0.7,-2.4-q.L+B,1.4,q.L*.8,q.mane);
+  const hy=down?-3.6:-q.L-3.6;
+  R(-hw*.32,hy+B,hw*.64,3.2,q.head);
+  if(down){
+    R(-hw*.32+0.5,hy+1+B,1,1,'#160e08'); R(hw*.32-1.5,hy+1+B,1,1,'#160e08');
+    R(-0.8,hy+2.6+B,1.6,1,shade(q.head,-20));
+  }
+  if(q.ears){ R(-hw*.32-0.6,hy-1.6+B,1,2,q.ears); R(hw*.32-0.4,hy-1.6+B,1,2,q.ears); }
+  if(q.horns){ R(-hw*.32-0.8,hy-1+B,1.2,1.2,q.horns); R(hw*.32-0.4,hy-1+B,1.2,1.2,q.horns); }
+  if(q.antlers){ R(-hw*.32-0.6,hy-2+B,0.8,2.4,q.antlers); R(hw*.32-0.2,hy-2+B,0.8,2.4,q.antlers); }
+  if(q.mane&&!down) R(-hw*.32,hy-0.5+B,hw*.64,1.2,q.mane);
+  if(!down) R(-0.8,-1.8,1.6,1.4,shade(q.body,-18));
+  sprRender(g,ops,u,1);
+  if(o.rider){
+    const seatV={camel:-10.6,horse:-8.4,donkey:-6.4}[type];
+    if(seatV!==undefined)
+      drawChar(g,0,Math.round(seatV*u),o.rider,{t,dir:o.dir,moving:o.moving,riding:true,scale:o.riderScale||1});
   }
   g.restore();
 }
@@ -1515,6 +1569,29 @@ function drawProp(g,px,py,p,t){
       break; }
     case 'chariot': {
       /* horse-drawn chariot / wagon */
+      if(p.dir==='up'||p.dir==='down'){
+        const dn=p.dir==='down';
+        g.fillStyle='rgba(0,0,0,.22)';
+        g.beginPath(); g.ellipse(0,2,TILE*.7,TILE*.4,0,0,Math.PI*2); g.fill();
+        if(p.horses&&!dn){
+          drawAnimal(g,-TILE*.3,-TILE*1.5,'horse',{t,dir:'up',moving:p.moving});
+          drawAnimal(g,TILE*.32,-TILE*1.38,'horse',{t:t+300,dir:'up',moving:p.moving});
+        }
+        const grdV=g.createLinearGradient(0,-TILE*1.15,0,0);
+        grdV.addColorStop(0,p.gold?'#caa23c':'#8d7048'); grdV.addColorStop(1,p.gold?'#8a6a1c':'#5d4426');
+        g.fillStyle=grdV;
+        g.fillRect(-TILE*.5,-TILE*1.15,TILE,TILE*1.0);
+        g.fillStyle=p.gold?'#e8c66a':'#9a8458'; g.fillRect(-TILE*.5,-TILE*1.22,TILE,TILE*.1);
+        g.strokeStyle='#4a3522'; g.lineWidth=Math.max(3,TILE*.1);
+        g.beginPath(); g.arc(-TILE*.55,-TILE*.18,TILE*.3,0,Math.PI*2); g.stroke();
+        g.beginPath(); g.arc(TILE*.55,-TILE*.18,TILE*.3,0,Math.PI*2); g.stroke();
+        if(p.rider) drawChar(g,0,-TILE*.95,p.rider,{t,dir:p.dir,riding:true});
+        if(p.horses&&dn){
+          drawAnimal(g,-TILE*.3,TILE*1.05,'horse',{t,dir:'down',moving:p.moving});
+          drawAnimal(g,TILE*.32,TILE*1.18,'horse',{t:t+300,dir:'down',moving:p.moving});
+        }
+        break;
+      }
       const ch2=TILE*.052;
       g.fillStyle='rgba(0,0,0,.22)';
       g.beginPath(); g.ellipse(TILE*.2,2,TILE*1.9,TILE*.4,0,0,Math.PI*2); g.fill();
@@ -1589,6 +1666,19 @@ function drawProp(g,px,py,p,t){
       wgl.addColorStop(0,`rgba(255,200,110,${p.lit===false?0:.35}`+')');
       wgl.addColorStop(1,'rgba(255,200,110,0)');
       g.fillStyle=wgl; g.fillRect(-2.4*u,-9.4*u,4.8*u,9.4*u);
+      break; }
+    case 'standard': {
+      /* tribal banner: each man by his own standard (BEMIDBAR 2:2) */
+      shadow(2);
+      g.strokeStyle='#5d4426'; g.lineWidth=u*.8; g.lineCap='round';
+      g.beginPath(); g.moveTo(0,0); g.lineTo(0,-11*u); g.stroke();
+      g.fillStyle='#e8c66a'; g.beginPath(); g.arc(0,-11.4*u,1*u,0,Math.PI*2); g.fill();
+      const wv9=Math.sin(t/420+(p.x||0))*.8;
+      g.fillStyle=p.banner||'#a8893f';
+      g.beginPath();
+      g.moveTo(0,-10.6*u); g.lineTo(6.5*u,(-10+wv9)*u); g.lineTo(6.1*u,(-8.6+wv9)*u); g.lineTo(0,-9*u);
+      g.closePath(); g.fill();
+      g.fillStyle='rgba(0,0,0,.15)'; g.fillRect(0,-10.6*u,6.3*u,.5*u);
       break; }
     case 'burningbush': {
       shadow(3.6);
@@ -1934,6 +2024,10 @@ function npcBlocked(world,x,y,px,py){
 }
 
 
+const TRIBES=[['Yahuḏah','#a8893f'],['Yissasḵar','#5d7a8a'],['Zeḇulun','#7a6a9c'],
+ ['Re’uḇĕn','#9d4a2e'],['Shim‘on','#6e8a3e'],['Gaḏ','#8a8076'],
+ ['Ephrayim','#caa23c'],['Menashsheh','#8a5436'],['Binyamin','#5d3a6e'],
+ ['Dan','#2e5f8a'],['Ashĕr','#b8956a'],['Naphtali','#7d8a6a']];
 function campRing(G,n,o){
   /* pitch a camp: rows of dwellings around the playable space, with lanes between,
      auto-avoiding objectives, items and marked props */
@@ -1965,6 +2059,14 @@ function campRing(G,n,o){
     if(bad) continue;
     m.decor.push(houses?{type:'house',solid:true,x:xx,y:yy,col:hcols[placed%3]}
                        :{type:'tent',solid:true,x:xx,y:yy,col:tcols[placed%5]});
+    if(o.tribal){
+      const grp9=Math.max(1,Math.ceil(n/12));
+      if(placed%grp9===0){
+        const tr9=TRIBES[Math.floor(placed/grp9)%12];
+        m.decor.push({type:'standard',x:xx-1.7,y:yy+1.8,banner:tr9[1],
+          examine:'The standard of the camp of '+tr9[0]+' — Yasharal encamps by their tribes, each man by his own banner, by the standards of their fathers’ houses.'});
+      }
+    }
     if(placed%5===4) m.decor.push({type:'firepit',x:xx+1.9,y:yy+1.1,lit:true});
     placed++;
   }
@@ -2692,6 +2794,15 @@ const Game={
       char:sc.player, x:sc.playerPos[0], y:sc.playerPos[1],
       dir:'down', moving:false, speed:.085, mount:sc.playerMount||null
     }:null;
+    if(player){
+      for(let i9=map.decor.length-1;i9>=0;i9--){ const d9=map.decor[i9];
+        if(d9.solid&&!d9.id&&!d9.examine&&dist(d9.x,d9.y,player.x,player.y)<2.3) map.decor.splice(i9,1); }
+    }
+    for(const ob9 of (sc.objectives||[])){
+      if(ob9.x===undefined) continue;
+      for(let i9=map.decor.length-1;i9>=0;i9--){ const d9=map.decor[i9];
+        if(d9.solid&&!d9.id&&!d9.examine&&dist(d9.x,d9.y,ob9.x,ob9.y)<1.5) map.decor.splice(i9,1); }
+    }
     this.world={
       map, player, npcs:(sc.npcs||[]).map(makeNpc),
       items:(sc.items||[]).map(it=>Object.assign({},it)),
@@ -2884,8 +2995,9 @@ const Game={
       if(v.x||v.y){
         const ms=p.speed*(p.mount?1.65:1);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkable(w.map,p.x,p.y);
+        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
@@ -4427,6 +4539,13 @@ STORY.push(
      {id:'sh2',animal:'sheep',x:9,y:24,range:2,noTalk:true,group:'flock',follow:true},
      {id:'sh3',animal:'goat',x:12.5,y:22,range:2,noTalk:true,group:'flock',follow:true},
    ],
+   onStart:[
+     {call:G=>{ const m=G.world.map;
+       for(let i=0;i<10;i++){ const xx=24+(i%5)*3.4+hash2(i,3)*1.5, yy=6.5+Math.floor(i/5)*3+hash2(i,5)*1.5;
+         if(dist(xx,yy,32,12)>3.6) m.decor.push({type:'rock',solid:true,x:xx,y:yy}); }
+       for(let i=0;i<6;i++) m.decor.push({type:'rock',solid:true,x:8+i*5+hash2(i,7)*2,y:25+hash2(i,9)*1.6});
+       m.decor.sort((a,b)=>a.y-b.y); }},
+   ],
    objectives:[
      {type:'lead',group:'flock',x:27,y:17,radius:3,need:3,text:'Lead the flock to the back of the wilderness, to Ḥorĕḇ'},
      {type:'interact',prop:'bush',text:'Turn aside and see this great sight — why the bush does not burn up',hiddenUntil:1,
@@ -4465,6 +4584,12 @@ STORY.push(
    time:'day', music:'holy',
    player:'mosheh', playerPos:[22,14],
    npcs:[],
+   onStart:[
+     {call:G=>{ const m=G.world.map;
+       for(let i=0;i<8;i++){ const xx=12+(i%4)*6+hash2(i,3)*2, yy=5.5+Math.floor(i/4)*2.6+hash2(i,5);
+         if(dist(xx,yy,24,10)>3.6&&dist(xx,yy,14,15)>3) m.decor.push({type:'rock',solid:true,x:xx,y:yy}); }
+       m.decor.sort((a,b)=>a.y-b.y); }},
+   ],
    objectives:[
      {type:'goto',x:23,y:13,radius:2,text:'“What is that in your hand?” — cast your staff to the ground',
       script:[
@@ -5094,7 +5219,7 @@ STORY.push(
      {id:'miryam',char:'miryam',x:25,y:17.5,wander:true,range:1.4,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,20,{y1:12,x1:33})},
+     {call:G=>campRing(G,24,{tribal:true,y1:12,x1:33})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<60;i++) G.world.npcs.push(makeNpc({id:'xc'+i,char:cs[i%4],child:i%8===7,
          x:13+(i%13)*1.9+Math.random(),y:13.5+Math.floor(i/13)*1.6+Math.random(),
@@ -5258,7 +5383,18 @@ STORY.push(
      {id:'dk1',animal:'donkey',x:11,y:21,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,12,{x0:31,y0:6,x1:43,y1:13})},
+     {call:G=>campRing(G,24,{tribal:true,x0:28,y0:17,x1:43,y1:24,keep:[[36,16,44,21]]})},
+     {call:G=>{ const m=G.world.map;
+       /* Eylim: twelve fountains of water, and seventy palm trees */
+       let pl=0;
+       for(let r=0;r<6&&pl<70;r++) for(let c=0;c<13&&pl<70;c++){
+         const xx=27.6+c*1.42+(r%2?.7:0)+hash2(r*13+c,5)*.5, yy=3.4+r*1.55+hash2(r*13+c,9)*.5;
+         if(xx>m.w-2.5||SOLID.has(tileAt(m,xx,yy))) continue;
+         m.decor.push({type:'palm',solid:true,x:xx,y:yy}); pl++;
+       }
+       for(let i=0;i<12;i++) m.decor.push({type:'well',solid:true,x:29.4+(i%6)*2.5+(i>5?1.2:0),y:13.6+Math.floor(i/6)*2});
+       m.decor.sort((a,b)=>a.y-b.y);
+     }},
    ],
    objectives:[
      {type:'interact',prop:'marah',text:'Three days without water — the wells of Marah at last',
@@ -5315,7 +5451,7 @@ STORY.push(
      {kind:'manna',x:28,y:14.5},{kind:'manna',x:21,y:18.5},
    ],
    onStart:[
-     {call:G=>campRing(G,32,{keep:[[8,11,36,21]]})},
+     {call:G=>campRing(G,36,{tribal:true,keep:[[8,11,36,21]]})},
    ],
    objectives:[
      {type:'talk',npc:'mosheh',text:'Hear what YAHUAH shall do with your grumbling'},
@@ -5356,7 +5492,7 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:18,y:21,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,24,{y0:15,keep:[[21,8,31,17]]})},
+     {call:G=>campRing(G,24,{tribal:true,y0:15,keep:[[21,8,31,17]]})},
    ],
    objectives:[
      {type:'goto',x:16,y:18.5,radius:2.2,text:'The people strive with you for water',
@@ -5401,7 +5537,7 @@ STORY.push(
      {id:'sold2',char:'hebrew2',x:21,y:21.5,wander:false,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,20,{x1:18,y0:15})},
+     {call:G=>campRing(G,24,{tribal:true,x1:18,y0:15})},
    ],
    objectives:[
      {type:'goto',x:25,y:18,radius:2.4,text:'Lead the chosen men out against Amaleq',
@@ -5482,7 +5618,7 @@ STORY.push(
      {id:'cam2',animal:'camel',x:44,y:21,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,26,{keep:[[14,9,32,22],[36,14,46,24]]})},
+     {call:G=>campRing(G,36,{tribal:true,keep:[[14,9,32,22],[36,14,46,24]]})},
    ],
    objectives:[
      {type:'talk',npc:'yithro',text:'Go out and meet Yithro your father-in-law'},
@@ -5532,7 +5668,7 @@ STORY.push(
      {id:'dk1',animal:'donkey',x:10,y:25,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,30,{y0:18,keep:[[17,18,30,27]]})},
+     {call:G=>campRing(G,36,{tribal:true,y0:18,keep:[[17,18,30,27]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<48;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
          x:10+(i%14)*1.9+Math.random(),y:19+Math.floor(i/14)*1.7+Math.random(),
@@ -5578,7 +5714,7 @@ STORY.push(
      {id:'elder1',char:'elder',x:18,y:23,wander:false,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,30,{y0:19,keep:[[15,19,31,27]]})},
+     {call:G=>campRing(G,36,{tribal:true,y0:19,keep:[[15,19,31,27]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<48;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
          x:11+(i%14)*1.8+Math.random(),y:20+Math.floor(i/14)*1.6+Math.random(),
@@ -5621,7 +5757,9 @@ STORY.push(
    map:{biome:'rocky', w:46, h:30, seed:917,
      features:[
        {type:'altar',stage:3,x:23,y:13,solid:true,clear:2,id:'altar'},
-       {type:'pillar',x:19,y:14},{type:'pillar',x:21,y:15},{type:'pillar',x:25,y:15},{type:'pillar',x:27,y:14},
+       {type:'pillar',x:16.5,y:11.5},{type:'pillar',x:17.5,y:13.3},{type:'pillar',x:19,y:14.7},{type:'pillar',x:20.7,y:15.7},
+       {type:'pillar',x:29.5,y:11.5},{type:'pillar',x:28.5,y:13.3},{type:'pillar',x:27,y:14.7},{type:'pillar',x:25.3,y:15.7},
+       {type:'pillar',x:18,y:10},{type:'pillar',x:20.5,y:9},{type:'pillar',x:25.5,y:9},{type:'pillar',x:28,y:10},
        {type:'clearing',x:23,y:17,flat:3},
      ]},
    time:'morning', music:'holy',
@@ -5635,7 +5773,7 @@ STORY.push(
      {id:'heb2',char:'hebreww',x:25,y:22.5,wander:false,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,24,{y0:20,keep:[[15,20,31,27]]})},
+     {call:G=>campRing(G,24,{tribal:true,y0:20,keep:[[15,20,31,27]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<36;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
          x:12+(i%12)*1.9+Math.random(),y:18.5+Math.floor(i/12)*1.7+Math.random(),
@@ -5652,6 +5790,11 @@ STORY.push(
       ]},
      {type:'goto',x:23,y:12,radius:2.2,text:'Go up — you, Aharon, Naḏaḇ, Aḇihu, and seventy of the elders',hiddenUntil:1,
       script:[
+       {call:G=>{ for(let i=0;i<70;i++){
+         const e9=makeNpc({id:'eld70_'+i,char:'elder',x:8+(i%14)*2.2+Math.random()*.8,y:18+Math.floor(i/14)*1.6+Math.random()*.6,wander:false,noTalk:true});
+         G.world.npcs.push(e9);
+         e9.target={x:9.5+(i%14)*1.9+Math.random()*.6,y:8.6+Math.floor(i/14)*1.5+Math.random()*.5}; e9.speed=.026+Math.random()*.01; } }},
+       {say:['narrator','And Mosheh went up, and Aharon, Naḏaḇ and Aḇihu — and SEVENTY of the elders of Yasharal climbed with them.']},
        {rays:.85,raysX:23},{music:'holy'},{sfx:'holy'},
        {say:['narrator','And they saw the Aluahim of Yasharal — and under His feet like a paved work of sapphire stone, and like the very shamayim for brightness. Yet upon the nobles of the children of Yasharal He did not lay His hand: and they saw Aluahim, and they ate and drank.']},
        {say:['voice','Come up to Me on the mountain, and be there — and I shall give you the tablets of stone, and the Torah and the command which I have written, to teach them.']},
@@ -5700,7 +5843,7 @@ STORY.push(
      {id:'lev2',char:'levite',x:13.5,y:23,wander:false,hidden:true,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,24,{y0:15,keep:[[16,14,32,25],[19,5,28,15]]})},
+     {call:G=>campRing(G,24,{tribal:true,y0:15,keep:[[16,14,32,25],[19,5,28,15]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','hebreww'];
        for(let i=0;i<12;i++) G.world.npcs.push(makeNpc({id:'rev_x'+i,char:cs[i%4],
          x:20+(i%6)*1.6+Math.random(),y:19.5+Math.floor(i/6)*2+Math.random(),
@@ -5761,7 +5904,7 @@ STORY.push(
      {id:'heb2',char:'hebreww',x:25.5,y:22.5,wander:true,range:1.4,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,22,{x1:27,y0:13,keep:[[12,8,17,13],[20,13,28,25]]})},
+     {call:G=>campRing(G,24,{tribal:true,x1:27,y0:13,keep:[[12,8,17,13],[20,13,28,25]]})},
    ],
    objectives:[
      {type:'goto',x:24,y:16,radius:2.2,text:'Go up again to YAHUAH — to make atonement, if you may',
@@ -5805,6 +5948,16 @@ STORY.push(
    time:'morning', music:'holy',
    player:'mosheh_o', playerPos:[23,20],
    npcs:[],
+   onStart:[
+     {call:G=>{ const m=G.world.map;
+       for(let i=0;i<12;i++){ const xx=12+(i%6)*4+hash2(i,3)*1.6, yy=5.5+Math.floor(i/6)*2.4+hash2(i,5);
+         if(dist(xx,yy,23,13)>3.4) m.decor.push({type:'rock',solid:true,x:xx,y:yy}); }
+       for(let i=0;i<5;i++) m.decor.push({type:'rock',solid:true,x:6+hash2(i,7)*3,y:10+i*3.4});
+       for(let i=0;i<5;i++) m.decor.push({type:'rock',solid:true,x:38+hash2(i,11)*3,y:10+i*3.4});
+       m.decor.push({type:'pillarcloud',x:20.5,y:7});
+       m.decor.push({type:'pillarcloud',x:25.5,y:7.5});
+       m.decor.sort((a,b)=>a.y-b.y); }},
+   ],
    objectives:[
      {type:'interact',prop:'newtablets',text:'Ascend at dawn with the two cut tablets',
       script:[
@@ -5870,7 +6023,7 @@ STORY.push(
      {kind:'gold',x:13,y:18},{kind:'gold',x:17,y:20.5},{kind:'bluecloth',x:21,y:20},{kind:'bluecloth',x:29,y:18},
    ],
    onStart:[
-     {call:G=>campRing(G,20,{keep:[[9,12,33,23]]})},
+     {call:G=>campRing(G,24,{tribal:true,keep:[[9,12,33,23]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','hebreww'];
        for(let i=0;i<22;i++) G.world.npcs.push(makeNpc({id:'wil'+i,char:cs[i%4],
          x:12+(i%7)*2+Math.random(),y:19+Math.floor(i/7)*2+Math.random(),
@@ -5915,7 +6068,7 @@ STORY.push(
      {id:'heb1',char:'hebrew',route:[[28,18],[22,20]],noTalk:true,x:28,y:18},
    ],
    onStart:[
-     {call:G=>campRing(G,18,{y0:21,keep:[[12,14,33,23]]})},
+     {call:G=>campRing(G,24,{tribal:true,y0:21,keep:[[12,14,33,23]]})},
      {call:G=>{ const cs=['hebrew','hebrew2','hebreww','hebrew'];
        for(let i=0;i<16;i++) G.world.npcs.push(makeNpc({id:'wrk'+i,char:cs[i%4],
          x:15+(i%5)*2.4+Math.random(),y:19+Math.floor(i/5)*2.2+Math.random(),
@@ -5975,7 +6128,7 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:31,y:23,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,26,{y0:21,keep:[[15,21,33,27]]})},
+     {call:G=>campRing(G,36,{tribal:true,y0:21,keep:[[15,21,33,27]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<44;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
          x:11+(i%12)*2+Math.random(),y:20+Math.floor(i/12)*1.8+Math.random(),
