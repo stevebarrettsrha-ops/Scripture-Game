@@ -1,0 +1,56 @@
+# BERĔSHITH — In The Beginning
+
+A complete journey through the book of Genesis (BERĔSHITH), with the witness of
+YASHAR (Jasher) and YOḆELIM (Jubilees) — built as a self-contained HTML5
+pixel-art adventure. No build step, no dependencies, no server required.
+
+## How to play
+
+Open **`index.html`** in any modern browser (desktop or mobile).
+Each game is a single file and works offline:
+
+| File | Game | Unlocked by |
+|---|---|---|
+| `index.html` | **BERĔSHITH — In The Beginning** (Genesis, 8 acts, 42 chapters) | always available |
+| `book-of-adam-and-chavvah.html` | **The Books of Aḏam & Ḥawwah** (20 chapters) | finishing Act II of BERĔSHITH |
+| `book-of-hanok.html` | **The Book of Ḥanoḵ** (15 chapters) | finishing the Books of Aḏam & Ḥawwah |
+
+Progress is saved automatically in the browser (localStorage). Finishing the
+Books of Aḏam & Ḥawwah also unlocks "continuity" mode in BERĔSHITH, letting you
+begin at the Flood.
+
+## Controls
+
+| Action | Keyboard | Touch |
+|---|---|---|
+| Move | WASD / Arrow keys | virtual joystick |
+| Interact / advance text | E, Space or Enter | ✦ button, or tap |
+| Previous slide | Backspace / ← | on-screen button |
+| Chapter menu | Esc / ☰ | ☰ button |
+| Story log (every line so far) | 📜 | 📜 button |
+| Fullscreen / sound | ⛶ / ♪ | ⛶ / ♪ |
+
+## Mechanics
+
+Beyond walking and talking, scenes use mechanics fitted to their stories:
+
+- **Struggle** — press repeatedly to hold on: wrestling the Man at Peni'al
+  until daybreak, digging the wells of Gerar, standing the penance in the sea.
+- **Battle** — fight groups of foes: Aḇram's night rescue of Lot, Shim'on and
+  Lĕwi at Sheḵem, the Amorite kings, defending the camp.
+- **Chase** — flee a pursuer: Potiphar's wife to the door, the serpent to the
+  cave, a giant on Mount Ḥermon.
+- **Collect / build / lead** — gather pitch for the ark, idols for the
+  terebinth, lead the animals two by two, ride camels, and more.
+
+## Source texts
+
+Game text follows The Besorah (Natsarim translation), condensed for play, with
+cross-witnesses cited on-screen from YASHAR, YOḆELIM, ḤANOḴ, and the First and
+Second Books of Aḏam & Ḥawwah. Reference PDFs are kept in the repository root.
+
+## Assets
+
+All art, music and sound are generated procedurally in code — there are no
+binary game assets. Custom art can be added under `assets/` and wired into the
+prop/character renderers.

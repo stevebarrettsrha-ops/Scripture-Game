@@ -1706,6 +1706,15 @@ function walkable(map,x,y){
   }
   return true;
 }
+const TINY_ANIMALS=new Set(['bird','dove','raven','fish','lizard','beetle','frog']);
+function npcBlocked(world,x,y){
+  /* the player cannot walk through the animals */
+  for(const n of world.npcs){
+    if(n.hidden||!n.animal||n.flying||TINY_ANIMALS.has(n.animal)) continue;
+    if(Math.abs(n.x-x)<.62&&Math.abs(n.y-y)<.52) return true;
+  }
+  return false;
+}
 
 /* ================= WORLD RENDER ================= */
 const Camera={x:0,y:0,shake:0,
@@ -1891,6 +1900,7 @@ function drawWorld(g,world,t){
     const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
     if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
+    else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
     else if(d.mount){
       drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale});
@@ -2031,13 +2041,51 @@ function drawEmote(g,sx,sy,kind,t){
   g.restore();
 }
 
+/* ---------- struggle (button-mash) overlay ---------- */
+function drawMashUI(g,m,t){
+  const w=Math.min(520,VW*.72), x=VW/2-w/2, y=VH-Math.max(96,VH*.18);
+  g.save();
+  g.fillStyle='rgba(10,14,26,.84)';
+  g.strokeStyle='rgba(232,198,106,.5)'; g.lineWidth=1.5;
+  g.beginPath(); g.rect(x-16,y-40,w+32,92); g.fill(); g.stroke();
+  g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 15px Georgia';
+  g.fillText(m.text||'Hold on!',VW/2,y-18);
+  g.fillStyle='rgba(232,198,106,.16)'; g.fillRect(x,y,w,11);
+  g.fillStyle=m.grip>.3?'#e8c66a':'#c84a3a'; g.fillRect(x,y,w*clamp(m.grip,0,1),11);
+  g.strokeStyle='rgba(232,198,106,.4)'; g.strokeRect(x+.5,y+.5,w,11);
+  g.fillStyle='rgba(170,200,255,.14)'; g.fillRect(x,y+19,w,8);
+  g.fillStyle='#bcd2f0'; g.fillRect(x,y+19,w*clamp(m.prog,0,1),8);
+  g.strokeStyle='rgba(170,200,255,.35)'; g.strokeRect(x+.5,y+19.5,w,8);
+  g.font='11px Georgia'; g.textAlign='left'; g.fillStyle='#9d987f';
+  g.fillText(m.barA||'YOUR GRIP',x,y+40);
+  g.textAlign='right'; g.fillText(m.barB||'UNTIL IT IS DONE',x+w,y+40);
+  const pul=.5+Math.sin(t/220)*.5;
+  g.textAlign='center'; g.fillStyle=`rgba(255,243,207,${.4+pul*.55})`; g.font='12px Georgia';
+  g.fillText(m.hint||'— press \u2726 / E again and again —',VW/2,y+40);
+  g.restore();
+}
+/* ---------- battle overlay ---------- */
+function drawBattleUI(g,b,t){
+  const w=Math.min(580,VW*.84), x=VW/2-w/2, y=Math.max(52,VH*.09);
+  g.save();
+  g.fillStyle='rgba(10,14,26,.8)';
+  g.strokeStyle='rgba(200,74,58,.6)'; g.lineWidth=1.5;
+  g.beginPath(); g.rect(x,y,w,48); g.fill(); g.stroke();
+  g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 14px Georgia';
+  g.fillText(b.text||'Fight!',VW/2,y+19);
+  const pul=.5+Math.sin(t/260)*.5;
+  g.fillStyle=`rgba(232,198,106,${.55+pul*.4})`; g.font='12px Georgia';
+  g.fillText('Foes standing: '+b.left+'   \u2014   press \u2726 / E beside a foe to strike',VW/2,y+38);
+  g.restore();
+}
+
 /* ================= GAME CORE ================= */
 const Game={
   state:'boot',        // boot,title,chapters,slides,play,complete,finale
   world:null, chapter:null, slideIdx:0, slideList:null, slidePhase:null,
   script:null, scriptIdx:0, scriptWait:0, scriptBlocked:false,
   dlgQueue:[], dlgChar:null, dlgText:'', dlgShown:0, dlgDone:false, dlgCb:null, dlgChoices:null,
-  inv:{}, flags:{}, t:0, lastTime:0, fadeT:0,
+  inv:{}, flags:{}, t:0, lastTime:0, fadeT:0, mash:null, battle:null,
   interactTarget:null,
 
   /* ---------- dialogue ---------- */
@@ -2216,6 +2264,23 @@ const Game={
     if(op.complete!==undefined){ this.completeObjective(op.complete); return true; }
     if(op.give){ this.inv[op.give[0]]=(this.inv[op.give[0]]||0)+(op.give[1]||1); return true; }
     if(op.flag){ this.flags[op.flag[0]]=op.flag[1]; return true; }
+    if(op.mash){
+      /* button-mash struggle: hold on until the timer runs its course */
+      this.scriptBlocked=true;
+      this.mash=Object.assign({grip:.6,prog:0,duration:9000},op.mash);
+      this.mash.onDone=()=>{this.scriptBlocked=false};
+      return false;
+    }
+    if(op.battle){
+      /* fight a group of npcs: they close in on the player, strike them down one by one */
+      this.scriptBlocked=true;
+      let left=0;
+      for(const n of w.npcs) if(op.battle.foes.includes(n.id)){
+        n.foe=true; n.hp=op.battle.hits||2; n.wander=false; n.noTalk=true; left++;
+      }
+      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,onDone:()=>{this.scriptBlocked=false}};
+      return false;
+    }
     if(op.call){ op.call(this); return true; }
     if(op.end){ this.endScene(); return true; }
     return true;
@@ -2336,6 +2401,7 @@ const Game={
   startScene(){
     const ch=this.chapter;
     this.dlgQueue=[]; this.closeDlg();
+    this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
     const map=generateMap(sc.map);
@@ -2388,6 +2454,38 @@ const Game={
     Sound.init();
     if(this.state==='slides'){ if(this.slideT>350){ Sound.sfx('blip'); this.advanceSlide(); } return; }
     if(this.dlgChar){ this.advanceDlg(); return; }
+    if(this.mash){
+      this.mash.grip=Math.min(1,this.mash.grip+(this.mash.gain||.14));
+      Sound.sfx('blip');
+      return;
+    }
+    if(this.battle&&this.state==='play'&&this.world&&this.world.player){
+      const p=this.world.player;
+      let best=null,bd=1.6;
+      for(const n of this.world.npcs){
+        if(!n.foe||n.hidden||n.lying) continue;
+        const d7=dist(p.x,p.y,n.x,n.y); if(d7<bd){bd=d7;best=n;}
+      }
+      if(best){
+        best.hp=(best.hp||1)-1;
+        Sound.sfx('bad'); Particles.burst(best.x*TILE,best.y*TILE,'spark',10);
+        const a=Math.atan2(best.y-p.y,best.x-p.x);
+        best.x=clamp(best.x+Math.cos(a)*.9,1.2,this.world.map.w-2.2);
+        best.y=clamp(best.y+Math.sin(a)*.9,1.2,this.world.map.h-2.2);
+        best.target=null;
+        if(best.hp<=0){
+          best.foe=false; best.lying=true; best.moving=false; best.noTalk=true;
+          this.battle.left--;
+          if(this.battle.left>0) toast(this.battle.left+' of the foes still stand');
+          else {
+            const cb=this.battle.onDone, won=this.battle.won; this.battle=null;
+            toast(won||'The foes are fallen'); Sound.sfx('chime');
+            if(cb)cb();
+          }
+        }
+      }
+      return;
+    }
     if(this.state==='play'&&!this.script){
       const tgt=this.interactTarget;
       if(tgt) this.doInteract(tgt);
@@ -2448,18 +2546,36 @@ const Game={
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
+    if(this.mash){
+      const m=this.mash;
+      m.grip=Math.max(0,m.grip-dt*(m.decay||.00026));
+      if(m.grip>.12){ m.prog=Math.min(1,m.prog+dt/(m.duration||9000)); Camera.shake=Math.max(Camera.shake,1.1); }
+      else m.prog=Math.max(0,m.prog-dt*.35/(m.duration||9000));
+      const mp=this.world.player, mw=m.vs?this.world.npcs.find(n=>n.id===m.vs):null;
+      if(mp) mp.moving=true;
+      if(mw) mw.moving=true;
+      if(!m._m1&&m.prog>.34&&m.msg1){ m._m1=true; toast(m.msg1); }
+      if(!m._m2&&m.prog>.7&&m.msg2){ m._m2=true; toast(m.msg2); }
+      if(m.prog>=1){
+        const cb=m.onDone; this.mash=null;
+        if(mp) mp.moving=false; if(mw) mw.moving=false;
+        if(cb)cb();
+      }
+    }
+    if(this.chapter&&this.chapter.scene&&this.chapter.scene.tick&&!this.script&&!this.dlgChar)
+      this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
     // player movement
     const p=w.player;
-    const blocked=this.script||this.dlgChar;
+    const blocked=(this.script&&!this.battle)||this.dlgChar;
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
         const ms=p.speed*(p.mount?1.65:1);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        if(walkable(w.map,nx,p.y)) p.x=nx;
-        if(walkable(w.map,p.x,ny)) p.y=ny;
+        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y)) p.x=nx;
+        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
@@ -2475,6 +2591,29 @@ const Game={
           const cb=e.onArrive; e.onArrive=null; if(cb)cb(); }
         else { e.x+=dx/m*step; e.y+=dy/m*step; e.moving=true;
           e.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'); }
+      } else if(e.foe&&p&&!e.lying&&!this.dlgChar){
+        /* battle foe: close in on the player, shove when adjacent */
+        const df=dist(e.x,e.y,p.x,p.y);
+        if(df>1){ e.target={x:p.x,y:p.y}; e.speed=e.foeSpeed||.045; }
+        else {
+          e.moving=false;
+          e.dir=Math.abs(p.x-e.x)>Math.abs(p.y-e.y)?(p.x<e.x?'left':'right'):(p.y<e.y?'up':'down');
+          if(!e._st||this.t>e._st){
+            e._st=this.t+1400; Camera.shake=Math.max(Camera.shake,2); Sound.sfx('bad');
+            const a2=Math.atan2(p.y-e.y,p.x-e.x);
+            const sx2=p.x+Math.cos(a2)*.55, sy2=p.y+Math.sin(a2)*.55;
+            if(walkable(w.map,sx2,p.y)) p.x=sx2;
+            if(walkable(w.map,p.x,sy2)) p.y=sy2;
+          }
+        }
+      } else if(e.chase&&p&&!e.lying&&!this.dlgChar&&!this.script){
+        /* pursuer: runs after the player */
+        e.target={x:p.x,y:p.y}; e.speed=e.chaseSpeed||.095;
+      } else if(e.route&&!e.lying&&!blocked){
+        /* working npc: walks its task route in a loop */
+        e._ri=((e._ri||0)+1)%e.route.length;
+        const wp=e.route[e._ri];
+        e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;
@@ -2609,6 +2748,8 @@ const Game={
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
+      if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
     }
     drawTitleBg(ctx,this.t);
@@ -3393,6 +3534,8 @@ const STORY=[
    time:'night', music:'night',
    player:'chanok', playerPos:[16,13],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:16,y:18,range:2,noTalk:true},
+     {id:'amb_deer1',animal:'deer',x:22,y:20,range:3,noTalk:true},
      {id:'methushelah',char:'methushelah',x:17,y:14,wander:true,range:1.5,
       script:[
        {say:['methushelah','Father — the people below grow stranger by the year, and the people of the mountain fewer. What do you see, when you watch the sky all night?']},
@@ -3431,6 +3574,8 @@ const STORY=[
    time:'deepnight', music:'tense',
    player:'chanok', playerPos:[10,24],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:14,y:26,range:3,noTalk:true},
+     {id:'amb_deer2',animal:'deer',x:12,y:22,range:3,noTalk:true},
      {id:'semjaza',char:'semjaza',x:23,y:13,wander:false,noTalk:true},
      {id:'w1',char:'watcher',x:25.5,y:14,wander:false,noTalk:true},
      {id:'w2',char:'watcher',x:21,y:14.5,wander:false,noTalk:true},
@@ -3455,6 +3600,18 @@ const STORY=[
        {time:'night'},{fade:'in'},{shake:1.5},{sfx:'thunder'},
        {say:['narrator','And the earth was filled with blood and with wrongdoing — and the souls of men cried out, and their cry went up to the gates of the shamayim.']},
        {say:['chanok','O Aluahim — the watchers of the shamayim have broken their watch. The earth itself groans under them. Hear the cry that rises — for it rises night and day.']},
+       {move:['giant',26,20,.05,'bg']},
+       {say:['narrator','And the giant turned — and its eyes found Ḥanoḵ on the mountainside.']},
+       {sfx:'bad'},{shake:2},
+       {call:G=>{ const g2=G.world.npcs.find(n=>n.id==='giant');
+         if(g2){ g2.chase=true; g2.chaseSpeed=.08; } }},
+      ]},
+     {type:'goto',x:42,y:27,radius:2.4,text:'Flee down the mountain — carry the cry of the earth!',hiddenUntil:1,
+      script:[
+       {call:G=>{ const g2=G.world.npcs.find(n=>n.id==='giant');
+         if(g2){ g2.chase=false; g2.target={x:24,y:14}; g2.speed=.05; } }},
+       {say:['chanok','It did not follow beyond the rocks… The cry of the earth goes up night and day — and I have seen now with my own eyes why. I shall carry it, to whoever in the shamayim still keeps watch.']},
+       {music:'night'},
       ]},
    ],
   },
@@ -3526,6 +3683,7 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'chanok', playerPos:[10,22],
    npcs:[
+     {id:'amb_bird1',animal:'bird',x:20,y:18,range:4,noTalk:true},
      {id:'semjaza',char:'semjaza',x:18,y:15,wander:false,noTalk:true},
      {id:'w1',char:'watcher',x:16,y:16.5,wander:false,noTalk:true},
      {id:'w2',char:'watcher',x:20,y:16.8,wander:false,noTalk:true},
@@ -3674,6 +3832,8 @@ const STORY=[
    time:'morning', music:'eden',
    player:'chanok', playerPos:[23,27],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:20,y:18,range:3,noTalk:true},
+     {id:'amb_bird1',animal:'bird',x:24,y:14,range:4,noTalk:true},
      {id:'michaal',char:'michaal',x:25,y:11,wander:false,
       script:[
        {say:['chanok','Michaal — among all these trees, this one is fragrant beyond any fragrance, and its leaves and blooms wither not. Why do I long for it, and fear it, at once?']},
@@ -3747,9 +3907,50 @@ const STORY=[
 { id:'h11', title:'Carried Up', ref:'ḤANOḴ 70–71',
   intro:[
    {art:'chariots', music:'holy', text:'And it came to pass after this that his name during his lifetime was raised aloft to that Son of Man and to YAHUAH of ruchot, from among those who dwell on the earth — and he was raised aloft on the chariots of the ruach, and his name vanished among them.', ref:'ḤANOḴ 70:1–2'},
-   {art:'crystalhouse', music:'holy', text:'And my ruach was translated, and it ascended into the shamayim: and I saw the sons of the holy mal’akim stepping on flames of fire, and their garments white, and the light of their faces like snow. And I fell on my face before YAHUAH of ruchot.', ref:'ḤANOḴ 71:1,11'},
   ],
-  scene:null,
+  scene:{
+   map:{biome:'ararat', w:44, h:28, seed:711,
+     features:[
+       {type:'tent',x:11,y:17,solid:true,clear:2,col:'#8a7a62'},
+       {type:'firepit',x:13,y:18.5,lit:true},
+       {type:'altar',stage:3,x:15,y:15.5,solid:true,clear:2,id:'altar'},
+       {type:'clearing',x:33,y:10,flat:3},
+     ]},
+   time:'morning', music:'holy',
+   player:'chanok', playerPos:[14,20],
+   npcs:[
+     {id:'methushelah',char:'methushelah',x:15.5,y:19,wander:false,
+      script:[
+       {say:['methushelah','Father — you have been silent since the dawn. Your face is changed; it shines like one who stands too near the sun.']},
+       {say:['chanok','Methushelaḥ, my son. The summons has come. All that I was shown I have written in the books — guard them, and read them to your generations. Walk in righteousness, and the flood that comes shall not blot out your name.']},
+       {say:['chanok','Do not follow me past the high stones — for I am called, and where I go, you cannot yet come. Kiss me, my son. We shall meet where the Tree of Life is planted.']},
+      ]},
+     {id:'lemek',char:'lemek',x:17,y:20,wander:true,range:1.4,noTalk:true},
+     {id:'m1',char:'michaal',x:33,y:9,wander:false,hidden:true,noTalk:true},
+     {id:'m2',char:'gabrial',x:34.6,y:10.4,wander:false,hidden:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'talk',npc:'methushelah',text:'Take leave of Methushelaḥ your son'},
+     {type:'goto',x:33,y:10,radius:2.4,text:'Go up alone, past the high stones',hiddenUntil:1,
+      script:[
+       {time:'dusk'},{music:'holy'},
+       {show:'m1'},{show:'m2'},{burst:[33,9,'holy',16]},{burst:[34.6,10.4,'holy',16]},{sfx:'holy'},
+       {say:['michaal','Ḥanoḵ, scribe of righteousness — the hour is come. He whom you have served calls you up, that you may not taste the corruption of the earth.']},
+       {say:['chanok','I am here. Let it be to your servant according to the word of my Master.']},
+       {rays:.95,raysX:33},{shake:1.5},{sfx:'thunder'},
+       {say:['narrator','And see — chariots as of fire and horses of fire, and a whirlwind going round about. And he was raised aloft on the chariots of the ruach, and his name vanished among those who dwell on the earth.']},
+       {burst:[33,10,'holy',32]},
+       {call:G=>{ G.world.player.hidden=true; }},
+       {hide:'m1'},{hide:'m2'},{shake:2},{wait:900},
+       {say:['narrator','And my ruach was translated, and it ascended into the shamayim: and I saw the sons of the holy mal’akim stepping on flames of fire, their garments white, and the light of their faces like snow — and I fell on my face before YAHUAH of ruchot.']},
+       {rays:0},{time:'night'},
+       {call:G=>{ const m=G.world.npcs.find(n=>n.id==='methushelah');
+         if(m){ m.target={x:30,y:12}; m.speed=.05; } }},
+       {wait:1100},
+       {say:['methushelah','Father…? — He is not. For Aluahim took him. Blessed be the Name, from everlasting to everlasting.']},
+      ]},
+   ],
+  },
   complete:'Raised aloft on the chariots of the ruach — and his name vanished among them.'
 },
 ]},
@@ -3810,6 +4011,7 @@ const STORY=[
    time:'deepnight', music:'night',
    player:'chanok', playerPos:[21,17],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:18,y:18,range:2,noTalk:true},
      {id:'methushelah',char:'methushelah',x:19,y:15,wander:false,
       script:[
        {say:['chanok','My son — I dreamed, and the dream was terrible: the shamayim thrown down, the earth swallowed in the abyss, everything sinking. I cried out until the words woke me.']},
@@ -3853,6 +4055,8 @@ const STORY=[
    time:'dusk', music:'desert',
    player:'chanok', playerPos:[34,15],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:16,y:19,range:2,noTalk:true},
+     {id:'amb_cam1',animal:'camel',x:22,y:21,range:2,noTalk:true},
      {id:'methushelah',char:'methushelah',x:10,y:20,wander:false,noTalk:true},
    ],
    objectives:[

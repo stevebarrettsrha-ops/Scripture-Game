@@ -502,6 +502,10 @@ const CHARS={
   luluwa:  {name:'Luluwa', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#9c7d8c'},
   aqlia:   {name:'Aqlia', skin:'#7e5630', hair:'#46301a', hairStyle:'long', robe:'#7d8a6a'},
   yared:   {name:'Yared', skin:'#704a27', hair:'#cfc8b8', hairStyle:'short', robe:'#6e5b3e', beard:'#cfc8b8', old:true},
+  methushelah:{name:'Methushelaḥ', skin:'#704a27', hair:'#b8b2a4', hairStyle:'short', robe:'#7a6a48', beard:'#b8b2a4'},
+  lemek:   {name:'Lemeḵ', skin:'#7a4e29', hair:'#46301a', hairStyle:'short', robe:'#6e6048', beard:'#46301a'},
+  lamekb:  {name:'Lamek the Blind', skin:'#6b4828', hair:'#b8b2a4', hairStyle:'short', robe:'#5d5246', beard:'#b8b2a4'},
+  shepboy: {name:'A Young Shepherd', skin:'#7a4e29', hair:'#33230f', hairStyle:'short', robe:'#a09064', child:true},
   avraham: {name:'Aḇraham', skin:'#704a27', hair:'#cfc8b8', hairStyle:'short', robe:'#8a7048', beard:'#cfc8b8', headcover:'#c8b486'},
   sarah:   {name:'Sarah',   skin:'#815631', hair:'#9c8e7c', hairStyle:'long', robe:'#9c7d8c', headcover:'#d4c4a2'},
   lot:     {name:'Lot',     skin:'#6f4b27', hair:'#46301a', hairStyle:'short', robe:'#5d7080', beard:'#46301a'},
@@ -1658,6 +1662,15 @@ function walkable(map,x,y){
   }
   return true;
 }
+const TINY_ANIMALS=new Set(['bird','dove','raven','fish','lizard','beetle','frog']);
+function npcBlocked(world,x,y){
+  /* the player cannot walk through the animals */
+  for(const n of world.npcs){
+    if(n.hidden||!n.animal||n.flying||TINY_ANIMALS.has(n.animal)) continue;
+    if(Math.abs(n.x-x)<.62&&Math.abs(n.y-y)<.52) return true;
+  }
+  return false;
+}
 
 /* ================= WORLD RENDER ================= */
 const Camera={x:0,y:0,shake:0,
@@ -1843,6 +1856,7 @@ function drawWorld(g,world,t){
     const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
     if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
+    else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale});
     else if(d.mount){
       drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale});
@@ -1983,13 +1997,51 @@ function drawEmote(g,sx,sy,kind,t){
   g.restore();
 }
 
+/* ---------- struggle (button-mash) overlay ---------- */
+function drawMashUI(g,m,t){
+  const w=Math.min(520,VW*.72), x=VW/2-w/2, y=VH-Math.max(96,VH*.18);
+  g.save();
+  g.fillStyle='rgba(10,14,26,.84)';
+  g.strokeStyle='rgba(232,198,106,.5)'; g.lineWidth=1.5;
+  g.beginPath(); g.rect(x-16,y-40,w+32,92); g.fill(); g.stroke();
+  g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 15px Georgia';
+  g.fillText(m.text||'Hold on!',VW/2,y-18);
+  g.fillStyle='rgba(232,198,106,.16)'; g.fillRect(x,y,w,11);
+  g.fillStyle=m.grip>.3?'#e8c66a':'#c84a3a'; g.fillRect(x,y,w*clamp(m.grip,0,1),11);
+  g.strokeStyle='rgba(232,198,106,.4)'; g.strokeRect(x+.5,y+.5,w,11);
+  g.fillStyle='rgba(170,200,255,.14)'; g.fillRect(x,y+19,w,8);
+  g.fillStyle='#bcd2f0'; g.fillRect(x,y+19,w*clamp(m.prog,0,1),8);
+  g.strokeStyle='rgba(170,200,255,.35)'; g.strokeRect(x+.5,y+19.5,w,8);
+  g.font='11px Georgia'; g.textAlign='left'; g.fillStyle='#9d987f';
+  g.fillText(m.barA||'YOUR GRIP',x,y+40);
+  g.textAlign='right'; g.fillText(m.barB||'UNTIL IT IS DONE',x+w,y+40);
+  const pul=.5+Math.sin(t/220)*.5;
+  g.textAlign='center'; g.fillStyle=`rgba(255,243,207,${.4+pul*.55})`; g.font='12px Georgia';
+  g.fillText(m.hint||'— press \u2726 / E again and again —',VW/2,y+40);
+  g.restore();
+}
+/* ---------- battle overlay ---------- */
+function drawBattleUI(g,b,t){
+  const w=Math.min(580,VW*.84), x=VW/2-w/2, y=Math.max(52,VH*.09);
+  g.save();
+  g.fillStyle='rgba(10,14,26,.8)';
+  g.strokeStyle='rgba(200,74,58,.6)'; g.lineWidth=1.5;
+  g.beginPath(); g.rect(x,y,w,48); g.fill(); g.stroke();
+  g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 14px Georgia';
+  g.fillText(b.text||'Fight!',VW/2,y+19);
+  const pul=.5+Math.sin(t/260)*.5;
+  g.fillStyle=`rgba(232,198,106,${.55+pul*.4})`; g.font='12px Georgia';
+  g.fillText('Foes standing: '+b.left+'   \u2014   press \u2726 / E beside a foe to strike',VW/2,y+38);
+  g.restore();
+}
+
 /* ================= GAME CORE ================= */
 const Game={
   state:'boot',        // boot,title,chapters,slides,play,complete,finale
   world:null, chapter:null, slideIdx:0, slideList:null, slidePhase:null,
   script:null, scriptIdx:0, scriptWait:0, scriptBlocked:false,
   dlgQueue:[], dlgChar:null, dlgText:'', dlgShown:0, dlgDone:false, dlgCb:null, dlgChoices:null,
-  inv:{}, flags:{}, t:0, lastTime:0, fadeT:0,
+  inv:{}, flags:{}, t:0, lastTime:0, fadeT:0, mash:null, battle:null,
   interactTarget:null,
 
   /* ---------- dialogue ---------- */
@@ -2168,6 +2220,23 @@ const Game={
     if(op.complete!==undefined){ this.completeObjective(op.complete); return true; }
     if(op.give){ this.inv[op.give[0]]=(this.inv[op.give[0]]||0)+(op.give[1]||1); return true; }
     if(op.flag){ this.flags[op.flag[0]]=op.flag[1]; return true; }
+    if(op.mash){
+      /* button-mash struggle: hold on until the timer runs its course */
+      this.scriptBlocked=true;
+      this.mash=Object.assign({grip:.6,prog:0,duration:9000},op.mash);
+      this.mash.onDone=()=>{this.scriptBlocked=false};
+      return false;
+    }
+    if(op.battle){
+      /* fight a group of npcs: they close in on the player, strike them down one by one */
+      this.scriptBlocked=true;
+      let left=0;
+      for(const n of w.npcs) if(op.battle.foes.includes(n.id)){
+        n.foe=true; n.hp=op.battle.hits||2; n.wander=false; n.noTalk=true; left++;
+      }
+      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,onDone:()=>{this.scriptBlocked=false}};
+      return false;
+    }
     if(op.call){ op.call(this); return true; }
     if(op.end){ this.endScene(); return true; }
     return true;
@@ -2288,6 +2357,7 @@ const Game={
   startScene(){
     const ch=this.chapter;
     this.dlgQueue=[]; this.closeDlg();
+    this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
     const map=generateMap(sc.map);
@@ -2342,6 +2412,38 @@ const Game={
     Sound.init();
     if(this.state==='slides'){ if(this.slideT>350){ Sound.sfx('blip'); this.advanceSlide(); } return; }
     if(this.dlgChar){ this.advanceDlg(); return; }
+    if(this.mash){
+      this.mash.grip=Math.min(1,this.mash.grip+(this.mash.gain||.14));
+      Sound.sfx('blip');
+      return;
+    }
+    if(this.battle&&this.state==='play'&&this.world&&this.world.player){
+      const p=this.world.player;
+      let best=null,bd=1.6;
+      for(const n of this.world.npcs){
+        if(!n.foe||n.hidden||n.lying) continue;
+        const d7=dist(p.x,p.y,n.x,n.y); if(d7<bd){bd=d7;best=n;}
+      }
+      if(best){
+        best.hp=(best.hp||1)-1;
+        Sound.sfx('bad'); Particles.burst(best.x*TILE,best.y*TILE,'spark',10);
+        const a=Math.atan2(best.y-p.y,best.x-p.x);
+        best.x=clamp(best.x+Math.cos(a)*.9,1.2,this.world.map.w-2.2);
+        best.y=clamp(best.y+Math.sin(a)*.9,1.2,this.world.map.h-2.2);
+        best.target=null;
+        if(best.hp<=0){
+          best.foe=false; best.lying=true; best.moving=false; best.noTalk=true;
+          this.battle.left--;
+          if(this.battle.left>0) toast(this.battle.left+' of the foes still stand');
+          else {
+            const cb=this.battle.onDone, won=this.battle.won; this.battle=null;
+            toast(won||'The foes are fallen'); Sound.sfx('chime');
+            if(cb)cb();
+          }
+        }
+      }
+      return;
+    }
     if(this.state==='play'&&!this.script){
       const tgt=this.interactTarget;
       if(tgt) this.doInteract(tgt);
@@ -2402,18 +2504,36 @@ const Game={
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
+    if(this.mash){
+      const m=this.mash;
+      m.grip=Math.max(0,m.grip-dt*(m.decay||.00026));
+      if(m.grip>.12){ m.prog=Math.min(1,m.prog+dt/(m.duration||9000)); Camera.shake=Math.max(Camera.shake,1.1); }
+      else m.prog=Math.max(0,m.prog-dt*.35/(m.duration||9000));
+      const mp=this.world.player, mw=m.vs?this.world.npcs.find(n=>n.id===m.vs):null;
+      if(mp) mp.moving=true;
+      if(mw) mw.moving=true;
+      if(!m._m1&&m.prog>.34&&m.msg1){ m._m1=true; toast(m.msg1); }
+      if(!m._m2&&m.prog>.7&&m.msg2){ m._m2=true; toast(m.msg2); }
+      if(m.prog>=1){
+        const cb=m.onDone; this.mash=null;
+        if(mp) mp.moving=false; if(mw) mw.moving=false;
+        if(cb)cb();
+      }
+    }
+    if(this.chapter&&this.chapter.scene&&this.chapter.scene.tick&&!this.script&&!this.dlgChar)
+      this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
     // player movement
     const p=w.player;
-    const blocked=this.script||this.dlgChar;
+    const blocked=(this.script&&!this.battle)||this.dlgChar;
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
         const ms=p.speed*(p.mount?1.65:1);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        if(walkable(w.map,nx,p.y)) p.x=nx;
-        if(walkable(w.map,p.x,ny)) p.y=ny;
+        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y)) p.x=nx;
+        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
@@ -2429,6 +2549,29 @@ const Game={
           const cb=e.onArrive; e.onArrive=null; if(cb)cb(); }
         else { e.x+=dx/m*step; e.y+=dy/m*step; e.moving=true;
           e.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'); }
+      } else if(e.foe&&p&&!e.lying&&!this.dlgChar){
+        /* battle foe: close in on the player, shove when adjacent */
+        const df=dist(e.x,e.y,p.x,p.y);
+        if(df>1){ e.target={x:p.x,y:p.y}; e.speed=e.foeSpeed||.045; }
+        else {
+          e.moving=false;
+          e.dir=Math.abs(p.x-e.x)>Math.abs(p.y-e.y)?(p.x<e.x?'left':'right'):(p.y<e.y?'up':'down');
+          if(!e._st||this.t>e._st){
+            e._st=this.t+1400; Camera.shake=Math.max(Camera.shake,2); Sound.sfx('bad');
+            const a2=Math.atan2(p.y-e.y,p.x-e.x);
+            const sx2=p.x+Math.cos(a2)*.55, sy2=p.y+Math.sin(a2)*.55;
+            if(walkable(w.map,sx2,p.y)) p.x=sx2;
+            if(walkable(w.map,p.x,sy2)) p.y=sy2;
+          }
+        }
+      } else if(e.chase&&p&&!e.lying&&!this.dlgChar&&!this.script){
+        /* pursuer: runs after the player */
+        e.target={x:p.x,y:p.y}; e.speed=e.chaseSpeed||.095;
+      } else if(e.route&&!e.lying&&!blocked){
+        /* working npc: walks its task route in a loop */
+        e._ri=((e._ri||0)+1)%e.route.length;
+        const wp=e.route[e._ri];
+        e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;
@@ -2563,6 +2706,8 @@ const Game={
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
+      if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
     }
     drawTitleBg(ctx,this.t);
@@ -3294,6 +3439,8 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[10,20],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:20,y:20,range:3,noTalk:true},
+     {id:'amb_bird1',animal:'bird',x:24,y:16,range:4,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:9,y:21,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
@@ -3445,13 +3592,26 @@ const STORY=[
        {move:['player',20.5,19.5,.09]},
        {say:['adam_c','Get behind me! — You accursed thing! Was it not enough that we fell? Would you now slay the bone of my bone?']},
        {say:['narrator','And the serpent rose against them in fury — for it could no longer speak since the curse — and it pressed upon them with hatred to destroy them.']},
-       {shake:2},{sfx:'bad'},{wait:600},
-       {rays:.9,raysX:20},{sfx:'holy'},{music:'holy'},
+       {shake:2},{sfx:'bad'},{music:'storm'},
+       {say:['adam_c','Run, Ḥawwah — to the cave! RUN!']},
+       {call:g=>{ const s=g.world.npcs.find(n=>n.id==='serpent');
+         if(s){ s.chase=true; s.chaseSpeed=.078; }
+         const c=g.world.npcs.find(n=>n.id==='chavvah');
+         if(c){ c.follow=true; } }},
+      ]},
+     {type:'goto',x:36,y:15.4,radius:2.2,text:'Flee with Ḥawwah to the mouth of the cave!',hiddenUntil:1,
+      script:[
+       {call:g=>{ const s=g.world.npcs.find(n=>n.id==='serpent');
+         if(s){ s.chase=false; s.target=null; s.moving=false; }
+         const c=g.world.npcs.find(n=>n.id==='chavvah');
+         if(c){ c.follow=false; } }},
+       {shake:2},{sfx:'bad'},{wait:400},
+       {rays:.9,raysX:36},{sfx:'holy'},{music:'holy'},
        {say:['voice','You accursed serpent — touch them not. As I live, you shall not come near the children of Aḏam to do them harm.']},
        {say:['narrator','And a great wind came and carried the serpent away, and cast it far from them, so that it could not come at them. And Aluahim commanded the beasts of the earth concerning Aḏam and his children.']},
-       {despawn:'serpent'},{burst:[18,21,'ash',16]},
+       {despawn:'serpent'},{burst:[34,17,'ash',16]},
        {say:['voice','Behold, the beasts and all that move on the earth — I have made them subject to you. They shall not rise against you, nor against your seed, except when you turn from My commandment.']},
-       {rays:0},
+       {rays:0},{music:'eden'},
        {say:['chavvah_c','Even fallen — even outside the garden — He stands between us and the destroyer.']},
       ]},
    ],
@@ -3478,6 +3638,7 @@ const STORY=[
    time:'morning', music:'sorrow',
    player:'adam_c', playerPos:[14,20],
    npcs:[
+     {id:'amb_bird1',animal:'bird',x:18,y:16,range:4,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:13,y:21,wander:false,follow:true,noTalk:true},
    ],
    items:[
@@ -3521,6 +3682,7 @@ const STORY=[
    time:'day', music:'eden',
    player:'adam_c', playerPos:[33,17],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:22,y:22,range:3,noTalk:true},
      {id:'m1',char:'malak',x:10,y:22,wander:false,noTalk:true},
      {id:'m2',char:'malak',x:8,y:24,wander:false,noTalk:true},
      {id:'m3',char:'malak',x:12,y:25,wander:false,noTalk:true},
@@ -3569,7 +3731,9 @@ const STORY=[
        {move:['player',24,23.8,.03]},
        {call:g=>{ g.world.player.submerged=true; g.world.player.moving=false; }},
        {wait:700},
-       {say:['narrator','And Aḏam went down into the sea until the water stood about him, and he stood in it, praying — day after day, while the waves went over him. Thirty-five days passed.']},
+       {say:['narrator','And Aḏam went down into the sea until the water stood about him, and he stood in it, praying — day after day, while the waves went over him.']},
+       {mash:{duration:9000,gain:.13,decay:.00024,text:'Stand fast in the cold water — do not come up!',barA:'YOUR RESOLVE',barB:'THE DAYS OF PENANCE',msg1:'Your limbs grow numb — yet you stand…',msg2:'The waves go over your head — yet you stand…'}},
+       {say:['narrator','Thirty-five days passed.']},
        {fade:'out'},{toast:'Thirty-five days of penance in the water…'},{wait:1600},{fade:'in'},
        {show:'satan'},{move:['satan',27,19,.05]},
        {say:['satan_a','Aḏam — rejoice! Aluahim has heard your prayer, and has sent me, His messenger, to bring you the bright light you lost! Come up out of the water — come, follow me, and I will lead you to the garden.']},
@@ -3607,6 +3771,7 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[33,16],
    npcs:[
+     {id:'amb_bird1',animal:'bird',x:26,y:18,range:4,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:32,y:15,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
@@ -3697,6 +3862,8 @@ const STORY=[
    time:'day', music:'desert',
    player:'adam_c', playerPos:[34,15],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:20,y:20,range:2,noTalk:true},
+     {id:'amb_sheep2',animal:'sheep',x:22,y:21,range:2,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:35,y:16,wander:true,range:1.5,
       dlg:[['chavvah_c','The Word spoke of skins of sheep on the mountain-side, Aḏam — left where the lions ate. Come, let us go and find them.']]},
      {id:'satan',char:'satan_d',x:12,y:17,wander:false,hidden:true,noTalk:true},
@@ -3763,6 +3930,7 @@ const STORY=[
    time:'day', music:'tense',
    player:'adam_c', playerPos:[36,15],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:24,y:20,range:3,noTalk:true},
      {id:'oldman',char:'oldman',x:30,y:18,wander:false,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:37,y:16,wander:false,follow:true,noTalk:true},
    ],
@@ -3816,6 +3984,7 @@ const STORY=[
    time:'day', music:'tense',
    player:'adam_c', playerPos:[34,15],
    npcs:[
+     {id:'amb_bird1',animal:'bird',x:22,y:18,range:4,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:35,y:16,wander:false,follow:true,noTalk:true},
      {id:'m1',char:'siren',x:14,y:16,submerged:true,wander:false,hidden:true,noTalk:true},
      {id:'m2',char:'siren',x:13.4,y:18.5,submerged:true,wander:false,hidden:true,noTalk:true},
@@ -3935,6 +4104,8 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[30,16],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:18,y:18,range:2,noTalk:true},
+     {id:'amb_sheep2',animal:'sheep',x:20,y:19.4,range:2,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:31,y:17,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
@@ -3977,6 +4148,7 @@ const STORY=[
    time:'morning', music:'eden',
    player:'adam_c', playerPos:[24,17],
    npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:20,y:19,range:2,noTalk:true},
      {id:'chavvah',char:'chavvah_c',x:28,y:15,wander:false,
       script:[
        {say:['chavvah_c','Aḏam — come. Come and see your son.']},
@@ -4008,6 +4180,7 @@ const STORY=[
    time:'day', music:'tense',
    player:'sheth', playerPos:[31,15],
    npcs:[
+     {id:'amb_deer1',animal:'deer',x:24,y:18,range:3,noTalk:true},
      {id:'satan',char:'satan_a',x:16,y:22,wander:false,noTalk:true},
      {id:'adam',char:'adam_c',x:33,y:14,wander:false,hidden:true,noTalk:true},
    ],
@@ -4090,11 +4263,62 @@ const STORY=[
 { id:'b16', title:'Lamek the Blind', ref:'2 AḎAM & ḤAWWAH 12–13',
   intro:[
    {art:'corrupt', music:'tense', text:'Then Shĕth the just called Enosh his son, and Qeynan, and commanded them as Aḏam had commanded him. And below, in the dark land, the children of Qayin multiplied — and among them was much robbery, murder and sin.', ref:'2 AḎAM & ḤAWWAH 12–13'},
-   {art:'corrupt', music:'sorrow', text:'In those days lived Lamek the blind, of the sons of Qayin. And as he went with a young shepherd, the boy said, “I hear a sound — a beast moves in the thicket.” And Lamek drew his bow and loosed at the sound.', ref:'2 AḎAM & ḤAWWAH 13'},
-   {art:'corrupt', music:'sorrow', text:'But the sound was Qayin, who walked alone in the waste — for he could find no rest in any place. And the arrow struck him, and he died: the man who slew his brother, slain unknowing by his own blind son’s son. And the judgment of the first blood was complete.', ref:'2 AḎAM & ḤAWWAH 13'},
+   {art:'corrupt', music:'sorrow', text:'In those days lived Lamek the blind, of the sons of Qayin — a herdsman of the dark land. And a young shepherd led him by the hand wherever he went, and watched the flock with him.', ref:'2 AḎAM & ḤAWWAH 13'},
+  ],
+  scene:{
+   map:{biome:'wild', w:44, h:28, seed:413,
+     features:[
+       {type:'tent',x:10,y:16,solid:true,clear:2,col:'#8a7a62'},
+       {type:'firepit',x:12,y:17.5,lit:true},
+       {type:'tree',x:31,y:12,solid:true,col:'#5d6e3e'},
+       {type:'tree',x:33.5,y:14,solid:true,col:'#6e7a3e'},
+       {type:'tree',x:30,y:15.5,solid:true,col:'#5d6e3e'},
+       {type:'tree',x:35,y:11.5,solid:true,col:'#6e7a3e'},
+       {type:'bush',x:32,y:16,col:'#5d6e3e'},
+       {type:'clearing',x:27,y:16,flat:2},
+     ]},
+   time:'dusk', music:'sorrow',
+   player:'shepboy', playerPos:[12,19],
+   npcs:[
+     {id:'lamekb',char:'lamekb',x:13.5,y:18.5,wander:false,
+      script:[
+       {say:['lamekb','Boy — give me your hand. My eyes have been long dark, and the flock is restless tonight. Some beast prowls the thicket; I hear the sheep start at it. Lead me out, and be my eyes — and I shall be the bow.']},
+       {say:['shepboy','Hold to my shoulder, master. The thicket is east of the fold — walk where I walk.']},
+       {call:g=>{ const l=g.world.npcs.find(n=>n.id==='lamekb'); if(l) l.follow=true; }},
+      ]},
+     {id:'qayin',char:'qayin',x:40,y:13,wander:false,hidden:true,noTalk:true},
+     {id:'sheep1',animal:'sheep',x:15,y:20.5,range:2,noTalk:true},
+     {id:'sheep2',animal:'sheep',x:16.4,y:19.4,range:2,noTalk:true},
+     {id:'sheep3',animal:'sheep',x:14.2,y:21.6,range:2,noTalk:true},
+   ],
+   objectives:[
+     {type:'talk',npc:'lamekb',text:'Lamek the blind calls for you — be his eyes'},
+     {type:'goto',x:27,y:16,radius:2,text:'Lead Lamek toward the sound in the thicket',hiddenUntil:1,
+      script:[
+       {teleport:['qayin',36,12.5]},{show:'qayin'},
+       {move:['qayin',33,14.5,.02,'bg']},
+       {say:['shepboy','There! I hear it — a sound, a beast moving in the thicket! A great one, master — I see something stir among the trees!']},
+       {say:['lamekb','Steady, boy. Take my arm — point it at the sound. …Steady. Now.']},
+       {wait:600},{sfx:'bad'},{shake:1},
+       {call:g=>{ const q=g.world.npcs.find(n=>n.id==='qayin');
+         if(q){ q.target=null; q.lying=true; q.moving=false; } }},
+       {say:['narrator','And the arrow leapt from the string and sang into the thicket — and the sound fell, and did not rise.']},
+       {call:g=>{ const l=g.world.npcs.find(n=>n.id==='lamekb'); if(l) l.follow=false; }},
+      ]},
+     {type:'goto',x:33,y:15,radius:1.8,text:'Go and see what the arrow struck',hiddenUntil:2,
+      script:[
+       {say:['shepboy','Master… it is no beast. It is a man! An old man — and on him… on him is the mark! Master — it is Qayin!']},
+       {say:['lamekb','Qayin?! …QAYIN? Woe is me — woe! I have slain the man of the mark, whom Aluahim said no man should slay! I, blind, have struck down the slayer of Heḇal — and the wound shall return upon me!']},
+       {say:['narrator','For Qayin had walked alone in the waste, finding no rest in any place — and the arrow found him there. The man who slew his brother, slain unknowing by the blind son of his sons. And the judgment of the first blood was complete.']},
+       {sfx:'thunder'},{shake:1.5},{music:'night'},{time:'night'},
+       {say:['lamekb','Sevenfold was the vengeance of Qayin… and what of Lamek now? Seventy-and-sevenfold. Lead me home, boy. Lead me home — and let me never draw bow again.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'corrupt', music:'sorrow', text:'And in his grief Lamek struck his hands together — and the blow fell upon the head of the lad, and he died also. And Lamek said to his wives: “I have slain a man for wounding me, even a young man for hurting me. If Qayin is avenged sevenfold, then Lamek seventy-sevenfold.”', ref:'2 AḎAM & ḤAWWAH 13 · BERĔSHITH 4:23–24'},
    {art:'corrupt', music:'night', text:'ANOTHER WITNESS — But the book of Yoḇelim bears a different account of Qayin’s end: that his house fell upon him, and he died in the middle of his house, killed by its stones. “For with a stone he had killed Heḇal, and by a stone he was killed, in righteous mishpat.” Two witnesses, one judgment: the blood of Heḇal was required.', ref:'YOḆELIM 4:31–32'},
   ],
-  scene:null,
   complete:'No rest in any place — and the judgment of the first blood came home at last.'
 },
 { id:'b17', title:'The Songs of Genun', ref:'2 AḎAM & ḤAWWAH 16–20',
@@ -4113,6 +4337,8 @@ const STORY=[
    time:'dusk', music:'tense',
    player:'yared', playerPos:[16,12],
    npcs:[
+     {id:'amb_goat1',animal:'goat',x:18,y:16,range:2,noTalk:true},
+     {id:'amb_goat2',animal:'goat',x:20,y:17.5,range:2,noTalk:true},
      {id:'s1',char:'builder',x:20,y:18,wander:true,range:2,
       script:[
        {say:['builder','Father Yared — do you hear it? Every night, from below the mountain — the horns, the strings, the laughter. The sound comes up the rocks like the smell of a feast. Why must holiness be so quiet?']},
@@ -4157,10 +4383,59 @@ const STORY=[
   intro:[
    {art:'stars', music:'night', text:'But Ḥanoḵ kept the commandment of Yared his father, and continued to minister in the cave. It is this Ḥanoḵ to whom many wonders happened, who also wrote a celebrated book — but those wonders may not be told in this place.', ref:'2 AḎAM & ḤAWWAH 22'},
    {art:'chariots', music:'holy', text:'And when the children of Shĕth had gone astray, they, their children and their wives — Ḥanoḵ, Methushelaḥ, Lamek and Noaḥ alone remained, and their hearts suffered. And Ḥanoḵ was taken by Aluahim, and seen no more.', ref:'2 AḎAM & ḤAWWAH 22'},
+  ],
+  scene:{
+   map:{biome:'ararat', w:44, h:28, seed:421,
+     features:[
+       {type:'cave',x:11,y:13,solid:true,clear:4,flat:4,id:'cave'},
+       {type:'altar',stage:3,x:14,y:16,solid:true,clear:2,id:'altar'},
+       {type:'firepit',x:12,y:18,lit:true},
+       {type:'clearing',x:33,y:11,flat:3},
+     ]},
+   time:'morning', music:'holy',
+   player:'noach', playerPos:[14,19],
+   npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:16,y:20,range:2,noTalk:true},
+     {id:'chanok',char:'chanok',x:13,y:17,wander:false,
+      script:[
+       {say:['chanok','Noaḥ, son of Lemeḵ. Come close, and hear — for my days among you are counted, and what I say now, say to your sons after you.']},
+       {say:['chanok','Keep the way of YAHUAH, and turn neither to the right nor to the left. Do not go down from this mountain to the children of Qayin — for in your days the earth shall be cleansed with water, and of all this multitude only your house shall be carried over it.']},
+       {say:['chanok','I have written what I was shown, in books — guard them. The promise of the great five days and a half stands sure: the Word shall come, and shall save. Now walk with me, child. I am called up the mountain — and I shall not come down again.']},
+       {call:g=>{ const c=g.world.npcs.find(n=>n.id==='chanok'); if(c) c.follow=true; }},
+      ]},
+     {id:'methushelah',char:'methushelah',x:16,y:18,wander:false,hidden:true,
+      script:[
+       {say:['methushelah','He is taken. My father walked with Aluahim — and he was not, for Aluahim took him. Do not weep, Noaḥ. Weep rather for the world below, that would not hear him.']},
+       {say:['lemek','Three of us remain on the mountain of the fathers — Methushelaḥ, and I, and you, my son. Three righteous men left in the world, and the wickedness of man growing great upon the earth.']},
+       {say:['noach','Then we three shall keep the charge. The books, the cave, the body of Aḏam, the promise — whatever waters come, the promise shall be carried over them.']},
+       {sfx:'holy'},{burst:[33,11,'holy',18]},
+      ]},
+     {id:'lemek',char:'lemek',x:17.5,y:19.5,wander:false,hidden:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'talk',npc:'chanok',text:'Ḥanoḵ calls you — hear his last commands'},
+     {type:'goto',x:33,y:11,radius:2.4,text:'Walk with Ḥanoḵ up to the high place',hiddenUntil:1,
+      script:[
+       {call:g=>{ const c=g.world.npcs.find(n=>n.id==='chanok');
+         if(c){ c.follow=false; c.target={x:33,y:10.2}; c.speed=.04; } }},
+       {wait:1200},
+       {say:['chanok','It is here. Stand back from me, Noaḥ — and whatever you see, do not fear. Remember: the promise is sure. THE PROMISE IS SURE.']},
+       {time:'deepnight'},{music:'holy'},{sfx:'thunder'},{shake:1.5},
+       {rays:.9,raysX:33},{sfx:'holy'},
+       {say:['narrator','And it came to pass as they walked, that a whirlwind came down, and horses of fire and a brightness like the sun stood between them — and Ḥanoḵ was lifted from the earth.']},
+       {burst:[33,10,'holy',30]},{hide:'chanok'},{shake:2},{wait:800},
+       {say:['narrator','And Ḥanoḵ was taken by Aluahim — and was seen no more. For before he was taken, he had this witness: that he pleased Aluahim.']},
+       {rays:0},{time:'morning'},
+       {show:'methushelah'},{show:'lemek'},
+       {move:['lemek',31.5,12.5,.06,'bg']},{move:['methushelah',32,11.8,.06,'bg']},
+      ]},
+     {type:'talk',npc:'methushelah',text:'Stand with Methushelaḥ and Lemeḵ — three remain',hiddenUntil:2},
+   ],
+  },
+  outro:[
    {art:'flood', music:'storm', text:'Three righteous men were left in the world. And the wickedness of man grew great upon the earth — and the waters of the prophecy began to gather in the reckoning of Aluahim. The rest is written in BERĔSHITH: the ark, the flood, and the body of Aḏam carried over the waters.', ref:'2 AḎAM & ḤAWWAH 22 → BERĔSHITH 6'},
    {art:'coffin', music:'holy', text:'Here end the BOOKS OF AḎAM AND ḤAWWAH. The promise of the great five days and a half passed from the cave to the ark, from the ark to the fathers — gold, incense and myrrh waiting for the One to whom they belong.', ref:'END OF THE SECOND BOOK'},
   ],
-  scene:null,
   complete:'Three righteous men left in the world — and the promise, intact, passing over the waters.'
 },
 ]},
