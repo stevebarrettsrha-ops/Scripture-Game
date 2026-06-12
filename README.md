@@ -14,6 +14,7 @@ Each game is a single file and works offline:
 | `index.html` | **BERĔSHITH — In The Beginning** (Genesis, 8 acts, 42 chapters) | always available |
 | `book-of-adam-and-chavvah.html` | **The Books of Aḏam & Ḥawwah** (20 chapters) | finishing Act II of BERĔSHITH |
 | `book-of-hanok.html` | **The Book of Ḥanoḵ** (15 chapters) | finishing the Books of Aḏam & Ḥawwah |
+| `book-of-shemoth.html` | **SHEMOTH — These Are The Names** (Exodus, 8 acts, 37 chapters) | finishing BERĔSHITH |
 
 Progress is saved automatically in the browser (localStorage). Finishing the
 Books of Aḏam & Ḥawwah also unlocks "continuity" mode in BERĔSHITH, letting you
@@ -35,11 +36,13 @@ begin at the Flood.
 Beyond walking and talking, scenes use mechanics fitted to their stories:
 
 - **Struggle** — press repeatedly to hold on: wrestling the Man at Peni'al
-  until daybreak, digging the wells of Gerar, standing the penance in the sea.
+  until daybreak, digging the wells of Gerar, standing the penance in the sea,
+  staying up the hands of Mosheh against Amaleq.
 - **Battle** — fight groups of foes: Aḇram's night rescue of Lot, Shim'on and
-  Lĕwi at Sheḵem, the Amorite kings, defending the camp.
+  Lĕwi at Sheḵem, the Amorite kings, the serpents of Kush, the shepherds of
+  Miḏyan, and the war with Amaleq.
 - **Chase** — flee a pursuer: Potiphar's wife to the door, the serpent to the
-  cave, a giant on Mount Ḥermon.
+  cave, a giant on Mount Ḥermon, Pharaoh's chariots at the Sea of Reeds.
 - **Collect / build / lead** — gather pitch for the ark, idols for the
   terebinth, lead the animals two by two, ride camels, and more.
 
