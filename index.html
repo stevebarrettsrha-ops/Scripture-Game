@@ -1719,11 +1719,18 @@ function walkable(map,x,y){
   return true;
 }
 const TINY_ANIMALS=new Set(['bird','dove','raven','fish','lizard','beetle','frog']);
-function npcBlocked(world,x,y){
-  /* the player cannot walk through the animals */
+function npcBlocked(world,x,y,px,py){
+  /* the player cannot walk through people or animals.
+     escape rule: movement that takes you AWAY from whoever blocks you is always allowed,
+     so a wandering npc can never pin the player. */
   for(const n of world.npcs){
-    if(n.hidden||!n.animal||n.flying||TINY_ANIMALS.has(n.animal)) continue;
-    if(Math.abs(n.x-x)<.62&&Math.abs(n.y-y)<.52) return true;
+    if(n.hidden||n.lying) continue;
+    if(n.flying||(n.animal&&TINY_ANIMALS.has(n.animal))) continue;
+    const big=n.animal||n.propType;
+    if(Math.abs(n.x-x)<(big?.62:.5)&&Math.abs(n.y-y)<(big?.52:.42)){
+      if(px!==undefined&&Math.hypot(n.x-x,n.y-y)>Math.hypot(n.x-px,n.y-py)) continue;
+      return true;
+    }
   }
   return false;
 }
@@ -2088,10 +2095,10 @@ function drawBattleUI(g,b,t){
   g.strokeStyle='rgba(200,74,58,.6)'; g.lineWidth=1.5;
   g.beginPath(); g.rect(x,y,w,48); g.fill(); g.stroke();
   g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 14px Georgia';
-  g.fillText(b.text||'Fight!',VW/2,y+19);
+  g.fillText(b.phase==='rally'?'The fight is over.':(b.text||'Fight!'),VW/2,y+19);
   const pul=.5+Math.sin(t/260)*.5;
   g.fillStyle=`rgba(232,198,106,${.55+pul*.4})`; g.font='12px Georgia';
-  g.fillText('Foes standing: '+b.left+'   —   press ✦ / E beside a foe to strike',VW/2,y+38);
+  g.fillText(b.phase==='rally'?'Regroup — walk to the gold marker to continue':'Foes standing: '+b.left+' — press ✦ / E beside a foe to strike',VW/2,y+38);
   g.restore();
 }
 
@@ -2294,7 +2301,8 @@ const Game={
       for(const n of w.npcs) if(op.battle.foes.includes(n.id)){
         n.foe=true; n.hp=op.battle.hits||2; n.wander=false; n.noTalk=true; left++;
       }
-      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,onDone:()=>{this.scriptBlocked=false}};
+      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,
+        rally:op.battle.rally||null,onDone:()=>{this.scriptBlocked=false}};
       return false;
     }
     if(op.call){ op.call(this); return true; }
@@ -2479,6 +2487,7 @@ const Game={
       return;
     }
     if(this.battle&&this.state==='play'&&this.world&&this.world.player){
+      if(this.battle.phase==='rally') return;
       const p=this.world.player;
       let best=null,bd=1.6;
       for(const n of this.world.npcs){
@@ -2496,9 +2505,16 @@ const Game={
           best.foe=false; best.lying=true; best.moving=false; best.noTalk=true;
           this.battle.left--;
           if(this.battle.left>0) toast(this.battle.left+' of the foes still stand');
+          else if(this.battle.rally){
+            /* the fight is over — but the story waits until the player regroups */
+            this.battle.phase='rally'; this.battle.deadUntil=this.t+800;
+            toast(this.battle.won||'The foes are fallen'); Sound.sfx('chime');
+            this.world.gotoMark={x:this.battle.rally[0],y:this.battle.rally[1]};
+          }
           else {
             const cb=this.battle.onDone, won=this.battle.won; this.battle=null;
             toast(won||'The foes are fallen'); Sound.sfx('chime');
+            this.endSkirmish();
             if(cb)cb();
           }
         }
@@ -2519,6 +2535,14 @@ const Game={
   },
   onEscape(){
     if(this.state==='play'||this.state==='complete'){ openChapters(); }
+  },
+  endSkirmish(){
+    /* the battle is decided: enemy skirmishers fall, allies stand down */
+    if(!this.world) return;
+    for(const n of this.world.npcs){
+      if(n.sparFoe&&!n.lying){ n.lying=true; n.moving=false; n.spar=null; n.target=null; }
+      else if(n.spar){ n.spar=null; n.moving=false; n.target=null; }
+    }
   },
   doInteract(tgt){
     const w=this.world;
@@ -2581,6 +2605,15 @@ const Game={
         if(cb)cb();
       }
     }
+    if(this.battle&&this.battle.phase==='rally'&&this.world.player){
+      const b9=this.battle, p9=this.world.player;
+      if(this.t>(b9.deadUntil||0)&&b9.rally&&dist(p9.x,p9.y,b9.rally[0],b9.rally[1])<1.7){
+        this.battle=null; this.world.gotoMark=null;
+        this.endSkirmish();
+        const cb9=b9.onDone; if(cb9)cb9();
+        this.updateMarkers();
+      }
+    }
     if(this.chapter&&this.chapter.scene&&this.chapter.scene.tick&&!this.script&&!this.dlgChar)
       this.chapter.scene.tick(this);
     const w=this.world;
@@ -2593,8 +2626,8 @@ const Game={
       if(v.x||v.y){
         const ms=p.speed*(p.mount?1.65:1);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y)) p.x=nx;
-        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny)) p.y=ny;
+        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
@@ -2610,6 +2643,19 @@ const Game={
           const cb=e.onArrive; e.onArrive=null; if(cb)cb(); }
         else { e.x+=dx/m*step; e.y+=dy/m*step; e.moving=true;
           e.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'); }
+      } else if(e.spar&&!e.lying&&!this.dlgChar){
+        /* locked in melee with a partner: press in, jostle, sparks fly */
+        const o9=w.npcs.find(n=>n.id===e.spar);
+        if(o9&&!o9.lying&&!o9.hidden){
+          const d9=dist(e.x,e.y,o9.x,o9.y);
+          if(d9>1){ e.target={x:o9.x,y:o9.y}; e.speed=.04; }
+          else {
+            e.moving=true;
+            e.dir=Math.abs(o9.x-e.x)>Math.abs(o9.y-e.y)?(o9.x<e.x?'left':'right'):(o9.y<e.y?'up':'down');
+            e.x+=(Math.random()-.5)*.05; e.y+=(Math.random()-.5)*.04;
+            if(Math.random()<.012) Particles.burst((e.x+o9.x)/2*TILE,(e.y+o9.y)/2*TILE,'spark',3);
+          }
+        } else { e.spar=null; e.moving=false; }
       } else if(e.foe&&p&&!e.lying&&!this.dlgChar){
         /* battle foe: close in on the player, shove when adjacent */
         const df=dist(e.x,e.y,p.x,p.y);
@@ -2854,6 +2900,36 @@ const Sky={
 function drawSlideArt(g,key,st,t,slide){
   const fadeUp=clamp(st/900,0,1);
   switch(key){
+    case 'watchers': {
+      Sky.paint(g,[[0,'#0c0e22'],[.6,'#1c1a36'],[1,'#2c2440']]);
+      Sky.stars(g,t,110,.85);
+      g.fillStyle='#181430'; g.beginPath();
+      g.moveTo(0,VH); g.lineTo(VW*.35,VH*.3); g.lineTo(VW*.7,VH); g.closePath(); g.fill();
+      for(let i=0;i<5;i++){
+        const dx9=VW*(.2+i*.14), dy9=VH*(.12+(i%2)*.08)+Math.sin(t/900+i)*8;
+        const gl9=g.createRadialGradient(dx9,dy9,2,dx9,dy9,34);
+        gl9.addColorStop(0,'rgba(220,210,255,.8)'); gl9.addColorStop(1,'rgba(220,210,255,0)');
+        g.fillStyle=gl9; g.beginPath(); g.arc(dx9,dy9,34,0,Math.PI*2); g.fill();
+        g.strokeStyle='rgba(220,210,255,.3)'; g.lineWidth=2;
+        g.beginPath(); g.moveTo(dx9,dy9+10); g.lineTo(dx9+8,VH*.34); g.stroke();
+      }
+      g.fillStyle='#2c2440'; g.fillRect(0,VH*.84,VW,VH*.16);
+      for(let i=0;i<3;i++) Sky.figure(g,VW*(.55+i*.14),VH*.97,['chavvah_c','lotd1','lotd2'][i],{t:t+i*300,scale:1.7,dir:'up'});
+      break; }
+    case 'cavehome': {
+      Sky.paint(g,[[0,'#141020'],[.6,'#241c28'],[1,'#342824']]);
+      Sky.stars(g,t,60,.5); Sky.moon(g,VW*.18,VH*.18,16);
+      g.fillStyle='#241a14'; g.beginPath();
+      g.moveTo(VW*.3,VH); g.lineTo(VW*.62,VH*.2); g.lineTo(VW*.98,VH); g.closePath(); g.fill();
+      g.fillStyle='#0c0805'; g.beginPath();
+      g.moveTo(VW*.52,VH); g.quadraticCurveTo(VW*.62,VH*.55,VW*.74,VH); g.closePath(); g.fill();
+      const wg9=g.createRadialGradient(VW*.63,VH*.85,6,VW*.63,VH*.85,80);
+      wg9.addColorStop(0,'rgba(255,180,90,.5)'); wg9.addColorStop(1,'rgba(255,180,90,0)');
+      g.fillStyle=wg9; g.beginPath(); g.arc(VW*.63,VH*.85,80,0,Math.PI*2); g.fill();
+      g.fillStyle='#342824'; g.fillRect(0,VH*.9,VW,VH*.1);
+      drawProp(g,VW*.4,VH*.97,{type:'firepit',lit:true},t);
+      Sky.figure(g,VW*.3,VH*.98,'lot',{t,scale:1.9,dir:'right'});
+      break; }
     case 'void': {
       Sky.paint(g,[[0,'#04060c'],[.6,'#070b16'],[1,'#0a1020']]);
       // the deep — slow dark waters
@@ -4562,18 +4638,30 @@ STORY.push(
        {spawn:{id:'foe2',char:'raider2',x:30,y:29,wander:false,noTalk:true,foeSpeed:.042}},
        {spawn:{id:'foe3',char:'raider',x:18,y:29,wander:false,noTalk:true,foeSpeed:.046}},
        {spawn:{id:'foe4',char:'raider2',x:27,y:32,wander:false,noTalk:true,foeSpeed:.055}},
+       {spawn:{id:'foe5',char:'raider2',x:20,y:32,wander:false,noTalk:true,foeSpeed:.048}},
+       {spawn:{id:'foe6',char:'raider',x:31,y:31,wander:false,noTalk:true,foeSpeed:.044}},
+       {spawn:{id:'foe7',char:'raider2',x:16,y:30,wander:false,noTalk:true,foeSpeed:.05}},
+       {spawn:{id:'sa1',char:'servant',x:19,y:27,wander:false,noTalk:true,spar:'se1'}},
+       {spawn:{id:'se1',char:'raider',x:20,y:27.6,wander:false,noTalk:true,spar:'sa1',sparFoe:true}},
+       {spawn:{id:'sa2',char:'shepherd',x:23,y:28.5,wander:false,noTalk:true,spar:'se2'}},
+       {spawn:{id:'se2',char:'raider2',x:24,y:29,wander:false,noTalk:true,spar:'sa2',sparFoe:true}},
+       {spawn:{id:'sa3',char:'builder',x:27,y:27.5,wander:false,noTalk:true,spar:'se3'}},
+       {spawn:{id:'se3',char:'raider',x:28,y:28,wander:false,noTalk:true,spar:'sa3',sparFoe:true}},
+       {spawn:{id:'sa4',char:'builder2',x:30,y:26,wander:false,noTalk:true,spar:'se4'}},
+       {spawn:{id:'se4',char:'raider2',x:31,y:26.6,wander:false,noTalk:true,spar:'sa4',sparFoe:true}},
+       {spawn:{id:'sa5',char:'builder3',x:17,y:27,wander:false,noTalk:true,spar:'se5'}},
+       {spawn:{id:'se5',char:'raider',x:18,y:27.6,wander:false,noTalk:true,spar:'sa5',sparFoe:true}},
+       {spawn:{id:'sa6',char:'servant',x:21,y:30,wander:false,noTalk:true,spar:'se6'}},
+       {spawn:{id:'se6',char:'raider2',x:22,y:30.6,wander:false,noTalk:true,spar:'sa6',sparFoe:true}},
        {spawn:{id:'lotc',char:'lot',x:24,y:32,wander:false,noTalk:true}},
        {sfx:'thunder'},{shake:2},{music:'storm'},
        {say:['narrator','And he divided his men against them by night, he and his servants — and he smote them.']},
-       {battle:{foes:['foe1','foe2','foe3','foe4'],hits:2,text:'By night — smite the army of the four sovereigns and free Lot!',won:'The camp of the kings is broken — they flee before you'}},
+       {battle:{foes:['foe1','foe2','foe3','foe4','foe5','foe6','foe7'],hits:2,rally:[22,21],text:'By night — smite the army of the four sovereigns and free Lot!',won:'The camp of the kings is broken'}},
        {music:'night'},
        {move:['lotc',24,27,.06]},
        {say:['lot','Uncle — you came. Three hundred and eighteen, against the armies of four sovereigns… and you came for me.']},
        {say:['narrator','And he brought back all the goods, and also brought back his brother Lot and his goods, and the women and the people.']},
-       {fade:'out'},
-       {despawn:'foe1'},{despawn:'foe2'},{despawn:'foe3'},{despawn:'foe4'},
-       {despawn:'aly1'},{despawn:'aly2'},{despawn:'lotc'},
-       {fade:'in'},
+       {fade:'out'},{move:['lotc',46,30,.2,'bg']},{despawn:'lotc'},{fade:'in'},
        {say:['narrator','And Malkitseḏeq, sovereign of Shalĕm, kohen of the Most High Ăl, brought out bread and wine, and baruk him: “Baruk be Aḇram of the Most High Ăl, Possessor of the shamayim and earth.” And Aḇram gave him a tenth of all — and would not take for himself a thread or a sandal strap from the spoil.']},
        {say:['narrator','After these matters the word of YAHUAH came to Aḇram in a vision, saying:']},
        {rays:.7,raysX:24},{sfx:'holy'},
@@ -5655,8 +5743,10 @@ STORY.push(
        {spawn:{id:'gd2',char:'shechemite',x:24,y:12.6,wander:false,noTalk:true,foeSpeed:.03}},
        {spawn:{id:'gd3',char:'builder3',x:35,y:19,wander:false,noTalk:true,foeSpeed:.032}},
        {spawn:{id:'gd4',char:'shechemite',x:28,y:19.5,wander:false,noTalk:true,foeSpeed:.036}},
+       {spawn:{id:'gd5',char:'shechemite',x:37,y:16,wander:false,noTalk:true,foeSpeed:.033}},
+       {spawn:{id:'gd6',char:'builder3',x:26,y:14,wander:false,noTalk:true,foeSpeed:.035}},
        {sfx:'thunder'},{shake:2},
-       {battle:{foes:['gd1','gd2','gd3','gd4'],hits:2,text:'Shim‛on and Lĕwi, Dinah’s brothers — take the city with the sword!',won:'The city that defiled Dinah is fallen'}},
+       {battle:{foes:['gd1','gd2','gd3','gd4','gd5','gd6'],hits:2,rally:[22,20],text:'Shim‛on and Lĕwi, Dinah’s brothers — take the city with the sword!',won:'The city that defiled Dinah is fallen'}},
        {say:['narrator','And Shim‛on and Lĕwi, Dinah’s brothers, each took his sword and came upon the city unawares — and they killed Ḥamor and Sheḵem his son with the edge of the sword.']},
       ]},
      {type:'goto',x:30.5,y:13.2,radius:1.7,text:'Take Dinah out of Sheḵem’s house',hiddenUntil:2,
@@ -5669,7 +5759,6 @@ STORY.push(
      {type:'lead',group:'dinah',x:10,y:22,radius:2.6,need:1,text:'Bring Dinah home to the tents',hiddenUntil:3},
    ],
    onComplete:[
-     {despawn:'gd1'},{despawn:'gd2'},{despawn:'gd3'},{despawn:'gd4'},
      {call:G=>{ const l=G.world.npcs.find(n=>n.id==='levi'); if(l) l.follow=false; }},
      {face:['yaaqov','right']},
      {say:['yaaqov','You have troubled me, making me a stench among the inhabitants of the land — among the Kena‛anites and the Perizzites! I am few in number; they shall gather themselves against me and smite me, and I shall be destroyed, I and my house!']},
@@ -5680,9 +5769,22 @@ STORY.push(
      {spawn:{id:'am3',char:'amorite',x:36,y:21,wander:false,noTalk:true,foeSpeed:.052}},
      {spawn:{id:'am4',char:'raider2',x:30,y:27,wander:false,noTalk:true,foeSpeed:.046}},
      {spawn:{id:'am5',char:'amorite',x:35,y:26,wander:false,noTalk:true,foeSpeed:.048}},
+     {spawn:{id:'am6',char:'amorite',x:38,y:23,wander:false,noTalk:true,foeSpeed:.045}},
+     {spawn:{id:'am7',char:'raider',x:33,y:21,wander:false,noTalk:true,foeSpeed:.047}},
+     {spawn:{id:'am8',char:'raider2',x:37,y:27,wander:false,noTalk:true,foeSpeed:.043}},
+     {spawn:{id:'ba1',char:'yahudah',x:17,y:19,wander:false,noTalk:true,spar:'be1'}},
+     {spawn:{id:'be1',char:'amorite',x:18,y:19.6,wander:false,noTalk:true,spar:'ba1',sparFoe:true}},
+     {spawn:{id:'ba2',char:'reuven',x:20,y:21,wander:false,noTalk:true,spar:'be2'}},
+     {spawn:{id:'be2',char:'raider',x:21,y:21.6,wander:false,noTalk:true,spar:'ba2',sparFoe:true}},
+     {spawn:{id:'ba3',char:'shepherd',x:15,y:22,wander:false,noTalk:true,spar:'be3'}},
+     {spawn:{id:'be3',char:'raider2',x:16,y:22.6,wander:false,noTalk:true,spar:'ba3',sparFoe:true}},
+     {spawn:{id:'ba4',char:'servant',x:23,y:23,wander:false,noTalk:true,spar:'be4'}},
+     {spawn:{id:'be4',char:'amorite',x:24,y:23.6,wander:false,noTalk:true,spar:'ba4',sparFoe:true}},
+     {spawn:{id:'ba5',char:'builder',x:19,y:24.5,wander:false,noTalk:true,spar:'be5'}},
+     {spawn:{id:'be5',char:'raider',x:20,y:25,wander:false,noTalk:true,spar:'ba5',sparFoe:true}},
      {sfx:'thunder'},{shake:2},{music:'storm'},
      {say:['levi','They come, brother! Stand — for the tents, for our father!']},
-     {battle:{foes:['am1','am2','am3','am4','am5'],hits:2,text:'Stand with your brothers — drive back the armies of the Amorite kings!',won:'The Amorites break and flee before the sons of Ya‘aqoḇ'}},
+     {battle:{foes:['am1','am2','am3','am4','am5','am6','am7','am8'],hits:2,rally:[17,16],text:'Stand with your brothers — drive back the armies of the Amorite kings!',won:'The Amorites break before the sons of Ya‘aqoḇ'}},
      {music:'eden'},
      {say:['narrator','And Yahuḏah and his brothers were mighty in the battle, and the Amorites fled — and the dread of Aluahim was upon the cities that were all around them, so that they did not pursue the sons of Ya‘aqoḇ.']},
    ],

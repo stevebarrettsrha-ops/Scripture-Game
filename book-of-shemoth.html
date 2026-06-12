@@ -1865,11 +1865,18 @@ function walkable(map,x,y){
   return true;
 }
 const TINY_ANIMALS=new Set(['bird','dove','raven','fish','lizard','beetle','frog']);
-function npcBlocked(world,x,y){
-  /* the player cannot walk through the animals */
+function npcBlocked(world,x,y,px,py){
+  /* the player cannot walk through people or animals.
+     escape rule: movement that takes you AWAY from whoever blocks you is always allowed,
+     so a wandering npc can never pin the player. */
   for(const n of world.npcs){
-    if(n.hidden||!n.animal||n.flying||TINY_ANIMALS.has(n.animal)) continue;
-    if(Math.abs(n.x-x)<.62&&Math.abs(n.y-y)<.52) return true;
+    if(n.hidden||n.lying) continue;
+    if(n.flying||(n.animal&&TINY_ANIMALS.has(n.animal))) continue;
+    const big=n.animal||n.propType;
+    if(Math.abs(n.x-x)<(big?.62:.5)&&Math.abs(n.y-y)<(big?.52:.42)){
+      if(px!==undefined&&Math.hypot(n.x-x,n.y-y)>Math.hypot(n.x-px,n.y-py)) continue;
+      return true;
+    }
   }
   return false;
 }
@@ -2241,10 +2248,10 @@ function drawBattleUI(g,b,t){
   g.strokeStyle='rgba(200,74,58,.6)'; g.lineWidth=1.5;
   g.beginPath(); g.rect(x,y,w,48); g.fill(); g.stroke();
   g.textAlign='center'; g.fillStyle='#f5ecd6'; g.font='italic 14px Georgia';
-  g.fillText(b.text||'Fight!',VW/2,y+19);
+  g.fillText(b.phase==='rally'?'The fight is over.':(b.text||'Fight!'),VW/2,y+19);
   const pul=.5+Math.sin(t/260)*.5;
   g.fillStyle=`rgba(232,198,106,${.55+pul*.4})`; g.font='12px Georgia';
-  g.fillText('Foes standing: '+b.left+'   —   press ✦ / E beside a foe to strike',VW/2,y+38);
+  g.fillText(b.phase==='rally'?'Regroup — walk to the gold marker to continue':'Foes standing: '+b.left+' — press ✦ / E beside a foe to strike',VW/2,y+38);
   g.restore();
 }
 
@@ -2447,7 +2454,8 @@ const Game={
       for(const n of w.npcs) if(op.battle.foes.includes(n.id)){
         n.foe=true; n.hp=op.battle.hits||2; n.wander=false; n.noTalk=true; left++;
       }
-      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,onDone:()=>{this.scriptBlocked=false}};
+      this.battle={left,text:op.battle.text||'Fight!',won:op.battle.won,
+        rally:op.battle.rally||null,onDone:()=>{this.scriptBlocked=false}};
       return false;
     }
     if(op.call){ op.call(this); return true; }
@@ -2631,6 +2639,7 @@ const Game={
       return;
     }
     if(this.battle&&this.state==='play'&&this.world&&this.world.player){
+      if(this.battle.phase==='rally') return;
       const p=this.world.player;
       let best=null,bd=1.6;
       for(const n of this.world.npcs){
@@ -2648,9 +2657,16 @@ const Game={
           best.foe=false; best.lying=true; best.moving=false; best.noTalk=true;
           this.battle.left--;
           if(this.battle.left>0) toast(this.battle.left+' of the foes still stand');
+          else if(this.battle.rally){
+            /* the fight is over — but the story waits until the player regroups */
+            this.battle.phase='rally'; this.battle.deadUntil=this.t+800;
+            toast(this.battle.won||'The foes are fallen'); Sound.sfx('chime');
+            this.world.gotoMark={x:this.battle.rally[0],y:this.battle.rally[1]};
+          }
           else {
             const cb=this.battle.onDone, won=this.battle.won; this.battle=null;
             toast(won||'The foes are fallen'); Sound.sfx('chime');
+            this.endSkirmish();
             if(cb)cb();
           }
         }
@@ -2671,6 +2687,14 @@ const Game={
   },
   onEscape(){
     if(this.state==='play'||this.state==='complete'){ openChapters(); }
+  },
+  endSkirmish(){
+    /* the battle is decided: enemy skirmishers fall, allies stand down */
+    if(!this.world) return;
+    for(const n of this.world.npcs){
+      if(n.sparFoe&&!n.lying){ n.lying=true; n.moving=false; n.spar=null; n.target=null; }
+      else if(n.spar){ n.spar=null; n.moving=false; n.target=null; }
+    }
   },
   doInteract(tgt){
     const w=this.world;
@@ -2733,6 +2757,15 @@ const Game={
         if(cb)cb();
       }
     }
+    if(this.battle&&this.battle.phase==='rally'&&this.world.player){
+      const b9=this.battle, p9=this.world.player;
+      if(this.t>(b9.deadUntil||0)&&b9.rally&&dist(p9.x,p9.y,b9.rally[0],b9.rally[1])<1.7){
+        this.battle=null; this.world.gotoMark=null;
+        this.endSkirmish();
+        const cb9=b9.onDone; if(cb9)cb9();
+        this.updateMarkers();
+      }
+    }
     if(this.chapter&&this.chapter.scene&&this.chapter.scene.tick&&!this.script&&!this.dlgChar)
       this.chapter.scene.tick(this);
     const w=this.world;
@@ -2745,8 +2778,8 @@ const Game={
       if(v.x||v.y){
         const ms=p.speed*(p.mount?1.65:1);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y)) p.x=nx;
-        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny)) p.y=ny;
+        if(walkable(w.map,nx,p.y)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if(walkable(w.map,p.x,ny)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
@@ -2762,6 +2795,19 @@ const Game={
           const cb=e.onArrive; e.onArrive=null; if(cb)cb(); }
         else { e.x+=dx/m*step; e.y+=dy/m*step; e.moving=true;
           e.dir=Math.abs(dx)>Math.abs(dy)?(dx<0?'left':'right'):(dy<0?'up':'down'); }
+      } else if(e.spar&&!e.lying&&!this.dlgChar){
+        /* locked in melee with a partner: press in, jostle, sparks fly */
+        const o9=w.npcs.find(n=>n.id===e.spar);
+        if(o9&&!o9.lying&&!o9.hidden){
+          const d9=dist(e.x,e.y,o9.x,o9.y);
+          if(d9>1){ e.target={x:o9.x,y:o9.y}; e.speed=.04; }
+          else {
+            e.moving=true;
+            e.dir=Math.abs(o9.x-e.x)>Math.abs(o9.y-e.y)?(o9.x<e.x?'left':'right'):(o9.y<e.y?'up':'down');
+            e.x+=(Math.random()-.5)*.05; e.y+=(Math.random()-.5)*.04;
+            if(Math.random()<.012) Particles.burst((e.x+o9.x)/2*TILE,(e.y+o9.y)/2*TILE,'spark',3);
+          }
+        } else { e.spar=null; e.moving=false; }
       } else if(e.foe&&p&&!e.lying&&!this.dlgChar){
         /* battle foe: close in on the player, shove when adjacent */
         const df=dist(e.x,e.y,p.x,p.y);
@@ -3006,6 +3052,186 @@ const Sky={
 function drawSlideArt(g,key,st,t,slide){
   const fadeUp=clamp(st/900,0,1);
   switch(key){
+    case 'brickpits': {
+      Sky.paint(g,[[0,'#3a2415'],[.5,'#7a4a22'],[1,'#b8763a']]);
+      Sky.sun(g,VW*.78,VH*.28,24,'rgba(255,170,80,.8)');
+      Sky.hills(g,'#4a3018',VH*.6,18,5);
+      g.fillStyle='#2c1c0e';
+      for(const [bx,bw,bh] of [[VW*.1,VW*.17,VH*.32],[VW*.56,VW*.21,VH*.4]])
+        for(let i=0;i<3;i++) g.fillRect(bx+i*bw*.12,VH*.62-bh*(1-i*.28),bw*(1-i*.22),bh*(1-i*.28)*.99);
+      g.fillStyle='#6e4a26'; g.fillRect(0,VH*.64,VW,VH*.36);
+      g.fillStyle='#8a5a30';
+      for(let i=0;i<8;i++){ g.fillRect(VW*.05+i*VW*.118,VH*.72+(i%2)*14,40,16);
+        g.fillStyle=i%2?'#7a4e28':'#8a5a30'; }
+      for(let i=0;i<5;i++) Sky.figure(g,VW*(.15+i*.16),VH*(.84+(i%2)*.05),i%2?'hebrew':'hebrew2',{t:t+i*340,scale:1.7,dir:i%2?'left':'right',moving:true});
+      Sky.figure(g,VW*.5,VH*.97,'taskmaster',{t,scale:2.2,dir:'left'});
+      break; }
+    case 'pharaohcourt': {
+      Sky.paint(g,[[0,'#150f08'],[.6,'#2c1f10'],[1,'#4a3318']]);
+      g.fillStyle='#caa23c';
+      for(let i=0;i<4;i++){ const cx9=VW*(.12+i*.25);
+        g.fillRect(cx9-14,VH*.12,28,VH*.78);
+        g.fillStyle='#8a6a1c'; g.fillRect(cx9-22,VH*.1,44,16); g.fillRect(cx9-22,VH*.86,44,16);
+        g.fillStyle='#caa23c'; }
+      for(let i=0;i<3;i++){ const fx9=VW*(.25+i*.25);
+        const gl9=g.createRadialGradient(fx9,VH*.55,4,fx9,VH*.55,70);
+        gl9.addColorStop(0,'rgba(255,180,80,.5)'); gl9.addColorStop(1,'rgba(255,180,80,0)');
+        g.fillStyle=gl9; g.beginPath(); g.arc(fx9,VH*.55,70,0,Math.PI*2); g.fill(); }
+      g.fillStyle='#5d4426'; g.fillRect(VW*.38,VH*.62,VW*.24,VH*.06);
+      drawProp(g,VW*.5,VH*.62,{type:'throne'},t);
+      Sky.figure(g,VW*.5,VH*.6,'paroh1',{t,scale:1.9,dir:'down'});
+      Sky.figure(g,VW*.32,VH*.86,'sorcerer',{t:t+200,scale:1.9,dir:'right'});
+      Sky.figure(g,VW*.68,VH*.86,'taskmaster',{t:t+500,scale:1.9,dir:'left'});
+      break; }
+    case 'nile': {
+      Sky.paint(g,[[0,'#2c3a55'],[.45,'#7a6a8a'],[1,'#caa87a']]);
+      Sky.sun(g,VW*.2,VH*.24,20,'rgba(255,220,150,.7)');
+      g.fillStyle='#3d7a8a'; g.fillRect(0,VH*.55,VW,VH*.45);
+      for(let i=0;i<10;i++){ g.fillStyle=`rgba(255,255,255,${.06+Math.sin(t/700+i)*.04})`;
+        g.fillRect(0,VH*.58+i*VH*.04+Math.sin(t/900+i*2)*3,VW,2); }
+      g.strokeStyle='#3f6a32'; g.lineWidth=4; g.lineCap='round';
+      for(let i=0;i<14;i++){ const rx9=VW*(.04+i*.073), sway9=Math.sin(t/800+i)*6;
+        g.beginPath(); g.moveTo(rx9,VH*.78); g.quadraticCurveTo(rx9+sway9,VH*.6,rx9+sway9*1.6,VH*.5); g.stroke();
+        g.fillStyle='#5d7a35'; g.beginPath(); g.ellipse(rx9+sway9*1.6,VH*.49,4,10,.3,0,Math.PI*2); g.fill(); }
+      g.save(); g.translate(VW*.55,VH*.66); g.scale(2.4,2.4); drawProp(g,0,0,{type:'reedark'},t); g.restore();
+      drawProp(g,VW*.9,VH*.55,{type:'palm'},t);
+      Sky.figure(g,VW*.16,VH*.92,'miryam_c',{t,scale:2,dir:'right'});
+      break; }
+    case 'bushart': {
+      Sky.paint(g,[[0,'#101428'],[.6,'#26203a'],[1,'#4a3a3a']]);
+      Sky.stars(g,t,60,.5);
+      Sky.hills(g,'#1c1626',VH*.72,30,7);
+      g.fillStyle='#2c2230'; g.beginPath();
+      g.moveTo(VW*.55,VH*.78); g.lineTo(VW*.78,VH*.3); g.lineTo(VW*1.02,VH*.8); g.closePath(); g.fill();
+      g.save(); g.translate(VW*.42,VH*.82); g.scale(2.6,2.6); drawProp(g,0,0,{type:'burningbush'},t); g.restore();
+      const gl8=g.createRadialGradient(VW*.42,VH*.7,10,VW*.42,VH*.7,VW*.3);
+      gl8.addColorStop(0,'rgba(255,190,90,.3)'); gl8.addColorStop(1,'rgba(255,190,90,0)');
+      g.fillStyle=gl8; g.fillRect(0,0,VW,VH);
+      Sky.figure(g,VW*.2,VH*.9,'mosheh',{t,scale:2.2,dir:'right'});
+      drawAnimal(g,VW*.1,VH*.94,'sheep',{t,dir:'right'});
+      break; }
+    case 'plaguesart': {
+      Sky.paint(g,[[0,'#15101c'],[.6,'#2c1f26'],[1,'#3d2820']]);
+      if(Math.sin(t/450)>.93){ g.fillStyle='rgba(230,235,255,.25)'; g.fillRect(0,0,VW,VH);
+        g.strokeStyle='#e8eaff'; g.lineWidth=3; g.beginPath();
+        g.moveTo(VW*.6,0); g.lineTo(VW*.55,VH*.2); g.lineTo(VW*.62,VH*.22); g.lineTo(VW*.56,VH*.42); g.stroke(); }
+      g.fillStyle='#1a1210';
+      for(const [bx,bw,bh] of [[VW*.08,VW*.14,VH*.3],[VW*.3,VW*.1,VH*.22],[VW*.62,VW*.18,VH*.34],[VW*.86,VW*.1,VH*.24]])
+        for(let i=0;i<3;i++) g.fillRect(bx+i*bw*.12,VH*.66-bh*(1-i*.28),bw*(1-i*.22),bh*(1-i*.28));
+      g.fillStyle='#6e1c14'; g.fillRect(0,VH*.7,VW,VH*.3);
+      for(let i=0;i<8;i++){ g.fillStyle=`rgba(255,120,90,${.08+Math.sin(t/600+i)*.04})`;
+        g.fillRect(0,VH*.73+i*VH*.032+Math.sin(t/800+i*2)*2,VW,2); }
+      g.fillStyle='rgba(40,30,20,.9)';
+      for(let i=0;i<26;i++){ const lx9=( (i*97+t*.06)%VW ), ly9=VH*(.1+(i*53%40)/100);
+        g.fillRect(lx9,ly9+Math.sin(t/200+i)*6,5,3); }
+      break; }
+    case 'pesachnight': {
+      Sky.paint(g,[[0,'#070a18'],[.7,'#10142a'],[1,'#1c1c30']]);
+      Sky.stars(g,t,110,.8); Sky.moon(g,VW*.82,VH*.18,22);
+      g.fillStyle='#2c2118'; g.fillRect(VW*.3,VH*.3,VW*.4,VH*.7);
+      g.fillStyle='#16100c'; g.beginPath();
+      g.moveTo(VW*.42,VH);g.lineTo(VW*.42,VH*.52);g.quadraticCurveTo(VW*.5,VH*.42,VW*.58,VH*.52);g.lineTo(VW*.58,VH);g.closePath();g.fill();
+      const wg=g.createLinearGradient(0,VH*.5,0,VH);
+      wg.addColorStop(0,'rgba(255,200,110,.55)'); wg.addColorStop(1,'rgba(255,200,110,.08)');
+      g.fillStyle=wg; g.beginPath();
+      g.moveTo(VW*.43,VH);g.lineTo(VW*.43,VH*.53);g.quadraticCurveTo(VW*.5,VH*.44,VW*.57,VH*.53);g.lineTo(VW*.57,VH);g.closePath();g.fill();
+      g.strokeStyle='#9d2a1c'; g.lineWidth=10; g.lineCap='round';
+      g.beginPath(); g.moveTo(VW*.41,VH*.55); g.lineTo(VW*.41,VH*.9); g.stroke();
+      g.beginPath(); g.moveTo(VW*.59,VH*.55); g.lineTo(VW*.59,VH*.9); g.stroke();
+      g.beginPath(); g.moveTo(VW*.43,VH*.47); g.quadraticCurveTo(VW*.5,VH*.4,VW*.57,VH*.47); g.stroke();
+      Sky.figure(g,VW*.5,VH*.93,'hebreww',{t,scale:1.9,dir:'down'});
+      break; }
+    case 'seacross': {
+      Sky.paint(g,[[0,'#0a1024'],[.6,'#142038'],[1,'#1c2c44']]);
+      Sky.stars(g,t,70,.6);
+      for(const s9 of [-1,1]){
+        const wx9=VW*.5+s9*VW*.26;
+        const grd8=g.createLinearGradient(wx9,0,wx9-s9*VW*.3,0);
+        grd8.addColorStop(0,'#2c5a8a'); grd8.addColorStop(1,'#0e2238');
+        g.fillStyle=grd8;
+        g.beginPath();
+        g.moveTo(wx9,VH); g.quadraticCurveTo(wx9-s9*30,VH*.4,wx9-s9*100,VH*.12);
+        g.lineTo(wx9-s9*VW*.4,0); g.lineTo(wx9-s9*VW*.4,VH); g.closePath(); g.fill();
+        for(let i=0;i<8;i++){ g.fillStyle=`rgba(200,230,255,${.1+Math.sin(t/500+i)*.05})`;
+          g.beginPath(); g.ellipse(wx9-s9*(20+i*9),VH*(.15+i*.1),5,16,s9*.4,0,Math.PI*2); g.fill(); }
+      }
+      g.fillStyle='#b89a6a'; g.fillRect(VW*.3,VH*.7,VW*.4,VH*.3);
+      g.fillStyle='#caa87a'; g.beginPath();
+      g.moveTo(VW*.3,VH); g.lineTo(VW*.42,VH*.3); g.lineTo(VW*.58,VH*.3); g.lineTo(VW*.7,VH); g.closePath(); g.fill();
+      const fl8=g.createRadialGradient(VW*.5,VH*.26,4,VW*.5,VH*.26,60);
+      fl8.addColorStop(0,'rgba(255,200,90,.9)'); fl8.addColorStop(1,'rgba(255,140,60,0)');
+      g.fillStyle=fl8; g.beginPath(); g.arc(VW*.5,VH*.26,60,0,Math.PI*2); g.fill();
+      for(let i=0;i<5;i++) Sky.figure(g,VW*(.44+(i%3)*.05),VH*(.85-i*.1),['hebrew','hebreww','hebrew2','hebrew','hebreww'][i],{t:t+i*300,scale:1.5-i*.14,dir:'up',moving:true});
+      drawAnimal(g,VW*.55,VH*.9,'sheep',{t,dir:'left'});
+      break; }
+    case 'exodusmarch': {
+      Sky.paint(g,[[0,'#0a0e20'],[.7,'#181c34'],[1,'#2a2438']]);
+      Sky.stars(g,t,90,.7); Sky.moon(g,VW*.14,VH*.18,18);
+      Sky.hills(g,'#141226',VH*.7,20,4);
+      g.fillStyle='#3a3046'; g.fillRect(0,VH*.78,VW,VH*.22);
+      g.save(); g.translate(VW*.78,VH*.62); g.scale(2.2,2.2); drawProp(g,0,0,{type:'pillarcloud',fire:true},t); g.restore();
+      const gl7=g.createRadialGradient(VW*.78,VH*.5,10,VW*.78,VH*.5,VW*.3);
+      gl7.addColorStop(0,'rgba(255,170,80,.25)'); gl7.addColorStop(1,'rgba(255,170,80,0)');
+      g.fillStyle=gl7; g.fillRect(0,0,VW,VH);
+      for(let i=0;i<6;i++) Sky.figure(g,VW*(.1+i*.11),VH*(.86+(i%2)*.04),['mosheh_o','hebrew','hebreww','hebrew2','hebreww','hebrew'][i],{t:t+i*260,scale:1.8,dir:'right',moving:true});
+      drawAnimal(g,VW*.42,VH*.95,'donkey',{t,dir:'right',moving:true});
+      drawAnimal(g,VW*.3,VH*.97,'sheep',{t:t+300,dir:'right',moving:true});
+      break; }
+    case 'sinaiart': {
+      Sky.paint(g,[[0,'#16121f'],[.6,'#2a2030'],[1,'#3a2c30']]);
+      g.fillStyle='#241c2a'; g.beginPath();
+      g.moveTo(VW*.1,VH); g.lineTo(VW*.5,VH*.14); g.lineTo(VW*.9,VH); g.closePath(); g.fill();
+      const fl7=g.createRadialGradient(VW*.5,VH*.16,6,VW*.5,VH*.16,110);
+      fl7.addColorStop(0,'rgba(255,180,80,.85)'); fl7.addColorStop(1,'rgba(255,120,50,0)');
+      g.fillStyle=fl7; g.beginPath(); g.arc(VW*.5,VH*.16,110,0,Math.PI*2); g.fill();
+      for(let i=0;i<7;i++){ const ph7=t/1100+i*1.2;
+        g.fillStyle=`rgba(200,200,215,${.3-i*.035})`;
+        g.beginPath(); g.arc(VW*.5+Math.sin(ph7)*40,VH*.18-i*26,30+i*12,0,Math.PI*2); g.fill(); }
+      if(Math.sin(t/520)>.94){ g.strokeStyle='#fff3cf'; g.lineWidth=3;
+        g.beginPath(); g.moveTo(VW*.5,VH*.2); g.lineTo(VW*.46,VH*.34); g.lineTo(VW*.52,VH*.36); g.lineTo(VW*.47,VH*.5); g.stroke(); }
+      g.fillStyle='#3a2c30'; g.fillRect(0,VH*.86,VW,VH*.14);
+      for(let i=0;i<6;i++) drawProp(g,VW*(.08+i*.17),VH*.95,{type:'tent',col:i%2?'#6a5a48':'#7a6450'},t+i*200);
+      for(let i=0;i<4;i++) Sky.figure(g,VW*(.2+i*.18),VH*.99,['hebrew','hebreww','elder','hebrew2'][i],{t:t+i*400,scale:1.5,dir:'up'});
+      break; }
+    case 'mishkanart': {
+      Sky.paint(g,[[0,'#0c1022'],[.65,'#1c1c30'],[1,'#2c2434']]);
+      Sky.stars(g,t,80,.6);
+      g.fillStyle='#2c2434'; g.fillRect(0,VH*.8,VW,VH*.2);
+      g.save(); g.translate(VW*.5,VH*.78); g.scale(1.8,1.8); drawProp(g,0,0,{type:'mishkan',stage:2,glory:true},t); g.restore();
+      const gl6=g.createLinearGradient(0,0,0,VH*.7);
+      gl6.addColorStop(0,'rgba(255,235,160,.18)'); gl6.addColorStop(1,'rgba(255,235,160,0)');
+      g.fillStyle=gl6; g.fillRect(VW*.36,0,VW*.28,VH*.7);
+      for(let i=0;i<4;i++) drawProp(g,VW*(.06+i*.05),VH*(.88+i*.025),{type:'tent',col:'#5d5246'},t);
+      for(let i=0;i<4;i++) drawProp(g,VW*(.82+i*.045),VH*(.88+i*.025),{type:'tent',col:'#5d5246'},t);
+      Sky.figure(g,VW*.3,VH*.96,'mosheh_o',{t,scale:1.9,dir:'right'});
+      Sky.figure(g,VW*.68,VH*.97,'aharon',{t:t+300,scale:1.9,dir:'left'});
+      break; }
+    case 'kushsiege': {
+      Sky.paint(g,[[0,'#2a1c14'],[.55,'#5a3a20'],[1,'#8a5a30']]);
+      Sky.sun(g,VW*.85,VH*.2,22,'rgba(255,190,110,.75)');
+      Sky.hills(g,'#3a2818',VH*.62,16,8);
+      g.fillStyle='#4a3018';
+      for(let i=0;i<3;i++) g.fillRect(VW*.6+i*26,VH*.62-VH*.3*(1-i*.26),VW*.16*(1-i*.2),VH*.3*(1-i*.26));
+      g.fillStyle='#6e4a26'; g.fillRect(0,VH*.66,VW,VH*.34);
+      for(let i=0;i<4;i++) drawAnimal(g,VW*(.2+i*.18),VH*(.3+(i%2)*.08),'dove',{t:t+i*220,flying:true,dir:'right',col:'#e8e2d2'});
+      for(let i=0;i<3;i++){ g.save(); g.translate(VW*(.55+i*.12),VH*(.78+i*.05)); drawChar(g,0,0,'serpent_c',{t:t+i*400,dir:'left'}); g.restore(); }
+      Sky.figure(g,VW*.2,VH*.9,'mosheh',{t,scale:2.1,dir:'right'});
+      Sky.figure(g,VW*.34,VH*.94,'kushite',{t:t+200,scale:1.9,dir:'right',moving:true});
+      break; }
+    case 'calfart': {
+      Sky.paint(g,[[0,'#140f1e'],[.6,'#2a1c28'],[1,'#3a2420']]);
+      Sky.stars(g,t,50,.4);
+      g.fillStyle='#241c2a'; g.beginPath();
+      g.moveTo(VW*.55,VH*.5); g.lineTo(VW*.8,VH*.06); g.lineTo(VW*1.05,VH*.5); g.closePath(); g.fill();
+      const gl5=g.createRadialGradient(VW*.38,VH*.6,8,VW*.38,VH*.6,130);
+      gl5.addColorStop(0,'rgba(255,210,100,.55)'); gl5.addColorStop(1,'rgba(255,210,100,0)');
+      g.fillStyle=gl5; g.beginPath(); g.arc(VW*.38,VH*.6,130,0,Math.PI*2); g.fill();
+      g.fillStyle='#3a2c20'; g.fillRect(0,VH*.72,VW,VH*.28);
+      g.save(); g.translate(VW*.38,VH*.66); g.scale(2.2,2.2); drawProp(g,0,0,{type:'idol',col:'#e8c66a'},t); g.restore();
+      for(let i=0;i<5;i++){ const a5=t/600+i*1.26;
+        Sky.figure(g,VW*.38+Math.cos(a5)*VW*.14,VH*.8+Math.sin(a5)*VH*.06,['hebrew','hebreww','hebrew2','hebreww','hebrew'][i],{t:t+i*180,scale:1.7,dir:Math.cos(a5)>0?'left':'right',moving:true}); }
+      drawProp(g,VW*.85,VH*.92,{type:'tablets'},t);
+      break; }
     case 'void': {
       Sky.paint(g,[[0,'#04060c'],[.6,'#070b16'],[1,'#0a1020']]);
       // the deep — slow dark waters
@@ -3619,8 +3845,8 @@ STORY.push(
 { id:'x1', title:'A King Who Knew Not Yosĕph', ref:'SHEMOTH 1:1–14 · YOḆELIM 46',
   intro:[
    {art:'coffin', music:'night', text:'And these are the names of the children of Yasharal who came into Mitsrayim with Ya‘aqoḇ, each one with his household… And Yosĕph died, and all his brothers, and all that generation. And the children of Yasharal bore fruit and increased very much, and the land was filled with them.', ref:'SHEMOTH 1:1–7'},
-   {art:'egypt', music:'tense', text:'WITNESS — And the bones of all the sons of Ya‘aqoḇ were carried up and buried in Maḵpĕlah, except the bones of Yosĕph, which remained in Mitsrayim — for a war had arisen between Mitsrayim and Kena‛an, and the gates were shut. So Yosĕph waited in his coffin, until the day of the visitation.', ref:'YOḆELIM 46:8–10'},
-   {art:'egypt', music:'sorrow', text:'And a new sovereign arose over Mitsrayim, who did not know Yosĕph. And he said to his people, “See, the people of the children of Yasharal are more and mightier than we. Come, let us act wisely toward them — lest they increase, and join our enemies, and fight against us.”', ref:'SHEMOTH 1:8–10'},
+   {art:'brickpits', music:'tense', text:'WITNESS — And the bones of all the sons of Ya‘aqoḇ were carried up and buried in Maḵpĕlah, except the bones of Yosĕph, which remained in Mitsrayim — for a war had arisen between Mitsrayim and Kena‛an, and the gates were shut. So Yosĕph waited in his coffin, until the day of the visitation.', ref:'YOḆELIM 46:8–10'},
+   {art:'brickpits', music:'sorrow', text:'And a new sovereign arose over Mitsrayim, who did not know Yosĕph. And he said to his people, “See, the people of the children of Yasharal are more and mightier than we. Come, let us act wisely toward them — lest they increase, and join our enemies, and fight against us.”', ref:'SHEMOTH 1:8–10'},
   ],
   scene:{
    map:{biome:'city', w:48, h:30, seed:801,
@@ -3659,13 +3885,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'egypt', music:'sorrow', text:'WITNESS — Seventy souls went down, and the children of Yasharal grew into a multitude; and Mitsrayim, who had been saved by a Hebrew from the famine, forgot — and the friendship of Yosĕph became the bondage of his children.', ref:'YOḆELIM 46 · SHEMOTH 1'},
+   {art:'brickpits', music:'sorrow', text:'WITNESS — Seventy souls went down, and the children of Yasharal grew into a multitude; and Mitsrayim, who had been saved by a Hebrew from the famine, forgot — and the friendship of Yosĕph became the bondage of his children.', ref:'YOḆELIM 46 · SHEMOTH 1'},
   ],
   complete:'The more they afflicted them, the more they increased — and Mitsrayim was in dread.'
 },
 { id:'x2', title:'The Midwives', ref:'SHEMOTH 1:15–22',
   intro:[
-   {art:'egypt', music:'tense', text:'And the sovereign of Mitsrayim spoke to the Hebrew midwives, of whom the name of one was Shiphrah and the name of the other Pu‛ah…', ref:'SHEMOTH 1:15'},
+   {art:'pharaohcourt', music:'tense', text:'And the sovereign of Mitsrayim spoke to the Hebrew midwives, of whom the name of one was Shiphrah and the name of the other Pu‛ah…', ref:'SHEMOTH 1:15'},
   ],
   scene:{
    map:{biome:'interior', w:26, h:16, seed:805,
@@ -3702,13 +3928,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'sorrow', text:'And Pharaoh commanded all his people, saying, “Every son who is born you are to throw into the river.” — And the river of Mitsrayim, that had fed them in famine, became a grave for the sons of Yasharal.', ref:'SHEMOTH 1:22'},
+   {art:'nile', music:'sorrow', text:'And Pharaoh commanded all his people, saying, “Every son who is born you are to throw into the river.” — And the river of Mitsrayim, that had fed them in famine, became a grave for the sons of Yasharal.', ref:'SHEMOTH 1:22'},
   ],
   complete:'The midwives feared Aluahim — and He made households for them.'
 },
 { id:'x3', title:'The Counsel of the Three', ref:'YASHAR 66–67',
   intro:[
-   {art:'egypt', music:'tense', text:'WITNESS — And Pharaoh, troubled by a dream and by the increase of Yasharal, called for his three counselors, to take counsel concerning the Hebrews: Bil‛am son of Be‛or the sorcerer, Iyoḇ of Uts, and Yithro the Miḏyanite.', ref:'YASHAR 66'},
+   {art:'pharaohcourt', music:'tense', text:'WITNESS — And Pharaoh, troubled by a dream and by the increase of Yasharal, called for his three counselors, to take counsel concerning the Hebrews: Bil‛am son of Be‛or the sorcerer, Iyoḇ of Uts, and Yithro the Miḏyanite.', ref:'YASHAR 66'},
   ],
   scene:{
    map:{biome:'interior', w:28, h:16, seed:809,
@@ -3755,7 +3981,7 @@ STORY.push(
 },
 { id:'x4', title:'The Ark of Reeds', ref:'SHEMOTH 2:1–10 · YASHAR 68',
   intro:[
-   {art:'journey', music:'sorrow', text:'And a man of the house of Lĕwi went and took as wife a daughter of Lĕwi. And the woman conceived and bore a son — and she saw that he was a goodly child, and she hid him three months. And when she could hide him no longer, she took an ark of bulrushes for him, and daubed it with tar and pitch.', ref:'SHEMOTH 2:1–3'},
+   {art:'nile', music:'sorrow', text:'And a man of the house of Lĕwi went and took as wife a daughter of Lĕwi. And the woman conceived and bore a son — and she saw that he was a goodly child, and she hid him three months. And when she could hide him no longer, she took an ark of bulrushes for him, and daubed it with tar and pitch.', ref:'SHEMOTH 2:1–3'},
   ],
   scene:{
    map:{biome:'plains', w:50, h:30, seed:813, river:{x:30,width:6,curve:1.5},
@@ -3800,13 +4026,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'WITNESS — And the child grew, and she brought him to Pharaoh’s daughter, and he became her son. And Amram his father taught him writing — and all the days of Mosheh in the court of Pharaoh, Aluahim kept his heart from the idols of Mitsrayim.', ref:'SHEMOTH 2:10 · YOḆELIM 47'},
+   {art:'nile', music:'holy', text:'WITNESS — And the child grew, and she brought him to Pharaoh’s daughter, and he became her son. And Amram his father taught him writing — and all the days of Mosheh in the court of Pharaoh, Aluahim kept his heart from the idols of Mitsrayim.', ref:'SHEMOTH 2:10 · YOḆELIM 47'},
   ],
   complete:'“I have drawn him out of the water.” — The river of the decree carried the deliverer to the daughter of the decree-maker.'
 },
 { id:'x5', title:'The Crown and the Coal', ref:'YASHAR 70',
   intro:[
-   {art:'egypt', music:'royal', text:'WITNESS — And the child Mosheh grew in the palace, and was brought before Pharaoh; and the boy was beautiful and wise beyond his years, and Pharaoh and all his servants loved him.', ref:'YASHAR 70'},
+   {art:'pharaohcourt', music:'royal', text:'WITNESS — And the child Mosheh grew in the palace, and was brought before Pharaoh; and the boy was beautiful and wise beyond his years, and Pharaoh and all his servants loved him.', ref:'YASHAR 70'},
   ],
   scene:{
    map:{biome:'interior', w:28, h:16, seed:817,
@@ -3846,13 +4072,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'egypt', music:'sorrow', text:'WITNESS — And Bil‛am the sorcerer fled from Mitsrayim, for his counsel had failed; and Mosheh grew in the palace of the sovereign whose decree had hunted him.', ref:'YASHAR 70'},
+   {art:'pharaohcourt', music:'sorrow', text:'WITNESS — And Bil‛am the sorcerer fled from Mitsrayim, for his counsel had failed; and Mosheh grew in the palace of the sovereign whose decree had hunted him.', ref:'YASHAR 70'},
   ],
   complete:'Heavy of mouth and heavy of tongue — yet his life was saved, and the spokesman was already growing.'
 },
 { id:'x6', title:'Out of the Palace', ref:'SHEMOTH 2:11–15 · YASHAR 71',
   intro:[
-   {art:'egypt', music:'tense', text:'And it came to be in those days, when Mosheh was grown, that he went out to his brothers and looked at their burdens — and his heart was grieved for them, and he put his shoulder to their loads, as one of them.', ref:'SHEMOTH 2:11 · YASHAR 71'},
+   {art:'brickpits', music:'tense', text:'And it came to be in those days, when Mosheh was grown, that he went out to his brothers and looked at their burdens — and his heart was grieved for them, and he put his shoulder to their loads, as one of them.', ref:'SHEMOTH 2:11 · YASHAR 71'},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:821,
@@ -3876,7 +4102,7 @@ STORY.push(
       script:[
        {say:['taskmaster','Lazy Iḇri dog — the tale of bricks! I shall beat the count out of your hide!']},
        {say:['narrator','And he looked this way and that way, and saw that there was no man—']},
-       {battle:{foes:['striker'],hits:2,text:'Strike down the Mitsrite who beats your brother!',won:'The taskmaster lies still'}},
+       {battle:{foes:['striker'],hits:2,rally:[18,20],text:'Strike down the Mitsrite who beats your brother!',won:'The taskmaster lies still'}},
        {say:['narrator','And he smote the Mitsrite, and hid him in the sand.']},
        {despawn:'striker'},{burst:[23,16,'ash',10]},
        {say:['victim','…You. You are the prince from the palace. Why would a prince of Mitsrayim bleed for a slave? …Whoever you are — I shall not forget this.']},
@@ -3900,14 +4126,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wilderness', music:'desert', text:'He looked this way and that way — but the eyes he did not lift were the ones that saw. Yet even this was woven into the pattern: the deliverer must first know the wilderness, before he can lead a nation through it.', ref:'SHEMOTH 2:12–15'},
+   {art:'brickpits', music:'desert', text:'He looked this way and that way — but the eyes he did not lift were the ones that saw. Yet even this was woven into the pattern: the deliverer must first know the wilderness, before he can lead a nation through it.', ref:'SHEMOTH 2:12–15'},
   ],
   complete:'Who made you a prince and a judge over us? — Not Pharaoh; and not yet YAHUAH. Forty years more.'
 },
 { id:'x7', title:'King in Kush', ref:'YASHAR 72–76',
   intro:[
-   {art:'journey', music:'tense', text:'WITNESS — And Mosheh fled, and came to the camp of Kush, which lay in siege against its own city; for Bil‛am the sorcerer had seized the city of Kikianus the sovereign, and filled its open side with serpents by his arts, and no man could come in.', ref:'YASHAR 72–73'},
-   {art:'camp', music:'tense', text:'And Mosheh found favour in the eyes of the men of war, for the wisdom of Aluahim was in him — and when Kikianus died, the host said: “There is no man among us like this Hebrew. Let him lead us, and take the city.”', ref:'YASHAR 74–76'},
+   {art:'kushsiege', music:'tense', text:'WITNESS — And Mosheh fled, and came to the camp of Kush, which lay in siege against its own city; for Bil‛am the sorcerer had seized the city of Kikianus the sovereign, and filled its open side with serpents by his arts, and no man could come in.', ref:'YASHAR 72–73'},
+   {art:'kushsiege', music:'tense', text:'And Mosheh found favour in the eyes of the men of war, for the wisdom of Aluahim was in him — and when Kikianus died, the host said: “There is no man among us like this Hebrew. Let him lead us, and take the city.”', ref:'YASHAR 74–76'},
   ],
   scene:{
    map:{biome:'desert', w:46, h:28, seed:825,
@@ -3935,19 +4161,33 @@ STORY.push(
       script:[
        {spawn:{id:'sn1',char:'serpent_c',x:33,y:13,wander:false,noTalk:true,foeSpeed:.04}},
        {spawn:{id:'sn2',char:'serpent_c',x:35,y:16,wander:false,noTalk:true,foeSpeed:.045}},
+       {spawn:{id:'sn3',char:'serpent_c',x:34,y:19,wander:false,noTalk:true,foeSpeed:.042}},
        {spawn:{id:'gd1',char:'kushite2',x:37,y:12,wander:false,noTalk:true,foeSpeed:.05}},
        {spawn:{id:'gd2',char:'kushite2',x:36,y:18,wander:false,noTalk:true,foeSpeed:.046}},
+       {spawn:{id:'gd5',char:'kushite2',x:38,y:15,wander:false,noTalk:true,foeSpeed:.048}},
+       {spawn:{id:'ka1',char:'kushite',x:27,y:13,wander:false,noTalk:true,spar:'ke1'}},
+       {spawn:{id:'ke1',char:'kushite2',x:28,y:13.6,wander:false,noTalk:true,spar:'ka1',sparFoe:true}},
+       {spawn:{id:'ka2',char:'kushite',x:29,y:17,wander:false,noTalk:true,spar:'ke2'}},
+       {spawn:{id:'ke2',char:'kushite2',x:30,y:17.6,wander:false,noTalk:true,spar:'ka2',sparFoe:true}},
+       {spawn:{id:'ka3',char:'kushite',x:26,y:19.5,wander:false,noTalk:true,spar:'ke3'}},
+       {spawn:{id:'ke3',char:'kushite2',x:27,y:20,wander:false,noTalk:true,spar:'ka3',sparFoe:true}},
+       {spawn:{id:'ka4',char:'kushite',x:31,y:11.5,wander:false,noTalk:true,spar:'ke4'}},
+       {spawn:{id:'ke4',char:'kushite2',x:32,y:12,wander:false,noTalk:true,spar:'ka4',sparFoe:true}},
+       {spawn:{id:'ka5',char:'kushite',x:24,y:15,wander:false,noTalk:true,spar:'ke5'}},
+       {spawn:{id:'ke5',char:'kushite2',x:25,y:15.6,wander:false,noTalk:true,spar:'ka5',sparFoe:true}},
+       {spawn:{id:'ka6',char:'kushite',x:28,y:21.5,wander:false,noTalk:true,spar:'ke6'}},
+       {spawn:{id:'ke6',char:'kushite2',x:29,y:22,wander:false,noTalk:true,spar:'ka6',sparFoe:true}},
        {sfx:'thunder'},{shake:2},{music:'storm'},
-       {battle:{foes:['sn1','sn2','gd1','gd2'],hits:2,text:'Take the city — the last serpents and the rebel guard stand before you!',won:'The city of Kush is taken'}},
+       {battle:{foes:['sn1','sn2','sn3','gd1','gd2','gd5'],hits:2,rally:[15,18],text:'Take the city — the last serpents and the rebel guard stand before you!',won:'The city of Kush is taken'}},
        {music:'royal'},
        {say:['narrator','And the city was taken, and the host made Mosheh sovereign over Kush — and he reigned in righteousness, and the land had rest. But he would not turn his heart to their mighty ones, nor take their ways; and after many years they gave him gifts and sent him away in honour.']},
        {say:['mosheh','A crown I never sought, in a land not mine. Somewhere north my people still bake bricks for Pharaoh. What is the meaning of all these years, O Aluahim of my fathers — a palace, a war, a throne — and not one chain in Goshen broken?']},
-       {fade:'out'},{despawn:'gd1'},{despawn:'gd2'},{toast:'And Mosheh departed from Kush, and came to the land of Miḏyan…'},{wait:1700},{fade:'in'},
+       {fade:'out'},{toast:'And Mosheh departed from Kush, and came to the land of Miḏyan…'},{wait:1700},{fade:'in'},
       ]},
    ],
   },
   outro:[
-   {art:'wilderness', music:'desert', text:'WITNESS — Prince of Mitsrayim, sovereign of Kush — and not yet shepherd of Yasharal. Every throne he was given, he was given to lay down; for the Aluahim of his fathers was unmaking a prince, to make a servant.', ref:'YASHAR 76'},
+   {art:'kushsiege', music:'desert', text:'WITNESS — Prince of Mitsrayim, sovereign of Kush — and not yet shepherd of Yasharal. Every throne he was given, he was given to lay down; for the Aluahim of his fathers was unmaking a prince, to make a servant.', ref:'YASHAR 76'},
   ],
   complete:'Sovereign of Kush — and still a stranger. The wilderness was not finished with him yet.'
 },
@@ -3981,7 +4221,7 @@ STORY.push(
      {type:'goto',x:24,y:17,radius:2.6,text:'The shepherds are driving the daughters from the well',
       script:[
        {say:['sodomite','Away, daughters of the priest! The well is for men and their flocks — your father’s sheep can drink the dust!']},
-       {battle:{foes:['shep1','shep2'],hits:2,text:'Stand up and deliver them — drive off the shepherds!',won:'The shepherds flee from the stranger'}},
+       {battle:{foes:['shep1','shep2'],hits:2,rally:[29,19],text:'Stand up and deliver them — drive off the shepherds!',won:'The shepherds flee from the stranger'}},
        {despawn:'shep1'},{despawn:'shep2'},
        {say:['narrator','But Mosheh stood up and delivered them — and watered their flock.']},
        {say:['tsipporah','You are no Miḏyanite, stranger — and no shepherd either, by your hands. Yet you watered the flock of strangers before yourself. Come — my father will want to break bread with such a man.']},
@@ -4018,7 +4258,7 @@ STORY.push(
 { id:'xact2', roman:'II', title:'The Bush That Burned', ref:'SHEMOTH 3–4 · YOḆELIM 48', chapters:[
 { id:'x9', title:'I AM THAT I AM', ref:'SHEMOTH 3',
   intro:[
-   {art:'wilderness', music:'desert', text:'And Mosheh was shepherding the flock of Yithro his father-in-law, the kohen of Miḏyan — and he led the flock to the back of the wilderness, and came to Ḥorĕḇ, the mountain of Aluahim.', ref:'SHEMOTH 3:1'},
+   {art:'bushart', music:'desert', text:'And Mosheh was shepherding the flock of Yithro his father-in-law, the kohen of Miḏyan — and he led the flock to the back of the wilderness, and came to Ḥorĕḇ, the mountain of Aluahim.', ref:'SHEMOTH 3:1'},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:30, seed:833,
@@ -4059,7 +4299,7 @@ STORY.push(
 },
 { id:'x10', title:'The Three Signs', ref:'SHEMOTH 4:1–17',
   intro:[
-   {art:'wilderness', music:'desert', text:'And Mosheh answered and said, “But see, they shall not believe me, nor listen to my voice — for they shall say, ‘YAHUAH has not appeared to you.’”', ref:'SHEMOTH 4:1'},
+   {art:'bushart', music:'desert', text:'And Mosheh answered and said, “But see, they shall not believe me, nor listen to my voice — for they shall say, ‘YAHUAH has not appeared to you.’”', ref:'SHEMOTH 4:1'},
   ],
   scene:{
    map:{biome:'rocky', w:40, h:26, seed:837,
@@ -4100,13 +4340,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'“Who has made man’s mouth? Is it not I, YAHUAH?” — Three signs in a shepherd’s hand, and a brother already on the road.', ref:'SHEMOTH 4:11–17'},
+   {art:'bushart', music:'holy', text:'“Who has made man’s mouth? Is it not I, YAHUAH?” — Three signs in a shepherd’s hand, and a brother already on the road.', ref:'SHEMOTH 4:11–17'},
   ],
   complete:'The staff, the hand, and the water — and Aharon already coming out to meet you.'
 },
 { id:'x11', title:'The Road Back', ref:'SHEMOTH 4:18–31 · YOḆELIM 48',
   intro:[
-   {art:'journey', music:'desert', text:'And Mosheh went and returned to Yithro his father-in-law, and said, “Please let me go and return to my brothers in Mitsrayim, and see whether they are still alive.” And Yithro said to Mosheh, “Go in shalom.” And YAHUAH said to Mosheh in Miḏyan, “Go, return to Mitsrayim — for all the men who sought your life are dead.”', ref:'SHEMOTH 4:18–19'},
+   {art:'wilderness', music:'desert', text:'And Mosheh went and returned to Yithro his father-in-law, and said, “Please let me go and return to my brothers in Mitsrayim, and see whether they are still alive.” And Yithro said to Mosheh, “Go in shalom.” And YAHUAH said to Mosheh in Miḏyan, “Go, return to Mitsrayim — for all the men who sought your life are dead.”', ref:'SHEMOTH 4:18–19'},
   ],
   scene:{
    map:{biome:'desert', w:50, h:28, seed:841,
@@ -4146,7 +4386,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'goshen', music:'holy', text:'And the people believed; and they bowed their heads and worshipped. — Four hundred and thirty years in the furnace, and the first word of the visitation ran through the slave-huts like dawn.', ref:'SHEMOTH 4:31'},
+   {art:'brickpits', music:'holy', text:'And the people believed; and they bowed their heads and worshipped. — Four hundred and thirty years in the furnace, and the first word of the visitation ran through the slave-huts like dawn.', ref:'SHEMOTH 4:31'},
   ],
   complete:'Yasharal is My son, My first-born — and the people believed, and worshipped.'
 },
@@ -4158,8 +4398,8 @@ STORY.push(
 { id:'xact3', roman:'III', title:'Let My People Go', ref:'SHEMOTH 5–11 · YASHAR 80 · YOḆELIM 48', chapters:[
 { id:'x12', title:'Who Is YAHUAH?', ref:'SHEMOTH 5:1–6:13',
   intro:[
-   {art:'egypt', music:'tense', text:'And afterward Mosheh and Aharon went in and said to Pharaoh, “Thus said YAHUAH, Aluahim of Yasharal: Let My people go, that they may keep a festival to Me in the wilderness.” And Pharaoh said, “Who is YAHUAH, that I should obey His voice to let Yasharal go? I do not know YAHUAH — and neither am I letting Yasharal go!”', ref:'SHEMOTH 5:1–2'},
-   {art:'egypt', music:'sorrow', text:'And the same day Pharaoh commanded the taskmasters: “You are no longer to give the people straw to make bricks — let them go and gather straw for themselves. And the same tale of bricks you shall lay on them; you are not to diminish it, for they are idle!”', ref:'SHEMOTH 5:6–8'},
+   {art:'pharaohcourt', music:'tense', text:'And afterward Mosheh and Aharon went in and said to Pharaoh, “Thus said YAHUAH, Aluahim of Yasharal: Let My people go, that they may keep a festival to Me in the wilderness.” And Pharaoh said, “Who is YAHUAH, that I should obey His voice to let Yasharal go? I do not know YAHUAH — and neither am I letting Yasharal go!”', ref:'SHEMOTH 5:1–2'},
+   {art:'brickpits', music:'sorrow', text:'And the same day Pharaoh commanded the taskmasters: “You are no longer to give the people straw to make bricks — let them go and gather straw for themselves. And the same tale of bricks you shall lay on them; you are not to diminish it, for they are idle!”', ref:'SHEMOTH 5:6–8'},
   ],
   scene:{
    map:{biome:'city', w:48, h:30, seed:845,
@@ -4203,13 +4443,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'egypt', music:'sorrow', text:'WITNESS — And these are the heads of the fathers’ houses: Re’uḇĕn, Shim‛on, and Lĕwi — and of Lĕwi: Gĕreshon, Qehath and Merari; and Amram took Yoḵeḇed, and she bore him Aharon and Mosheh. These are that Aharon and Mosheh to whom YAHUAH said, “Bring out the children of Yasharal from the land of Mitsrayim, by their divisions.”', ref:'SHEMOTH 6:14–27'},
+   {art:'brickpits', music:'sorrow', text:'WITNESS — And these are the heads of the fathers’ houses: Re’uḇĕn, Shim‛on, and Lĕwi — and of Lĕwi: Gĕreshon, Qehath and Merari; and Amram took Yoḵeḇed, and she bore him Aharon and Mosheh. These are that Aharon and Mosheh to whom YAHUAH said, “Bring out the children of Yasharal from the land of Mitsrayim, by their divisions.”', ref:'SHEMOTH 6:14–27'},
   ],
   complete:'I shall bring you out, deliver you, redeem you, take you, bring you in — I am YAHUAH.'
 },
 { id:'x13', title:'The Staff and the Sorcerers', ref:'SHEMOTH 6:28–7:13 · YOḆELIM 48',
   intro:[
-   {art:'egypt', music:'tense', text:'And YAHUAH said to Mosheh, “See, I have made you an aluahim to Pharaoh, and Aharon your brother is your prophet… And Pharaoh is not going to listen to you, and I shall lay My hand on Mitsrayim, and bring My people out by great judgments.” And Mosheh was eighty years old, and Aharon eighty-three, when they spoke to Pharaoh.', ref:'SHEMOTH 7:1–7'},
+   {art:'pharaohcourt', music:'tense', text:'And YAHUAH said to Mosheh, “See, I have made you an aluahim to Pharaoh, and Aharon your brother is your prophet… And Pharaoh is not going to listen to you, and I shall lay My hand on Mitsrayim, and bring My people out by great judgments.” And Mosheh was eighty years old, and Aharon eighty-three, when they spoke to Pharaoh.', ref:'SHEMOTH 7:1–7'},
   ],
   scene:{
    map:{biome:'interior', w:28, h:16, seed:849,
@@ -4250,13 +4490,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'The staff swallowed their staffs — yet his heart was hardened. The long war of the wonders had begun: ten blows against the mighty ones of Mitsrayim, each one a judgment on a god of the Nile.', ref:'SHEMOTH 7:12–13'},
+   {art:'plaguesart', music:'tense', text:'The staff swallowed their staffs — yet his heart was hardened. The long war of the wonders had begun: ten blows against the mighty ones of Mitsrayim, each one a judgment on a god of the Nile.', ref:'SHEMOTH 7:12–13'},
   ],
   complete:'Each threw down his staff — but the staff of Aharon swallowed their staffs.'
 },
 { id:'x14', title:'Blood', ref:'SHEMOTH 7:14–25',
   intro:[
-   {art:'journey', music:'tense', text:'“See, Pharaoh is going out to the water. And you shall stand before him at the river’s bank, and the staff which was turned into a serpent you shall take in your hand. And you shall say to him: YAHUAH, the Aluahim of the Iḇrim, has sent me to you, saying — Let My people go… By this you shall know that I am YAHUAH.”', ref:'SHEMOTH 7:15–17'},
+   {art:'nile', music:'tense', text:'“See, Pharaoh is going out to the water. And you shall stand before him at the river’s bank, and the staff which was turned into a serpent you shall take in your hand. And you shall say to him: YAHUAH, the Aluahim of the Iḇrim, has sent me to you, saying — Let My people go… By this you shall know that I am YAHUAH.”', ref:'SHEMOTH 7:15–17'},
   ],
   scene:{
    map:{biome:'plains', w:46, h:28, seed:853, river:{x:32,width:7,curve:1.5},
@@ -4288,13 +4528,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'sorrow', text:'WITNESS — The first blow fell on the river: the god of Mitsrayim that had swallowed the sons of Yasharal now ran red before the whole land, blood answering blood.', ref:'SHEMOTH 7:20–25 · YASHAR 80'},
+   {art:'nile', music:'sorrow', text:'WITNESS — The first blow fell on the river: the god of Mitsrayim that had swallowed the sons of Yasharal now ran red before the whole land, blood answering blood.', ref:'SHEMOTH 7:20–25 · YASHAR 80'},
   ],
   complete:'The river that drowned the sons of Yasharal ran red — blood answering blood.'
 },
 { id:'x15', title:'Frogs, Lice, and Flies', ref:'SHEMOTH 8',
   intro:[
-   {art:'egypt', music:'tense', text:'“And if you refuse to let them go, see, I am smiting all your border with frogs. And the river shall swarm with frogs, which shall go up and come into your house, and your bedroom, and on your bed, and into the houses of your servants, and on your people, and into your ovens and your kneading bowls.”', ref:'SHEMOTH 8:2–3'},
+   {art:'pharaohcourt', music:'tense', text:'“And if you refuse to let them go, see, I am smiting all your border with frogs. And the river shall swarm with frogs, which shall go up and come into your house, and your bedroom, and on your bed, and into the houses of your servants, and on your people, and into your ovens and your kneading bowls.”', ref:'SHEMOTH 8:2–3'},
   ],
   scene:{
    map:{biome:'interior', w:28, h:16, seed:857,
@@ -4340,13 +4580,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'Frogs from the river-god, lice from the dust, flies upon the houses — and Goshen set apart, that Pharaoh might know that YAHUAH is in the midst of the land. “This is the finger of Aluahim,” said his own magicians. He did not listen.', ref:'SHEMOTH 8:19–32'},
+   {art:'plaguesart', music:'tense', text:'Frogs from the river-god, lice from the dust, flies upon the houses — and Goshen set apart, that Pharaoh might know that YAHUAH is in the midst of the land. “This is the finger of Aluahim,” said his own magicians. He did not listen.', ref:'SHEMOTH 8:19–32'},
   ],
   complete:'This is the finger of Aluahim — said the sorcerers of Mitsrayim themselves.'
 },
 { id:'x16', title:'Livestock, Boils, and Hail', ref:'SHEMOTH 9',
   intro:[
-   {art:'egypt', music:'tense', text:'“See, the hand of YAHUAH is on your livestock in the field — a very grievous pestilence. And YAHUAH shall separate between the livestock of Yasharal and the livestock of Mitsrayim: not one of all that belongs to the children of Yasharal shall die.”', ref:'SHEMOTH 9:3–4'},
+   {art:'plaguesart', music:'tense', text:'“See, the hand of YAHUAH is on your livestock in the field — a very grievous pestilence. And YAHUAH shall separate between the livestock of Yasharal and the livestock of Mitsrayim: not one of all that belongs to the children of Yasharal shall die.”', ref:'SHEMOTH 9:3–4'},
   ],
   scene:{
    map:{biome:'plains', w:46, h:28, seed:861,
@@ -4389,13 +4629,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'storm', text:'“For this reason I have raised you up: to show you My power, and to declare My Name in all the earth.” — Fire in the midst of hail, and a Pharaoh who confessed in the storm and recanted in the sunshine.', ref:'SHEMOTH 9:16, 27–35'},
+   {art:'plaguesart', music:'storm', text:'“For this reason I have raised you up: to show you My power, and to declare My Name in all the earth.” — Fire in the midst of hail, and a Pharaoh who confessed in the storm and recanted in the sunshine.', ref:'SHEMOTH 9:16, 27–35'},
   ],
   complete:'I have sinned this time, said Pharaoh — and when the rain ceased, he sinned again.'
 },
 { id:'x17', title:'Locusts and Darkness', ref:'SHEMOTH 10',
   intro:[
-   {art:'egypt', music:'tense', text:'“For I have hardened his heart… that you relate in the hearing of your son and your son’s son what I have done in Mitsrayim, and My signs which I have done among them — and you shall know that I am YAHUAH.”', ref:'SHEMOTH 10:1–2'},
+   {art:'plaguesart', music:'tense', text:'“For I have hardened his heart… that you relate in the hearing of your son and your son’s son what I have done in Mitsrayim, and My signs which I have done among them — and you shall know that I am YAHUAH.”', ref:'SHEMOTH 10:1–2'},
   ],
   scene:{
    map:{biome:'plains', w:46, h:28, seed:865,
@@ -4439,14 +4679,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'night', text:'Darkness over the sun-god of Mitsrayim, three days, a darkness felt — and light in every slave-hut in Goshen. The ninth blow was a parable: the kingdoms had already changed places.', ref:'SHEMOTH 10:21–29'},
+   {art:'plaguesart', music:'night', text:'Darkness over the sun-god of Mitsrayim, three days, a darkness felt — and light in every slave-hut in Goshen. The ninth blow was a parable: the kingdoms had already changed places.', ref:'SHEMOTH 10:21–29'},
   ],
   complete:'Darkness that could be felt — but all the children of Yasharal had light in their dwellings.'
 },
 { id:'x18', title:'One Plague More', ref:'SHEMOTH 11',
   intro:[
-   {art:'egypt', music:'night', text:'And YAHUAH said to Mosheh, “One more plague I am bringing on Pharaoh and on Mitsrayim — after that he is going to let you go from here. When he lets you go, he shall drive you out altogether. Speak now in the hearing of the people: let every man ask from his neighbour, and every woman from her neighbour, objects of silver and objects of gold.” And YAHUAH gave the people favour in the eyes of the Mitsrites. And the man Mosheh was very great in the land of Mitsrayim, in the eyes of Pharaoh’s servants and in the eyes of the people.', ref:'SHEMOTH 11:1–3'},
-   {art:'corrupt', music:'sorrow', text:'And Mosheh said, “Thus said YAHUAH: About midnight I am going out into the midst of Mitsrayim, and all the first-born in the land of Mitsrayim shall die — from the first-born of Pharaoh who sits on his throne, to the first-born of the female servant behind the millstones, and all the first-born of cattle. And there shall be a great cry in all the land of Mitsrayim, such as has never been, nor shall ever be again. But against any of the children of Yasharal shall not even a dog move its tongue — so that you know that YAHUAH makes a distinction between Mitsrayim and Yasharal.” And he went out from Pharaoh in burning wrath.', ref:'SHEMOTH 11:4–8'},
+   {art:'plaguesart', music:'night', text:'And YAHUAH said to Mosheh, “One more plague I am bringing on Pharaoh and on Mitsrayim — after that he is going to let you go from here. When he lets you go, he shall drive you out altogether. Speak now in the hearing of the people: let every man ask from his neighbour, and every woman from her neighbour, objects of silver and objects of gold.” And YAHUAH gave the people favour in the eyes of the Mitsrites. And the man Mosheh was very great in the land of Mitsrayim, in the eyes of Pharaoh’s servants and in the eyes of the people.', ref:'SHEMOTH 11:1–3'},
+   {art:'plaguesart', music:'sorrow', text:'And Mosheh said, “Thus said YAHUAH: About midnight I am going out into the midst of Mitsrayim, and all the first-born in the land of Mitsrayim shall die — from the first-born of Pharaoh who sits on his throne, to the first-born of the female servant behind the millstones, and all the first-born of cattle. And there shall be a great cry in all the land of Mitsrayim, such as has never been, nor shall ever be again. But against any of the children of Yasharal shall not even a dog move its tongue — so that you know that YAHUAH makes a distinction between Mitsrayim and Yasharal.” And he went out from Pharaoh in burning wrath.', ref:'SHEMOTH 11:4–8'},
   ],
   scene:null,
   complete:'Not even a dog shall move its tongue — that you may know that YAHUAH makes a distinction.'
@@ -4456,7 +4696,7 @@ STORY.push(
 { id:'xact4', roman:'IV', title:'Pesach and the Sea', ref:'SHEMOTH 12–15 · YOḆELIM 48–49 · YASHAR 81', chapters:[
 { id:'x19', title:'The Lamb and the Blood', ref:'SHEMOTH 12:1–28 · YOḆELIM 49',
   intro:[
-   {art:'goshen', music:'night', text:'And YAHUAH spoke to Mosheh and Aharon in the land of Mitsrayim: “This month is the beginning of months for you, it is the first month of the year for you. On the tenth day of this month each one shall take for himself a lamb, according to the house of his father — a lamb perfect, a male, a year old. And you shall keep it until the fourteenth day, and all the assembly shall slay it between the evenings.”', ref:'SHEMOTH 12:1–6'},
+   {art:'pesachnight', music:'night', text:'And YAHUAH spoke to Mosheh and Aharon in the land of Mitsrayim: “This month is the beginning of months for you, it is the first month of the year for you. On the tenth day of this month each one shall take for himself a lamb, according to the house of his father — a lamb perfect, a male, a year old. And you shall keep it until the fourteenth day, and all the assembly shall slay it between the evenings.”', ref:'SHEMOTH 12:1–6'},
   ],
   scene:{
    map:{biome:'plains', w:44, h:26, seed:869,
@@ -4501,13 +4741,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'night', text:'WITNESS — “And you shall remember this day, to keep it in its appointed time, from year to year: a Pesach to YAHUAH, fourteenth day to the evening of the fifteenth — for it is a statute forever, ordained on the tablets of the shamayim for all the children of Yasharal.”', ref:'YOḆELIM 49'},
+   {art:'pesachnight', music:'night', text:'WITNESS — “And you shall remember this day, to keep it in its appointed time, from year to year: a Pesach to YAHUAH, fourteenth day to the evening of the fifteenth — for it is a statute forever, ordained on the tablets of the shamayim for all the children of Yasharal.”', ref:'YOḆELIM 49'},
   ],
   complete:'When I see the blood, I shall pass over you — the night of the watches had come.'
 },
 { id:'x20', title:'The Night of the Cry', ref:'SHEMOTH 12:29–42',
   intro:[
-   {art:'corrupt', music:'night', text:'And it came to be at midnight that YAHUAH smote all the first-born in the land of Mitsrayim, from the first-born of Pharaoh who sat on his throne to the first-born of the captive who was in the dungeon, and all the first-born of livestock.', ref:'SHEMOTH 12:29'},
+   {art:'pesachnight', music:'night', text:'And it came to be at midnight that YAHUAH smote all the first-born in the land of Mitsrayim, from the first-born of Pharaoh who sat on his throne to the first-born of the captive who was in the dungeon, and all the first-born of livestock.', ref:'SHEMOTH 12:29'},
   ],
   scene:{
    map:{biome:'plains', w:44, h:26, seed:873,
@@ -4549,13 +4789,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'Four hundred and thirty years — and on that same day, the divisions of YAHUAH went out: with silver and gold, with unleavened dough on their shoulders, and not one feeble among their tribes.', ref:'SHEMOTH 12:40–42 · TEHILLIM 105:37'},
+   {art:'exodusmarch', music:'holy', text:'Four hundred and thirty years — and on that same day, the divisions of YAHUAH went out: with silver and gold, with unleavened dough on their shoulders, and not one feeble among their tribes.', ref:'SHEMOTH 12:40–42 · TEHILLIM 105:37'},
   ],
   complete:'A night of watches unto YAHUAH — and Yasharal went out, six hundred thousand strong.'
 },
 { id:'x21', title:'The Bones of Yosĕph', ref:'SHEMOTH 13 · YOḆELIM 46',
   intro:[
-   {art:'journey', music:'eden', text:'“Set apart to Me all the first-born — whatever opens the womb among the children of Yasharal, among man and among beast: it is Mine.” And Mosheh said to the people, “Remember this day, in which you went out of Mitsrayim, out of the house of bondage — for by strength of hand YAHUAH brought you out of this place, and no leavened bread is to be eaten this day.”', ref:'SHEMOTH 13:1–3'},
+   {art:'exodusmarch', music:'eden', text:'“Set apart to Me all the first-born — whatever opens the womb among the children of Yasharal, among man and among beast: it is Mine.” And Mosheh said to the people, “Remember this day, in which you went out of Mitsrayim, out of the house of bondage — for by strength of hand YAHUAH brought you out of this place, and no leavened bread is to be eaten this day.”', ref:'SHEMOTH 13:1–3'},
   ],
   scene:{
    map:{biome:'desert', w:50, h:28, seed:877,
@@ -4594,13 +4834,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'By day a pillar of cloud, by night a pillar of fire — and in the midst of the host, on a wagon, a coffin keeping a three-hundred-year-old promise.', ref:'SHEMOTH 13:19–22'},
+   {art:'exodusmarch', music:'holy', text:'By day a pillar of cloud, by night a pillar of fire — and in the midst of the host, on a wagon, a coffin keeping a three-hundred-year-old promise.', ref:'SHEMOTH 13:19–22'},
   ],
   complete:'And Mosheh took the bones of Yosĕph with him — Yasharal keeps its oath.'
 },
 { id:'x22', title:'The Sea of Reeds', ref:'SHEMOTH 14 · YOḆELIM 48 · YASHAR 81',
   intro:[
-   {art:'egypt', music:'tense', text:'And it was reported to the sovereign of Mitsrayim that the people had fled — and the heart of Pharaoh and his servants was turned against the people, and they said, “What is this we have done, that we have let Yasharal go from serving us?” And he made ready his chariot, and took his people with him: six hundred chosen chariots, and all the chariots of Mitsrayim.', ref:'SHEMOTH 14:5–7'},
+   {art:'pharaohcourt', music:'tense', text:'And it was reported to the sovereign of Mitsrayim that the people had fled — and the heart of Pharaoh and his servants was turned against the people, and they said, “What is this we have done, that we have let Yasharal go from serving us?” And he made ready his chariot, and took his people with him: six hundred chosen chariots, and all the chariots of Mitsrayim.', ref:'SHEMOTH 14:5–7'},
   ],
   scene:{
    map:{biome:'desert', w:46, h:34, seed:881, sea:11,
@@ -4658,13 +4898,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'divide', music:'holy', text:'WITNESS — And on the fourteenth day Mastema was bound, that he might not accuse them; and on the day Yasharal went free he was loosed — and hardened the heart of Mitsrayim to pursue. And all the powers of Mitsrayim drowned in the depth of the sea, repaid for the sons cast into the river.', ref:'YOḆELIM 48:12–18 · YASHAR 81'},
+   {art:'seacross', music:'holy', text:'WITNESS — And on the fourteenth day Mastema was bound, that he might not accuse them; and on the day Yasharal went free he was loosed — and hardened the heart of Mitsrayim to pursue. And all the powers of Mitsrayim drowned in the depth of the sea, repaid for the sons cast into the river.', ref:'YOḆELIM 48:12–18 · YASHAR 81'},
   ],
   complete:'The waters were a wall on the right hand and on the left — and not one of the pursuers was left.'
 },
 { id:'x23', title:'The Song at the Sea', ref:'SHEMOTH 15:1–21',
   intro:[
-   {art:'divide', music:'holy', text:'Then Mosheh and the children of Yasharal sang this song to YAHUAH: “I sing to YAHUAH, for He is highly exalted! The horse and its rider He has thrown into the sea!”', ref:'SHEMOTH 15:1'},
+   {art:'seacross', music:'holy', text:'Then Mosheh and the children of Yasharal sang this song to YAHUAH: “I sing to YAHUAH, for He is highly exalted! The horse and its rider He has thrown into the sea!”', ref:'SHEMOTH 15:1'},
   ],
   scene:{
    map:{biome:'desert', w:44, h:26, seed:885, sea:7,
@@ -4698,7 +4938,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'WITNESS — And Pharaoh’s host was repaid measure for measure: as they had cast the sons into the river, so the sea covered them. And the dread of YAHUAH fell on all the peoples: “All the inhabitants of Kena‛an have melted away… until Your people pass over, O YAHUAH, whom You have bought.”', ref:'SHEMOTH 15:14–16 · YASHAR 81'},
+   {art:'seacross', music:'holy', text:'WITNESS — And Pharaoh’s host was repaid measure for measure: as they had cast the sons into the river, so the sea covered them. And the dread of YAHUAH fell on all the peoples: “All the inhabitants of Kena‛an have melted away… until Your people pass over, O YAHUAH, whom You have bought.”', ref:'SHEMOTH 15:14–16 · YASHAR 81'},
   ],
   complete:'I sing to YAHUAH, for He is highly exalted — YAHUAH reigns forever and ever.'
 },
@@ -4870,9 +5110,23 @@ STORY.push(
        {spawn:{id:'am1',char:'amaleqi',x:36,y:16,wander:false,noTalk:true,foeSpeed:.05}},
        {spawn:{id:'am2',char:'amaleqi',x:38,y:20,wander:false,noTalk:true,foeSpeed:.044}},
        {spawn:{id:'am3',char:'raider2',x:35,y:23,wander:false,noTalk:true,foeSpeed:.048}},
+       {spawn:{id:'am6',char:'amaleqi',x:39,y:17.5,wander:false,noTalk:true,foeSpeed:.046}},
+       {spawn:{id:'am7',char:'raider2',x:37,y:25,wander:false,noTalk:true,foeSpeed:.043}},
+       {spawn:{id:'wa1',char:'hebrew',x:27,y:16,wander:false,noTalk:true,spar:'we1'}},
+       {spawn:{id:'we1',char:'amaleqi',x:28,y:16.6,wander:false,noTalk:true,spar:'wa1',sparFoe:true}},
+       {spawn:{id:'wa2',char:'hebrew2',x:29,y:20,wander:false,noTalk:true,spar:'we2'}},
+       {spawn:{id:'we2',char:'raider2',x:30,y:20.6,wander:false,noTalk:true,spar:'wa2',sparFoe:true}},
+       {spawn:{id:'wa3',char:'levite',x:26,y:22.5,wander:false,noTalk:true,spar:'we3'}},
+       {spawn:{id:'we3',char:'amaleqi',x:27,y:23,wander:false,noTalk:true,spar:'wa3',sparFoe:true}},
+       {spawn:{id:'wa4',char:'hebrew',x:31,y:14,wander:false,noTalk:true,spar:'we4'}},
+       {spawn:{id:'we4',char:'amaleqi',x:32,y:14.6,wander:false,noTalk:true,spar:'wa4',sparFoe:true}},
+       {spawn:{id:'wa5',char:'hebrew2',x:24,y:19,wander:false,noTalk:true,spar:'we5'}},
+       {spawn:{id:'we5',char:'raider2',x:25,y:19.6,wander:false,noTalk:true,spar:'wa5',sparFoe:true}},
+       {spawn:{id:'wa6',char:'hebrew',x:28,y:25,wander:false,noTalk:true,spar:'we6'}},
+       {spawn:{id:'we6',char:'amaleqi',x:29,y:25.6,wander:false,noTalk:true,spar:'wa6',sparFoe:true}},
        {sfx:'thunder'},{shake:2},
        {say:['yahoshua','For YAHUAH and for Yasharal! The staff is lifted on the hill — strike, men of Yasharal!']},
-       {battle:{foes:['am1','am2','am3'],hits:2,text:'Fight with Amaleq — while the staff of Aluahim is held high!',won:'The first rank of Amaleq breaks'}},
+       {battle:{foes:['am1','am2','am3','am6','am7'],hits:2,rally:[20,13],text:'Fight with Amaleq — while the staff of Aluahim is held high!',won:'The first rank of Amaleq breaks'}},
        {say:['narrator','And it came to be, when Mosheh held up his hand, that Yasharal prevailed — and when he let down his hand, Amaleq prevailed. But the hands of Mosheh grew heavy.']},
        {camera:['ent','mosheh']},
        {say:['aharon','His arms shake — the battle turns below! A stone — set him on the stone! Ḥur, take his left, I take his right. We stay up his hands until the sun goes down!']},
@@ -4880,10 +5134,13 @@ STORY.push(
        {camera:'player'},
        {spawn:{id:'am4',char:'amaleqi',x:37,y:14,wander:false,noTalk:true,foeSpeed:.052}},
        {spawn:{id:'am5',char:'raider2',x:39,y:19,wander:false,noTalk:true,foeSpeed:.046}},
-       {battle:{foes:['am4','am5'],hits:2,text:'His hands are steady as the going down of the sun — break Amaleq!',won:'Amaleq is defeated with the edge of the sword'}},
+       {spawn:{id:'am8',char:'amaleqi',x:38,y:22,wander:false,noTalk:true,foeSpeed:.049}},
+       {spawn:{id:'am9',char:'raider2',x:40,y:16,wander:false,noTalk:true,foeSpeed:.045}},
+       {spawn:{id:'am10',char:'amaleqi',x:36,y:26,wander:false,noTalk:true,foeSpeed:.047}},
+       {battle:{foes:['am4','am5','am8','am9','am10'],hits:2,rally:[22,20],text:'His hands are steady as the going down of the sun — break Amaleq!',won:'Amaleq is defeated with the edge of the sword'}},
        {time:'dusk'},{music:'holy'},
        {say:['narrator','And his hands were steady until the going down of the sun. And Yahoshua defeated Amaleq and his people with the edge of the sword.']},
-       {fade:'out'},{despawn:'am1'},{despawn:'am2'},{despawn:'am3'},{despawn:'am4'},{despawn:'am5'},{fade:'in'},
+       
        {say:['voice','Write this for a remembrance in the book, and recite it in the hearing of Yahoshua: that I shall completely blot out the remembrance of Amaleq from under the shamayim.']},
        {addProp:{type:'altar',stage:3,x:24,y:16,solid:true,id:'nissi'}},
        {say:['mosheh_o','And Mosheh built a mizbe’ach and called its name: YAHUAH NISSI — YAHUAH my Banner. Because a hand is on the throne of Yah: YAHUAH is to fight against Amaleq, from generation to generation.']},
@@ -4950,7 +5207,7 @@ STORY.push(
 { id:'xact6', roman:'VI', title:'Sinai', ref:'SHEMOTH 19–24 · YOḆELIM 1', chapters:[
 { id:'x29', title:'The Third Day', ref:'SHEMOTH 19',
   intro:[
-   {art:'mountain', music:'holy', text:'In the third month after the children of Yasharal came out of Mitsrayim, they came to the Wilderness of Sinai — and Yasharal camped there before the mountain. And Mosheh went up to Aluahim, and YAHUAH called to him from the mountain.', ref:'SHEMOTH 19:1–3'},
+   {art:'sinaiart', music:'holy', text:'In the third month after the children of Yasharal came out of Mitsrayim, they came to the Wilderness of Sinai — and Yasharal camped there before the mountain. And Mosheh went up to Aluahim, and YAHUAH called to him from the mountain.', ref:'SHEMOTH 19:1–3'},
    {art:'stars', music:'holy', text:'“You have seen what I did to the Mitsrites, and how I bore you on eagles’ wings and brought you to Myself. And now, if you diligently obey My voice and guard My covenant, then you shall be My treasured possession above all the peoples — for all the earth is Mine. And you shall be to Me a reign of kohanim and a set-apart nation.” And all the people answered together and said, “All that YAHUAH has spoken we shall do.”', ref:'SHEMOTH 19:4–8'},
   ],
   scene:{
@@ -4991,13 +5248,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'mountain', music:'storm', text:'Thunder, the mountain in smoke, the shophar growing ever louder — and a freed slave-nation standing at the foot, washed and trembling, to hear the voice of the living Aluahim.', ref:'SHEMOTH 19:16–25'},
+   {art:'sinaiart', music:'storm', text:'Thunder, the mountain in smoke, the shophar growing ever louder — and a freed slave-nation standing at the foot, washed and trembling, to hear the voice of the living Aluahim.', ref:'SHEMOTH 19:16–25'},
   ],
   complete:'On eagles’ wings I bore you — and on the third day, the mountain burned.'
 },
 { id:'x30', title:'The Ten Words', ref:'SHEMOTH 20',
   intro:[
-   {art:'mountain', music:'storm', text:'And Aluahim spoke all these Words, saying:', ref:'SHEMOTH 20:1'},
+   {art:'sinaiart', music:'storm', text:'And Aluahim spoke all these Words, saying:', ref:'SHEMOTH 20:1'},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:30, seed:913,
@@ -5041,8 +5298,8 @@ STORY.push(
 },
 { id:'x31', title:'The Blood of the Covenant', ref:'SHEMOTH 21–24 · YOḆELIM 1',
   intro:[
-   {art:'rest', music:'holy', text:'WITNESS — And YAHUAH gave the right-rulings: for the Hebrew servant freed in the seventh year; for the life that is struck — eye for eye, no more; for the ox and the pit and the fire and the theft; for the sojourner — “for you were sojourners in the land of Mitsrayim”; for the widow and the fatherless, whose cry He surely hears; for the poor man’s garment, returned before the sun goes down — “for I show favour.”', ref:'SHEMOTH 21–22'},
-   {art:'rest', music:'holy', text:'WITNESS — “You do not follow a crowd to do evil… Keep far from a false matter… Three times in the year you celebrate a festival to Me: Matsoth, the Harvest, and the Ingathering. See, I am sending a Messenger before you, to guard you in the way — be on guard before Him and obey His voice, for My Name is in Him. Little by little I shall drive the inhabitants out before you, until you bear fruit and possess the land.”', ref:'SHEMOTH 23'},
+   {art:'sinaiart', music:'holy', text:'WITNESS — And YAHUAH gave the right-rulings: for the Hebrew servant freed in the seventh year; for the life that is struck — eye for eye, no more; for the ox and the pit and the fire and the theft; for the sojourner — “for you were sojourners in the land of Mitsrayim”; for the widow and the fatherless, whose cry He surely hears; for the poor man’s garment, returned before the sun goes down — “for I show favour.”', ref:'SHEMOTH 21–22'},
+   {art:'sinaiart', music:'holy', text:'WITNESS — “You do not follow a crowd to do evil… Keep far from a false matter… Three times in the year you celebrate a festival to Me: Matsoth, the Harvest, and the Ingathering. See, I am sending a Messenger before you, to guard you in the way — be on guard before Him and obey His voice, for My Name is in Him. Little by little I shall drive the inhabitants out before you, until you bear fruit and possess the land.”', ref:'SHEMOTH 23'},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:30, seed:917,
@@ -5085,7 +5342,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'The blood of the covenant sprinkled, the sapphire pavement seen, and two tablets of stone written with the finger of Aluahim — while below, in the camp, forty days proved longer than a nation’s memory.', ref:'SHEMOTH 24 · 31:18'},
+   {art:'sinaiart', music:'holy', text:'The blood of the covenant sprinkled, the sapphire pavement seen, and two tablets of stone written with the finger of Aluahim — while below, in the camp, forty days proved longer than a nation’s memory.', ref:'SHEMOTH 24 · 31:18'},
   ],
   complete:'All that YAHUAH has spoken we shall do and obey — see, the blood of the covenant.'
 },
@@ -5097,7 +5354,7 @@ STORY.push(
 { id:'xact7', roman:'VII', title:'The Calf', ref:'SHEMOTH 32–34', chapters:[
 { id:'x32', title:'The Sound of Singing', ref:'SHEMOTH 32:1–29',
   intro:[
-   {art:'corrupt', music:'tense', text:'And when the people saw that Mosheh was so long in coming down from the mountain, they gathered to Aharon and said, “Arise, make us mighty ones who go before us — for this Mosheh, we do not know what has become of him.” And all the people took off the golden earrings, and he made it a moulded calf. And they said, “This is your mighty one, O Yasharal, that brought you up out of the land of Mitsrayim!”', ref:'SHEMOTH 32:1–4'},
+   {art:'calfart', music:'tense', text:'And when the people saw that Mosheh was so long in coming down from the mountain, they gathered to Aharon and said, “Arise, make us mighty ones who go before us — for this Mosheh, we do not know what has become of him.” And all the people took off the golden earrings, and he made it a moulded calf. And they said, “This is your mighty one, O Yasharal, that brought you up out of the land of Mitsrayim!”', ref:'SHEMOTH 32:1–4'},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:30, seed:921,
@@ -5150,13 +5407,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'sorrow', text:'Forty days of glory above; forty days of forgetting below. The tablets of the finger of Aluahim lay broken at the foot of the mountain — and the gold of Mitsrayim floated, as dust, on the water the people drank.', ref:'SHEMOTH 32:19–29'},
+   {art:'calfart', music:'sorrow', text:'Forty days of glory above; forty days of forgetting below. The tablets of the finger of Aluahim lay broken at the foot of the mountain — and the gold of Mitsrayim floated, as dust, on the water the people drank.', ref:'SHEMOTH 32:19–29'},
   ],
   complete:'Who is for YAHUAH — to me! And the sons of Lĕwi gathered to him.'
 },
 { id:'x33', title:'Show Me Your Glory', ref:'SHEMOTH 32:30–33:23',
   intro:[
-   {art:'mountain', music:'sorrow', text:'And on the next day Mosheh said to the people, “You, you have sinned a great sin. And now I am going up to YAHUAH — if I might atone for your sin.”', ref:'SHEMOTH 32:30'},
+   {art:'sinaiart', music:'sorrow', text:'And on the next day Mosheh said to the people, “You, you have sinned a great sin. And now I am going up to YAHUAH — if I might atone for your sin.”', ref:'SHEMOTH 32:30'},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:30, seed:925,
@@ -5204,7 +5461,7 @@ STORY.push(
 },
 { id:'x34', title:'The Name Proclaimed', ref:'SHEMOTH 34',
   intro:[
-   {art:'mountain', music:'holy', text:'And YAHUAH said to Mosheh, “Cut two tablets of stone like the first ones — and I shall write on these tablets the Words that were on the first tablets which you broke. And be ready in the morning, and come up to Mount Sinai — and no man is to come up with you.”', ref:'SHEMOTH 34:1–3'},
+   {art:'sinaiart', music:'holy', text:'And YAHUAH said to Mosheh, “Cut two tablets of stone like the first ones — and I shall write on these tablets the Words that were on the first tablets which you broke. And be ready in the morning, and come up to Mount Sinai — and no man is to come up with you.”', ref:'SHEMOTH 34:1–3'},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:929,
@@ -5250,8 +5507,8 @@ STORY.push(
 { id:'xact8', roman:'VIII', title:'The Dwelling Place', ref:'SHEMOTH 25–31; 35–40', chapters:[
 { id:'x35', title:'The Willing of Heart', ref:'SHEMOTH 25–31; 35:4–36:7',
   intro:[
-   {art:'stars', music:'holy', text:'WITNESS — On the mountain YAHUAH had shown Mosheh the pattern: “Let them make Me a Set-apart Place — AND I SHALL DWELL IN THEIR MIDST. According to all that I show you — the pattern of the Dwelling Place and of all its furnishings — so you shall make it”: the ark of acacia wood overlaid with gold, with its lid of atonement and keruḇim of gold; the table of showbread; the lampstand of pure gold, beaten work; the altars; the courts; and the set-apart garments of Aharon — for esteem and for comeliness.', ref:'SHEMOTH 25–28'},
-   {art:'stars', music:'holy', text:'WITNESS — And the anointing oil and the incense; the bronze laver; the kohenship of Aharon and his sons; the half-sheqel of atonement; and the Shabbath as the SIGN between YAHUAH and Yasharal forever — “for in six days YAHUAH made the shamayim and the earth, and on the seventh day He rested, and was refreshed.”', ref:'SHEMOTH 29–31'},
+   {art:'mishkanart', music:'holy', text:'WITNESS — On the mountain YAHUAH had shown Mosheh the pattern: “Let them make Me a Set-apart Place — AND I SHALL DWELL IN THEIR MIDST. According to all that I show you — the pattern of the Dwelling Place and of all its furnishings — so you shall make it”: the ark of acacia wood overlaid with gold, with its lid of atonement and keruḇim of gold; the table of showbread; the lampstand of pure gold, beaten work; the altars; the courts; and the set-apart garments of Aharon — for esteem and for comeliness.', ref:'SHEMOTH 25–28'},
+   {art:'mishkanart', music:'holy', text:'WITNESS — And the anointing oil and the incense; the bronze laver; the kohenship of Aharon and his sons; the half-sheqel of atonement; and the Shabbath as the SIGN between YAHUAH and Yasharal forever — “for in six days YAHUAH made the shamayim and the earth, and on the seventh day He rested, and was refreshed.”', ref:'SHEMOTH 29–31'},
   ],
   scene:{
    map:{biome:'desert', w:46, h:28, seed:933,
@@ -5294,13 +5551,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'rest', music:'eden', text:'“Let them make Me a Set-apart Place — and I shall dwell in their midst.” The gold of Mitsrayim, that had once become a calf, now became a dwelling for the Name.', ref:'SHEMOTH 25:8; 36:5–7'},
+   {art:'mishkanart', music:'eden', text:'“Let them make Me a Set-apart Place — and I shall dwell in their midst.” The gold of Mitsrayim, that had once become a calf, now became a dwelling for the Name.', ref:'SHEMOTH 25:8; 36:5–7'},
   ],
   complete:'The people bring much more than enough — and they were restrained from bringing.'
 },
 { id:'x36', title:'Betsal’ĕl Builds', ref:'SHEMOTH 36–39',
   intro:[
-   {art:'camp', music:'eden', text:'And all the wise-hearted ones among them who were doing the work made the Dwelling Place — ten curtains of fine woven linen, blue and purple and scarlet, with keruḇim, the work of a designer.', ref:'SHEMOTH 36:8'},
+   {art:'mishkanart', music:'eden', text:'And all the wise-hearted ones among them who were doing the work made the Dwelling Place — ten curtains of fine woven linen, blue and purple and scarlet, with keruḇim, the work of a designer.', ref:'SHEMOTH 36:8'},
   ],
   scene:{
    map:{biome:'desert', w:46, h:28, seed:937,
@@ -5343,13 +5600,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'rest', music:'holy', text:'“As YAHUAH commanded Mosheh” — eighteen times the refrain rings through the record of the work; and at the end of it, the blessing of Mosheh on a people who, this time, had done all things according to the pattern.', ref:'SHEMOTH 39:32–43'},
+   {art:'mishkanart', music:'holy', text:'“As YAHUAH commanded Mosheh” — eighteen times the refrain rings through the record of the work; and at the end of it, the blessing of Mosheh on a people who, this time, had done all things according to the pattern.', ref:'SHEMOTH 39:32–43'},
   ],
   complete:'And Mosheh saw all the work — and see, they had done it as YAHUAH commanded. And Mosheh baruk them.'
 },
 { id:'x37', title:'The Glory', ref:'SHEMOTH 40',
   intro:[
-   {art:'stars', music:'holy', text:'And YAHUAH spoke to Mosheh, saying: “On the first day of the first month, in the first month, you are to raise up the Dwelling Place of the Tent of Appointment.”', ref:'SHEMOTH 40:1–2'},
+   {art:'mishkanart', music:'holy', text:'And YAHUAH spoke to Mosheh, saying: “On the first day of the first month, in the first month, you are to raise up the Dwelling Place of the Tent of Appointment.”', ref:'SHEMOTH 40:1–2'},
   ],
   scene:{
    map:{biome:'desert', w:46, h:30, seed:941,
@@ -5398,7 +5655,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'So ends SHEMOTH, the Book of Names — a nation of slaves drawn out of the water like the child in the basket, carried on eagles’ wings, married at a burning mountain — and now walking the wilderness with the esteem of YAHUAH in its midst: cloud by day, fire by night, in all their journeys.', ref:'SHEMOTH 40:34–38 — THE END OF THE BOOK OF NAMES'},
+   {art:'mishkanart', music:'holy', text:'So ends SHEMOTH, the Book of Names — a nation of slaves drawn out of the water like the child in the basket, carried on eagles’ wings, married at a burning mountain — and now walking the wilderness with the esteem of YAHUAH in its midst: cloud by day, fire by night, in all their journeys.', ref:'SHEMOTH 40:34–38 — THE END OF THE BOOK OF NAMES'},
   ],
   complete:'And the esteem of YAHUAH filled the Dwelling Place — cloud by day, fire by night, in all their journeys.'
 },
