@@ -3321,6 +3321,28 @@ function drawSlideArt(g,key,st,t,slide){
         Sky.figure(g,VW*.38+Math.cos(a5)*VW*.14,VH*.8+Math.sin(a5)*VH*.06,['hebrew','hebreww','hebrew2','hebreww','hebrew'][i],{t:t+i*180,scale:1.7,dir:Math.cos(a5)>0?'left':'right',moving:true}); }
       drawProp(g,VW*.85,VH*.92,{type:'tablets'},t);
       break; }
+    case 'songshore': {
+      Sky.paint(g,[[0,'#2c3a55'],[.45,'#7a6a8a'],[1,'#caa87a']]);
+      Sky.sun(g,VW*.5,VH*.18,26,'rgba(255,225,150,.85)');
+      Sky.sealine(g,'#2c5a8a',VH*.42,t);
+      /* wreckage of Pharaoh at the water's edge */
+      g.strokeStyle='#4a3522'; g.lineWidth=5;
+      g.beginPath(); g.arc(VW*.3,VH*.5,16,0,Math.PI,true); g.stroke();
+      g.beginPath(); g.moveTo(VW*.3-16,VH*.5); g.lineTo(VW*.3+16,VH*.5); g.stroke();
+      g.save(); g.translate(VW*.62,VH*.47); g.rotate(.6);
+      g.fillStyle='#5d4426'; g.fillRect(-22,-6,44,12); g.restore();
+      g.fillStyle='#caa87a'; g.fillRect(0,VH*.66,VW,VH*.34);
+      g.fillStyle='#b8956a'; g.fillRect(0,VH*.66,VW,6);
+      /* the nation on the shore, and Miryam answering with the timbrel */
+      for(let i=0;i<11;i++){
+        const fx=VW*(.06+i*.085), fy=VH*(.8+((i*7)%3)*.055);
+        Sky.figure(g,fx,fy,['hebrew','hebreww','hebrew2','elder','hebreww'][i%5],{t:t+i*240,scale:1.7,dir:i%3?'up':'right',moving:i%2===0});
+      }
+      Sky.figure(g,VW*.5,VH*.96,'miryam',{t,scale:2.1,dir:'up',moving:true});
+      Sky.figure(g,VW*.38,VH*.93,'mosheh_o',{t:t+300,scale:2,dir:'up'});
+      drawAnimal(g,VW*.85,VH*.93,'sheep',{t,dir:'left'});
+      for(let i=0;i<3;i++) drawAnimal(g,VW*(.2+i*.25),VH*(.3-i*.04),'dove',{t:t+i*300,flying:true,dir:'right'});
+      break; }
     case 'void': {
       Sky.paint(g,[[0,'#04060c'],[.6,'#070b16'],[1,'#0a1020']]);
       // the deep — slow dark waters
@@ -4311,7 +4333,7 @@ STORY.push(
    objectives:[
      {type:'goto',x:24,y:17,radius:2.6,text:'The shepherds are driving the daughters from the well',
       script:[
-       {say:['sodomite','Away, daughters of the priest! The well is for men and their flocks — your father’s sheep can drink the dust!']},
+       {say:['sodomite','Away, daughters of the kohen! The well is for men and their flocks — your father’s sheep can drink the dust!']},
        {battle:{foes:['shep1','shep2'],hits:2,rally:[29,19],text:'Stand up and deliver them — drive off the shepherds!',won:'The shepherds flee from the stranger'}},
        {despawn:'shep1'},{despawn:'shep2'},
        {say:['narrator','But Mosheh stood up and delivered them — and watered their flock.']},
@@ -4479,9 +4501,9 @@ STORY.push(
          w.map.decor.push({type:'firepit',x:24,y:16.5,lit:true});
          w.map.decor.sort((a,b)=>a.y-b.y);
          const cs=['hebrew','hebreww','hebrew2','elder','hebreww','hebrew'];
-         for(let i=0;i<42;i++){
+         for(let i=0;i<70;i++){
            w.npcs.push(makeNpc({id:'gosh'+i,char:cs[i%6],child:i%9===8,
-             x:9+(i%11)*2.1+Math.random(),y:16.5+Math.floor(i/11)*1.9+Math.random(),
+             x:7+(i%14)*2.1+Math.random(),y:16+Math.floor(i/14)*1.9+Math.random(),
              wander:true,range:1.1,noTalk:true}));
          }
          for(let i=0;i<4;i++) w.npcs.push(makeNpc({id:'goshsheep'+i,animal:i%2?'sheep':'goat',x:31+i*1.4,y:18+(i%2)*1.5,range:1.4,noTalk:true}));
@@ -4581,7 +4603,7 @@ STORY.push(
 },
 { id:'x13', title:'The Staff and the Sorcerers', ref:'SHEMOTH 6:28–7:13 · YOḆELIM 48',
   intro:[
-   {art:'pharaohcourt', music:'tense', text:'And YAHUAH said to Mosheh, “See, I have made you an aluahim to Pharaoh, and Aharon your brother is your prophet… And Pharaoh is not going to listen to you, and I shall lay My hand on Mitsrayim, and bring My people out by great judgments.” And Mosheh was eighty years old, and Aharon eighty-three, when they spoke to Pharaoh.', ref:'SHEMOTH 7:1–7'},
+   {art:'pharaohcourt', music:'tense', text:'And YAHUAH said to Mosheh, “See, I have made you an aluahim to Pharaoh, and Aharon your brother is your naḇi… And Pharaoh is not going to listen to you, and I shall lay My hand on Mitsrayim, and bring My people out by great judgments.” And Mosheh was eighty years old, and Aharon eighty-three, when they spoke to Pharaoh.', ref:'SHEMOTH 7:1–7'},
   ],
   scene:{
    map:{biome:'interior', w:28, h:16, seed:849,
@@ -4622,7 +4644,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'plaguesart', music:'tense', text:'The staff swallowed their staffs — yet his heart was hardened. The long war of the wonders had begun: ten blows against the mighty ones of Mitsrayim, each one a judgment on a god of the Nile.', ref:'SHEMOTH 7:12–13'},
+   {art:'plaguesart', music:'tense', text:'The staff swallowed their staffs — yet his heart was hardened. The long war of the wonders had begun: ten blows against the mighty ones of Mitsrayim, each one a judgment on a mighty one of the Nile.', ref:'SHEMOTH 7:12–13'},
   ],
   complete:'Each threw down his staff — but the staff of Aharon swallowed their staffs.'
 },
@@ -4647,7 +4669,7 @@ STORY.push(
      {type:'goto',x:28,y:14.5,radius:2.2,text:'Meet Pharaoh at the river’s bank at morning',
       script:[
        {say:['mosheh_o','Thus said YAHUAH: By this you shall know that I am YAHUAH. See, I am striking the waters of the river with the staff that is in my hand — and they shall be turned to blood.']},
-       {say:['pharaoh','Strike the Nile? The Nile is a god, old man — the mother of Mitsrayim. Strike it, then, and amuse me.']},
+       {say:['pharaoh','Strike the Nile? The Nile is a mighty one, old man — the mother of Mitsrayim. Strike it, then, and amuse me.']},
        {sfx:'thunder'},{shake:2},
        {call:G=>{ const m=G.world.map; m.cfg.blood=true;
          for(const n of G.world.npcs){ if(n.animal==='fish'){ n.lying=true; n.moving=false; } } }},
@@ -4660,7 +4682,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'nile', music:'sorrow', text:'WITNESS — The first blow fell on the river: the god of Mitsrayim that had swallowed the sons of Yasharal now ran red before the whole land, blood answering blood.', ref:'SHEMOTH 7:20–25 · YASHAR 80'},
+   {art:'nile', music:'sorrow', text:'WITNESS — The first blow fell on the river: the mighty one of Mitsrayim that had swallowed the sons of Yasharal now ran red before the whole land, blood answering blood.', ref:'SHEMOTH 7:20–25 · YASHAR 80'},
   ],
   complete:'The river that drowned the sons of Yasharal ran red — blood answering blood.'
 },
@@ -4712,7 +4734,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'plaguesart', music:'tense', text:'Frogs from the river-god, lice from the dust, flies upon the houses — and Goshen set apart, that Pharaoh might know that YAHUAH is in the midst of the land. “This is the finger of Aluahim,” said his own magicians. He did not listen.', ref:'SHEMOTH 8:19–32'},
+   {art:'plaguesart', music:'tense', text:'Frogs from the mighty one of the river, lice from the dust, flies upon the houses — and Goshen set apart, that Pharaoh might know that YAHUAH is in the midst of the land. “This is the finger of Aluahim,” said his own magicians. He did not listen.', ref:'SHEMOTH 8:19–32'},
   ],
   complete:'This is the finger of Aluahim — said the sorcerers of Mitsrayim themselves.'
 },
@@ -4811,7 +4833,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'plaguesart', music:'night', text:'Darkness over the sun-god of Mitsrayim, three days, a darkness felt — and light in every slave-hut in Goshen. The ninth blow was a parable: the kingdoms had already changed places.', ref:'SHEMOTH 10:21–29'},
+   {art:'plaguesart', music:'night', text:'Darkness over the sun, the mighty one of Mitsrayim, three days, a darkness felt — and light in every slave-hut in Goshen. The ninth blow was a parable: the kingdoms had already changed places.', ref:'SHEMOTH 10:21–29'},
   ],
   complete:'Darkness that could be felt — but all the children of Yasharal had light in their dwellings.'
 },
@@ -4914,8 +4936,8 @@ STORY.push(
       script:[
        {show:'mosheh'},{show:'aharon'},{music:'holy'},
        {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-         for(let i=0;i<30;i++) G.world.npcs.push(makeNpc({id:'dep'+i,char:cs[i%4],child:i%8===7,
-           x:12+(i%10)*2+Math.random(),y:14+Math.floor(i/10)*2+Math.random(),
+         for(let i=0;i<60;i++) G.world.npcs.push(makeNpc({id:'dep'+i,char:cs[i%4],child:i%8===7,
+           x:8+(i%15)*2.1+Math.random(),y:13+Math.floor(i/15)*2+Math.random(),
            wander:true,range:1,noTalk:true}));
          for(let i=0;i<5;i++) G.world.npcs.push(makeNpc({id:'depan'+i,animal:['sheep','goat','donkey','sheep','cow'][i],x:30+i*1.6,y:20+(i%2)*1.6,range:1.4,noTalk:true}));
        }},
@@ -4955,19 +4977,21 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder','hebreww','hebrew'];
-       /* six hundred thousand on foot — the screen is full of the going-out */
-       for(let i=0;i<58;i++){
-         const lane=i%6, col=Math.floor(i/6);
-         G.world.npcs.push(makeNpc({id:'mar'+i,char:cs[i%6],child:i%8===7,
-           x:6+col*4.2+Math.random()*2,y:11.5+lane*2.3+Math.random()*1.4,
-           route:[[42+(i%5),11+lane*2.4],[7+(i%7),11.5+lane*2.3]],routeSpeed:.013+(i%5)*.002,noTalk:true}));
+       /* like the sand of the sea: a hundred souls on screen, streaming east */
+       for(let i=0;i<100;i++){
+         const lane=i%8, col=Math.floor(i/8);
+         G.world.npcs.push(makeNpc({id:'mar'+i,char:cs[i%6],child:i%7===6,
+           x:4+col*3.4+Math.random()*1.8,y:10.2+lane*1.9+Math.random()*1.2,
+           route:[[44+(i%4),10+lane*2],[5+(i%6),10.2+lane*1.9]],routeSpeed:.011+(i%6)*.002,noTalk:true}));
        }
-       const an=['sheep','goat','cow','donkey','sheep','goat','camel','sheep','donkey','goat','sheep','cow'];
-       for(let i=0;i<12;i++) G.world.npcs.push(makeNpc({id:'maran'+i,animal:an[i],
-         x:8+(i%6)*6+Math.random()*2,y:21.5+Math.floor(i/6)*2.2+Math.random(),
-         route:[[40+(i%4),21+(i%3)*1.8],[9+(i%5),21.5+(i%3)*1.6]],routeSpeed:.012,noTalk:true}));
-       G.world.npcs.push(makeNpc({id:'famcart1',propType:'chariot',x:10,y:24,wander:false,noTalk:true,route:[[42,24],[8,24]],routeSpeed:.011}));
-       G.world.npcs.push(makeNpc({id:'famrider1',char:'hebreww',mount:'donkey',x:12,y:13,wander:false,noTalk:true,route:[[42,12.5],[8,13]],routeSpeed:.013}));
+       const an=['sheep','goat','cow','donkey','sheep','goat','camel','sheep','donkey','goat','sheep','cow','goat','sheep','donkey','cow'];
+       for(let i=0;i<16;i++) G.world.npcs.push(makeNpc({id:'maran'+i,animal:an[i],
+         x:6+(i%8)*5.2+Math.random()*2,y:11+(i%8)*1.8+Math.random(),
+         route:[[43+(i%4),11+(i%7)*2],[7+(i%5),11+(i%8)*1.8]],routeSpeed:.011,noTalk:true}));
+       for(let i=0;i<3;i++) G.world.npcs.push(makeNpc({id:'famcart'+(i+1),propType:'chariot',rider:['hebreww','elder','hebrew'][i],x:8+i*9,y:23.5+(i%2),wander:false,noTalk:true,
+         route:[[43,23.5+(i%2)],[7,23.5+(i%2)]],routeSpeed:.01+i*.001}));
+       G.world.npcs.push(makeNpc({id:'famrider1',char:'hebreww',mount:'donkey',x:12,y:12.5,wander:false,noTalk:true,route:[[42,12.5],[8,12.5]],routeSpeed:.013}));
+       G.world.npcs.push(makeNpc({id:'famrider2',char:'elder',mount:'donkey',x:30,y:18.5,wander:false,noTalk:true,route:[[43,18.5],[9,18.5]],routeSpeed:.012}));
      }},
    ],
    objectives:[
@@ -4977,7 +5001,7 @@ STORY.push(
        {say:['mosheh_o','“Aluahim shall certainly visit you — and you shall bring up my bones from here with you.” Three hundred years in a coffin in Mitsrayim, Yosĕph — and the visitation has come. Yasharal keeps its oath: you go up with us.']},
        {say:['narrator','And Mosheh took the bones of Yosĕph with him. The dreamer who was sold into Mitsrayim went out of Mitsrayim at the head of the nation his dreams had saved.']},
        {removeProp:'bonewagon'},
-       {spawn:{id:'bonecart',propType:'chariot',x:14,y:16,wander:false,noTalk:true}},
+       {spawn:{id:'bonecart',propType:'chariot',rider:'hebrew2',x:14,y:16,wander:false,noTalk:true}},
        {spawn:{id:'cartman',char:'hebrew2',x:12.6,y:16.4,wander:false,noTalk:true}},
        {spawn:{id:'cartman2',char:'hebrew',x:12.4,y:15.4,wander:false,noTalk:true}},
        {call:G=>{ const c9=G.world.npcs.find(n=>n.id==='bonecart');
@@ -4987,10 +5011,9 @@ STORY.push(
          if(m9){ m9.target={x:42.6,y:16.1}; m9.speed=.012; }
          if(m8){ m8.target={x:42.4,y:15.1}; m8.speed=.012; } }},
        {say:['narrator','And the coffin was set upon the wagon, and men of the sons of Ephrayim put their shoulders to it — and the bones of the dreamer rolled east in the midst of the host, before the eyes of all Yasharal.']},
-       {call:G=>{ for(const n of G.world.npcs){ if(n.group==='host'){ n.follow=true; } } }},
+       {call:G=>{ for(const n of G.world.npcs){ if(n.group==='host'){ n.wander=false; n.route=[[40+Math.random()*3,14+Math.random()*4],[10+Math.random()*4,17+Math.random()*4]]; n.routeSpeed=.012; } } }},
       ]},
-     {type:'lead',group:'host',x:38,y:16,radius:3.4,need:4,text:'Lead the families after the pillar of cloud',hiddenUntil:1},
-     {type:'goto',x:40,y:15.5,radius:2.4,text:'Stand beneath the pillar of cloud',hiddenUntil:2,
+     {type:'goto',x:40,y:15.5,radius:2.4,text:'Go on to the pillar of cloud',hiddenUntil:1,
       script:[
        {say:['narrator','And Aluahim did not lead them by the way of the land of the Philistines, though that was near — for Aluahim said, “Lest the people regret when they see fighting, and return to Mitsrayim.” So Aluahim led the people around, by way of the wilderness of the Sea of Reeds.']},
        {say:['narrator','And YAHUAH went before them: by day in a pillar of cloud to lead the way, and by night in a pillar of fire to give them light — to go by day and night. The pillar did not cease from before the people.']},
@@ -5024,21 +5047,23 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<24;i++) G.world.npcs.push(makeNpc({id:'xc'+i,char:cs[i%4],child:i%9===8,
-         x:18+(i%10)*1.9+Math.random(),y:15.5+Math.floor(i/10)*1.6+Math.random(),
-         wander:true,range:1.1,noTalk:true})); }},
+       for(let i=0;i<60;i++) G.world.npcs.push(makeNpc({id:'xc'+i,char:cs[i%4],child:i%8===7,
+         x:13+(i%13)*1.9+Math.random(),y:13.5+Math.floor(i/13)*1.6+Math.random(),
+         wander:true,range:1.1,noTalk:true}));
+       for(let i=0;i<6;i++) G.world.npcs.push(makeNpc({id:'xcan'+i,animal:['sheep','goat','donkey','sheep','cow','goat'][i],
+         x:14+i*4,y:21+(i%2),range:1.4,noTalk:true})); }},
    ],
    objectives:[
      {type:'goto',x:24,y:20,radius:2.2,text:'Camp by the sea — and look back toward Mitsrayim',
       script:[
        {call:G=>{ const w9=G.world;
          /* six hundred chosen chariots, and all the chariots of Mitsrayim */
-         for(let i=0;i<8;i++) w9.npcs.push(makeNpc({id:'war'+(i+1),propType:'chariot',horses:true,gold:i%3===0,
-           x:43+(i%3)*2,y:6.5+i*1.6,wander:false,noTalk:true}));
-         for(let i=0;i<5;i++) w9.npcs.push(makeNpc({id:'rider'+(i+1),char:i%2?'sorcerer':'taskmaster',mount:'horse',
-           x:45+(i%2)*1.5,y:7.5+i*2.4,wander:false,noTalk:true}));
-         for(let i=0;i<5;i++) w9.npcs.push(makeNpc({id:'foot'+(i+1),char:'taskmaster',
-           x:46,y:8+i*2.2,wander:false,noTalk:true}));
+         for(let i=0;i<14;i++) w9.npcs.push(makeNpc({id:'war'+(i+1),propType:'chariot',horses:true,gold:i%3===0,
+           rider:i%2?'taskmaster':'sorcerer',x:40+(i%4)*2,y:5.5+(i%7)*1.9,wander:false,noTalk:true}));
+         for(let i=0;i<8;i++) w9.npcs.push(makeNpc({id:'rider'+(i+1),char:i%2?'sorcerer':'taskmaster',mount:'horse',
+           x:44.5+(i%2)*1.5,y:6.5+i*1.7,wander:false,noTalk:true}));
+         for(let i=0;i<8;i++) w9.npcs.push(makeNpc({id:'foot'+(i+1),char:'taskmaster',
+           x:46,y:6.5+i*1.7,wander:false,noTalk:true}));
        }},
        {call:G=>{ for(const n of G.world.npcs){
          if(/^war\d/.test(n.id)){ n.target={x:33+Math.random()*4,y:7+Math.random()*8}; n.speed=.04; }
@@ -5109,7 +5134,7 @@ STORY.push(
 },
 { id:'x23', title:'The Song at the Sea', ref:'SHEMOTH 15:1–21',
   intro:[
-   {art:'seacross', music:'holy', text:'Then Mosheh and the children of Yasharal sang this song to YAHUAH: “I sing to YAHUAH, for He is highly exalted! The horse and its rider He has thrown into the sea!”', ref:'SHEMOTH 15:1'},
+   {art:'songshore', music:'holy', text:'Then Mosheh and the children of Yasharal sang this song to YAHUAH: “I sing to YAHUAH, for He is highly exalted! The horse and its rider He has thrown into the sea!”', ref:'SHEMOTH 15:1'},
   ],
   scene:{
    map:{biome:'desert', w:44, h:26, seed:885, sea:7,
@@ -5133,7 +5158,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebreww','hebrew','hebreww','hebrew2'];
-       for(let i=0;i<16;i++){ const w9=i%2===0;
+       for(let i=0;i<30;i++){ const w9=i%2===0;
          G.world.npcs.push(makeNpc({id:'sng'+i,char:cs[i%4],child:i%8===7,
            x:16+(i%8)*1.9+Math.random(),y:14+Math.floor(i/8)*2+Math.random(),
            route:w9?[[17+(i%5)*2,16],[19+(i%4)*2,18],[16+(i%6),17]]:null,routeSpeed:.02,
@@ -5141,17 +5166,17 @@ STORY.push(
    ],
    objectives:[
      {type:'talk',npc:'mosheh',text:'Sing the Song of the Sea with Mosheh and all Yasharal'},
-     {type:'goto',x:21,y:17,radius:2,text:'Take up the timbrel — answer them, Miryam the prophetess',hiddenUntil:1,
+     {type:'goto',x:21,y:17,radius:2,text:'Take up the timbrel — answer them, Miryam the neḇi’ah',hiddenUntil:1,
       script:[
        {sfx:'chime'},{burst:[21,17,'mote',22]},
        {say:['miryam','Sing to YAHUAH, for He is highly exalted! The horse and its rider He has thrown into the sea!']},
-       {say:['narrator','And Miryam the prophetess, the sister of Aharon, took the timbrel in her hand — and all the women went out after her with timbrels and with dances, and Miryam answered them. The girl who once stood far off by a river of decree, watching a basket in the reeds, now led the daughters of a free nation in the dance.']},
+       {say:['narrator','And Miryam the neḇi’ah, the sister of Aharon, took the timbrel in her hand — and all the women went out after her with timbrels and with dances, and Miryam answered them. The girl who once stood far off by a river of decree, watching a basket in the reeds, now led the daughters of a free nation in the dance.']},
        {sfx:'holy'},
       ]},
    ],
   },
   outro:[
-   {art:'seacross', music:'holy', text:'WITNESS — And Pharaoh’s host was repaid measure for measure: as they had cast the sons into the river, so the sea covered them. And the dread of YAHUAH fell on all the peoples: “All the inhabitants of Kena‛an have melted away… until Your people pass over, O YAHUAH, whom You have bought.”', ref:'SHEMOTH 15:14–16 · YASHAR 81'},
+   {art:'songshore', music:'holy', text:'WITNESS — And Pharaoh’s host was repaid measure for measure: as they had cast the sons into the river, so the sea covered them. And the dread of YAHUAH fell on all the peoples: “All the inhabitants of Kena‛an have melted away… until Your people pass over, O YAHUAH, whom You have bought.”', ref:'SHEMOTH 15:14–16 · YASHAR 81'},
   ],
   complete:'I sing to YAHUAH, for He is highly exalted — YAHUAH reigns forever and ever.'
 },
@@ -5444,8 +5469,8 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<24;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
-         x:14+(i%9)*2+Math.random(),y:20+Math.floor(i/9)*1.8+Math.random(),
+       for(let i=0;i<48;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
+         x:10+(i%14)*1.9+Math.random(),y:19+Math.floor(i/14)*1.7+Math.random(),
          wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
@@ -5489,8 +5514,8 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<24;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
-         x:15+(i%9)*1.9+Math.random(),y:21+Math.floor(i/9)*1.6+Math.random(),
+       for(let i=0;i<48;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
+         x:11+(i%14)*1.8+Math.random(),y:20+Math.floor(i/14)*1.6+Math.random(),
          wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
@@ -5545,8 +5570,8 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<18;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
-         x:16+(i%8)*1.9+Math.random(),y:19.5+Math.floor(i/8)*1.7+Math.random(),
+       for(let i=0;i<36;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
+         x:12+(i%12)*1.9+Math.random(),y:18.5+Math.floor(i/12)*1.7+Math.random(),
          wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
@@ -5775,7 +5800,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','hebreww'];
-       for(let i=0;i<14;i++) G.world.npcs.push(makeNpc({id:'wil'+i,char:cs[i%4],
+       for(let i=0;i<22;i++) G.world.npcs.push(makeNpc({id:'wil'+i,char:cs[i%4],
          x:12+(i%7)*2+Math.random(),y:19+Math.floor(i/7)*2+Math.random(),
          route:[[13+(i%5)*2,20],[24,15.5],[16+(i%4)*2,21]],routeSpeed:.02,noTalk:true})); }},
    ],
@@ -5819,7 +5844,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebrew','hebrew2','hebreww','hebrew'];
-       for(let i=0;i<10;i++) G.world.npcs.push(makeNpc({id:'wrk'+i,char:cs[i%4],
+       for(let i=0;i<16;i++) G.world.npcs.push(makeNpc({id:'wrk'+i,char:cs[i%4],
          x:15+(i%5)*2.4+Math.random(),y:19+Math.floor(i/5)*2.2+Math.random(),
          route:[[17+(i%4)*2,19.5],[24+(i%3),16],[20+(i%5),21]],routeSpeed:.022,noTalk:true})); }},
    ],
@@ -5878,8 +5903,8 @@ STORY.push(
    ],
    onStart:[
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<22;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
-         x:15+(i%8)*2+Math.random(),y:21+Math.floor(i/8)*1.8+Math.random(),
+       for(let i=0;i<44;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
+         x:11+(i%12)*2+Math.random(),y:20+Math.floor(i/12)*1.8+Math.random(),
          wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
