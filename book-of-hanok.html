@@ -500,7 +500,7 @@ const CHARS={
   avram_y: {name:'Aḇram',   skin:'#7a4e29', hair:'#46301a', hairStyle:'short', robe:'#7c6442'},
   terah:   {name:'Teraḥ',   skin:'#704a27', hair:'#9a9286', hairStyle:'short', robe:'#704a3a', beard:'#9a9286', headcover:'#8a3030'},
   oldman:  {name:'An Old Stranger', skin:'#6b4828', hair:'#b8b2a4', hairStyle:'short', robe:'#6a665a', beard:'#b8b2a4'},
-  satan_a: {name:'A Shining One', angel:true, skin:'#6e4a28', hair:'#d8c8a0', hairStyle:'short', robe:'#e8e0d0'},
+  satan_a: {name:'A Shining One', angel:true, skin:'#6e4a28', hair:'#a31515', hairStyle:'short', robe:'#e8e0d0'},
   satan_d: {name:'Satan', skin:'#0e0a0a', hair:'#a31515', hairStyle:'short', robe:'#8a8a8e', robeLine:'#eceef0'},
   adam_o:  {name:'Aḏam', skin:'#6e4524', hair:'#d8d2c4', hairStyle:'short', robe:'#7d5d38', beard:'#d8d2c4', old:true},
   luluwa:  {name:'Luluwa', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#9c7d8c'},
@@ -2050,13 +2050,26 @@ function drawWorld(g,world,t){
       g.fillStyle='rgba(0,0,0,.18)';
       for(let i=0;i<3;i++) g.fillRect(sx,sy+5+i*TILE/3,TILE,2);
     } else if(id===T.MTN){
-      g.fillStyle='rgba(255,255,255,.045)';
-      const pk=TILE*(.3+hash2(x*3,y*5)*.4);
-      g.beginPath(); g.moveTo(sx,sy+TILE); g.lineTo(sx+pk,sy+TILE*(.15+hash2(x,y*7)*.25)); g.lineTo(sx+TILE,sy+TILE);
-      g.closePath(); g.fill();
-      g.fillStyle='rgba(0,0,0,.1)'; g.fillRect(sx,sy+TILE-3,TILE,3);
-      if(hash2(x,y)>.88){ g.fillStyle='rgba(240,244,250,.35)';
-        g.beginPath(); g.moveTo(sx+TILE*.3,sy+TILE*.45); g.lineTo(sx+TILE*.5,sy+TILE*.2); g.lineTo(sx+TILE*.7,sy+TILE*.45); g.closePath(); g.fill(); }
+      /* a craggy peak with lit & shadowed faces meeting at a jagged ridge — not a flat triangle */
+      const h7=hash2(x*3,y*5), h8=hash2(x*7,y*3);
+      const peakX=sx+TILE*(.36+h7*.28), peakY=sy+TILE*(.05+h8*.18), baseY=sy+TILE+1;
+      g.fillStyle='rgba(0,0,0,.15)';
+      g.beginPath(); g.ellipse(sx+TILE/2,baseY-2,TILE*.54,TILE*.15,0,0,Math.PI*2); g.fill();
+      g.fillStyle=shadeC('#4c463c',-4);
+      g.beginPath(); g.moveTo(peakX,peakY);
+      g.lineTo(sx+TILE*(.7+h8*.18),sy+TILE*.46); g.lineTo(sx+TILE+1,baseY);
+      g.lineTo(peakX,baseY); g.closePath(); g.fill();
+      g.fillStyle=shadeC('#6e665a',12);
+      g.beginPath(); g.moveTo(peakX,peakY);
+      g.lineTo(sx-1+TILE*(.16*h7),sy+TILE*.6); g.lineTo(sx-1,baseY);
+      g.lineTo(peakX,baseY); g.closePath(); g.fill();
+      g.strokeStyle='rgba(0,0,0,.13)'; g.lineWidth=1.4;
+      g.beginPath(); g.moveTo(peakX,peakY); g.lineTo(sx+TILE*(.42+h7*.12),sy+TILE*.6);
+      g.moveTo(peakX,peakY); g.lineTo(sx+TILE*(.56+h8*.12),sy+TILE*.78); g.stroke();
+      if(peakY<sy+TILE*.13){ g.fillStyle='rgba(240,244,250,.85)';
+        g.beginPath(); g.moveTo(peakX,peakY);
+        g.lineTo(peakX-TILE*.12,peakY+TILE*.19); g.lineTo(peakX,peakY+TILE*.12);
+        g.lineTo(peakX+TILE*.13,peakY+TILE*.2); g.closePath(); g.fill(); }
     } else if(id===T.WALL){
       g.fillStyle='rgba(0,0,0,.22)';
       g.fillRect(sx,sy+TILE-4,TILE,4);
@@ -2355,7 +2368,7 @@ const Game={
   updateDlg(dt){
     if(!this.dlgChar) return;
     if(!this.dlgDone){
-      this.dlgShown+=dt*.045;
+      this.dlgShown+=dt*.026;
       const n=Math.min(this.dlgText.length,Math.floor(this.dlgShown));
       $('dlg-text').textContent=this.dlgText.slice(0,n);
       if(n%3===0&&n>0&&Math.floor(this.dlgShown-dt*.045)!==n) {}
@@ -2898,12 +2911,17 @@ const Game={
           e._fa=((h9%100)/100-.5)*1.5;       /* personal angle off the line of march */
           e._fd=1+((h9>>3)%100)/100*1.1;     /* personal following distance */
         }
-        if(!e.target){
-          const d3=dist(e.x,e.y,p.x,p.y);
-          if(d3<3.4&&d3>e._fd+.25){
-            const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
-            e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd}; e.speed=.06;
-          }
+        const d3f=dist(e.x,e.y,p.x,p.y);
+        if(d3f>7){
+          /* the player outran them — re-form the line so a follower is never lost */
+          const a9=Math.atan2(e.y-p.y,e.x-p.x);
+          let cx=p.x+Math.cos(a9)*e._fd, cy=p.y+Math.sin(a9)*e._fd;
+          if(!walkable(w.map,cx,cy)){ cx=p.x; cy=p.y; }
+          e.x=cx; e.y=cy; e.target=null;
+        } else if(!e.target&&d3f>e._fd+.25){
+          const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
+          e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd};
+          e.speed=clamp(.06+(d3f-e._fd)*.05,.06,.2);
         }
         /* spacing: two followers never merge into one */
         for(const o9 of w.npcs){
