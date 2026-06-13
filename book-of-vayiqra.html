@@ -3225,6 +3225,19 @@ const Game={
         e._ri=((e._ri||0)+1)%e.route.length;
         const wp=e.route[e._ri];
         e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
+      } else if(e!==p&&e.animal&&p&&!blocked&&!e.lying&&!e.foe&&!e.route&&!e.rideable&&!e.group&&!e.dlg&&!e.script&&!e.tame){
+        /* skittish creatures: birds take wing, the creeping things scatter when you draw near */
+        const dp=dist(e.x,e.y,p.x,p.y);
+        const fly=(e.animal==='bird'||e.animal==='dove'||e.animal==='raven');
+        const fr=e.fleeRange||(fly?4:2.8);
+        if(dp<fr){
+          const a=Math.atan2(e.y-p.y,e.x-p.x);
+          let fx=clamp(e.x+Math.cos(a)*2.4,2,w.map.w-3), fy=clamp(e.y+Math.sin(a)*2.4,2,w.map.h-3);
+          if(fly){ e.flying=true; e.speed=.15; } else { e.speed=.09; }
+          if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy};
+          else { const a2=a+Math.PI/2; fx=clamp(e.x+Math.cos(a2)*2.2,2,w.map.w-3); fy=clamp(e.y+Math.sin(a2)*2.2,2,w.map.h-3);
+            if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy}; }
+        } else if(e.flying&&dp>fr+2.5){ e.flying=false; }
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;

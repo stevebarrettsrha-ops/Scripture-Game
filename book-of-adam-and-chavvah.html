@@ -935,8 +935,29 @@ function drawSerpent(g,px,py,o){
   g.save(); g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined)g.globalAlpha=o.alpha;
   g.fillStyle='rgba(0,0,0,.2)';
-  g.beginPath(); g.ellipse(0,1,9*u,2.4*u,0,0,Math.PI*2); g.fill();
+  g.beginPath(); g.ellipse(0,1,(o.rear?5:9)*u,2.4*u,0,0,Math.PI*2); g.fill();
   const ops=[]; const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
+  if(o.rear){
+    /* reared up on the tip of its tail, jaws open to strike */
+    const sway=Math.sin(t/140)*1.2, N=7;
+    R(-4,-2,8,3,'#4a6322'); R(-3,-3.6,6,2.4,'#5d7a2e');   /* coil at the base */
+    for(let i=0;i<N;i++){
+      const fy=i/(N-1), y=-3-i*2.3;
+      const x=Math.sin(fy*3+t/200)*1.8+sway*fy, s2=2.6-i*.16;
+      R(x-s2,y-s2,s2*2,s2*2,i%2?'#5d7a2e':'#4a6322');
+      if(i%2===0) R(x-s2*.5,y-.3,s2,1,'#d8c25a');
+    }
+    const topx=Math.sin(3+t/200)*1.8+sway, topy=-3-(N-1)*2.3-2;
+    const gape=2+Math.sin(t/120)*1.2;                       /* mouth opening pulse */
+    R(topx-3,topy-2.2,5.6,3.2,'#5d7a2e');                   /* skull */
+    R(topx-1.6,topy-1.4,1.3,1.3,'#e8c64a'); R(topx-1.3,topy-1.1,.7,.7,'#160e08'); /* eye */
+    R(topx-5.4,topy-1.6,2.8,1.1,'#4a6322');                 /* upper jaw */
+    R(topx-5.4,topy+gape*.5,2.8,1.1,'#3a5018');             /* lower jaw, dropped open */
+    R(topx-5.2,topy-.4,2.2,gape*.5,'#1c0b0b');              /* gullet */
+    R(topx-5,topy-.4,.5,1.1,'#f2eee2'); R(topx-3.4,topy-.4,.5,1.1,'#f2eee2'); /* fangs */
+    if(Math.sin(t/120)>0){ R(topx-7.6,topy-.1,2.2,.5,'#c0392b'); R(topx-8.2,topy-.6,.9,.5,'#c0392b'); R(topx-8.2,topy+.4,.9,.5,'#c0392b'); }
+    sprRender(g,ops,u,flip); g.restore(); return;
+  }
   const segs=7;
   for(let i=segs;i>=0;i--){
     const ph=t/260+i*.8;
@@ -2071,7 +2092,7 @@ function drawWorld(g,world,t){
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand,rear:d.rear});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -2851,6 +2872,19 @@ const Game={
         e._ri=((e._ri||0)+1)%e.route.length;
         const wp=e.route[e._ri];
         e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
+      } else if(e!==p&&e.animal&&p&&!blocked&&!e.lying&&!e.foe&&!e.route&&!e.rideable&&!e.group&&!e.dlg&&!e.script&&!e.tame){
+        /* skittish creatures: birds take wing, the creeping things scatter when you draw near */
+        const dp=dist(e.x,e.y,p.x,p.y);
+        const fly=(e.animal==='bird'||e.animal==='dove'||e.animal==='raven');
+        const fr=e.fleeRange||(fly?4:2.8);
+        if(dp<fr){
+          const a=Math.atan2(e.y-p.y,e.x-p.x);
+          let fx=clamp(e.x+Math.cos(a)*2.4,2,w.map.w-3), fy=clamp(e.y+Math.sin(a)*2.4,2,w.map.h-3);
+          if(fly){ e.flying=true; e.speed=.15; } else { e.speed=.09; }
+          if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy};
+          else { const a2=a+Math.PI/2; fx=clamp(e.x+Math.cos(a2)*2.2,2,w.map.w-3); fy=clamp(e.y+Math.sin(a2)*2.2,2,w.map.h-3);
+            if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy}; }
+        } else if(e.flying&&dp>fr+2.5){ e.flying=false; }
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;
@@ -3971,7 +4005,10 @@ const STORY=[
    map:{biome:'wild', w:46, h:32, seed:321,
      features:[
        {type:'cave',x:36,y:13,solid:true,clear:4,flat:4,id:'cave'},
-       {type:'clearing',x:20,y:20,flat:3},
+       {type:'clearing',x:20,y:20,flat:3,clear:3},
+       /* a clear run to the cave — no stones to trip on while fleeing */
+       {type:'clearing',x:26,y:18.5,flat:3,clear:3},
+       {type:'clearing',x:31,y:16,flat:3,clear:3},
      ]},
    time:'day', music:'tense',
    player:'adam_c', playerPos:[33,16],
@@ -3987,13 +4024,16 @@ const STORY=[
       script:[
        {move:['serpent',18.5,20.5,.07,'bg']},
        {say:['chavvah_c','Aḏam! The serpent — it comes at me — it means to kill me!']},
-       {move:['player',20.5,19.5,.09]},
-       {say:['adam_c','Get behind me! — You accursed thing! Was it not enough that we fell? Would you now slay the bone of my bone?']},
-       {say:['narrator','And the serpent rose against them in fury — for it could no longer speak since the curse — and it pressed upon them with hatred to destroy them.']},
-       {shake:2},{sfx:'bad'},{music:'storm'},
+       /* Aḏam steps in front of Ḥawwah, between her and the serpent */
+       {move:['player',19,20.2,.09]},{face:['player','left']},{face:['chavvah','right']},
+       {say:['adam_c','Get behind me, Ḥawwah! — You accursed thing! Was it not enough that we fell? Would you now slay the bone of my bone?']},
+       {call:g=>{ const s=g.world.npcs.find(n=>n.id==='serpent');
+         if(s){ s.rear=true; s.dir='right'; s.moving=false; s.target=null; } }},
+       {say:['narrator','And the serpent rose up upon the tip of its tail, its jaws gaping wide — for it could no longer speak since the curse — and it pressed upon them with hatred to destroy them.']},
+       {shake:2},{sfx:'bad'},{music:'storm'},{wait:700},
        {say:['adam_c','Run, Ḥawwah — to the cave! RUN!']},
        {call:g=>{ const s=g.world.npcs.find(n=>n.id==='serpent');
-         if(s){ s.chase=true; s.chaseSpeed=.078; }
+         if(s){ s.rear=false; s.chase=true; s.chaseSpeed=.078; }
          const c=g.world.npcs.find(n=>n.id==='chavvah');
          if(c){ c.follow=true; } }},
       ]},
