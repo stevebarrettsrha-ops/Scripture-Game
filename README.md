@@ -6,7 +6,25 @@ pixel-art adventure. No build step, no dependencies, no server required.
 
 ## How to play
 
-Open **`index.html`** in any modern browser (desktop or mobile).
+The fastest way is to open **`index.html`** in any modern browser (desktop or
+mobile). For a one-click, fully **offline** experience on a local device, use
+the launchers below — see **`START HERE.txt`** for the friendly version:
+
+| Platform | Double-click | What it does |
+|---|---|---|
+| Windows | `start-windows.bat` | Opens the game in your default browser (offline, no install) |
+| Windows | `Create Desktop Shortcut.bat` | Run once to put a **Scripture Game** launcher on your desktop |
+| macOS | `start-mac.command` | Opens the game in your default browser (offline) |
+| Linux | `start-linux.sh` | Opens the game in your default browser (offline) |
+
+No internet, account, server or build step is required — the launchers simply
+open the self-contained HTML on your device.
+
+**Optional — play from another device on your network:** `start-windows-server.bat`
+hosts the game at `http://localhost:8080` (needs Python or Node.js installed),
+so phones/tablets on the same Wi-Fi can reach it at `http://YOUR-PC-IP:8080`.
+This is not needed for normal solo play.
+
 Each game is a single file and works offline:
 
 | File | Game | Unlocked by |
