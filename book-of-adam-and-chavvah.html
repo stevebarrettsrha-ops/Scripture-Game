@@ -205,6 +205,43 @@
     <div class="sys-btn" id="btn-menu" title="Chapters">☰</div>
   </div>
 
+  <!-- Besorah in-game reader -->
+  <style>
+    #ref-banner{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:55;
+      display:none;max-width:78vw;padding:6px 14px;border-radius:18px;cursor:pointer;
+      background:rgba(12,16,24,.84);border:1px solid rgba(201,169,106,.55);color:#e8dcc0;
+      font-size:13px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      font-family:inherit;box-shadow:0 2px 14px rgba(0,0,0,.4)}
+    #ref-banner.show{display:block}
+    #ref-banner:hover{background:rgba(201,169,106,.28);color:#fff}
+    #besorah-modal{position:fixed;inset:0;z-index:1000;display:none}
+    #besorah-modal.show{display:block}
+    #besorah-backdrop{position:absolute;inset:0;background:rgba(4,6,12,.82)}
+    #besorah-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      width:min(92vw,860px);height:88vh;background:#0c1018;border:2px solid var(--gold,#c9a96a);
+      border-radius:10px;box-shadow:0 12px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+    #besorah-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:8px 12px;background:#11161f;border-bottom:1px solid rgba(201,169,106,.4);
+      color:var(--gold,#c9a96a);font-family:inherit;letter-spacing:.1em;text-transform:uppercase;
+      font-size:13px;overflow:hidden}
+    #besorah-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #besorah-close{flex:none;background:rgba(201,169,106,.15);color:#e8dcc0;border:1px solid rgba(201,169,106,.5);
+      width:34px;height:34px;border-radius:6px;font-size:18px;line-height:1;cursor:pointer}
+    #besorah-close:hover{background:rgba(201,169,106,.32);color:#fff}
+    #besorah-frame-wrap{position:relative;flex:1;background:#f4ecd8}
+    #besorah-frame-wrap iframe{width:100%;height:100%;border:0;display:block}
+    #besorah-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      color:#6a5a3a;font-style:italic;background:#f4ecd8}
+  </style>
+  <div id="ref-banner"></div>
+  <div id="besorah-modal" aria-hidden="true">
+    <div id="besorah-backdrop"></div>
+    <div id="besorah-panel">
+      <div id="besorah-bar"><span id="besorah-title">The Besorah</span><button id="besorah-close" title="Close (Esc)">✕</button></div>
+      <div id="besorah-frame-wrap"><div id="besorah-loading">Loading the Besorah…</div></div>
+    </div>
+  </div>
+
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
@@ -236,6 +273,7 @@
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
       <button class="btn" id="btn-chapters">Chapters</button>
+      <button class="btn small" id="btn-besorah">📖 The Besorah Scriptures</button>
       <button class="btn small" id="btn-hanok">🔒 The Book of Ḥanoḵ</button>
       <button class="btn small" id="btn-book">← Return to BERĔSHITH</button>
     </div>
@@ -474,6 +512,8 @@ const CHARS={
   chavvah: {name:'Ḥawwah',  skin:'#83552d', hair:'#23150b', hairStyle:'long',  robe:null, glory:true},
   chavvah_f:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#7a8a4a', leaf:true},
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
+  adam_cs:  {name:'Aḏam',   skin:'#6e4524', hair:'#3a2716', hairStyle:'short', robe:'#4a3a28', beard:'#3a2716', singed:true},
+  chavvah_cs:{name:'Ḥawwah',skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#4a3a2a', headcover:'#5a4836', singed:true},
   serpent: {name:'The Serpent', serpent:true},
   cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
   malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
@@ -494,12 +534,13 @@ const CHARS={
   avram_y: {name:'Aḇram',   skin:'#7a4e29', hair:'#46301a', hairStyle:'short', robe:'#7c6442'},
   terah:   {name:'Teraḥ',   skin:'#704a27', hair:'#9a9286', hairStyle:'short', robe:'#704a3a', beard:'#9a9286', headcover:'#8a3030'},
   oldman:  {name:'An Old Stranger', skin:'#6b4828', hair:'#b8b2a4', hairStyle:'short', robe:'#6a665a', beard:'#b8b2a4'},
-  satan_a: {name:'A Shining One', angel:true, skin:'#6e4a28', hair:'#d8c8a0', hairStyle:'short', robe:'#e8e0d0'},
-  siren:   {name:'A Maiden of the River', skin:'#7a4e29', hair:'#1d1208', hairStyle:'long', robe:'#7a98a8'},
-  sirenman:{name:'A Man of the River', skin:'#6e4524', hair:'#221a10', hairStyle:'short', robe:'#5d7a88'},
+  satan_a: {name:'A Shining One', angel:true, skin:'#6e4a28', hair:'#a31515', hairStyle:'short', robe:'#e8e0d0'},
+  host_a:  {name:'A Shining One', angel:true, skin:'#6e4a28', hair:'#b5651d', hairStyle:'short', robe:'#e8e0d0'},
+  siren:   {name:'A Maiden of the River', skin:'#7a4e29', hair:'#b5651d', hairStyle:'long', robe:'#7a98a8'},
+  sirenman:{name:'A Man of the River', skin:'#6e4524', hair:'#b5651d', hairStyle:'short', robe:'#5d7a88'},
   satan_d: {name:'Satan', skin:'#0e0a0a', hair:'#a31515', hairStyle:'short', robe:'#8a8a8e', robeLine:'#eceef0'},
-  satan_w: {name:'A Fair Stranger', skin:'#7e5630', hair:'#120b04', hairStyle:'long', robe:'#b87a9a', headcover:'#d4c4a2'},
-  satan_e: {name:'A Venerable Elder', angel:true, skin:'#6e4a28', hair:'#e8e2d2', hairStyle:'short', robe:'#f0ead8', beard:'#e8e2d2'},
+  satan_w: {name:'A Fair Stranger', skin:'#7e5630', hair:'#a31515', hairStyle:'long', robe:'#b87a9a', headcover:'#d4c4a2'},
+  satan_e: {name:'A Venerable Elder', angel:true, skin:'#6e4a28', hair:'#a31515', hairStyle:'short', robe:'#f0ead8', beard:'#a31515'},
   adam_o:  {name:'Aḏam', skin:'#6e4524', hair:'#d8d2c4', hairStyle:'short', robe:'#7d5d38', beard:'#d8d2c4', old:true},
   luluwa:  {name:'Luluwa', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#9c7d8c'},
   aqlia:   {name:'Aqlia', skin:'#7e5630', hair:'#46301a', hairStyle:'long', robe:'#7d8a6a'},
@@ -862,6 +903,18 @@ function drawChar(g,px,py,charId,o){
       }
     }
   }
+  if(c.singed){
+    /* a covering scorched in Satan's fire: soot, charred holes, and a torn hem that bares the skin */
+    R(-3.6,-7.4+B,1.7,1.7,'#1c140d'); R(1.6,-5.4+B,1.5,1.5,'#241a12'); R(-1.2,-3.4+B,1.4,1.3,'#1c140d');
+    R(-4.6,-2.6+B,1.8,1.5,skin); R(2.7,-2.6+B,1.8,1.5,skin);
+    R(3.0,-8.2+B,1.2,2.2,skin);
+  }
+  if(o.babe){
+    /* a swaddled infant cradled in the arms */
+    R(-0.4,-9.2+B,4.6,3.1,'#efe7d6'); R(-0.8,-8.1+B,5.0,1.3,'#ddd2bb');
+    R(2.6,-9.0+B,1.8,1.8,'#8a5a30'); R(2.9,-8.5+B,.45,.45,'#160e08');
+    R(2.5,-10.0+B,1.9,.7,'#5a3a1e');
+  }
   sprRender(g,ops,u,flip);
   if(hold==='torch'&&!o.lying){
     const fx=(side?(2.65+k*1.5)*u:5.65*u)*flip, fy=((side?-9.2:-9.6+k*0.9)+B-6.8)*u;
@@ -935,8 +988,29 @@ function drawSerpent(g,px,py,o){
   g.save(); g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined)g.globalAlpha=o.alpha;
   g.fillStyle='rgba(0,0,0,.2)';
-  g.beginPath(); g.ellipse(0,1,9*u,2.4*u,0,0,Math.PI*2); g.fill();
+  g.beginPath(); g.ellipse(0,1,(o.rear?5:9)*u,2.4*u,0,0,Math.PI*2); g.fill();
   const ops=[]; const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
+  if(o.rear){
+    /* reared up on the tip of its tail, jaws open to strike */
+    const sway=Math.sin(t/140)*1.2, N=7;
+    R(-4,-2,8,3,'#4a6322'); R(-3,-3.6,6,2.4,'#5d7a2e');   /* coil at the base */
+    for(let i=0;i<N;i++){
+      const fy=i/(N-1), y=-3-i*2.3;
+      const x=Math.sin(fy*3+t/200)*1.8+sway*fy, s2=2.6-i*.16;
+      R(x-s2,y-s2,s2*2,s2*2,i%2?'#5d7a2e':'#4a6322');
+      if(i%2===0) R(x-s2*.5,y-.3,s2,1,'#d8c25a');
+    }
+    const topx=Math.sin(3+t/200)*1.8+sway, topy=-3-(N-1)*2.3-2;
+    const gape=2+Math.sin(t/120)*1.2;                       /* mouth opening pulse */
+    R(topx-3,topy-2.2,5.6,3.2,'#5d7a2e');                   /* skull */
+    R(topx-1.6,topy-1.4,1.3,1.3,'#e8c64a'); R(topx-1.3,topy-1.1,.7,.7,'#160e08'); /* eye */
+    R(topx-5.4,topy-1.6,2.8,1.1,'#4a6322');                 /* upper jaw */
+    R(topx-5.4,topy+gape*.5,2.8,1.1,'#3a5018');             /* lower jaw, dropped open */
+    R(topx-5.2,topy-.4,2.2,gape*.5,'#1c0b0b');              /* gullet */
+    R(topx-5,topy-.4,.5,1.1,'#f2eee2'); R(topx-3.4,topy-.4,.5,1.1,'#f2eee2'); /* fangs */
+    if(Math.sin(t/120)>0){ R(topx-7.6,topy-.1,2.2,.5,'#c0392b'); R(topx-8.2,topy-.6,.9,.5,'#c0392b'); R(topx-8.2,topy+.4,.9,.5,'#c0392b'); }
+    sprRender(g,ops,u,flip); g.restore(); return;
+  }
   const segs=7;
   for(let i=segs;i>=0;i--){
     const ph=t/260+i*.8;
@@ -1928,8 +2002,8 @@ const TINTS={
   day:null,
   morning:'rgba(255,200,120,.10)',
   dusk:'rgba(230,120,60,.18)',
-  night:'rgba(10,18,48,.46)',
-  deepnight:'rgba(5,8,30,.6)',
+  night:'rgba(14,22,54,.34)',
+  deepnight:'rgba(8,12,36,.46)',
   storm:'rgba(30,38,52,.38)',
   dream:'rgba(60,40,110,.25)',
 };
@@ -2011,13 +2085,26 @@ function drawWorld(g,world,t){
       g.fillStyle='rgba(0,0,0,.18)';
       for(let i=0;i<3;i++) g.fillRect(sx,sy+5+i*TILE/3,TILE,2);
     } else if(id===T.MTN){
-      g.fillStyle='rgba(255,255,255,.045)';
-      const pk=TILE*(.3+hash2(x*3,y*5)*.4);
-      g.beginPath(); g.moveTo(sx,sy+TILE); g.lineTo(sx+pk,sy+TILE*(.15+hash2(x,y*7)*.25)); g.lineTo(sx+TILE,sy+TILE);
-      g.closePath(); g.fill();
-      g.fillStyle='rgba(0,0,0,.1)'; g.fillRect(sx,sy+TILE-3,TILE,3);
-      if(hash2(x,y)>.88){ g.fillStyle='rgba(240,244,250,.35)';
-        g.beginPath(); g.moveTo(sx+TILE*.3,sy+TILE*.45); g.lineTo(sx+TILE*.5,sy+TILE*.2); g.lineTo(sx+TILE*.7,sy+TILE*.45); g.closePath(); g.fill(); }
+      /* a craggy peak with lit & shadowed faces meeting at a jagged ridge — not a flat triangle */
+      const h7=hash2(x*3,y*5), h8=hash2(x*7,y*3);
+      const peakX=sx+TILE*(.36+h7*.28), peakY=sy+TILE*(.05+h8*.18), baseY=sy+TILE+1;
+      g.fillStyle='rgba(0,0,0,.15)';
+      g.beginPath(); g.ellipse(sx+TILE/2,baseY-2,TILE*.54,TILE*.15,0,0,Math.PI*2); g.fill();
+      g.fillStyle=shadeC('#4c463c',-4);
+      g.beginPath(); g.moveTo(peakX,peakY);
+      g.lineTo(sx+TILE*(.7+h8*.18),sy+TILE*.46); g.lineTo(sx+TILE+1,baseY);
+      g.lineTo(peakX,baseY); g.closePath(); g.fill();
+      g.fillStyle=shadeC('#6e665a',12);
+      g.beginPath(); g.moveTo(peakX,peakY);
+      g.lineTo(sx-1+TILE*(.16*h7),sy+TILE*.6); g.lineTo(sx-1,baseY);
+      g.lineTo(peakX,baseY); g.closePath(); g.fill();
+      g.strokeStyle='rgba(0,0,0,.13)'; g.lineWidth=1.4;
+      g.beginPath(); g.moveTo(peakX,peakY); g.lineTo(sx+TILE*(.42+h7*.12),sy+TILE*.6);
+      g.moveTo(peakX,peakY); g.lineTo(sx+TILE*(.56+h8*.12),sy+TILE*.78); g.stroke();
+      if(peakY<sy+TILE*.13){ g.fillStyle='rgba(240,244,250,.85)';
+        g.beginPath(); g.moveTo(peakX,peakY);
+        g.lineTo(peakX-TILE*.12,peakY+TILE*.19); g.lineTo(peakX,peakY+TILE*.12);
+        g.lineTo(peakX+TILE*.13,peakY+TILE*.2); g.closePath(); g.fill(); }
     } else if(id===T.WALL){
       g.fillStyle='rgba(0,0,0,.22)';
       g.fillRect(sx,sy+TILE-4,TILE,4);
@@ -2061,7 +2148,7 @@ function drawWorld(g,world,t){
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand,rear:d.rear,babe:d.babe});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -2140,6 +2227,31 @@ function drawWorld(g,world,t){
       g.fillStyle=`rgba(240,240,255,${tw*(world.time==='deepnight'?.9:.5)})`;
       g.fillRect(sx,sy,2,2);
     }
+  }
+  // sunrise — warm, reddish dawn that lifts the darkness (distinct from the pale-gold rays of the Most High)
+  if(world.dawn>0){
+    const sxr=(world.dawnX!==undefined?world.dawnX*TILE+offX:VW*.5);
+    const suny=VH*(.30-world.dawn*.07);
+    g.save(); g.globalCompositeOperation='lighter';
+    const dg=g.createLinearGradient(0,0,0,VH);
+    dg.addColorStop(0,`rgba(255,176,86,${world.dawn*.5})`);
+    dg.addColorStop(.5,`rgba(255,138,68,${world.dawn*.22})`);
+    dg.addColorStop(1,'rgba(255,120,60,0)');
+    g.fillStyle=dg; g.fillRect(0,0,VW,VH);
+    const rg=g.createRadialGradient(sxr,suny,4,sxr,suny,VH*.55);
+    rg.addColorStop(0,`rgba(255,238,184,${world.dawn*.85})`);
+    rg.addColorStop(.4,`rgba(255,168,88,${world.dawn*.4})`);
+    rg.addColorStop(1,'rgba(255,150,80,0)');
+    g.fillStyle=rg; g.beginPath(); g.arc(sxr,suny,VH*.55,0,Math.PI*2); g.fill();
+    for(let i=0;i<7;i++){
+      const a=(i-3)*.26+Math.sin(t/2600+i)*.05;
+      g.save(); g.translate(sxr,suny); g.rotate(a+Math.PI/2);
+      const bg=g.createLinearGradient(0,0,0,VH);
+      bg.addColorStop(0,`rgba(255,206,138,${world.dawn*.16})`); bg.addColorStop(1,'rgba(255,206,138,0)');
+      g.fillStyle=bg; g.beginPath(); g.moveTo(-14,0); g.lineTo(14,0); g.lineTo(72,VH); g.lineTo(-72,VH); g.closePath(); g.fill();
+      g.restore();
+    }
+    g.globalCompositeOperation='source-over'; g.restore();
   }
   // vignette
   const vg=g.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.42,VW/2,VH/2,Math.max(VW,VH)*.72);
@@ -2316,7 +2428,7 @@ const Game={
   updateDlg(dt){
     if(!this.dlgChar) return;
     if(!this.dlgDone){
-      this.dlgShown+=dt*.045;
+      this.dlgShown+=dt*.026;
       const n=Math.min(this.dlgText.length,Math.floor(this.dlgShown));
       $('dlg-text').textContent=this.dlgText.slice(0,n);
       if(n%3===0&&n>0&&Math.floor(this.dlgShown-dt*.045)!==n) {}
@@ -2425,6 +2537,7 @@ const Game={
     if(op.sfx){ Sound.sfx(op.sfx); return true; }
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
+    if(op.dawn!==undefined){ w.dawnTarget=op.dawn; if(op.dawnX!==undefined)w.dawnX=op.dawnX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
@@ -2600,7 +2713,7 @@ const Game={
     this.world={
       map, player, npcs:(sc.npcs||[]).map(makeNpc),
       items:(sc.items||[]).map(it=>Object.assign({},it)),
-      time:sc.time||'day', rain:false, rays:0, raysTarget:0,
+      time:sc.time||'day', rain:false, rays:0, raysTarget:0, dawn:0, dawnTarget:0,
       camFollow:'player', camTarget:null, gotoMark:null,
       overlook:sc.overlook||null
     };
@@ -2783,6 +2896,7 @@ const Game={
       this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
+    w.dawn=lerp(w.dawn,w.dawnTarget||0,dt*.0016);   /* the dawn comes on slowly */
     // player movement
     const p=w.player;
     const blocked=(this.script&&!this.battle)||this.dlgChar;
@@ -2845,6 +2959,19 @@ const Game={
         e._ri=((e._ri||0)+1)%e.route.length;
         const wp=e.route[e._ri];
         e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
+      } else if(e!==p&&e.animal&&p&&!blocked&&!e.lying&&!e.foe&&!e.route&&!e.rideable&&!e.group&&!e.dlg&&!e.script&&!e.tame){
+        /* skittish creatures: birds take wing, the creeping things scatter when you draw near */
+        const dp=dist(e.x,e.y,p.x,p.y);
+        const fly=(e.animal==='bird'||e.animal==='dove'||e.animal==='raven');
+        const fr=e.fleeRange||(fly?4:2.8);
+        if(dp<fr){
+          const a=Math.atan2(e.y-p.y,e.x-p.x);
+          let fx=clamp(e.x+Math.cos(a)*2.4,2,w.map.w-3), fy=clamp(e.y+Math.sin(a)*2.4,2,w.map.h-3);
+          if(fly){ e.flying=true; e.speed=.15; } else { e.speed=.09; }
+          if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy};
+          else { const a2=a+Math.PI/2; fx=clamp(e.x+Math.cos(a2)*2.2,2,w.map.w-3); fy=clamp(e.y+Math.sin(a2)*2.2,2,w.map.h-3);
+            if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy}; }
+        } else if(e.flying&&dp>fr+2.5){ e.flying=false; }
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;
@@ -2865,12 +2992,17 @@ const Game={
           e._fa=((h9%100)/100-.5)*1.5;       /* personal angle off the line of march */
           e._fd=1+((h9>>3)%100)/100*1.1;     /* personal following distance */
         }
-        if(!e.target){
-          const d3=dist(e.x,e.y,p.x,p.y);
-          if(d3<3.4&&d3>e._fd+.25){
-            const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
-            e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd}; e.speed=.06;
-          }
+        const d3f=dist(e.x,e.y,p.x,p.y);
+        if(d3f>7){
+          /* the player outran them — re-form the line so a follower is never lost */
+          const a9=Math.atan2(e.y-p.y,e.x-p.x);
+          let cx=p.x+Math.cos(a9)*e._fd, cy=p.y+Math.sin(a9)*e._fd;
+          if(!walkable(w.map,cx,cy)){ cx=p.x; cy=p.y; }
+          e.x=cx; e.y=cy; e.target=null;
+        } else if(!e.target&&d3f>e._fd+.25){
+          const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
+          e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd};
+          e.speed=clamp(.06+(d3f-e._fd)*.05,.06,.2);
         }
         /* spacing: two followers never merge into one */
         for(const o9 of w.npcs){
@@ -4214,16 +4346,17 @@ const STORY=[
       ]},
      {type:'interact',prop:'cave',text:'Enter the Cave of Treasures',hiddenUntil:1,
       script:[
-       {fade:'out'},{wait:400},
        {say:['narrator','And Aḏam and Ḥawwah went into the cave and stood praying in their own tongue — a tongue we know not, but which they knew well.']},
-       {fade:'in'},
+       {fade:'out'},{wait:300},
       ]},
    ],
   },
   outro:[
    {art:'cavehome', music:'sorrow', text:'And as they prayed, Aḏam raised his eyes and saw the rock and the roof of the cave that covered him overhead — so that he could see neither shamayim nor the creatures of Aluahim. And he wept and struck his breast, until he dropped and was as dead.', ref:'1 AḎAM & ḤAWWAH 6'},
+   {art:'cavehome', music:'holy', text:'Then the Word of Aluahim came to Aḏam, and raised him from his death, and said: “O Aḏam, what is this you have done? Did you smite yourself unto death for the one day’s grief? Do you not know that I am your Aluahim who created you, and breathed into you the breath of life? I will not forsake you, until I have fulfilled the promise of the great five days and a half.”', ref:'1 AḎAM & ḤAWWAH 7'},
+   {art:'cavehome', music:'holy', text:'And Aḏam rose up, and bowed himself before YAHUAH; and his heart took comfort, for he understood that he was not cast off, and that the Word would surely come.', ref:'1 AḎAM & ḤAWWAH 7'},
   ],
-  complete:'From light into this darkness — yet He sent His Word, and raised them from their fallen state.'
+  complete:'He struck his breast until he was as dead — yet the Word of Aluahim came, and raised him up, and would not forsake him.'
 },
 { id:'b1a', title:'The Water by the Garden', ref:'1 AḎAM & ḤAWWAH 9–10',
   intro:[
@@ -4305,14 +4438,19 @@ const STORY=[
        {say:['narrator','And Aḏam and Ḥawwah took comfort, and slept that first night of the world — though sleep came slowly, for they feared the dark would not keep its promise to end.']},
        {fade:'out'},{time:'morning'},{music:'eden'},{fade:'in'},
       ]},
-     {type:'interact',prop:'mouth',text:'At first light — go to the mouth of the cave',hiddenUntil:2,
+     {type:'interact',prop:'mouth',text:'At first light — go with Ḥawwah to the mouth of the cave',hiddenUntil:2,
       script:[
-       {say:['narrator','And when the merciful Aluahim saw that the first night had ended, He made the sun rise — and Aḏam and Ḥawwah saw the light growing red over the mountains.']},
+       {say:['chavvah_c','Aḏam — what is that, beyond the mouth of the cave? The blackness… is it growing thin?']},
+       /* both rise and come to the threshold together */
+       {move:['chavvah',17,3.2,.05]},{move:['player',18.6,3.2,.05]},
+       {face:['player','up']},{face:['chavvah','up']},
+       {say:['narrator','And when the merciful Aluahim saw that the first night had ended, He made the sun to rise — and Aḏam and Ḥawwah stood together at the mouth of the cave, and saw the light growing red over the mountains.']},
+       {dawn:.3,dawnX:18},{sfx:'chime'},{wait:700},
        {say:['chavvah_c','Aḏam — FIRE! A great fire is coming over the earth to burn us! Hide — back into the cave!']},
        {say:['adam_c','Wait— wait, Ḥawwah. It does not devour the mountains. It… warms them. It is climbing the sky. It is LIGHT — the light He promised would return!']},
-       {sfx:'chime'},{rays:.5,raysX:18},
-       {say:['narrator','And the sun rose upon them for the first time outside the garden, and they stood in its warmth and wept for joy — for the darkness had not been forever, exactly as Aluahim had said.']},
-       {rays:0},
+       {time:'morning'},{music:'eden'},{dawn:.85,dawnX:18},{wait:1100},
+       {say:['narrator','And the sun rose upon them for the first time outside the garden; and the darkness slowly fled away before it, and its warm rays shone upon their faces. And they stood in its warmth and wept for joy — for the darkness had not been forever, exactly as Aluahim had said.']},
+       {wait:900},{dawn:0},
       ]},
    ],
   },
@@ -4329,7 +4467,10 @@ const STORY=[
    map:{biome:'wild', w:46, h:32, seed:321,
      features:[
        {type:'cave',x:36,y:13,solid:true,clear:4,flat:4,id:'cave'},
-       {type:'clearing',x:20,y:20,flat:3},
+       {type:'clearing',x:20,y:20,flat:3,clear:3},
+       /* a clear run to the cave — no stones to trip on while fleeing */
+       {type:'clearing',x:26,y:18.5,flat:3,clear:3},
+       {type:'clearing',x:31,y:16,flat:3,clear:3},
      ]},
    time:'day', music:'tense',
    player:'adam_c', playerPos:[33,16],
@@ -4345,13 +4486,16 @@ const STORY=[
       script:[
        {move:['serpent',18.5,20.5,.07,'bg']},
        {say:['chavvah_c','Aḏam! The serpent — it comes at me — it means to kill me!']},
-       {move:['player',20.5,19.5,.09]},
-       {say:['adam_c','Get behind me! — You accursed thing! Was it not enough that we fell? Would you now slay the bone of my bone?']},
-       {say:['narrator','And the serpent rose against them in fury — for it could no longer speak since the curse — and it pressed upon them with hatred to destroy them.']},
-       {shake:2},{sfx:'bad'},{music:'storm'},
+       /* Aḏam steps in front of Ḥawwah, between her and the serpent */
+       {move:['player',19,20.2,.09]},{face:['player','left']},{face:['chavvah','right']},
+       {say:['adam_c','Get behind me, Ḥawwah! — You accursed thing! Was it not enough that we fell? Would you now slay the bone of my bone?']},
+       {call:g=>{ const s=g.world.npcs.find(n=>n.id==='serpent');
+         if(s){ s.rear=true; s.dir='right'; s.moving=false; s.target=null; } }},
+       {say:['narrator','And the serpent rose up upon the tip of its tail, its jaws gaping wide — for it could no longer speak since the curse — and it pressed upon them with hatred to destroy them.']},
+       {shake:2},{sfx:'bad'},{music:'storm'},{wait:700},
        {say:['adam_c','Run, Ḥawwah — to the cave! RUN!']},
        {call:g=>{ const s=g.world.npcs.find(n=>n.id==='serpent');
-         if(s){ s.chase=true; s.chaseSpeed=.078; }
+         if(s){ s.rear=false; s.chase=true; s.chaseSpeed=.078; }
          const c=g.world.npcs.find(n=>n.id==='chavvah');
          if(c){ c.follow=true; } }},
       ]},
@@ -4522,11 +4666,14 @@ const STORY=[
   ],
   scene:{
    map:{biome:'wild', w:48, h:32, seed:351, sea:9,
-     features:[{type:'clearing',x:24,y:20,flat:2}]},
+     features:[{type:'clearing',x:24,y:20,flat:2,clear:3},
+       /* keep the shore clear so no tree hides Aḏam while he stands in the water */
+       {type:'clearing',x:24,y:23,flat:2,clear:3},{type:'clearing',x:28,y:20,flat:1,clear:2}]},
    time:'day', music:'sorrow',
    player:'adam_c', playerPos:[14,14],
    npcs:[
      {id:'satan',char:'satan_a',x:40,y:18,wander:false,hidden:true,noTalk:true},
+     {id:'chavvah',char:'chavvah_c',x:37,y:24.5,wander:false,noTalk:true,submerged:true},
    ],
    objectives:[
      {type:'goto',x:24,y:21,radius:2.2,text:'Go down and stand in the water of the sea',
@@ -4534,19 +4681,29 @@ const STORY=[
        {move:['player',24,23.8,.03]},
        {call:g=>{ g.world.player.submerged=true; g.world.player.moving=false; }},
        {wait:700},
-       {say:['narrator','And Aḏam went down into the sea until the water stood about him, and he stood in it, praying — day after day, while the waves went over him.']},
+       {say:['narrator','And Aḏam went down into the sea until the water stood about him, and he stood in it, praying — day after day, while the waves went over him; and Ḥawwah stood in the river, even as they had agreed.']},
        {mash:{duration:9000,gain:.13,decay:.00024,text:'Stand fast in the cold water — do not come up!',barA:'YOUR RESOLVE',barB:'THE DAYS OF PENANCE',msg1:'Your limbs grow numb — yet you stand…',msg2:'The waves go over your head — yet you stand…'}},
        {say:['narrator','Thirty-five days passed.']},
        {fade:'out'},{toast:'Thirty-five days of penance in the water…'},{wait:1600},{fade:'in'},
-       {show:'satan'},{move:['satan',27,19,.05]},
-       {say:['satan_a','Aḏam — rejoice! Aluahim has heard your prayer, and has sent me, His messenger, to bring you the bright light you lost! Come up out of the water — come, follow me, and I will lead you to the garden.']},
+       /* unable to move Aḏam, the deceiver goes first to Ḥawwah in the river */
+       {say:['narrator','Now Satan saw that he could not move Aḏam — so he went first to Ḥawwah in the river, transformed into a shining one, fair and full of borrowed light.']},
+       {show:'satan'},{move:['satan',35,23,.07,'bg']},
+       {say:['satan_a','Ḥawwah — rejoice! Your penance is accepted; Aluahim has sent me to bring you up out of the cold river, and to lead you to Aḏam, and to the garden you lost. Come up — do not linger in the water.']},
+       {say:['narrator','And Ḥawwah, not knowing the deceiver, believed him; and she came up out of the river, and cut her penance short, and followed him toward Aḏam.']},
+       {call:g=>{ const c=g.world.npcs.find(n=>n.id==='chavvah'); if(c){ c.submerged=false; } }},
+       {move:['satan',30,21,.06,'bg']},{move:['chavvah',31,21.5,.05]},
+       {say:['adam_c','Ḥawwah! Why have you left the river? Who has told you the penance was complete?']},
+       {say:['chavvah_c','A shining messenger, Aḏam — he says Aluahim sent him, to bring me to you, and to lead us both home to the garden…']},
+       {move:['satan',27,21,.05]},
+       {say:['satan_a','It is so, Aḏam — come up out of the sea as she has done, and follow me, His messenger, and I will bring you to the bright light you lost.']},
        {say:['adam_c','…Your words are sweet. But my heart is afraid. When the Word of Aluahim speaks, my whole soul has peace — and before you, it trembles.']},
        {say:['adam_c','O Aluahim — if this messenger is from You, give me a sign. And if it is the enemy, deliver me out of his hand — for I will not break my penance at any voice but Yours.']},
-       {rays:.9,raysX:24},{sfx:'holy'},{music:'holy'},
-       {say:['voice','O Aḏam, the figure of brightness before you is he who promised you the light once before — the deceiver, who hid himself in the serpent. He has no light, but darkness; no garden, but the pit. Behold him as he is.']},
-       {charSwap:['satan','satan_d']},{sfx:'thunder'},{burst:[27,19,'ash',22]},
+       {rays:.9,raysX:27},{sfx:'holy'},{music:'holy'},
+       {say:['voice','O Aḏam, the figure of brightness before you is he who promised you the light once before — the deceiver, who hid himself in the serpent. He has no light, but darkness; no garden, but the pit. He has drawn Ḥawwah out of the river; let him not draw you out of the sea. Behold him as he is.']},
+       {charSwap:['satan','satan_d']},{sfx:'thunder'},{burst:[27,21,'ash',22]},
        {say:['satan_d','…You were MINE, son of dust. You followed once. You will follow again.']},
-       {say:['voice','Be gone, accursed one. — O Aḏam, how many times have I delivered you out of his hand! Complete your penance in peace; and see, I send you figs from the garden, for your hunger.']},
+       {say:['chavvah_c','Forgive me, Aḏam — I have been deceived again, and have broken my penance! O Aluahim, do not hold it against me.']},
+       {say:['voice','Be gone, accursed one. — O Ḥawwah, your heart was toward Me; rise, and do not despair. O Aḏam, how many times have I delivered you out of his hand! Complete your penance in peace; and see, I send you figs from the garden, for your hunger.']},
        {despawn:'satan'},{rays:0},{music:'eden'},
        {say:['narrator','And messengers brought them figs from the garden, the first comfort of food. And Aḏam completed the forty days.']},
        {call:g=>{ g.world.player.submerged=false; }},
@@ -4665,6 +4822,7 @@ const STORY=[
    npcs:[
      {id:'chavvah',char:'chavvah_c',x:25.5,y:18.5,wander:false,follow:true,noTalk:true},
      {id:'satan',char:'satan_d',x:24,y:6.5,wander:false,hidden:true,noTalk:true},
+     {id:'rollstone',propType:'stone',scale:1.7,x:24,y:7.5,wander:false,hidden:true,noTalk:true},
    ],
    objectives:[
      {type:'goto',x:24,y:14,radius:2,text:'Stand before the cave with Ḥawwah, and pray the morning prayer',
@@ -4673,17 +4831,28 @@ const STORY=[
        {say:['adam_c','O Aluahim, we praise You with the dawn. You made the light, and the darkness flees before it—']},
        {sfx:'thunder'},{music:'storm'},{show:'satan'},
        {say:['satan_d','Pray, then — pray under THIS.']},
-       {say:['narrator','And Satan took a great stone from the height, broad as a threshing floor, and hurled it down upon them as they prayed — to crush them under it, that they might die before their time.']},
-       {shake:3},{sfx:'bad'},
-       {addProp:{type:'rock',x:24,y:14.6,id:'dome'}},
-       {burst:[24,14,'ash',24]},
+       {say:['narrator','And Satan took a great stone from the height, broad as a threshing floor, and rolled it down upon them as they prayed — to crush them under it, that they might die before their time.']},
+       /* the stone comes rolling down the slope toward them */
+       {show:'rollstone'},{sfx:'bad'},{shake:3},
+       {move:['rollstone',24,13.4,.12,'bg']},
+       {wait:200},{burst:[24,10,'ash',12]},{shake:3},
+       {wait:220},{burst:[24,11.5,'ash',14]},{shake:3},
+       {wait:240},{burst:[24,12.8,'ash',16]},{shake:3},
+       {wait:200},
+       /* the Word stays it; they pass beneath, and a door opens — it becomes a cave over them */
        {rays:.9,raysX:24},{sfx:'holy'},{music:'holy'},
-       {say:['narrator','But as it fell, the Word of Aluahim stayed it in the air — and the stone became as a TENT over them, and rested above their heads, and did not touch them; and under it they finished their prayer.']},
+       {hide:'player'},{hide:'chavvah'},{despawn:'rollstone'},
+       {addProp:{type:'cave',x:24,y:13.2,solid:true,id:'dome',examine:'The stone Satan hurled to be their grave — which the Word stayed, and made a cave over their prayer.'}},
+       {burst:[24,13,'holy',24]},{shake:1},
+       {say:['narrator','But as it fell, the Word of Aluahim stayed it in the air; and the great stone rested above them and did not touch them — and a door opened in the rock, and it became a CAVE over their heads, and under it they finished their prayer.']},
        {say:['voice','O Aḏam — see: he hurls death, and I make of it a roof. Not a hair of you falls without Me. Finish your prayer in peace; and let the stone stand for a witness, that what the enemy means for crushing, I mean for covering.']},
        {say:['satan_d','…Stone, fire, water — what is left?! …Time. Time is left, son of dust. I have until your Seed comes for me — and I will spend it all on you and on your children.']},
        {burst:[24,6.5,'ash',18]},{hide:'satan'},
        {rays:0},{music:'eden'},{shake:0},
-       {say:['chavvah_c','He threw it to make a grave for us — and Aluahim made it a roof over our prayer. Aḏam… even his wrath must serve our Maker.']},
+       /* they come out from under it, unhurt */
+       {call:g=>{ const p=g.world.player; p.hidden=false; p.x=24; p.y=15.4; p.dir='down';
+         const c=g.world.npcs.find(n=>n.id==='chavvah'); if(c){ c.hidden=false; c.x=25.4; c.y=15.6; c.target=null; } }},
+       {say:['chavvah_c','He threw it to make a grave for us — and Aluahim made it a roof, and a cave, over our prayer. Aḏam… even his wrath must serve our Maker.']},
        {sfx:'holy'},
       ]},
    ],
@@ -4707,12 +4876,12 @@ const STORY=[
        {type:'clearing',x:12,y:18,flat:2},{type:'clearing',x:13,y:25,flat:2},
      ]},
    time:'day', music:'desert',
-   player:'adam_c', playerPos:[34,15],
+   player:'adam_cs', playerPos:[34,15],
    npcs:[
      {id:'amb_sheep1',animal:'sheep',x:20,y:20,range:2,noTalk:true},
      {id:'amb_sheep2',animal:'sheep',x:22,y:21,range:2,noTalk:true},
-     {id:'chavvah',char:'chavvah_c',x:35,y:16,wander:true,range:1.5,
-      dlg:[['chavvah_c','The Word spoke of skins of sheep on the mountain-side, Aḏam — left where the lions ate. Come, let us go and find them.']]},
+     {id:'chavvah',char:'chavvah_cs',x:35,y:16,wander:true,range:1.5,
+      dlg:[['chavvah_cs','Our coverings are burnt and torn, Aḏam — and the Word spoke of skins of sheep on the mountain-side, left where the lions ate. Come, let us go and find them.']]},
      {id:'satan',char:'satan_d',x:12,y:17,wander:false,hidden:true,noTalk:true},
      {id:'malak',char:'malak',x:33,y:14,wander:false,hidden:true,noTalk:true},
    ],
@@ -4744,6 +4913,7 @@ const STORY=[
       script:[
        {say:['narrator','Then the mal’ak began before them to work out the skins, after the manner of one who prepares a shirt — and he took the thorns and stuck them into the skins, before their eyes.']},
        {say:['narrator','Then the mal’ak stood up and prayed Aluahim that the thorns in those skins should be hidden, so as to be as it were sewn with one thread. And so it was, by the order of Aluahim — and they became garments for Aḏam and Ḥawwah, and He clothed them with them.']},
+       {charSwap:['player','adam_c']},{charSwap:['chavvah','chavvah_c']},
        {sfx:'chime'},{burst:[34,14,'holy',18]},
        {say:['adam_c','From His hand at the gate, the coats of skin — and from His messenger’s hands now, garments again. Even our clothing is mercy taught from the shamayim.']},
        {move:['malak',44,8,.06,'bg']},{despawn:'malak'},
@@ -4812,6 +4982,63 @@ const STORY=[
   ],
   complete:'Two souls, a cave, and the Name — and the hosts of darkness fled before the lamp.'
 },
+{ id:'b8b', title:'The Throne in the Night', ref:'2 AḎAM & ḤAWWAH — the false glory',
+  intro:[
+   {art:'corrupt', music:'tense', text:'Then Satan, envying the worship that Aḏam gave to Aluahim, gathered his host and wrought his proudest apparition of all: in the night he set up for himself a throne, and clothed himself in borrowed light — that Aḏam might take him for a Mighty One, and bow down and worship him.', ref:'2 AḎAM & ḤAWWAH'},
+  ],
+  scene:{
+   map:{biome:'wild', w:48, h:32, seed:369,
+     features:[
+       {type:'cave',glow:true,x:39,y:15,solid:true,clear:4,flat:4,id:'cave'},
+       {type:'throne',x:18,y:10,id:'throne',examine:'A throne of false glory, raised in the night by the enemy.'},
+       {type:'clearing',x:18,y:14,flat:3,clear:4},
+       {type:'clearing',x:28,y:18,flat:3,clear:3},
+     ]},
+   time:'night', music:'tense',
+   player:'adam_c', playerPos:[35,19],
+   npcs:[
+     {id:'chavvah',char:'chavvah_c',x:36,y:20,wander:false,follow:true,noTalk:true},
+     {id:'satan',char:'satan_a',x:18,y:11.4,wander:false,hidden:true,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ /* twenty of his host — shining ones — arrayed before the throne in praise */
+       for(let i=0;i<20;i++){ const col=i%10, row=Math.floor(i/10);
+         G.world.npcs.push(makeNpc({id:'host'+i,char:'host_a',dir:'up',
+           x:9.5+col*1.85, y:14.5+row*1.8, wander:false,hidden:true,noTalk:true})); } }},
+   ],
+   objectives:[
+     {type:'goto',x:27,y:16,radius:2.6,text:'A throne and a glory burn upon the mountain in the night — go and see',
+      script:[
+       {show:'satan'},
+       {call:G=>{ for(let i=0;i<20;i++){ const n=G.world.npcs.find(x=>x.id==='host'+i); if(n) n.hidden=false; } }},
+       {rays:.9,raysX:18},{burst:[18,11,'holy',30]},{sfx:'holy'},{music:'royal'},
+       {say:['narrator','And behold, a throne was set upon the mountain in the night, and one sat upon it in great glory; and round about him stood twenty shining ones, lifting their voices in praise — and a light streamed out from the throne, and filled the whole mountain.']},
+       {say:['satan_a','Bow down, Aḏam. I am he that made the earth and all that fills it; these are my mal’akim, and this is my glory. Worship me, and I will give you again the brightness you lost, and set you upon a throne beside my own.']},
+       {say:['chavvah_c','Aḏam — the light, the singing… it is like the glory of Aluahim Himself. Is this another Mighty One? Has the Most High set a second over the earth?']},
+       {say:['adam_c','I do not know him, Ḥawwah — and my heart is troubled, for here is a throne, and a host, and praise, and light. I will not bow until I have asked the One I know.']},
+      ]},
+     {type:'goto',x:35,y:19,radius:2.4,text:'Turn from the throne, and ask the Most High the truth',hiddenUntil:1,
+      script:[
+       {face:['player','up']},
+       {say:['adam_c','O Aluahim, my Maker — is there another Mighty One upon the earth besides You? For I have seen a throne, and a glory, and a host of twenty that praise him; and he bids me bow down and worship him. Tell me the truth, that I be not deceived.']},
+       {rays:.95,raysX:35},{sfx:'holy'},{music:'holy'},
+       {say:['voice','O Aḏam — there is no Mighty One but Me, neither in the shamayim above nor upon the earth beneath; and beside Me there is no other. That throne is the deceiver’s, and that glory is borrowed, and that praise is a lie. He is a servant who would be worshipped. Behold now whose the light is, when I take it back from him.']},
+       {camera:[18,12]},{wait:400},{sfx:'thunder'},{shake:2},
+       {charSwap:['satan','satan_d']},
+       {call:G=>{ for(let i=0;i<20;i++){ const n=G.world.npcs.find(x=>x.id==='host'+i); if(n) n.hidden=true; } }},
+       {burst:[18,12,'ash',34]},{removeProp:'throne'},
+       {say:['narrator','And at the word of Aluahim the light went out, and the throne crumbled to nothing, and the twenty shining ones became as smoke and were not — and there remained only the deceiver in his own form, naked of all glory.']},
+       {say:['satan_d','…The light was never mine to keep. But I will sit upon every throne that men shall build, son of dust — until your Seed comes, and casts me down.']},
+       {burst:[18,12,'ash',20]},{despawn:'satan'},{rays:0},{music:'eden'},{camera:'player'},
+       {say:['adam_c','There is no Mighty One but You, O Aluahim. I will not bow down to a borrowed light, though it shine as the sun.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'corrupt', music:'holy', text:'A throne in the night, twenty voices of praise, and a borrowed glory — and at one word of the Most High it was smoke. There is no Mighty One but YAHUAH; and the light the enemy wears, he wears as a thief.', ref:'2 AḎAM & ḤAWWAH'},
+  ],
+  complete:'There is no Mighty One but YAHUAH — and the deceiver’s throne was only borrowed light, gone at a word.'
+},
 { id:'b9', title:'The Old Man and the First Bread', ref:'1 AḎAM & ḤAWWAH 60–66',
   intro:[
    {art:'journey', music:'tense', text:'Then Satan transformed himself into an old man, fair of speech, and came to them as they prayed — saying, “I am an aged stranger of a far country: come, for I know a place of rest for you.”', ref:'1 AḎAM & ḤAWWAH 60'},
@@ -4835,7 +5062,9 @@ const STORY=[
      {type:'goto',x:29,y:18,radius:2.2,text:'A weary old traveller calls to you',
       script:[
        {say:['oldman','Peace to you, children of the cave! I am an old man of a far country. I heard your weeping, and my heart was moved. I know a garden — a place of rest, eastward — come, follow an old man’s kindness, and I will bring you to it.']},
-       {say:['adam_c','A garden…? Ḥawwah, come — perhaps Aluahim has sent him—']},
+       {say:['oldman','I will tell you a secret, Aḏam: I knew you before your sorrow. You were taken from beside me, and set in a garden of delight — and I have kept that garden for you all this while. Come, lean upon an old man’s arm, and I myself will carry you back to the rest from which you fell.']},
+       {say:['oldman','It is no great way — only a little walking, and your weeping is ended, and Ḥawwah shall sit again under the trees of life. Will you not trust an old man who has journeyed so far for the love of you?']},
+       {say:['adam_c','A garden…? And you would carry us to it…? Ḥawwah, come — perhaps Aluahim has sent him—']},
        {say:['narrator','And they began to follow him. But as they walked, Aḏam grew uneasy — for the old man cast no kindness in his eye when he thought himself unwatched.']},
        {say:['adam_c','Stranger — pray with us. We go nowhere, not even to a garden, without prayer to Aluahim.']},
        {say:['narrator','And at the name of prayer the old man’s face changed. And the Word of Aluahim came, and the disguise fell away like a torn garment.']},
@@ -4948,12 +5177,22 @@ const STORY=[
    map:{biome:'plains', w:46, h:32, seed:401,
      features:[
        {type:'cave',glow:true,x:34,y:11,solid:true,clear:4,flat:4,id:'cave'},
-       {type:'tent',x:26,y:14,solid:true,clear:2,col:'#b3a07f'},
        {type:'firepit',x:29,y:16,lit:true},
-       {type:'wheat',x:14,y:22},{type:'wheat',x:15,y:23},{type:'wheat',x:13,y:23},
      ]},
    time:'day', music:'eden',
    player:'adam_c', playerPos:[28,18],
+   onStart:[
+     {call:G=>{ const m=G.world.map;
+       /* Qayin the tiller's field: tilled rows full of standing grain */
+       for(let y=20;y<=27;y++) for(let x=7;x<=21;x++){ if(!SOLID.has(tileAt(m,x,y))) m.tiles[y*m.w+x]=T.TILLED; }
+       for(let i=0;i<72;i++){ const x=7+(i%14)*1.0+0.3+hash2(i,3)*0.3, y=20+Math.floor(i/14)*1.25+0.35;
+         if(x<21.5&&y<27.5&&!SOLID.has(tileAt(m,x,y))) m.decor.push({type:'wheat',x,y}); }
+       /* Heḇal the shepherd's flock */
+       for(let i=0;i<8;i++) G.world.npcs.push(makeNpc({id:'flock'+i,animal:'sheep',
+         x:31.5+(i%4)*1.9+hash2(i,5)*.6, y:20+Math.floor(i/4)*1.9+hash2(i,9)*.6, range:2.6, noTalk:true}));
+       m.decor.sort((a,b)=>a.y-b.y);
+     }},
+   ],
    npcs:[
      {id:'chavvah',char:'chavvah_c',x:27,y:15,wander:true,range:1.5,
       dlg:[['chavvah_c','Four children under one roof of rock, Aḏam. The cave has grown louder than the sea — and I would not trade one voice of it.']]},
@@ -5000,6 +5239,18 @@ const STORY=[
      ]},
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[30,16],
+   onStart:[
+     {call:G=>{ const m=G.world.map;
+       /* the tilled field Qayin worked, full of standing grain */
+       for(let y=22;y<=27;y++) for(let x=8;x<=20;x++){ if(!SOLID.has(tileAt(m,x,y))) m.tiles[y*m.w+x]=T.TILLED; }
+       for(let i=0;i<56;i++){ const x=8+(i%12)*1.0+0.3+hash2(i,3)*0.3, y=22+Math.floor(i/12)*1.15+0.35;
+         if(x<20.5&&y<27.5&&!SOLID.has(tileAt(m,x,y))) m.decor.push({type:'wheat',x,y}); }
+       /* Heḇal's flock, that still knew his voice */
+       for(let i=0;i<6;i++) G.world.npcs.push(makeNpc({id:'flock'+i,animal:'sheep',
+         x:15+(i%3)*2.0+hash2(i,5)*.6, y:17+Math.floor(i/3)*1.7+hash2(i,9)*.6, range:2.4, noTalk:true}));
+       m.decor.sort((a,b)=>a.y-b.y);
+     }},
+   ],
    npcs:[
      {id:'amb_sheep1',animal:'sheep',x:18,y:18,range:2,noTalk:true},
      {id:'amb_sheep2',animal:'sheep',x:20,y:19.4,range:2,noTalk:true},
@@ -5037,26 +5288,27 @@ const STORY=[
    {art:'vista_sunset', watcher:'qayin', peopleBelow:['luluwa'], music:'sorrow', text:'When Luluwa heard of the deed, she wept and went to call her father and mother — and the household of Aḏam was broken with grief. And Qayin took Luluwa to wife — whom the book of Yoḇelim names Awan — and went away from the face of the mountain, down to the dark land of Noḏ.', ref:'2 AḎAM & ḤAWWAH 1 · YOḆELIM 4:9'},
   ],
   scene:{
-   map:{biome:'wild', w:44, h:30, seed:421,
+   /* within the Cave of Treasures — the birth is in the cave, not before it */
+   map:{biome:'interior', floorCol:'#6e5d48', w:22, h:14, seed:421,
      features:[
-       {type:'cave',glow:true,x:30,y:12,solid:true,clear:4,flat:4,id:'cave'},
-       {type:'firepit',x:26,y:15,lit:true},
+       {type:'doorway',x:18,y:1.9,id:'mouth',examine:'The mouth of the Cave of Treasures — morning light beyond it.'},
+       {type:'firepit',x:6,y:8,lit:true},
+       {type:'rock',solid:true,x:4,y:5},
      ]},
-   time:'morning', music:'eden',
-   player:'adam_c', playerPos:[24,17],
+   time:'day', music:'eden',
+   player:'adam_c', playerPos:[13,9],
    npcs:[
-     {id:'amb_sheep1',animal:'sheep',x:20,y:19,range:2,noTalk:true},
-     {id:'chavvah',char:'chavvah_c',x:28,y:15,wander:false,
+     {id:'chavvah',char:'chavvah_c',x:9,y:9,wander:false,babe:true,
       script:[
        {say:['chavvah_c','Aḏam — come. Come and see your son.']},
-       {say:['narrator','And Ḥawwah brought forth a son, perfectly beautiful in figure and in countenance; his beauty was like that of his father Aḏam, yet more beautiful.']},
+       {say:['narrator','And Ḥawwah brought forth a son, perfectly beautiful in figure and in countenance; his beauty was like that of his father Aḏam, yet more beautiful — and she wrapped him, and held him to her breast within the cave.']},
        {say:['adam_c','…After the grave, a cradle. Aluahim has given us another seed in place of Heḇal. His name is SHĔTH — “appointed” — for Aluahim has appointed him.']},
-       {sfx:'chime'},{burst:[28,15,'holy',16]},
+       {sfx:'chime'},{burst:[9,9,'holy',16]},
        {say:['chavvah_c','And he shall be told everything, Aḏam — the garden, the fall, the cave, the promise of the five days and a half. He shall keep what we almost lost.']},
       ]},
    ],
    objectives:[
-     {type:'talk',npc:'chavvah',text:'Ḥawwah calls you to the cave'},
+     {type:'talk',npc:'chavvah',text:'Ḥawwah calls you into the cave to see your son'},
    ],
   },
   outro:[
@@ -5117,7 +5369,8 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[29,16],
    npcs:[
-     {id:'chavvah',char:'chavvah_c',x:27,y:15.5,wander:true,range:1.2,noTalk:true},
+     /* Aḏam is severed from Ḥawwah and sleeps apart — she is not present until he goes down to her */
+     {id:'chavvah',char:'chavvah_c',x:27,y:15.5,wander:true,range:1.2,hidden:true,noTalk:true},
      {id:'satan',char:'satan_w',x:42,y:14,wander:false,hidden:true,noTalk:true},
    ],
    objectives:[
@@ -5130,11 +5383,11 @@ const STORY=[
        {say:['satan_w','And see — the promise is fulfilled this night. You are yet but a youth, Aḏam: do not end your youth in sorrow. Your days are few and your trial is great. Spend the days of your youth in mirth and in pleasure — come, rejoice with me, and be without fear.']},
        {say:['narrator','And she drew near to embrace him. But Aḏam saw that he should be overcome — and he prayed to Aluahim with a burning heart to deliver him.']},
        {rays:.9,raysX:35},{sfx:'holy'},{music:'holy'},
-       {say:['voice','O Aḏam — that figure is the one that promised you the Aluahim-hood and the majesty. At one time he shows himself in the form of a woman; at another in the likeness of a mal’ak; at another in the similitude of a serpent; at another in the semblance of a god. And he does it all only to destroy your soul.']},
+       {say:['voice','O Aḏam — that figure is the one that promised you the Aluahim-hood and the majesty. At one time he shows himself in the form of a woman; at another in the likeness of a mal’ak; at another in the similitude of a serpent; at another in the semblance of a mighty one. And he does it all only to destroy your soul.']},
        {sfx:'thunder'},{charSwap:['satan','satan_d']},{shake:2},{burst:[36.5,11,'ash',20]},
        {say:['voice','And NOW — show yourself plainly, deceiver, in your own form: and stand BOUND in the air before him, unable to flee.']},
        {say:['narrator','And Satan hung in the air before Aḏam, bound, in his own hideous form — and Aḏam feared and trembled at the sight of him.']},
-       {say:['voice','Look at him, Aḏam — at him who said of himself that he is a god. Can a god be overpowered? Would a god take the form of a woman? It is he who made you fall from brightness into darkness, from rest into toil. See him bound — and henceforth do not be afraid of him.']},
+       {say:['voice','Look at him, Aḏam — at him who said of himself that he is a mighty one. Can a mighty one be overpowered? Would a mighty one take the form of a woman? It is he who made you fall from brightness into darkness, from rest into toil. See him bound — and henceforth do not be afraid of him.']},
        {say:['satan_d','…Loose me. LOOSE ME. — Mark the roof of your cave, Aḏam: there is no height where I have not stood, and no form I have not worn.']},
        {burst:[36.5,11,'ash',24]},{despawn:'satan'},
        {say:['voice','Go down now to the Cave of Treasures, and be not parted from Ḥawwah your wife — and I Myself will quiet the enemy’s storm in you both. Your forty days are ended; I have counted them.']},
@@ -5143,6 +5396,7 @@ const STORY=[
      {type:'goto',x:28,y:15.5,radius:2.4,text:'Go down from the roof — to Ḥawwah, and be parted no more',hiddenUntil:1,
       script:[
        {time:'deepnight'},
+       {show:'chavvah'},
        {say:['chavvah_c','Aḏam? You are come down before the morning — and your face is like a man who has seen the adversary, and outlived him.']},
        {say:['adam_c','I have seen him, Ḥawwah — in a borrowed face, and then in his own; and bound, in the air, unable to flee. He is strong against us alone, and nothing against the Word. Aluahim has ended the forty days: we are not to be parted again.']},
        {say:['narrator','And from that hour they had rest, by the commandment of Aluahim — and Aḏam worshipped before YAHUAH, for having delivered him.']},
@@ -5151,7 +5405,7 @@ const STORY=[
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'“At one time a woman; at another a mal’ak; at another a serpent; at another a god — and all only to destroy your soul.” But shown plainly and bound in the air, he is only a creature that begs to be loosed.', ref:'2 AḎAM & ḤAWWAH 3–4'},
+   {art:'stars', music:'holy', text:'“At one time a woman; at another a mal’ak; at another a serpent; at another a mighty one — and all only to destroy your soul.” But shown plainly and bound in the air, he is only a creature that begs to be loosed.', ref:'2 AḎAM & ḤAWWAH 3–4'},
   ],
   complete:'Behold him bound — and henceforth be not afraid of him.'
 },
@@ -5279,7 +5533,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:44, h:28, seed:413,
      features:[
-       {type:'tent',x:10,y:16,solid:true,clear:2,col:'#8a7a62'},
+       {type:'house',x:10,y:16,solid:true,clear:2,col:'#8a7a62'},
        {type:'firepit',x:12,y:17.5,lit:true},
        {type:'tree',x:31,y:12,solid:true,col:'#5d6e3e'},
        {type:'tree',x:33.5,y:14,solid:true,col:'#6e7a3e'},
@@ -5343,9 +5597,9 @@ const STORY=[
        {type:'cave',glow:true,x:14,y:9,solid:true,clear:4,flat:4,id:'cave',examine:'The Cave of Treasures — within, the bodies of the fathers, and the lamp that burns over them always.'},
        {type:'altar',stage:3,x:18,y:11,solid:true,clear:2,id:'altar',examine:'The altar on which Aḏam himself offered.'},
        {type:'well',x:26,y:27,solid:true,clear:2,id:'fountain',examine:'A fountain of water, near the houses of the children of Qayin.'},
-       {type:'tent',x:21,y:29,solid:true,clear:2,col:'#8d7a60'},
-       {type:'tent',x:31,y:28.5,solid:true,clear:2,col:'#7d6a52'},
-       {type:'tent',x:35,y:30,solid:true,clear:2,col:'#8d7a60'},
+       {type:'house',x:21,y:29,solid:true,clear:2,col:'#8d7a60'},
+       {type:'house',x:31,y:28.5,solid:true,clear:2,col:'#7d6a52'},
+       {type:'house',x:35,y:30,solid:true,clear:2,col:'#8d7a60'},
        {type:'firepit',x:29,y:30,lit:true},
        {type:'clearing',x:26,y:25,flat:3},
      ]},
@@ -5688,6 +5942,73 @@ function frame(ts){
   Game.render();
   requestAnimationFrame(frame);
 }
+
+/* ============ BESORAH IN-GAME READER ============ */
+(function(){
+  const BOOKS=[
+    ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
+    ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
+  ];
+  function parseRef(ref){
+    if(!ref) return null;
+    const s=String(ref).split('·')[0].trim();
+    let id=null,rest='';
+    for(const [pfx,bid] of BOOKS){ const i=s.indexOf(pfx); if(i>=0){ id=bid; rest=s.slice(i+pfx.length); break; } }
+    if(!id) return null;
+    const m=rest.match(/(\d+)(?::\s*(\d+))?/);
+    let hash='#/book/'+id;
+    if(m){ hash+='/'+m[1]; if(m[2]) hash+='/v/'+m[2]; }
+    return 'besorah-offline.html'+hash;
+  }
+  let curRef=null;
+  function ensureFrame(){
+    let f=document.getElementById('besorah-frame');
+    if(!f){ f=document.createElement('iframe'); f.id='besorah-frame';
+      f.addEventListener('load',()=>{ f._loaded=true; const l=$('besorah-loading'); if(l) l.style.display='none'; });
+      $('besorah-frame-wrap').appendChild(f); }
+    return f;
+  }
+  function open(ref){
+    try{ Sound&&Sound.init&&Sound.init(); }catch(e){}
+    const target=parseRef(ref)||'besorah-offline.html#/';
+    const f=ensureFrame();
+    if(!f._loaded){ const l=$('besorah-loading'); if(l) l.style.display='flex'; }
+    if(f._cur!==target){ f.src=target; f._cur=target; }
+    $('besorah-title').textContent = ref ? ('The Besorah — '+ref) : 'The Besorah';
+    $('besorah-modal').classList.add('show');
+    window.besorahOpen=true;
+  }
+  function close(){ $('besorah-modal').classList.remove('show'); window.besorahOpen=false; }
+  function setRef(ref){
+    curRef=ref;
+    const b=$('ref-banner'); if(!b) return;
+    if(ref && parseRef(ref)){ b.textContent='📖 '+ref+'  ·  read in the Besorah'; b.classList.add('show'); }
+    else b.classList.remove('show');
+  }
+  window.BesorahUI={open,close,setRef};
+  $('besorah-close').onclick=close;
+  $('besorah-backdrop').onclick=close;
+  $('ref-banner').onclick=()=>open(curRef);
+  const sr=$('slide-ref'); if(sr){ sr.style.cursor='pointer'; sr.title='Read this passage in the Besorah'; sr.onclick=()=>{ if(curRef&&parseRef(curRef)) open(curRef); }; }
+  const bb=$('btn-besorah'); if(bb) bb.onclick=()=>open(null);
+  /* drive the reference banner from the game flow */
+  if(Game.showSlide){ const _ss=Game.showSlide.bind(Game);
+    Game.showSlide=function(){ _ss(); const s=this.slideList&&this.slideList[this.slideIdx]; setRef(s&&s.ref); }; }
+  if(Game.startScene){ const _stsc=Game.startScene.bind(Game);
+    Game.startScene=function(){ _stsc(); setRef(this.chapter&&this.chapter.ref); }; }
+  if(typeof showScreen==='function'){ const _shs=showScreen;
+    showScreen=function(id){ setRef(null); return _shs(id); }; }
+  /* pause game input while the reader is open */
+  if(Input.moveVec){ const _mv=Input.moveVec.bind(Input);
+    Input.moveVec=function(){ return window.besorahOpen?{x:0,y:0}:_mv(); }; }
+  if(Game.onAction){ const _oa=Game.onAction.bind(Game);
+    Game.onAction=function(){ if(window.besorahOpen) return; return _oa.apply(this,arguments); }; }
+  if(Game.prevSlide){ const _ps=Game.prevSlide.bind(Game);
+    Game.prevSlide=function(){ if(window.besorahOpen) return; return _ps.apply(this,arguments); }; }
+  if(Game.onEscape){ const _oe=Game.onEscape.bind(Game);
+    Game.onEscape=function(){ if(window.besorahOpen){ close(); return; } return _oe.apply(this,arguments); }; }
+})();
 
 /* ================= BOOT ================= */
 Save.load();
