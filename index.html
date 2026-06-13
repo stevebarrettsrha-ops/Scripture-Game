@@ -802,7 +802,66 @@ function drawChar(g,px,py,charId,o){
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
     R(-0.6+k*1.5,-9.2+B,2.2,1.7,skin);
   }
+  /* held item — drawn last so it sits in the hand, over the body */
+  const hold=o.hold;
+  if(hold&&!o.lying){
+    const wood='#8a6a45', woodD=shade(wood,-18), stone='#d8d2c2', script9='#8a8478';
+    if(!side){
+      const hy=-9.6+B+k*0.9;                       /* right-hand height */
+      if(hold==='staff'||hold==='spear'){
+        R(4.9,hy-12.4,1.4,21,wood);
+        R(4.9,hy-12.4,1.4,2.4,woodD);
+        if(hold==='staff') R(4.4,hy-13.6,2.4,1.6,woodD);
+        else R(4.65,hy-15.2,1.9,2.9,'#c8ccd4');
+      } else if(hold==='tablets'&&dir!=='up'){
+        /* two stone tablets clasped before the chest */
+        R(-4.1,-17+B,3.7,6.4,stone); R(0.4,-17+B,3.7,6.4,stone);
+        R(-3.5,-17.9+B,2.5,1,stone); R(1,-17.9+B,2.5,1,stone);
+        R(-3.4,-15.6+B,2.3,.6,script9); R(1.1,-15.6+B,2.3,.6,script9);
+        R(-3.4,-14.2+B,2.3,.6,script9); R(1.1,-14.2+B,2.3,.6,script9);
+        R(-3.4,-12.8+B,2.3,.6,script9); R(1.1,-12.8+B,2.3,.6,script9);
+      } else if(hold==='scroll'){
+        R(3.6,hy-.4,4,2,'#e8dcc0'); R(3.6,hy-.4,.9,2,'#c2b28a'); R(6.7,hy-.4,.9,2,'#c2b28a');
+      } else if(hold==='torch'){
+        R(5,hy-4.6,1.3,5.6,'#6e5226');
+        R(4.7,hy-6.5,1.9,2.1,'#e8862f'); R(5.05,hy-7.5,1.2,1.5,'#f2c14e');
+      } else if(hold==='jar'){
+        R(4.4,hy-1.4,3,3.8,'#a8714a'); R(5,hy-2.4,1.8,1.2,'#8a5b3a');
+        R(4.4,hy-.2,3,.8,shade('#a8714a',-20));
+      } else if(hold==='sword'){
+        R(5,hy-6.6,1.2,5.4,'#c8ccd4'); R(4.3,hy-1.4,2.6,1,wood); R(5.05,hy-.6,1.1,1.6,woodD);
+      }
+    } else {
+      const hx=k*1.5, hy=-9.2+B;                   /* front-hand position */
+      if(hold==='staff'||hold==='spear'){
+        R(2.7+hx,hy-12.6,1.4,21,wood);
+        R(2.7+hx,hy-12.6,1.4,2.4,woodD);
+        if(hold==='staff') R(2.2+hx,hy-13.8,2.4,1.6,woodD);
+        else R(2.45+hx,hy-15.4,1.9,2.9,'#c8ccd4');
+      } else if(hold==='tablets'){
+        R(3.2,-15+B,3.4,6.2,stone); R(3.8,-15.8+B,2.2,1,stone);
+        R(2.4,-14.2+B,3.4,6.2,stone); R(3,-15+B,2.2,1,stone);
+        R(3,-12.6+B,2.2,.6,script9); R(3,-11.2+B,2.2,.6,script9); R(3,-9.8+B,2.2,.6,script9);
+      } else if(hold==='scroll'){
+        R(1.4+hx,hy-.4,4,2,'#e8dcc0'); R(1.4+hx,hy-.4,.9,2,'#c2b28a'); R(4.5+hx,hy-.4,.9,2,'#c2b28a');
+      } else if(hold==='torch'){
+        R(2+hx,hy-4.6,1.3,5.6,'#6e5226');
+        R(1.7+hx,hy-6.5,1.9,2.1,'#e8862f'); R(2.05+hx,hy-7.5,1.2,1.5,'#f2c14e');
+      } else if(hold==='jar'){
+        R(1.4+hx,hy-1.4,3,3.8,'#a8714a'); R(2+hx,hy-2.4,1.8,1.2,'#8a5b3a');
+        R(1.4+hx,hy-.2,3,.8,shade('#a8714a',-20));
+      } else if(hold==='sword'){
+        R(2+hx,hy-6.6,1.2,5.4,'#c8ccd4'); R(1.3+hx,hy-1.4,2.6,1,wood); R(2.05+hx,hy-.6,1.1,1.6,woodD);
+      }
+    }
+  }
   sprRender(g,ops,u,flip);
+  if(hold==='torch'&&!o.lying){
+    const fx=(side?(2.65+k*1.5)*u:5.65*u)*flip, fy=((side?-9.2:-9.6+k*0.9)+B-6.8)*u;
+    const fl=g.createRadialGradient(fx,fy,u,fx,fy,7*u);
+    fl.addColorStop(0,`rgba(255,200,110,${.4+Math.sin(t/170)*.08})`); fl.addColorStop(1,'rgba(255,200,110,0)');
+    g.fillStyle=fl; g.beginPath(); g.arc(fx,fy,7*u,0,Math.PI*2); g.fill();
+  }
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
@@ -1074,7 +1133,7 @@ function drawAnimal(g,px,py,type,o){
     if(seat!==undefined){
       const rc=CHARS[o.rider]||{};
       const lu=(o.riderScale||1)*(rc.child?1.9:(rc.angel?3.3:2.6))*(TILE/40);
-      drawChar(g,0,Math.round(seat*u),o.rider,{t,dir:rdir,moving:o.moving,riding:true,scale:o.riderScale||1});
+      drawChar(g,0,Math.round(seat*u),o.rider,{t,dir:rdir,moving:o.moving,riding:true,scale:o.riderScale||1,hold:o.riderHold});
       /* the near leg hangs over the flank, foot against the animal's side */
       const robe9=rc.robe||rc.skin||'#7a4e29', skin9=rc.skin||'#7a4e29';
       const ly=Math.round(seat*u-5.5*lu);
@@ -1140,7 +1199,7 @@ function drawQuadVert(g,px,py,type,o){
   if(o.rider){
     const seatV={camel:-10.6,horse:-8.4,donkey:-6.4}[type];
     if(seatV!==undefined)
-      drawChar(g,0,Math.round(seatV*u),o.rider,{t,dir:o.dir,moving:o.moving,riding:true,scale:o.riderScale||1});
+      drawChar(g,0,Math.round(seatV*u),o.rider,{t,dir:o.dir,moving:o.moving,riding:true,scale:o.riderScale||1,hold:o.riderHold});
   }
   g.restore();
 }
@@ -1565,7 +1624,7 @@ function drawProp(g,px,py,p,t){
         g.strokeStyle='#4a3522'; g.lineWidth=Math.max(3,TILE*.1);
         g.beginPath(); g.arc(-TILE*.55,-TILE*.18,TILE*.3,0,Math.PI*2); g.stroke();
         g.beginPath(); g.arc(TILE*.55,-TILE*.18,TILE*.3,0,Math.PI*2); g.stroke();
-        if(p.rider) drawChar(g,0,-TILE*.95,p.rider,{t,dir:p.dir,riding:true});
+        if(p.rider) drawChar(g,0,-TILE*.95,p.rider,{t,dir:p.dir,riding:true,hold:p.riderHold});
         if(p.horses&&dn){
           drawAnimal(g,-TILE*.3,TILE*1.05,'horse',{t,dir:'down',moving:p.moving});
           drawAnimal(g,TILE*.32,TILE*1.18,'horse',{t:t+300,dir:'down',moving:p.moving});
@@ -1598,7 +1657,7 @@ function drawProp(g,px,py,p,t){
         g.moveTo(TILE*.35-Math.cos(a)*TILE*.38,-Math.sin(a)*TILE*.38);
         g.lineTo(TILE*.35+Math.cos(a)*TILE*.38,Math.sin(a)*TILE*.38); }
       g.stroke();
-      if(p.rider) drawChar(g,TILE*.3,-TILE*.95,p.rider,{t,dir:'left',riding:true});
+      if(p.rider) drawChar(g,TILE*.3,-TILE*.95,p.rider,{t,dir:'left',riding:true,hold:p.riderHold});
       break; }
     case 'trough': {
       g.fillStyle='rgba(0,0,0,.18)';
@@ -2035,11 +2094,11 @@ function drawWorld(g,world,t){
     else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale,spotted:d.spotted});
     else if(d.mount){
-      drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale});
+      drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale,riderHold:d.hold});
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -2397,6 +2456,7 @@ const Game={
     if(op.show){ const ent=findEnt(op.show); if(ent) ent.hidden=false; return true; }
     if(op.emote){ const ent=findEnt(op.emote[0]); if(ent) ent.emote=op.emote[1]; return true; }
     if(op.charSwap){ const ent=findEnt(op.charSwap[0]); if(ent) ent.char=op.charSwap[1]; return true; }
+    if(op.hold){ const ent=findEnt(op.hold[0]); if(ent) ent.hold=op.hold[1]||null; return true; }
     if(op.mount){ const ent=findEnt(op.mount[0]); if(ent) ent.mount=op.mount[1]; return true; }
     if(op.wait!==undefined){ this.scriptWait=op.wait; return false; }
     if(op.fade==='out'){ $('fader').style.opacity='1'; this.scriptWait=850; return false; }
@@ -2565,7 +2625,7 @@ const Game={
     const map=generateMap(sc.map);
     const player=sc.player?{
       char:sc.player, x:sc.playerPos[0], y:sc.playerPos[1],
-      dir:'down', moving:false, speed:.085, mount:sc.playerMount||null
+      dir:'down', moving:false, speed:.085, mount:sc.playerMount||null, hold:sc.playerHold||null
     }:null;
     if(player){
       for(let i9=map.decor.length-1;i9>=0;i9--){ const d9=map.decor[i9];
@@ -5179,6 +5239,7 @@ STORY.push(
       script:[
        {say:['avraham','Stay here with the donkey, while the boy and I go yonder and worship — and come back to you.']},
        {say:['narrator','And Aḇraham took the wood of the burnt offering and laid it on Yahtsḥaq his son, and he took the fire in his hand, and the knife — and the two of them went together.']},
+       {hold:['player','torch']},
        {say:['yitschaq','My father! See, the fire and the wood — but where is the lamb for a burnt offering?']},
        {say:['avraham','My son… Aluahim does provide for Himself the lamb for a burnt offering.']},
        {say:['narrator','And the two of them went together.']},
@@ -5213,6 +5274,7 @@ STORY.push(
       ]},
      {type:'interact',prop:'altar',text:'Build the mizbe’ach at the place Aluahim had said',hiddenUntil:2,
       script:[
+       {hold:['player']},
        {prop:['altar',{stage:2}]},{wait:600},
        {say:['narrator','And Aḇraham built the mizbe’ach there and laid the wood in order. And he bound Yahtsḥaq his son and laid him on the mizbe’ach, on the wood. And Aḇraham stretched out his hand and took the knife…']},
        {sfx:'holy'},{rays:1,raysX:22},{shake:2},{music:'holy'},
@@ -6321,7 +6383,7 @@ STORY.push(
        {type:'clearing',x:28,y:14,flat:2},
      ]},
    time:'day', music:'desert',
-   player:'yahudah', playerPos:[11,17],
+   player:'yahudah', playerPos:[11,17], playerHold:'staff',
    npcs:[
      {id:'amb_sheep1',animal:'sheep',x:27,y:16.5,range:2,noTalk:true},
      {id:'amb_sheep2',animal:'sheep',x:29,y:15.4,range:2,noTalk:true},
@@ -6342,6 +6404,7 @@ STORY.push(
        {say:['tamar_v','What will you give me?']},
        {say:['yahudah','I shall send you a young goat from the flock.']},
        {say:['tamar_v','Will you give me a pledge until you send it? Your seal and your cord — and the staff that is in your hand.']},
+       {hold:['player']},{hold:['tamar','staff']},
        {say:['narrator','And he gave them to her, and came in to her — and she conceived by him. And she arose and went away, and laid aside her veil, and put on the garments of her widowhood.']},
        {fade:'out'},{hide:'tamar'},
        {toast:'And Yahuḏah sent the young goat by the hand of his friend the Aḏullamite, to take back the pledge — but he did not find her.'},{wait:1900},
@@ -6352,7 +6415,7 @@ STORY.push(
       script:[
        {say:['hirah','Yahuḏah — it is told: Tamar your daughter-in-law has whored, and see, she has conceived by whoring.']},
        {say:['yahudah','Bring her out — and let her be burned!']},
-       {spawn:{id:'tamar2',char:'tamar',x:3,y:17.5,wander:false,noTalk:true}},
+       {spawn:{id:'tamar2',char:'tamar',x:3,y:17.5,wander:false,noTalk:true,hold:'staff'}},
        {move:['tamar2',10,17.2,.06]},
        {say:['tamar','I am with child by the man to whom these belong. Please examine them — whose are these: the seal, and the cord, and the staff?']},
        {wait:600},{sfx:'bad'},

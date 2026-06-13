@@ -826,7 +826,66 @@ function drawChar(g,px,py,charId,o){
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
     R(-0.6+k*1.5,-9.2+B,2.2,1.7,skin);
   }
+  /* held item — drawn last so it sits in the hand, over the body */
+  const hold=o.hold;
+  if(hold&&!o.lying){
+    const wood='#8a6a45', woodD=shade(wood,-18), stone='#d8d2c2', script9='#8a8478';
+    if(!side){
+      const hy=-9.6+B+k*0.9;                       /* right-hand height */
+      if(hold==='staff'||hold==='spear'){
+        R(4.9,hy-12.4,1.4,21,wood);
+        R(4.9,hy-12.4,1.4,2.4,woodD);
+        if(hold==='staff') R(4.4,hy-13.6,2.4,1.6,woodD);
+        else R(4.65,hy-15.2,1.9,2.9,'#c8ccd4');
+      } else if(hold==='tablets'&&dir!=='up'){
+        /* two stone tablets clasped before the chest */
+        R(-4.1,-17+B,3.7,6.4,stone); R(0.4,-17+B,3.7,6.4,stone);
+        R(-3.5,-17.9+B,2.5,1,stone); R(1,-17.9+B,2.5,1,stone);
+        R(-3.4,-15.6+B,2.3,.6,script9); R(1.1,-15.6+B,2.3,.6,script9);
+        R(-3.4,-14.2+B,2.3,.6,script9); R(1.1,-14.2+B,2.3,.6,script9);
+        R(-3.4,-12.8+B,2.3,.6,script9); R(1.1,-12.8+B,2.3,.6,script9);
+      } else if(hold==='scroll'){
+        R(3.6,hy-.4,4,2,'#e8dcc0'); R(3.6,hy-.4,.9,2,'#c2b28a'); R(6.7,hy-.4,.9,2,'#c2b28a');
+      } else if(hold==='torch'){
+        R(5,hy-4.6,1.3,5.6,'#6e5226');
+        R(4.7,hy-6.5,1.9,2.1,'#e8862f'); R(5.05,hy-7.5,1.2,1.5,'#f2c14e');
+      } else if(hold==='jar'){
+        R(4.4,hy-1.4,3,3.8,'#a8714a'); R(5,hy-2.4,1.8,1.2,'#8a5b3a');
+        R(4.4,hy-.2,3,.8,shade('#a8714a',-20));
+      } else if(hold==='sword'){
+        R(5,hy-6.6,1.2,5.4,'#c8ccd4'); R(4.3,hy-1.4,2.6,1,wood); R(5.05,hy-.6,1.1,1.6,woodD);
+      }
+    } else {
+      const hx=k*1.5, hy=-9.2+B;                   /* front-hand position */
+      if(hold==='staff'||hold==='spear'){
+        R(2.7+hx,hy-12.6,1.4,21,wood);
+        R(2.7+hx,hy-12.6,1.4,2.4,woodD);
+        if(hold==='staff') R(2.2+hx,hy-13.8,2.4,1.6,woodD);
+        else R(2.45+hx,hy-15.4,1.9,2.9,'#c8ccd4');
+      } else if(hold==='tablets'){
+        R(3.2,-15+B,3.4,6.2,stone); R(3.8,-15.8+B,2.2,1,stone);
+        R(2.4,-14.2+B,3.4,6.2,stone); R(3,-15+B,2.2,1,stone);
+        R(3,-12.6+B,2.2,.6,script9); R(3,-11.2+B,2.2,.6,script9); R(3,-9.8+B,2.2,.6,script9);
+      } else if(hold==='scroll'){
+        R(1.4+hx,hy-.4,4,2,'#e8dcc0'); R(1.4+hx,hy-.4,.9,2,'#c2b28a'); R(4.5+hx,hy-.4,.9,2,'#c2b28a');
+      } else if(hold==='torch'){
+        R(2+hx,hy-4.6,1.3,5.6,'#6e5226');
+        R(1.7+hx,hy-6.5,1.9,2.1,'#e8862f'); R(2.05+hx,hy-7.5,1.2,1.5,'#f2c14e');
+      } else if(hold==='jar'){
+        R(1.4+hx,hy-1.4,3,3.8,'#a8714a'); R(2+hx,hy-2.4,1.8,1.2,'#8a5b3a');
+        R(1.4+hx,hy-.2,3,.8,shade('#a8714a',-20));
+      } else if(hold==='sword'){
+        R(2+hx,hy-6.6,1.2,5.4,'#c8ccd4'); R(1.3+hx,hy-1.4,2.6,1,wood); R(2.05+hx,hy-.6,1.1,1.6,woodD);
+      }
+    }
+  }
   sprRender(g,ops,u,flip);
+  if(hold==='torch'&&!o.lying){
+    const fx=(side?(2.65+k*1.5)*u:5.65*u)*flip, fy=((side?-9.2:-9.6+k*0.9)+B-6.8)*u;
+    const fl=g.createRadialGradient(fx,fy,u,fx,fy,7*u);
+    fl.addColorStop(0,`rgba(255,200,110,${.4+Math.sin(t/170)*.08})`); fl.addColorStop(1,'rgba(255,200,110,0)');
+    g.fillStyle=fl; g.beginPath(); g.arc(fx,fy,7*u,0,Math.PI*2); g.fill();
+  }
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
@@ -1098,7 +1157,7 @@ function drawAnimal(g,px,py,type,o){
     if(seat!==undefined){
       const rc=CHARS[o.rider]||{};
       const lu=(o.riderScale||1)*(rc.child?1.9:(rc.angel?3.3:2.6))*(TILE/40);
-      drawChar(g,0,Math.round(seat*u),o.rider,{t,dir:rdir,moving:o.moving,riding:true,scale:o.riderScale||1});
+      drawChar(g,0,Math.round(seat*u),o.rider,{t,dir:rdir,moving:o.moving,riding:true,scale:o.riderScale||1,hold:o.riderHold});
       /* the near leg hangs over the flank, foot against the animal's side */
       const robe9=rc.robe||rc.skin||'#7a4e29', skin9=rc.skin||'#7a4e29';
       const ly=Math.round(seat*u-5.5*lu);
@@ -1164,7 +1223,7 @@ function drawQuadVert(g,px,py,type,o){
   if(o.rider){
     const seatV={camel:-10.6,horse:-8.4,donkey:-6.4}[type];
     if(seatV!==undefined)
-      drawChar(g,0,Math.round(seatV*u),o.rider,{t,dir:o.dir,moving:o.moving,riding:true,scale:o.riderScale||1});
+      drawChar(g,0,Math.round(seatV*u),o.rider,{t,dir:o.dir,moving:o.moving,riding:true,scale:o.riderScale||1,hold:o.riderHold});
   }
   g.restore();
 }
@@ -1589,7 +1648,7 @@ function drawProp(g,px,py,p,t){
         g.strokeStyle='#4a3522'; g.lineWidth=Math.max(3,TILE*.1);
         g.beginPath(); g.arc(-TILE*.55,-TILE*.18,TILE*.3,0,Math.PI*2); g.stroke();
         g.beginPath(); g.arc(TILE*.55,-TILE*.18,TILE*.3,0,Math.PI*2); g.stroke();
-        if(p.rider) drawChar(g,0,-TILE*.95,p.rider,{t,dir:p.dir,riding:true});
+        if(p.rider) drawChar(g,0,-TILE*.95,p.rider,{t,dir:p.dir,riding:true,hold:p.riderHold});
         if(p.horses&&dn){
           drawAnimal(g,-TILE*.3,TILE*1.05,'horse',{t,dir:'down',moving:p.moving});
           drawAnimal(g,TILE*.32,TILE*1.18,'horse',{t:t+300,dir:'down',moving:p.moving});
@@ -1622,7 +1681,7 @@ function drawProp(g,px,py,p,t){
         g.moveTo(TILE*.35-Math.cos(a)*TILE*.38,-Math.sin(a)*TILE*.38);
         g.lineTo(TILE*.35+Math.cos(a)*TILE*.38,Math.sin(a)*TILE*.38); }
       g.stroke();
-      if(p.rider) drawChar(g,TILE*.3,-TILE*.95,p.rider,{t,dir:'left',riding:true});
+      if(p.rider) drawChar(g,TILE*.3,-TILE*.95,p.rider,{t,dir:'left',riding:true,hold:p.riderHold});
       break; }
     case 'trough': {
       g.fillStyle='rgba(0,0,0,.18)';
@@ -2280,11 +2339,11 @@ function drawWorld(g,world,t){
     else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale,spotted:d.spotted});
     else if(d.mount){
-      drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale});
+      drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale,riderHold:d.hold});
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -2649,6 +2708,7 @@ const Game={
     if(op.show){ const ent=findEnt(op.show); if(ent) ent.hidden=false; return true; }
     if(op.emote){ const ent=findEnt(op.emote[0]); if(ent) ent.emote=op.emote[1]; return true; }
     if(op.charSwap){ const ent=findEnt(op.charSwap[0]); if(ent) ent.char=op.charSwap[1]; return true; }
+    if(op.hold){ const ent=findEnt(op.hold[0]); if(ent) ent.hold=op.hold[1]||null; return true; }
     if(op.mount){ const ent=findEnt(op.mount[0]); if(ent) ent.mount=op.mount[1]; return true; }
     if(op.wait!==undefined){ this.scriptWait=op.wait; return false; }
     if(op.fade==='out'){ $('fader').style.opacity='1'; this.scriptWait=850; return false; }
@@ -2817,7 +2877,7 @@ const Game={
     const map=generateMap(sc.map);
     const player=sc.player?{
       char:sc.player, x:sc.playerPos[0], y:sc.playerPos[1],
-      dir:'down', moving:false, speed:.085, mount:sc.playerMount||null
+      dir:'down', moving:false, speed:.085, mount:sc.playerMount||null, hold:sc.playerHold||null
     }:null;
     if(player){
       for(let i9=map.decor.length-1;i9>=0;i9--){ const d9=map.decor[i9];
@@ -4531,6 +4591,7 @@ STORY.push(
        {say:['mosheh','…It is only a staff. A shepherd needs a staff.']},
        {sfx:'holy'},{burst:[12.5,16,'holy',20]},{rays:.6,raysX:12.5},
        {say:['narrator','And Mosheh put out his hand and drew it out — as a man draws his own staff from the sand. And Re‛u’ĕl saw, and gave him Tsipporah his daughter for a wife.']},
+       {hold:['player','staff']},
        {rays:0},
        {say:['tsipporah','The staff that would yield to no man, in your hand like a willow wand… What are you, Mosheh of Mitsrayim?']},
        {say:['mosheh','A stranger. — And she bore a son, and I called his name Gĕreshom: “for I have been a sojourner in a foreign land.”']},
@@ -4558,7 +4619,7 @@ STORY.push(
        {type:'clearing',x:30,y:14,flat:3},
      ]},
    time:'day', music:'desert',
-   player:'mosheh', playerPos:[10,22],
+   player:'mosheh', playerPos:[10,22], playerHold:'staff',
    npcs:[
      {id:'sh1',animal:'sheep',x:11.5,y:23.5,range:2,noTalk:true,group:'flock',follow:true},
      {id:'sh2',animal:'sheep',x:9,y:24,range:2,noTalk:true,group:'flock',follow:true},
@@ -4607,7 +4668,7 @@ STORY.push(
        {type:'clearing',x:22,y:13,flat:3},
      ]},
    time:'day', music:'holy',
-   player:'mosheh', playerPos:[22,14],
+   player:'mosheh', playerPos:[22,14], playerHold:'staff',
    npcs:[],
    onStart:[
      {call:G=>{ const m=G.world.map;
@@ -4621,12 +4682,13 @@ STORY.push(
        {say:['voice','What is that in your hand?']},
        {say:['mosheh','A staff.']},
        {say:['voice','Throw it on the ground.']},
+       {hold:['player']},
        {spawn:{id:'snake',char:'serpent_c',x:23.6,y:14.2,wander:false,noTalk:true}},
        {sfx:'bad'},{shake:1},
        {say:['narrator','And he threw it on the ground — and it became a serpent! And Mosheh fled from it.']},
        {say:['voice','Stretch out your hand, and seize it by the tail.']},
        {say:['narrator','And he stretched out his hand and took hold of it — and it became a staff in his hand.']},
-       {despawn:'snake'},{burst:[23.6,14.2,'mote',10]},{sfx:'chime'},
+       {despawn:'snake'},{hold:['player','staff']},{burst:[23.6,14.2,'mote',10]},{sfx:'chime'},
        {say:['voice','— that they may believe that YAHUAH, the Aluahim of their fathers, has appeared to you. Now put your hand in your bosom.']},
        {say:['narrator','And he put his hand in his bosom, and drew it out — and see, his hand was leprous, like snow. And He said, “Put your hand back” — and it was restored, like his other flesh.']},
        {sfx:'holy'},
@@ -4660,7 +4722,7 @@ STORY.push(
        {type:'clearing',x:40,y:18,flat:2},
      ]},
    time:'dusk', music:'desert',
-   player:'mosheh', playerPos:[8,18], playerMount:'donkey',
+   player:'mosheh', playerPos:[8,18], playerMount:'donkey', playerHold:'staff',
    npcs:[
      {id:'tsipporah',char:'tsipporah',mount:'donkey',x:9.5,y:19,wander:false,follow:true,noTalk:true},
      {id:'boy1',char:'sheth',mount:'donkey',scale:.72,x:8.5,y:20,wander:false,follow:true,noTalk:true},
@@ -4748,7 +4810,7 @@ STORY.push(
      {id:'task1',char:'taskmaster',route:[[18,14],[30,14],[30,19]],noTalk:true,x:18,y:14},
      {id:'task2',char:'taskmaster',route:[[34,16],[24,20]],noTalk:true,x:34,y:16},
      {id:'officer',char:'hebrew2',x:22,y:17,wander:false,hidden:true,noTalk:true},
-     {id:'mosheh',char:'mosheh_o',x:14,y:22,wander:false,hidden:true,noTalk:true},
+     {id:'mosheh',char:'mosheh_o',x:14,y:22,wander:false,hidden:true,noTalk:true,hold:'staff'},
      {id:'aharon',char:'aharon',x:15.5,y:22.5,wander:false,hidden:true,noTalk:true},
      {id:'heb1',char:'hebrew',route:[[16,17],[33,12]],noTalk:true,x:16,y:17},
      {id:'dk1',animal:'donkey',x:28,y:21,range:2,noTalk:true},
@@ -4809,27 +4871,29 @@ STORY.push(
    player:'mosheh_o', playerPos:[14,12],
    npcs:[
      {id:'paroh',char:'pharaoh',x:14,y:6,wander:false,noTalk:true},
-     {id:'aharon',char:'aharon',x:15.5,y:11.5,wander:false,noTalk:true},
-     {id:'sorc1',char:'sorcerer',x:10.5,y:8.5,wander:false,noTalk:true},
-     {id:'sorc2',char:'sorcerer',x:17.5,y:8.5,wander:false,noTalk:true},
+     {id:'aharon',char:'aharon',x:15.5,y:11.5,wander:false,noTalk:true,hold:'staff'},
+     {id:'sorc1',char:'sorcerer',x:10.5,y:8.5,wander:false,noTalk:true,hold:'staff'},
+     {id:'sorc2',char:'sorcerer',x:17.5,y:8.5,wander:false,noTalk:true,hold:'staff'},
      {id:'mastema',char:'mastema',x:14,y:9,wander:false,hidden:true,noTalk:true},
    ],
    objectives:[
      {type:'goto',x:14,y:10,radius:1.8,text:'Stand before Pharaoh — and let Aharon throw down the staff',
       script:[
        {say:['pharaoh','The Hebrews again. Show a miracle for yourselves — or trouble my court no more.']},
+       {hold:['aharon']},
        {spawn:{id:'snakeA',char:'serpent_c',x:14,y:8.6,wander:false,noTalk:true}},
        {sfx:'bad'},{shake:1},
        {say:['narrator','And Aharon threw his staff before Pharaoh and before his servants — and it became a serpent.']},
        {show:'mastema'},
        {say:['mastema','WITNESS — And I, Mastema, stood by the sorcerers of Mitsrayim and strengthened their hands, that they might withstand the servants of YAHUAH.']},
+       {hold:['sorc1']},{hold:['sorc2']},
        {spawn:{id:'snakeB',char:'serpent_c',x:11,y:9.6,wander:false,noTalk:true}},
        {spawn:{id:'snakeC',char:'serpent_c',x:17,y:9.6,wander:false,noTalk:true}},
        {say:['narrator','And the magicians of Mitsrayim, they also did so with their secret arts: each threw down his staff, and they became serpents—']},
        {wait:600},
        {despawn:'snakeB'},{despawn:'snakeC'},{burst:[14,9,'ash',16]},{sfx:'thunder'},
        {say:['narrator','—but the staff of Aharon SWALLOWED their staffs.']},
-       {despawn:'snakeA'},{hide:'mastema'},
+       {despawn:'snakeA'},{hold:['aharon','staff']},{hide:'mastema'},
        {say:['pharaoh','…Clever. Court tricks. Mitsrayim has a hundred such jugglers. Take your serpent-staff and go — Yasharal stays in the brick-pits.']},
        {say:['narrator','And Pharaoh’s heart was hardened, and he did not listen to them, as YAHUAH had said.']},
       ]},
@@ -4848,7 +4912,7 @@ STORY.push(
    map:{biome:'plains', w:46, h:28, seed:853, river:{x:32,width:7,curve:1.5},
      features:[{type:'clearing',x:27,y:14,flat:2}]},
    time:'morning', music:'tense',
-   player:'mosheh_o', playerPos:[12,16],
+   player:'mosheh_o', playerPos:[12,16], playerHold:'staff',
    npcs:[
      {id:'aharon',char:'aharon',x:13.5,y:17,wander:false,follow:true,noTalk:true},
      {id:'paroh',char:'pharaoh',x:27,y:13,wander:false,noTalk:true},
@@ -4862,6 +4926,7 @@ STORY.push(
       script:[
        {say:['mosheh_o','Thus said YAHUAH: By this you shall know that I am YAHUAH. See, I am striking the waters of the river with the staff that is in my hand — and they shall be turned to blood.']},
        {say:['pharaoh','Strike the Nile? The Nile is a mighty one, old man — the mother of Mitsrayim. Strike it, then, and amuse me.']},
+       {hold:['player']},{hold:['aharon','staff']},
        {sfx:'thunder'},{shake:2},
        {call:G=>{ const m=G.world.map; m.cfg.blood=true;
          for(const n of G.world.npcs){ if(n.animal==='fish'){ n.lying=true; n.moving=false; } } }},
@@ -4893,7 +4958,7 @@ STORY.push(
    player:'mosheh_o', playerPos:[14,12],
    npcs:[
      {id:'paroh',char:'pharaoh',x:14,y:6,wander:false,noTalk:true},
-     {id:'aharon',char:'aharon',x:15.5,y:11.5,wander:false,noTalk:true},
+     {id:'aharon',char:'aharon',x:15.5,y:11.5,wander:false,noTalk:true,hold:'staff'},
      {id:'sorc1',char:'sorcerer',x:10.5,y:8.5,wander:false,noTalk:true},
    ],
    objectives:[
@@ -4941,7 +5006,7 @@ STORY.push(
        {type:'clearing',x:24,y:15,flat:2},
      ]},
    time:'day', music:'tense',
-   player:'mosheh_o', playerPos:[14,18],
+   player:'mosheh_o', playerPos:[14,18], playerHold:'staff',
    npcs:[
      {id:'aharon',char:'aharon',x:15.5,y:18.5,wander:false,follow:true,noTalk:true},
      {id:'paroh',char:'pharaoh',x:25,y:14,wander:false,noTalk:true},
@@ -4990,7 +5055,7 @@ STORY.push(
        {type:'clearing',x:24,y:18,flat:2},
      ]},
    time:'day', music:'tense',
-   player:'mosheh_o', playerPos:[14,18],
+   player:'mosheh_o', playerPos:[14,18], playerHold:'staff',
    npcs:[
      {id:'aharon',char:'aharon',x:15.5,y:18.5,wander:false,follow:true,noTalk:true},
      {id:'paroh',char:'pharaoh',x:25,y:18,wander:false,noTalk:true},
@@ -5083,6 +5148,7 @@ STORY.push(
        {prop:['house',{blood:true}]},
        {burst:[26,13.4,'spark',8]},{sfx:'pickup'},
        {say:['narrator','And they struck the lintel and the two doorposts with the hyssop dipped in blood — and the lamb was roasted with fire, with unleavened bread and with bitter herbs they ate it: loins girded, sandals on their feet, staff in hand — in haste. IT IS THE PESACH OF YAHUAH.']},
+       {hold:['player','staff']},
        {say:['hebreww','The little ones are inside. The bread is unleavened — there was no time for rising, and there shall be no time. Whatever passes through Mitsrayim tonight… the blood is over our heads.']},
        {time:'deepnight'},{music:'night'},
        {say:['narrator','And the people bowed their heads and worshipped. And the children of Yasharal went away and did as YAHUAH had commanded Mosheh and Aharon — so they did. And the night fell: the night of the watches.']},
@@ -5235,7 +5301,7 @@ STORY.push(
        {type:'clearing',x:24,y:18,flat:3},
      ]},
    time:'dusk', music:'tense',
-   player:'mosheh_o', playerPos:[24,19],
+   player:'mosheh_o', playerPos:[24,19], playerHold:'staff',
    npcs:[
      {id:'aharon',char:'aharon',x:25.5,y:19.5,wander:false,noTalk:true},
      {id:'heb1',char:'hebrew',x:22,y:18.5,wander:true,range:1.4,noTalk:true},
@@ -5509,7 +5575,7 @@ STORY.push(
        {type:'clearing',x:24,y:14,flat:2},
      ]},
    time:'day', music:'tense',
-   player:'mosheh_o', playerPos:[14,18],
+   player:'mosheh_o', playerPos:[14,18], playerHold:'staff',
    npcs:[
      {id:'heb1',char:'hebrew',x:16,y:18,wander:true,range:1.6,noTalk:true},
      {id:'heb2',char:'hebrew2',x:14.5,y:19.5,wander:true,range:1.6,noTalk:true},
@@ -5555,7 +5621,7 @@ STORY.push(
    time:'day', music:'storm',
    player:'yahoshua', playerPos:[20,19],
    npcs:[
-     {id:'mosheh',char:'mosheh_o',x:14,y:8,wander:false,noTalk:true},
+     {id:'mosheh',char:'mosheh_o',x:14,y:8,wander:false,noTalk:true,hold:'staff'},
      {id:'aharon',char:'aharon',x:12.6,y:8.6,wander:false,noTalk:true},
      {id:'hur',char:'hur',x:15.4,y:8.6,wander:false,noTalk:true},
      {id:'sold1',char:'hebrew',x:22,y:20,wander:false,noTalk:true},
@@ -5828,6 +5894,7 @@ STORY.push(
        {toast:'WITNESS — And YAHUAH showed him the divisions of the days from the beginning, and the ordinance of the Shabbathoth, and the years and the jubilees, that he might write all in a book. (YOḆELIM 1)'},{wait:2200},
        {fade:'in'},
        {say:['narrator','And when He had ended speaking with him on Mount Sinai, He gave Mosheh two tablets of the Witness — tablets of stone, written with the finger of Aluahim.']},
+       {hold:['player','tablets']},
        {sfx:'holy'},
       ]},
    ],
@@ -5857,7 +5924,7 @@ STORY.push(
        {type:'clearing',x:23,y:9,flat:2},
      ]},
    time:'day', music:'tense',
-   player:'mosheh_o', playerPos:[23,8],
+   player:'mosheh_o', playerPos:[23,8], playerHold:'tablets',
    npcs:[
      {id:'yahoshua',char:'yahoshua',x:24.5,y:8.5,wander:false,noTalk:true},
      {id:'aharon',char:'aharon',x:22,y:18.5,wander:false,noTalk:true},
@@ -5887,6 +5954,7 @@ STORY.push(
       script:[
        {sfx:'thunder'},{shake:3},{music:'storm'},
        {say:['narrator','And as he came near the camp and saw the calf and the dancing — Mosheh’s displeasure burned, and he THREW THE TABLETS out of his hands and BROKE THEM at the foot of the mountain.']},
+       {hold:['player']},
        {addProp:{type:'tablets',x:23,y:21.5,id:'broken'}},
        {burst:[23,21.5,'ash',20]},{sfx:'bad'},
        {call:G=>{ for(const n of G.world.npcs){ if(String(n.id).startsWith('rev')){ n.route=null; n.wander=false; n.moving=false; } } }},
@@ -5994,7 +6062,8 @@ STORY.push(
        {say:['voice','See, I am making a covenant: before all your people I do wonders such as have not been done in all the earth. Guard what I command you this day — the Festival of Matsoth, the first-born that are Mine, the Shabbath in ploughing time and in harvest, the Festival of Weeks and the Ingathering. For YAHUAH, whose Name is Jealous, is a jealous Ăl.']},
        {say:['narrator','And he was there with YAHUAH forty days and forty nights — he did not eat bread and he did not drink water — and He wrote on the tablets the Words of the covenant, the Ten Words.']},
        {rays:0},
-       {prop:['newtablets',{glowing:true}]},
+       {removeProp:'newtablets'},
+       {hold:['player','tablets']},
       ]},
      {type:'goto',x:23,y:21,radius:2.4,text:'Go down to the camp — not knowing your own face shines',hiddenUntil:1,
       script:[
