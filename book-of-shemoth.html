@@ -3623,6 +3623,55 @@ const Sky={
     g.fillStyle=`rgba(214,224,236,${(a||.9)*.5})`;
     g.beginPath(); g.ellipse(x,y+s*.34,s*1.1,s*.26,0,0,Math.PI*2); g.fill();
   },
+  /* a tall jagged karst peak (silhouette), like the spires of the references */
+  crag(g,x,baseY,w,h,col,seed){
+    seed=seed||0; const j=(a,b)=>hash2(seed*7+a,b);
+    g.fillStyle=col; g.beginPath(); g.moveTo(x-w/2,baseY);
+    g.lineTo(x-w*.42,baseY-h*(.3+j(1,2)*.1));
+    g.lineTo(x-w*.3,baseY-h*.28);
+    g.lineTo(x-w*.36,baseY-h*(.54+j(2,3)*.1));
+    g.lineTo(x-w*.12,baseY-h*.8);
+    g.lineTo(x-w*.05,baseY-h*(.9+j(3,1)*.1));
+    g.lineTo(x,baseY-h);                              /* apex */
+    g.lineTo(x+w*.07,baseY-h*(.82+j(4,2)*.08));
+    g.lineTo(x+w*.03,baseY-h*.68);
+    g.lineTo(x+w*.2,baseY-h*(.56+j(5,3)*.1));
+    g.lineTo(x+w*.15,baseY-h*.4);
+    g.lineTo(x+w*.36,baseY-h*(.26+j(6,1)*.08));
+    g.lineTo(x+w/2,baseY); g.closePath(); g.fill();
+  },
+  /* a conifer / fir silhouette */
+  conifer(g,x,y,s,col){
+    g.fillStyle=col;
+    g.fillRect(x-s*.04,y-s*.06,s*.08,s*.16);
+    for(let i=0;i<3;i++){ const ty=y-s*.04-i*s*.22, tw=s*(.32-i*.07);
+      g.beginPath(); g.moveTo(x,ty-s*.34); g.lineTo(x-tw,ty); g.lineTo(x+tw,ty); g.closePath(); g.fill(); }
+  },
+  /* a low wispy cloud band (for dramatic skies) */
+  cloudBand(g,x,y,s,col){
+    g.fillStyle=col; g.beginPath();
+    g.ellipse(x,y,s,s*.2,0,0,Math.PI*2);
+    g.ellipse(x-s*.62,y+s*.05,s*.5,s*.15,0,0,Math.PI*2);
+    g.ellipse(x+s*.62,y+s*.04,s*.55,s*.17,0,0,Math.PI*2);
+    g.ellipse(x+s*.2,y-s*.08,s*.45,s*.13,0,0,Math.PI*2); g.fill();
+  },
+  /* a faceted angular boulder/rock formation (wasteland style) */
+  boulder(g,x,baseY,w,h,opts){
+    opts=opts||{}; const lit=opts.lit||'#b9b3a8', mid=opts.mid||'#9a948a', dk=opts.dk||'#726c62';
+    const hw=w/2;
+    g.fillStyle='rgba(0,0,0,.14)'; g.beginPath(); g.ellipse(x,baseY,hw*1.05,h*.06,0,0,Math.PI*2); g.fill();
+    g.fillStyle=mid; g.beginPath();
+    g.moveTo(x-hw,baseY); g.lineTo(x-hw*.7,baseY-h*.5); g.lineTo(x-hw*.2,baseY-h*.95);
+    g.lineTo(x+hw*.25,baseY-h); g.lineTo(x+hw*.72,baseY-h*.46); g.lineTo(x+hw,baseY); g.closePath(); g.fill();
+    g.fillStyle=lit; g.beginPath();   /* lit left facets */
+    g.moveTo(x-hw,baseY); g.lineTo(x-hw*.7,baseY-h*.5); g.lineTo(x-hw*.2,baseY-h*.95);
+    g.lineTo(x-hw*.05,baseY-h*.6); g.lineTo(x-hw*.3,baseY-h*.2); g.closePath(); g.fill();
+    g.fillStyle=dk; g.beginPath();    /* shadow right facets */
+    g.moveTo(x+hw*.25,baseY-h); g.lineTo(x+hw*.72,baseY-h*.46); g.lineTo(x+hw,baseY);
+    g.lineTo(x+hw*.4,baseY); g.lineTo(x+hw*.15,baseY-h*.5); g.closePath(); g.fill();
+    g.strokeStyle='rgba(50,44,38,.4)'; g.lineWidth=Math.max(1,w*.012);
+    g.beginPath(); g.moveTo(x-hw*.2,baseY-h*.95); g.lineTo(x-hw*.05,baseY-h*.6); g.lineTo(x+hw*.15,baseY-h*.5); g.stroke();
+  },
   glowText(g,t){ /* reserved */ }
 };
 
@@ -4442,6 +4491,78 @@ function drawSlideArt(g,key,st,t,slide){
       /* the figures at the overlook, looking out over the land */
       Sky.figure(g,VW*.18,VH*.93,'mosheh_o',{t,scale:2,dir:'right'});
       Sky.figure(g,VW*.32,VH*.98,'aharon',{t:t+300,scale:1.8,dir:'right'});
+      break; }
+    case 'vista_sunset': {
+      /* a height at sundown, looking over the valley — sunset over jagged spires */
+      Sky.paint(g,[[0,'#371a3a'],[.26,'#732a46'],[.48,'#c0552f'],[.62,'#e8923a'],[.76,'#f4c64e'],[1,'#d8a63e']]);
+      const sx=VW*.46, sy=VH*.25;
+      const sg=g.createRadialGradient(sx,sy,8,sx,sy,VW*.13);
+      sg.addColorStop(0,'rgba(255,242,150,1)'); sg.addColorStop(.5,'rgba(255,200,80,.5)'); sg.addColorStop(1,'rgba(255,180,60,0)');
+      g.fillStyle=sg; g.beginPath(); g.arc(sx,sy,VW*.13,0,Math.PI*2); g.fill();
+      g.fillStyle='#ffe862'; g.beginPath(); g.arc(sx,sy,VW*.04,0,Math.PI*2); g.fill();
+      Sky.cloudBand(g,VW*.2,VH*.1,VW*.1,'rgba(38,18,28,.72)');
+      Sky.cloudBand(g,VW*.72,VH*.07,VW*.12,'rgba(38,18,28,.66)');
+      Sky.cloudBand(g,VW*.85,VH*.18,VW*.08,'rgba(48,24,32,.5)');
+      /* far spires, then a purple mist, then nearer darker spires */
+      for(let i=0;i<8;i++) Sky.crag(g,VW*(.06+i*.12),VH*.5,VW*.13,VH*(.15+hash2(i,3)*.13),'#7a3f58',i);
+      g.fillStyle='rgba(168,92,156,.45)'; g.fillRect(0,VH*.43,VW,VH*.09);
+      for(let i=0;i<6;i++) Sky.crag(g,VW*(.12+i*.16),VH*.53,VW*.16,VH*(.2+hash2(i,7)*.16),'#3c2334',i+9);
+      /* the valley floor, lit amber by the sun */
+      const vg=g.createLinearGradient(0,VH*.5,0,VH);
+      vg.addColorStop(0,'#b06e34'); vg.addColorStop(1,'#8a5226'); g.fillStyle=vg; g.fillRect(0,VH*.5,VW,VH*.5);
+      /* a river winding back toward the sun, catching the light */
+      g.strokeStyle='rgba(255,214,128,.8)'; g.lineWidth=Math.max(3,VW*.014); g.lineCap='round';
+      g.beginPath(); g.moveTo(sx,VH*.52); g.quadraticCurveTo(VW*.4,VH*.64,VW*.5,VH*.74);
+      g.quadraticCurveTo(VW*.58,VH*.86,VW*.4,VH); g.stroke(); g.lineCap='butt';
+      /* tree-topped rocks and conifer clusters scattered over the valley */
+      Sky.spire(g,VW*.66,VH*.62,VW*.09,VH*.07,{rock:'#7a4e2a',shade:'#5d3a1e',cap:'#3f5a2a',capD:'#2f4520'});
+      Sky.spire(g,VW*.84,VH*.58,VW*.07,VH*.055,{rock:'#7a4e2a',shade:'#5d3a1e',cap:'#3f5a2a',capD:'#2f4520'});
+      for(const[fx,fy,fs]of[[.3,.6,30],[.36,.62,24],[.5,.66,26],[.7,.7,30],[.78,.66,22],[.2,.64,26]])
+        Sky.conifer(g,VW*fx,VH*fy,fs,'rgba(34,28,30,.82)');
+      /* tiny people on the valley floor below */
+      if(!slide||slide.peopleBelow!==false){
+        const pb=(slide&&slide.peopleBelow)||['hebrew','hebreww','hebrew2'];
+        [[.58,.72],[.63,.7],[.6,.76]].forEach(([fx,fy],i)=>
+          Sky.figure(g,VW*fx,VH*fy,pb[i%pb.length],{t:t+i*260,scale:.6,dir:i%2?'left':'right'})); }
+      /* foreground grassy height with a trail down and flowering sprigs */
+      g.fillStyle='#7f7a32'; g.beginPath();
+      g.moveTo(0,VH); g.lineTo(0,VH*.74); g.quadraticCurveTo(VW*.2,VH*.82,VW*.34,VH); g.closePath(); g.fill();
+      g.fillStyle='#9a9440'; g.beginPath();
+      g.moveTo(0,VH*.74); g.quadraticCurveTo(VW*.2,VH*.82,VW*.34,VH); g.quadraticCurveTo(VW*.12,VH*.96,0,VH*.86); g.closePath(); g.fill();
+      g.strokeStyle='rgba(214,186,120,.8)'; g.lineWidth=Math.max(3,VW*.02); g.lineCap='round';
+      g.beginPath(); g.moveTo(VW*.12,VH); g.quadraticCurveTo(VW*.22,VH*.86,VW*.3,VH*.79); g.stroke(); g.lineCap='butt';
+      g.fillStyle='#3f5a2a'; g.beginPath(); g.ellipse(VW*.05,VH*.96,VW*.06,VH*.05,0,0,Math.PI*2); g.fill();
+      for(let i=0;i<5;i++){ const a=i/5*Math.PI*2;
+        g.fillStyle='#c47a9a'; g.beginPath(); g.arc(VW*.04+Math.cos(a)*8,VH*.9+Math.sin(a)*8,3,0,Math.PI*2); g.fill(); }
+      Sky.figure(g,VW*.18,VH*.94,(slide&&slide.watcher)||'sheth',{t,scale:1.8,dir:'right'});
+      break; }
+    case 'wasteland': {
+      /* a dry rocky waste — bright sky, faceted gray crags, cracked red ground */
+      Sky.paint(g,[[0,'#2e80c2'],[.45,'#57a3d8'],[.78,'#a6d0ea'],[1,'#d4e8f2']]);
+      Sky.cloud(g,VW*.2,VH*.16,28,.92); Sky.cloud(g,VW*.54,VH*.1,40,.86); Sky.cloud(g,VW*.82,VH*.2,24,.8);
+      /* distant bluish ridges */
+      Sky.range(g,VH*.56,VH*.12,'#9fb6cc',4,{peaks:9,lit:'rgba(255,255,255,.1)'});
+      /* mid-ground faceted gray rock formations */
+      Sky.boulder(g,VW*.12,VH*.66,VW*.3,VH*.3,{});
+      Sky.boulder(g,VW*.78,VH*.64,VW*.26,VH*.26,{});
+      Sky.boulder(g,VW*.5,VH*.62,VW*.16,VH*.16,{lit:'#c2bcb0',mid:'#a49e92'});
+      /* the cracked red-brown ground */
+      const gr=g.createLinearGradient(0,VH*.6,0,VH);
+      gr.addColorStop(0,'#a8623a'); gr.addColorStop(.5,'#925330'); gr.addColorStop(1,'#7a4226');
+      g.fillStyle=gr; g.beginPath(); g.moveTo(0,VH*.64);
+      for(let x=0;x<=VW;x+=30) g.lineTo(x,VH*.64+Math.sin(x*.02)*6); g.lineTo(VW,VH); g.lineTo(0,VH); g.closePath(); g.fill();
+      /* cracks + sandy streaks */
+      g.strokeStyle='rgba(60,34,20,.4)'; g.lineWidth=2;
+      for(let i=0;i<7;i++){ const cx=hash2(i,5)*VW, cy=VH*(.72+hash2(i,9)*.24);
+        g.beginPath(); g.moveTo(cx,cy); g.lineTo(cx+30+hash2(i,3)*40,cy+10); g.lineTo(cx+50,cy+2); g.stroke(); }
+      g.fillStyle='rgba(190,138,90,.4)';
+      for(let i=0;i<5;i++) g.fillRect(hash2(i,7)*VW,VH*(.7+hash2(i,11)*.26),60+hash2(i,2)*60,4);
+      /* scattered boulders and stones in the foreground */
+      for(const[bx,by,bw,bh]of[[.3,.86,VW*.1,VH*.06],[.62,.92,VW*.12,VH*.07],[.88,.84,VW*.08,VH*.05],[.46,.98,VW*.09,VH*.05]])
+        Sky.boulder(g,VW*bx,VH*by,bw,bh,{});
+      g.fillStyle='#6e6258';
+      for(let i=0;i<10;i++){ const rx=hash2(i,13)*VW, ry=VH*(.74+hash2(i,17)*.24);
+        g.beginPath(); g.ellipse(rx,ry,5+hash2(i,4)*6,3+hash2(i,6)*3,0,0,Math.PI*2); g.fill(); }
       break; }
     case 'furnace': {
       Sky.paint(g,[[0,'#160c0a'],[.6,'#2c1410'],[1,'#3d1c12']]);
