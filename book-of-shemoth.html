@@ -685,6 +685,7 @@ function drawChar(g,px,py,charId,o){
   const B=bob;
   const torso=robe||skin;
   const armC=robe?shade(torso,-12):skin;
+  const handC=o.whiteHand?'#f4f1e6':skin;
 
   if(!side){
     /* ---------- FRONT / BACK ---------- */
@@ -717,7 +718,7 @@ function drawChar(g,px,py,charId,o){
     R(-6.3,-14.6+B-k*0.9,2,5.4,armC);
     R(4.3,-14.6+B+k*0.9,2,5.4,armC);
     R(-6.3,-9.6+B-k*0.9,2,1.7,skin);
-    R(4.3,-9.6+B+k*0.9,2,1.7,skin);
+    R(4.3,-9.6+B+k*0.9,2,1.7,handC);
     /* head */
     R(-5,-24.4+B,10,9.6,skin);
     if(dir==='down'){
@@ -824,7 +825,7 @@ function drawChar(g,px,py,charId,o){
     if(c.hairy){ R(-4.6,-17+B,1.4,2.6,hairC); }
     /* front arm swings */
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
-    R(-0.6+k*1.5,-9.2+B,2.2,1.7,skin);
+    R(-0.6+k*1.5,-9.2+B,2.2,1.7,handC);
   }
   /* held item — drawn last so it sits in the hand, over the body */
   const hold=o.hold;
@@ -1809,8 +1810,30 @@ function drawProp(g,px,py,p,t){
         g.quadraticCurveTo(x9+flB*u,-11.4*u,x9+.6*u,-9.6*u); g.fill();
       }
       break; }
+    case 'staff': {
+      /* the staff of the fathers, planted in the earth */
+      shadow(1);
+      R(-0.7,-9.5,1.4,9.5,'#4a6a9a');
+      R(-0.7,-9.5,0.5,9.5,'#6e8fc0');
+      R(-1.2,-10.9,2.4,1.6,'#3a557e');
+      const glS=g.createRadialGradient(0,-5*u,u,0,-5*u,6.5*u);
+      glS.addColorStop(0,`rgba(150,190,255,${.16+Math.sin(t/500)*.05})`); glS.addColorStop(1,'rgba(150,190,255,0)');
+      g.fillStyle=glS; g.beginPath(); g.arc(0,-5*u,6.5*u,0,Math.PI*2); g.fill();
+      break; }
     case 'tablets': {
       shadow(2.6);
+      if(p.broken){
+        /* shattered shards at the foot of the mountain */
+        for(const [bx9,by9,bw9,bh9,ba9] of [[-3.4,-1.1,2.9,1.9,-.32],[-0.4,-2,3.1,2.2,.26],[2.3,-.7,2.5,1.7,-.18],[-1.7,.2,2,1.2,.42],[1.1,.7,1.7,1,-.36]]){
+          g.save(); g.translate(bx9*u,by9*u); g.rotate(ba9);
+          g.fillStyle='#9a9488'; g.fillRect(-bw9/2*u,-bh9/2*u,bw9*u,bh9*u);
+          g.fillStyle='#7a7468'; g.fillRect((-bw9/2+.4)*u,-.18*u,(bw9-.9)*u,.36*u);
+          g.restore();
+        }
+        g.fillStyle='#88827a';
+        g.fillRect(-4.6*u,.4*u,.9*u,.7*u); g.fillRect(4*u,-1.6*u,.8*u,.6*u); g.fillRect(.2*u,1.4*u,.7*u,.5*u);
+        break;
+      }
       for(const dx9 of [-2.2,2.2]){
         g.fillStyle='#9a9488';
         g.beginPath(); g.moveTo((dx9-2)*u,0); g.lineTo((dx9-2)*u,-5.4*u);
@@ -2343,7 +2366,7 @@ function drawWorld(g,world,t){
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -4553,6 +4576,7 @@ STORY.push(
        {type:'palm',x:26.5,y:15,solid:true},
        {type:'tent',x:10,y:19,solid:true,clear:2,col:'#c8b486'},
        {type:'tree',x:12.5,y:16,solid:true,col:'#4a7c3a',id:'gardentree',examine:'The garden of Re‛u’ĕl — and in its midst, a staff of sapphire planted in the earth, graven with the Name. Every suitor of Miḏyan has tried to draw it. None has moved it.'},
+       {type:'staff',x:13.6,y:16.7,id:'gardenstaff',examine:'The staff of sapphire, planted in the earth — graven with the Name.'},
        {type:'clearing',x:24,y:16,flat:2},
      ]},
    time:'day', music:'desert',
@@ -4589,9 +4613,9 @@ STORY.push(
       script:[
        {say:['narrator','WITNESS — In the garden of Re‛u’ĕl stood the staff, made in the twilight of the sixth day, graven with the Name — carried from Aḏam to Ḥanoḵ to Noaḥ, to Aḇraham, Yahtsḥaq and Ya‘aqoḇ, and from Yosĕph’s house into Mitsrayim, and from Mitsrayim to this garden. All the mighty of Miḏyan had set their hand to it. It had not moved.']},
        {say:['mosheh','…It is only a staff. A shepherd needs a staff.']},
-       {sfx:'holy'},{burst:[12.5,16,'holy',20]},{rays:.6,raysX:12.5},
+       {sfx:'holy'},{burst:[13.6,16.7,'holy',20]},{rays:.6,raysX:13.6},
        {say:['narrator','And Mosheh put out his hand and drew it out — as a man draws his own staff from the sand. And Re‛u’ĕl saw, and gave him Tsipporah his daughter for a wife.']},
-       {hold:['player','staff']},
+       {removeProp:'gardenstaff'},{hold:['player','staff']},
        {rays:0},
        {say:['tsipporah','The staff that would yield to no man, in your hand like a willow wand… What are you, Mosheh of Mitsrayim?']},
        {say:['mosheh','A stranger. — And she bore a son, and I called his name Gĕreshom: “for I have been a sojourner in a foreign land.”']},
@@ -4690,7 +4714,11 @@ STORY.push(
        {say:['narrator','And he stretched out his hand and took hold of it — and it became a staff in his hand.']},
        {despawn:'snake'},{hold:['player','staff']},{burst:[23.6,14.2,'mote',10]},{sfx:'chime'},
        {say:['voice','— that they may believe that YAHUAH, the Aluahim of their fathers, has appeared to you. Now put your hand in your bosom.']},
-       {say:['narrator','And he put his hand in his bosom, and drew it out — and see, his hand was leprous, like snow. And He said, “Put your hand back” — and it was restored, like his other flesh.']},
+       {call:G=>{G.world.player.whiteHand=true}},{sfx:'bad'},{wait:700},
+       {say:['narrator','And he put his hand in his bosom, and drew it out — and see, his hand was leprous, like snow.']},
+       {say:['voice','Put your hand back into your bosom.']},
+       {wait:500},{call:G=>{G.world.player.whiteHand=false}},{sfx:'chime'},
+       {say:['narrator','And he put his hand back, and drew it out — and see, it was restored, like his other flesh.']},
        {sfx:'holy'},
        {say:['voice','And if they do not believe even these two signs: take water from the river and pour it on the dry land — and the water shall become blood on the dry land.']},
       ]},
@@ -4890,10 +4918,14 @@ STORY.push(
        {spawn:{id:'snakeB',char:'serpent_c',x:11,y:9.6,wander:false,noTalk:true}},
        {spawn:{id:'snakeC',char:'serpent_c',x:17,y:9.6,wander:false,noTalk:true}},
        {say:['narrator','And the magicians of Mitsrayim, they also did so with their secret arts: each threw down his staff, and they became serpents—']},
-       {wait:600},
-       {despawn:'snakeB'},{despawn:'snakeC'},{burst:[14,9,'ash',16]},{sfx:'thunder'},
+       {wait:400},
+       {move:['snakeA',11.7,9.6,.055]},
+       {despawn:'snakeB'},{burst:[11,9.6,'ash',12]},{sfx:'bad'},{wait:400},
+       {move:['snakeA',16.3,9.6,.055]},
+       {despawn:'snakeC'},{burst:[17,9.6,'ash',12]},{sfx:'thunder'},
        {say:['narrator','—but the staff of Aharon SWALLOWED their staffs.']},
-       {despawn:'snakeA'},{hold:['aharon','staff']},{hide:'mastema'},
+       {move:['snakeA',14.6,9.4,.05]},{wait:300},
+       {despawn:'snakeA'},{burst:[14.6,9.4,'mote',10]},{hold:['aharon','staff']},{hide:'mastema'},
        {say:['pharaoh','…Clever. Court tricks. Mitsrayim has a hundred such jugglers. Take your serpent-staff and go — Yasharal stays in the brick-pits.']},
        {say:['narrator','And Pharaoh’s heart was hardened, and he did not listen to them, as YAHUAH had said.']},
       ]},
@@ -5955,7 +5987,7 @@ STORY.push(
        {sfx:'thunder'},{shake:3},{music:'storm'},
        {say:['narrator','And as he came near the camp and saw the calf and the dancing — Mosheh’s displeasure burned, and he THREW THE TABLETS out of his hands and BROKE THEM at the foot of the mountain.']},
        {hold:['player']},
-       {addProp:{type:'tablets',x:23,y:21.5,id:'broken'}},
+       {addProp:{type:'tablets',broken:true,x:23,y:21.5,id:'broken'}},
        {burst:[23,21.5,'ash',20]},{sfx:'bad'},
        {call:G=>{ for(const n of G.world.npcs){ if(String(n.id).startsWith('rev')){ n.route=null; n.wander=false; n.moving=false; } } }},
        {say:['narrator','And he took the calf which they had made, and burned it in the fire, and ground it to powder, and scattered it on the water — and made the children of Yasharal drink it.']},
