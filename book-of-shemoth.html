@@ -2218,9 +2218,51 @@ function campRing(G,n,o){
   const hcols=['#b58a50','#a87f48','#ad8248'];
   const avoid=[];
   for(const ob of (G.objectives||[])) if(ob.x!==undefined) avoid.push([ob.x,ob.y,3.2]);
-  for(const d of m.decor) if(d.id||d.examine||d.type==='mishkan'||d.type==='altar'||d.type==='well') avoid.push([d.x,d.y,3.2]);
+  for(const d of m.decor){
+    if(d.type==='mishkan') avoid.push([d.x,d.y,7.5]);   /* keep the camp well back from the Dwelling — a clear court around the tabernacle */
+    else if(d.id||d.examine||d.type==='altar'||d.type==='well') avoid.push([d.x,d.y,3.2]);
+  }
   for(const it of (G.world.items||[])) if(!it.taken) avoid.push([it.x,it.y,2.4]);
   if(G.world.player) avoid.push([G.world.player.x,G.world.player.y,2.6]);
+  if(o.cluster){
+    /* Yasharal encamps by tribes: twelve clusters ringing a clear central court (the Dwelling) */
+    let cx=m.w/2, cy=m.h/2;
+    const mish=m.decor.find(d=>d.type==='mishkan');
+    if(mish){ cx=mish.x; cy=mish.y; }
+    else if(o.cx!==undefined){ cx=o.cx; cy=(o.cy!==undefined?o.cy:cy); }
+    const court=o.court||8, cap=Math.min(n,o.cap||120);
+    const ringR=Math.max(court+4, Math.min(m.w/2,m.h/2)-4);
+    const per=Math.max(4,Math.ceil(cap/12));
+    const tentOk=(xx,yy)=>{
+      if(xx<2||xx>m.w-2||yy<2||yy>m.h-2) return false;
+      if(dist(xx,yy,cx,cy)<court) return false;
+      if(SOLID.has(tileAt(m,xx,yy))) return false;
+      for(const k of keep){ if(xx>k[0]&&xx<k[2]&&yy>k[1]&&yy<k[3]) return false; }
+      for(const a of avoid){ if(Math.abs(a[0]-xx)<a[2]&&Math.abs(a[1]-yy)<a[2]) return false; }
+      return true;
+    };
+    let placedT=0;
+    for(let tIdx=0;tIdx<12&&placedT<cap;tIdx++){
+      const ang=(tIdx/12)*Math.PI*2-Math.PI/2;
+      const ux=Math.cos(ang), uy=Math.sin(ang)*0.82;          /* flatten the ring a touch for the camera */
+      const ccx=cx+ux*ringR, ccy=cy+uy*ringR;
+      let clusterPlaced=0;
+      for(let i=0;i<per*4&&clusterPlaced<per&&placedT<cap;i++){
+        const xx=ccx+((i%3)-1)*2.0+hash2(tIdx*9+i,3)*0.7;
+        const yy=ccy+(Math.floor(i/3)-1)*1.8+hash2(tIdx*5+i,11)*0.6;
+        if(!tentOk(xx,yy)) continue;
+        m.decor.push({type:'tent',solid:true,x:xx,y:yy,col:tcols[placedT%5]});
+        placedT++; clusterPlaced++;
+      }
+      if(clusterPlaced>0){
+        m.decor.push({type:'standard',x:cx+ux*(ringR-2.6),y:cy+uy*(ringR-2.6),banner:TRIBES[tIdx][1],
+          examine:'The standard of the camp of '+TRIBES[tIdx][0]+' — Yasharal encamps by their tribes, each man by his own banner, by the standards of their fathers’ houses.'});
+        m.decor.push({type:'firepit',x:ccx+1.6,y:ccy+1.4,lit:true});
+      }
+    }
+    m.decor.sort((a,b)=>a.y-b.y);
+    return;
+  }
   let placed=0;
   const cols=Math.max(1,Math.floor((x1-x0)/gx));
   for(let i=0;i<cols*40&&placed<n;i++){
@@ -2310,8 +2352,8 @@ const TINTS={
   day:null,
   morning:'rgba(255,200,120,.10)',
   dusk:'rgba(230,120,60,.18)',
-  night:'rgba(10,18,48,.46)',
-  deepnight:'rgba(5,8,30,.6)',
+  night:'rgba(14,22,54,.34)',
+  deepnight:'rgba(8,12,36,.46)',
   storm:'rgba(30,38,52,.38)',
   dream:'rgba(60,40,110,.25)',
 };
@@ -2390,13 +2432,26 @@ function drawWorld(g,world,t){
       g.fillStyle='rgba(0,0,0,.18)';
       for(let i=0;i<3;i++) g.fillRect(sx,sy+5+i*TILE/3,TILE,2);
     } else if(id===T.MTN){
-      g.fillStyle='rgba(255,255,255,.045)';
-      const pk=TILE*(.3+hash2(x*3,y*5)*.4);
-      g.beginPath(); g.moveTo(sx,sy+TILE); g.lineTo(sx+pk,sy+TILE*(.15+hash2(x,y*7)*.25)); g.lineTo(sx+TILE,sy+TILE);
-      g.closePath(); g.fill();
-      g.fillStyle='rgba(0,0,0,.1)'; g.fillRect(sx,sy+TILE-3,TILE,3);
-      if(hash2(x,y)>.88){ g.fillStyle='rgba(240,244,250,.35)';
-        g.beginPath(); g.moveTo(sx+TILE*.3,sy+TILE*.45); g.lineTo(sx+TILE*.5,sy+TILE*.2); g.lineTo(sx+TILE*.7,sy+TILE*.45); g.closePath(); g.fill(); }
+      /* a craggy peak with lit & shadowed faces meeting at a jagged ridge — not a flat triangle */
+      const h7=hash2(x*3,y*5), h8=hash2(x*7,y*3);
+      const peakX=sx+TILE*(.36+h7*.28), peakY=sy+TILE*(.05+h8*.18), baseY=sy+TILE+1;
+      g.fillStyle='rgba(0,0,0,.15)';
+      g.beginPath(); g.ellipse(sx+TILE/2,baseY-2,TILE*.54,TILE*.15,0,0,Math.PI*2); g.fill();
+      g.fillStyle=shadeC('#4c463c',-4);
+      g.beginPath(); g.moveTo(peakX,peakY);
+      g.lineTo(sx+TILE*(.7+h8*.18),sy+TILE*.46); g.lineTo(sx+TILE+1,baseY);
+      g.lineTo(peakX,baseY); g.closePath(); g.fill();
+      g.fillStyle=shadeC('#6e665a',12);
+      g.beginPath(); g.moveTo(peakX,peakY);
+      g.lineTo(sx-1+TILE*(.16*h7),sy+TILE*.6); g.lineTo(sx-1,baseY);
+      g.lineTo(peakX,baseY); g.closePath(); g.fill();
+      g.strokeStyle='rgba(0,0,0,.13)'; g.lineWidth=1.4;
+      g.beginPath(); g.moveTo(peakX,peakY); g.lineTo(sx+TILE*(.42+h7*.12),sy+TILE*.6);
+      g.moveTo(peakX,peakY); g.lineTo(sx+TILE*(.56+h8*.12),sy+TILE*.78); g.stroke();
+      if(peakY<sy+TILE*.13){ g.fillStyle='rgba(240,244,250,.85)';
+        g.beginPath(); g.moveTo(peakX,peakY);
+        g.lineTo(peakX-TILE*.12,peakY+TILE*.19); g.lineTo(peakX,peakY+TILE*.12);
+        g.lineTo(peakX+TILE*.13,peakY+TILE*.2); g.closePath(); g.fill(); }
     } else if(id===T.WALL){
       g.fillStyle='rgba(0,0,0,.22)';
       g.fillRect(sx,sy+TILE-4,TILE,4);
@@ -2706,7 +2761,7 @@ const Game={
   updateDlg(dt){
     if(!this.dlgChar) return;
     if(!this.dlgDone){
-      this.dlgShown+=dt*.045;
+      this.dlgShown+=dt*.026;
       const n=Math.min(this.dlgText.length,Math.floor(this.dlgShown));
       $('dlg-text').textContent=this.dlgText.slice(0,n);
       if(n%3===0&&n>0&&Math.floor(this.dlgShown-dt*.045)!==n) {}
@@ -3231,6 +3286,19 @@ const Game={
         e._ri=((e._ri||0)+1)%e.route.length;
         const wp=e.route[e._ri];
         e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
+      } else if(e!==p&&e.animal&&p&&!blocked&&!e.lying&&!e.foe&&!e.route&&!e.rideable&&!e.group&&!e.dlg&&!e.script&&!e.tame){
+        /* skittish creatures: birds take wing, the creeping things scatter when you draw near */
+        const dp=dist(e.x,e.y,p.x,p.y);
+        const fly=(e.animal==='bird'||e.animal==='dove'||e.animal==='raven');
+        const fr=e.fleeRange||(fly?4:2.8);
+        if(dp<fr){
+          const a=Math.atan2(e.y-p.y,e.x-p.x);
+          let fx=clamp(e.x+Math.cos(a)*2.4,2,w.map.w-3), fy=clamp(e.y+Math.sin(a)*2.4,2,w.map.h-3);
+          if(fly){ e.flying=true; e.speed=.15; } else { e.speed=.09; }
+          if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy};
+          else { const a2=a+Math.PI/2; fx=clamp(e.x+Math.cos(a2)*2.2,2,w.map.w-3); fy=clamp(e.y+Math.sin(a2)*2.2,2,w.map.h-3);
+            if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy}; }
+        } else if(e.flying&&dp>fr+2.5){ e.flying=false; }
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
           e.wt=this.t+1500+Math.random()*3500;
@@ -3251,12 +3319,17 @@ const Game={
           e._fa=((h9%100)/100-.5)*1.5;       /* personal angle off the line of march */
           e._fd=1+((h9>>3)%100)/100*1.1;     /* personal following distance */
         }
-        if(!e.target){
-          const d3=dist(e.x,e.y,p.x,p.y);
-          if(d3<3.4&&d3>e._fd+.25){
-            const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
-            e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd}; e.speed=.06;
-          }
+        const d3f=dist(e.x,e.y,p.x,p.y);
+        if(d3f>7){
+          /* the player outran them — re-form the line so a follower is never lost */
+          const a9=Math.atan2(e.y-p.y,e.x-p.x);
+          let cx=p.x+Math.cos(a9)*e._fd, cy=p.y+Math.sin(a9)*e._fd;
+          if(!walkable(w.map,cx,cy)){ cx=p.x; cy=p.y; }
+          e.x=cx; e.y=cy; e.target=null;
+        } else if(!e.target&&d3f>e._fd+.25){
+          const a9=Math.atan2(e.y-p.y,e.x-p.x)+e._fa;
+          e.target={x:p.x+Math.cos(a9)*e._fd,y:p.y+Math.sin(a9)*e._fd};
+          e.speed=clamp(.06+(d3f-e._fd)*.05,.06,.2);
         }
         /* spacing: two followers never merge into one */
         for(const o9 of w.npcs){
@@ -6491,7 +6564,7 @@ STORY.push(
    {art:'mishkanart', music:'holy', text:'And YAHUAH spoke to Mosheh, saying: “On the first day of the first month, in the first month, you are to raise up the Dwelling Place of the Tent of Appointment.”', ref:'SHEMOTH 40:1–2'},
   ],
   scene:{
-   map:{biome:'desert', w:46, h:30, seed:941,
+   map:{biome:'desert', w:64, h:46, seed:941,
      features:[
        {type:'mishkan',stage:1,x:24,y:12,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Dwelling Place, raised on the first day of the first month of the second year.'},
        {type:'arkcov',x:20,y:14.5,id:'ark',examine:'The ark of the Witness — within it, the tablets.'},
@@ -6510,11 +6583,12 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:31,y:23,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,36,{tribal:true,y0:21,keep:[[15,21,33,27]]})},
+     /* the whole house of Yasharal encamped by their tribes around the Dwelling */
+     {call:G=>campRing(G,108,{cluster:true,court:9,cap:108,keep:[[15,21,33,27]]})},
      {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<44;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
-         x:11+(i%12)*2+Math.random(),y:20+Math.floor(i/12)*1.8+Math.random(),
+       for(let i=0;i<80;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
+         x:10+(i%16)*2.4+Math.random(),y:22+Math.floor(i/16)*1.7+Math.random(),
          wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
