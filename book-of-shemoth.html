@@ -3718,6 +3718,29 @@ const Sky={
       for(let i=0;i<7;i++){ const cxk=[.3,.6,.78,.42,.5,.68,.36][i], ph=t/900+i;
         for(let s=0;s<6;s++){ g.fillStyle=`rgba(72,64,68,${.42-s*.05})`;
           g.beginPath(); g.arc(VW*cxk+Math.sin(ph+s*.5)*18,hz-s*H*.08,12+s*6,0,Math.PI*2); g.fill(); } }
+    } else if(kind==='flood'){
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#566e8c'],[.4,'#8aa2ba'],[.72,'#bcd2de'],[1,'#9fbcc8']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      peaks(hz+H*.02,'#566076',6,4,H*.1);
+      const wv=g.createLinearGradient(0,hz,0,lipY); wv.addColorStop(0,'#7090ac'); wv.addColorStop(1,'#48688a');
+      g.fillStyle=wv; g.fillRect(0,hz,VW,lipY-hz);
+      for(let i=0;i<10;i++){ const gy=hz+(lipY-hz)*((i+1)/11);
+        g.fillStyle=`rgba(225,238,246,${.08+Math.sin(t/700+i)*.05})`;
+        g.fillRect(0,gy+Math.sin(t/800+i*2)*2,VW,1.5); }
+      for(const[cx,cy,cw]of[[.3,.34,.06],[.58,.5,.05],[.78,.32,.055],[.46,.64,.045]]){
+        const iy=hz+(lipY-hz)*cy;
+        g.fillStyle='#586272'; g.beginPath(); g.moveTo(VW*cx-VW*cw,iy); g.quadraticCurveTo(VW*cx,iy-H*.07,VW*cx+VW*cw,iy); g.closePath(); g.fill(); }
+    } else if(kind==='camp'){
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#3f86c4'],[.46,'#9cc2de'],[.74,'#d8c6a2'],[1,'#c4aa78']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      peaks(hz+H*.04,'#9a8a6a',6,4,H*.1);
+      g.fillStyle='#c4aa78'; g.fillRect(0,hz,VW,lipY-hz);
+      const ts=Math.max(6,H*.026);
+      for(let r=0;r<3;r++) for(let i=0;i<9;i++){ const tx=VW*(.05+i*.108)+(r%2?VW*.05:0), ty=hz+(lipY-hz)*(.42+r*.2);
+        g.fillStyle=r%2?'#b3a07f':'#c8b486'; g.beginPath(); g.moveTo(tx-ts,ty); g.lineTo(tx+ts,ty); g.lineTo(tx,ty-ts*1.5); g.closePath(); g.fill();
+        g.fillStyle='rgba(0,0,0,.1)'; g.fillRect(tx-ts,ty,ts*2,2); }
     } else if(kind==='sunset'){
       const sky=g.createLinearGradient(0,0,0,lipY);
       [[0,'#371a3a'],[.32,'#8f3a34'],[.5,'#e8923a'],[.64,'#f4c64e'],[1,'#9a5a2a']].forEach(([p,c])=>sky.addColorStop(p,c));
@@ -6559,20 +6582,52 @@ STORY.push(
        {rays:.85,raysX:23},{music:'holy'},{sfx:'holy'},
        {say:['narrator','And they saw the Aluahim of Yasharal — and under His feet like a paved work of sapphire stone, and like the very shamayim for brightness. Yet upon the nobles of the children of Yasharal He did not lay His hand: and they saw Aluahim, and they ate and drank.']},
        {say:['voice','Come up to Me on the mountain, and be there — and I shall give you the tablets of stone, and the Torah and the command which I have written, to teach them.']},
-       {say:['narrator','And Mosheh went into the midst of the cloud and went up the mountain — and the appearance of the esteem of YAHUAH was like a consuming fire on the top of the mountain, before the eyes of the children of Yasharal. And Mosheh was on the mountain forty days and forty nights.']},
-       {rays:0},{fade:'out'},
-       {toast:'WITNESS — And YAHUAH showed him the divisions of the days from the beginning, and the ordinance of the Shabbathoth, and the years and the jubilees, that he might write all in a book. (YOḆELIM 1)'},{wait:2200},
-       {fade:'in'},
-       {say:['narrator','And when He had ended speaking with him on Mount Sinai, He gave Mosheh two tablets of the Witness — tablets of stone, written with the finger of Aluahim.']},
-       {hold:['player','tablets']},
-       {sfx:'holy'},
+       {rays:0},
       ]},
    ],
   },
   outro:[
-   {art:'sinaiart', music:'holy', text:'The blood of the covenant sprinkled, the sapphire pavement seen, and two tablets of stone written with the finger of Aluahim — while below, in the camp, forty days proved longer than a nation’s memory.', ref:'SHEMOTH 24 · 31:18'},
+   {art:'sinaiart', music:'holy', text:'The blood of the covenant sprinkled, and the sapphire pavement seen beneath His feet — and the call came: \u201CCome up to Me on the mountain, and be there.\u201D', ref:'SHEMOTH 24:8\u201312'},
   ],
   complete:'All that YAHUAH has spoken we shall do and obey — see, the blood of the covenant.'
+},
+{ id:'x31b', title:'Up the Mountain', ref:'SHEMOTH 24:12\u201318 \u00B7 YO\u1E06ELIM 1',
+  intro:[
+   {art:'sinaiart', music:'holy', text:'And Mosheh rose with his servant Yahusha, and went up to the mountain of Aluahim, leaving the people with Aharon and \u1E24ur. \u201CWait here for us,\u201D he said, \u201Cuntil we return to you.\u201D', ref:'SHEMOTH 24:13\u201314'},
+  ],
+  scene:{
+   map:{biome:'rocky', w:30, h:28, seed:916,
+     features:[
+       {type:'clearing',x:16,y:18,flat:3},
+       {type:'rock',x:9,y:22,solid:true,clear:1},{type:'rock',x:23,y:21,solid:true,clear:1},
+       {type:'rock',x:11,y:16,solid:true,clear:1},{type:'rock',x:21,y:15,solid:true,clear:1},
+     ]},
+   overlook:{kind:'camp', cliffY:12, drop:.6, peopleBelow:['hebrew','hebreww','hebrew2','elder','hebreww','hebrew']},
+   time:'day', music:'holy',
+   player:'mosheh_o', playerPos:[16,24],
+   npcs:[
+     {id:'yahoshua',char:'yahoshua',x:17.6,y:24.4,wander:false,follow:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'goto',x:16,y:14,radius:2.4,text:'Go up the mountain \u2014 and look back at the people below',
+      script:[
+       {say:['narrator','And Mosheh went up higher than the camp, and looked back \u2014 and all Yasharal stood far below at the foot of the mountain, every tent emptied to the edge of the bound, watching him climb toward the cloud.']},
+       {say:['yahoshua','They are all watching, Mosheh \u2014 the whole camp. Aharon and \u1E24ur hold them at the bound. I will wait for you here on the slope, as you said.']},
+       {say:['mosheh_o','Wait, Yahusha. If any have a matter, let them go to Aharon and \u1E24ur. I am going up into the cloud \u2014 and I do not know the day I shall come down.']},
+       {rays:.8,raysX:16},{sfx:'holy'},{music:'holy'},
+       {say:['narrator','And Mosheh went up into the mountain, and the cloud covered it; and the esteem of YAHUAH dwelt on Mount Sinai, and the cloud covered it six days. And on the seventh day He called to Mosheh out of the midst of the cloud \u2014 and the appearance of His esteem was like a consuming fire on the top of the mountain, before the eyes of all the children of Yasharal.']},
+       {fade:'out'},
+       {toast:'WITNESS \u2014 And YAHUAH showed him the divisions of the days from the beginning, and the ordinance of the Shabbathoth, and the years and the jubilees, that he might write all in a book. (YO\u1E06ELIM 1)'},{wait:2200},
+       {fade:'in'},
+       {say:['narrator','And Mosheh was on the mountain forty days and forty nights. And when He had ended speaking with him on Mount Sinai, He gave Mosheh two tablets of the Witness \u2014 tablets of stone, written with the finger of Aluahim.']},
+       {hold:['player','tablets']},{sfx:'holy'},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'sinaiart', music:'holy', text:'Forty days and forty nights in the cloud, while the camp watched the fire on the summit from far below. The mediator went up \u2014 and the people waited, their patience the thread on which the next chapter would hang.', ref:'SHEMOTH 24:18 \u00B7 31:18'},
+  ],
+  complete:'Mosheh went up into the cloud \u2014 and was there forty days and forty nights.'
 },
 ]},
 );

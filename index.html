@@ -3407,6 +3407,29 @@ const Sky={
       for(let i=0;i<7;i++){ const cxk=[.3,.6,.78,.42,.5,.68,.36][i], ph=t/900+i;
         for(let s=0;s<6;s++){ g.fillStyle=`rgba(72,64,68,${.42-s*.05})`;
           g.beginPath(); g.arc(VW*cxk+Math.sin(ph+s*.5)*18,hz-s*H*.08,12+s*6,0,Math.PI*2); g.fill(); } }
+    } else if(kind==='flood'){
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#566e8c'],[.4,'#8aa2ba'],[.72,'#bcd2de'],[1,'#9fbcc8']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      peaks(hz+H*.02,'#566076',6,4,H*.1);
+      const wv=g.createLinearGradient(0,hz,0,lipY); wv.addColorStop(0,'#7090ac'); wv.addColorStop(1,'#48688a');
+      g.fillStyle=wv; g.fillRect(0,hz,VW,lipY-hz);
+      for(let i=0;i<10;i++){ const gy=hz+(lipY-hz)*((i+1)/11);
+        g.fillStyle=`rgba(225,238,246,${.08+Math.sin(t/700+i)*.05})`;
+        g.fillRect(0,gy+Math.sin(t/800+i*2)*2,VW,1.5); }
+      for(const[cx,cy,cw]of[[.3,.34,.06],[.58,.5,.05],[.78,.32,.055],[.46,.64,.045]]){
+        const iy=hz+(lipY-hz)*cy;
+        g.fillStyle='#586272'; g.beginPath(); g.moveTo(VW*cx-VW*cw,iy); g.quadraticCurveTo(VW*cx,iy-H*.07,VW*cx+VW*cw,iy); g.closePath(); g.fill(); }
+    } else if(kind==='camp'){
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#3f86c4'],[.46,'#9cc2de'],[.74,'#d8c6a2'],[1,'#c4aa78']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      peaks(hz+H*.04,'#9a8a6a',6,4,H*.1);
+      g.fillStyle='#c4aa78'; g.fillRect(0,hz,VW,lipY-hz);
+      const ts=Math.max(6,H*.026);
+      for(let r=0;r<3;r++) for(let i=0;i<9;i++){ const tx=VW*(.05+i*.108)+(r%2?VW*.05:0), ty=hz+(lipY-hz)*(.42+r*.2);
+        g.fillStyle=r%2?'#b3a07f':'#c8b486'; g.beginPath(); g.moveTo(tx-ts,ty); g.lineTo(tx+ts,ty); g.lineTo(tx,ty-ts*1.5); g.closePath(); g.fill();
+        g.fillStyle='rgba(0,0,0,.1)'; g.fillRect(tx-ts,ty,ts*2,2); }
     } else if(kind==='sunset'){
       const sky=g.createLinearGradient(0,0,0,lipY);
       [[0,'#371a3a'],[.32,'#8f3a34'],[.5,'#e8923a'],[.64,'#f4c64e'],[1,'#9a5a2a']].forEach(([p,c])=>sky.addColorStop(p,c));
@@ -4851,6 +4874,39 @@ STORY.push(
    {art:'land', music:'holy', text:'And he waited yet another seven days and sent out the dove, and she did not return to him again… And in the second month, on the twenty-seventh day of the month, the earth was dry.', ref:'BERĔSHITH 8:12,14'},
   ],
   complete:'And see, a freshly plucked olive leaf was in her mouth. And Noaḥ knew that the waters had receded from the earth.'
+},
+{ id:'c9b', title:'The Mountains of Ararat', ref:'BERĔSHITH 8:1–5',
+  intro:[
+   {art:'flood', music:'holy', text:'And Aluahim made a wind to pass over the earth, and the waters subsided… And the ark came to rest, in the seventh month, on the mountains of Ararat. And the waters decreased steadily, and the tops of the mountains were seen.', ref:'BERĔSHITH 8:1–5'},
+  ],
+  scene:{
+   map:{biome:'ararat', w:30, h:28, seed:46,
+     features:[
+       {type:'ark',stage:2,x:9,y:21,solid:true,clear:5,flat:4,id:'ark',examine:'The ark, come to rest with a groan of timber on the mountains of Ararat.'},
+       {type:'clearing',x:16,y:18,flat:3},
+       {type:'rock',x:22,y:22,solid:true,clear:1},
+     ]},
+   overlook:{kind:'flood', cliffY:13, drop:.62},
+   time:'morning', music:'holy',
+   player:'noach', playerPos:[16,23],
+   npcs:[
+     {id:'wife',char:'noach_w',x:12,y:23,wander:true,range:1.4,noTalk:true},
+     {id:'shem',char:'shem',x:13.5,y:22.4,wander:true,range:1.4,noTalk:true},
+     {id:'dove',animal:'dove',x:18,y:14,wander:true,range:1.6,noTalk:true},
+   ],
+   objectives:[
+     {type:'goto',x:16,y:15,radius:2.4,text:'Go to the edge and look out over the face of the waters',
+      script:[
+       {say:['narrator','And the ark came to rest on the mountains of Ararat. And Noaḥ went up to the edge of the mountain and looked out — and the waters were decreasing steadily upon the earth, and the tops of the mountains rose one by one out of the deep.']},
+       {say:['noach','A whole world under the water… and the high places returning, one by one. He remembered us. The deep had its bound after all — and now it draws back at His word, as it drew back on the first morning, when He divided the waters from the waters.']},
+       {say:['narrator','And Noaḥ knew that the judgment had an end, and that mercy stood on the far side of the flood — as a mountain stands when the waters go down.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'flood', music:'holy', text:'The deep that had covered the high mountains drew back at the word of Aluahim — and the ark rested, and the tops of the mountains were seen: the first dry ground of a washed world.', ref:'BERĔSHITH 8:4–5'},
+  ],
+  complete:'The ark rested on the mountains of Ararat — and the tops of the mountains were seen.'
 },
 { id:'c10', title:'The Rainbow Covenant', ref:'BERĔSHITH 8:15–9:17',
   intro:[
