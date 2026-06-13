@@ -20,10 +20,15 @@ the launchers below — see **`START HERE.txt`** for the friendly version:
 No internet, account, server or build step is required — the launchers simply
 open the self-contained HTML on your device.
 
-**Optional — play from another device on your network:** `start-windows-server.bat`
-hosts the game at `http://localhost:8080` (needs Python or Node.js installed),
-so phones/tablets on the same Wi-Fi can reach it at `http://YOUR-PC-IP:8080`.
-This is not needed for normal solo play.
+**Desktop launchers (`Launchers/`):** run the installer for your OS once to put a
+**Scripture Game** icon on your desktop — Windows/macOS/Linux supported. See
+`Launchers/README.txt`.
+
+**Fully offline network play (`fully offline network/`):** let several devices play
+from one machine with **no internet**. Run `host-windows.bat` / `host-mac.command`
+/ `host-linux.sh` on the host; it prints an address like `http://192.168.1.42:8080/index.html`
+that any device on the same Wi-Fi/router can open. See that folder's `README.txt`.
+Not needed for normal solo play.
 
 Each game is a single file and works offline:
 
