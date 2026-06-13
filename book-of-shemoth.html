@@ -2224,6 +2224,45 @@ function campRing(G,n,o){
   }
   for(const it of (G.world.items||[])) if(!it.taken) avoid.push([it.x,it.y,2.4]);
   if(G.world.player) avoid.push([G.world.player.x,G.world.player.y,2.6]);
+  if(o.cluster){
+    /* Yasharal encamps by tribes: twelve clusters ringing a clear central court (the Dwelling) */
+    let cx=m.w/2, cy=m.h/2;
+    const mish=m.decor.find(d=>d.type==='mishkan');
+    if(mish){ cx=mish.x; cy=mish.y; }
+    else if(o.cx!==undefined){ cx=o.cx; cy=(o.cy!==undefined?o.cy:cy); }
+    const court=o.court||8, cap=Math.min(n,o.cap||120);
+    const ringR=Math.max(court+4, Math.min(m.w/2,m.h/2)-4);
+    const per=Math.max(4,Math.ceil(cap/12));
+    const tentOk=(xx,yy)=>{
+      if(xx<2||xx>m.w-2||yy<2||yy>m.h-2) return false;
+      if(dist(xx,yy,cx,cy)<court) return false;
+      if(SOLID.has(tileAt(m,xx,yy))) return false;
+      for(const k of keep){ if(xx>k[0]&&xx<k[2]&&yy>k[1]&&yy<k[3]) return false; }
+      for(const a of avoid){ if(Math.abs(a[0]-xx)<a[2]&&Math.abs(a[1]-yy)<a[2]) return false; }
+      return true;
+    };
+    let placedT=0;
+    for(let tIdx=0;tIdx<12&&placedT<cap;tIdx++){
+      const ang=(tIdx/12)*Math.PI*2-Math.PI/2;
+      const ux=Math.cos(ang), uy=Math.sin(ang)*0.82;          /* flatten the ring a touch for the camera */
+      const ccx=cx+ux*ringR, ccy=cy+uy*ringR;
+      let clusterPlaced=0;
+      for(let i=0;i<per*4&&clusterPlaced<per&&placedT<cap;i++){
+        const xx=ccx+((i%3)-1)*2.0+hash2(tIdx*9+i,3)*0.7;
+        const yy=ccy+(Math.floor(i/3)-1)*1.8+hash2(tIdx*5+i,11)*0.6;
+        if(!tentOk(xx,yy)) continue;
+        m.decor.push({type:'tent',solid:true,x:xx,y:yy,col:tcols[placedT%5]});
+        placedT++; clusterPlaced++;
+      }
+      if(clusterPlaced>0){
+        m.decor.push({type:'standard',x:cx+ux*(ringR-2.6),y:cy+uy*(ringR-2.6),banner:TRIBES[tIdx][1],
+          examine:'The standard of the camp of '+TRIBES[tIdx][0]+' — Yasharal encamps by their tribes, each man by his own banner, by the standards of their fathers’ houses.'});
+        m.decor.push({type:'firepit',x:ccx+1.6,y:ccy+1.4,lit:true});
+      }
+    }
+    m.decor.sort((a,b)=>a.y-b.y);
+    return;
+  }
   let placed=0;
   const cols=Math.max(1,Math.floor((x1-x0)/gx));
   for(let i=0;i<cols*40&&placed<n;i++){
@@ -6525,7 +6564,7 @@ STORY.push(
    {art:'mishkanart', music:'holy', text:'And YAHUAH spoke to Mosheh, saying: “On the first day of the first month, in the first month, you are to raise up the Dwelling Place of the Tent of Appointment.”', ref:'SHEMOTH 40:1–2'},
   ],
   scene:{
-   map:{biome:'desert', w:46, h:30, seed:941,
+   map:{biome:'desert', w:64, h:46, seed:941,
      features:[
        {type:'mishkan',stage:1,x:24,y:12,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Dwelling Place, raised on the first day of the first month of the second year.'},
        {type:'arkcov',x:20,y:14.5,id:'ark',examine:'The ark of the Witness — within it, the tablets.'},
@@ -6544,11 +6583,12 @@ STORY.push(
      {id:'sheep1',animal:'sheep',x:31,y:23,range:2,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,36,{tribal:true,y0:21,keep:[[15,21,33,27]]})},
+     /* the whole house of Yasharal encamped by their tribes around the Dwelling */
+     {call:G=>campRing(G,108,{cluster:true,court:9,cap:108,keep:[[15,21,33,27]]})},
      {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
-       for(let i=0;i<44;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
-         x:11+(i%12)*2+Math.random(),y:20+Math.floor(i/12)*1.8+Math.random(),
+       for(let i=0;i<80;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
+         x:10+(i%16)*2.4+Math.random(),y:22+Math.floor(i/16)*1.7+Math.random(),
          wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
