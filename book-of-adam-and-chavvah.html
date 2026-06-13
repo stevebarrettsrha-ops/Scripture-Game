@@ -1949,8 +1949,8 @@ const TINTS={
   day:null,
   morning:'rgba(255,200,120,.10)',
   dusk:'rgba(230,120,60,.18)',
-  night:'rgba(10,18,48,.46)',
-  deepnight:'rgba(5,8,30,.6)',
+  night:'rgba(14,22,54,.34)',
+  deepnight:'rgba(8,12,36,.46)',
   storm:'rgba(30,38,52,.38)',
   dream:'rgba(60,40,110,.25)',
 };
@@ -2171,6 +2171,31 @@ function drawWorld(g,world,t){
       g.fillStyle=`rgba(240,240,255,${tw*(world.time==='deepnight'?.9:.5)})`;
       g.fillRect(sx,sy,2,2);
     }
+  }
+  // sunrise — warm, reddish dawn that lifts the darkness (distinct from the pale-gold rays of the Most High)
+  if(world.dawn>0){
+    const sxr=(world.dawnX!==undefined?world.dawnX*TILE+offX:VW*.5);
+    const suny=VH*(.30-world.dawn*.07);
+    g.save(); g.globalCompositeOperation='lighter';
+    const dg=g.createLinearGradient(0,0,0,VH);
+    dg.addColorStop(0,`rgba(255,176,86,${world.dawn*.5})`);
+    dg.addColorStop(.5,`rgba(255,138,68,${world.dawn*.22})`);
+    dg.addColorStop(1,'rgba(255,120,60,0)');
+    g.fillStyle=dg; g.fillRect(0,0,VW,VH);
+    const rg=g.createRadialGradient(sxr,suny,4,sxr,suny,VH*.55);
+    rg.addColorStop(0,`rgba(255,238,184,${world.dawn*.85})`);
+    rg.addColorStop(.4,`rgba(255,168,88,${world.dawn*.4})`);
+    rg.addColorStop(1,'rgba(255,150,80,0)');
+    g.fillStyle=rg; g.beginPath(); g.arc(sxr,suny,VH*.55,0,Math.PI*2); g.fill();
+    for(let i=0;i<7;i++){
+      const a=(i-3)*.26+Math.sin(t/2600+i)*.05;
+      g.save(); g.translate(sxr,suny); g.rotate(a+Math.PI/2);
+      const bg=g.createLinearGradient(0,0,0,VH);
+      bg.addColorStop(0,`rgba(255,206,138,${world.dawn*.16})`); bg.addColorStop(1,'rgba(255,206,138,0)');
+      g.fillStyle=bg; g.beginPath(); g.moveTo(-14,0); g.lineTo(14,0); g.lineTo(72,VH); g.lineTo(-72,VH); g.closePath(); g.fill();
+      g.restore();
+    }
+    g.globalCompositeOperation='source-over'; g.restore();
   }
   // vignette
   const vg=g.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.42,VW/2,VH/2,Math.max(VW,VH)*.72);
@@ -2456,6 +2481,7 @@ const Game={
     if(op.sfx){ Sound.sfx(op.sfx); return true; }
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
+    if(op.dawn!==undefined){ w.dawnTarget=op.dawn; if(op.dawnX!==undefined)w.dawnX=op.dawnX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
@@ -2629,7 +2655,7 @@ const Game={
     this.world={
       map, player, npcs:(sc.npcs||[]).map(makeNpc),
       items:(sc.items||[]).map(it=>Object.assign({},it)),
-      time:sc.time||'day', rain:false, rays:0, raysTarget:0,
+      time:sc.time||'day', rain:false, rays:0, raysTarget:0, dawn:0, dawnTarget:0,
       camFollow:'player', camTarget:null, gotoMark:null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
@@ -2810,6 +2836,7 @@ const Game={
       this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
+    w.dawn=lerp(w.dawn,w.dawnTarget||0,dt*.0016);   /* the dawn comes on slowly */
     // player movement
     const p=w.player;
     const blocked=(this.script&&!this.battle)||this.dlgChar;
@@ -3898,8 +3925,10 @@ const STORY=[
   },
   outro:[
    {art:'cavehome', music:'sorrow', text:'And as they prayed, Aḏam raised his eyes and saw the rock and the roof of the cave that covered him overhead — so that he could see neither shamayim nor the creatures of Aluahim. And he wept and struck his breast, until he dropped and was as dead.', ref:'1 AḎAM & ḤAWWAH 6'},
+   {art:'cavehome', music:'holy', text:'Then the Word of Aluahim came to Aḏam, and raised him from his death, and said: “O Aḏam, what is this you have done? Did you smite yourself unto death for the one day’s grief? Do you not know that I am your Aluahim who created you, and breathed into you the breath of life? I will not forsake you, until I have fulfilled the promise of the great five days and a half.”', ref:'1 AḎAM & ḤAWWAH 7'},
+   {art:'cavehome', music:'holy', text:'And Aḏam rose up, and bowed himself before YAHUAH; and his heart took comfort, for he understood that he was not cast off, and that the Word would surely come.', ref:'1 AḎAM & ḤAWWAH 7'},
   ],
-  complete:'From light into this darkness — yet He sent His Word, and raised them from their fallen state.'
+  complete:'He struck his breast until he was as dead — yet the Word of Aluahim came, and raised him up, and would not forsake him.'
 },
 { id:'b1a', title:'The Water by the Garden', ref:'1 AḎAM & ḤAWWAH 9–10',
   intro:[
@@ -3981,14 +4010,19 @@ const STORY=[
        {say:['narrator','And Aḏam and Ḥawwah took comfort, and slept that first night of the world — though sleep came slowly, for they feared the dark would not keep its promise to end.']},
        {fade:'out'},{time:'morning'},{music:'eden'},{fade:'in'},
       ]},
-     {type:'interact',prop:'mouth',text:'At first light — go to the mouth of the cave',hiddenUntil:2,
+     {type:'interact',prop:'mouth',text:'At first light — go with Ḥawwah to the mouth of the cave',hiddenUntil:2,
       script:[
-       {say:['narrator','And when the merciful Aluahim saw that the first night had ended, He made the sun rise — and Aḏam and Ḥawwah saw the light growing red over the mountains.']},
+       {say:['chavvah_c','Aḏam — what is that, beyond the mouth of the cave? The blackness… is it growing thin?']},
+       /* both rise and come to the threshold together */
+       {move:['chavvah',17,3.2,.05]},{move:['player',18.6,3.2,.05]},
+       {face:['player','up']},{face:['chavvah','up']},
+       {say:['narrator','And when the merciful Aluahim saw that the first night had ended, He made the sun to rise — and Aḏam and Ḥawwah stood together at the mouth of the cave, and saw the light growing red over the mountains.']},
+       {dawn:.3,dawnX:18},{sfx:'chime'},{wait:700},
        {say:['chavvah_c','Aḏam — FIRE! A great fire is coming over the earth to burn us! Hide — back into the cave!']},
        {say:['adam_c','Wait— wait, Ḥawwah. It does not devour the mountains. It… warms them. It is climbing the sky. It is LIGHT — the light He promised would return!']},
-       {sfx:'chime'},{rays:.5,raysX:18},
-       {say:['narrator','And the sun rose upon them for the first time outside the garden, and they stood in its warmth and wept for joy — for the darkness had not been forever, exactly as Aluahim had said.']},
-       {rays:0},
+       {time:'morning'},{music:'eden'},{dawn:.85,dawnX:18},{wait:1100},
+       {say:['narrator','And the sun rose upon them for the first time outside the garden; and the darkness slowly fled away before it, and its warm rays shone upon their faces. And they stood in its warmth and wept for joy — for the darkness had not been forever, exactly as Aluahim had said.']},
+       {wait:900},{dawn:0},
       ]},
    ],
   },
@@ -4517,7 +4551,9 @@ const STORY=[
      {type:'goto',x:29,y:18,radius:2.2,text:'A weary old traveller calls to you',
       script:[
        {say:['oldman','Peace to you, children of the cave! I am an old man of a far country. I heard your weeping, and my heart was moved. I know a garden — a place of rest, eastward — come, follow an old man’s kindness, and I will bring you to it.']},
-       {say:['adam_c','A garden…? Ḥawwah, come — perhaps Aluahim has sent him—']},
+       {say:['oldman','I will tell you a secret, Aḏam: I knew you before your sorrow. You were taken from beside me, and set in a garden of delight — and I have kept that garden for you all this while. Come, lean upon an old man’s arm, and I myself will carry you back to the rest from which you fell.']},
+       {say:['oldman','It is no great way — only a little walking, and your weeping is ended, and Ḥawwah shall sit again under the trees of life. Will you not trust an old man who has journeyed so far for the love of you?']},
+       {say:['adam_c','A garden…? And you would carry us to it…? Ḥawwah, come — perhaps Aluahim has sent him—']},
        {say:['narrator','And they began to follow him. But as they walked, Aḏam grew uneasy — for the old man cast no kindness in his eye when he thought himself unwatched.']},
        {say:['adam_c','Stranger — pray with us. We go nowhere, not even to a garden, without prayer to Aluahim.']},
        {say:['narrator','And at the name of prayer the old man’s face changed. And the Word of Aluahim came, and the disguise fell away like a torn garment.']},
