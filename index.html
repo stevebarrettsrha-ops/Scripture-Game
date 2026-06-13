@@ -1949,7 +1949,7 @@ function npcBlocked(world,x,y,px,py){
 /* ================= WORLD RENDER ================= */
 const Camera={x:0,y:0,shake:0,
   follow(tx,ty,map,instant){
-    const px=tx*TILE, py=ty*TILE;
+    const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
     const gx=maxX<minX?(map.w*TILE)/2:clamp(px,minX,maxX);
     const gy=maxY<minY?(map.h*TILE)/2:clamp(py,minY,maxY);
@@ -2693,6 +2693,7 @@ const Game={
     $('hud').style.display='';
     $('hud-chapter').textContent=ch.title;
     this.setupObjectives(sc.objectives);
+    Camera.biasY=sc.overlook?VH*(.5-(sc.overlook.drop||.64)):0;
     if(player) Camera.follow(player.x,player.y,map,true);
     else if(sc.camStart){ Camera.x=sc.camStart[0]*TILE; Camera.y=sc.camStart[1]*TILE; }
     if(sc.onStart) this.runScript(sc.onStart.slice());
@@ -3062,6 +3063,7 @@ const Game={
     }
     Particles.update(dt);
     // camera
+    Camera.biasY=(w.overlook&&w.camFollow==='player')?VH*(.5-(w.overlook.drop||.64)):0;
     if(w.camFollow==='player'&&p) Camera.follow(p.x,p.y,w.map);
     else if(w.camTarget){
       if(w.camTarget[0]==='ent'){
@@ -5609,14 +5611,14 @@ STORY.push(
    map:{biome:'rocky', w:30, h:28, seed:101,
      features:[
        {type:'altar',stage:3,x:11,y:22,solid:true,clear:2,id:'altar',examine:'The place where Aḇraham had stood before YAHUAH.'},
-       {type:'clearing',x:15,y:14,flat:3},
+       {type:'clearing',x:15,y:16,flat:3},
      ]},
-   overlook:{kind:'sodom', cliffY:12},
+   overlook:{kind:'sodom', cliffY:13, drop:.66},
    time:'morning', music:'sorrow',
    player:'avraham', playerPos:[15,22],
    npcs:[],
    objectives:[
-     {type:'goto',x:15,y:13,radius:2.4,text:'Go to the edge where you stood before YAHUAH — look toward Seḏom',
+     {type:'goto',x:15,y:15,radius:2.4,text:'Go to the edge where you stood before YAHUAH — look toward Seḏom',
       script:[
        {shake:1.5},{sfx:'thunder'},{wait:600},
        {say:['narrator','And Aḇraham looked toward Seḏom and Amorah, toward all the land of the plain — and saw, and see: the smoke of the land went up like the smoke of a furnace.']},

@@ -2231,7 +2231,7 @@ function campRing(G,n,o){
 /* ================= WORLD RENDER ================= */
 const Camera={x:0,y:0,shake:0,
   follow(tx,ty,map,instant){
-    const px=tx*TILE, py=ty*TILE;
+    const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
     const gx=maxX<minX?(map.w*TILE)/2:clamp(px,minX,maxX);
     const gy=maxY<minY?(map.h*TILE)/2:clamp(py,minY,maxY);
@@ -2982,6 +2982,7 @@ const Game={
     $('hud').style.display='';
     $('hud-chapter').textContent=ch.title;
     this.setupObjectives(sc.objectives);
+    Camera.biasY=sc.overlook?VH*(.5-(sc.overlook.drop||.64)):0;
     if(player) Camera.follow(player.x,player.y,map,true);
     else if(sc.camStart){ Camera.x=sc.camStart[0]*TILE; Camera.y=sc.camStart[1]*TILE; }
     if(sc.onStart) this.runScript(sc.onStart.slice());
@@ -3349,6 +3350,7 @@ const Game={
     }
     Particles.update(dt);
     // camera
+    Camera.biasY=(w.overlook&&w.camFollow==='player')?VH*(.5-(w.overlook.drop||.64)):0;
     if(w.camFollow==='player'&&p) Camera.follow(p.x,p.y,w.map);
     else if(w.camTarget){
       if(w.camTarget[0]==='ent'){
