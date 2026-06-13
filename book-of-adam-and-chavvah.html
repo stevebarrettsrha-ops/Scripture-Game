@@ -474,6 +474,8 @@ const CHARS={
   chavvah: {name:'Ḥawwah',  skin:'#83552d', hair:'#23150b', hairStyle:'long',  robe:null, glory:true},
   chavvah_f:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#7a8a4a', leaf:true},
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
+  adam_cs:  {name:'Aḏam',   skin:'#6e4524', hair:'#3a2716', hairStyle:'short', robe:'#4a3a28', beard:'#3a2716', singed:true},
+  chavvah_cs:{name:'Ḥawwah',skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#4a3a2a', headcover:'#5a4836', singed:true},
   serpent: {name:'The Serpent', serpent:true},
   cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
   malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
@@ -861,6 +863,12 @@ function drawChar(g,px,py,charId,o){
         R(2+hx,hy-6.6,1.2,5.4,'#c8ccd4'); R(1.3+hx,hy-1.4,2.6,1,wood); R(2.05+hx,hy-.6,1.1,1.6,woodD);
       }
     }
+  }
+  if(c.singed){
+    /* a covering scorched in Satan's fire: soot, charred holes, and a torn hem that bares the skin */
+    R(-3.6,-7.4+B,1.7,1.7,'#1c140d'); R(1.6,-5.4+B,1.5,1.5,'#241a12'); R(-1.2,-3.4+B,1.4,1.3,'#1c140d');
+    R(-4.6,-2.6+B,1.8,1.5,skin); R(2.7,-2.6+B,1.8,1.5,skin);
+    R(3.0,-8.2+B,1.2,2.2,skin);
   }
   sprRender(g,ops,u,flip);
   if(hold==='torch'&&!o.lying){
@@ -4238,11 +4246,14 @@ const STORY=[
   ],
   scene:{
    map:{biome:'wild', w:48, h:32, seed:351, sea:9,
-     features:[{type:'clearing',x:24,y:20,flat:2}]},
+     features:[{type:'clearing',x:24,y:20,flat:2,clear:3},
+       /* keep the shore clear so no tree hides Aḏam while he stands in the water */
+       {type:'clearing',x:24,y:23,flat:2,clear:3},{type:'clearing',x:28,y:20,flat:1,clear:2}]},
    time:'day', music:'sorrow',
    player:'adam_c', playerPos:[14,14],
    npcs:[
      {id:'satan',char:'satan_a',x:40,y:18,wander:false,hidden:true,noTalk:true},
+     {id:'chavvah',char:'chavvah_c',x:37,y:24.5,wander:false,noTalk:true,submerged:true},
    ],
    objectives:[
      {type:'goto',x:24,y:21,radius:2.2,text:'Go down and stand in the water of the sea',
@@ -4250,19 +4261,29 @@ const STORY=[
        {move:['player',24,23.8,.03]},
        {call:g=>{ g.world.player.submerged=true; g.world.player.moving=false; }},
        {wait:700},
-       {say:['narrator','And Aḏam went down into the sea until the water stood about him, and he stood in it, praying — day after day, while the waves went over him.']},
+       {say:['narrator','And Aḏam went down into the sea until the water stood about him, and he stood in it, praying — day after day, while the waves went over him; and Ḥawwah stood in the river, even as they had agreed.']},
        {mash:{duration:9000,gain:.13,decay:.00024,text:'Stand fast in the cold water — do not come up!',barA:'YOUR RESOLVE',barB:'THE DAYS OF PENANCE',msg1:'Your limbs grow numb — yet you stand…',msg2:'The waves go over your head — yet you stand…'}},
        {say:['narrator','Thirty-five days passed.']},
        {fade:'out'},{toast:'Thirty-five days of penance in the water…'},{wait:1600},{fade:'in'},
-       {show:'satan'},{move:['satan',27,19,.05]},
-       {say:['satan_a','Aḏam — rejoice! Aluahim has heard your prayer, and has sent me, His messenger, to bring you the bright light you lost! Come up out of the water — come, follow me, and I will lead you to the garden.']},
+       /* unable to move Aḏam, the deceiver goes first to Ḥawwah in the river */
+       {say:['narrator','Now Satan saw that he could not move Aḏam — so he went first to Ḥawwah in the river, transformed into a shining one, fair and full of borrowed light.']},
+       {show:'satan'},{move:['satan',35,23,.07,'bg']},
+       {say:['satan_a','Ḥawwah — rejoice! Your penance is accepted; Aluahim has sent me to bring you up out of the cold river, and to lead you to Aḏam, and to the garden you lost. Come up — do not linger in the water.']},
+       {say:['narrator','And Ḥawwah, not knowing the deceiver, believed him; and she came up out of the river, and cut her penance short, and followed him toward Aḏam.']},
+       {call:g=>{ const c=g.world.npcs.find(n=>n.id==='chavvah'); if(c){ c.submerged=false; } }},
+       {move:['satan',30,21,.06,'bg']},{move:['chavvah',31,21.5,.05]},
+       {say:['adam_c','Ḥawwah! Why have you left the river? Who has told you the penance was complete?']},
+       {say:['chavvah_c','A shining messenger, Aḏam — he says Aluahim sent him, to bring me to you, and to lead us both home to the garden…']},
+       {move:['satan',27,21,.05]},
+       {say:['satan_a','It is so, Aḏam — come up out of the sea as she has done, and follow me, His messenger, and I will bring you to the bright light you lost.']},
        {say:['adam_c','…Your words are sweet. But my heart is afraid. When the Word of Aluahim speaks, my whole soul has peace — and before you, it trembles.']},
        {say:['adam_c','O Aluahim — if this messenger is from You, give me a sign. And if it is the enemy, deliver me out of his hand — for I will not break my penance at any voice but Yours.']},
-       {rays:.9,raysX:24},{sfx:'holy'},{music:'holy'},
-       {say:['voice','O Aḏam, the figure of brightness before you is he who promised you the light once before — the deceiver, who hid himself in the serpent. He has no light, but darkness; no garden, but the pit. Behold him as he is.']},
-       {charSwap:['satan','satan_d']},{sfx:'thunder'},{burst:[27,19,'ash',22]},
+       {rays:.9,raysX:27},{sfx:'holy'},{music:'holy'},
+       {say:['voice','O Aḏam, the figure of brightness before you is he who promised you the light once before — the deceiver, who hid himself in the serpent. He has no light, but darkness; no garden, but the pit. He has drawn Ḥawwah out of the river; let him not draw you out of the sea. Behold him as he is.']},
+       {charSwap:['satan','satan_d']},{sfx:'thunder'},{burst:[27,21,'ash',22]},
        {say:['satan_d','…You were MINE, son of dust. You followed once. You will follow again.']},
-       {say:['voice','Be gone, accursed one. — O Aḏam, how many times have I delivered you out of his hand! Complete your penance in peace; and see, I send you figs from the garden, for your hunger.']},
+       {say:['chavvah_c','Forgive me, Aḏam — I have been deceived again, and have broken my penance! O Aluahim, do not hold it against me.']},
+       {say:['voice','Be gone, accursed one. — O Ḥawwah, your heart was toward Me; rise, and do not despair. O Aḏam, how many times have I delivered you out of his hand! Complete your penance in peace; and see, I send you figs from the garden, for your hunger.']},
        {despawn:'satan'},{rays:0},{music:'eden'},
        {say:['narrator','And messengers brought them figs from the garden, the first comfort of food. And Aḏam completed the forty days.']},
        {call:g=>{ g.world.player.submerged=false; }},
@@ -4381,6 +4402,7 @@ const STORY=[
    npcs:[
      {id:'chavvah',char:'chavvah_c',x:25.5,y:18.5,wander:false,follow:true,noTalk:true},
      {id:'satan',char:'satan_d',x:24,y:6.5,wander:false,hidden:true,noTalk:true},
+     {id:'rollstone',propType:'stone',scale:1.7,x:24,y:7.5,wander:false,hidden:true,noTalk:true},
    ],
    objectives:[
      {type:'goto',x:24,y:14,radius:2,text:'Stand before the cave with Ḥawwah, and pray the morning prayer',
@@ -4389,17 +4411,28 @@ const STORY=[
        {say:['adam_c','O Aluahim, we praise You with the dawn. You made the light, and the darkness flees before it—']},
        {sfx:'thunder'},{music:'storm'},{show:'satan'},
        {say:['satan_d','Pray, then — pray under THIS.']},
-       {say:['narrator','And Satan took a great stone from the height, broad as a threshing floor, and hurled it down upon them as they prayed — to crush them under it, that they might die before their time.']},
-       {shake:3},{sfx:'bad'},
-       {addProp:{type:'rock',x:24,y:14.6,id:'dome'}},
-       {burst:[24,14,'ash',24]},
+       {say:['narrator','And Satan took a great stone from the height, broad as a threshing floor, and rolled it down upon them as they prayed — to crush them under it, that they might die before their time.']},
+       /* the stone comes rolling down the slope toward them */
+       {show:'rollstone'},{sfx:'bad'},{shake:3},
+       {move:['rollstone',24,13.4,.12,'bg']},
+       {wait:200},{burst:[24,10,'ash',12]},{shake:3},
+       {wait:220},{burst:[24,11.5,'ash',14]},{shake:3},
+       {wait:240},{burst:[24,12.8,'ash',16]},{shake:3},
+       {wait:200},
+       /* the Word stays it; they pass beneath, and a door opens — it becomes a cave over them */
        {rays:.9,raysX:24},{sfx:'holy'},{music:'holy'},
-       {say:['narrator','But as it fell, the Word of Aluahim stayed it in the air — and the stone became as a TENT over them, and rested above their heads, and did not touch them; and under it they finished their prayer.']},
+       {hide:'player'},{hide:'chavvah'},{despawn:'rollstone'},
+       {addProp:{type:'cave',x:24,y:13.2,solid:true,id:'dome',examine:'The stone Satan hurled to be their grave — which the Word stayed, and made a cave over their prayer.'}},
+       {burst:[24,13,'holy',24]},{shake:1},
+       {say:['narrator','But as it fell, the Word of Aluahim stayed it in the air; and the great stone rested above them and did not touch them — and a door opened in the rock, and it became a CAVE over their heads, and under it they finished their prayer.']},
        {say:['voice','O Aḏam — see: he hurls death, and I make of it a roof. Not a hair of you falls without Me. Finish your prayer in peace; and let the stone stand for a witness, that what the enemy means for crushing, I mean for covering.']},
        {say:['satan_d','…Stone, fire, water — what is left?! …Time. Time is left, son of dust. I have until your Seed comes for me — and I will spend it all on you and on your children.']},
        {burst:[24,6.5,'ash',18]},{hide:'satan'},
        {rays:0},{music:'eden'},{shake:0},
-       {say:['chavvah_c','He threw it to make a grave for us — and Aluahim made it a roof over our prayer. Aḏam… even his wrath must serve our Maker.']},
+       /* they come out from under it, unhurt */
+       {call:g=>{ const p=g.world.player; p.hidden=false; p.x=24; p.y=15.4; p.dir='down';
+         const c=g.world.npcs.find(n=>n.id==='chavvah'); if(c){ c.hidden=false; c.x=25.4; c.y=15.6; c.target=null; } }},
+       {say:['chavvah_c','He threw it to make a grave for us — and Aluahim made it a roof, and a cave, over our prayer. Aḏam… even his wrath must serve our Maker.']},
        {sfx:'holy'},
       ]},
    ],
@@ -4423,12 +4456,12 @@ const STORY=[
        {type:'clearing',x:12,y:18,flat:2},{type:'clearing',x:13,y:25,flat:2},
      ]},
    time:'day', music:'desert',
-   player:'adam_c', playerPos:[34,15],
+   player:'adam_cs', playerPos:[34,15],
    npcs:[
      {id:'amb_sheep1',animal:'sheep',x:20,y:20,range:2,noTalk:true},
      {id:'amb_sheep2',animal:'sheep',x:22,y:21,range:2,noTalk:true},
-     {id:'chavvah',char:'chavvah_c',x:35,y:16,wander:true,range:1.5,
-      dlg:[['chavvah_c','The Word spoke of skins of sheep on the mountain-side, Aḏam — left where the lions ate. Come, let us go and find them.']]},
+     {id:'chavvah',char:'chavvah_cs',x:35,y:16,wander:true,range:1.5,
+      dlg:[['chavvah_cs','Our coverings are burnt and torn, Aḏam — and the Word spoke of skins of sheep on the mountain-side, left where the lions ate. Come, let us go and find them.']]},
      {id:'satan',char:'satan_d',x:12,y:17,wander:false,hidden:true,noTalk:true},
      {id:'malak',char:'malak',x:33,y:14,wander:false,hidden:true,noTalk:true},
    ],
@@ -4460,6 +4493,7 @@ const STORY=[
       script:[
        {say:['narrator','Then the mal’ak began before them to work out the skins, after the manner of one who prepares a shirt — and he took the thorns and stuck them into the skins, before their eyes.']},
        {say:['narrator','Then the mal’ak stood up and prayed Aluahim that the thorns in those skins should be hidden, so as to be as it were sewn with one thread. And so it was, by the order of Aluahim — and they became garments for Aḏam and Ḥawwah, and He clothed them with them.']},
+       {charSwap:['player','adam_c']},{charSwap:['chavvah','chavvah_c']},
        {sfx:'chime'},{burst:[34,14,'holy',18]},
        {say:['adam_c','From His hand at the gate, the coats of skin — and from His messenger’s hands now, garments again. Even our clothing is mercy taught from the shamayim.']},
        {move:['malak',44,8,.06,'bg']},{despawn:'malak'},
