@@ -870,6 +870,12 @@ function drawChar(g,px,py,charId,o){
     R(-4.6,-2.6+B,1.8,1.5,skin); R(2.7,-2.6+B,1.8,1.5,skin);
     R(3.0,-8.2+B,1.2,2.2,skin);
   }
+  if(o.babe){
+    /* a swaddled infant cradled in the arms */
+    R(-0.4,-9.2+B,4.6,3.1,'#efe7d6'); R(-0.8,-8.1+B,5.0,1.3,'#ddd2bb');
+    R(2.6,-9.0+B,1.8,1.8,'#8a5a30'); R(2.9,-8.5+B,.45,.45,'#160e08');
+    R(2.5,-10.0+B,1.9,.7,'#5a3a1e');
+  }
   sprRender(g,ops,u,flip);
   if(hold==='torch'&&!o.lying){
     const fx=(side?(2.65+k*1.5)*u:5.65*u)*flip, fy=((side?-9.2:-9.6+k*0.9)+B-6.8)*u;
@@ -2100,7 +2106,7 @@ function drawWorld(g,world,t){
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand,rear:d.rear});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand,rear:d.rear,babe:d.babe});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -4700,12 +4706,22 @@ const STORY=[
    map:{biome:'plains', w:46, h:32, seed:401,
      features:[
        {type:'cave',glow:true,x:34,y:11,solid:true,clear:4,flat:4,id:'cave'},
-       {type:'tent',x:26,y:14,solid:true,clear:2,col:'#b3a07f'},
        {type:'firepit',x:29,y:16,lit:true},
-       {type:'wheat',x:14,y:22},{type:'wheat',x:15,y:23},{type:'wheat',x:13,y:23},
      ]},
    time:'day', music:'eden',
    player:'adam_c', playerPos:[28,18],
+   onStart:[
+     {call:G=>{ const m=G.world.map;
+       /* Qayin the tiller's field: tilled rows full of standing grain */
+       for(let y=20;y<=27;y++) for(let x=7;x<=21;x++){ if(!SOLID.has(tileAt(m,x,y))) m.tiles[y*m.w+x]=T.TILLED; }
+       for(let i=0;i<72;i++){ const x=7+(i%14)*1.0+0.3+hash2(i,3)*0.3, y=20+Math.floor(i/14)*1.25+0.35;
+         if(x<21.5&&y<27.5&&!SOLID.has(tileAt(m,x,y))) m.decor.push({type:'wheat',x,y}); }
+       /* Heḇal the shepherd's flock */
+       for(let i=0;i<8;i++) G.world.npcs.push(makeNpc({id:'flock'+i,animal:'sheep',
+         x:31.5+(i%4)*1.9+hash2(i,5)*.6, y:20+Math.floor(i/4)*1.9+hash2(i,9)*.6, range:2.6, noTalk:true}));
+       m.decor.sort((a,b)=>a.y-b.y);
+     }},
+   ],
    npcs:[
      {id:'chavvah',char:'chavvah_c',x:27,y:15,wander:true,range:1.5,
       dlg:[['chavvah_c','Four children under one roof of rock, Aḏam. The cave has grown louder than the sea — and I would not trade one voice of it.']]},
@@ -4752,6 +4768,18 @@ const STORY=[
      ]},
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[30,16],
+   onStart:[
+     {call:G=>{ const m=G.world.map;
+       /* the tilled field Qayin worked, full of standing grain */
+       for(let y=22;y<=27;y++) for(let x=8;x<=20;x++){ if(!SOLID.has(tileAt(m,x,y))) m.tiles[y*m.w+x]=T.TILLED; }
+       for(let i=0;i<56;i++){ const x=8+(i%12)*1.0+0.3+hash2(i,3)*0.3, y=22+Math.floor(i/12)*1.15+0.35;
+         if(x<20.5&&y<27.5&&!SOLID.has(tileAt(m,x,y))) m.decor.push({type:'wheat',x,y}); }
+       /* Heḇal's flock, that still knew his voice */
+       for(let i=0;i<6;i++) G.world.npcs.push(makeNpc({id:'flock'+i,animal:'sheep',
+         x:15+(i%3)*2.0+hash2(i,5)*.6, y:17+Math.floor(i/3)*1.7+hash2(i,9)*.6, range:2.4, noTalk:true}));
+       m.decor.sort((a,b)=>a.y-b.y);
+     }},
+   ],
    npcs:[
      {id:'amb_sheep1',animal:'sheep',x:18,y:18,range:2,noTalk:true},
      {id:'amb_sheep2',animal:'sheep',x:20,y:19.4,range:2,noTalk:true},
@@ -4789,26 +4817,27 @@ const STORY=[
    {art:'wilderness', music:'sorrow', text:'When Luluwa heard of the deed, she wept and went to call her father and mother — and the household of Aḏam was broken with grief. And Qayin took Luluwa to wife — whom the book of Yoḇelim names Awan — and went away from the face of the mountain, down to the dark land of Noḏ.', ref:'2 AḎAM & ḤAWWAH 1 · YOḆELIM 4:9'},
   ],
   scene:{
-   map:{biome:'wild', w:44, h:30, seed:421,
+   /* within the Cave of Treasures — the birth is in the cave, not before it */
+   map:{biome:'interior', floorCol:'#6e5d48', w:22, h:14, seed:421,
      features:[
-       {type:'cave',glow:true,x:30,y:12,solid:true,clear:4,flat:4,id:'cave'},
-       {type:'firepit',x:26,y:15,lit:true},
+       {type:'doorway',x:18,y:1.9,id:'mouth',examine:'The mouth of the Cave of Treasures — morning light beyond it.'},
+       {type:'firepit',x:6,y:8,lit:true},
+       {type:'rock',solid:true,x:4,y:5},
      ]},
-   time:'morning', music:'eden',
-   player:'adam_c', playerPos:[24,17],
+   time:'day', music:'eden',
+   player:'adam_c', playerPos:[13,9],
    npcs:[
-     {id:'amb_sheep1',animal:'sheep',x:20,y:19,range:2,noTalk:true},
-     {id:'chavvah',char:'chavvah_c',x:28,y:15,wander:false,
+     {id:'chavvah',char:'chavvah_c',x:9,y:9,wander:false,babe:true,
       script:[
        {say:['chavvah_c','Aḏam — come. Come and see your son.']},
-       {say:['narrator','And Ḥawwah brought forth a son, perfectly beautiful in figure and in countenance; his beauty was like that of his father Aḏam, yet more beautiful.']},
+       {say:['narrator','And Ḥawwah brought forth a son, perfectly beautiful in figure and in countenance; his beauty was like that of his father Aḏam, yet more beautiful — and she wrapped him, and held him to her breast within the cave.']},
        {say:['adam_c','…After the grave, a cradle. Aluahim has given us another seed in place of Heḇal. His name is SHĔTH — “appointed” — for Aluahim has appointed him.']},
-       {sfx:'chime'},{burst:[28,15,'holy',16]},
+       {sfx:'chime'},{burst:[9,9,'holy',16]},
        {say:['chavvah_c','And he shall be told everything, Aḏam — the garden, the fall, the cave, the promise of the five days and a half. He shall keep what we almost lost.']},
       ]},
    ],
    objectives:[
-     {type:'talk',npc:'chavvah',text:'Ḥawwah calls you to the cave'},
+     {type:'talk',npc:'chavvah',text:'Ḥawwah calls you into the cave to see your son'},
    ],
   },
   outro:[
@@ -4830,7 +4859,8 @@ const STORY=[
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[29,16],
    npcs:[
-     {id:'chavvah',char:'chavvah_c',x:27,y:15.5,wander:true,range:1.2,noTalk:true},
+     /* Aḏam is severed from Ḥawwah and sleeps apart — she is not present until he goes down to her */
+     {id:'chavvah',char:'chavvah_c',x:27,y:15.5,wander:true,range:1.2,hidden:true,noTalk:true},
      {id:'satan',char:'satan_w',x:42,y:14,wander:false,hidden:true,noTalk:true},
    ],
    objectives:[
@@ -4856,6 +4886,7 @@ const STORY=[
      {type:'goto',x:28,y:15.5,radius:2.4,text:'Go down from the roof — to Ḥawwah, and be parted no more',hiddenUntil:1,
       script:[
        {time:'deepnight'},
+       {show:'chavvah'},
        {say:['chavvah_c','Aḏam? You are come down before the morning — and your face is like a man who has seen the adversary, and outlived him.']},
        {say:['adam_c','I have seen him, Ḥawwah — in a borrowed face, and then in his own; and bound, in the air, unable to flee. He is strong against us alone, and nothing against the Word. Aluahim has ended the forty days: we are not to be parted again.']},
        {say:['narrator','And from that hour they had rest, by the commandment of Aluahim — and Aḏam worshipped before YAHUAH, for having delivered him.']},
@@ -4992,7 +5023,7 @@ const STORY=[
   scene:{
    map:{biome:'wild', w:44, h:28, seed:413,
      features:[
-       {type:'tent',x:10,y:16,solid:true,clear:2,col:'#8a7a62'},
+       {type:'house',x:10,y:16,solid:true,clear:2,col:'#8a7a62'},
        {type:'firepit',x:12,y:17.5,lit:true},
        {type:'tree',x:31,y:12,solid:true,col:'#5d6e3e'},
        {type:'tree',x:33.5,y:14,solid:true,col:'#6e7a3e'},
@@ -5056,9 +5087,9 @@ const STORY=[
        {type:'cave',glow:true,x:14,y:9,solid:true,clear:4,flat:4,id:'cave',examine:'The Cave of Treasures — within, the bodies of the fathers, and the lamp that burns over them always.'},
        {type:'altar',stage:3,x:18,y:11,solid:true,clear:2,id:'altar',examine:'The altar on which Aḏam himself offered.'},
        {type:'well',x:26,y:27,solid:true,clear:2,id:'fountain',examine:'A fountain of water, near the houses of the children of Qayin.'},
-       {type:'tent',x:21,y:29,solid:true,clear:2,col:'#8d7a60'},
-       {type:'tent',x:31,y:28.5,solid:true,clear:2,col:'#7d6a52'},
-       {type:'tent',x:35,y:30,solid:true,clear:2,col:'#8d7a60'},
+       {type:'house',x:21,y:29,solid:true,clear:2,col:'#8d7a60'},
+       {type:'house',x:31,y:28.5,solid:true,clear:2,col:'#7d6a52'},
+       {type:'house',x:35,y:30,solid:true,clear:2,col:'#8d7a60'},
        {type:'firepit',x:29,y:30,lit:true},
        {type:'clearing',x:26,y:25,flat:3},
      ]},
