@@ -685,6 +685,7 @@ function drawChar(g,px,py,charId,o){
   const B=bob;
   const torso=robe||skin;
   const armC=robe?shade(torso,-12):skin;
+  const handC=o.whiteHand?'#f4f1e6':skin;
 
   if(!side){
     /* ---------- FRONT / BACK ---------- */
@@ -717,7 +718,7 @@ function drawChar(g,px,py,charId,o){
     R(-6.3,-14.6+B-k*0.9,2,5.4,armC);
     R(4.3,-14.6+B+k*0.9,2,5.4,armC);
     R(-6.3,-9.6+B-k*0.9,2,1.7,skin);
-    R(4.3,-9.6+B+k*0.9,2,1.7,skin);
+    R(4.3,-9.6+B+k*0.9,2,1.7,handC);
     /* head */
     R(-5,-24.4+B,10,9.6,skin);
     if(dir==='down'){
@@ -824,7 +825,7 @@ function drawChar(g,px,py,charId,o){
     if(c.hairy){ R(-4.6,-17+B,1.4,2.6,hairC); }
     /* front arm swings */
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
-    R(-0.6+k*1.5,-9.2+B,2.2,1.7,skin);
+    R(-0.6+k*1.5,-9.2+B,2.2,1.7,handC);
   }
   /* held item — drawn last so it sits in the hand, over the body */
   const hold=o.hold;
@@ -852,6 +853,10 @@ function drawChar(g,px,py,charId,o){
       } else if(hold==='jar'){
         R(4.4,hy-1.4,3,3.8,'#a8714a'); R(5,hy-2.4,1.8,1.2,'#8a5b3a');
         R(4.4,hy-.2,3,.8,shade('#a8714a',-20));
+      } else if(hold==='wood'){
+        R(3.6,hy-1.2,4.8,2.6,'#7a5a34');
+        R(3.6,hy-.7,4.8,.5,'#8d6a3e'); R(3.6,hy+.4,4.8,.5,'#6a4c2a');
+        R(3.3,hy-1,(0.7),2.2,'#9a7a4a'); R(8.1,hy-1,(0.7),2.2,'#5d4426');
       } else if(hold==='sword'){
         R(5,hy-6.6,1.2,5.4,'#c8ccd4'); R(4.3,hy-1.4,2.6,1,wood); R(5.05,hy-.6,1.1,1.6,woodD);
       }
@@ -874,6 +879,10 @@ function drawChar(g,px,py,charId,o){
       } else if(hold==='jar'){
         R(1.4+hx,hy-1.4,3,3.8,'#a8714a'); R(2+hx,hy-2.4,1.8,1.2,'#8a5b3a');
         R(1.4+hx,hy-.2,3,.8,shade('#a8714a',-20));
+      } else if(hold==='wood'){
+        R(.6+hx,hy-1.2,4.8,2.6,'#7a5a34');
+        R(.6+hx,hy-.7,4.8,.5,'#8d6a3e'); R(.6+hx,hy+.4,4.8,.5,'#6a4c2a');
+        R(.3+hx,hy-1,.7,2.2,'#9a7a4a'); R(5.1+hx,hy-1,.7,2.2,'#5d4426');
       } else if(hold==='sword'){
         R(2+hx,hy-6.6,1.2,5.4,'#c8ccd4'); R(1.3+hx,hy-1.4,2.6,1,wood); R(2.05+hx,hy-.6,1.1,1.6,woodD);
       }
@@ -1180,7 +1189,7 @@ const QUADV={
  ram:{L:9,W:6.4,body:'#e8e2d2',top:'#f2eee2',head:'#3b2f22',leg:'#3b2f22',horns:'#9a8458'},
  goat:{L:8.6,W:5.8,body:'#8d7a60',top:'#9a8870',head:'#8d7a60',leg:'#6e5b48',horns:'#5d4d38'},
  cow:{L:11,W:7.6,body:'#7a5a42',top:'#8a6a50',head:'#7a5a42',leg:'#5d4434',horns:'#d8d2c4',patch:'#e8dcc8'},
- donkey:{L:10,W:6.2,body:'#8d8276',top:'#9a8f84',head:'#8d8276',leg:'#6e6258',ears:'#7a7066'},
+ donkey:{L:10,W:6.2,body:'#8d8276',top:'#9a8f84',head:'#8d8276',leg:'#6e6258',ears:'#6a6158',mane:'#675e54',muzzle:'#b5aca0'},
  camel:{L:12,W:7,body:'#c2a872',top:'#c2a872',head:'#b59a68',leg:'#b59a68',humps:'#b59a68'},
  horse:{L:11.4,W:7,body:'#7a5234',top:'#8a5f3e',head:'#7a5234',leg:'#5d4434',mane:'#3b2a1c'},
  deer:{L:9.6,W:5.8,body:'#b08a5c',top:'#bd9866',head:'#b08a5c',leg:'#9d7a52',antlers:'#6e5638'},
@@ -1212,9 +1221,9 @@ function drawQuadVert(g,px,py,type,o){
   R(-hw*.32,hy+B,hw*.64,3.2,q.head);
   if(down){
     R(-hw*.32+0.5,hy+1+B,1,1,'#160e08'); R(hw*.32-1.5,hy+1+B,1,1,'#160e08');
-    R(-0.8,hy+2.6+B,1.6,1,shade(q.head,-20));
+    R(-0.9,hy+2.4+B,1.8,1.2,q.muzzle||shade(q.head,-20));
   }
-  if(q.ears){ R(-hw*.32-0.6,hy-1.6+B,1,2,q.ears); R(hw*.32-0.4,hy-1.6+B,1,2,q.ears); }
+  if(q.ears){ R(-hw*.5-.6,hy-2+B,1.1,3.2,q.ears); R(hw*.5-.5,hy-2+B,1.1,3.2,q.ears); }
   if(q.horns){ R(-hw*.32-0.8,hy-1+B,1.2,1.2,q.horns); R(hw*.32-0.4,hy-1+B,1.2,1.2,q.horns); }
   if(q.antlers){ R(-hw*.32-0.6,hy-2+B,0.8,2.4,q.antlers); R(hw*.32-0.2,hy-2+B,0.8,2.4,q.antlers); }
   if(q.mane&&!down) R(-hw*.32,hy-0.5+B,hw*.64,1.2,q.mane);
@@ -1809,8 +1818,30 @@ function drawProp(g,px,py,p,t){
         g.quadraticCurveTo(x9+flB*u,-11.4*u,x9+.6*u,-9.6*u); g.fill();
       }
       break; }
+    case 'staff': {
+      /* the staff of the fathers, planted in the earth */
+      shadow(1);
+      R(-0.7,-9.5,1.4,9.5,'#4a6a9a');
+      R(-0.7,-9.5,0.5,9.5,'#6e8fc0');
+      R(-1.2,-10.9,2.4,1.6,'#3a557e');
+      const glS=g.createRadialGradient(0,-5*u,u,0,-5*u,6.5*u);
+      glS.addColorStop(0,`rgba(150,190,255,${.16+Math.sin(t/500)*.05})`); glS.addColorStop(1,'rgba(150,190,255,0)');
+      g.fillStyle=glS; g.beginPath(); g.arc(0,-5*u,6.5*u,0,Math.PI*2); g.fill();
+      break; }
     case 'tablets': {
       shadow(2.6);
+      if(p.broken){
+        /* shattered shards at the foot of the mountain */
+        for(const [bx9,by9,bw9,bh9,ba9] of [[-3.4,-1.1,2.9,1.9,-.32],[-0.4,-2,3.1,2.2,.26],[2.3,-.7,2.5,1.7,-.18],[-1.7,.2,2,1.2,.42],[1.1,.7,1.7,1,-.36]]){
+          g.save(); g.translate(bx9*u,by9*u); g.rotate(ba9);
+          g.fillStyle='#9a9488'; g.fillRect(-bw9/2*u,-bh9/2*u,bw9*u,bh9*u);
+          g.fillStyle='#7a7468'; g.fillRect((-bw9/2+.4)*u,-.18*u,(bw9-.9)*u,.36*u);
+          g.restore();
+        }
+        g.fillStyle='#88827a';
+        g.fillRect(-4.6*u,.4*u,.9*u,.7*u); g.fillRect(4*u,-1.6*u,.8*u,.6*u); g.fillRect(.2*u,1.4*u,.7*u,.5*u);
+        break;
+      }
       for(const dx9 of [-2.2,2.2]){
         g.fillStyle='#9a9488';
         g.beginPath(); g.moveTo((dx9-2)*u,0); g.lineTo((dx9-2)*u,-5.4*u);
@@ -1847,15 +1878,20 @@ function drawProp(g,px,py,p,t){
         g.fillStyle='#caa23c';
         for(let i=-5;i<=5;i++) g.fillRect(i*W9*.16-2,TILE*.7,4,TILE*.8);
       }
-      g.fillStyle=st9>=1?'#8a6a38':'#caa23c';
+      g.fillStyle='#caa23c';
       g.fillRect(-W9/2,-H9,W9,H9);
       if(st9===0){ g.fillStyle='#1a140a';
         for(let i=1;i<8;i++) g.fillRect(-W9/2+i*W9/8-2,-H9,4,H9);
         g.fillStyle='#caa23c'; g.fillRect(-W9/2,-H9,W9,4);
       } else {
-        g.fillStyle='#7d5d6e'; g.fillRect(-W9/2,-H9,W9,H9*.45);
-        g.fillStyle='#8a6a38'; g.fillRect(-W9/2,-H9+H9*.45,W9,H9*.2);
-        g.fillStyle='#2e5f8a'; g.fillRect(-W9*.1,-H9*.8,W9*.2,H9*.8);
+        /* the boards, overlaid with gold */
+        g.fillStyle='#e8c66a'; g.fillRect(-W9/2,-H9,W9,H9*.45);
+        g.fillStyle='#d4af4e'; g.fillRect(-W9/2,-H9+H9*.45,W9,H9*.2);
+        g.fillStyle='#8a6a1c';
+        for(let i=1;i<10;i++) g.fillRect(-W9/2+i*W9/10-1,-H9,2,H9);
+        g.fillRect(-W9/2,-H9,W9,3);
+        g.fillStyle='#b58a2c'; g.fillRect(-W9*.1,-H9*.8,W9*.2,H9*.8);
+        g.fillStyle='#e8c66a'; g.fillRect(-W9*.12,-H9*.84,W9*.24,H9*.08);
       }
       if(p.glory){
         for(let i=0;i<6;i++){ const phA=t/1000+i*1.2;
@@ -2343,7 +2379,7 @@ function drawWorld(g,world,t){
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -3302,6 +3338,100 @@ function makeNpc(def){
     dir:def.dir||'down', moving:false, hidden:false, emote:def.emote||null,
     wander:def.wander!==false&&!def.animal, home:{x:def.x,y:def.y}, range:def.range||2.5
   },def);
+}
+
+/* ---------- camp life: purposeful villagers instead of aimless roaming ----------
+   cooks tend the fires, wood and water are carried, a shepherd keeps the flock,
+   an elder reads the scroll to the children, elders stand in counsel —
+   and some of the drifting crowd stops to talk in pairs. */
+function campLife(G,o){
+  o=o||{};
+  const w=G.world, m=w.map;
+  const has=c=>!!CHARS[c];
+  const man=o.man||(has('hebrew')?'hebrew':'shepherd');
+  const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
+  const child=o.child||(has('sheth')?'sheth':null);
+  let id9=0;
+  const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
+  const free=(x,y)=>{
+    if(x<2.5||y<2.5||x>m.w-3||y>m.h-3) return false;
+    if(!walkable(m,x,y)) return false;
+    for(const d of m.decor){ if(d.solid&&Math.abs(d.x-x)<1.7&&Math.abs(d.y-y)<1.7) return false; }
+    if(w.player&&dist(x,y,w.player.x,w.player.y)<3.2) return false;
+    return true;
+  };
+  const fires=m.decor.filter(d=>d.type==='firepit');
+  const wells=m.decor.filter(d=>d.type==='well');
+  const homes=m.decor.filter(d=>d.type==='tent'||d.type==='house');
+  const trees=m.decor.filter(d=>d.type==='tree'||d.type==='palm');
+  /* cooks tend the fires */
+  let nf=0;
+  for(const f of fires){
+    if(nf>=3) break;
+    if(free(f.x-1.2,f.y+.7)){ add({char:woman,x:f.x-1.2,y:f.y+.7,wander:false,dir:'right',hold:'jar'}); nf++; }
+    if(nf===1&&free(f.x+1.3,f.y+.8)) add({char:man2,x:f.x+1.3,y:f.y+.8,wander:false,dir:'left'});
+  }
+  /* wood-bearers carry their loads in to the fires */
+  if(fires.length&&!o.noWood){
+    const f=fires[0];
+    const sx=trees.length?trees[0].x+1:clamp(f.x-7,3,m.w-3), sy=trees.length?trees[0].y+1.5:clamp(f.y+3.5,3,m.h-3);
+    add({char:man,x:sx,y:sy,route:[[f.x+1.8,f.y+.2],[sx,sy]],routeSpeed:.02,hold:'wood'});
+    const f2=fires[1]||f;
+    add({char:man2,x:clamp(f2.x-4,3,m.w-3),y:clamp(f2.y+2,3,m.h-3),
+         route:[[f2.x-1.8,f2.y+.5],[clamp(f2.x-6,3,m.w-3),clamp(f2.y+3,3,m.h-3)]],routeSpeed:.016,hold:'wood'});
+  }
+  /* water-bearers between the well and the tents */
+  if(wells.length&&homes.length&&!o.noWater){
+    const wl=wells[0];
+    const tn=homes.reduce((a,b)=>dist(b.x,b.y,wl.x,wl.y)<dist(a.x,a.y,wl.x,wl.y)?b:a);
+    add({char:woman,x:wl.x+1.5,y:wl.y+1.1,route:[[tn.x+1.4,tn.y+1.6],[wl.x+1.5,wl.y+1.1]],routeSpeed:.02,hold:'jar'});
+  }
+  /* a shepherd keeps the flock at the edge of the camp */
+  if(!o.noFlock&&has('shepherd')){
+    let fx=null,fy=null;
+    for(let i=0;i<70&&fx===null;i++){
+      const tx=3+hash2(i,o.seed||7)*(m.w-7), ty=3+hash2(i*3+1,11)*(m.h-7);
+      if(free(tx,ty)&&free(tx+1.6,ty+1.2)&&homes.every(h=>dist(h.x,h.y,tx,ty)>3.4)){ fx=tx; fy=ty; }
+    }
+    if(fx!==null){
+      add({char:'shepherd',x:fx,y:fy,wander:true,range:1.7,hold:'staff'});
+      const kinds=['sheep','goat','sheep'];
+      for(let i=0;i<3;i++) add({animal:kinds[i],x:fx+.8+(i%2)*1.5,y:fy+.9+i*.8,range:1.9});
+    }
+  }
+  /* an elder reads the scroll to the children */
+  if(child&&!o.noScroll){
+    for(const h of homes){
+      if(free(h.x+2.4,h.y+1.6)&&free(h.x+2.4,h.y+3)){
+        add({char:elder,x:h.x+2.4,y:h.y+1.8,wander:false,dir:'down',hold:'scroll'});
+        add({char:child,child:true,x:h.x+1.5,y:h.y+3,wander:false,dir:'up'});
+        add({char:child,child:true,x:h.x+3.3,y:h.y+3.1,wander:false,dir:'up'});
+        break;
+      }
+    }
+  }
+  /* elders in counsel at a tent door */
+  if(!o.noCounsel){
+    for(let i=homes.length-1;i>=0;i--){ const h=homes[i];
+      if(free(h.x-1.8,h.y+1.8)&&free(h.x-.6,h.y+1.8)){
+        add({char:elder,x:h.x-1.7,y:h.y+1.8,wander:false,dir:'right'});
+        add({char:man,x:h.x-.5,y:h.y+1.9,wander:false,dir:'left'});
+        break;
+      }
+    }
+  }
+  /* settle some of the drifting crowd: pairs stop and talk */
+  const drifters=w.npcs.filter(n=>n.wander&&n.noTalk&&!n.animal&&!n.child&&!n.group&&!n.follow&&!n.route&&!n.hidden&&!n.foe&&!String(n.id).startsWith('life'));
+  for(let i=0;i+1<Math.min(drifters.length,Math.ceil(drifters.length*.55));i+=2){
+    const a9=drifters[i], b9=drifters[i+1];
+    a9.wander=false; a9.target=null; a9.moving=false;
+    b9.wander=false; b9.target=null; b9.moving=false;
+    b9.x=a9.x+1.1; b9.y=a9.y+.15;
+    a9.dir='right'; b9.dir='left';
+  }
+  m.decor.sort((a,b)=>a.y-b.y);
 }
 function toast(msg){
   const el=$('hud-toast');
@@ -4553,6 +4683,7 @@ STORY.push(
        {type:'palm',x:26.5,y:15,solid:true},
        {type:'tent',x:10,y:19,solid:true,clear:2,col:'#c8b486'},
        {type:'tree',x:12.5,y:16,solid:true,col:'#4a7c3a',id:'gardentree',examine:'The garden of Re‛u’ĕl — and in its midst, a staff of sapphire planted in the earth, graven with the Name. Every suitor of Miḏyan has tried to draw it. None has moved it.'},
+       {type:'staff',x:13.6,y:16.7,id:'gardenstaff',examine:'The staff of sapphire, planted in the earth — graven with the Name.'},
        {type:'clearing',x:24,y:16,flat:2},
      ]},
    time:'day', music:'desert',
@@ -4589,9 +4720,9 @@ STORY.push(
       script:[
        {say:['narrator','WITNESS — In the garden of Re‛u’ĕl stood the staff, made in the twilight of the sixth day, graven with the Name — carried from Aḏam to Ḥanoḵ to Noaḥ, to Aḇraham, Yahtsḥaq and Ya‘aqoḇ, and from Yosĕph’s house into Mitsrayim, and from Mitsrayim to this garden. All the mighty of Miḏyan had set their hand to it. It had not moved.']},
        {say:['mosheh','…It is only a staff. A shepherd needs a staff.']},
-       {sfx:'holy'},{burst:[12.5,16,'holy',20]},{rays:.6,raysX:12.5},
+       {sfx:'holy'},{burst:[13.6,16.7,'holy',20]},{rays:.6,raysX:13.6},
        {say:['narrator','And Mosheh put out his hand and drew it out — as a man draws his own staff from the sand. And Re‛u’ĕl saw, and gave him Tsipporah his daughter for a wife.']},
-       {hold:['player','staff']},
+       {removeProp:'gardenstaff'},{hold:['player','staff']},
        {rays:0},
        {say:['tsipporah','The staff that would yield to no man, in your hand like a willow wand… What are you, Mosheh of Mitsrayim?']},
        {say:['mosheh','A stranger. — And she bore a son, and I called his name Gĕreshom: “for I have been a sojourner in a foreign land.”']},
@@ -4690,7 +4821,11 @@ STORY.push(
        {say:['narrator','And he stretched out his hand and took hold of it — and it became a staff in his hand.']},
        {despawn:'snake'},{hold:['player','staff']},{burst:[23.6,14.2,'mote',10]},{sfx:'chime'},
        {say:['voice','— that they may believe that YAHUAH, the Aluahim of their fathers, has appeared to you. Now put your hand in your bosom.']},
-       {say:['narrator','And he put his hand in his bosom, and drew it out — and see, his hand was leprous, like snow. And He said, “Put your hand back” — and it was restored, like his other flesh.']},
+       {call:G=>{G.world.player.whiteHand=true}},{sfx:'bad'},{wait:700},
+       {say:['narrator','And he put his hand in his bosom, and drew it out — and see, his hand was leprous, like snow.']},
+       {say:['voice','Put your hand back into your bosom.']},
+       {wait:500},{call:G=>{G.world.player.whiteHand=false}},{sfx:'chime'},
+       {say:['narrator','And he put his hand back, and drew it out — and see, it was restored, like his other flesh.']},
        {sfx:'holy'},
        {say:['voice','And if they do not believe even these two signs: take water from the river and pour it on the dry land — and the water shall become blood on the dry land.']},
       ]},
@@ -4890,10 +5025,14 @@ STORY.push(
        {spawn:{id:'snakeB',char:'serpent_c',x:11,y:9.6,wander:false,noTalk:true}},
        {spawn:{id:'snakeC',char:'serpent_c',x:17,y:9.6,wander:false,noTalk:true}},
        {say:['narrator','And the magicians of Mitsrayim, they also did so with their secret arts: each threw down his staff, and they became serpents—']},
-       {wait:600},
-       {despawn:'snakeB'},{despawn:'snakeC'},{burst:[14,9,'ash',16]},{sfx:'thunder'},
+       {wait:400},
+       {move:['snakeA',11.7,9.6,.055]},
+       {despawn:'snakeB'},{burst:[11,9.6,'ash',12]},{sfx:'bad'},{wait:400},
+       {move:['snakeA',16.3,9.6,.055]},
+       {despawn:'snakeC'},{burst:[17,9.6,'ash',12]},{sfx:'thunder'},
        {say:['narrator','—but the staff of Aharon SWALLOWED their staffs.']},
-       {despawn:'snakeA'},{hold:['aharon','staff']},{hide:'mastema'},
+       {move:['snakeA',14.6,9.4,.05]},{wait:300},
+       {despawn:'snakeA'},{burst:[14.6,9.4,'mote',10]},{hold:['aharon','staff']},{hide:'mastema'},
        {say:['pharaoh','…Clever. Court tricks. Mitsrayim has a hundred such jugglers. Take your serpent-staff and go — Yasharal stays in the brick-pits.']},
        {say:['narrator','And Pharaoh’s heart was hardened, and he did not listen to them, as YAHUAH had said.']},
       ]},
@@ -5134,6 +5273,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,14,{houses:true,keep:[[10,10,33,18]]})},
+     {call:G=>campLife(G,{noFlock:true})},
    ],
    objectives:[
      {type:'talk',npc:'mosheh',text:'Hear the ordinance of the Pesach from Mosheh'},
@@ -5475,6 +5615,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,24,{tribal:true,x0:28,y0:17,x1:43,y1:24,keep:[[36,16,44,21]]})},
+     {call:G=>campLife(G)},
      {call:G=>{ const m=G.world.map;
        /* Eylim: twelve fountains of water, and seventy palm trees */
        let pl=0;
@@ -5543,6 +5684,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,36,{tribal:true,keep:[[8,11,36,21]]})},
+     {call:G=>campLife(G)},
    ],
    objectives:[
      {type:'talk',npc:'mosheh',text:'Hear what YAHUAH shall do with your grumbling'},
@@ -5584,6 +5726,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,24,{tribal:true,y0:15,keep:[[21,8,31,17]]})},
+     {call:G=>campLife(G)},
    ],
    objectives:[
      {type:'goto',x:16,y:18.5,radius:2.2,text:'The people strive with you for water',
@@ -5710,6 +5853,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,36,{tribal:true,keep:[[14,9,32,22],[36,14,46,24]]})},
+     {call:G=>campLife(G)},
    ],
    objectives:[
      {type:'talk',npc:'yithro',text:'Go out and meet Yithro your father-in-law'},
@@ -5760,6 +5904,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,36,{tribal:true,y0:18,keep:[[17,18,30,27]]})},
+     {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<48;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
          x:10+(i%14)*1.9+Math.random(),y:19+Math.floor(i/14)*1.7+Math.random(),
@@ -5865,6 +6010,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,24,{tribal:true,y0:20,keep:[[15,20,31,27]]})},
+     {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<36;i++) G.world.npcs.push(makeNpc({id:'sin'+i,char:cs[i%4],child:i%9===8,
          x:12+(i%12)*1.9+Math.random(),y:18.5+Math.floor(i/12)*1.7+Math.random(),
@@ -5955,7 +6101,7 @@ STORY.push(
        {sfx:'thunder'},{shake:3},{music:'storm'},
        {say:['narrator','And as he came near the camp and saw the calf and the dancing — Mosheh’s displeasure burned, and he THREW THE TABLETS out of his hands and BROKE THEM at the foot of the mountain.']},
        {hold:['player']},
-       {addProp:{type:'tablets',x:23,y:21.5,id:'broken'}},
+       {addProp:{type:'tablets',broken:true,x:23,y:21.5,id:'broken'}},
        {burst:[23,21.5,'ash',20]},{sfx:'bad'},
        {call:G=>{ for(const n of G.world.npcs){ if(String(n.id).startsWith('rev')){ n.route=null; n.wander=false; n.moving=false; } } }},
        {say:['narrator','And he took the calf which they had made, and burned it in the fire, and ground it to powder, and scattered it on the water — and made the children of Yasharal drink it.']},
@@ -6118,6 +6264,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,24,{tribal:true,keep:[[9,12,33,23]]})},
+     {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','hebreww'];
        for(let i=0;i<22;i++) G.world.npcs.push(makeNpc({id:'wil'+i,char:cs[i%4],
          x:12+(i%7)*2+Math.random(),y:19+Math.floor(i/7)*2+Math.random(),
@@ -6163,6 +6310,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,24,{tribal:true,y0:21,keep:[[12,14,33,23]]})},
+     {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebrew2','hebreww','hebrew'];
        for(let i=0;i<16;i++) G.world.npcs.push(makeNpc({id:'wrk'+i,char:cs[i%4],
          x:15+(i%5)*2.4+Math.random(),y:19+Math.floor(i/5)*2.2+Math.random(),
@@ -6223,6 +6371,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campRing(G,36,{tribal:true,y0:21,keep:[[15,21,33,27]]})},
+     {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<44;i++) G.world.npcs.push(makeNpc({id:'gl'+i,char:cs[i%4],child:i%9===8,
          x:11+(i%12)*2+Math.random(),y:20+Math.floor(i/12)*1.8+Math.random(),
