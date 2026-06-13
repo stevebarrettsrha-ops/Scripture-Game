@@ -506,6 +506,7 @@ const Input={
 
 /* ================= CHARACTERS ================= */
 const CHARS={
+  sihon:  {name:'Siḥon', skin:'#6e4a28', hair:'#2c1a0c', hairStyle:'short', robe:'#7a3a32', beard:'#2c1a0c', collar:'#8a6a1c', headcover:'#8a6a1c'},
   qorah:  {name:'Qoraḥ', skin:'#6e4a28', hair:'#2c1a0c', hairStyle:'short', robe:'#7d5d6e', beard:'#2c1a0c'},
   datan:  {name:'Datan', skin:'#774e2a', hair:'#33230f', hairStyle:'short', robe:'#8a6a45', beard:'#33230f'},
   kaleb:  {name:'Kalĕḇ', skin:'#6e4926', hair:'#2c1a0c', hairStyle:'short', robe:'#8d6a45', beard:'#3a2716'},
@@ -5313,6 +5314,59 @@ STORY.push(
   ],
   complete:'The rod of Aharon budded, and bore almonds — life from dead wood, the seal of the chosen.'
 },
+{ id:'n11b', title:'The Ashes of the Heifer', ref:'BAMIḎBAR 19',
+  intro:[
+   {art:'mishkanart', music:'holy', text:'And YAHUAH said to Mosheh and Aharon: “This is the law: speak to the children of Yasharal, that they bring you a RED HEIFER, perfect, in which is no blemish, on which a yoke has never come. And it shall be slaughtered outside the camp, and burned whole — and its ashes laid up, for the water of separation: a cleansing for sin, for whoever touches the dead.”', ref:'BAMIḎBAR 19:1–9'},
+  ],
+  scene:{
+   map:{biome:'desert', w:42, h:28, seed:1112,
+     features:[
+       {type:'altar',stage:3,x:30,y:11,solid:true,clear:2,id:'burnplace',examine:'The place outside the camp, where the red heifer is burned whole — hide, flesh, blood and dung — with cedar, hyssop, and scarlet.'},
+       {type:'fold',x:13,y:19,w:4,h:3,id:'pen'},
+       {type:'clearing',x:22,y:18,flat:3},
+     ]},
+   time:'morning', music:'holy',
+   player:'hebrew', playerPos:[18,20],
+   npcs:[
+     {id:'elazar',char:'elazar',x:28,y:14,wander:false,
+      script:[
+       {say:['elazar','You have touched the dead, and are unclean seven days — you, who buried your kin after the plague. There is a cleansing for it: a red heifer, perfect, never yoked, burned whole outside the camp; and its ashes, with running water, become the WATER OF SEPARATION. Bring the heifer, and I shall make the cleansing.']},
+       {say:['hebrew','A heifer to cleanse the touch of death? Then even the grave does not cut me off from the assembly forever.']},
+      ]},
+     {id:'heifer',animal:'cow',x:13.5,y:19.5,range:1,noTalk:true,group:'heifer',follow:false},
+   ],
+   onStart:[
+     {call:G=>campRing(G,18,{tribal:true,keep:[[10,8,33,22]]})},
+     {call:G=>campLife(G)},
+   ],
+   objectives:[
+     {type:'talk',npc:'elazar',text:'Hear Elazar — there is a cleansing for the touch of death'},
+     {type:'goto',x:14,y:19,radius:2.2,text:'Bring the red heifer, perfect and never yoked',hiddenUntil:1,
+      script:[{call:G=>{ const b=G.world.npcs.find(n=>n.id==='heifer'); if(b) b.follow=true; }},
+       {say:['narrator','A heifer red and whole, on which no yoke had ever come — never bent to the work of this fallen world.']}]},
+     {type:'lead',group:'heifer',x:30,y:13.5,radius:2.6,need:1,text:'Lead it outside the camp, to the place of burning',hiddenUntil:2,
+      script:[
+       {call:G=>{ const b=G.world.npcs.find(n=>n.id==='heifer'); if(b){ b.follow=false; b.wander=false; b.target=null; b.hidden=true; } }},
+       {sfx:'holy'},{burst:[30,11,'spark',16]},
+       {say:['narrator','And the heifer was slaughtered outside the camp, and Elazar took of its blood and sprinkled it toward the front of the Tent seven times; and it was burned whole — hide and flesh and blood — with cedar wood, and hyssop, and scarlet. And the ashes were gathered, and laid up outside the camp, in a clean place.']},
+       {call:G=>{ const m=G.world.map; for(let y=12;y<=13;y++)for(let x=20;x<=22;x++) m.tiles[y*m.w+x]=T.WATER; }},
+       {burst:[21,12.5,'mote',12]},
+       {say:['elazar','Now the cleansing. The ashes of the heifer, in running water — the water of separation — sprinkled on the third day and the seventh; and you shall be clean from the touch of death.']},
+      ]},
+     {type:'goto',x:21,y:14,radius:2,text:'Be sprinkled with the water of separation — and be clean',hiddenUntil:3,
+      script:[
+       {rays:.7,raysX:21},{sfx:'chime'},{burst:[21,13,'mote',14]},
+       {say:['narrator','And the unclean was sprinkled with the water of separation, and washed, and at evening was clean — restored to the assembly of YAHUAH.']},
+       {say:['elazar','See the wonder of it: the same ashes that cleanse the defiled make the clean priest who handles them unclean till evening. The cure for death carries death’s own shadow — until the day a cleansing comes that touches the dead, and is not itself defiled, but raises them.']},
+       {rays:0},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'mishkanart', music:'holy', text:'The ashes of a red heifer, never yoked, burned whole outside the camp — and a water that washed away the defilement of the grave: a strange and beautiful sign, that even the touch of death has a cleansing appointed; and a shadow of the One who would touch the dead and not be defiled, but make them live.', ref:'BAMIḎBAR 19:11–22'},
+  ],
+  complete:'The water of separation cleansed the touch of death — a shadow of a greater cleansing to come.'
+},
 { id:'n12', title:'The Waters of Meriḇah', ref:'BAMIḎBAR 20',
   intro:[
    {art:'wilderness', music:'tense', text:'And the children of Yasharal came to the Wilderness of Tsin, and there was no water for the congregation — and they assembled against Mosheh and Aharon, and said, “Why have you brought up the assembly of YAHUAH into this wilderness, to die here, we and our livestock?” And Mosheh and Aharon went to the door of the Tent and fell on their faces.', ref:'BAMIḎBAR 20:1–6'},
@@ -5404,6 +5458,59 @@ STORY.push(
 STORY.push(
 /* ============ ACT VI — THE PLAINS OF MO’AḆ ============ */
 { id:'nact6', roman:'VI', title:'The Plains of Mo’aḇ', ref:'BAMIḎBAR 22–27', chapters:[
+{ id:'n13b', title:'Siḥon and Og', ref:'BAMIḎBAR 21:21–35',
+  intro:[
+   {art:'wasteland', music:'tense', text:'And Yasharal sent messengers to Siḥon sovereign of the Amorites, saying, “Let us pass through your land. We shall not turn into field or vineyard, nor drink the water of the wells; we shall go by the sovereign’s highway until we have passed your border.” But Siḥon would not let Yasharal pass — he gathered all his people and went out against Yasharal into the wilderness, to Yahats, and fought.', ref:'BAMIḎBAR 21:21–23'},
+  ],
+  scene:{
+   map:{biome:'rocky', w:46, h:28, seed:1117,
+     features:[
+       {type:'rock',x:12,y:10,solid:true,clear:1},{type:'rock',x:34,y:11,solid:true,clear:1},
+       {type:'clearing',x:22,y:18,flat:3},
+     ]},
+   time:'day', music:'storm',
+   player:'yahoshua', playerPos:[16,20], playerHold:'sword',
+   npcs:[
+     {id:'mosheh',char:'mosheh_o',x:14,y:21,wander:false,noTalk:true,hold:'staff'},
+     {id:'sold1',char:'hebrew',x:18,y:19,wander:false,noTalk:true},
+     {id:'sold2',char:'hebrew2',x:19,y:21,wander:false,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>campRing(G,14,{tribal:true,y0:16,keep:[[10,8,36,22]]})},
+   ],
+   objectives:[
+     {type:'goto',x:24,y:16,radius:2.4,text:'Siḥon comes out to Yahats — meet the Amorites in the field',
+      script:[
+       {spawn:{id:'sihon',char:'sihon',x:34,y:14,wander:false,noTalk:true,foeSpeed:.046}},
+       {spawn:{id:'am1',char:'amaleqi',x:36,y:16,wander:false,noTalk:true,foeSpeed:.05}},
+       {spawn:{id:'am2',char:'amaleqi',x:38,y:19,wander:false,noTalk:true,foeSpeed:.048}},
+       {spawn:{id:'am3',char:'raider2',x:35,y:21,wander:false,noTalk:true,foeSpeed:.05}},
+       {sfx:'thunder'},{shake:2},
+       {say:['narrator','And Siḥon would not let them pass, but trusted in his own strength, and came out with all his people to the field.']},
+       {say:['yahoshua','For YAHUAH and for Yasharal! He has given Siḥon and his land into our hand — strike, and fear not!']},
+       {battle:{foes:['am1','am2','am3','sihon'],hits:2,rally:[22,18],text:'Strike down Siḥon and the Amorites at Yahats!',won:'Siḥon is fallen, and his host is broken'}},
+       {say:['narrator','And Yasharal struck him with the edge of the sword, and took possession of his land from the Arnon to the Yabboq — and dwelt in Ḥeshbon and all its villages; for Ḥeshbon was the city of Siḥon, sovereign of the Amorites.']},
+      ]},
+     {type:'goto',x:24,y:14,radius:2.4,text:'Now Og of Bashan comes out at Edre‘i — a giant, the last of the Rephaim',hiddenUntil:1,
+      script:[
+       {rays:.6,raysX:24},{sfx:'holy'},
+       {say:['voice','Do not fear him, for I have given him into your hand, and all his people and his land — and you shall do to him as you did to Siḥon, who dwelt at Ḥeshbon.']},
+       {spawn:{id:'og',char:'giant',x:34,y:11,wander:false,noTalk:true,foeSpeed:.034}},
+       {spawn:{id:'bg1',char:'amaleqi',x:37,y:13,wander:false,noTalk:true,foeSpeed:.05}},
+       {spawn:{id:'bg2',char:'raider2',x:36,y:9,wander:false,noTalk:true,foeSpeed:.048}},
+       {sfx:'thunder'},{shake:3},{music:'storm'},
+       {say:['narrator','And Og the sovereign of Bashan came out against them, he and all his people, to battle at Edre‘i — a giant, the last remnant of the Rephaim, whose iron bedstead was nine cubits long.']},
+       {battle:{foes:['bg1','bg2','og'],hits:3,rally:[22,16],text:'Stand against Og of Bashan and the men of Bashan — YAHUAH has given him into your hand!',won:'Og the giant is fallen at Edre‘i'}},
+       {say:['narrator','And they struck him, and his sons, and all his people, until none was left of them remaining; and they took possession of his land. Two Amorite sovereigns fallen east of the Yardĕn — and the dread of Yasharal fell on Mo’aḇ, so that Balaq trembled, and sent for the curser.']},
+       {rays:0},{sfx:'holy'},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'wasteland', music:'holy', text:'Siḥon at Ḥeshbon and Og at Edre‘i — the two Amorite sovereigns fallen, and the whole land east of the Yardĕn taken for an inheritance. The wilderness generation’s children were learning to fight; and the sight of it filled Mo’aḇ with dread, and set Balaq seeking a curse.', ref:'BAMIḎBAR 21:24–35'},
+  ],
+  complete:'Two sovereigns fallen east of the Yardĕn — and the dread of Yasharal fell upon Mo’aḇ.'
+},
 { id:'n14', title:'The Donkey and the Messenger', ref:'BAMIḎBAR 22',
   intro:[
    {art:'wilderness', music:'tense', text:'And Balaq son of Tsippor, sovereign of Mo’aḇ, was in dread of Yasharal, for they were many — and he sent to Bil‘am son of Be‘or, to Pethor by the River, saying, “Come, curse this people for me, for they are too mighty for me. For I know that whom you bless is blessed, and whom you curse is cursed.” And Bil‘am rose in the morning and saddled his donkey, and went with the princes of Mo’aḇ.', ref:'BAMIḎBAR 22:2–21'},
@@ -5541,9 +5648,57 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'mishkanart', music:'holy', text:'So ends BAMIḎBAR, the Book of the Wilderness — a generation laid in the sand, and their little ones grown into an army at the edge of the land; the daughters given their inheritance, Pineḥas his covenant of peace, and Yahusha the charge to bring them over. The wandering is ended; the crossing waits.', ref:'BAMIḎBAR 27:18–23 — THE END OF THE WILDERNESS'},
+   {art:'mishkanart', music:'holy', text:'The plague stayed by Pineḥas and his covenant of peace; the daughters of Tselophḥaḏ given their inheritance; and Yahusha charged to bring the people over. One reckoning yet remained on the plains of Mo’aḇ before the crossing — with Miḏyan, and with the man whose counsel had snared them at Pe‘or.', ref:'BAMIḎBAR 25–27'},
   ],
-  complete:'Be strong and courageous — Yahusha is charged to bring them in, and the wilderness is ended.'
+  complete:'Pineḥas his peace, the daughters their portion, Yahusha his charge — and one last reckoning to come.'
+},
+{ id:'n17', title:'The War on Miḏyan', ref:'BAMIḎBAR 31',
+  intro:[
+   {art:'wasteland', music:'tense', text:'And YAHUAH said to Mosheh, “Avenge the children of Yasharal on the Miḏyanites — who snared them at Pe‘or by the counsel of Bil‘am — and afterward you shall be gathered to your people.” And they armed a thousand from each tribe, twelve thousand for the war, with Pineḥas son of Elazar, and the set-apart vessels and the trumpets for the alarm in his hand.', ref:'BAMIḎBAR 31:1–6'},
+  ],
+  scene:{
+   map:{biome:'wasteland', w:46, h:28, seed:1118,
+     features:[
+       {type:'rock',x:12,y:10,solid:true,clear:1},{type:'rock',x:34,y:12,solid:true,clear:1},
+       {type:'clearing',x:22,y:18,flat:3},
+     ]},
+   time:'day', music:'storm',
+   player:'pinchas', playerPos:[16,20], playerHold:'trumpet',
+   npcs:[
+     {id:'war1',char:'hebrew',x:18,y:19,wander:false,noTalk:true},
+     {id:'war2',char:'hebrew2',x:19,y:21,wander:false,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ const cs=['hebrew','hebrew2','levite'];
+       for(let i=0;i<10;i++) G.world.npcs.push(makeNpc({id:'host'+i,char:cs[i%3],x:13+(i%5)*1.6+Math.random(),y:20+Math.floor(i/5)*1.5,wander:true,range:1.2,noTalk:true})); }},
+   ],
+   objectives:[
+     {type:'goto',x:24,y:16,radius:2.4,text:'Sound the alarm, and meet Miḏyan in the field',
+      script:[
+       {spawn:{id:'mk1',char:'sihon',x:34,y:13,wander:false,noTalk:true,foeSpeed:.046}},
+       {spawn:{id:'md1',char:'amaleqi',x:36,y:16,wander:false,noTalk:true,foeSpeed:.05}},
+       {spawn:{id:'md2',char:'raider2',x:38,y:19,wander:false,noTalk:true,foeSpeed:.048}},
+       {spawn:{id:'bilam',char:'bilam',x:37,y:11,wander:false,noTalk:true,foeSpeed:.04}},
+       {sfx:'thunder'},{shake:2},
+       {say:['narrator','And they warred against Miḏyan, as YAHUAH commanded — and the trumpets of the alarm sounded over the host.']},
+       {say:['pinchas','For YAHUAH, and for the wrong done at Pe‘or! Stand, men of Yasharal — the alarm is blown before our Aluahim, and He remembers His own.']},
+       {battle:{foes:['md1','md2','mk1','bilam'],hits:2,rally:[22,18],text:'Strike Miḏyan — and the man whose counsel snared Yasharal at Pe‘or',won:'Miḏyan is broken, and her kings are fallen'}},
+       {say:['narrator','And they slew the sovereigns of Miḏyan — Ewi and Reqem, Tsur, Ḥur, and Reḇa, the five — and BIL‘AM son of Be‘or they slew with the sword: the hired curser, who could not curse, and so taught the snare instead, fell at last by the blade among those he had corrupted.']},
+      ]},
+     {type:'goto',x:18,y:22,radius:2.4,text:'Return — but keep outside the camp seven days, and be cleansed',hiddenUntil:1,
+      script:[
+       {say:['voice','Whoever has slain a being, and whoever has touched the slain, shall stay outside the camp seven days; and purify yourselves on the third day and the seventh, with the water of separation — you and all your captives and all you have taken; and only then come into the camp.']},
+       {sfx:'holy'},{burst:[18,22,'mote',14]},
+       {say:['narrator','And the officers of the host came to Mosheh and said, “Your servants have counted the men of war under our hand — and NOT ONE OF US IS MISSING.” And for this they brought an offering to YAHUAH: the gold of their spoil, a memorial before Him for the children of Yasharal.']},
+       {say:['pinchas','Not one missing — twelve thousand went out, and twelve thousand return. He fought for us; the least we bring Him is the gold off our own hands, a memorial that He, and not our sword, gave the victory.']},
+       {sfx:'chime'},{burst:[18,22,'holy',16]},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'mishkanart', music:'holy', text:'So ends BAMIḎBAR, the Book of the Wilderness — a generation laid in the sand, and their little ones grown into an army at the edge of the land; Bil‘am fallen by the sword he meant for others, Miḏyan’s snare avenged, not one warrior missing, and the gold laid up as a memorial. The wandering is ended; across the Yardĕn, the land waits.', ref:'BAMIḎBAR 31:48–54 — THE END OF THE WILDERNESS'},
+  ],
+  complete:'Not one of us is missing — Miḏyan avenged, Bil‘am fallen, and the wilderness is ended.'
 },
 ]},
 );
