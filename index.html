@@ -287,6 +287,8 @@
       <button class="btn small" id="btn-book">✦ The First Book of Aḏam &amp; Ḥawwah ✦</button>
       <button class="btn small" id="btn-hanok">🔒 The Book of Ḥanoḵ</button>
       <button class="btn small" id="btn-shemoth">🔒 SHEMOTH — These Are The Names</button>
+      <button class="btn small" id="btn-vayiqra">🔒 VAYIQRA — And He Called</button>
+      <button class="btn small" id="btn-bamidbar">🔒 BAMIḎBAR — In the Wilderness</button>
     </div>
   </div>
 
@@ -7444,6 +7446,14 @@ function openTitle(){
   $('btn-shemoth').innerHTML=sOpen?'✦ SHEMOTH — These Are The Names ✦':'🔒 SHEMOTH — These Are The Names';
   $('btn-shemoth').style.opacity=sOpen?'1':'.45';
   $('btn-shemoth').title=sOpen?'':'Unlocks at the end of BERĔSHITH';
+  const vOpen=vayiqraUnlocked();
+  $('btn-vayiqra').innerHTML=vOpen?'✦ VAYIQRA — And He Called ✦':'🔒 VAYIQRA — And He Called';
+  $('btn-vayiqra').style.opacity=vOpen?'1':'.45';
+  $('btn-vayiqra').title=vOpen?'':'Unlocks at the end of SHEMOTH';
+  const bOpen=bamidbarUnlocked();
+  $('btn-bamidbar').innerHTML=bOpen?'✦ BAMIḎBAR — In the Wilderness ✦':'🔒 BAMIḎBAR — In the Wilderness';
+  $('btn-bamidbar').style.opacity=bOpen?'1':'.45';
+  $('btn-bamidbar').title=bOpen?'':'Unlocks at the end of VAYIQRA';
   showScreen('title-screen');
 }
 
@@ -7469,6 +7479,20 @@ $('btn-shemoth').onclick=()=>{
   if(!Save.data.done['c25']){ Sound.init(); Sound.sfx('bad');
     toast('Finish BERĔSHITH — the coffin in Mitsrayim — to open the Book of Names.'); return; }
   window.location.href='book-of-shemoth.html'; };
+function vayiqraUnlocked(){
+  try{ const d=JSON.parse(localStorage.getItem('shemoth_v1')); return !!(d&&d.done&&d.done.x37); }catch(e){ return false; }
+}
+function bamidbarUnlocked(){
+  try{ const d=JSON.parse(localStorage.getItem('vayiqra_v1')); return !!(d&&d.done&&d.done.v18); }catch(e){ return false; }
+}
+$('btn-vayiqra').onclick=()=>{
+  if(!vayiqraUnlocked()){ Sound.init(); Sound.sfx('bad');
+    toast('Finish SHEMOTH — the esteem filling the Dwelling — to open the Book of the Service.'); return; }
+  Sound.init(); window.location.href='book-of-vayiqra.html'; };
+$('btn-bamidbar').onclick=()=>{
+  if(!bamidbarUnlocked()){ Sound.init(); Sound.sfx('bad');
+    toast('Finish VAYIQRA — the covenant on Mount Sinai — to open the Book of the Wilderness.'); return; }
+  Sound.init(); window.location.href='book-of-bamidbar.html'; };
 $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
