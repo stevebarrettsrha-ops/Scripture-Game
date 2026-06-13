@@ -4359,51 +4359,89 @@ function drawSlideArt(g,key,st,t,slide){
       Sky.spire(g,VW*.55,VH*1.06,VW*.26,VH*.2,{rock:'#bd9e62',cap:'#52802f'});
       break; }
     case 'vista': {
-      /* standing on a height, looking down over the land below — a great
-         grassy clifftop fills the lower half, a path winds down to the valley */
-      Sky.paint(g,[[0,'#3f86c4'],[.34,'#67a8d8'],[.58,'#bcd9ec'],[.72,'#d6e6cf'],[1,'#a6c27c']]);
-      Sky.sun(g,VW*.8,VH*.15,18,'rgba(255,250,224,.85)');
-      Sky.cloud(g,VW*.3,VH*.13,26,.8); Sky.cloud(g,VW*.6,VH*.09,34,.7);
-      /* the land far below: hazy ranges, then a green valley floor */
-      Sky.range(g,VH*.44,VH*.16,'#9fb8d0',2,{peaks:9});
-      Sky.range(g,VH*.5,VH*.15,'#88a8c6',5,{peaks:8});
-      g.fillStyle='#a8c486'; g.fillRect(0,VH*.5,VW,VH*.5);
-      g.fillStyle='rgba(224,236,240,.4)'; g.fillRect(0,VH*.5,VW,VH*.07);   /* valley haze */
-      /* tiny distant green-capped hills on the valley floor */
-      Sky.spire(g,VW*.66,VH*.62,VW*.09,VH*.07,{rock:'#aebf86',shade:'#94a76e',cap:'#6f9a4a',capD:'#5d8534'});
-      Sky.spire(g,VW*.8,VH*.6,VW*.07,VH*.055,{rock:'#a6b87e',shade:'#8ea068',cap:'#669245',capD:'#557f30'});
-      Sky.spire(g,VW*.9,VH*.64,VW*.08,VH*.06,{rock:'#aebf86',shade:'#94a76e',cap:'#6f9a4a',capD:'#5d8534'});
-      /* the clifftop the viewer stands on — rock face dropping away on the right */
-      const lipX=VW*.56, lipY=VH*.6;
-      g.fillStyle='#b6975c'; g.beginPath();
-      g.moveTo(0,VH); g.lineTo(0,VH*.5);
-      g.quadraticCurveTo(VW*.3,VH*.42,lipX,lipY);
-      g.quadraticCurveTo(VW*.5,VH*.82,VW*.36,VH); g.closePath(); g.fill();
-      /* rocky striations on the cliff face */
-      g.strokeStyle='rgba(70,52,26,.22)'; g.lineWidth=2;
-      for(let i=0;i<5;i++){ g.beginPath();
-        g.moveTo(VW*.2+i*VW*.06,VH); g.lineTo(VW*.34+i*VW*.045,lipY+VH*.06); g.stroke(); }
-      /* the grassy top surface the figures stand on */
-      g.fillStyle='#6da043'; g.beginPath();
-      g.moveTo(0,VH); g.lineTo(0,VH*.5);
-      g.quadraticCurveTo(VW*.3,VH*.42,lipX,lipY);
-      g.quadraticCurveTo(VW*.34,lipY+VH*.05,VW*.16,lipY+VH*.04);
-      g.quadraticCurveTo(VW*.06,lipY+VH*.06,0,VH*.74); g.closePath(); g.fill();
-      g.fillStyle='#7caf4c'; g.beginPath();   /* sunlit grass near the lip */
-      g.moveTo(0,VH*.5); g.quadraticCurveTo(VW*.3,VH*.42,lipX,lipY);
-      g.quadraticCurveTo(VW*.3,lipY-VH*.02,0,VH*.54); g.closePath(); g.fill();
-      /* a dirt path winding from the foreground up to a notch in the lip, then down */
-      g.strokeStyle='#b89a64'; g.lineWidth=VW*.05; g.lineCap='round';
-      g.beginPath(); g.moveTo(VW*.16,VH);
-      g.quadraticCurveTo(VW*.34,VH*.86,VW*.3,VH*.74);
-      g.quadraticCurveTo(VW*.26,VH*.66,VW*.46,lipY+VH*.005); g.stroke();
-      g.strokeStyle='rgba(168,142,90,.7)'; g.lineWidth=VW*.022;   /* the path continuing down over the edge */
-      g.beginPath(); g.moveTo(VW*.46,lipY+VH*.01);
-      g.quadraticCurveTo(VW*.52,lipY+VH*.08,VW*.5,lipY+VH*.16); g.stroke();
-      g.lineCap='butt';
+      /* standing on a height, looking down over the land below — a sheer
+         clifftop fills the lower-left, a switchback trail descends to the valley */
+      Sky.paint(g,[[0,'#3f86c4'],[.3,'#67a8d8'],[.5,'#bcd9ec'],[.64,'#d6e6cf'],[1,'#9bbc72']]);
+      Sky.sun(g,VW*.82,VH*.14,18,'rgba(255,250,224,.9)');
+      Sky.cloud(g,VW*.28,VH*.12,26,.85); Sky.cloud(g,VW*.58,VH*.08,32,.7); Sky.cloud(g,VW*.74,VH*.19,18,.55);
+      /* the land far below: three hazy ranges receding */
+      Sky.range(g,VH*.4,VH*.17,'#a6bdd4',2,{peaks:9});
+      Sky.range(g,VH*.46,VH*.15,'#8aa9c6',5,{peaks:8});
+      Sky.range(g,VH*.5,VH*.12,'#7396b8',8,{peaks:10});
+      /* the valley floor far below */
+      const vg=g.createLinearGradient(0,VH*.5,0,VH);
+      vg.addColorStop(0,'#aec98a'); vg.addColorStop(1,'#7ba84c');
+      g.fillStyle=vg; g.fillRect(0,VH*.5,VW,VH*.5);
+      g.fillStyle='rgba(228,240,244,.5)'; g.fillRect(0,VH*.5,VW,VH*.06);   /* distance haze */
+      /* field patches quilting the valley */
+      const fields=[['#94ba66',.62,.58,.16,.05],['#a6c878',.8,.56,.14,.045],['#86ad5a',.7,.66,.2,.06],['#b0cd82',.9,.62,.13,.05]];
+      for(const[c,fx,fy,fw,fh]of fields){ g.fillStyle=c; g.beginPath();
+        g.ellipse(VW*fx,VH*fy,VW*fw,VH*fh,0,0,Math.PI*2); g.fill(); }
+      /* a river threading the valley */
+      g.strokeStyle='rgba(126,176,206,.85)'; g.lineWidth=Math.max(3,VW*.012); g.lineCap='round';
+      g.beginPath(); g.moveTo(VW*.5,VH*.52);
+      g.quadraticCurveTo(VW*.66,VH*.6,VW*.6,VH*.7);
+      g.quadraticCurveTo(VW*.56,VH*.82,VW*.74,VH*.95); g.stroke(); g.lineCap='butt';
+      /* distant green-capped hills standing in the valley */
+      Sky.spire(g,VW*.7,VH*.6,VW*.1,VH*.08,{rock:'#aec088',shade:'#94a76e',cap:'#6f9a4a',capD:'#5d8534'});
+      Sky.spire(g,VW*.85,VH*.58,VW*.08,VH*.06,{rock:'#a6b87e',shade:'#8ea068',cap:'#669245',capD:'#557f30'});
+      Sky.spire(g,VW*.95,VH*.64,VW*.09,VH*.07,{rock:'#aec088',shade:'#94a76e',cap:'#6f9a4a',capD:'#5d8534'});
+      /* tiny people on the valley floor far below — those who dwell beneath the height */
+      if(!slide||slide.peopleBelow!==false){
+        const pb=(slide&&slide.peopleBelow)||['hebrew','hebreww','hebrew2','elder','hebreww'];
+        const spots=[[.62,.7],[.68,.68],[.66,.74],[.74,.72],[.7,.78],[.78,.69],[.82,.75]];
+        spots.forEach(([fx,fy],i)=>{ if(i<pb.length+2)
+          Sky.figure(g,VW*fx,VH*fy,pb[i%pb.length],{t:t+i*260,scale:.62,dir:i%2?'left':'right',moving:i%3===0}); });
+      }
+      /* ===== the clifftop the viewer stands on ===== */
+      const lipX=VW*.55, lipY=VH*.6;
+      const land=()=>{ g.beginPath();
+        g.moveTo(0,VH); g.lineTo(0,VH*.48);
+        g.quadraticCurveTo(VW*.28,VH*.4,lipX,lipY);
+        g.quadraticCurveTo(VW*.6,VH*.84,VW*.44,VH); g.closePath(); };
+      /* rock face of the cliff */
+      land(); g.fillStyle='#a9854f'; g.fill();
+      g.save(); land(); g.clip();
+      /* horizontal rock strata */
+      g.fillStyle='rgba(120,92,52,.5)';
+      for(let i=0;i<7;i++) g.fillRect(0,lipY+VH*.04+i*VH*.06,VW,VH*.018);
+      g.fillStyle='rgba(150,120,74,.5)';
+      for(let i=0;i<7;i++) g.fillRect(0,lipY+VH*.07+i*VH*.06,VW,VH*.012);
+      /* deep shadow at the base of the sheer face */
+      const cs=g.createLinearGradient(0,lipY,0,VH);
+      cs.addColorStop(0,'rgba(40,26,12,0)'); cs.addColorStop(1,'rgba(40,26,12,.5)');
+      g.fillStyle=cs; g.fillRect(0,lipY,VW,VH-lipY);
+      /* a couple of protruding ledges to read as sheer rock */
+      g.fillStyle='rgba(60,42,22,.4)';
+      g.beginPath(); g.ellipse(VW*.34,VH*.82,VW*.12,VH*.02,0,0,Math.PI*2); g.fill();
+      g.beginPath(); g.ellipse(VW*.2,VH*.92,VW*.14,VH*.022,0,0,Math.PI*2); g.fill();
+      g.restore();
+      /* the flat grassy top the figures stand on */
+      g.fillStyle='#5f9a3c'; g.beginPath();
+      g.moveTo(0,VH); g.lineTo(0,VH*.48);
+      g.quadraticCurveTo(VW*.28,VH*.4,lipX,lipY);
+      g.quadraticCurveTo(VW*.34,lipY+VH*.055,VW*.13,lipY+VH*.04);
+      g.quadraticCurveTo(VW*.05,lipY+VH*.06,0,VH*.7); g.closePath(); g.fill();
+      /* sunlit grass at the lip + the shadow it casts down the cliff */
+      g.fillStyle='#79b048'; g.beginPath();
+      g.moveTo(0,VH*.48); g.quadraticCurveTo(VW*.28,VH*.4,lipX,lipY);
+      g.quadraticCurveTo(VW*.28,lipY-VH*.03,0,VH*.52); g.closePath(); g.fill();
+      g.strokeStyle='rgba(30,40,18,.35)'; g.lineWidth=Math.max(2,VH*.012);
+      g.beginPath(); g.moveTo(0,VH*.49); g.quadraticCurveTo(VW*.28,VH*.41,lipX,lipY+1); g.stroke();
+      /* a switchback trail carved down the rock face */
+      g.strokeStyle='#c0a370'; g.lineWidth=Math.max(3,VW*.02); g.lineCap='round';
+      g.beginPath();
+      g.moveTo(VW*.16,VH); g.lineTo(VW*.3,VH*.86);
+      g.lineTo(VW*.2,VH*.74); g.lineTo(VW*.36,VH*.66);
+      g.lineTo(VW*.3,lipY+VH*.03); g.stroke();
+      g.strokeStyle='rgba(90,68,40,.5)'; g.lineWidth=1.5;
+      g.beginPath();
+      g.moveTo(VW*.16,VH); g.lineTo(VW*.3,VH*.86);
+      g.lineTo(VW*.2,VH*.74); g.lineTo(VW*.36,VH*.66);
+      g.lineTo(VW*.3,lipY+VH*.03); g.stroke(); g.lineCap='butt';
       /* the figures at the overlook, looking out over the land */
-      Sky.figure(g,VW*.2,VH*.95,'mosheh_o',{t,scale:2,dir:'right'});
-      Sky.figure(g,VW*.34,VH*.99,'aharon',{t:t+300,scale:1.8,dir:'right'});
+      Sky.figure(g,VW*.18,VH*.93,'mosheh_o',{t,scale:2,dir:'right'});
+      Sky.figure(g,VW*.32,VH*.98,'aharon',{t:t+300,scale:1.8,dir:'right'});
       break; }
     case 'furnace': {
       Sky.paint(g,[[0,'#160c0a'],[.6,'#2c1410'],[1,'#3d1c12']]);
