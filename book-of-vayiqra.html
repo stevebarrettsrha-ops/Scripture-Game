@@ -208,6 +208,43 @@
     <div class="sys-btn" id="btn-menu" title="Chapters">☰</div>
   </div>
 
+  <!-- Besorah in-game reader -->
+  <style>
+    #ref-banner{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:55;
+      display:none;max-width:78vw;padding:6px 14px;border-radius:18px;cursor:pointer;
+      background:rgba(12,16,24,.84);border:1px solid rgba(201,169,106,.55);color:#e8dcc0;
+      font-size:13px;letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      font-family:inherit;box-shadow:0 2px 14px rgba(0,0,0,.4)}
+    #ref-banner.show{display:block}
+    #ref-banner:hover{background:rgba(201,169,106,.28);color:#fff}
+    #besorah-modal{position:fixed;inset:0;z-index:1000;display:none}
+    #besorah-modal.show{display:block}
+    #besorah-backdrop{position:absolute;inset:0;background:rgba(4,6,12,.82)}
+    #besorah-panel{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      width:min(92vw,860px);height:88vh;background:#0c1018;border:2px solid var(--gold,#c9a96a);
+      border-radius:10px;box-shadow:0 12px 50px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+    #besorah-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;
+      padding:8px 12px;background:#11161f;border-bottom:1px solid rgba(201,169,106,.4);
+      color:var(--gold,#c9a96a);font-family:inherit;letter-spacing:.1em;text-transform:uppercase;
+      font-size:13px;overflow:hidden}
+    #besorah-title{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    #besorah-close{flex:none;background:rgba(201,169,106,.15);color:#e8dcc0;border:1px solid rgba(201,169,106,.5);
+      width:34px;height:34px;border-radius:6px;font-size:18px;line-height:1;cursor:pointer}
+    #besorah-close:hover{background:rgba(201,169,106,.32);color:#fff}
+    #besorah-frame-wrap{position:relative;flex:1;background:#f4ecd8}
+    #besorah-frame-wrap iframe{width:100%;height:100%;border:0;display:block}
+    #besorah-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+      color:#6a5a3a;font-style:italic;background:#f4ecd8}
+  </style>
+  <div id="ref-banner"></div>
+  <div id="besorah-modal" aria-hidden="true">
+    <div id="besorah-backdrop"></div>
+    <div id="besorah-panel">
+      <div id="besorah-bar"><span id="besorah-title">The Besorah</span><button id="besorah-close" title="Close (Esc)">✕</button></div>
+      <div id="besorah-frame-wrap"><div id="besorah-loading">Loading the Besorah…</div></div>
+    </div>
+  </div>
+
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
@@ -239,6 +276,7 @@
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
       <button class="btn" id="btn-chapters">Chapters</button>
+      <button class="btn small" id="btn-besorah">📖 The Besorah Scriptures</button>
       <button class="btn small" id="btn-book">⟵ SHEMOTH — These Are The Names</button>
     </div>
   </div>
@@ -5444,6 +5482,73 @@ function frame(ts){
   Game.render();
   requestAnimationFrame(frame);
 }
+
+/* ============ BESORAH IN-GAME READER ============ */
+(function(){
+  const BOOKS=[
+    ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
+    ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
+  ];
+  function parseRef(ref){
+    if(!ref) return null;
+    const s=String(ref).split('·')[0].trim();
+    let id=null,rest='';
+    for(const [pfx,bid] of BOOKS){ const i=s.indexOf(pfx); if(i>=0){ id=bid; rest=s.slice(i+pfx.length); break; } }
+    if(!id) return null;
+    const m=rest.match(/(\d+)(?::\s*(\d+))?/);
+    let hash='#/book/'+id;
+    if(m){ hash+='/'+m[1]; if(m[2]) hash+='/v/'+m[2]; }
+    return 'besorah-offline.html'+hash;
+  }
+  let curRef=null;
+  function ensureFrame(){
+    let f=document.getElementById('besorah-frame');
+    if(!f){ f=document.createElement('iframe'); f.id='besorah-frame';
+      f.addEventListener('load',()=>{ f._loaded=true; const l=$('besorah-loading'); if(l) l.style.display='none'; });
+      $('besorah-frame-wrap').appendChild(f); }
+    return f;
+  }
+  function open(ref){
+    try{ Sound&&Sound.init&&Sound.init(); }catch(e){}
+    const target=parseRef(ref)||'besorah-offline.html#/';
+    const f=ensureFrame();
+    if(!f._loaded){ const l=$('besorah-loading'); if(l) l.style.display='flex'; }
+    if(f._cur!==target){ f.src=target; f._cur=target; }
+    $('besorah-title').textContent = ref ? ('The Besorah — '+ref) : 'The Besorah';
+    $('besorah-modal').classList.add('show');
+    window.besorahOpen=true;
+  }
+  function close(){ $('besorah-modal').classList.remove('show'); window.besorahOpen=false; }
+  function setRef(ref){
+    curRef=ref;
+    const b=$('ref-banner'); if(!b) return;
+    if(ref && parseRef(ref)){ b.textContent='📖 '+ref+'  ·  read in the Besorah'; b.classList.add('show'); }
+    else b.classList.remove('show');
+  }
+  window.BesorahUI={open,close,setRef};
+  $('besorah-close').onclick=close;
+  $('besorah-backdrop').onclick=close;
+  $('ref-banner').onclick=()=>open(curRef);
+  const sr=$('slide-ref'); if(sr){ sr.style.cursor='pointer'; sr.title='Read this passage in the Besorah'; sr.onclick=()=>{ if(curRef&&parseRef(curRef)) open(curRef); }; }
+  const bb=$('btn-besorah'); if(bb) bb.onclick=()=>open(null);
+  /* drive the reference banner from the game flow */
+  if(Game.showSlide){ const _ss=Game.showSlide.bind(Game);
+    Game.showSlide=function(){ _ss(); const s=this.slideList&&this.slideList[this.slideIdx]; setRef(s&&s.ref); }; }
+  if(Game.startScene){ const _stsc=Game.startScene.bind(Game);
+    Game.startScene=function(){ _stsc(); setRef(this.chapter&&this.chapter.ref); }; }
+  if(typeof showScreen==='function'){ const _shs=showScreen;
+    showScreen=function(id){ setRef(null); return _shs(id); }; }
+  /* pause game input while the reader is open */
+  if(Input.moveVec){ const _mv=Input.moveVec.bind(Input);
+    Input.moveVec=function(){ return window.besorahOpen?{x:0,y:0}:_mv(); }; }
+  if(Game.onAction){ const _oa=Game.onAction.bind(Game);
+    Game.onAction=function(){ if(window.besorahOpen) return; return _oa.apply(this,arguments); }; }
+  if(Game.prevSlide){ const _ps=Game.prevSlide.bind(Game);
+    Game.prevSlide=function(){ if(window.besorahOpen) return; return _ps.apply(this,arguments); }; }
+  if(Game.onEscape){ const _oe=Game.onEscape.bind(Game);
+    Game.onEscape=function(){ if(window.besorahOpen){ close(); return; } return _oe.apply(this,arguments); }; }
+})();
 
 /* ================= BOOT ================= */
 Save.load();
