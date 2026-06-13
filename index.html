@@ -2052,7 +2052,10 @@ function drawWorld(g,world,t){
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
   const y1=Math.min(map.h-1,Math.ceil((Camera.y+VH/2)/TILE)+1);
   // tiles
+  if(world.overlook){ const lipY=world.overlook.cliffY*TILE+offY;
+    Sky.overlook(g,lipY,world.overlook.kind,t,world.overlook); }
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    if(world.overlook&&y<world.overlook.cliffY) continue;
     const id=map.tiles[y*map.w+x];
     const sx=x*TILE+offX, sy=y*TILE+offY;
     g.fillStyle=tileColor(map,id,x,y);
@@ -2675,11 +2678,14 @@ const Game={
       for(let i9=map.decor.length-1;i9>=0;i9--){ const d9=map.decor[i9];
         if(d9.solid&&!d9.id&&!d9.examine&&dist(d9.x,d9.y,ob9.x,ob9.y)<1.5) map.decor.splice(i9,1); }
     }
+    if(sc.overlook){ const cY=sc.overlook.cliffY;
+      for(let y9=0;y9<cY;y9++)for(let x9=0;x9<map.w;x9++) map.tiles[y9*map.w+x9]=T.MTN; }
     this.world={
       map, player, npcs:(sc.npcs||[]).map(makeNpc),
       items:(sc.items||[]).map(it=>Object.assign({},it)),
       time:sc.time||'day', rain:false, rays:0, raysTarget:0,
-      camFollow:'player', camTarget:null, gotoMark:null
+      camFollow:'player', camTarget:null, gotoMark:null,
+      overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
     Sound.ambient(sc.music||'eden');
@@ -3360,6 +3366,61 @@ const Sky={
     g.lineTo(x+hw*.4,baseY); g.lineTo(x+hw*.15,baseY-h*.5); g.closePath(); g.fill();
     g.strokeStyle='rgba(50,44,38,.4)'; g.lineWidth=Math.max(1,w*.012);
     g.beginPath(); g.moveTo(x-hw*.2,baseY-h*.95); g.lineTo(x-hw*.05,baseY-h*.6); g.lineTo(x+hw*.15,baseY-h*.5); g.stroke();
+  },
+  /* the view OVER a cliff edge in a walkable scene: distant land painted in the
+     screen band above the lip (lipY), with people or destruction below.
+     kind: 'day' | 'sunset' | 'wasteland' | 'sodom' */
+  overlook(g,lipY,kind,t,opts){
+    opts=opts||{}; if(lipY<=2) return;
+    const H=lipY, hz=H*.5;
+    g.save(); g.beginPath(); g.rect(0,0,VW,lipY); g.clip();
+    const peaks=(yb,col,n,seed,amp)=>{ for(let i=0;i<n;i++) Sky.crag(g,VW*((i+.5)/n),yb,VW*(1.3/n),amp,col,seed+i); };
+    if(kind==='sodom'){
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#190b11'],[.34,'#451511'],[.58,'#8a2c12'],[.8,'#d4621c'],[1,'#eaa040']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      peaks(hz+H*.05,'#281310',7,3,H*.16);
+      g.fillStyle='#62280f'; g.fillRect(0,hz,VW,lipY-hz);
+      for(const[cx,cw]of[[.32,.16],[.6,.2],[.5,.12],[.8,.13]]){
+        const gx=g.createRadialGradient(VW*cx,hz+H*.12,2,VW*cx,hz+H*.12,VW*cw);
+        gx.addColorStop(0,`rgba(255,200,90,${.72+Math.sin(t/200+cx*9)*.18})`); gx.addColorStop(.5,'rgba(255,110,40,.4)'); gx.addColorStop(1,'rgba(255,90,30,0)');
+        g.fillStyle=gx; g.beginPath(); g.arc(VW*cx,hz+H*.12,VW*cw,0,Math.PI*2); g.fill(); }
+      for(const cx of[.3,.6,.49,.78]){ g.fillStyle='#190d08';
+        for(let b=0;b<4;b++) g.fillRect(VW*cx-20+b*12,hz+H*.02-(b%2)*6,9,12+(b%2)*8); }
+      for(let i=0;i<6;i++){ const cxk=[.3,.6,.49,.4,.66,.78][i], ph=t/600+i;
+        for(let s=0;s<7;s++){ g.fillStyle=`rgba(42,30,32,${.5-s*.06})`;
+          g.beginPath(); g.arc(VW*cxk+Math.sin(ph+s*.5)*14,hz-s*H*.075,9+s*5,0,Math.PI*2); g.fill(); } }
+    } else if(kind==='sunset'){
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#371a3a'],[.32,'#8f3a34'],[.5,'#e8923a'],[.64,'#f4c64e'],[1,'#9a5a2a']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      const sx2=VW*.5,sy2=hz*.6, sgl=g.createRadialGradient(sx2,sy2,4,sx2,sy2,H*.2);
+      sgl.addColorStop(0,'rgba(255,242,150,1)'); sgl.addColorStop(.5,'rgba(255,200,80,.4)'); sgl.addColorStop(1,'rgba(255,180,60,0)');
+      g.fillStyle=sgl; g.beginPath(); g.arc(sx2,sy2,H*.2,0,Math.PI*2); g.fill();
+      g.fillStyle='#ffe862'; g.beginPath(); g.arc(sx2,sy2,H*.055,0,Math.PI*2); g.fill();
+      peaks(hz+H*.04,'#3c2334',7,5,H*.18);
+      g.fillStyle='#8a5226'; g.fillRect(0,hz,VW,lipY-hz);
+    } else if(kind==='wasteland'){
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#2e80c2'],[.5,'#7bb6dd'],[1,'#c4dcd0']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      peaks(hz+H*.06,'#9fb6cc',6,4,H*.12);
+      g.fillStyle='#94532e'; g.fillRect(0,hz,VW,lipY-hz);
+    } else {
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#3f86c4'],[.45,'#8fbfe0'],[.7,'#cfe6d8'],[1,'#a8c87e']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      peaks(hz+H*.04,'#88a8c6',7,5,H*.16);
+      const vg2=g.createLinearGradient(0,hz,0,lipY); vg2.addColorStop(0,'#a8c987'); vg2.addColorStop(1,'#7ba84c');
+      g.fillStyle=vg2; g.fillRect(0,hz,VW,lipY-hz);
+    }
+    if(opts.peopleBelow){ const pb=opts.peopleBelow;
+      [[.34,.55],[.44,.7],[.54,.6],[.64,.74],[.74,.64]].forEach(([fx,fr],i)=>{
+        Sky.figure(g,VW*fx,hz+(lipY-hz)*fr,pb[i%pb.length],{t:t+i*240,scale:Math.max(.42,H*.0014),dir:i%2?'left':'right',moving:i%3===0}); }); }
+    g.restore();
+    /* the near rocky lip the player stands at */
+    g.fillStyle='#6e5436'; g.fillRect(0,lipY-4,VW,7);
+    g.fillStyle='rgba(0,0,0,.28)'; g.fillRect(0,lipY+2,VW,3);
   },
   glowText(g,t){ /* reserved */ }
 };
@@ -5545,19 +5606,17 @@ STORY.push(
    {art:'sodom', music:'storm', sfx:'thunder', text:'And YAHUAH rained sulphur and fire on Seḏom and Amorah, from YAHUAH out of the shamayim — and Aḇraham arose early in the morning, and went to the place where he had stood before YAHUAH.', ref:'BERĔSHITH 19:24,27'},
   ],
   scene:{
-   map:{biome:'rocky', w:44, h:30, seed:101,
+   map:{biome:'rocky', w:30, h:28, seed:101,
      features:[
-       {type:'cloud_pillar',x:36,y:9,id:'smoke1'},
-       {type:'cloud_pillar',x:39,y:11,id:'smoke2'},
-       {type:'cloud_pillar',x:34,y:12},
-       {type:'altar',stage:3,x:10,y:16,solid:true,clear:2},
-       {type:'clearing',x:30,y:13,flat:2},
+       {type:'altar',stage:3,x:11,y:22,solid:true,clear:2,id:'altar',examine:'The place where Aḇraham had stood before YAHUAH.'},
+       {type:'clearing',x:15,y:14,flat:3},
      ]},
+   overlook:{kind:'sodom', cliffY:12},
    time:'morning', music:'sorrow',
-   player:'avraham', playerPos:[10,18],
+   player:'avraham', playerPos:[15,22],
    npcs:[],
    objectives:[
-     {type:'goto',x:30,y:13,radius:2.4,text:'Go early to the place where you stood before YAHUAH',
+     {type:'goto',x:15,y:13,radius:2.4,text:'Go to the edge where you stood before YAHUAH — look toward Seḏom',
       script:[
        {shake:1.5},{sfx:'thunder'},{wait:600},
        {say:['narrator','And Aḇraham looked toward Seḏom and Amorah, toward all the land of the plain — and saw, and see: the smoke of the land went up like the smoke of a furnace.']},
