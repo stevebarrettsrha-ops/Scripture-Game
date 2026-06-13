@@ -3703,6 +3703,21 @@ const Sky={
       for(let i=0;i<6;i++){ const cxk=[.3,.6,.49,.4,.66,.78][i], ph=t/600+i;
         for(let s=0;s<7;s++){ g.fillStyle=`rgba(42,30,32,${.5-s*.06})`;
           g.beginPath(); g.arc(VW*cxk+Math.sin(ph+s*.5)*14,hz-s*H*.075,9+s*5,0,Math.PI*2); g.fill(); } }
+    } else if(kind==='embers'){
+      const sky=g.createLinearGradient(0,0,0,lipY);
+      [[0,'#1a1622'],[.4,'#3a2230'],[.66,'#5e3322'],[.85,'#8a4a26'],[1,'#a8632c']].forEach(([p,c])=>sky.addColorStop(p,c));
+      g.fillStyle=sky; g.fillRect(0,0,VW,lipY);
+      peaks(hz+H*.05,'#241620',7,3,H*.16);
+      g.fillStyle='#3e2418'; g.fillRect(0,hz,VW,lipY-hz);
+      for(const[cx,cw]of[[.34,.1],[.6,.12],[.78,.08]]){
+        const gx=g.createRadialGradient(VW*cx,hz+H*.12,2,VW*cx,hz+H*.12,VW*cw);
+        gx.addColorStop(0,`rgba(255,150,60,${.3+Math.sin(t/520+cx*8)*.1})`); gx.addColorStop(1,'rgba(255,120,40,0)');
+        g.fillStyle=gx; g.beginPath(); g.arc(VW*cx,hz+H*.12,VW*cw,0,Math.PI*2); g.fill(); }
+      for(const cx of[.32,.6,.78]){ g.fillStyle='#160d0a';
+        for(let b=0;b<4;b++) g.fillRect(VW*cx-18+b*11,hz+H*.04-(b%2)*3,8,8+(b%2)*5); }
+      for(let i=0;i<7;i++){ const cxk=[.3,.6,.78,.42,.5,.68,.36][i], ph=t/900+i;
+        for(let s=0;s<6;s++){ g.fillStyle=`rgba(72,64,68,${.42-s*.05})`;
+          g.beginPath(); g.arc(VW*cxk+Math.sin(ph+s*.5)*18,hz-s*H*.08,12+s*6,0,Math.PI*2); g.fill(); } }
     } else if(kind==='sunset'){
       const sky=g.createLinearGradient(0,0,0,lipY);
       [[0,'#371a3a'],[.32,'#8f3a34'],[.5,'#e8923a'],[.64,'#f4c64e'],[1,'#9a5a2a']].forEach(([p,c])=>sky.addColorStop(p,c));
@@ -5247,27 +5262,33 @@ STORY.push(
    {art:'bushart', music:'desert', text:'And Mosheh was shepherding the flock of Yithro his father-in-law, the kohen of Miḏyan — and he led the flock to the back of the wilderness, and came to Ḥorĕḇ, the mountain of Aluahim.', ref:'SHEMOTH 3:1'},
   ],
   scene:{
-   map:{biome:'rocky', w:46, h:30, seed:833,
+   map:{biome:'rocky', w:40, h:28, seed:833,
      features:[
-       {type:'burningbush',x:32,y:12,solid:true,clear:3,id:'bush',examine:'A bush, burning with fire — and the bush is not consumed.'},
-       {type:'clearing',x:30,y:14,flat:3},
+       {type:'burningbush',x:20,y:15,solid:true,clear:3,id:'bush',examine:'A bush, burning with fire — and the bush is not consumed.'},
+       {type:'clearing',x:18,y:20,flat:3},
      ]},
+   overlook:{kind:'wasteland', cliffY:12, drop:.6},
    time:'day', music:'desert',
-   player:'mosheh', playerPos:[10,22], playerHold:'staff',
+   player:'mosheh', playerPos:[16,23], playerHold:'staff',
    npcs:[
-     {id:'sh1',animal:'sheep',x:11.5,y:23.5,range:2,noTalk:true,group:'flock',follow:true},
-     {id:'sh2',animal:'sheep',x:9,y:24,range:2,noTalk:true,group:'flock',follow:true},
-     {id:'sh3',animal:'goat',x:12.5,y:22,range:2,noTalk:true,group:'flock',follow:true},
+     {id:'sh1',animal:'sheep',x:13,y:24,range:1.6,noTalk:true},
+     {id:'sh2',animal:'sheep',x:18.5,y:24.5,range:1.6,noTalk:true},
+     {id:'sh3',animal:'goat',x:21,y:23.5,range:1.6,noTalk:true},
+     {id:'stray',animal:'goat',x:20,y:14,wander:true,range:1,noTalk:true},
    ],
    onStart:[
      {call:G=>{ const m=G.world.map;
-       for(let i=0;i<10;i++){ const xx=24+(i%5)*3.4+hash2(i,3)*1.5, yy=6.5+Math.floor(i/5)*3+hash2(i,5)*1.5;
-         if(dist(xx,yy,32,12)>3.6) m.decor.push({type:'rock',solid:true,x:xx,y:yy}); }
-       for(let i=0;i<6;i++) m.decor.push({type:'rock',solid:true,x:8+i*5+hash2(i,7)*2,y:25+hash2(i,9)*1.6});
+       for(let i=0;i<8;i++){ const xx=6+(i%4)*7.5+hash2(i,3)*2, yy=18+Math.floor(i/4)*4+hash2(i,5)*2;
+         if(dist(xx,yy,20,15)>3.6&&dist(xx,yy,16,23)>2.6) m.decor.push({type:'rock',solid:true,x:xx,y:yy}); }
        m.decor.sort((a,b)=>a.y-b.y); }},
    ],
    objectives:[
-     {type:'lead',group:'flock',x:27,y:17,radius:3,need:3,text:'Lead the flock to the back of the wilderness, to Ḥorĕḇ'},
+     {type:'goto',x:20,y:14.5,radius:2.2,text:'A kid has strayed up toward the edge — go up and bring it back',
+      script:[
+       {say:['narrator','And a kid strayed from the flock, up toward the edge of the mountain — and Mosheh followed it to the back of the wilderness, and came to Ḥorĕḇ, the mountain of Aluahim.']},
+       {say:['mosheh','Easy now, little one — you have led me to the very edge of the world. Nothing beyond but the bare wilderness, and the rock of the mountain… What is that? A bush, alight — and the branches not blackened. Fire that does not consume?']},
+       {say:['narrator','And Mosheh said, “Let me turn aside now and see this great sight — why the bush does not burn up.”']},
+      ]},
      {type:'interact',prop:'bush',text:'Turn aside and see this great sight — why the bush does not burn up',hiddenUntil:1,
       script:[
        {music:'holy'},{rays:.85,raysX:32},{sfx:'holy'},
