@@ -2010,6 +2010,15 @@ function generateWorldMap(cfg){
           if(tl!==T.WATER&&tl!==T.DEEP&&tl!==T.MTN&&tl!==T.SNOW){ tiles[Y*w+X]=T.PATH;
             for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } } }
   }
+  /* ---- M0: a gateway to the next book (cross-file deep-link into Shemoth) ---- */
+  { const gx=w-7, gy=Math.round(h*0.5);
+    for(let yy=gy-3;yy<=gy+3;yy++)for(let xx=gx-3;xx<=gx+3;xx++)
+      if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
+    for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,gx,gy)<3) decor.splice(k,1); }
+    decor.push({type:'gate',solid:true,clear:3,x:gx,y:gy,id:'gate_shemoth',
+      go:{url:'book-of-shemoth.html',play:'x37',title:'the Book of Shemoth'},
+      examine:'A gateway eastward — into the Book of Shemoth (“The Glory”). Press E to cross.'});
+  }
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,decor,biome:'plains',cfg,world:true};
 }
@@ -2985,6 +2994,7 @@ const Game={
         if(o.script){ this.runScript(o.script.slice(),()=>this.completeObjective(o.idx)); }
         else this.completeObjective(o.idx);
       } else if(p.site){ this.enterSite(p.site); }
+      else if(p.go){ this.enterGate(p.go); }
       else if(p.examine){ this.say('narrator',p.examine); }
     }
   },
@@ -2995,6 +3005,14 @@ const Game={
     this._returnWorld={pos:[this.world.player.x,this.world.player.y]};
     Sound.sfx('blip');
     this.startChapter(ch);
+  },
+  /* M0: a gateway to another book — deep-link out, the book returns here on completion */
+  enterGate(go){
+    if(this.world&&this.world.player){
+      Save.data.world={x:+this.world.player.x.toFixed(2),y:+this.world.player.y.toFixed(2)}; Save.write(); }
+    try{Sound.sfx('blip');}catch(_){}
+    try{toast('Crossing into '+(go.title||'the next book')+'…');}catch(_){}
+    location.href=go.url+'?play='+encodeURIComponent(go.play)+'&return='+encodeURIComponent('world-travel-styled.html');
   },
   /* M5: steer the single waypoint to the next uncompleted site, and track progress */
   steerJourney(){
@@ -6461,8 +6479,13 @@ Sound.enabled=Save.data.sound!==false;
 if(!Sound.enabled) $('btn-sound').style.opacity='.4';
 Input.init();
 resize();
+/* M0: merge completions earned in other books (shared key), and greet on return */
+try{ const xd=JSON.parse(localStorage.getItem('scripture_world_done')||'{}');
+  Object.keys(xd).forEach(id=>{ Save.data.done[id]=true; }); }catch(_){}
+const _from=new URLSearchParams(location.search).get('from');
 /* DEMO: boot straight into the seamless free-roam world (skip the title) */
 Game.startChapter(allChapters().find(c=>c.id==='freeroam'));
+if(_from){ try{ Save.data.done[_from]=true; Save.write(); toast('✦ Returned from the Book of Shemoth — “'+_from+'” complete'); }catch(_){}}
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 
