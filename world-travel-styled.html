@@ -1983,6 +1983,49 @@ function generateWorldMap(cfg){
         if(SOLID.has(tiles[y*w+x])) tiles[y*w+x]=T.DIRT; }
     if(f.type!=='clearing') decor.push(Object.assign({},f));
   });
+  /* ---- M7: lay every Act-I chapter as a story-site along a serpentine path ---- */
+  if(typeof JOURNEY!=='undefined' && JOURNEY.length){
+    const sprops=['altar','cave','tower','well','tent','doorway','gate','throne'];
+    const open=(x,y)=>{ const tl=tiles[y*w+x]; return !SOLID.has(tl)&&tl!==T.WATER&&tl!==T.DEEP; };
+    const snap=(x,y)=>{ for(let r=0;r<12;r++)for(let a=0;a<14;a++){
+        const X=Math.round(x+Math.cos(a/14*6.283)*r), Y=Math.round(y+Math.sin(a/14*6.283)*r);
+        if(X>4&&X<w-4&&Y>4&&Y<h-4&&open(X,Y)) return [X,Y]; } return [Math.round(x),Math.round(y)]; };
+    for(let i=0;i<JOURNEY.length;i++){ const s=JOURNEY[i], tt=JOURNEY.length>1?i/(JOURNEY.length-1):0;
+      let X=14+tt*(w-28), Y=h*0.5+Math.sin(tt*Math.PI*3)*(h*0.28);
+      const sn=snap(X,Y); X=sn[0]; Y=sn[1]; s.x=X; s.y=Y;
+      for(let yy=Y-3;yy<=Y+3;yy++)for(let xx=X-3;xx<=X+3;xx++)
+        if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
+      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,X,Y)<2.6) decor.splice(k,1); }
+      const pt=sprops[i%sprops.length];
+      decor.push({type:pt,stage:pt==='altar'?3:undefined,glow:pt==='cave'?true:undefined,
+        solid:true,clear:3,x:X,y:Y,id:'site_'+s.id,site:s.id,examine:'“'+s.name+'” — press E to enter.'});
+      if(Save.data.done[s.id]) decor.push({type:'pillar',oil:true,x:X+1.8,y:Y+.1});
+    }
+    /* ---- M8: a road winds between the sites (skips rivers and peaks) ---- */
+    for(let i=0;i<JOURNEY.length-1;i++){ const a=JOURNEY[i], bb=JOURNEY[i+1];
+      const steps=Math.max(1,Math.hypot(bb.x-a.x,bb.y-a.y)*1.4|0);
+      for(let s=0;s<=steps;s++){ const t=s/steps;
+        const X=Math.round(a.x+(bb.x-a.x)*t), Y=Math.round(a.y+(bb.y-a.y)*t);
+        if(X>1&&X<w-1&&Y>1&&Y<h-1){ const tl=tiles[Y*w+X];
+          if(tl!==T.WATER&&tl!==T.DEEP&&tl!==T.MTN&&tl!==T.SNOW){ tiles[Y*w+X]=T.PATH;
+            for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } } }
+  }
+  /* ---- M0: gateways to the other books (cross-file deep-links), a row to the east ---- */
+  { const gates=[
+      {play:'x37',url:'book-of-shemoth.html', title:'Shemoth',  ex:'the Book of Shemoth (“The Glory”)'},
+      {play:'v1', url:'book-of-vayiqra.html', title:'Vayiqra',  ex:'the Book of Vayiqra (“And He Called”)'},
+      {play:'n2', url:'book-of-bamidbar.html',title:'Bamiḏbar', ex:'the Book of Bamiḏbar (“By Their Standards”)'},
+      {play:'h1', url:'book-of-hanok.html',   title:'Ḥanoḵ',    ex:'the Book of Ḥanoḵ (“The Words of Ḥanoḵ”)'},
+    ];
+    gates.forEach((gt,i)=>{ const gx=w-7, gy=Math.round(h*0.28)+i*Math.round(h*0.15);
+      for(let yy=gy-3;yy<=gy+3;yy++)for(let xx=gx-4;xx<=gx+3;xx++)
+        if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
+      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,gx,gy)<3) decor.splice(k,1); }
+      decor.push({type:'gate',solid:true,clear:3,x:gx,y:gy,id:'gate_'+gt.play,
+        go:{url:gt.url,play:gt.play,title:gt.title},
+        examine:'A gateway eastward — into '+gt.ex+'. Press E to cross.'});
+    });
+  }
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,decor,biome:'plains',cfg,world:true};
 }
@@ -2780,10 +2823,15 @@ const Game={
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
     const map=sc.map.world?generateWorldMap(sc.map):generateMap(sc.map);
-    // M3: when returning from a story site, spawn the player back at that site
-    const spawn=(sc.map.world&&this._worldSpawn)?this._worldSpawn:null; this._worldSpawn=null;
+    // spawn position: returning from a site > saved world position > scene default
+    let wx=sc.playerPos[0], wy=sc.playerPos[1];
+    if(sc.map.world){
+      if(this._worldSpawn){ wx=this._worldSpawn[0]; wy=this._worldSpawn[1]; }
+      else if(Save.data.world){ wx=Save.data.world.x; wy=Save.data.world.y; }
+    }
+    this._worldSpawn=null;
     const player=sc.player?{
-      char:sc.player, x:spawn?spawn[0]:sc.playerPos[0], y:spawn?spawn[1]:sc.playerPos[1],
+      char:sc.player, x:wx, y:wy,
       dir:'down', moving:false, speed:.085, mount:sc.playerMount||null, hold:sc.playerHold||null
     }:null;
     if(player){
@@ -2953,6 +3001,7 @@ const Game={
         if(o.script){ this.runScript(o.script.slice(),()=>this.completeObjective(o.idx)); }
         else this.completeObjective(o.idx);
       } else if(p.site){ this.enterSite(p.site); }
+      else if(p.go){ this.enterGate(p.go); }
       else if(p.examine){ this.say('narrator',p.examine); }
     }
   },
@@ -2964,6 +3013,51 @@ const Game={
     Sound.sfx('blip');
     this.startChapter(ch);
   },
+  /* M0: a gateway to another book — deep-link out, the book returns here on completion */
+  enterGate(go){
+    if(this.world&&this.world.player){
+      Save.data.world={x:+this.world.player.x.toFixed(2),y:+this.world.player.y.toFixed(2)}; Save.write(); }
+    try{Sound.sfx('blip');}catch(_){}
+    try{toast('Crossing into '+(go.title||'the next book')+'…');}catch(_){}
+    location.href=go.url+'?play='+encodeURIComponent(go.play)+'&return='+encodeURIComponent('world-travel-styled.html');
+  },
+  /* M5: steer the single waypoint to the next uncompleted site, and track progress */
+  steerJourney(){
+    if(!this.objectives||!this.objectives.length) return;
+    const o=this.objectives.find(x=>x.dynamic); if(!o) return;
+    const done=JOURNEY.filter(s=>Save.data.done[s.id]).length;
+    const next=JOURNEY.find(s=>!Save.data.done[s.id]);
+    let text;
+    if(next){ o.x=next.x; o.y=next.y;
+      text='Next chapter — “'+next.name+'”  ·  '+done+'/'+JOURNEY.length+' walked'; }
+    else { o.x=-99; o.y=-99;
+      text='The journey is complete — every chapter walked  ·  '+done+'/'+JOURNEY.length; }
+    if(o.text!==text){ o.text=text; this.renderObjectives(); }
+    // M5: persist the player's place in the world (throttled), so the journey resumes
+    if(this.world&&this.world.player){
+      this._wsave=(this._wsave||0)+1;
+      if(this._wsave>=45){ this._wsave=0;
+        Save.data.world={x:+this.world.player.x.toFixed(2),y:+this.world.player.y.toFixed(2)};
+        Save.write(); }
+    }
+  },
+  /* M6: a light-hybrid set-piece battle — the raiders of Amalĕq ambush in the wilderness.
+     Event-driven: it fires once when the player crosses the valley, never repeats. */
+  checkWorldBattle(){
+    const p=this.world&&this.world.player; if(!p||this.battle||this._amalek||Save.data.amalekDone) return;
+    const B={x:118,y:88};
+    if(dist(p.x,p.y,B.x,B.y)<6){
+      this._amalek=true;
+      const foes=['amal0','amal1','amal2','amal3'];
+      foes.forEach((id,i)=>{ const a=i/foes.length*6.283;
+        this.world.npcs.push(makeNpc({id,char:'qayin',foe:true,hp:2,wander:false,noTalk:true,foeSpeed:.052,
+          x:B.x+Math.cos(a)*3.4,y:B.y+Math.sin(a)*3.4})); });
+      this.battle={left:foes.length,text:'⚔ The raiders of Amalĕq fall upon the weary!',
+        won:'Amalĕq is overcome — Yisra’ĕl prevails',rally:null,
+        onDone:()=>{ Save.data.amalekDone=true; Save.write(); }};
+      try{Sound.sfx('bad');}catch(_){}
+    }
+  },
 
   /* ---------- update ---------- */
   update(dt){
@@ -2971,6 +3065,7 @@ const Game={
     if(this.state==='slides'){ this.slideT+=dt; }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
+    if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkWorldBattle(); }
     this.updateScript(dt);
     if(this.mash){
       const m=this.mash;
@@ -3020,6 +3115,11 @@ const Game={
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
     for(const e of ents){
+      /* M4 LOD: freeze ambient entities far from the player (off-screen) — keeps a
+         densely populated world at 60fps. The player, followers, foes, sparring
+         and mid-glide entities always update. */
+      if(e!==p&&p&&!e.target&&!e.follow&&!e.foe&&!e.spar&&
+         (e.x-p.x)*(e.x-p.x)+(e.y-p.y)*(e.y-p.y)>900){ e.moving=false; continue; }
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
         const sp=(e.speed||.045)*dt*.06*40/TILE*TILE/40; // tiles per ms*dt
@@ -4420,28 +4520,15 @@ const STORY=[
   scene:{
    map:{world:true, w:240, h:140, seed:7777,
      features:[
-       /* GOSHEN — the camp of Yisra'el beside the Sea of Reeds */
+       /* ambiance only — the story-sites are generated from the book (see generateWorldMap) */
        {type:'tent',x:30,y:74,solid:true,col:'#c8b486',clear:2},
        {type:'tent',x:34,y:72,solid:true,col:'#b3a07f',clear:2},
        {type:'tent',x:33,y:77,solid:true,col:'#bda884',clear:2},
        {type:'tent',x:27,y:78,solid:true,col:'#c8b486',clear:2},
        {type:'firepit',x:31,y:75,clear:1},
-       {type:'well',x:38,y:75,solid:true,clear:2},
-       /* HAR SINAI — the altar (a story doorway) and the abiding cloud below the peak */
-       {type:'altar',stage:3,x:103,y:72,solid:true,clear:3,flat:4,id:'site_altar',site:'b4',
-        examine:'The altar of unhewn stone. Press E to make the offering — “Blood on the Altar.”'},
-       {type:'pillar',x:99,y:70,solid:true,clear:1},
-       {type:'pillar',x:107,y:70,solid:true,clear:1},
        {type:'cloud_pillar',x:103,y:60,clear:3},
-       /* PARAN — the well of Qadĕsh */
-       {type:'well',x:146,y:70,solid:true,clear:2},
        {type:'trough',x:143,y:71,clear:1},
        {type:'fold',x:150,y:74,solid:true,clear:3},
-       /* KENA'AN — the city of Yeriḥo, and a cave in the hills */
-       {type:'tower',x:216,y:64,solid:true,clear:3},
-       {type:'gate',x:213,y:68,solid:true,clear:2},
-       {type:'cave',glow:true,x:208,y:82,solid:true,clear:3,flat:3,id:'cave',site:'b5',
-        examine:'The Cave of Treasures. Press E to enter — “Gold, Incense and Myrrh.”'},
      ]},
    player:'adam_c', playerPos:[26,72],
    npcs:[
@@ -4476,10 +4563,23 @@ const STORY=[
      {id:'bird2',animal:'bird',x:170,y:54,range:5,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:103,y:73,radius:4,text:'Cross the wilderness to Har Sinai, where the cloud abides',
-      script:[{say:['narrator','From Goshen, across the Sea of Reeds and the long wilderness, you have come to the mountain of Elohim — one continuous land, walked end to end.']}]},
-     {type:'goto',x:214,y:66,radius:4,text:'Journey on, through Paran and over the Yarden, to Kena’an',hiddenUntil:1,
-      script:[{say:['narrator','Past the well of Qadĕsh, over the fords of the Yarden, to the city in the land of promise. The whole journey is one world — and it is yours to walk.']}]},
+     {type:'goto',x:38,y:75,radius:-1,dynamic:true,text:'Begin the journey — follow the way'},
+   ],
+   onStart:[
+     {call:G=>{
+       const m=G.world.map, chars=['sheth','host_a','builder','builder2','builder3','servant','shepherd'];
+       const beasts=['sheep','sheep','ram','deer','donkey'];
+       let n=0;
+       for(let i=0;i<140&&n<110;i++){
+         const x=6+Math.random()*(m.w-12), y=6+Math.random()*(m.h-12);
+         if(!walkable(m,x,y)) continue;
+         if(Math.random()<.35) G.world.npcs.push(makeNpc({id:'life'+i,animal:beasts[(Math.random()*beasts.length)|0],x,y,range:3,noTalk:true}));
+         else G.world.npcs.push(makeNpc({id:'life'+i,char:chars[(Math.random()*chars.length)|0],x,y,wander:true,range:2.6,noTalk:true}));
+         n++;
+       }
+       /* a rideable donkey at the Goshen camp — mount with E for fast travel (1.65x) */
+       G.world.npcs.push(makeNpc({id:'ride',animal:'donkey',rideable:true,wander:false,x:36,y:73,noTalk:true}));
+     }},
    ],
   },
 },
@@ -6176,6 +6276,11 @@ const STORY=[
 
 /* ================= MENUS / FLOW ================= */
 function allChapters(){ return STORY.flatMap(a=>a.chapters); }
+/* M7: the journey is generated from the book itself — every playable chapter of
+   Act I becomes a story-site in the world. Positions are filled by generateWorldMap.
+   This is the migration pattern: add content to STORY and it appears in the world. */
+const JOURNEY=allChapters().filter(c=>c.id!=='freeroam'&&c.scene).slice(0,16)
+  .map(c=>({id:c.id,name:c.title,place:c.ref||'',x:0,y:0}));
 function nextChapter(id){
   const chs=allChapters();
   const i=chs.findIndex(c=>c.id===id);
@@ -6381,10 +6486,97 @@ Sound.enabled=Save.data.sound!==false;
 if(!Sound.enabled) $('btn-sound').style.opacity='.4';
 Input.init();
 resize();
+/* M0: merge completions earned in other books (shared key), and greet on return */
+try{ const xd=JSON.parse(localStorage.getItem('scripture_world_done')||'{}');
+  Object.keys(xd).forEach(id=>{ Save.data.done[id]=true; }); }catch(_){}
+const _from=new URLSearchParams(location.search).get('from');
 /* DEMO: boot straight into the seamless free-roam world (skip the title) */
 Game.startChapter(allChapters().find(c=>c.id==='freeroam'));
+if(_from){ try{ Save.data.done[_from]=true; Save.write(); toast('✦ Returned from the Book of Shemoth — “'+_from+'” complete'); }catch(_){}}
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
+
+/* ===== M5 traversal: a world map / journey screen with fast-travel (press M) ===== */
+(function(){
+  const wrap=document.createElement('div'); wrap.id='worldmap';
+  wrap.style.cssText='position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(6,9,16,.88)';
+  wrap.innerHTML='<div style="text-align:center">'+
+    '<div style="color:#e8c66a;letter-spacing:.2em;font-size:18px;margin-bottom:8px">THE LAND OF THE JOURNEY</div>'+
+    '<canvas id="wm-cv" width="740" height="430" style="border:2px solid #5a4a30;border-radius:6px;background:#1a1408;cursor:pointer"></canvas>'+
+    '<div id="wm-info" style="color:#e8dcb8;font-size:13px;margin-top:8px;height:18px"></div>'+
+    '<div style="color:#8a7e60;font-size:12px;margin-top:2px">click a reached site to travel  ·  press M or Esc to close</div></div>';
+  document.body.appendChild(wrap);
+  const cv=wrap.querySelector('#wm-cv'), g2=cv.getContext('2d'), info=wrap.querySelector('#wm-info');
+  const pal={}; pal[T.GRASS]=[123,189,73];pal[T.GRASS2]=[112,131,63];pal[T.FLOWER]=[140,154,82];
+  pal[T.DIRT]=[138,122,82];pal[T.SAND]=[221,202,148];pal[T.PATH]=[200,170,110];
+  pal[T.WATER]=[74,134,192];pal[T.DEEP]=[39,101,155];pal[T.MTN]=[93,86,76];
+  pal[T.ROCK]=[141,125,102];pal[T.SNOW]=[238,243,247];
+  let open=false, hover=-1;
+  const reached=i=>{ const fu=JOURNEY.findIndex(s=>!Save.data.done[s.id]); return Save.data.done[JOURNEY[i].id]||i===fu; };
+  function draw(){
+    const m=Game.world&&Game.world.map; if(!m) return; const W=cv.width,H=cv.height;
+    const off=document.createElement('canvas'); off.width=m.w; off.height=m.h;
+    const og=off.getContext('2d'), img=og.createImageData(m.w,m.h);
+    for(let i=0;i<m.w*m.h;i++){ const c=pal[m.tiles[i]]||[60,55,45];
+      img.data[i*4]=c[0];img.data[i*4+1]=c[1];img.data[i*4+2]=c[2];img.data[i*4+3]=255; }
+    og.putImageData(img,0,0); g2.imageSmoothingEnabled=false; g2.clearRect(0,0,W,H); g2.drawImage(off,0,0,W,H);
+    for(let i=0;i<JOURNEY.length;i++){ const s=JOURNEY[i],sx=s.x/m.w*W,sy=s.y/m.h*H;
+      const done=Save.data.done[s.id],rch=reached(i);
+      if(rch&&!done){ g2.beginPath(); g2.arc(sx,sy,11,0,7); g2.strokeStyle='rgba(255,233,168,.7)'; g2.lineWidth=2; g2.stroke(); }
+      g2.beginPath(); g2.arc(sx,sy,i===hover?8:6,0,7);
+      g2.fillStyle=done?'#6cc06a':(rch?'#ffe9a8':'rgba(180,170,150,.45)'); g2.fill();
+      g2.strokeStyle='rgba(0,0,0,.5)'; g2.lineWidth=1.5; g2.stroke();
+      g2.fillStyle='#1a1408'; g2.font='bold 9px sans-serif'; g2.textAlign='center'; g2.fillText(String(i+1),sx,sy+3); }
+    const p=Game.world.player; if(p){ const px=p.x/m.w*W,py=p.y/m.h*H;
+      g2.beginPath(); g2.arc(px,py,5,0,7); g2.fillStyle='#ffec40'; g2.fill(); g2.strokeStyle='#1a1408'; g2.lineWidth=2; g2.stroke(); }
+  }
+  function siteAt(mx,my){ const m=Game.world.map,W=cv.width,H=cv.height; let best=-1,bd=14;
+    for(let i=0;i<JOURNEY.length;i++){ const s=JOURNEY[i],sx=s.x/m.w*W,sy=s.y/m.h*H,d=Math.hypot(sx-mx,sy-my); if(d<bd){bd=d;best=i;} } return best; }
+  function openMap(){ if(!Game.world||!Game.chapter||Game.chapter.id!=='freeroam')return; open=true; wrap.style.display='flex'; draw(); }
+  function closeMap(){ open=false; wrap.style.display='none'; }
+  cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect();
+    hover=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
+    info.textContent=hover>=0?((hover+1)+'. '+JOURNEY[hover].name+(Save.data.done[JOURNEY[hover].id]?'   ✓ walked':(reached(hover)?'   — your next step':'   — not yet reached'))):''; draw(); });
+  cv.addEventListener('click',e=>{ const r=cv.getBoundingClientRect();
+    const i=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
+    if(i>=0&&reached(i)){ const s=JOURNEY[i]; Game.world.player.x=s.x; Game.world.player.y=s.y+2.4;
+      if(typeof Camera!=='undefined')Camera.follow(s.x,s.y,Game.world.map,true);
+      try{Sound.sfx('blip');}catch(_){}; try{toast('Travelled to “'+s.name+'”');}catch(_){}; closeMap(); } });
+  addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
+    if(k==='m'){ e.preventDefault(); open?closeMap():openMap(); } else if(k==='escape'&&open) closeMap(); });
+  window.openWorldMap=openMap; window.closeWorldMap=closeMap;
+})();
+
+/* ===== M8 polish: region banners on crossing + a map hint ===== */
+(function(){
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;left:50%;top:9%;transform:translateX(-50%);z-index:25;text-align:center;'+
+    'color:#f4ecd8;letter-spacing:.22em;font-size:26px;opacity:0;transition:opacity .7s;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.85)';
+  banner.innerHTML='<span></span>';
+  const hint=document.createElement('div');
+  hint.textContent='🗺  press  M  for the map';
+  hint.style.cssText='position:fixed;right:16px;bottom:14px;z-index:25;color:#cdbf9a;font-size:12px;'+
+    'letter-spacing:.08em;opacity:.8;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.8);display:none';
+  document.body.appendChild(banner); document.body.appendChild(hint);
+  const label=(x,w)=>{ const u=x/w;
+    return u<.15?['GOSHEN','by the Sea of Reeds']:u<.33?['THE WILDERNESS OF SHUR','the long march']:
+      u<.52?['HAR SINAI','the mountain of Elohim']:u<.70?['THE WILDERNESS OF PARAN','toward Qadĕsh']:
+      u<.82?['THE PLAINS OF MOAB','across the Yarden']:["KENA'AN",'the land of promise']; };
+  let last='';
+  function tick(){
+    const inWorld=Game.world&&Game.chapter&&Game.chapter.id==='freeroam'&&Game.state==='play';
+    const mapOpen=document.getElementById('worldmap')&&document.getElementById('worldmap').style.display==='flex';
+    if(inWorld&&!mapOpen){
+      const rl=label(Game.world.player.x,Game.world.map.w);
+      if(rl[0]!==last){ last=rl[0];
+        banner.innerHTML=rl[0]+'<small style="display:block;font-size:12px;letter-spacing:.4em;opacity:.7;margin-top:3px">'+rl[1]+'</small>';
+        banner.style.opacity='1'; clearTimeout(banner._t); banner._t=setTimeout(()=>banner.style.opacity='0',2200); }
+      hint.style.display='block';
+    } else { hint.style.display='none'; if(mapOpen) banner.style.opacity='0'; }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
+})();
 </script>
 </body>
 </html>
