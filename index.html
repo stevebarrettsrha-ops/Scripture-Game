@@ -1968,44 +1968,46 @@ function wNoise(x,y){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
   const u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
   return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;}
 function wFbm(x,y){let t=0,a=.5,f=1;for(let o=0;o<4;o++){t+=a*wNoise(x*f+o*40,y*f-o*30);f*=2;a*=.5;}return t;}
-function wRegion(u){ return u<.15?'goshen':u<.33?'shur':u<.52?'sinai':u<.70?'paran':u<.82?'arvoth':'canaan'; }
+function wRegion(u){ return u<.16?'eden':u<.32?'nod':u<.50?'ararat':u<.66?'shinar':u<.82?'kenaan':'mitsrayim'; }
 function generateWorldMap(cfg){
   const w=cfg.w||240, h=cfg.h||140, rng=mulberry32(cfg.seed||99);
   const tiles=new Uint8Array(w*h), decor=[];
+  /* terrain — the lands of Berĕshith, west to east */
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const reg=wRegion(x/w), e=wFbm(x/15,y/15), m=wFbm((x+200)/19,(y+90)/19);
     let t;
-    if(reg==='goshen'){ t=m>.55?T.GRASS2:T.GRASS; if(wFbm(x/6,y/6)>.72&&m>.5)t=T.FLOWER; }
-    else if(reg==='shur'){ t=m<.42?T.SAND:(e>.62?T.DIRT:T.GRASS2); }
-    else if(reg==='sinai'){ const mt=wFbm(x/8+10,y/8); t=mt>.62?T.MTN:(e>.55?T.ROCK:T.DIRT); }
-    else if(reg==='paran'){ t=m<.46?T.SAND:(e>.6?T.ROCK:T.DIRT); }
-    else if(reg==='arvoth'){ t=m>.5?T.GRASS2:T.DIRT; }
-    else { t=m>.5?T.GRASS:(m>.34?T.GRASS2:T.DIRT); if(wFbm(x/6,y/6)>.73)t=T.FLOWER; }
+    if(reg==='eden'){ t=m>.42?T.GRASS:T.GRASS2; if(wFbm(x/5,y/5)>.6)t=T.FLOWER; }            // the garden
+    else if(reg==='nod'){ t=m<.42?T.SAND:T.DIRT; }                                            // east of Eden
+    else if(reg==='ararat'){ const mt=wFbm(x/8+10,y/8); t=mt>.62?T.MTN:(e>.55?T.ROCK:T.DIRT); }
+    else if(reg==='shinar'){ t=m>.5?T.GRASS2:T.DIRT; }                                        // the plain
+    else if(reg==='kenaan'){ t=m>.5?T.GRASS:(e>.62?T.DIRT:T.GRASS2); }                        // the land of promise
+    else { t=m<.5?T.SAND:T.DIRT; }                                                             // mitsrayim
     tiles[y*w+x]=t;
   }
-  const mx=Math.floor(w*.43), my=Math.floor(h*.45);
+  /* the mountains of Ararat — where the ark came to rest (snow at the peak) */
+  const mx=Math.floor(w*.41), my=Math.floor(h*.43);
   for(let y=-8;y<=8;y++)for(let x=-11;x<=11;x++){ const X=mx+x,Y=my+y,d=Math.hypot(x/1.35,y);
     if(X>1&&X<w-1&&Y>1&&Y<h-1&&d<8) tiles[Y*w+X]= d<2.2?T.SNOW : d<6.5?T.MTN : T.ROCK; }
-  const fordY=Math.round(h*.5);
-  const river=(cx,half)=>{ for(let y=0;y<h;y++){ const c=cx+Math.sin(y*.12)*3;
+  /* a river went out of Eden, and was parted into four heads: Pishon, Giḥon, Ḥiddeqel, Perath */
+  { const sx=Math.floor(w*.06), sy=Math.floor(h*.5), len=Math.floor(w*.24);
+    [-0.62,-0.22,0.22,0.62].forEach((ang,k)=>{ for(let s=5;s<len;s++){
+      const cx=sx+Math.cos(ang)*s+Math.sin(s*.14+k)*2.2, cy=sy+Math.sin(ang)*s+Math.cos(s*.12+k)*2.2;
+      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){ const X=Math.round(cx+dx),Y=Math.round(cy+dy),dd=Math.hypot(dx,dy);
+        if(X>1&&X<w-1&&Y>1&&Y<h-1){ if(dd<1)tiles[Y*w+X]=T.WATER; else if(!SOLID.has(tiles[Y*w+X])&&tiles[Y*w+X]!==T.WATER)tiles[Y*w+X]=T.SAND; } } } }); }
+  /* the Nile of Mitsrayim, far to the east */
+  { const cx0=Math.floor(w*.88); for(let y=0;y<h;y++){ const c=cx0+Math.sin(y*.1)*3;
     for(let x=0;x<w;x++){ const dx=Math.abs(x-c);
-      if(dx<half-1)tiles[y*w+x]=T.DEEP; else if(dx<half)tiles[y*w+x]=T.WATER;
-      else if(dx<half+1.3&&!SOLID.has(tiles[y*w+x]))tiles[y*w+x]=T.SAND; } }
-    for(let y=fordY-1;y<=fordY+1;y++)for(let x=0;x<w;x++){ const tl=tiles[y*w+x];
-      if(tl===T.WATER||tl===T.DEEP)tiles[y*w+x]=T.PATH; } };
-  river(Math.floor(w*.085),4); river(Math.floor(w*.785),5);
-  { const lx=Math.floor(w*.20),ly=Math.floor(h*.22),rx=10,ry=6;
-    for(let y=0;y<h;y++)for(let x=0;x<w;x++){ const d=Math.hypot((x-lx)/rx,(y-ly)/ry);
-      if(d<1)tiles[y*w+x]=d<.78?T.DEEP:T.WATER; else if(d<1.2&&!SOLID.has(tiles[y*w+x]))tiles[y*w+x]=T.SAND; } }
+      if(dx<2)tiles[y*w+x]=dx<1?T.DEEP:T.WATER; else if(dx<3.2&&!SOLID.has(tiles[y*w+x]))tiles[y*w+x]=T.SAND; } } }
+  /* mountain border frame */
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){ const edge=Math.min(x,y,w-1-x,h-1-y);
     if(edge===0||(edge===1&&rng()<.6)) tiles[y*w+x]=T.MTN; }
   const RD={
-    goshen:{d:.05,b:.04,col:['#3f7032','#4a7c3a','#39652c']},
-    shur:{d:.012,b:.012,col:['#6e7a3e'],dead:.5,palm:true},
-    sinai:{d:.006,b:.004,col:['#5d6e3e'],dead:.6,rock:.05},
-    paran:{d:.007,b:.004,col:['#7a8a4a'],palm:true,rock:.025},
-    arvoth:{d:.022,b:.02,col:['#5d7a35','#6e8a3e']},
-    canaan:{d:.06,b:.045,col:['#3f7032','#4a7c3a','#39652c','#5d7a35']},
+    eden:{d:.07,b:.05,col:['#3f8f3a','#4a9c42','#39852c','#5aa84a']},
+    nod:{d:.012,b:.012,col:['#6e7a3e'],dead:.4,palm:true},
+    ararat:{d:.01,b:.006,col:['#5d6e3e'],dead:.6,rock:.05},
+    shinar:{d:.018,b:.02,col:['#6e8a3e','#7a8a4a']},
+    kenaan:{d:.05,b:.04,col:['#3f7032','#4a7c3a','#5d7a35']},
+    mitsrayim:{d:.008,b:.004,col:['#7a8a4a'],palm:true,rock:.01},
   };
   for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){
     const tl=tiles[y*w+x];
@@ -2042,9 +2044,8 @@ function generateWorldMap(cfg){
       const steps=Math.max(1,Math.hypot(bb.x-a.x,bb.y-a.y)*1.4|0);
       for(let st=0;st<=steps;st++){ const t=st/steps;
         const X=Math.round(a.x+(bb.x-a.x)*t), Y=Math.round(a.y+(bb.y-a.y)*t);
-        if(X>1&&X<w-1&&Y>1&&Y<h-1){ const tl=tiles[Y*w+X];
-          if(tl!==T.WATER&&tl!==T.DEEP&&tl!==T.MTN&&tl!==T.SNOW){ tiles[Y*w+X]=T.PATH;
-            for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } } }
+        if(X>1&&X<w-1&&Y>1&&Y<h-1){ tiles[Y*w+X]=T.PATH;   // a ford/pass — the way is always walkable
+          for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } }
   }
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,decor,biome:'plains',cfg,world:true};
@@ -7927,12 +7928,12 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
     'letter-spacing:.08em;opacity:.8;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.8);display:none';
   document.body.appendChild(banner); document.body.appendChild(hint);
   const label=(x,w)=>{ const u=x/w;
-    return u<.16?['EAST OF EDEN','the gate of the Garden behind them']:
-      u<.34?['THE WILDERNESS','the world outside the Garden']:
-      u<.52?['THE HOLY MOUNTAIN','where the sons of Shĕth dwell']:
-      u<.70?['THE PLAIN','where the generations spread']:
-      u<.84?['THE FAR COUNTRY','the lands of the nations']:
-      ['THE LATER LANDS','toward Shemoth, Vayiqra, Bamiḏbar, Ḥanoḵ']; };
+    return u<.16?['ĔḎEN','the garden, and the river with four heads']:
+      u<.32?['THE LAND OF NOḎ','east of Eden, where Qayin dwelt']:
+      u<.50?['THE MOUNTAINS OF ARARAT','where the ark came to rest']:
+      u<.66?['THE PLAIN OF SHINʿAR','where they built the tower']:
+      u<.82?['KENAʿAN','the land of promise']:
+      ['MITSRAYIM','the land of the Nile']; };
   let last='';
   function tick(){
     const inWorld=Game.world&&Game.chapter&&Game.chapter.id==='freeroam'&&Game.state==='play';
