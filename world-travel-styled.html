@@ -4516,69 +4516,48 @@ function drawTitleBg(g,t){
 const STORY=[
 /* ============ FREE-ROAM TRAVEL DEMO (one large walkable world, your style) ============ */
 { id:'demoact', roman:'★', title:'The Open Land', ref:'SEAMLESS WORLD · DEMO', chapters:[
-{ id:'freeroam', title:'The Open Land', ref:'travel demo — walk where you will',
+{ id:'freeroam', title:'East of Eden', ref:'the first world — walk where you will',
   scene:{
    map:{world:true, w:300, h:180, seed:7777,
      features:[
-       /* ambiance only — the story-sites are generated from the book (see generateWorldMap) */
-       {type:'tent',x:30,y:74,solid:true,col:'#c8b486',clear:2},
-       {type:'tent',x:34,y:72,solid:true,col:'#b3a07f',clear:2},
-       {type:'tent',x:33,y:77,solid:true,col:'#bda884',clear:2},
-       {type:'tent',x:27,y:78,solid:true,col:'#c8b486',clear:2},
-       {type:'firepit',x:31,y:75,clear:1},
-       {type:'cloud_pillar',x:103,y:60,clear:3},
-       {type:'trough',x:143,y:71,clear:1},
-       {type:'fold',x:150,y:74,solid:true,clear:3},
+       /* early earth — the gate of the Garden (behind them, to the west) and the Cave of Treasures, their dwelling */
+       {type:'gate',x:7,y:90,solid:true,clear:2},
+       {type:'cave',glow:true,x:30,y:84,solid:true,clear:3},
      ]},
-   player:'adam_c', playerPos:[26,72],
+   player:'adam_c', playerPos:[22,92],
    npcs:[
-     {id:'chavvah',char:'chavvah_c',x:24,y:73,wander:false,follow:true,noTalk:true},
-     /* Goshen camp life */
-     {id:'g1',char:'sheth',x:32,y:74,wander:true,range:2.2,noTalk:true},
-     {id:'g2',char:'host_a',x:29,y:76,wander:true,range:2,noTalk:true},
-     {id:'g3',char:'builder',x:35,y:78,wander:true,range:2,noTalk:true},
-     {id:'g4',char:'builder2',x:28,y:72,wander:true,range:2,noTalk:true},
-     {id:'gj',char:'chavvah_c',x:38,y:76,wander:false,dir:'left',hold:'jar',noTalk:true},
-     /* a shepherd & flock in the wilderness of Shur */
-     {id:'shep',char:'shepherd',x:64,y:66,wander:true,range:2.4,hold:'staff',noTalk:true},
-     {id:'s1',animal:'sheep',x:66,y:68,range:3,noTalk:true},
-     {id:'s2',animal:'sheep',x:68,y:66,range:3,noTalk:true},
-     {id:'s3',animal:'sheep',x:63,y:70,range:3,noTalk:true},
-     {id:'s4',animal:'ram',x:69,y:69,range:3,noTalk:true},
-     /* worshippers at Sinai */
-     {id:'a1',char:'host_a',x:100,y:75,wander:true,range:2,noTalk:true},
-     {id:'a2',char:'sheth',x:106,y:75,wander:true,range:2,noTalk:true},
-     /* travellers & a donkey on the road through Paran */
-     {id:'t1',char:'builder3',x:128,y:68,wander:true,range:3,noTalk:true},
-     {id:'t2',char:'servant',x:140,y:72,wander:true,range:3,noTalk:true},
-     {id:'don',animal:'donkey',x:134,y:70,range:2,noTalk:true},
-     {id:'q1',char:'host_a',x:148,y:72,wander:true,range:2,noTalk:true},
-     /* folk of Kena'an by Yeriḥo */
-     {id:'k1',char:'builder',x:214,y:67,wander:true,range:2,noTalk:true},
-     {id:'k2',char:'servant',x:218,y:69,wander:true,range:2,noTalk:true},
-     /* wild creatures */
-     {id:'deer1',animal:'deer',x:84,y:58,range:4,noTalk:true},
-     {id:'deer2',animal:'deer',x:200,y:60,range:4,noTalk:true},
-     {id:'bird1',animal:'bird',x:54,y:50,range:5,noTalk:true},
-     {id:'bird2',animal:'bird',x:170,y:54,range:5,noTalk:true},
+     /* at the first there are only the two of them — Aḏam (you) and Ḥawwah */
+     {id:'chavvah',char:'chavvah_c',x:20,y:93,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:38,y:75,radius:-1,dynamic:true,text:'Begin the journey — follow the way'},
+     {type:'goto',x:38,y:75,radius:-1,dynamic:true,text:'Walk on — follow the way'},
    ],
    onStart:[
      {call:G=>{
-       const m=G.world.map, chars=['sheth','host_a','builder','builder2','builder3','servant','shepherd'];
-       const beasts=['sheep','sheep','ram','deer','donkey'];
-       let n=0;
-       for(let i=0;i<140&&n<110;i++){
-         const x=6+Math.random()*(m.w-12), y=6+Math.random()*(m.h-12);
-         if(!walkable(m,x,y)) continue;
-         if(Math.random()<.35) G.world.npcs.push(makeNpc({id:'life'+i,animal:beasts[(Math.random()*beasts.length)|0],x,y,range:3,noTalk:true}));
-         else G.world.npcs.push(makeNpc({id:'life'+i,char:chars[(Math.random()*chars.length)|0],x,y,wander:true,range:2.6,noTalk:true}));
-         n++;
+       const m=G.world.map, done=id=>!!Save.data.done[id], R=Math.random;
+       const place=(def)=>{ let x,y,t=0; do{ x=8+R()*(m.w-16); y=8+R()*(m.h-16); t++; }while(!walkable(m,x,y)&&t<10);
+         if(walkable(m,x,y)) G.world.npcs.push(makeNpc(Object.assign({x,y,noTalk:true},def))); };
+       /* the beasts of the field, made subject to Aḏam — they roam the early earth */
+       const beasts=['sheep','ram','deer','sheep','donkey'];
+       for(let i=0;i<22;i++) place({id:'beast'+i,animal:beasts[i%beasts.length],range:3+R()*3});
+       for(let i=0;i<4;i++)  place({id:'fowl'+i,animal:'bird',range:6,flying:true});
+       /* a rideable beast for the long road (the beasts serve Aḏam) */
+       place({id:'ride',animal:'donkey',rideable:true,wander:false});
+       /* ---- humans appear only as the generations are born ---- */
+       const childrenBorn=['b9','b10','b11','b12','b13','b13a','b13b'].some(done);
+       const abelSlain   =['b12','b13'].some(done);
+       const sethBorn    =done('b13');
+       if(childrenBorn){
+         if(!abelSlain){ place({id:'hevel',char:'hevel',wander:true,range:3});      // Heḇal (Abel), the keeper of sheep
+                         place({id:'aqlia',char:'chavvah_c',wander:true,range:2}); } // his twin sister
+         place({id:'qayin',char:'qayin',wander:true,range:4});                       // Qayin (Cain), the tiller of the ground
+         place({id:'luluwa',char:'chavvah_c',wander:true,range:2});                  // his twin sister
        }
-       /* a rideable donkey at the Goshen camp — mount with E for fast travel (1.65x) */
-       G.world.npcs.push(makeNpc({id:'ride',animal:'donkey',rideable:true,wander:false,x:36,y:73,noTalk:true}));
+       if(sethBorn) place({id:'sheth',char:'sheth',wander:true,range:3});            // Shĕth (Seth), the appointed seed
+       /* the generations multiply (Book 2) — Shĕth's line and Qayin's */
+       const gens=['b13','b13a','b13b','b14','b15','b16','b16a','b16b','b17','b18'].filter(done).length;
+       const kin=['sheth','host_a','builder','builder2','builder3','servant'];
+       for(let i=0;i<gens*5;i++) place({id:'gen'+i,char:kin[i%kin.length],wander:true,range:2.6});
      }},
    ],
   },
@@ -6565,9 +6544,12 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
     'letter-spacing:.08em;opacity:.8;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.8);display:none';
   document.body.appendChild(banner); document.body.appendChild(hint);
   const label=(x,w)=>{ const u=x/w;
-    return u<.15?['GOSHEN','by the Sea of Reeds']:u<.33?['THE WILDERNESS OF SHUR','the long march']:
-      u<.52?['HAR SINAI','the mountain of Elohim']:u<.70?['THE WILDERNESS OF PARAN','toward Qadĕsh']:
-      u<.82?['THE PLAINS OF MOAB','across the Yarden']:["KENA'AN",'the land of promise']; };
+    return u<.16?['EAST OF EDEN','the gate of the Garden behind them']:
+      u<.34?['THE WILDERNESS','the world outside the Garden']:
+      u<.52?['THE HOLY MOUNTAIN','where the sons of Shĕth dwell']:
+      u<.70?['THE PLAIN','where Qayin was driven out']:
+      u<.84?['THE FAR COUNTRY','the lands of the generations']:
+      ['THE LATER LANDS','toward Shemoth, Vayiqra, Bamiḏbar, Ḥanoḵ']; };
   let last='';
   function tick(){
     const inWorld=Game.world&&Game.chapter&&Game.chapter.id==='freeroam'&&Game.state==='play';
