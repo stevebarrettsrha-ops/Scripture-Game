@@ -2780,8 +2780,10 @@ const Game={
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
     const map=sc.map.world?generateWorldMap(sc.map):generateMap(sc.map);
+    // M3: when returning from a story site, spawn the player back at that site
+    const spawn=(sc.map.world&&this._worldSpawn)?this._worldSpawn:null; this._worldSpawn=null;
     const player=sc.player?{
-      char:sc.player, x:sc.playerPos[0], y:sc.playerPos[1],
+      char:sc.player, x:spawn?spawn[0]:sc.playerPos[0], y:spawn?spawn[1]:sc.playerPos[1],
       dir:'down', moving:false, speed:.085, mount:sc.playerMount||null, hold:sc.playerHold||null
     }:null;
     if(player){
@@ -2823,6 +2825,15 @@ const Game={
   finishChapter(){
     const ch=this.chapter;
     Save.data.done[ch.id]=true; Save.write();
+    // M3: if this chapter was entered from the open world, return there
+    if(this._returnWorld){
+      const rw=this._returnWorld; this._returnWorld=null;
+      this._worldSpawn=rw.pos;
+      Sound.sfx('holy');
+      toast('✦ Returned to the land — “'+ch.title+'” complete');
+      this.startChapter(allChapters().find(c=>c.id==='freeroam'));
+      return;
+    }
     Sound.sfx('holy');
     this.state='complete';
     this.dlgQueue=[]; this.closeDlg();
@@ -2941,8 +2952,17 @@ const Game={
         }
         if(o.script){ this.runScript(o.script.slice(),()=>this.completeObjective(o.idx)); }
         else this.completeObjective(o.idx);
-      } else if(p.examine){ this.say('narrator',p.examine); }
+      } else if(p.site){ this.enterSite(p.site); }
+      else if(p.examine){ this.say('narrator',p.examine); }
     }
+  },
+  /* M3: enter a story site from the open world, then return to it on completion */
+  enterSite(id){
+    const ch=allChapters().find(c=>c.id===id);
+    if(!ch){ this.say('narrator','(The way here is not yet opened.)'); return; }
+    this._returnWorld={pos:[this.world.player.x,this.world.player.y]};
+    Sound.sfx('blip');
+    this.startChapter(ch);
   },
 
   /* ---------- update ---------- */
@@ -4407,8 +4427,9 @@ const STORY=[
        {type:'tent',x:27,y:78,solid:true,col:'#c8b486',clear:2},
        {type:'firepit',x:31,y:75,clear:1},
        {type:'well',x:38,y:75,solid:true,clear:2},
-       /* HAR SINAI — the altar and the abiding cloud below the peak */
-       {type:'altar',x:103,y:72,solid:true,clear:3},
+       /* HAR SINAI — the altar (a story doorway) and the abiding cloud below the peak */
+       {type:'altar',stage:3,x:103,y:72,solid:true,clear:3,flat:4,id:'site_altar',site:'b4',
+        examine:'The altar of unhewn stone. Press E to make the offering — “Blood on the Altar.”'},
        {type:'pillar',x:99,y:70,solid:true,clear:1},
        {type:'pillar',x:107,y:70,solid:true,clear:1},
        {type:'cloud_pillar',x:103,y:60,clear:3},
@@ -4419,7 +4440,8 @@ const STORY=[
        /* KENA'AN — the city of Yeriḥo, and a cave in the hills */
        {type:'tower',x:216,y:64,solid:true,clear:3},
        {type:'gate',x:213,y:68,solid:true,clear:2},
-       {type:'cave',x:208,y:82,solid:true,clear:3,id:'cave'},
+       {type:'cave',glow:true,x:208,y:82,solid:true,clear:3,flat:3,id:'cave',site:'b5',
+        examine:'The Cave of Treasures. Press E to enter — “Gold, Incense and Myrrh.”'},
      ]},
    player:'adam_c', playerPos:[26,72],
    npcs:[
