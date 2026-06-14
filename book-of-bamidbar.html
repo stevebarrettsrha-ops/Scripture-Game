@@ -2359,45 +2359,48 @@ function campDivisions(G,o){
   const C={x:mish?mish.x:m.w/2, y:mish?mish.y:m.h/2};
   const tcols=['#c8b486','#b3a07f','#bda884','#a89a78','#cbb591'];
   const avoid=[];
-  for(const ob of (G.objectives||[])) if(ob.x!==undefined) avoid.push([ob.x,ob.y,2.6]);
+  for(const ob of (G.objectives||[])) if(ob.x!==undefined) avoid.push([ob.x,ob.y,o.objR||2.6]);
   for(const d of m.decor){ if(d.id||d.examine||d.type==='well') avoid.push([d.x,d.y,1.8]); }
   if(G.world.player) avoid.push([G.world.player.x,G.world.player.y,2.2]);
+  const keep=o.keep||[];
   /* keep a clear court around the Dwelling (it reaches south to the gate) */
   const court=[C.x-4.4,C.y-3.2,C.x+4.4,C.y+8.8];
+  const inRect=(xx,yy,r)=> xx>r[0]&&xx<r[2]&&yy>r[1]&&yy<r[3];
   const ok=(xx,yy)=>{
     if(xx<2||xx>m.w-2||yy<2||yy>m.h-2) return false;
     if(SOLID.has(tileAt(m,xx,yy))) return false;
-    if(xx>court[0]&&xx<court[2]&&yy>court[1]&&yy<court[3]) return false;
+    if(inRect(xx,yy,court)) return false;
+    for(const k of keep){ if(inRect(xx,yy,k)) return false; }
     for(const a of avoid){ if(Math.abs(a[0]-xx)<a[2]&&Math.abs(a[1]-yy)<a[2]) return false; }
     return true;
   };
   const tent=(xx,yy,col)=>{ if(!ok(xx,yy)) return false;
     m.decor.push({type:'tent',solid:true,x:xx,y:yy,col:col||tcols[0]}); return true; };
+  /* Each camp is sized to the room between the court edge and the map edge, so
+     the arrangement spreads to fill whatever map it is dropped into. */
   const camps=[
-    {u:[0,-1], reach:8.6,  lev:4.6, banner:'#a83a32',
-     tribes:['Yahuḏah','Yissasḵar','Zeḇulun'],
-     levite:'Mosheh, Aharon and the kohanim — on the EAST, before the entrance'},
-    {u:[1,0],  reach:12.4, lev:6.4, banner:'#caa23c',
-     tribes:['Re’uḇĕn','Shim‘on','Gaḏ'],
-     levite:'the Qehathites — on the SOUTH'},
-    {u:[0,1],  reach:11.8, lev:9.4, banner:'#3e6a8a',
-     tribes:['Ephrayim','Menashsheh','Binyamin'],
-     levite:'the Gĕreshonites — on the WEST'},
-    {u:[-1,0], reach:12.4, lev:6.4, banner:'#4e7a3e',
-     tribes:['Dan','Ashĕr','Naphtali'],
-     levite:'the Merarites — on the NORTH'},
+    {u:[0,-1], edge:3.2, room:C.y-2,       banner:'#a83a32', tribes:['Yahuḏah','Yissasḵar','Zeḇulun'], levite:'Mosheh, Aharon and the kohanim — on the EAST, before the entrance'},
+    {u:[1,0],  edge:4.4, room:(m.w-2)-C.x, banner:'#caa23c', tribes:['Re’uḇĕn','Shim‘on','Gaḏ'],       levite:'the Qehathites — on the SOUTH'},
+    {u:[0,1],  edge:8.8, room:(m.h-2)-C.y, banner:'#3e6a8a', tribes:['Ephrayim','Menashsheh','Binyamin'], levite:'the Gĕreshonites — on the WEST'},
+    {u:[-1,0], edge:4.4, room:C.x-2,       banner:'#4e7a3e', tribes:['Dan','Ashĕr','Naphtali'],         levite:'the Merarites — on the NORTH'},
   ];
   for(const c of camps){
     const ux=c.u[0], uy=c.u[1], px=-uy, py=ux;       /* perpendicular to the camp's facing */
+    const gap=c.room-c.edge;                          /* free band between court edge and map edge */
+    if(gap<3) continue;                               /* no room on this side */
+    const reach=c.edge+Math.min(Math.max(gap*0.58,3),gap-1.5);
+    const lev=c.edge+Math.min(1.6,gap*0.45);
+    const perpHalf=(ux!==0)?Math.min(C.y-2,(m.h-2)-C.y):Math.min(C.x-2,(m.w-2)-C.x);
+    const spread=Math.min(Math.max(perpHalf*0.42,3.6),6.4);
     /* the Lĕwite house, between the tribes and the Dwelling */
     let lp=0;
-    for(let k=-1;k<=1;k++){ if(tent(C.x+ux*c.lev+px*k*1.6, C.y+uy*c.lev+py*k*1.6, '#9a8a66')) lp++; }
-    if(lp) m.decor.push({type:'standard',x:C.x+ux*c.lev+px*2.1,y:C.y+uy*c.lev+py*2.1,banner:'#d8cba0',
+    for(let k=-1;k<=1;k++){ if(tent(C.x+ux*lev+px*k*1.6, C.y+uy*lev+py*k*1.6, '#9a8a66')) lp++; }
+    if(lp) m.decor.push({type:'standard',x:C.x+ux*lev+px*2.1,y:C.y+uy*lev+py*2.1,banner:'#d8cba0',
       examine:'The Lĕwites: '+c.levite+'. They camp around the Dwelling, that there be no wrath on the congregation.'});
     /* the three tribes, spread along the perpendicular */
     for(let ti=0;ti<3;ti++){
-      const off=(ti-1)*4.4;
-      const bx=C.x+ux*c.reach+px*off, by=C.y+uy*c.reach+py*off;
+      const off=(ti-1)*spread;
+      const bx=C.x+ux*reach+px*off, by=C.y+uy*reach+py*off;
       let placed=0;
       for(let r=0;r<3&&placed<6;r++)for(let cc=0;cc<2;cc++){
         if(tent(bx+(cc-0.5)*1.8+hash2(ti*7+r,cc*5)*.5, by+(r-1)*1.6, tcols[(ti+r)%5])) placed++;
@@ -4906,7 +4909,7 @@ STORY.push(
    {art:'mishkanart', music:'holy', text:'And YAHUAH spoke to Mosheh in the Wilderness of Sinai, in the Tent of Appointment, on the first day of the second month, in the second year after they came out of Mitsrayim, saying: “Take a census of all the congregation of the children of Yasharal, by their clans, by their fathers’ houses — every male, head by head, from twenty years and upward, everyone going out to the army.”', ref:'BAMIḎBAR 1:1–3'},
   ],
   scene:{
-   map:{biome:'desert', w:44, h:28, seed:1101,
+   map:{biome:'desert', w:50, h:40, seed:1101,
      features:[
        {type:'mishkan',stage:2,x:23,y:10,solid:true,clear:5,flat:5,id:'mishkan'},
        {type:'clearing',x:22,y:18,flat:3},
@@ -4924,7 +4927,7 @@ STORY.push(
      {id:'elder3',char:'hebrew',x:18,y:21,wander:false,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,30,{tribal:true,keep:[[14,8,33,22]]})},
+     {call:G=>campDivisions(G,{keep:[[14,8,33,24]]})},
      {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<40;i++) G.world.npcs.push(makeNpc({id:'mn'+i,char:cs[i%4],child:i%9===8,
@@ -4951,33 +4954,33 @@ STORY.push(
    {art:'mishkanart', music:'holy', text:'And YAHUAH spoke to Mosheh and Aharon, saying: “The children of Yasharal camp, each man by his own standard, by the banners of their fathers’ houses — opposite, all around the Tent of Appointment, they camp.”', ref:'BAMIḎBAR 2:1–2'},
   ],
   scene:{
-   map:{biome:'desert', w:46, h:30, seed:1102,
+   map:{biome:'desert', w:60, h:42, seed:1102,
      features:[
-       {type:'mishkan',stage:2,x:23,y:15,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Dwelling, in the very midst of the camp — the heart of the nation.'},
-       {type:'standard',x:23,y:8,banner:'#a83a32',id:'std_e',examine:'The standard of the camp of Yahuḏah — to the EAST, toward the sunrise: Yahuḏah, Yissaḵar, Zeḇulun.'},
-       {type:'standard',x:34,y:16,banner:'#caa23c',id:'std_s',examine:'The standard of the camp of Re’uḇĕn — to the SOUTH: Re’uḇĕn, Shim‘on, Gaḏ.'},
-       {type:'standard',x:23,y:23,banner:'#3e6a8a',id:'std_w',examine:'The standard of the camp of Ephrayim — to the WEST: Ephrayim, Menashsheh, Binyamin.'},
-       {type:'standard',x:12,y:16,banner:'#4e7a3e',id:'std_n',examine:'The standard of the camp of Dan — to the NORTH: Dan, Ashĕr, Naphtali.'},
-       {type:'clearing',x:23,y:18,flat:2},
+       {type:'mishkan',stage:2,x:30,y:21,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Dwelling, in the very midst of the camp — the heart of the nation.'},
+       {type:'standard',x:30,y:14,banner:'#a83a32',id:'std_e',examine:'The standard of the camp of Yahuḏah — to the EAST, toward the sunrise: Yahuḏah, Yissaḵar, Zeḇulun.'},
+       {type:'standard',x:41,y:22,banner:'#caa23c',id:'std_s',examine:'The standard of the camp of Re’uḇĕn — to the SOUTH: Re’uḇĕn, Shim‘on, Gaḏ.'},
+       {type:'standard',x:30,y:29,banner:'#3e6a8a',id:'std_w',examine:'The standard of the camp of Ephrayim — to the WEST: Ephrayim, Menashsheh, Binyamin.'},
+       {type:'standard',x:19,y:22,banner:'#4e7a3e',id:'std_n',examine:'The standard of the camp of Dan — to the NORTH: Dan, Ashĕr, Naphtali.'},
+       {type:'clearing',x:30,y:24,flat:2},
      ]},
    time:'day', music:'holy',
-   player:'mosheh_o', playerPos:[23,19],
+   player:'mosheh_o', playerPos:[30,25],
    npcs:[],
    onStart:[
      {call:G=>campDivisions(G)},
      {call:G=>campLife(G)},
    ],
    objectives:[
-     {type:'goto',x:23,y:9.5,radius:2.2,text:'Set the standard of Yahuḏah to the EAST, toward the sunrise',
+     {type:'goto',x:30,y:15.5,radius:2.2,text:'Set the standard of Yahuḏah to the EAST, toward the sunrise',
       script:[{say:['narrator','To the EAST, toward the rising of the sun: the camp of YAHUḎAH — and with him Yissaḵar and Zeḇulun. They set out FIRST. The lion of the tribes leads the march.']}]},
-     {type:'goto',x:32.5,y:16,radius:2.2,text:'Set the standard of Re’uḇĕn to the SOUTH',hiddenUntil:1,
+     {type:'goto',x:39.5,y:22,radius:2.2,text:'Set the standard of Re’uḇĕn to the SOUTH',hiddenUntil:1,
       script:[{say:['narrator','To the SOUTH: the camp of RE’UḆĔN — and with him Shim‘on and Gaḏ. They set out second.']}]},
-     {type:'goto',x:23,y:21.5,radius:2.2,text:'Set the standard of Ephrayim to the WEST',hiddenUntil:2,
+     {type:'goto',x:30,y:27.5,radius:2.2,text:'Set the standard of Ephrayim to the WEST',hiddenUntil:2,
       script:[{say:['narrator','To the WEST: the camp of EPHRAYIM — and with him Menashsheh and Binyamin. And in the midst, between the camps, went the Lĕwites and the Tent.']}]},
-     {type:'goto',x:13.5,y:16,radius:2.2,text:'Set the standard of Dan to the NORTH',hiddenUntil:3,
+     {type:'goto',x:20.5,y:22,radius:2.2,text:'Set the standard of Dan to the NORTH',hiddenUntil:3,
       script:[
        {say:['narrator','To the NORTH: the camp of DAN — and with him Ashĕr and Naphtali. They set out LAST, the rear-guard of all the camps.']},
-       {rays:.7,raysX:23},{sfx:'holy'},
+       {rays:.7,raysX:30},{sfx:'holy'},
        {say:['mosheh_o','Four camps, three tribes each, and the Dwelling in the centre — the Name in the midst of His people. As they camp, so they shall march: order around the Presence. Let the nations look, and see what dwells among us.']},
        {rays:0},
       ]},
@@ -4993,7 +4996,7 @@ STORY.push(
    {art:'mishkanart', music:'holy', text:'And YAHUAH said: “See, I have taken the Lĕwites from among the children of Yasharal instead of every first-born — the Lĕwites shall be Mine. They shall keep the charge of the Tent, and carry it, and camp around the Dwelling, that there be no wrath on the congregation.”', ref:'BAMIḎBAR 3:12; 1:53'},
   ],
   scene:{
-   map:{biome:'desert', w:42, h:28, seed:1103,
+   map:{biome:'desert', w:50, h:38, seed:1103,
      features:[
        {type:'mishkan',stage:2,x:21,y:11,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Dwelling — to be covered, taken down, and carried by the sons of Lĕwi.'},
        {type:'arkcov',x:16,y:13.5,id:'ark',examine:'The ark of the Witness — the sons of Qehath carry it on their shoulders, with the poles, and look not on the set-apart things, lest they die.'},
@@ -5012,7 +5015,7 @@ STORY.push(
      {id:'lev2',char:'levite',route:[[24,15],[17,16]],noTalk:true,x:24,y:15},
    ],
    onStart:[
-     {call:G=>campRing(G,18,{tribal:true,keep:[[13,8,29,20]]})},
+     {call:G=>campDivisions(G,{keep:[[13,8,29,21]]})},
      {call:G=>campLife(G)},
    ],
    objectives:[
@@ -5040,7 +5043,7 @@ STORY.push(
    {art:'pesachnight', music:'night', text:'And YAHUAH said: “Let the children of Yasharal keep the Pesaḥ in its appointed time.” But there were men defiled by a dead body, who could not keep the Pesaḥ on that day — and they came before Mosheh, and said, “Why should we be kept back from bringing the offering of YAHUAH at its appointed time among the children of Yasharal?”', ref:'BAMIḎBAR 9:1–7'},
   ],
   scene:{
-   map:{biome:'desert', w:40, h:26, seed:1104,
+   map:{biome:'desert', w:48, h:36, seed:1104,
      features:[
        {type:'mishkan',stage:2,x:20,y:9,solid:true,clear:5,flat:5,id:'mishkan'},
        {type:'firepit',x:14,y:18,lit:true},{type:'pot',x:15.4,y:18,fire:true},
@@ -5057,7 +5060,7 @@ STORY.push(
      {id:'def2',char:'hebrew2',x:16.5,y:19.5,wander:false,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,16,{tribal:true,keep:[[10,8,30,21]]})},
+     {call:G=>campDivisions(G,{keep:[[10,8,30,21]]})},
      {call:G=>campLife(G)},
    ],
    objectives:[
@@ -5081,7 +5084,7 @@ STORY.push(
    {art:'mishkanart', music:'holy', text:'And YAHUAH said: “Make two trumpets of silver, of beaten work — and you shall use them for the calling of the congregation, and for the setting out of the camps. And when the cloud was taken up from over the Dwelling, the children of Yasharal set out on their journeys, from the Wilderness of Sinai.”', ref:'BAMIḎBAR 10:1–2, 11–12'},
   ],
   scene:{
-   map:{biome:'desert', w:48, h:28, seed:1105,
+   map:{biome:'desert', w:58, h:42, seed:1105,
      features:[
        {type:'mishkan',stage:2,x:24,y:10,solid:true,clear:5,flat:5,id:'mishkan'},
        {type:'pillarcloud',x:24,y:6,id:'cloud',examine:'The cloud over the Dwelling — when it lifts, the camp sets out; when it rests, they camp.'},
@@ -5095,7 +5098,7 @@ STORY.push(
      {id:'hev1',char:'hebrew',route:[[18,19],[28,20]],noTalk:true,x:18,y:19},
    ],
    onStart:[
-     {call:G=>campRing(G,40,{tribal:true,keep:[[16,7,33,22]]})},
+     {call:G=>campDivisions(G,{keep:[[16,7,33,24]]})},
      {call:G=>campLife(G)},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<50;i++) G.world.npcs.push(makeNpc({id:'mar'+i,char:cs[i%4],child:i%9===8,
@@ -5131,7 +5134,7 @@ STORY.push(
    {art:'wilderness', music:'tense', text:'And the people complained in the ears of YAHUAH, and the fire of YAHUAH burned among them and consumed the edge of the camp — and Mosheh prayed, and the fire was quenched, and he called the place Taḇ‘ĕrah, a burning. And the mixed multitude among them lusted greatly, and said, “Who shall give us flesh to eat? We remember the fish, the cucumbers, the melons of Mitsrayim — but now our throat is dried; there is nothing but this manna.”', ref:'BAMIḎBAR 11:1–6'},
   ],
   scene:{
-   map:{biome:'desert', w:46, h:28, seed:1106,
+   map:{biome:'desert', w:52, h:36, seed:1106,
      features:[
        {type:'tent',x:12,y:14,solid:true,clear:2,col:'#b3a07f'},
        {type:'firepit',x:30,y:12,big:true,lit:true,id:'taberah',examine:'The edge of the camp, scorched — where the fire of YAHUAH broke out against the complaining.'},
@@ -5182,7 +5185,7 @@ STORY.push(
    {art:'wilderness', music:'tense', text:'And Miryam and Aharon spoke against Mosheh because of the Kushite woman he had taken — and they said, “Has YAHUAH spoken only by Mosheh? Has He not also spoken by us?” And YAHUAH heard it. Now the man Mosheh was very meek, more than all men on the face of the earth.', ref:'BAMIḎBAR 12:1–3'},
   ],
   scene:{
-   map:{biome:'desert', w:40, h:26, seed:1107,
+   map:{biome:'desert', w:48, h:36, seed:1107,
      features:[
        {type:'mishkan',stage:2,x:20,y:9,solid:true,clear:5,flat:5,id:'mishkan'},
        {type:'pillarcloud',x:20,y:13,id:'pillar',examine:'The column of cloud, come down to the door of the Tent.'},
@@ -5195,7 +5198,7 @@ STORY.push(
      {id:'aharon',char:'aharon_k',x:23,y:17,wander:false,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,16,{tribal:true,keep:[[12,7,28,21]]})},
+     {call:G=>campDivisions(G,{keep:[[12,7,28,21]]})},
      {call:G=>campLife(G)},
    ],
    objectives:[
@@ -5271,7 +5274,7 @@ STORY.push(
    {art:'wilderness', music:'sorrow', text:'And all the congregation lifted up their voice and wept that night. And they grumbled against Mosheh and against Aharon, and said, “If only we had died in Mitsrayim, or in this wilderness! Let us appoint a leader and return to Mitsrayim.” And Yahusha and Kalĕḇ tore their garments, and said, “The land is exceedingly good — only do not rebel against YAHUAH.”', ref:'BAMIḎBAR 14:1–9'},
   ],
   scene:{
-   map:{biome:'desert', w:46, h:28, seed:1109,
+   map:{biome:'desert', w:54, h:40, seed:1109,
      features:[
        {type:'mishkan',stage:2,x:23,y:9,solid:true,clear:5,flat:5,id:'mishkan'},
        {type:'clearing',x:23,y:18,flat:3},
@@ -5285,7 +5288,7 @@ STORY.push(
      {id:'mob2',char:'hebrew',x:27,y:18,wander:true,range:1.6,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,24,{tribal:true,keep:[[15,7,31,21]]})},
+     {call:G=>campDivisions(G,{keep:[[15,7,31,24]]})},
      {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
        for(let i=0;i<30;i++) G.world.npcs.push(makeNpc({id:'wp'+i,char:cs[i%4],x:16+(i%10)*1.7+Math.random(),y:18+Math.floor(i/10)*1.6+Math.random(),wander:true,range:1.2,noTalk:true})); }},
    ],
@@ -5326,7 +5329,7 @@ STORY.push(
    {art:'wilderness', music:'tense', text:'Now Qoraḥ son of Yitshar, a Lĕwite, with Datan and Aḇiram of Re’uḇĕn, and two hundred and fifty leaders of the congregation, rose up against Mosheh. “You take too much on yourselves! All the congregation are set-apart, every one of them, and YAHUAH is in their midst — why then do you lift yourselves above the assembly of YAHUAH?”', ref:'BAMIḎBAR 16:1–3'},
   ],
   scene:{
-   map:{biome:'desert', w:46, h:28, seed:1110,
+   map:{biome:'desert', w:54, h:40, seed:1110,
      features:[
        {type:'mishkan',stage:2,x:23,y:9,solid:true,clear:5,flat:5,id:'mishkan'},
        {type:'tent',x:12,y:20,solid:true,clear:2,col:'#a87f48',id:'datentent',examine:'The tents of Datan and Aḇiram — who would not even come up when called.'},
@@ -5345,7 +5348,7 @@ STORY.push(
      {id:'rebel2',char:'hebrew2',x:22,y:16,wander:true,range:1.4,noTalk:true,hold:'censer'},
    ],
    onStart:[
-     {call:G=>campRing(G,20,{tribal:true,keep:[[10,7,32,22]]})},
+     {call:G=>campDivisions(G,{keep:[[10,7,32,22]]})},
    ],
    objectives:[
      {type:'talk',npc:'qorah',text:'Answer Qoraḥ — let YAHUAH choose with the censers'},
@@ -5371,7 +5374,7 @@ STORY.push(
    {art:'mishkanart', music:'holy', text:'And YAHUAH said: “Take a rod from each father’s house — twelve rods — and write each man’s name on his rod, and Aharon’s name on the rod of Lĕwi. And lay them up in the Tent before the Witness; and the rod of the man whom I choose shall blossom — and I shall make to cease the grumblings of the children of Yasharal against you.”', ref:'BAMIḎBAR 17:1–5'},
   ],
   scene:{
-   map:{biome:'desert', w:40, h:26, seed:1111,
+   map:{biome:'desert', w:48, h:36, seed:1111,
      features:[
        {type:'mishkan',stage:2,x:20,y:9,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Tent of the Witness — within it, the twelve rods laid up before YAHUAH.'},
        {type:'clearing',x:20,y:17,flat:3},
@@ -5383,7 +5386,7 @@ STORY.push(
      {id:'elder1',char:'elder',x:23,y:16,wander:false,noTalk:true,hold:'staff'},
    ],
    onStart:[
-     {call:G=>campRing(G,16,{tribal:true,keep:[[12,7,28,20]]})},
+     {call:G=>campDivisions(G,{keep:[[12,7,28,20]]})},
      {call:G=>campLife(G)},
    ],
    objectives:[
@@ -5693,7 +5696,7 @@ STORY.push(
    {art:'wilderness', music:'sorrow', text:'And Yasharal dwelt in Shittim, and the people began to whore with the daughters of Mo’aḇ, who called them to the slaughterings of their mighty ones, and bowed to Ba‘al-Pe‘or — and the displeasure of YAHUAH burned, and a plague broke out among the people. But Pineḥas son of Elazar, son of Aharon, rose up in the midst, zealous for his Aluahim — and the plague was stayed.', ref:'BAMIḎBAR 25:1–13'},
   ],
   scene:{
-   map:{biome:'desert', w:44, h:28, seed:1116,
+   map:{biome:'desert', w:52, h:38, seed:1116,
      features:[
        {type:'mishkan',stage:2,x:22,y:9,solid:true,clear:5,flat:5,id:'mishkan'},
        {type:'clearing',x:22,y:17,flat:3},
@@ -5711,7 +5714,7 @@ STORY.push(
      {id:'elazar',char:'elazar',x:20.5,y:18,wander:false,noTalk:true},
    ],
    onStart:[
-     {call:G=>campRing(G,24,{tribal:true,keep:[[14,7,30,21]]})},
+     {call:G=>campDivisions(G,{keep:[[14,7,30,21]]})},
      {call:G=>campLife(G)},
    ],
    objectives:[
@@ -5747,7 +5750,7 @@ STORY.push(
    {art:'wasteland', music:'tense', text:'And YAHUAH said to Mosheh, “Avenge the children of Yasharal on the Miḏyanites — who snared them at Pe‘or by the counsel of Bil‘am — and afterward you shall be gathered to your people.” And they armed a thousand from each tribe, twelve thousand for the war, with Pineḥas son of Elazar, and the set-apart vessels and the trumpets for the alarm in his hand.', ref:'BAMIḎBAR 31:1–6'},
   ],
   scene:{
-   map:{biome:'wasteland', w:46, h:28, seed:1118,
+   map:{biome:'wasteland', w:52, h:34, seed:1118,
      features:[
        {type:'rock',x:12,y:10,solid:true,clear:1},{type:'rock',x:34,y:12,solid:true,clear:1},
        {type:'clearing',x:22,y:18,flat:3},
