@@ -6440,6 +6440,57 @@ resize();
 Game.startChapter(allChapters().find(c=>c.id==='freeroam'));
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
+
+/* ===== M5 traversal: a world map / journey screen with fast-travel (press M) ===== */
+(function(){
+  const wrap=document.createElement('div'); wrap.id='worldmap';
+  wrap.style.cssText='position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;background:rgba(6,9,16,.88)';
+  wrap.innerHTML='<div style="text-align:center">'+
+    '<div style="color:#e8c66a;letter-spacing:.2em;font-size:18px;margin-bottom:8px">THE LAND OF THE JOURNEY</div>'+
+    '<canvas id="wm-cv" width="740" height="430" style="border:2px solid #5a4a30;border-radius:6px;background:#1a1408;cursor:pointer"></canvas>'+
+    '<div id="wm-info" style="color:#e8dcb8;font-size:13px;margin-top:8px;height:18px"></div>'+
+    '<div style="color:#8a7e60;font-size:12px;margin-top:2px">click a reached site to travel  ·  press M or Esc to close</div></div>';
+  document.body.appendChild(wrap);
+  const cv=wrap.querySelector('#wm-cv'), g2=cv.getContext('2d'), info=wrap.querySelector('#wm-info');
+  const pal={}; pal[T.GRASS]=[123,189,73];pal[T.GRASS2]=[112,131,63];pal[T.FLOWER]=[140,154,82];
+  pal[T.DIRT]=[138,122,82];pal[T.SAND]=[221,202,148];pal[T.PATH]=[200,170,110];
+  pal[T.WATER]=[74,134,192];pal[T.DEEP]=[39,101,155];pal[T.MTN]=[93,86,76];
+  pal[T.ROCK]=[141,125,102];pal[T.SNOW]=[238,243,247];
+  let open=false, hover=-1;
+  const reached=i=>{ const fu=JOURNEY.findIndex(s=>!Save.data.done[s.id]); return Save.data.done[JOURNEY[i].id]||i===fu; };
+  function draw(){
+    const m=Game.world&&Game.world.map; if(!m) return; const W=cv.width,H=cv.height;
+    const off=document.createElement('canvas'); off.width=m.w; off.height=m.h;
+    const og=off.getContext('2d'), img=og.createImageData(m.w,m.h);
+    for(let i=0;i<m.w*m.h;i++){ const c=pal[m.tiles[i]]||[60,55,45];
+      img.data[i*4]=c[0];img.data[i*4+1]=c[1];img.data[i*4+2]=c[2];img.data[i*4+3]=255; }
+    og.putImageData(img,0,0); g2.imageSmoothingEnabled=false; g2.clearRect(0,0,W,H); g2.drawImage(off,0,0,W,H);
+    for(let i=0;i<JOURNEY.length;i++){ const s=JOURNEY[i],sx=s.x/m.w*W,sy=s.y/m.h*H;
+      const done=Save.data.done[s.id],rch=reached(i);
+      if(rch&&!done){ g2.beginPath(); g2.arc(sx,sy,11,0,7); g2.strokeStyle='rgba(255,233,168,.7)'; g2.lineWidth=2; g2.stroke(); }
+      g2.beginPath(); g2.arc(sx,sy,i===hover?8:6,0,7);
+      g2.fillStyle=done?'#6cc06a':(rch?'#ffe9a8':'rgba(180,170,150,.45)'); g2.fill();
+      g2.strokeStyle='rgba(0,0,0,.5)'; g2.lineWidth=1.5; g2.stroke();
+      g2.fillStyle='#1a1408'; g2.font='bold 9px sans-serif'; g2.textAlign='center'; g2.fillText(String(i+1),sx,sy+3); }
+    const p=Game.world.player; if(p){ const px=p.x/m.w*W,py=p.y/m.h*H;
+      g2.beginPath(); g2.arc(px,py,5,0,7); g2.fillStyle='#ffec40'; g2.fill(); g2.strokeStyle='#1a1408'; g2.lineWidth=2; g2.stroke(); }
+  }
+  function siteAt(mx,my){ const m=Game.world.map,W=cv.width,H=cv.height; let best=-1,bd=14;
+    for(let i=0;i<JOURNEY.length;i++){ const s=JOURNEY[i],sx=s.x/m.w*W,sy=s.y/m.h*H,d=Math.hypot(sx-mx,sy-my); if(d<bd){bd=d;best=i;} } return best; }
+  function openMap(){ if(!Game.world||!Game.chapter||Game.chapter.id!=='freeroam')return; open=true; wrap.style.display='flex'; draw(); }
+  function closeMap(){ open=false; wrap.style.display='none'; }
+  cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect();
+    hover=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
+    info.textContent=hover>=0?((hover+1)+'. '+JOURNEY[hover].name+(Save.data.done[JOURNEY[hover].id]?'   ✓ walked':(reached(hover)?'   — your next step':'   — not yet reached'))):''; draw(); });
+  cv.addEventListener('click',e=>{ const r=cv.getBoundingClientRect();
+    const i=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
+    if(i>=0&&reached(i)){ const s=JOURNEY[i]; Game.world.player.x=s.x; Game.world.player.y=s.y+2.4;
+      if(typeof Camera!=='undefined')Camera.follow(s.x,s.y,Game.world.map,true);
+      try{Sound.sfx('blip');}catch(_){}; try{toast('Travelled to “'+s.name+'”');}catch(_){}; closeMap(); } });
+  addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
+    if(k==='m'){ e.preventDefault(); open?closeMap():openMap(); } else if(k==='escape'&&open) closeMap(); });
+  window.openWorldMap=openMap; window.closeWorldMap=closeMap;
+})();
 </script>
 </body>
 </html>
