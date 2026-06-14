@@ -2747,6 +2747,12 @@ const Game={
   finishChapter(){
     const ch=this.chapter;
     Save.data.done[ch.id]=true; Save.write();
+    if(this._returnHub){
+      try{ const k='scripture_world_done', d=JSON.parse(localStorage.getItem(k)||'{}');
+        d[ch.id]=true; localStorage.setItem(k,JSON.stringify(d)); }catch(_){}
+      const u=this._returnHub; location.href=u+(u.indexOf('?')<0?'?':'&')+'from='+encodeURIComponent(ch.id);
+      return;
+    }
     Sound.sfx('holy');
     this.state='complete';
     this.dlgQueue=[]; this.closeDlg();
@@ -6215,7 +6221,12 @@ Sound.enabled=Save.data.sound!==false;
 if(!Sound.enabled) $('btn-sound').style.opacity='.4';
 Input.init();
 resize();
-openTitle();
+/* if deep-linked from the world hub (?play=ID&return=URL), boot into that chapter */
+(function(){ const q=new URLSearchParams(location.search), play=q.get('play'), ret=q.get('return');
+  const ch=play&&allChapters().find(c=>c.id===play);
+  if(ch){ Game._returnHub=ret||'index.html'; Game.startChapter(ch); }
+  else openTitle();
+})();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
