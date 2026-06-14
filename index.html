@@ -2867,7 +2867,13 @@ const Game={
     if(player) Camera.follow(player.x,player.y,map,true);
     else if(sc.camStart){ Camera.x=sc.camStart[0]*TILE; Camera.y=sc.camStart[1]*TILE; }
     if(sc.onStart) this.runScript(sc.onStart.slice());
-    if(sc.map.world) this._storyCooldown=this.t+1200;   // grace so spawning on a waypoint doesn't auto-trigger
+    if(sc.map.world){
+      this._storyCooldown=this.t+1200;   // grace so spawning on a waypoint doesn't auto-trigger
+      const hp=this.worldHero();          // the walker reflects the current protagonist & spouse
+      if(this.world.player) this.world.player.char=hp.hero;
+      const wf=this.world.npcs.find(n=>n.id==='chavvah');
+      if(wf){ if(hp.wife){ wf.char=hp.wife; wf.hidden=false; } else { wf.hidden=true; } }
+    }
   },
   endScene(){
     const ch=this.chapter;
@@ -2914,15 +2920,31 @@ const Game={
     const p=this.world&&this.world.player;
     if(!p||this.battle||this.script||this.dlgChar||this.state!=='play') return;
     if(this.t<(this._storyCooldown||0)) return;
-    for(const s of JOURNEY){
-      if(Save.data.done[s.id]) continue;
-      if(dist(p.x,p.y,s.x,s.y)<1.5){
-        this._storyCooldown=this.t+4000;
-        if(s.book){ this.enterGate({url:s.book,play:s.id,title:s.name}); }
-        else { try{toast('Entering — “'+s.name+'”');}catch(_){}; this.enterSite(s.id); }
-        return;
-      }
+    /* only the next story, in order, may begin — the journey is walked one at a time */
+    const s=JOURNEY.find(j=>!Save.data.done[j.id]);
+    if(!s) return;
+    if(dist(p.x,p.y,s.x,s.y)<1.5){
+      this._storyCooldown=this.t+4000;
+      if(s.book){ this.enterGate({url:s.book,play:s.id,title:s.name}); }
+      else { try{toast('Entering — “'+s.name+'”');}catch(_){}; this.enterSite(s.id); }
     }
+  },
+  /* the one who walks the world is the story's living protagonist (and spouse),
+     changing as the generations pass: Aḏam → Noaḥ → Aḇraham → Yitsḥaq → Yaaqoḇ → Yosĕph */
+  worldHero(){
+    const nx=JOURNEY.find(j=>!j.book&&!Save.data.done[j.id]);
+    const id=nx?nx.id:'c22a';
+    const noah=['c7','c8','c9','c9b','c10','c10a'];
+    const abr=['c11','c11a','c11b','c12','c12a','c13','c13a','c14','c14b','c15','c15b','c16','c17'];
+    const isa=['c17a','c17b','c17c','c18','c18b'];
+    const yaa=['c18a','c19','c20','c20a','c21','c21b','c21a'];
+    const yos=['c22','c22a'];
+    if(yos.includes(id)) return {hero:'yoseph',wife:null};
+    if(yaa.includes(id)) return {hero:'yaaqov',wife:'rachel'};
+    if(isa.includes(id)) return {hero:'yitschaq',wife:'rivqah'};
+    if(abr.includes(id)) return {hero:'avraham',wife:'sarah'};
+    if(noah.includes(id)) return {hero:'noach',wife:'noach_w'};
+    return {hero:'adam_c',wife:'chavvah_c'};
   },
   /* the mount is a horse on green land and a camel in the wilderness; it waits
      where you dismount (the engine un-hides it at your feet) and re-mounts with E */
