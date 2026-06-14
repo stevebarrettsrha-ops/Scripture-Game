@@ -2782,10 +2782,15 @@ const Game={
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
     const map=sc.map.world?generateWorldMap(sc.map):generateMap(sc.map);
-    // M3: when returning from a story site, spawn the player back at that site
-    const spawn=(sc.map.world&&this._worldSpawn)?this._worldSpawn:null; this._worldSpawn=null;
+    // spawn position: returning from a site > saved world position > scene default
+    let wx=sc.playerPos[0], wy=sc.playerPos[1];
+    if(sc.map.world){
+      if(this._worldSpawn){ wx=this._worldSpawn[0]; wy=this._worldSpawn[1]; }
+      else if(Save.data.world){ wx=Save.data.world.x; wy=Save.data.world.y; }
+    }
+    this._worldSpawn=null;
     const player=sc.player?{
-      char:sc.player, x:spawn?spawn[0]:sc.playerPos[0], y:spawn?spawn[1]:sc.playerPos[1],
+      char:sc.player, x:wx, y:wy,
       dir:'down', moving:false, speed:.085, mount:sc.playerMount||null, hold:sc.playerHold||null
     }:null;
     if(player){
@@ -2978,6 +2983,13 @@ const Game={
     else { o.x=-99; o.y=-99;
       text='The journey is complete — every story walked  ·  '+done+'/'+JOURNEY.length; }
     if(o.text!==text){ o.text=text; this.renderObjectives(); }
+    // M5: persist the player's place in the world (throttled), so the journey resumes
+    if(this.world&&this.world.player){
+      this._wsave=(this._wsave||0)+1;
+      if(this._wsave>=45){ this._wsave=0;
+        Save.data.world={x:+this.world.player.x.toFixed(2),y:+this.world.player.y.toFixed(2)};
+        Save.write(); }
+    }
   },
 
   /* ---------- update ---------- */
