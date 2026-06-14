@@ -2047,6 +2047,17 @@ function generateWorldMap(cfg){
         if(X>1&&X<w-1&&Y>1&&Y<h-1){ tiles[Y*w+X]=T.PATH;   // a ford/pass — the way is always walkable
           for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } }
   }
+  /* a settlement in Kenaʿan — dwellings you may enter (walk into the door, leave by the way out) */
+  { const vx=Math.floor(w*.73), vy=Math.floor(h*.5);
+    [[vx,vy-7],[vx+8,vy-2],[vx-6,vy+5],[vx+6,vy+8]].forEach((s,i)=>{ const hx=s[0],hy=s[1];
+      if(hx<3||hx>w-3||hy<3||hy>h-4) return;
+      for(let yy=hy-2;yy<=hy+3;yy++)for(let xx=hx-3;xx<=hx+3;xx++)
+        if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
+      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,hx,hy)<3.2) decor.splice(k,1); }
+      decor.push({type:'tent',solid:true,x:hx,y:hy,col:['#bda884','#c8b486','#b3a07f'][i%3]});
+      decor.push({type:'doorway',x:hx,y:hy+1.3,enter:true,id:'house'+i,examine:'A dwelling — step inside.'});
+    });
+  }
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,decor,biome:'plains',cfg,world:true};
 }
@@ -2913,6 +2924,29 @@ const Game={
       }
     }
   },
+  /* the mount is a horse on green land and a camel in the wilderness; it waits
+     where you dismount (the engine un-hides it at your feet) and re-mounts with E */
+  updateMount(){
+    const p=this.world&&this.world.player, m=this.world&&this.world.map; if(!p||!m) return;
+    const kind=(x,y)=>{ const t=tileAt(m,x|0,y|0); return (t===T.GRASS||t===T.GRASS2||t===T.FLOWER)?'horse':'camel'; };
+    if(p.mount) p.mount=kind(p.x,p.y);
+    for(const n of this.world.npcs){ if(n.rideable&&!n.hidden) n.animal=kind(n.x,n.y); }
+  },
+  /* Pokémon-style: walking into a dwelling's door takes you inside; the way out returns you */
+  checkDoorways(){
+    const p=this.world&&this.world.player; if(!p||this.state!=='play'||this.dlgChar||this.script) return;
+    if(this.t<(this._storyCooldown||0)) return;
+    for(const d of this.world.map.decor){
+      if(!d.enter) continue;
+      if(dist(p.x,p.y,d.x,d.y)<1.0){
+        this._storyCooldown=this.t+2500;
+        this._returnWorld={pos:[d.x,d.y+1.6]};
+        try{Sound.sfx('blip');}catch(_){}
+        this.startChapter(allChapters().find(c=>c.id==='interior'));
+        return;
+      }
+    }
+  },
   finishChapter(){
     const ch=this.chapter;
     Save.data.done[ch.id]=true; Save.write();
@@ -3061,7 +3095,7 @@ const Game={
     if(this.state==='slides'){ this.slideT+=dt; }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
-    if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkStoryArrival(); }
+    if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkStoryArrival(); this.updateMount(); this.checkDoorways(); }
     this.updateScript(dt);
     if(this.mash){
       const m=this.mash;
@@ -4084,7 +4118,7 @@ function drawSlideArt(g,key,st,t,slide){
       g.save(); g.translate(wx2+Math.sin(t/300)*10,cy); g.rotate(-.28);
       const fl3=t/70;
       for(let h7=0;h7<2;h7++){
-        const hx3=-70-h7*44, hy3=-6+h7*9;
+        const hx3=70+h7*44, hy3=-6+h7*9;
         const grd7=g.createLinearGradient(hx3-26,hy3,hx3+26,hy3);
         grd7.addColorStop(0,'#ffd54a'); grd7.addColorStop(1,'#e8762a');
         g.fillStyle=grd7;
@@ -4106,7 +4140,7 @@ function drawSlideArt(g,key,st,t,slide){
       drawChar(g,0,-20,CHARS.chanok?'chanok':'adam_c',{t,scale:1.1,dir:'down'});
       for(let i=0;i<7;i++){
         g.fillStyle=`rgba(255,${150+i*12|0},60,${.5-i*.06})`;
-        g.beginPath(); g.arc(44+i*16+Math.sin(fl3+i)*4,18+i*8,9-i,0,Math.PI*2); g.fill();
+        g.beginPath(); g.arc(-44-i*16+Math.sin(fl3+i)*4,18+i*8,9-i,0,Math.PI*2); g.fill();
       }
       g.restore();
       const gl13=g.createRadialGradient(wx2,cy,8,wx2,cy,170);
@@ -4539,25 +4573,34 @@ const STORY=[
        const beasts=['sheep','ram','deer','sheep','donkey'];
        for(let i=0;i<24;i++) place({id:'beast'+i,animal:beasts[i%beasts.length],range:3+R()*3});
        for(let i=0;i<5;i++)  place({id:'fowl'+i,animal:'bird',range:6,flying:true});
-       place({id:'ride',animal:'donkey',rideable:true,wander:false});
-       /* ---- humans appear only as the generations are born ---- */
-       const childrenBorn=['c5','c6','c6b','c7'].some(done);
-       const abelSlain   =['c6','c6b','c7'].some(done);
-       const sethBorn    =['c6','c6b','c7'].some(done);
-       if(childrenBorn){
-         if(!abelSlain){ place({id:'hevel',char:'hevel',wander:true,range:3});
-                         place({id:'aqlia',char:'chavvah_c',wander:true,range:2}); }
-         place({id:'qayin',char:'qayin',wander:true,range:4});
-         place({id:'luluwa',char:'chavvah_c',wander:true,range:2});
-       }
-       if(sethBorn) place({id:'sheth',char:'sheth',wander:true,range:3});
-       if(done('c7')) place({id:'noach',char:'noach',wander:true,range:3});
-       /* the generations multiply across the earth */
+       /* a mount that waits where you leave it — a horse on green land, a camel in the wilderness */
+       G.world.npcs.push(makeNpc({id:'ride',animal:'horse',rideable:true,wander:false,x:27,y:101,noTalk:true}));
+       /* the generations multiply — anonymous folk of the earth (never the named figures
+          of the story, who belong to their own chapters). None until the journey begins. */
        const cdone=(typeof JOURNEY!=='undefined'?JOURNEY:[]).filter(s=>!s.book&&done(s.id)).length;
-       const extra=Math.max(0,(cdone-6))*4;
-       const kin=['adam','sheth','noach','qayin','chavvah_c'];
-       for(let i=0;i<extra;i++) place({id:'gen'+i,char:kin[i%kin.length],wander:true,range:2.6});
+       const folk=['builder','builder2','builder3','servant','steward','shepherd','oldman','gerarman','amorite'];
+       const people=cdone<1?0:Math.min(cdone*4,80);
+       for(let i=0;i<people;i++) place({id:'folk'+i,char:folk[i%folk.length],wander:true,range:2.6});
      }},
+   ],
+  },
+},
+/* a reusable interior room — entered by walking into a house door, left by the way out */
+{ id:'interior', title:'Inside', ref:'',
+  scene:{
+   map:{biome:'interior', floorCol:'#a89272', w:16, h:11, seed:7,
+     features:[
+       {type:'pot',x:4,y:4,id:'jar',examine:'A jar of oil and grain.'},
+       {type:'basket',x:6,y:4,full:true},
+       {type:'firepit',x:11,y:4,lit:true},
+       {type:'pot',x:12,y:7},
+       {type:'doorway',x:8,y:10,id:'exit',examine:'The way out.'},
+     ]},
+   player:'adam_c', playerPos:[8,8],
+   npcs:[],
+   objectives:[
+     {type:'goto',x:8,y:9.4,radius:1.2,text:'Step back outside',
+      script:[{say:['narrator','You step back out into the light of day.']}]},
    ],
   },
 },
@@ -7567,7 +7610,7 @@ STORY.push(
 function allChapters(){ return STORY.flatMap(a=>a.chapters); }
 /* The journey laid across the world: every Berĕshith chapter is a waypoint you walk
    to, and the other books are waypoints that open in their own file and return. */
-const JOURNEY=allChapters().filter(c=>c.scene&&c.id!=='freeroam').map(c=>({id:c.id,name:c.title,x:0,y:0}))
+const JOURNEY=allChapters().filter(c=>c.scene&&c.id!=='freeroam'&&c.id!=='interior').map(c=>({id:c.id,name:c.title,x:0,y:0}))
   .concat([
     {id:'b1', name:'Aḏam & Ḥawwah — Out of the Garden', book:'book-of-adam-and-chavvah.html', x:0,y:0},
     {id:'h1', name:'Ḥanoḵ — The Words of Ḥanoḵ',          book:'book-of-hanok.html',           x:0,y:0},
