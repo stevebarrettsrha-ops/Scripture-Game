@@ -2010,14 +2010,21 @@ function generateWorldMap(cfg){
           if(tl!==T.WATER&&tl!==T.DEEP&&tl!==T.MTN&&tl!==T.SNOW){ tiles[Y*w+X]=T.PATH;
             for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } } }
   }
-  /* ---- M0: a gateway to the next book (cross-file deep-link into Shemoth) ---- */
-  { const gx=w-7, gy=Math.round(h*0.5);
-    for(let yy=gy-3;yy<=gy+3;yy++)for(let xx=gx-3;xx<=gx+3;xx++)
-      if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
-    for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,gx,gy)<3) decor.splice(k,1); }
-    decor.push({type:'gate',solid:true,clear:3,x:gx,y:gy,id:'gate_shemoth',
-      go:{url:'book-of-shemoth.html',play:'x37',title:'the Book of Shemoth'},
-      examine:'A gateway eastward — into the Book of Shemoth (“The Glory”). Press E to cross.'});
+  /* ---- M0: gateways to the other books (cross-file deep-links), a row to the east ---- */
+  { const gates=[
+      {play:'x37',url:'book-of-shemoth.html', title:'Shemoth',  ex:'the Book of Shemoth (“The Glory”)'},
+      {play:'v1', url:'book-of-vayiqra.html', title:'Vayiqra',  ex:'the Book of Vayiqra (“And He Called”)'},
+      {play:'n2', url:'book-of-bamidbar.html',title:'Bamiḏbar', ex:'the Book of Bamiḏbar (“By Their Standards”)'},
+      {play:'h1', url:'book-of-hanok.html',   title:'Ḥanoḵ',    ex:'the Book of Ḥanoḵ (“The Words of Ḥanoḵ”)'},
+    ];
+    gates.forEach((gt,i)=>{ const gx=w-7, gy=Math.round(h*0.28)+i*Math.round(h*0.15);
+      for(let yy=gy-3;yy<=gy+3;yy++)for(let xx=gx-4;xx<=gx+3;xx++)
+        if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
+      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,gx,gy)<3) decor.splice(k,1); }
+      decor.push({type:'gate',solid:true,clear:3,x:gx,y:gy,id:'gate_'+gt.play,
+        go:{url:gt.url,play:gt.play,title:gt.title},
+        examine:'A gateway eastward — into '+gt.ex+'. Press E to cross.'});
+    });
   }
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,decor,biome:'plains',cfg,world:true};
