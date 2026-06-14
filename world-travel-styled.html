@@ -2001,6 +2001,14 @@ function generateWorldMap(cfg){
         solid:true,clear:3,x:X,y:Y,id:'site_'+s.id,site:s.id,examine:'“'+s.name+'” — press E to enter.'});
       if(Save.data.done[s.id]) decor.push({type:'pillar',oil:true,x:X+1.8,y:Y+.1});
     }
+    /* ---- M8: a road winds between the sites (skips rivers and peaks) ---- */
+    for(let i=0;i<JOURNEY.length-1;i++){ const a=JOURNEY[i], bb=JOURNEY[i+1];
+      const steps=Math.max(1,Math.hypot(bb.x-a.x,bb.y-a.y)*1.4|0);
+      for(let s=0;s<=steps;s++){ const t=s/steps;
+        const X=Math.round(a.x+(bb.x-a.x)*t), Y=Math.round(a.y+(bb.y-a.y)*t);
+        if(X>1&&X<w-1&&Y>1&&Y<h-1){ const tl=tiles[Y*w+X];
+          if(tl!==T.WATER&&tl!==T.DEEP&&tl!==T.MTN&&tl!==T.SNOW){ tiles[Y*w+X]=T.PATH;
+            for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } } }
   }
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,decor,biome:'plains',cfg,world:true};
@@ -6507,6 +6515,37 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
   addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
     if(k==='m'){ e.preventDefault(); open?closeMap():openMap(); } else if(k==='escape'&&open) closeMap(); });
   window.openWorldMap=openMap; window.closeWorldMap=closeMap;
+})();
+
+/* ===== M8 polish: region banners on crossing + a map hint ===== */
+(function(){
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;left:50%;top:9%;transform:translateX(-50%);z-index:25;text-align:center;'+
+    'color:#f4ecd8;letter-spacing:.22em;font-size:26px;opacity:0;transition:opacity .7s;pointer-events:none;text-shadow:0 2px 8px rgba(0,0,0,.85)';
+  banner.innerHTML='<span></span>';
+  const hint=document.createElement('div');
+  hint.textContent='🗺  press  M  for the map';
+  hint.style.cssText='position:fixed;right:16px;bottom:14px;z-index:25;color:#cdbf9a;font-size:12px;'+
+    'letter-spacing:.08em;opacity:.8;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.8);display:none';
+  document.body.appendChild(banner); document.body.appendChild(hint);
+  const label=(x,w)=>{ const u=x/w;
+    return u<.15?['GOSHEN','by the Sea of Reeds']:u<.33?['THE WILDERNESS OF SHUR','the long march']:
+      u<.52?['HAR SINAI','the mountain of Elohim']:u<.70?['THE WILDERNESS OF PARAN','toward Qadĕsh']:
+      u<.82?['THE PLAINS OF MOAB','across the Yarden']:["KENA'AN",'the land of promise']; };
+  let last='';
+  function tick(){
+    const inWorld=Game.world&&Game.chapter&&Game.chapter.id==='freeroam'&&Game.state==='play';
+    const mapOpen=document.getElementById('worldmap')&&document.getElementById('worldmap').style.display==='flex';
+    if(inWorld&&!mapOpen){
+      const rl=label(Game.world.player.x,Game.world.map.w);
+      if(rl[0]!==last){ last=rl[0];
+        banner.innerHTML=rl[0]+'<small style="display:block;font-size:12px;letter-spacing:.4em;opacity:.7;margin-top:3px">'+rl[1]+'</small>';
+        banner.style.opacity='1'; clearTimeout(banner._t); banner._t=setTimeout(()=>banner.style.opacity='0',2200); }
+      hint.style.display='block';
+    } else { hint.style.display='none'; if(mapOpen) banner.style.opacity='0'; }
+    requestAnimationFrame(tick);
+  }
+  requestAnimationFrame(tick);
 })();
 </script>
 </body>
