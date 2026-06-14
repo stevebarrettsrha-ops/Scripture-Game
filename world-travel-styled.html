@@ -1982,6 +1982,8 @@ function generateWorldMap(cfg){
       for(let x=Math.max(1,Math.floor(f.x-f.flat));x<=Math.min(w-2,Math.ceil(f.x+f.flat));x++)
         if(SOLID.has(tiles[y*w+x])) tiles[y*w+x]=T.DIRT; }
     if(f.type!=='clearing') decor.push(Object.assign({},f));
+    /* M5: a glowing pillar marks a site whose story is already complete */
+    if(f.site && Save.data.done[f.site]) decor.push({type:'pillar',oil:true,x:f.x+1.8,y:f.y+.1});
   });
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,decor,biome:'plains',cfg,world:true};
@@ -2964,6 +2966,19 @@ const Game={
     Sound.sfx('blip');
     this.startChapter(ch);
   },
+  /* M5: steer the single waypoint to the next uncompleted site, and track progress */
+  steerJourney(){
+    if(!this.objectives||!this.objectives.length) return;
+    const o=this.objectives.find(x=>x.dynamic); if(!o) return;
+    const done=JOURNEY.filter(s=>Save.data.done[s.id]).length;
+    const next=JOURNEY.find(s=>!Save.data.done[s.id]);
+    let text;
+    if(next){ o.x=next.x; o.y=next.y;
+      text='Journey to '+next.place+' — “'+next.name+'”  ·  '+done+'/'+JOURNEY.length+' sites'; }
+    else { o.x=-99; o.y=-99;
+      text='The journey is complete — every story walked  ·  '+done+'/'+JOURNEY.length; }
+    if(o.text!==text){ o.text=text; this.renderObjectives(); }
+  },
 
   /* ---------- update ---------- */
   update(dt){
@@ -2971,6 +2986,7 @@ const Game={
     if(this.state==='slides'){ this.slideT+=dt; }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
+    if(this.chapter&&this.chapter.id==='freeroam') this.steerJourney();
     this.updateScript(dt);
     if(this.mash){
       const m=this.mash;
@@ -4413,6 +4429,15 @@ function drawTitleBg(g,t){
 }
 
 /* ================= STORY DATA — THE BOOKS OF AḎAM & ḤAWWAH ================= */
+/* M5: the ordered journey of story-sites laid across the world (west → east).
+   The waypoint steers to the next site whose chapter is not yet in Save.data.done. */
+const JOURNEY=[
+  {id:'b1',  place:'Goshen',    name:'Out of the Garden',                 x:38, y:75},
+  {id:'b4',  place:'Har Sinai', name:'Blood on the Altar',                x:103,y:72},
+  {id:'b9',  place:'Qadĕsh',    name:'The Old Man and the First Bread',   x:146,y:70},
+  {id:'b5',  place:'the Cave',  name:'Gold, Incense and Myrrh',           x:208,y:82},
+  {id:'b12', place:'Yeriḥo',    name:'The First Blood',                   x:216,y:64},
+];
 const STORY=[
 /* ============ FREE-ROAM TRAVEL DEMO (one large walkable world, your style) ============ */
 { id:'demoact', roman:'★', title:'The Open Land', ref:'SEAMLESS WORLD · DEMO', chapters:[
@@ -4426,19 +4451,22 @@ const STORY=[
        {type:'tent',x:33,y:77,solid:true,col:'#bda884',clear:2},
        {type:'tent',x:27,y:78,solid:true,col:'#c8b486',clear:2},
        {type:'firepit',x:31,y:75,clear:1},
-       {type:'well',x:38,y:75,solid:true,clear:2},
+       {type:'well',x:38,y:75,solid:true,clear:2,flat:2,id:'site_goshen',site:'b1',
+        examine:'The way out of the garden, eastward. Press E to begin — “Out of the Garden.”'},
        /* HAR SINAI — the altar (a story doorway) and the abiding cloud below the peak */
        {type:'altar',stage:3,x:103,y:72,solid:true,clear:3,flat:4,id:'site_altar',site:'b4',
         examine:'The altar of unhewn stone. Press E to make the offering — “Blood on the Altar.”'},
        {type:'pillar',x:99,y:70,solid:true,clear:1},
        {type:'pillar',x:107,y:70,solid:true,clear:1},
        {type:'cloud_pillar',x:103,y:60,clear:3},
-       /* PARAN — the well of Qadĕsh */
-       {type:'well',x:146,y:70,solid:true,clear:2},
+       /* PARAN — the well of Qadĕsh (a story doorway) */
+       {type:'well',x:146,y:70,solid:true,clear:2,flat:2,id:'site_qadesh',site:'b9',
+        examine:'The well of Qadĕsh. Press E — “The Old Man and the First Bread.”'},
        {type:'trough',x:143,y:71,clear:1},
        {type:'fold',x:150,y:74,solid:true,clear:3},
-       /* KENA'AN — the city of Yeriḥo, and a cave in the hills */
-       {type:'tower',x:216,y:64,solid:true,clear:3},
+       /* KENA'AN — the city of Yeriḥo (a story doorway), and a cave in the hills */
+       {type:'tower',x:216,y:64,solid:true,clear:3,flat:3,id:'site_yeriho',site:'b12',
+        examine:'The city of Yeriḥo. Press E — “The First Blood.”'},
        {type:'gate',x:213,y:68,solid:true,clear:2},
        {type:'cave',glow:true,x:208,y:82,solid:true,clear:3,flat:3,id:'cave',site:'b5',
         examine:'The Cave of Treasures. Press E to enter — “Gold, Incense and Myrrh.”'},
@@ -4476,10 +4504,7 @@ const STORY=[
      {id:'bird2',animal:'bird',x:170,y:54,range:5,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:103,y:73,radius:4,text:'Cross the wilderness to Har Sinai, where the cloud abides',
-      script:[{say:['narrator','From Goshen, across the Sea of Reeds and the long wilderness, you have come to the mountain of Elohim — one continuous land, walked end to end.']}]},
-     {type:'goto',x:214,y:66,radius:4,text:'Journey on, through Paran and over the Yarden, to Kena’an',hiddenUntil:1,
-      script:[{say:['narrator','Past the well of Qadĕsh, over the fords of the Yarden, to the city in the land of promise. The whole journey is one world — and it is yours to walk.']}]},
+     {type:'goto',x:38,y:75,radius:-1,dynamic:true,text:'Begin the journey — follow the way'},
    ],
   },
 },
