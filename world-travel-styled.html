@@ -2010,20 +2010,31 @@ function generateWorldMap(cfg){
           if(tl!==T.WATER&&tl!==T.DEEP&&tl!==T.MTN&&tl!==T.SNOW){ tiles[Y*w+X]=T.PATH;
             for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } } }
   }
-  /* ---- M0: gateways to the other books (cross-file deep-links), a row to the east ---- */
+  /* ---- M0: themed gateways to the other books — each a distinct signpost, a row to the east ---- */
   { const gates=[
-      {play:'x37',url:'book-of-shemoth.html', title:'Shemoth',  ex:'the Book of Shemoth (“The Glory”)'},
-      {play:'v1', url:'book-of-vayiqra.html', title:'Vayiqra',  ex:'the Book of Vayiqra (“And He Called”)'},
-      {play:'n2', url:'book-of-bamidbar.html',title:'Bamiḏbar', ex:'the Book of Bamiḏbar (“By Their Standards”)'},
-      {play:'h1', url:'book-of-hanok.html',   title:'Ḥanoḵ',    ex:'the Book of Ḥanoḵ (“The Words of Ḥanoḵ”)'},
+      {play:'x37',url:'book-of-shemoth.html', title:'Shemoth',  icon:'ark',   ex:'the Book of Shemoth (“The Glory”)'},
+      {play:'v1', url:'book-of-vayiqra.html', title:'Vayiqra',  icon:'altar', ex:'the Book of Vayiqra (“And He Called”)'},
+      {play:'n2', url:'book-of-bamidbar.html',title:'Bamiḏbar', icon:'tent',  ex:'the Book of Bamiḏbar (“By Their Standards”)'},
+      {play:'h1', url:'book-of-hanok.html',   title:'Ḥanoḵ',    icon:'tower', ex:'the Book of Ḥanoḵ (“The Words of Ḥanoḵ”)'},
     ];
-    gates.forEach((gt,i)=>{ const gx=w-7, gy=Math.round(h*0.28)+i*Math.round(h*0.15);
-      for(let yy=gy-3;yy<=gy+3;yy++)for(let xx=gx-4;xx<=gx+3;xx++)
+    gates.forEach((gt,i)=>{ const gx=w-8, gy=Math.round(h*0.24)+i*Math.round(h*0.17);
+      for(let yy=gy-4;yy<=gy+4;yy++)for(let xx=gx-5;xx<=gx+4;xx++)
         if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
-      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,gx,gy)<3) decor.splice(k,1); }
-      decor.push({type:'gate',solid:true,clear:3,x:gx,y:gy,id:'gate_'+gt.play,
+      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,gx,gy)<4.5) decor.splice(k,1); }
+      /* a stone arch framing the doorway, and book-themed surround */
+      decor.push({type:'gate',solid:true,x:gx,y:gy-1.5});
+      if(gt.play==='x37') decor.push({type:'cloud_pillar',x:gx,y:gy-4});
+      if(gt.play==='n2'){ decor.push({type:'tent',x:gx-3.4,y:gy-0.4,col:'#bda884',solid:true});
+                          decor.push({type:'tent',x:gx+3.4,y:gy-0.4,col:'#c8b486',solid:true}); }
+      else { decor.push({type:'pillar',x:gx-3,y:gy-0.4,solid:true});
+             decor.push({type:'pillar',x:gx+3,y:gy-0.4,solid:true}); }
+      if(gt.play==='h1'){ decor.push({type:'pillar',x:gx-3,y:gy+1.6,solid:true});
+                          decor.push({type:'pillar',x:gx+3,y:gy+1.6,solid:true}); }
+      /* the interactive, book-distinct icon = the gateway itself */
+      decor.push({type:gt.icon, stage:gt.icon==='altar'?3:undefined, glow:gt.icon==='ark'?true:undefined,
+        col:gt.icon==='tent'?'#caa23c':undefined, solid:true, clear:3, x:gx, y:gy, id:'gate_'+gt.play,
         go:{url:gt.url,play:gt.play,title:gt.title},
-        examine:'A gateway eastward — into '+gt.ex+'. Press E to cross.'});
+        examine:'A gateway — into '+gt.ex+'. Press E to cross.'});
     });
   }
   decor.sort((a,b)=>a.y-b.y);
@@ -3294,7 +3305,7 @@ const Game={
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
-        const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
+        const r=d.go?3:(d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6)));
         if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
           bd=Math.min(bd,d5); best={prop:d};
         }
