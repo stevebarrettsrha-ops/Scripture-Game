@@ -2946,6 +2946,15 @@ const Game={
     if(noah.includes(id)) return {hero:'noach',wife:'noach_w'};
     return {hero:'adam_c',wife:'chavvah_c'};
   },
+  /* remember which story-sites the player has physically reached, so the map can
+     unlock the reached/completed ones and keep far-future ones locked */
+  markVisited(){
+    const p=this.world&&this.world.player; if(!p) return;
+    if(!Save.data.visited) Save.data.visited={};
+    let changed=false;
+    for(const s of JOURNEY){ if(!Save.data.visited[s.id]&&dist(p.x,p.y,s.x,s.y)<2.8){ Save.data.visited[s.id]=true; changed=true; } }
+    if(changed) Save.write();
+  },
   /* the mount is a horse on green land and a camel in the wilderness; it waits
      where you dismount (the engine un-hides it at your feet) and re-mounts with E */
   updateMount(){
@@ -3117,7 +3126,7 @@ const Game={
     if(this.state==='slides'){ this.slideT+=dt; }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
-    if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkStoryArrival(); this.updateMount(); this.checkDoorways(); }
+    if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkStoryArrival(); this.updateMount(); this.checkDoorways(); this.markVisited(); }
     this.updateScript(dt);
     if(this.mash){
       const m=this.mash;
@@ -7946,7 +7955,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
     '<div style="color:#e8c66a;letter-spacing:.2em;font-size:18px;margin-bottom:8px">THE LAND OF THE JOURNEY</div>'+
     '<canvas id="wm-cv" width="760" height="430" style="border:2px solid #5a4a30;border-radius:6px;background:#1a1408;cursor:pointer"></canvas>'+
     '<div id="wm-info" style="color:#e8dcb8;font-size:13px;margin-top:8px;height:18px"></div>'+
-    '<div style="color:#8a7e60;font-size:12px;margin-top:2px">click any story to begin it  ·  press M or Esc to close</div></div>';
+    '<div style="color:#8a7e60;font-size:12px;margin-top:2px">click a reached story to begin  ·  far ones unlock as you walk there  ·  M / Esc to close</div></div>';
   document.body.appendChild(wrap);
   const cv=wrap.querySelector('#wm-cv'), g2=cv.getContext('2d'), info=wrap.querySelector('#wm-info');
   const pal={}; pal[T.GRASS]=[123,189,73];pal[T.GRASS2]=[112,131,63];pal[T.FLOWER]=[140,154,82];
@@ -7954,7 +7963,8 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
   pal[T.WATER]=[74,134,192];pal[T.DEEP]=[39,101,155];pal[T.MTN]=[93,86,76];
   pal[T.ROCK]=[141,125,102];pal[T.SNOW]=[238,243,247];
   let open=false, hover=-1;
-  const reached=i=>{ const fu=JOURNEY.findIndex(s=>!Save.data.done[s.id]); return Save.data.done[JOURNEY[i].id]||i===fu; };
+  const reached=i=>{ const id=JOURNEY[i].id, fu=JOURNEY.findIndex(s=>!Save.data.done[s.id]);
+    return !!(Save.data.done[id] || (Save.data.visited&&Save.data.visited[id]) || i===fu); };
   function draw(){
     const m=Game.world&&Game.world.map; if(!m) return; const W=cv.width,H=cv.height;
     const off=document.createElement('canvas'); off.width=m.w; off.height=m.h;
@@ -7977,13 +7987,14 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
   function closeMap(){ open=false; wrap.style.display='none'; }
   cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect();
     hover=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
-    info.textContent=hover>=0?((hover+1)+'. '+JOURNEY[hover].name+(Save.data.done[JOURNEY[hover].id]?'   ✓ walked — click to revisit':'   — click to begin here')):''; draw(); });
+    info.textContent=hover>=0?((hover+1)+'. '+JOURNEY[hover].name+(Save.data.done[JOURNEY[hover].id]?'   ✓ walked — click to revisit':(reached(hover)?'   — click to begin here':'   🔒 locked · walk there first'))):''; draw(); });
   cv.addEventListener('click',e=>{ const r=cv.getBoundingClientRect();
     const i=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
-    if(i>=0){ const s=JOURNEY[i]; closeMap();
-      try{Sound.sfx('blip');}catch(_){}
-      if(s.book){ Game.enterGate({url:s.book,play:s.id,title:s.name}); }
-      else { Game.enterSite(s.id); } } });
+    if(i<0) return;
+    if(!reached(i)){ try{toast('“'+JOURNEY[i].name+'” is not yet reached — walk there first.');}catch(_){}; return; }
+    const s=JOURNEY[i]; closeMap(); try{Sound.sfx('blip');}catch(_){}
+    if(s.book){ Game.enterGate({url:s.book,play:s.id,title:s.name}); }
+    else { Game.enterSite(s.id); } });
   addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
     if(k==='m'){ e.preventDefault(); open?closeMap():openMap(); } else if(k==='escape'&&open) closeMap(); });
   window.openWorldMap=openMap;
