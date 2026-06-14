@@ -3036,6 +3036,11 @@ const Game={
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
     for(const e of ents){
+      /* M4 LOD: freeze ambient entities far from the player (off-screen) — keeps a
+         densely populated world at 60fps. The player, followers, foes, sparring
+         and mid-glide entities always update. */
+      if(e!==p&&p&&!e.target&&!e.follow&&!e.foe&&!e.spar&&
+         (e.x-p.x)*(e.x-p.x)+(e.y-p.y)*(e.y-p.y)>900){ e.moving=false; continue; }
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
         const sp=(e.speed||.045)*dt*.06*40/TILE*TILE/40; // tiles per ms*dt
@@ -4505,6 +4510,22 @@ const STORY=[
    ],
    objectives:[
      {type:'goto',x:38,y:75,radius:-1,dynamic:true,text:'Begin the journey — follow the way'},
+   ],
+   onStart:[
+     {call:G=>{
+       const m=G.world.map, chars=['sheth','host_a','builder','builder2','builder3','servant','shepherd'];
+       const beasts=['sheep','sheep','ram','deer','donkey'];
+       let n=0;
+       for(let i=0;i<140&&n<110;i++){
+         const x=6+Math.random()*(m.w-12), y=6+Math.random()*(m.h-12);
+         if(!walkable(m,x,y)) continue;
+         if(Math.random()<.35) G.world.npcs.push(makeNpc({id:'life'+i,animal:beasts[(Math.random()*beasts.length)|0],x,y,range:3,noTalk:true}));
+         else G.world.npcs.push(makeNpc({id:'life'+i,char:chars[(Math.random()*chars.length)|0],x,y,wander:true,range:2.6,noTalk:true}));
+         n++;
+       }
+       /* a rideable donkey at the Goshen camp — mount with E for fast travel (1.65x) */
+       G.world.npcs.push(makeNpc({id:'ride',animal:'donkey',rideable:true,wander:false,x:36,y:73,noTalk:true}));
+     }},
    ],
   },
 },
