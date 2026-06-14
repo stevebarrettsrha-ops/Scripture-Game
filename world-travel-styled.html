@@ -1910,6 +1910,82 @@ function generateMap(cfg){
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,decor,biome:cfg.biome,cfg};
 }
+
+/* ===== M1: one large multi-region world, built from the real tiles/palettes =====
+   West → East journey: Goshen · Wilderness · Har Sinai · Paran · the Yarden · Kena'an.
+   Rendered by the engine's own drawWorld/drawProp/drawChar — no renderer changes. */
+function wNoise(x,y){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+  const a=hash2(ix,iy),b=hash2(ix+1,iy),c=hash2(ix,iy+1),d=hash2(ix+1,iy+1);
+  const u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
+  return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;}
+function wFbm(x,y){let t=0,a=.5,f=1;for(let o=0;o<4;o++){t+=a*wNoise(x*f+o*40,y*f-o*30);f*=2;a*=.5;}return t;}
+function wRegion(u){ return u<.15?'goshen':u<.33?'shur':u<.52?'sinai':u<.70?'paran':u<.82?'arvoth':'canaan'; }
+function generateWorldMap(cfg){
+  const w=cfg.w||240, h=cfg.h||140, rng=mulberry32(cfg.seed||99);
+  const tiles=new Uint8Array(w*h), decor=[];
+  /* ---- terrain by region + noise ---- */
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const reg=wRegion(x/w), e=wFbm(x/15,y/15), m=wFbm((x+200)/19,(y+90)/19);
+    let t;
+    if(reg==='goshen'){ t=m>.55?T.GRASS2:T.GRASS; if(wFbm(x/6,y/6)>.72&&m>.5)t=T.FLOWER; }
+    else if(reg==='shur'){ t=m<.42?T.SAND:(e>.62?T.DIRT:T.GRASS2); }
+    else if(reg==='sinai'){ const mt=wFbm(x/8+10,y/8); t=mt>.62?T.MTN:(e>.55?T.ROCK:T.DIRT); }
+    else if(reg==='paran'){ t=m<.46?T.SAND:(e>.6?T.ROCK:T.DIRT); }
+    else if(reg==='arvoth'){ t=m>.5?T.GRASS2:T.DIRT; }
+    else { t=m>.5?T.GRASS:(m>.34?T.GRASS2:T.DIRT); if(wFbm(x/6,y/6)>.73)t=T.FLOWER; }
+    tiles[y*w+x]=t;
+  }
+  /* ---- the great mountain of Sinai (a cluster, snow at the peak) ---- */
+  const mx=Math.floor(w*.43), my=Math.floor(h*.45);
+  for(let y=-8;y<=8;y++)for(let x=-11;x<=11;x++){ const X=mx+x,Y=my+y,d=Math.hypot(x/1.35,y);
+    if(X>1&&X<w-1&&Y>1&&Y<h-1&&d<8) tiles[Y*w+X]= d<2.2?T.SNOW : d<6.5?T.MTN : T.ROCK; }
+  /* ---- two rivers: the Nile (west) and the Yarden (east), each with a ford ---- */
+  const fordY=Math.round(h*.5);
+  const river=(cx,half)=>{ for(let y=0;y<h;y++){ const c=cx+Math.sin(y*.12)*3;
+    for(let x=0;x<w;x++){ const dx=Math.abs(x-c);
+      if(dx<half-1)tiles[y*w+x]=T.DEEP; else if(dx<half)tiles[y*w+x]=T.WATER;
+      else if(dx<half+1.3&&!SOLID.has(tiles[y*w+x]))tiles[y*w+x]=T.SAND; } }
+    for(let y=fordY-1;y<=fordY+1;y++)for(let x=0;x<w;x++){ const tl=tiles[y*w+x];
+      if(tl===T.WATER||tl===T.DEEP)tiles[y*w+x]=T.PATH; } };
+  river(Math.floor(w*.085),4); river(Math.floor(w*.785),5);
+  /* ---- the Sea of Reeds, a lake beside the western camp ---- */
+  { const lx=Math.floor(w*.20),ly=Math.floor(h*.22),rx=10,ry=6;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){ const d=Math.hypot((x-lx)/rx,(y-ly)/ry);
+      if(d<1)tiles[y*w+x]=d<.78?T.DEEP:T.WATER; else if(d<1.2&&!SOLID.has(tiles[y*w+x]))tiles[y*w+x]=T.SAND; } }
+  /* ---- mountain border frame ---- */
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){ const edge=Math.min(x,y,w-1-x,h-1-y);
+    if(edge===0||(edge===1&&rng()<.6)) tiles[y*w+x]=T.MTN; }
+  /* ---- decor scattered by region, in the real prop styles ---- */
+  const RD={
+    goshen:{d:.05,b:.04,col:['#3f7032','#4a7c3a','#39652c']},
+    shur:{d:.012,b:.012,col:['#6e7a3e'],dead:.5,palm:true},
+    sinai:{d:.006,b:.004,col:['#5d6e3e'],dead:.6,rock:.05},
+    paran:{d:.007,b:.004,col:['#7a8a4a'],palm:true,rock:.025},
+    arvoth:{d:.022,b:.02,col:['#5d7a35','#6e8a3e']},
+    canaan:{d:.06,b:.045,col:['#3f7032','#4a7c3a','#39652c','#5d7a35']},
+  };
+  for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){
+    const tl=tiles[y*w+x];
+    if(SOLID.has(tl)||tl===T.WATER||tl===T.DEEP||tl===T.PATH) continue;
+    const rd=RD[wRegion(x/w)], r=rng();
+    if(tl===T.SAND){ if(rd.palm&&r<rd.d*1.6) decor.push({type:'palm',x:x+rng()*.5,y:y+rng()*.5,col:'#7a8a4a',solid:true}); continue; }
+    if(r<rd.d){ const dead=rd.dead&&rng()<rd.dead;
+      decor.push({type:'tree',x:x+rng()*.6,y:y+rng()*.6,col:pick(rng,rd.col),dead,solid:true}); }
+    else if(r<rd.d+rd.b){ decor.push({type:'bush',x:x+rng()*.6,y:y+rng()*.6,col:pick(rng,rd.col)}); }
+    else if(rd.rock&&rng()<rd.rock){ decor.push({type:'rock',x:x+rng()*.5,y:y+rng()*.5,solid:true}); }
+  }
+  /* ---- explicit landmark features (clear + flatten + place), as generateMap does ---- */
+  (cfg.features||[]).forEach(f=>{
+    const rad=f.clear!==undefined?f.clear:2;
+    for(let i=decor.length-1;i>=0;i--){ if(!decor[i].id&&dist(decor[i].x,decor[i].y,f.x,f.y)<rad) decor.splice(i,1); }
+    if(f.flat){ for(let y=Math.max(1,Math.floor(f.y-f.flat));y<=Math.min(h-2,Math.ceil(f.y+f.flat));y++)
+      for(let x=Math.max(1,Math.floor(f.x-f.flat));x<=Math.min(w-2,Math.ceil(f.x+f.flat));x++)
+        if(SOLID.has(tiles[y*w+x])) tiles[y*w+x]=T.DIRT; }
+    if(f.type!=='clearing') decor.push(Object.assign({},f));
+  });
+  decor.sort((a,b)=>a.y-b.y);
+  return {w,h,tiles,decor,biome:'plains',cfg,world:true};
+}
 function tileAt(map,x,y){
   const tx=Math.floor(x),ty=Math.floor(y);
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
@@ -2703,7 +2779,7 @@ const Game={
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
     const sc=ch.scene;
-    const map=generateMap(sc.map);
+    const map=sc.map.world?generateWorldMap(sc.map):generateMap(sc.map);
     const player=sc.player?{
       char:sc.player, x:sc.playerPos[0], y:sc.playerPos[1],
       dir:'down', moving:false, speed:.085, mount:sc.playerMount||null, hold:sc.playerHold||null
@@ -4322,65 +4398,66 @@ const STORY=[
 { id:'demoact', roman:'★', title:'The Open Land', ref:'SEAMLESS WORLD · DEMO', chapters:[
 { id:'freeroam', title:'The Open Land', ref:'travel demo — walk where you will',
   scene:{
-   map:{biome:'wild', w:132, h:84, seed:7777,
-     river:{x:84,width:6,curve:2.4,ford:46},
-     lake:{x:30,y:60,rx:8,ry:5},
+   map:{world:true, w:240, h:140, seed:7777,
      features:[
-       /* a camp of tents off to the west */
-       {type:'tent',x:24,y:30,solid:true,col:'#c8b486',clear:2},
-       {type:'tent',x:28,y:28,solid:true,col:'#b3a07f',clear:2},
-       {type:'tent',x:27,y:33,solid:true,col:'#bda884',clear:2},
-       {type:'tent',x:21,y:34,solid:true,col:'#c8b486',clear:2},
-       {type:'firepit',x:25,y:31,clear:1},
-       {type:'well',x:33,y:31,solid:true,clear:2},
-       /* the first altar, on a rise to the north-east */
-       {type:'altar',x:100,y:22,solid:true,clear:3},
-       {type:'pillar',x:96,y:20,solid:true,clear:1},
-       {type:'pillar',x:104,y:20,solid:true,clear:1},
-       /* the Cave of Treasures, in the eastern hills */
-       {type:'cave',x:116,y:60,solid:true,clear:3,id:'cave'},
-       {type:'cloud_pillar',x:116,y:54,clear:2},
-       /* a sheepfold and trough in the south */
-       {type:'fold',x:54,y:66,solid:true,clear:3},
-       {type:'trough',x:50,y:64,clear:1},
-       /* scattered standing stones along the way */
-       {type:'stone',x:64,y:40,solid:true,clear:1},
-       {type:'stone',x:72,y:48,solid:true,clear:1},
-       {type:'rock',x:90,y:62,solid:true,clear:1},
-       {type:'rock',x:108,y:40,solid:true,clear:1},
+       /* GOSHEN — the camp of Yisra'el beside the Sea of Reeds */
+       {type:'tent',x:30,y:74,solid:true,col:'#c8b486',clear:2},
+       {type:'tent',x:34,y:72,solid:true,col:'#b3a07f',clear:2},
+       {type:'tent',x:33,y:77,solid:true,col:'#bda884',clear:2},
+       {type:'tent',x:27,y:78,solid:true,col:'#c8b486',clear:2},
+       {type:'firepit',x:31,y:75,clear:1},
+       {type:'well',x:38,y:75,solid:true,clear:2},
+       /* HAR SINAI — the altar and the abiding cloud below the peak */
+       {type:'altar',x:103,y:72,solid:true,clear:3},
+       {type:'pillar',x:99,y:70,solid:true,clear:1},
+       {type:'pillar',x:107,y:70,solid:true,clear:1},
+       {type:'cloud_pillar',x:103,y:60,clear:3},
+       /* PARAN — the well of Qadĕsh */
+       {type:'well',x:146,y:70,solid:true,clear:2},
+       {type:'trough',x:143,y:71,clear:1},
+       {type:'fold',x:150,y:74,solid:true,clear:3},
+       /* KENA'AN — the city of Yeriḥo, and a cave in the hills */
+       {type:'tower',x:216,y:64,solid:true,clear:3},
+       {type:'gate',x:213,y:68,solid:true,clear:2},
+       {type:'cave',x:208,y:82,solid:true,clear:3,id:'cave'},
      ]},
-   player:'adam_c', playerPos:[20,42],
+   player:'adam_c', playerPos:[26,72],
    npcs:[
-     {id:'chavvah',char:'chavvah_c',x:18,y:43,wander:false,follow:true,noTalk:true},
-     /* life in and around the camp */
-     {id:'p1',char:'sheth',x:26,y:30,wander:true,range:2.2,noTalk:true},
-     {id:'p2',char:'host_a',x:23,y:32,wander:true,range:2,noTalk:true},
-     {id:'p3',char:'builder',x:30,y:34,wander:true,range:2,noTalk:true},
-     {id:'p4',char:'builder2',x:22,y:28,wander:true,range:2,noTalk:true},
-     {id:'wj',char:'chavvah_c',x:34,y:32,wander:false,dir:'left',hold:'jar',noTalk:true},
-     /* a shepherd and his flock in the meadow */
-     {id:'shep',char:'shepherd',x:48,y:50,wander:true,range:2.4,hold:'staff',noTalk:true},
-     {id:'s1',animal:'sheep',x:50,y:52,range:3,noTalk:true},
-     {id:'s2',animal:'sheep',x:52,y:50,range:3,noTalk:true},
-     {id:'s3',animal:'sheep',x:49,y:54,range:3,noTalk:true},
-     {id:'s4',animal:'ram',x:53,y:53,range:3,noTalk:true},
-     {id:'s5',animal:'sheep',x:46,y:52,range:3,noTalk:true},
-     /* travellers on the road east */
-     {id:'t1',char:'builder3',x:70,y:44,wander:true,range:3,noTalk:true},
-     {id:'t2',char:'servant',x:78,y:50,wander:true,range:3,noTalk:true},
-     {id:'don',animal:'donkey',x:74,y:46,range:2,noTalk:true},
-     /* folk near the altar */
-     {id:'a1',char:'host_a',x:98,y:25,wander:true,range:2,noTalk:true},
-     {id:'a2',char:'sheth',x:102,y:26,wander:true,range:2,noTalk:true},
+     {id:'chavvah',char:'chavvah_c',x:24,y:73,wander:false,follow:true,noTalk:true},
+     /* Goshen camp life */
+     {id:'g1',char:'sheth',x:32,y:74,wander:true,range:2.2,noTalk:true},
+     {id:'g2',char:'host_a',x:29,y:76,wander:true,range:2,noTalk:true},
+     {id:'g3',char:'builder',x:35,y:78,wander:true,range:2,noTalk:true},
+     {id:'g4',char:'builder2',x:28,y:72,wander:true,range:2,noTalk:true},
+     {id:'gj',char:'chavvah_c',x:38,y:76,wander:false,dir:'left',hold:'jar',noTalk:true},
+     /* a shepherd & flock in the wilderness of Shur */
+     {id:'shep',char:'shepherd',x:64,y:66,wander:true,range:2.4,hold:'staff',noTalk:true},
+     {id:'s1',animal:'sheep',x:66,y:68,range:3,noTalk:true},
+     {id:'s2',animal:'sheep',x:68,y:66,range:3,noTalk:true},
+     {id:'s3',animal:'sheep',x:63,y:70,range:3,noTalk:true},
+     {id:'s4',animal:'ram',x:69,y:69,range:3,noTalk:true},
+     /* worshippers at Sinai */
+     {id:'a1',char:'host_a',x:100,y:75,wander:true,range:2,noTalk:true},
+     {id:'a2',char:'sheth',x:106,y:75,wander:true,range:2,noTalk:true},
+     /* travellers & a donkey on the road through Paran */
+     {id:'t1',char:'builder3',x:128,y:68,wander:true,range:3,noTalk:true},
+     {id:'t2',char:'servant',x:140,y:72,wander:true,range:3,noTalk:true},
+     {id:'don',animal:'donkey',x:134,y:70,range:2,noTalk:true},
+     {id:'q1',char:'host_a',x:148,y:72,wander:true,range:2,noTalk:true},
+     /* folk of Kena'an by Yeriḥo */
+     {id:'k1',char:'builder',x:214,y:67,wander:true,range:2,noTalk:true},
+     {id:'k2',char:'servant',x:218,y:69,wander:true,range:2,noTalk:true},
      /* wild creatures */
-     {id:'deer1',animal:'deer',x:60,y:30,range:4,noTalk:true},
-     {id:'deer2',animal:'deer',x:64,y:34,range:4,noTalk:true},
-     {id:'bird1',animal:'bird',x:44,y:24,range:5,noTalk:true},
-     {id:'bird2',animal:'bird',x:88,y:30,range:5,noTalk:true},
+     {id:'deer1',animal:'deer',x:84,y:58,range:4,noTalk:true},
+     {id:'deer2',animal:'deer',x:200,y:60,range:4,noTalk:true},
+     {id:'bird1',animal:'bird',x:54,y:50,range:5,noTalk:true},
+     {id:'bird2',animal:'bird',x:170,y:54,range:5,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:116,y:60,radius:3,text:'Travel east across the open land to the Cave of Treasures',
-      script:[{say:['narrator','You have crossed the open land — from the camp, past the meadows and the first altar, to the cave in the eastern hills. The whole world is one, and walkable.']}]},
+     {type:'goto',x:103,y:73,radius:4,text:'Cross the wilderness to Har Sinai, where the cloud abides',
+      script:[{say:['narrator','From Goshen, across the Sea of Reeds and the long wilderness, you have come to the mountain of Elohim — one continuous land, walked end to end.']}]},
+     {type:'goto',x:214,y:66,radius:4,text:'Journey on, through Paran and over the Yarden, to Kena’an',hiddenUntil:1,
+      script:[{say:['narrator','Past the well of Qadĕsh, over the fords of the Yarden, to the city in the land of promise. The whole journey is one world — and it is yours to walk.']}]},
    ],
   },
 },
