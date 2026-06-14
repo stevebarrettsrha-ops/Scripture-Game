@@ -3008,6 +3008,23 @@ const Game={
         Save.write(); }
     }
   },
+  /* M6: a light-hybrid set-piece battle — the raiders of Amalĕq ambush in the wilderness.
+     Event-driven: it fires once when the player crosses the valley, never repeats. */
+  checkWorldBattle(){
+    const p=this.world&&this.world.player; if(!p||this.battle||this._amalek||Save.data.amalekDone) return;
+    const B={x:118,y:88};
+    if(dist(p.x,p.y,B.x,B.y)<6){
+      this._amalek=true;
+      const foes=['amal0','amal1','amal2','amal3'];
+      foes.forEach((id,i)=>{ const a=i/foes.length*6.283;
+        this.world.npcs.push(makeNpc({id,char:'qayin',foe:true,hp:2,wander:false,noTalk:true,foeSpeed:.052,
+          x:B.x+Math.cos(a)*3.4,y:B.y+Math.sin(a)*3.4})); });
+      this.battle={left:foes.length,text:'⚔ The raiders of Amalĕq fall upon the weary!',
+        won:'Amalĕq is overcome — Yisra’ĕl prevails',rally:null,
+        onDone:()=>{ Save.data.amalekDone=true; Save.write(); }};
+      try{Sound.sfx('bad');}catch(_){}
+    }
+  },
 
   /* ---------- update ---------- */
   update(dt){
@@ -3015,7 +3032,7 @@ const Game={
     if(this.state==='slides'){ this.slideT+=dt; }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
-    if(this.chapter&&this.chapter.id==='freeroam') this.steerJourney();
+    if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkWorldBattle(); }
     this.updateScript(dt);
     if(this.mash){
       const m=this.mash;
