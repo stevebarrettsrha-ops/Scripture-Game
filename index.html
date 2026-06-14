@@ -2897,17 +2897,22 @@ const Game={
     try{toast('Crossing into '+(go.title||'the next book')+'…');}catch(_){}
     location.href=go.url+'?play='+encodeURIComponent(go.play)+'&return='+encodeURIComponent('index.html');
   },
+  /* the journey's progress cursor — the story always continues forward from here,
+     whatever point the player chose to begin at (defaults to the first unwalked) */
+  frontIdx(){
+    if(typeof Save.data.front==='number') return Math.max(0,Math.min(Save.data.front,JOURNEY.length));
+    const i=JOURNEY.findIndex(s=>!Save.data.done[s.id]); return i<0?JOURNEY.length:i;
+  },
   steerJourney(){
     if(!this.objectives||!this.objectives.length) return;
     const o=this.objectives.find(x=>x.dynamic); if(!o) return;
-    const done=JOURNEY.filter(s=>Save.data.done[s.id]).length;
-    const next=JOURNEY.find(s=>!Save.data.done[s.id]);
+    const f=this.frontIdx(), next=JOURNEY[f];
     let text;
     if(next){ o.x=next.x; o.y=next.y;
       if(this.world) this.world.gotoMark={x:next.x,y:next.y};
-      text='Walk to — “'+next.name+'”  ·  '+done+'/'+JOURNEY.length+' walked'; }
+      text='Walk to — “'+next.name+'”  ·  '+(f+1)+' of '+JOURNEY.length; }
     else { o.x=-99; o.y=-99; if(this.world) this.world.gotoMark=null;
-      text='The journey is complete — every story walked  ·  '+done+'/'+JOURNEY.length; }
+      text='The journey is complete  ·  '+JOURNEY.length+' of '+JOURNEY.length; }
     if(o.text!==text){ o.text=text; this.renderObjectives(); }
     if(this.world&&this.world.player){
       this._wsave=(this._wsave||0)+1;
@@ -2920,8 +2925,8 @@ const Game={
     const p=this.world&&this.world.player;
     if(!p||this.battle||this.script||this.dlgChar||this.state!=='play') return;
     if(this.t<(this._storyCooldown||0)) return;
-    /* only the next story, in order, may begin — the journey is walked one at a time */
-    const s=JOURNEY.find(j=>!Save.data.done[j.id]);
+    /* only the current front story may begin by walking — one at a time, in order */
+    const s=JOURNEY[this.frontIdx()];
     if(!s) return;
     if(dist(p.x,p.y,s.x,s.y)<1.5){
       this._storyCooldown=this.t+4000;
@@ -2929,11 +2934,11 @@ const Game={
       else { try{toast('Entering — “'+s.name+'”');}catch(_){}; this.enterSite(s.id); }
     }
   },
-  /* the one who walks the world is the story's living protagonist (and spouse),
-     changing as the generations pass: Aḏam → Noaḥ → Aḇraham → Yitsḥaq → Yaaqoḇ → Yosĕph */
+  /* the one who walks the world is the story's living protagonist (and spouse) at the
+     current point: Aḏam → Noaḥ → Aḇraham → Yitsḥaq → Yaaqoḇ → Yosĕph */
   worldHero(){
-    const nx=JOURNEY.find(j=>!j.book&&!Save.data.done[j.id]);
-    const id=nx?nx.id:'c22a';
+    const f=this.frontIdx();
+    const id=(JOURNEY[f]&&!JOURNEY[f].book)?JOURNEY[f].id:'c22a';
     const noah=['c7','c8','c9','c9b','c10','c10a'];
     const abr=['c11','c11a','c11b','c12','c12a','c13','c13a','c14','c14b','c15','c15b','c16','c17'];
     const isa=['c17a','c17b','c17c','c18','c18b'];
@@ -2985,6 +2990,10 @@ const Game={
     if(this._returnWorld){
       const rw=this._returnWorld; this._returnWorld=null;
       this._worldSpawn=rw.pos;
+      // advance the journey cursor so the story continues forward from the one just finished
+      const j=JOURNEY.findIndex(s=>s.id===ch.id);
+      if(j>=0) Save.data.front=j+1;
+      Save.write();
       Sound.sfx('holy');
       toast('✦ Returned to the land — “'+ch.title+'” complete');
       this.startChapter(allChapters().find(c=>c.id==='freeroam'));
@@ -7767,7 +7776,7 @@ function openTitle(){
 $('btn-new').onclick=()=>{ Sound.init();
   if(Object.keys(Save.data.done).length>0&&!confirm('Begin a new journey from the beginning? Your progress will be cleared.')) return;
   Save.reset();
-  Save.data.world=null; Save.write();
+  Save.data.world=null; Save.data.front=0; Save.data.visited={}; Save.write();
   try{ localStorage.removeItem('scripture_world_done'); }catch(_){}
   Game.startChapter(allChapters().find(c=>c.id==='freeroam')); };
 $('btn-continue').onclick=()=>{ Sound.init(); Game.startChapter(allChapters().find(c=>c.id==='freeroam')); };
@@ -7940,7 +7949,9 @@ resize();
 try{ const xd=JSON.parse(localStorage.getItem('scripture_world_done')||'{}');
   Object.keys(xd).forEach(id=>{ Save.data.done[id]=true; }); }catch(_){}
 { const _from=new URLSearchParams(location.search).get('from');
-  if(_from){ Save.data.done[_from]=true; Save.write();
+  if(_from){ Save.data.done[_from]=true;
+    const j=JOURNEY.findIndex(s=>s.id===_from); if(j>=0&&(Save.data.front||0)<=j) Save.data.front=j+1;
+    Save.write();
     Game.startChapter(allChapters().find(c=>c.id==='freeroam'));
     try{toast('✦ Returned to the land — “'+_from+'” complete');}catch(_){}; }
   else openTitle(); }
@@ -7963,8 +7974,8 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
   pal[T.WATER]=[74,134,192];pal[T.DEEP]=[39,101,155];pal[T.MTN]=[93,86,76];
   pal[T.ROCK]=[141,125,102];pal[T.SNOW]=[238,243,247];
   let open=false, hover=-1;
-  const reached=i=>{ const id=JOURNEY[i].id, fu=JOURNEY.findIndex(s=>!Save.data.done[s.id]);
-    return !!(Save.data.done[id] || (Save.data.visited&&Save.data.visited[id]) || i===fu); };
+  const reached=i=>{ const id=JOURNEY[i].id;
+    return !!(Save.data.done[id] || (Save.data.visited&&Save.data.visited[id]) || i===Game.frontIdx()); };
   function draw(){
     const m=Game.world&&Game.world.map; if(!m) return; const W=cv.width,H=cv.height;
     const off=document.createElement('canvas'); off.width=m.w; off.height=m.h;
@@ -7992,7 +8003,9 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
     const i=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
     if(i<0) return;
     if(!reached(i)){ try{toast('“'+JOURNEY[i].name+'” is not yet reached — walk there first.');}catch(_){}; return; }
-    const s=JOURNEY[i]; closeMap(); try{Sound.sfx('blip');}catch(_){}
+    const s=JOURNEY[i];
+    Save.data.front=i; Save.write();   // the story continues forward from the point chosen
+    closeMap(); try{Sound.sfx('blip');}catch(_){}
     if(s.book){ Game.enterGate({url:s.book,play:s.id,title:s.name}); }
     else { Game.enterSite(s.id); } });
   addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
