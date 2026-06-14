@@ -1929,69 +1929,95 @@ function drawProp(g,px,py,p,t){
       g.beginPath(); g.ellipse(0,1,5*u,1.6*u,0,0,Math.PI*2); g.stroke();
       break; }
     case 'mishkan': {
+      /* The Dwelling (Mishkan) and its court — drawn back-to-front so it reads
+         like the camp: the linen court wraps the Tent, with the bronze altar
+         and laver (separate props) standing within, and the gate screen of
+         blue, purple and scarlet opening to the south, toward the camp. */
       const st9=p.stage||0;
-      const W9=TILE*7, H9=TILE*3;
-      g.fillStyle='rgba(0,0,0,.22)';
-      g.beginPath(); g.ellipse(0,TILE*.4,W9*.62,TILE*.5,0,0,Math.PI*2); g.fill();
+      const W9=TILE*5, H9=TILE*3;                 /* the Tent itself */
+      /* court geometry (raised only from stage 2) */
+      const CHW=TILE*3.3;                          /* court half-width (E–W) */
+      const NY=-TILE*2.2;                          /* north (back) hanging line */
+      const SY=TILE*7.4;                           /* south (front) line — the gate */
+      const linH=TILE*.62;                         /* height of the hangings */
+      const gateH=TILE*1.15;                       /* half-width of the gate opening */
+      const linen='#ece8da', linShade='#cfc8b3', post='#c8ccd4', postCap='#e2e6ec';
+      /* soft contact shadow beneath the Tent only */
+      g.fillStyle='rgba(0,0,0,.10)';
+      g.beginPath(); g.ellipse(0,TILE*.3,W9*.58,TILE*.42,0,0,Math.PI*2); g.fill();
+      if(st9===0){
+        /* the Dwelling not yet raised — boards and curtains bundled */
+        g.fillStyle='#caa23c'; g.fillRect(-W9/2,-H9,W9,H9);
+        g.fillStyle='#1a140a';
+        for(let i=1;i<7;i++) g.fillRect(-W9/2+i*W9/7-2,-H9,4,H9);
+        g.fillStyle='#caa23c'; g.fillRect(-W9/2,-H9,W9,4);
+        break;
+      }
       if(st9>=2){
-        /* the court: hangings of fine woven linen on silver-banded pillars,
-           with the gate screen of blue, purple and scarlet in the midst */
-        const cy9=TILE*1.7, ch9=TILE*.6, cw9=W9*.92, gw9=W9*.17;
-        g.fillStyle='#ece8da';
-        g.fillRect(-cw9,cy9-ch9,cw9-gw9,ch9);
-        g.fillRect(gw9,cy9-ch9,cw9-gw9,ch9);
-        g.fillStyle='#d4cfbe';
-        g.fillRect(-cw9,cy9-ch9,cw9-gw9,3);
-        g.fillRect(gw9,cy9-ch9,cw9-gw9,3);
+        /* the trodden court floor, a touch lighter than the sand */
+        g.fillStyle='rgba(236,228,205,.16)';
+        g.fillRect(-CHW,NY,CHW*2,SY-NY);
+        /* north (back) wall — behind the Tent */
+        g.fillStyle=linen; g.fillRect(-CHW,NY-linH,CHW*2,linH);
+        g.fillStyle=linShade; g.fillRect(-CHW,NY-3,CHW*2,3);
+        for(let i=0;i<=8;i++){ const px=-CHW+CHW*2*i/8;
+          g.fillStyle=post; g.fillRect(px-2,NY-linH-2,4,linH+4);
+          g.fillStyle=postCap; g.fillRect(px-2.5,NY-linH-4,5,3); }
+        /* side walls (east & west), running front to back */
+        for(const sx of [-1,1]){
+          const X=sx*CHW;
+          g.fillStyle=linen; g.fillRect(X-3,NY-linH,6,SY-NY+linH);
+          g.fillStyle=linShade; g.fillRect(X-3,NY-linH,6,3);
+          for(let i=0;i<=9;i++){ const py=NY+(SY-NY)*i/9;
+            g.fillStyle=post; g.fillRect(X-3,py-2,6,4);
+            g.fillStyle=postCap; g.fillRect(X-3.5,py-3,7,2); }
+        }
+      }
+      /* ===== the Tent of Appointment ===== */
+      /* the covering of rams' skins dyed red, spread over the Tent */
+      g.fillStyle='#6a3c28'; g.fillRect(-W9/2-5,-H9-6,W9+10,H9*.36+6);
+      g.fillStyle='#7d4830'; g.fillRect(-W9/2-5,-H9-6,W9+10,7);
+      g.fillStyle='rgba(30,16,10,.3)';
+      for(let i=1;i<7;i++) g.fillRect(-W9/2-5+i*(W9+10)/7-1,-H9-6,2,H9*.36+6);
+      /* the south face: boards of gold, five pillars, and the single screen */
+      const fy9=-H9+H9*.36, fh9=H9*.64;
+      g.fillStyle='#e8c66a'; g.fillRect(-W9/2,fy9,W9,fh9);
+      g.fillStyle='#8a6a1c';
+      for(let i=1;i<8;i++) g.fillRect(-W9/2+i*W9/8-1,fy9,2,fh9);
+      const scw9=W9*.44, scx9=-scw9/2;
+      const scols9=['#2e5f8a','#6a3e8a','#a83a32','#e8e2d2'];
+      for(let i=0;i<8;i++){ g.fillStyle=scols9[i%4];
+        g.fillRect(scx9+i*(scw9/8),fy9+3,scw9/8+1,fh9-3); }
+      g.fillStyle='#caa23c';
+      for(let i=0;i<5;i++){ const px9=scx9+i*(scw9/4);
+        g.fillRect(px9-2.5,fy9+1,5,fh9-1); }
+      g.fillStyle='#e8c66a'; g.fillRect(scx9-3,fy9,scw9+6,4);
+      /* sockets of silver at the base */
+      g.fillStyle='#c8ccd4'; g.fillRect(-W9/2,-3,W9,3);
+      /* ===== the cloud abiding over the Dwelling — pillar by day ===== */
+      for(let i=0;i<7;i++){ const ph9=t/1100+i*0.9;
+        g.fillStyle=`rgba(238,240,248,${(p.glory?.52:.30)-i*.038})`;
+        g.beginPath(); g.arc(Math.sin(ph9)*TILE*.5,-H9-TILE*.4-i*TILE*.5,TILE*(.5+i*.16),0,Math.PI*2); g.fill(); }
+      if(p.glory){
+        const glD=g.createRadialGradient(0,-H9*.5,4,0,-H9*.5,W9*.8);
+        glD.addColorStop(0,'rgba(255,235,150,.30)'); glD.addColorStop(1,'rgba(255,235,150,0)');
+        g.fillStyle=glD; g.fillRect(-W9,-H9*2,W9*2,H9*3);
+      }
+      /* ===== the south (front) wall and the gate screen — drawn last, in front ===== */
+      if(st9>=2){
+        g.fillStyle=linen;
+        g.fillRect(-CHW,SY-linH,CHW-gateH,linH);
+        g.fillRect(gateH,SY-linH,CHW-gateH,linH);
+        g.fillStyle=linShade;
+        g.fillRect(-CHW,SY-3,CHW-gateH,3);
+        g.fillRect(gateH,SY-3,CHW-gateH,3);
+        /* the gate screen of blue, purple, scarlet and fine linen */
         const gcols9=['#2e5f8a','#6a3e8a','#a83a32','#e8e2d2'];
         for(let i=0;i<8;i++){ g.fillStyle=gcols9[i%4];
-          g.fillRect(-gw9+i*(gw9/4),cy9-ch9-2,gw9/4+1,ch9+2); }
-        g.fillStyle='#c8ccd4';
-        for(let i=0;i<=10;i++){ const px9=-cw9+i*(cw9*2/10);
-          g.fillRect(px9-2,cy9-ch9-4,4,ch9+4); }
-        /* the side hangings, running back toward the Tent */
-        g.fillStyle='#ece8da';
-        g.fillRect(-cw9-3,-H9*.4,6,cy9-ch9+H9*.4);
-        g.fillRect(cw9-3,-H9*.4,6,cy9-ch9+H9*.4);
-        g.fillStyle='#c8ccd4';
-        for(let i=0;i<4;i++){ const py9=-H9*.4+i*((cy9-ch9+H9*.4)/3);
-          g.fillRect(-cw9-4,py9,8,4); g.fillRect(cw9-4,py9,8,4); }
-      }
-      if(st9===0){
-        g.fillStyle='#caa23c';
-        g.fillRect(-W9/2,-H9,W9,H9);
-        g.fillStyle='#1a140a';
-        for(let i=1;i<8;i++) g.fillRect(-W9/2+i*W9/8-2,-H9,4,H9);
-        g.fillStyle='#caa23c'; g.fillRect(-W9/2,-H9,W9,4);
-      } else {
-        /* the covering of rams' skins dyed red, spread over the Tent */
-        g.fillStyle='#6a3c28'; g.fillRect(-W9/2-5,-H9-6,W9+10,H9*.36+6);
-        g.fillStyle='#7d4830'; g.fillRect(-W9/2-5,-H9-6,W9+10,7);
-        g.fillStyle='rgba(30,16,10,.3)';
-        for(let i=1;i<8;i++) g.fillRect(-W9/2-5+i*(W9+10)/8-1,-H9-6,2,H9*.36+6);
-        /* the east face: boards of gold, five pillars, and the screen */
-        const fy9=-H9+H9*.36, fh9=H9*.64;
-        g.fillStyle='#e8c66a'; g.fillRect(-W9/2,fy9,W9,fh9);
-        g.fillStyle='#8a6a1c';
-        for(let i=1;i<10;i++) g.fillRect(-W9/2+i*W9/10-1,fy9,2,fh9);
-        const scw9=W9*.56, scx9=-scw9/2;
-        const scols9=['#2e5f8a','#6a3e8a','#a83a32','#e8e2d2'];
-        for(let i=0;i<8;i++){ g.fillStyle=scols9[i%4];
-          g.fillRect(scx9+i*(scw9/8),fy9+3,scw9/8+1,fh9-3); }
-        g.fillStyle='#caa23c';
-        for(let i=0;i<5;i++){ const px9=scx9+i*(scw9/4);
-          g.fillRect(px9-2.5,fy9+1,5,fh9-1); }
-        g.fillStyle='#e8c66a'; g.fillRect(scx9-3,fy9,scw9+6,4);
-        /* sockets of silver at the base */
-        g.fillStyle='#c8ccd4'; g.fillRect(-W9/2,-3,W9,3);
-      }
-      if(p.glory){
-        for(let i=0;i<6;i++){ const phA=t/1000+i*1.2;
-          g.fillStyle=`rgba(235,238,248,${.4-i*.05})`;
-          g.beginPath(); g.arc(Math.sin(phA)*TILE*.8,-H9-TILE*.7-i*TILE*.35,TILE*(.7+i*.18),0,Math.PI*2); g.fill(); }
-        const glD=g.createRadialGradient(0,-H9*.5,4,0,-H9*.5,W9*.7);
-        glD.addColorStop(0,'rgba(255,235,150,.3)'); glD.addColorStop(1,'rgba(255,235,150,0)');
-        g.fillStyle=glD; g.fillRect(-W9,-H9*2,W9*2,H9*3);
+          g.fillRect(-gateH+i*(gateH*2/8),SY-linH-2,gateH*2/8+1,linH+2); }
+        for(const px of [-CHW,-gateH,gateH,CHW]){
+          g.fillStyle=post; g.fillRect(px-2,SY-linH-4,4,linH+4);
+          g.fillStyle=postCap; g.fillRect(px-2.5,SY-linH-6,5,3); }
       }
       break; }
     case 'arkcov': {
