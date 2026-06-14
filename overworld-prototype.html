@@ -1,0 +1,220 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scripture Game — Overworld Prototype</title>
+<style>
+  html,body{margin:0;height:100%;background:#0c1018;overflow:hidden;font-family:'Trebuchet MS',system-ui,sans-serif;color:#f4ecd8}
+  #c{display:block;width:100vw;height:100vh}
+  .panel{position:fixed;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.8)}
+  #title{left:18px;top:14px;font-size:20px;letter-spacing:.5px}
+  #title small{display:block;font-size:12px;opacity:.7;letter-spacing:2px;margin-top:2px}
+  #hint{left:18px;bottom:14px;font-size:13px;line-height:1.7;opacity:.92}
+  #hint b{background:#2a3550;border:1px solid #4a5a80;border-radius:4px;padding:1px 6px;color:#ffe9a8}
+  #dest{right:18px;top:176px;width:236px;text-align:right;font-size:13px}
+  #dest .name{font-size:16px;color:#ffe1a0}
+  #prompt{left:50%;bottom:64px;transform:translateX(-50%);background:rgba(14,18,28,.86);
+    border:1px solid #6a5a30;border-radius:10px;padding:10px 18px;font-size:15px;display:none;text-align:center}
+  #prompt b{color:#ffe9a8}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div class="panel" id="title">SCRIPTURE — THE JOURNEY<small>OVERWORLD · PROTOTYPE</small></div>
+<div class="panel" id="dest"></div>
+<div class="panel" id="prompt"></div>
+<div class="panel" id="hint">
+  <b>W A S D</b> move &nbsp; <b>M</b> mount / dismount chariot &nbsp; <b>Tab</b> next destination &nbsp; <b>E</b> enter site
+</div>
+<script>
+const cv=document.getElementById('c'),g=cv.getContext('2d');
+let VW,VH; function resize(){VW=cv.width=innerWidth;VH=cv.height=innerHeight;} addEventListener('resize',resize); resize();
+
+/* ---------------- world ---------------- */
+const TILE=34, MW=150, MH=108, SEED=7;
+const B={DEEP:0,WATER:1,SHALLOW:2,SAND:3,DGRASS:4,GRASS:5,FOREST:6,HILL:7,ROCK:8,SNOW:9,BRIDGE:10,ROAD:11};
+const COL={
+ [B.DEEP]:'#27659b',[B.WATER]:'#3b86c0',[B.SHALLOW]:'#69b1da',[B.SAND]:'#ddca94',
+ [B.DGRASS]:'#a8c25a',[B.GRASS]:'#73bd49',[B.FOREST]:'#3f8f44',[B.HILL]:'#c2a96d',
+ [B.ROCK]:'#8d7d66',[B.SNOW]:'#eef3f7',[B.BRIDGE]:'#9a6b3a',[B.ROAD]:'#caa86e'};
+const SOLID=new Set([B.DEEP,B.WATER,B.ROCK,B.SNOW]);
+const grid=new Uint8Array(MW*MH);
+const at=(x,y)=>grid[(y|0)*MW+(x|0)];
+
+// value-noise fbm
+function rnd(ix,iy,s){let h=(ix*374761393+iy*668265263+s*1013904223)|0;h=Math.imul(h^(h>>>13),1274126177);return ((h^(h>>>16))>>>0)/4294967295;}
+const sm=t=>t*t*(3-2*t);
+function vn(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+ const a=rnd(ix,iy,s),b=rnd(ix+1,iy,s),c=rnd(ix,iy+1,s),d=rnd(ix+1,iy+1,s),u=sm(fx),v=sm(fy);
+ return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;}
+function fbm(x,y,s){let t=0,a=.5,f=1;for(let o=0;o<5;o++){t+=a*vn(x*f,y*f,s+o*23);f*=2;a*=.5;}return t;}
+
+// build terrain
+for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
+ const e=fbm(x/19,y/19,SEED), mo=fbm((x+300)/22,(y+120)/22,SEED+9);
+ let b;
+ if(e<.30)b=B.DEEP; else if(e<.355)b=B.WATER; else if(e<.40)b=B.SHALLOW;
+ else if(e<.435)b=B.SAND;
+ else if(e>.80)b=B.SNOW; else if(e>.72)b=B.ROCK; else if(e>.63)b=B.HILL;
+ else b= mo>.56?B.FOREST : mo>.40?B.GRASS : B.DGRASS;
+ grid[y*MW+x]=b;
+}
+// carve a river (Yarden) by descending a meander, plus a couple of lakes
+function carveRiver(pts){ for(let i=0;i<pts.length-1;i++){const[a,bb]=[pts[i],pts[i+1]];
+ const steps=Math.hypot(bb[0]-a[0],bb[1]-a[1])*2|0;
+ for(let s=0;s<=steps;s++){const t=s/steps,cx=a[0]+(bb[0]-a[0])*t,cy=a[1]+(bb[1]-a[1])*t;
+  for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){const X=cx+dx|0,Y=cy+dy|0;
+   if(X>0&&X<MW&&Y>0&&Y<MH){const d=Math.hypot(dx,dy); grid[Y*MW+X]= d<1?B.WATER:(at(X,Y)>=B.SAND&&at(X,Y)<=B.GRASS?B.SHALLOW:at(X,Y));}}}}}
+carveRiver([[92,4],[88,22],[95,38],[90,55],[96,72],[92,92],[98,104]]);
+function lake(cx,cy,r){for(let y=-r;y<=r;y++)for(let x=-r;x<=r;x++){const d=Math.hypot(x,y);if(d<=r){const X=cx+x,Y=cy+y;
+ if(X>0&&X<MW&&Y>0&&Y<MH)grid[Y*MW+X]= d<r-1.5?B.WATER:B.SHALLOW;}}}
+lake(40,40,5); lake(120,30,6);
+
+/* ---------------- points of interest (the biblical journey) ---------------- */
+const POI=[
+ {x:22,y:92,name:'Mitsrayim',sub:'Goshen — the house of bondage',book:'SHEMOTH 1–12',c:'#caa23c'},
+ {x:46,y:86,name:'Yam Suph',sub:'The sea split in two',book:'SHEMOTH 14',c:'#3f87bd'},
+ {x:58,y:70,name:'Marah & Ĕlim',sub:'Bitter water made sweet',book:'SHEMOTH 15–16',c:'#6aab3e'},
+ {x:54,y:50,name:'Har Sinai',sub:'The mountain of the Law',book:'SHEMOTH 19–40',c:'#a83a32'},
+ {x:70,y:40,name:'Midbar — the Camp',sub:'Numbered by their standards',book:'BAMIḎBAR 1–10',c:'#e8d27a'},
+ {x:86,y:30,name:'Qaḏĕsh Barnĕa',sub:'The twelve spies sent out',book:'BAMIḎBAR 13–20',c:'#b96',},
+ {x:104,y:34,name:'Har Hor',sub:'The bronze serpent',book:'BAMIḎBAR 21',c:'#8a6a1c'},
+ {x:112,y:54,name:'Plains of Moaḇ',sub:'The second giving of the Law',book:'DEḆARIM 1–34',c:'#caa23c'},
+ {x:96,y:64,name:'Yarden',sub:'The river crossed on dry ground',book:'YEHOSHUA 3–4',c:'#3f87bd'},
+ {x:88,y:74,name:'Yeriḥo',sub:'The walls fell down flat',book:'YEHOSHUA 6',c:'#a83a32'},
+];
+// stitch a faint road between the sites, and drop bridges where it meets water
+for(let i=0;i<POI.length-1;i++){const a=POI[i],b=POI[i+1];const steps=Math.hypot(b.x-a.x,b.y-a.y)*2|0;
+ for(let s=0;s<=steps;s++){const t=s/steps,X=Math.round(a.x+(b.x-a.x)*t),Y=Math.round(a.y+(b.y-a.y)*t);
+  if(X<1||X>=MW-1||Y<1||Y>=MH-1)continue; const cur=at(X,Y);
+  if(cur===B.WATER||cur===B.SHALLOW||cur===B.DEEP)grid[Y*MW+X]=B.BRIDGE;
+  else if(cur!==B.ROCK&&cur!==B.SNOW&&cur!==B.BRIDGE)grid[Y*MW+X]=B.ROAD; }}
+
+/* ---------------- player & chariot ---------------- */
+const me={x:62,y:54,dir:0,riding:true,sp:0};
+let destI=4; // current destination index
+const keys={};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;
+ if(e.key==='Tab'){e.preventDefault();destI=(destI+1)%POI.length;}
+ if(e.key.toLowerCase()==='m')me.riding=!me.riding;});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+function blocked(x,y){const b=at(x,y);if(b===B.BRIDGE||b===B.ROAD)return false;return SOLID.has(b);}
+
+/* ---------------- minimap (prebaked) ---------------- */
+const mm=document.createElement('canvas');mm.width=MW;mm.height=MH;const mg=mm.getContext('2d');
+const img=mg.createImageData(MW,MH);
+for(let i=0;i<MW*MH;i++){const c=COL[grid[i]];img.data[i*4]=parseInt(c.slice(1,3),16);
+ img.data[i*4+1]=parseInt(c.slice(3,5),16);img.data[i*4+2]=parseInt(c.slice(5,7),16);img.data[i*4+3]=255;}
+mg.putImageData(img,0,0);
+
+/* ---------------- render ---------------- */
+let cam={x:0,y:0};
+function tri(cx,cy,w,h,col,cap){g.fillStyle=col;g.beginPath();g.moveTo(cx,cy-h);g.lineTo(cx-w,cy);g.lineTo(cx+w,cy);g.closePath();g.fill();
+ if(cap){g.fillStyle=cap;g.beginPath();g.moveTo(cx,cy-h);g.lineTo(cx-w*.42,cy-h*.5);g.lineTo(cx+w*.42,cy-h*.5);g.closePath();g.fill();}}
+function draw(t){
+ // camera
+ cam.x=me.x*TILE-VW/2; cam.y=me.y*TILE-VH/2;
+ cam.x=Math.max(0,Math.min(MW*TILE-VW,cam.x)); cam.y=Math.max(0,Math.min(MH*TILE-VH,cam.y));
+ const x0=Math.max(0,(cam.x/TILE|0)-1),y0=Math.max(0,(cam.y/TILE|0)-1);
+ const x1=Math.min(MW,x0+VW/TILE+3),y1=Math.min(MH,y0+VH/TILE+3);
+ g.clearRect(0,0,VW,VH);
+ // ground
+ for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const b=grid[y*MW+x];const sx=x*TILE-cam.x,sy=y*TILE-cam.y;
+  g.fillStyle=COL[b];g.fillRect(sx,sy,TILE+1,TILE+1);
+  // subtle top bevel for the flat-stylized look
+  g.fillStyle='rgba(255,255,255,.05)';g.fillRect(sx,sy,TILE+1,3);
+  if(b===B.WATER||b===B.DEEP){g.fillStyle='rgba(255,255,255,.07)';
+    g.fillRect(sx,sy+((Math.sin((x+y)*.6+t/600)*0+ (Math.floor((t/400+x)%4)===0?TILE*.4:TILE*.7))),TILE+1,2);}
+ }
+ // scatter detail (trees / rocks / dunes) deterministically
+ for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){const b=grid[y*MW+x];const h=rnd(x,y,99);
+  const sx=x*TILE-cam.x+TILE/2,sy=y*TILE-cam.y+TILE*.72;
+  if(b===B.FOREST&&h>.35){tri(sx,sy,TILE*.32,TILE*.7,'#2f6f34');tri(sx,sy-TILE*.16,TILE*.26,TILE*.55,'#3c8a40');g.fillStyle='#6a4a28';g.fillRect(sx-2,sy,4,TILE*.22);}
+  else if(b===B.GRASS&&h>.86){tri(sx,sy,TILE*.26,TILE*.5,'#4fa047');}
+  else if((b===B.ROCK||b===B.SNOW)&&h>.25){tri(sx,sy+TILE*.1,TILE*.5,TILE*1.05,'#7c6c57',b===B.SNOW?'#eef3f7':'#9a8a73');}
+  else if(b===B.HILL&&h>.7){g.fillStyle='#a8905c';g.beginPath();g.ellipse(sx,sy,TILE*.34,TILE*.2,0,0,7);g.fill();}
+  else if(b===B.SAND&&h>.8){g.fillStyle='rgba(190,170,120,.6)';g.beginPath();g.ellipse(sx,sy,TILE*.32,TILE*.12,0,0,7);g.fill();}
+ }
+ // POI banners
+ for(let i=0;i<POI.length;i++){const p=POI[i];const sx=p.x*TILE-cam.x+TILE/2,sy=p.y*TILE-cam.y+TILE/2;
+  if(sx<-60||sx>VW+60||sy<-80||sy>VH+40)continue;
+  // glow ring on the active destination
+  if(i===destI){g.strokeStyle='rgba(255,225,150,'+(.5+.3*Math.sin(t/300))+')';g.lineWidth=3;
+    g.beginPath();g.arc(sx,sy+6,26+2*Math.sin(t/300),0,7);g.stroke();}
+  g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(sx,sy+10,16,6,0,0,7);g.fill();
+  // pole + pennant
+  g.fillStyle='#5a4a32';g.fillRect(sx-2,sy-34,4,44);
+  g.fillStyle=p.c;g.beginPath();g.moveTo(sx+2,sy-34);g.lineTo(sx+30,sy-28);g.lineTo(sx+2,sy-20);g.closePath();g.fill();
+  g.fillStyle='#e9dcb8';g.beginPath();g.arc(sx,sy-36,5,0,7);g.fill();
+  // label
+  g.font='bold 14px Trebuchet MS';g.textAlign='center';
+  const w=g.measureText(p.name).width+16;
+  g.fillStyle='rgba(14,18,28,.7)';g.fillRect(sx-w/2,sy+14,w,20);
+  g.fillStyle='#ffe9a8';g.fillText(p.name,sx,sy+28);
+ }
+ // player or chariot
+ const px=me.x*TILE-cam.x,py=me.y*TILE-cam.y;
+ g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(px,py+8,me.riding?22:9,me.riding?8:4,0,0,7);g.fill();
+ if(me.riding){
+  const fd=me.dir;const fx=Math.cos(fd),fy=Math.sin(fd);
+  // horse
+  g.fillStyle='#7a5a3a';g.save();g.translate(px+fx*18,py+fy*10);g.rotate(fd);
+  g.fillRect(-8,-7,22,12);g.fillStyle='#5f432a';g.fillRect(12,-10,8,8);g.restore();
+  // chariot body + wheels
+  g.fillStyle='#caa23c';g.fillRect(px-12,py-12,22,18);
+  g.fillStyle='#8a6a1c';g.fillRect(px-12,py-12,22,4);
+  g.strokeStyle='#3a2a16';g.lineWidth=3;
+  for(const wx of [px-10,px+8]){g.beginPath();g.arc(wx,py+8,8,0,7);g.stroke();
+   g.beginPath();g.moveTo(wx-8,py+8);g.lineTo(wx+8,py+8);g.moveTo(wx,py);g.lineTo(wx,py+16);g.stroke();}
+  // rider
+  g.fillStyle='#e3d9c0';g.beginPath();g.arc(px-1,py-16,5,0,7);g.fill();
+  g.fillStyle='#7a3030';g.fillRect(px-5,py-12,9,9);
+ } else {
+  g.fillStyle='#7a3030';g.fillRect(px-6,py-12,12,16);
+  g.fillStyle='#e3d9c0';g.beginPath();g.arc(px,py-18,6,0,7);g.fill();
+  g.fillStyle='#3a2a18';g.fillRect(px-6,py-22,12,5);
+ }
+
+ /* ---- minimap ---- */
+ const MMW=230,MMH=MMW*MH/MW,mx=VW-MMW-18,my=18;
+ g.fillStyle='rgba(8,12,20,.9)';g.fillRect(mx-4,my-4,MMW+8,MMH+8);
+ g.imageSmoothingEnabled=false;g.drawImage(mm,mx,my,MMW,MMH);g.imageSmoothingEnabled=true;
+ g.strokeStyle='#5a4a30';g.lineWidth=2;g.strokeRect(mx-4,my-4,MMW+8,MMH+8);
+ // viewport box
+ g.strokeStyle='rgba(255,255,255,.7)';g.lineWidth=1;
+ g.strokeRect(mx+cam.x/(MW*TILE)*MMW,my+cam.y/(MH*TILE)*MMH,VW/(MW*TILE)*MMW,VH/(MH*TILE)*MMH);
+ // POI dots
+ for(let i=0;i<POI.length;i++){const p=POI[i];const dx=mx+p.x/MW*MMW,dy=my+p.y/MH*MMH;
+  g.fillStyle=i===destI?'#fff':p.c;g.beginPath();g.arc(dx,dy,i===destI?4:3,0,7);g.fill();
+  if(i===destI){g.strokeStyle='#ffe9a8';g.lineWidth=1.5;g.beginPath();g.arc(dx,dy,6+Math.sin(t/250),0,7);g.stroke();}}
+ // player dot
+ g.fillStyle='#ff5';g.beginPath();g.arc(mx+me.x/MW*MMW,my+me.y/MH*MMH,3.5,0,7);g.fill();
+
+ /* ---- destination HUD + edge arrow ---- */
+ const d=POI[destI];const dist=Math.hypot(d.x-me.x,d.y-me.y)|0;
+ document.getElementById('dest').innerHTML='HEADING TO<div class="name">'+d.name+'</div>'+d.sub+'<br>'+dist+' leagues · '+d.book;
+ const ang=Math.atan2(d.y-me.y,d.x-me.x);
+ const ax=VW/2+Math.cos(ang)*160,ay=VH/2+Math.sin(ang)*160;
+ g.save();g.translate(ax,ay);g.rotate(ang);g.fillStyle='rgba(255,225,150,.9)';
+ g.beginPath();g.moveTo(14,0);g.lineTo(-8,-9);g.lineTo(-8,9);g.closePath();g.fill();g.restore();
+
+ /* ---- enter prompt ---- */
+ const pr=document.getElementById('prompt');
+ let near=null;for(const p of POI)if(Math.hypot(p.x-me.x,p.y-me.y)<2.2)near=p;
+ if(near){pr.style.display='block';pr.innerHTML='Press <b>E</b> to enter <b>'+near.name+'</b> — '+near.book;}
+ else pr.style.display='none';
+}
+
+/* ---------------- loop ---------------- */
+function step(t){
+ let mvx=0,mvy=0;
+ if(keys['w']||keys['arrowup'])mvy--; if(keys['s']||keys['arrowdown'])mvy++;
+ if(keys['a']||keys['arrowleft'])mvx--; if(keys['d']||keys['arrowright'])mvx++;
+ if(mvx||mvy){const l=Math.hypot(mvx,mvy);mvx/=l;mvy/=l;me.dir=Math.atan2(mvy,mvx);
+  const sp=(me.riding?.20:.085);
+  const nx=me.x+mvx*sp,ny=me.y+mvy*sp;
+  if(!blocked(nx,me.y))me.x=nx; if(!blocked(me.x,ny))me.y=ny;
+  me.x=Math.max(1,Math.min(MW-2,me.x));me.y=Math.max(1,Math.min(MH-2,me.y));}
+ draw(t);requestAnimationFrame(step);
+}
+requestAnimationFrame(step);
+window.__me=me; // for the screenshot driver
+</script></body></html>
