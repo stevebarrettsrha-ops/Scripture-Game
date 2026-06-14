@@ -1,0 +1,234 @@
+<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scripture Game — Seamless World Slice</title>
+<style>
+ html,body{margin:0;height:100%;background:#0c1018;overflow:hidden;font-family:'Trebuchet MS',system-ui,sans-serif;color:#f4ecd8}
+ #c{display:block;width:100vw;height:100vh}
+ .p{position:fixed;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.85)}
+ #title{left:18px;top:12px;font-size:19px;letter-spacing:.5px}
+ #title small{display:block;font-size:11px;opacity:.65;letter-spacing:2px}
+ #quest{left:18px;top:58px;font-size:13px;opacity:.95}
+ #quest b{color:#ffe9a8}
+ #dbg{right:16px;top:14px;font-size:12px;text-align:right;opacity:.85;line-height:1.6;font-family:ui-monospace,monospace}
+ #dbg b{color:#9fe0a0}
+ #region{left:50%;top:22px;transform:translateX(-50%);font-size:26px;letter-spacing:3px;opacity:0;transition:opacity .6s;text-align:center}
+ #region small{display:block;font-size:12px;letter-spacing:4px;opacity:.7}
+ #hint{left:18px;bottom:12px;font-size:12px;line-height:1.7;opacity:.9}
+ #hint b{background:#2a3550;border:1px solid #4a5a80;border-radius:4px;padding:1px 6px;color:#ffe9a8}
+ #prompt{left:50%;bottom:58px;transform:translateX(-50%);background:rgba(14,18,28,.86);border:1px solid #6a5a30;border-radius:10px;padding:9px 18px;font-size:15px;display:none}
+ #prompt b{color:#ffe9a8}
+ #battle{left:50%;top:42%;transform:translate(-50%,-50%);background:rgba(60,12,12,.82);border:2px solid #c0503a;border-radius:14px;padding:18px 34px;font-size:24px;letter-spacing:2px;text-align:center;display:none}
+ #battle small{display:block;font-size:13px;letter-spacing:1px;opacity:.85;margin-top:4px}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div class="p" id="title">SCRIPTURE — THE JOURNEY<small>SEAMLESS WORLD · VERTICAL SLICE</small></div>
+<div class="p" id="quest">✦ <b>Follow the pillar of cloud</b> to Har Sinai</div>
+<div class="p" id="dbg"></div>
+<div class="p" id="region"></div>
+<div class="p" id="prompt"></div>
+<div class="p" id="battle">⚔ THE BATTLE OF AMALĔQ<small>set-piece battle — hold the high ground while Mosheh's hands are lifted</small></div>
+<div class="p" id="hint"><b>W A S D</b> move &nbsp; <b>M</b> chariot &nbsp; <b>E</b> enter</div>
+<script>
+const cv=document.getElementById('c'),g=cv.getContext('2d');
+let VW,VH;function resize(){VW=cv.width=innerWidth;VH=cv.height=innerHeight;}addEventListener('resize',resize);resize();
+
+const TILE=34, CH=16, SEED=11, WW=440, WH=120;   // world in tiles
+const B={WATER:1,SHALLOW:2,SAND:3,SCRUB:4,GRASS:5,BRUSH:6,HILL:7,ROCK:8,SNOW:9};
+const COL={[B.WATER]:'#3b86c0',[B.SHALLOW]:'#69b1da',[B.SAND]:'#dcc793',[B.SCRUB]:'#cdbb7e',
+ [B.GRASS]:'#86b85a',[B.BRUSH]:'#9aa85a',[B.HILL]:'#bfa56a',[B.ROCK]:'#8d7d66',[B.SNOW]:'#eef3f7'};
+const SOLID=new Set([B.WATER,B.ROCK,B.SNOW]);
+
+// ---- noise ----
+function rnd(ix,iy,s){let h=(ix*374761393+iy*668265263+s*1013904223)|0;h=Math.imul(h^(h>>>13),1274126177);return((h^(h>>>16))>>>0)/4294967295;}
+const sm=t=>t*t*(3-2*t);
+function vn(x,y,s){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
+ const a=rnd(ix,iy,s),b=rnd(ix+1,iy,s),c=rnd(ix,iy+1,s),d=rnd(ix+1,iy+1,s),u=sm(fx),v=sm(fy);
+ return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;}
+function fbm(x,y,s){let t=0,a=.5,f=1;for(let o=0;o<4;o++){t+=a*vn(x*f,y*f,s+o*19);f*=2;a*=.5;}return t;}
+
+// ---- region + biome (one seamless coordinate space) ----
+function regionName(x){return x<132?['THE CAMP','in the wilderness of Sinai']:x<268?['THE WILDERNESS','of Sin — the long march']:['HAR SINAI','the mountain of Elohim'];}
+function biomeAt(x,y){
+ const mtn=Math.max(0,Math.min(1,(x-262)/120));        // ground rises toward Sinai in the east
+ let e=fbm(x/24,y/24,SEED)*0.74 + mtn*0.52;
+ const m=fbm((x+300)/28,(y+170)/28,SEED+5);
+ // a thin wadi/brook winding through the wilderness
+ const brook=Math.abs(y-(58+Math.sin(x*0.07)*9));
+ if(x>120&&x<272&&brook<1.0)return B.WATER;
+ if(x>120&&x<272&&brook<1.9)return B.SHALLOW;
+ if(e>.9)return B.SNOW; if(e>.78)return B.ROCK; if(e>.66)return B.HILL;
+ if(m>.66)return B.GRASS; if(m>.5)return B.SCRUB; if(m>.4)return B.BRUSH; return B.SAND;
+}
+
+// ---- landmarks (waypoint / doorway / trigger) ----
+const TENT={x:60,y:62}, WELL={x:172,y:58}, AMALEK={x:216,y:62}, SINAI={x:360,y:60};
+
+// ---- chunk streaming ----
+const chunks=new Map();
+const ckey=(cx,cy)=>cx+','+cy;
+function getChunk(cx,cy){let k=ckey(cx,cy),c=chunks.get(k);
+ if(!c){c={cx,cy,tiles:new Uint8Array(CH*CH),ents:[],gen:false};chunks.set(k,c);}
+ if(!c.gen)genChunk(c);return c;}
+function genChunk(c){
+ c.gen=true;
+ const ox=c.cx*CH, oy=c.cy*CH;
+ for(let ly=0;ly<CH;ly++)for(let lx=0;lx<CH;lx++){
+  const wx=ox+lx,wy=oy+ly; c.tiles[ly*CH+lx]=(wx<0||wx>=WW||wy<0||wy>=WH)?B.WATER:biomeAt(wx,wy);}
+ // populate this chunk (people, animals, tents) deterministically
+ const cx0=ox+CH/2;
+ const skins=['#caa07a','#b78a5f','#a87b54','#d8b48c'],robes=['#9c4a3a','#3e5f8a','#6a6f7a','#7a6a3a','#caa23c'];
+ const place=(x,y)=>{const b=c.tiles[((y-oy)|0)*CH+((x-ox)|0)];return !SOLID.has(b);};
+ if(cx0>22&&cx0<122){ // THE CAMP — tents + many people
+  const n=3+(rnd(c.cx,c.cy,1)*4|0);
+  for(let i=0;i<n;i++){const x=ox+2+rnd(c.cx*9+i,c.cy,2)*(CH-4),y=oy+2+rnd(c.cx,c.cy*9+i,3)*(CH-4);
+   if(Math.hypot(x-TENT.x,y-TENT.y)>6&&place(x,y))c.ents.push({type:'tent',x,y,col:['#c8b486','#b3a07f','#bda884'][i%3]});}
+  const np=4+(rnd(c.cx,c.cy,7)*5|0);
+  for(let i=0;i<np;i++){const hx=ox+2+rnd(c.cx+i*3,c.cy,4)*(CH-4),hy=oy+2+rnd(c.cx,c.cy+i*3,5)*(CH-4);
+   if(place(hx,hy))c.ents.push({type:'person',x:hx,y:hy,hx,hy,r:1.6,sp:.012,tx:hx,ty:hy,skin:skins[i%4],robe:robes[i%5]});}
+ } else if(cx0>=122&&cx0<272){ // THE WILDERNESS — herds + travellers
+  if(rnd(c.cx,c.cy,8)>.45){const fx=ox+4+rnd(c.cx,c.cy,9)*8,fy=oy+4+rnd(c.cx,c.cy,10)*8;
+   const flock=4+(rnd(c.cx,c.cy,11)*5|0);
+   for(let i=0;i<flock;i++){const x=fx+rnd(c.cx+i,c.cy,12)*5,y=fy+rnd(c.cx,c.cy+i,13)*5;
+    if(place(x,y))c.ents.push({type:i%5===0?'goat':'sheep',x,y,hx:fx,hy:fy,r:3,sp:.008,tx:x,ty:y});}}
+  if(rnd(c.cx,c.cy,14)>.6){const x=ox+3+rnd(c.cx,c.cy,15)*9,y=oy+3+rnd(c.cx,c.cy,16)*9;
+   if(place(x,y))c.ents.push({type:'person',x,y,hx:x,hy:y,r:4,sp:.014,tx:x,ty:y,skin:skins[2],robe:robes[c.cx%5],travel:true});}
+ }
+ // a few rocks on the mountain
+ if(cx0>=272){const nr=rnd(c.cx,c.cy,17)*4|0;
+  for(let i=0;i<nr;i++){const x=ox+2+rnd(c.cx+i,c.cy,18)*(CH-4),y=oy+2+rnd(c.cx,c.cy+i,19)*(CH-4);
+   c.ents.push({type:'rock',x,y});}}
+}
+
+// ---- player ----
+const me={x:50,y:64,dir:0,riding:false};
+const keys={};
+addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if(e.key.toLowerCase()==='m')me.riding=!me.riding;});
+addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+function solidAt(x,y){return SOLID.has(biomeAt(x|0,y|0))||Math.hypot(x-TENT.x,y-TENT.y)<1.4;}
+
+// ---- helpers ----
+let cam={x:0,y:0};
+function tri(cx,cy,w,h,col,cap){g.fillStyle=col;g.beginPath();g.moveTo(cx,cy-h);g.lineTo(cx-w,cy);g.lineTo(cx+w,cy);g.closePath();g.fill();
+ if(cap){g.fillStyle=cap;g.beginPath();g.moveTo(cx,cy-h);g.lineTo(cx-w*.42,cy-h*.5);g.lineTo(cx+w*.42,cy-h*.5);g.closePath();g.fill();}}
+function drawPerson(sx,sy,e){g.fillStyle='rgba(0,0,0,.28)';g.beginPath();g.ellipse(sx,sy+7,7,3,0,0,7);g.fill();
+ g.fillStyle=e.robe;g.fillRect(sx-5,sy-10,10,15);g.fillStyle=e.skin;g.beginPath();g.arc(sx,sy-15,5,0,7);g.fill();
+ g.fillStyle='#2a2018';g.fillRect(sx-5,sy-19,10,4);}
+function drawSheep(sx,sy,goat){g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(sx,sy+5,9,3.5,0,0,7);g.fill();
+ g.fillStyle=goat?'#6a5440':'#efe9da';g.beginPath();g.ellipse(sx,sy,9,6,0,0,7);g.fill();
+ g.fillStyle=goat?'#4a3a2a':'#cdc4b0';g.beginPath();g.arc(sx+8*(1),sy-2,4,0,7);g.fill();
+ g.fillStyle='#3a2e22';g.fillRect(sx-6,sy+4,2,4);g.fillRect(sx+4,sy+4,2,4);}
+function drawTent(sx,sy,col){g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(sx,sy+8,18,6,0,0,7);g.fill();
+ tri(sx,sy+8,20,26,col,'#d9cca8');g.strokeStyle='rgba(60,44,28,.5)';g.lineWidth=2;g.beginPath();g.moveTo(sx,sy-18);g.lineTo(sx,sy+8);g.stroke();
+ g.fillStyle='#5a4630';g.beginPath();g.moveTo(sx-5,sy+8);g.lineTo(sx,sy-4);g.lineTo(sx+5,sy+8);g.closePath();g.fill();}
+function drawTabernacle(sx,sy,t){ // mini court + tent + cloud (the doorway)
+ g.fillStyle='rgba(236,228,205,.16)';g.fillRect(sx-70,sy-30,140,120);
+ g.strokeStyle='#ece8da';g.lineWidth=5;g.strokeRect(sx-70,sy-30,140,120);
+ g.fillStyle='#6a3c28';g.fillRect(sx-44,sy-22,88,20);
+ g.fillStyle='#e8c66a';g.fillRect(sx-44,sy-4,88,34);
+ const sc=['#2e5f8a','#6a3e8a','#a83a32','#e8e2d2'];for(let i=0;i<8;i++){g.fillStyle=sc[i%4];g.fillRect(sx-20+i*5,sy-2,5,32);}
+ // pillar of cloud over the tent
+ for(let i=0;i<6;i++){g.fillStyle=`rgba(240,242,250,${.4-i*.05})`;g.beginPath();
+  g.arc(sx+Math.sin(t/900+i)*6,sy-34-i*15,14+i*4,0,7);g.fill();}}
+function drawSinai(sx,sy,t){ // mountain + cloud/fire (the waypoint)
+ tri(sx,sy+30,120,180,'#7c6c57','#9a8a73');tri(sx-50,sy+30,70,110,'#6e5f4c');tri(sx+55,sy+30,70,120,'#8a7a64','#c9bca5');
+ const gl=g.createRadialGradient(sx,sy-70,6,sx,sy-70,120);gl.addColorStop(0,'rgba(255,180,80,.5)');gl.addColorStop(1,'rgba(255,120,40,0)');
+ g.fillStyle=gl;g.beginPath();g.arc(sx,sy-70,120,0,7);g.fill();
+ for(let i=0;i<7;i++){g.fillStyle=`rgba(60,60,72,${.5-i*.05})`;g.beginPath();g.arc(sx+Math.sin(t/700+i)*10,sy-150-i*20,26+i*6,0,7);g.fill();}}
+
+// ---- main loop ----
+let last=performance.now(),fps=60, battleOn=false, lastRegion='';
+function frame(now){
+ const t=now; fps=fps*0.9+ (1000/Math.max(1,now-last))*0.1; last=now;
+ // movement
+ let mx=0,my=0;if(keys['w']||keys['arrowup'])my--;if(keys['s']||keys['arrowdown'])my++;
+ if(keys['a']||keys['arrowleft'])mx--;if(keys['d']||keys['arrowright'])mx++;
+ if(mx||my){const l=Math.hypot(mx,my);mx/=l;my/=l;me.dir=Math.atan2(my,mx);const sp=me.riding?.19:.085;
+  const nx=me.x+mx*sp,ny=me.y+my*sp;if(!solidAt(nx,me.y))me.x=nx;if(!solidAt(me.x,ny))me.y=ny;
+  me.x=Math.max(2,Math.min(WW-2,me.x));me.y=Math.max(2,Math.min(WH-2,me.y));}
+ // camera
+ cam.x=Math.max(0,Math.min(WW*TILE-VW,me.x*TILE-VW/2));
+ cam.y=Math.max(0,Math.min(WH*TILE-VH,me.y*TILE-VH/2));
+
+ // --- STREAMING: activate the ring of chunks around the player ---
+ const pcx=Math.floor(me.x/CH),pcy=Math.floor(me.y/CH),R=3;
+ const active=[];
+ for(let cy=pcy-R;cy<=pcy+R;cy++)for(let cx=pcx-R;cx<=pcx+R;cx++){if(cx<0||cy<0||cx*CH>=WW||cy*CH>=WH)continue;active.push(getChunk(cx,cy));}
+ let awake=0,total=0;chunks.forEach(c=>total+=c.ents.length);
+ // update only awake (active) entities
+ for(const c of active)for(const e of c.ents){if(!e.sp)continue;awake++;
+  if(Math.hypot(e.x-e.tx,e.y-e.ty)<.3){e.tx=e.hx+(rnd((e.x*7)|0,(e.y*7)|0,(t/700|0))*2-1)*e.r;e.ty=e.hy+(rnd((e.y*5)|0,(e.x*5)|0,(t/700|0))*2-1)*e.r;}
+  const a=Math.atan2(e.ty-e.y,e.tx-e.x);e.x+=Math.cos(a)*e.sp;e.y+=Math.sin(a)*e.sp;}
+
+ // --- render ground (visible tiles, read from streamed chunk cache) ---
+ g.clearRect(0,0,VW,VH);
+ const x0=Math.max(0,(cam.x/TILE|0)-1),y0=Math.max(0,(cam.y/TILE|0)-1);
+ const x1=Math.min(WW,x0+VW/TILE+3),y1=Math.min(WH,y0+VH/TILE+3);
+ for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++){
+  const c=getChunk(Math.floor(x/CH),Math.floor(y/CH));const b=c.tiles[(y-c.cy*CH)*CH+(x-c.cx*CH)];
+  const sx=x*TILE-cam.x,sy=y*TILE-cam.y;g.fillStyle=COL[b];g.fillRect(sx,sy,TILE+1,TILE+1);
+  g.fillStyle='rgba(255,255,255,.045)';g.fillRect(sx,sy,TILE+1,3);}
+
+ // --- drawables (y-sorted): entities, landmarks, player ---
+ const D=[];
+ for(const c of active)for(const e of c.ents){const sx=e.x*TILE-cam.x,sy=e.y*TILE-cam.y;
+  if(sx<-40||sx>VW+40||sy<-60||sy>VH+40)continue;
+  if(e.type==='tent')D.push({y:e.y,fn:()=>drawTent(sx,sy,e.col)});
+  else if(e.type==='person')D.push({y:e.y,fn:()=>drawPerson(sx,sy,e)});
+  else if(e.type==='sheep'||e.type==='goat')D.push({y:e.y,fn:()=>drawSheep(sx,sy,e.type==='goat')});
+  else if(e.type==='rock')D.push({y:e.y,fn:()=>tri(sx,sy+6,TILE*.5,TILE*.95,'#7c6c57','#9a8a73')});}
+ D.push({y:TENT.y,fn:()=>drawTabernacle(TENT.x*TILE-cam.x,TENT.y*TILE-cam.y,t)});
+ D.push({y:SINAI.y,fn:()=>drawSinai(SINAI.x*TILE-cam.x,SINAI.y*TILE-cam.y,t)});
+ // well
+ {const sx=WELL.x*TILE-cam.x,sy=WELL.y*TILE-cam.y;D.push({y:WELL.y,fn:()=>{g.fillStyle='#6a5a44';g.beginPath();g.arc(sx,sy,12,0,7);g.fill();g.fillStyle='#2a3550';g.beginPath();g.arc(sx,sy,8,0,7);g.fill();}});}
+ // player
+ D.push({y:me.y,fn:()=>{const px=me.x*TILE-cam.x,py=me.y*TILE-cam.y;
+  g.fillStyle='rgba(0,0,0,.3)';g.beginPath();g.ellipse(px,py+7,me.riding?20:8,me.riding?7:4,0,0,7);g.fill();
+  if(me.riding){const fx=Math.cos(me.dir),fy=Math.sin(me.dir);
+   g.fillStyle='#7a5a3a';g.save();g.translate(px+fx*17,py+fy*9);g.rotate(me.dir);g.fillRect(-8,-7,22,12);g.restore();
+   g.fillStyle='#caa23c';g.fillRect(px-12,py-12,22,18);g.fillStyle='#8a6a1c';g.fillRect(px-12,py-12,22,4);
+   g.strokeStyle='#3a2a16';g.lineWidth=3;for(const wx of[px-10,px+8]){g.beginPath();g.arc(wx,py+8,8,0,7);g.stroke();}
+   g.fillStyle='#e3d9c0';g.beginPath();g.arc(px-1,py-16,5,0,7);g.fill();g.fillStyle='#7a3030';g.fillRect(px-5,py-12,9,9);}
+  else{g.fillStyle='#7a3030';g.fillRect(px-6,py-12,12,16);g.fillStyle='#e3d9c0';g.beginPath();g.arc(px,py-18,6,0,7);g.fill();g.fillStyle='#3a2a18';g.fillRect(px-6,py-22,12,5);}}});
+ D.sort((a,b)=>a.y-b.y);for(const d of D)d.fn();
+
+ // --- waypoint arrow to Sinai ---
+ const ang=Math.atan2(SINAI.y-me.y,SINAI.x-me.x),ax=VW/2+Math.cos(ang)*150,ay=VH/2+Math.sin(ang)*150;
+ g.save();g.translate(ax,ay);g.rotate(ang);g.fillStyle='rgba(245,235,200,.9)';g.beginPath();g.moveTo(15,0);g.lineTo(-9,-10);g.lineTo(-9,10);g.closePath();g.fill();g.restore();
+
+ // --- hearts ---
+ for(let i=0;i<3;i++){const hx=22+i*26,hy=VH-58;g.fillStyle='#d0403a';
+  g.beginPath();g.arc(hx-4,hy,5,0,7);g.arc(hx+4,hy,5,0,7);g.moveTo(hx-9,hy+2);g.lineTo(hx,hy+12);g.lineTo(hx+9,hy+2);g.fill();}
+
+ // --- minimap strip ---
+ const MW2=Math.min(VW-360,520),MH2=46,mmx=(VW-MW2)/2,mmy=VH-MH2-12;
+ g.fillStyle='rgba(8,12,20,.85)';g.fillRect(mmx-3,mmy-3,MW2+6,MH2+6);
+ for(let i=0;i<MW2;i+=2){const wx=i/MW2*WW;g.fillStyle=COL[biomeAt(wx|0,60)];g.fillRect(mmx+i,mmy,3,MH2);}
+ for(const L of [[TENT,'#e8c66a'],[WELL,'#69b1da'],[AMALEK,'#c0503a'],[SINAI,'#fff']]){
+  g.fillStyle=L[1];g.beginPath();g.arc(mmx+L[0].x/WW*MW2,mmy+MH2/2,4,0,7);g.fill();}
+ g.fillStyle='#ff5';g.beginPath();g.arc(mmx+me.x/WW*MW2,mmy+MH2/2,4,0,7);g.fill();
+
+ // --- region banner on change ---
+ const rn=regionName(me.x);if(rn[0]!==lastRegion){lastRegion=rn[0];const el=document.getElementById('region');
+  el.innerHTML=rn[0]+'<small>'+rn[1]+'</small>';el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(()=>el.style.opacity='0',1800);}
+
+ // --- doorway prompt ---
+ const pr=document.getElementById('prompt');
+ if(Math.hypot(me.x-TENT.x,me.y-TENT.y)<5){pr.style.display='block';pr.innerHTML='Press <b>E</b> to enter <b>the Tent of Appointment</b> — SHEMOTH 40';}
+ else if(Math.hypot(me.x-WELL.x,me.y-WELL.y)<3.5){pr.style.display='block';pr.innerHTML='Press <b>E</b> to draw water at the <b>well</b>';}
+ else pr.style.display='none';
+
+ // --- battle trigger ---
+ const inB=Math.hypot(me.x-AMALEK.x,me.y-AMALEK.y)<6.5;
+ if(inB!==battleOn){battleOn=inB;document.getElementById('battle').style.display=inB?'block':'none';}
+
+ // --- streaming debug readout ---
+ document.getElementById('dbg').innerHTML=
+  'STREAMING<br>chunks active <b>'+active.length+'</b> · cached <b>'+chunks.size+'</b><br>'+
+  'NPCs awake <b>'+awake+'</b> / total <b>'+total+'</b><br>fps <b>'+fps.toFixed(0)+'</b>';
+
+ requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__me=me; window.__set=(x,y,r)=>{me.x=x;me.y=y;if(r!==undefined)me.riding=r;};
+</script></body></html>
