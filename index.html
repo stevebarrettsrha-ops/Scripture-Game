@@ -7686,6 +7686,7 @@ function buildChapterMenu(){
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
+    if(act.id==='fjact') return;   // the seamless world / interior — not a selectable chapter
     const blk=document.createElement('div'); blk.className='act-block';
     const head=document.createElement('div'); head.className='act-head';
     head.innerHTML=`<span class="roman">ACT ${act.roman}</span><span class="name">${act.title}</span><span class="ref">${act.ref}</span>`;
@@ -7755,8 +7756,11 @@ function openTitle(){
 
 /* ================= WIRING ================= */
 $('btn-new').onclick=()=>{ Sound.init();
-  if(Object.keys(Save.data.done).length>0&&!confirm('Begin a new journey? Your progress will be cleared.')) return;
-  Save.reset(); Game.startChapter(allChapters().find(c=>c.id==='freeroam')); };
+  if(Object.keys(Save.data.done).length>0&&!confirm('Begin a new journey from the beginning? Your progress will be cleared.')) return;
+  Save.reset();
+  Save.data.world=null; Save.write();
+  try{ localStorage.removeItem('scripture_world_done'); }catch(_){}
+  Game.startChapter(allChapters().find(c=>c.id==='freeroam')); };
 $('btn-continue').onclick=()=>{ Sound.init(); Game.startChapter(allChapters().find(c=>c.id==='freeroam')); };
 $('btn-chapters').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-book').onclick=()=>{
@@ -7942,7 +7946,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
     '<div style="color:#e8c66a;letter-spacing:.2em;font-size:18px;margin-bottom:8px">THE LAND OF THE JOURNEY</div>'+
     '<canvas id="wm-cv" width="760" height="430" style="border:2px solid #5a4a30;border-radius:6px;background:#1a1408;cursor:pointer"></canvas>'+
     '<div id="wm-info" style="color:#e8dcb8;font-size:13px;margin-top:8px;height:18px"></div>'+
-    '<div style="color:#8a7e60;font-size:12px;margin-top:2px">click a reached site to travel  ·  press M or Esc to close</div></div>';
+    '<div style="color:#8a7e60;font-size:12px;margin-top:2px">click any story to begin it  ·  press M or Esc to close</div></div>';
   document.body.appendChild(wrap);
   const cv=wrap.querySelector('#wm-cv'), g2=cv.getContext('2d'), info=wrap.querySelector('#wm-info');
   const pal={}; pal[T.GRASS]=[123,189,73];pal[T.GRASS2]=[112,131,63];pal[T.FLOWER]=[140,154,82];
@@ -7973,12 +7977,13 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
   function closeMap(){ open=false; wrap.style.display='none'; }
   cv.addEventListener('mousemove',e=>{ const r=cv.getBoundingClientRect();
     hover=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
-    info.textContent=hover>=0?((hover+1)+'. '+JOURNEY[hover].name+(Save.data.done[JOURNEY[hover].id]?'   ✓ walked':(reached(hover)?'   — your next step':'   — not yet reached'))):''; draw(); });
+    info.textContent=hover>=0?((hover+1)+'. '+JOURNEY[hover].name+(Save.data.done[JOURNEY[hover].id]?'   ✓ walked — click to revisit':'   — click to begin here')):''; draw(); });
   cv.addEventListener('click',e=>{ const r=cv.getBoundingClientRect();
     const i=siteAt((e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height);
-    if(i>=0&&reached(i)){ const s=JOURNEY[i]; Game.world.player.x=s.x; Game.world.player.y=s.y+2.4;
-      if(typeof Camera!=='undefined')Camera.follow(s.x,s.y,Game.world.map,true);
-      try{Sound.sfx('blip');}catch(_){}; try{toast('Travelled to “'+s.name+'”');}catch(_){}; closeMap(); } });
+    if(i>=0){ const s=JOURNEY[i]; closeMap();
+      try{Sound.sfx('blip');}catch(_){}
+      if(s.book){ Game.enterGate({url:s.book,play:s.id,title:s.name}); }
+      else { Game.enterSite(s.id); } } });
   addEventListener('keydown',e=>{ const k=e.key.toLowerCase();
     if(k==='m'){ e.preventDefault(); open?closeMap():openMap(); } else if(k==='escape'&&open) closeMap(); });
   window.openWorldMap=openMap;
