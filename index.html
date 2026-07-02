@@ -2070,7 +2070,7 @@ function wFbm(x,y){let t=0,a=.5,f=1;for(let o=0;o<4;o++){t+=a*wNoise(x*f+o*40,y*
    the block beneath. One block is a step that man and beast can climb; a face of
    two or more is a cliff, and the ways up the mountains are cut as stairs. ===== */
 const WORLD_SITES={ /* chapter id → [u,v], its place on the world (fractions of w,h) */
-  c2:[.845,.475], c3:[.842,.43], c4:[.967,.58], c5:[.894,.60], c6:[.867,.64],
+  c2:[.828,.49], c3:[.842,.43], c4:[.967,.58], c5:[.894,.60], c6:[.867,.64],
   c6b:[.783,.56], c7:[.728,.48], c8:[.700,.40], c9:[.678,.30], c9b:[.633,.13],
   c10:[.611,.17], c10a:[.644,.22], c11:[.736,.625], c11a:[.811,.715], c11b:[.833,.76],
   c12:[.586,.225], c12a:[.122,.79], c13:[.289,.64], c13a:[.239,.74], c14:[.286,.63],
@@ -3821,6 +3821,12 @@ const Game={
       Sound.sfx('holy');
       toast(eraTurn?'✦ “'+ch.title+'” complete — the face of the land is changed'
                    :'✦ Returned to the land — “'+ch.title+'” complete');
+      this.startChapter(allChapters().find(c=>c.id==='freeroam'));
+      return;
+    }
+    /* the very beginning: when the days of creation are told, the world opens */
+    if(ch.id==='c1'&&!this._returnWorld){
+      Sound.sfx('holy');
       this.startChapter(allChapters().find(c=>c.id==='freeroam'));
       return;
     }
@@ -8702,7 +8708,8 @@ $('btn-new').onclick=()=>{ Sound.init();
   Save.reset();
   Save.data.world=null; Save.data.front=0; Save.data.visited={}; Save.write();
   try{ localStorage.removeItem('scripture_world_done'); }catch(_){}
-  Game.startChapter(allChapters().find(c=>c.id==='freeroam')); };
+  /* in the beginning: the days of creation are told first, and then the world opens */
+  Game.startChapter(allChapters().find(c=>c.id==='c1')); };
 $('btn-continue').onclick=()=>{ Sound.init(); Game.startChapter(allChapters().find(c=>c.id==='freeroam')); };
 $('btn-chapters').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-book').onclick=()=>{
