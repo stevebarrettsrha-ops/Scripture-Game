@@ -2524,6 +2524,7 @@ function drawWorld(g,world,t){
   // items (pickups)
   for(const it of world.items){
     if(it.taken) continue;
+    if(world.overlook&&it.y<world.overlook.cliffY) continue;
     const sx=it.x*TILE+offX, sy=it.y*TILE+offY;
     const bob=Math.sin(t/300+it.x*3)*3;
     const gl=g.createRadialGradient(sx,sy-8+bob,2,sx,sy-8+bob,16);
@@ -2534,8 +2535,9 @@ function drawWorld(g,world,t){
   }
   // depth-sorted: decor + characters
   const ents=[];
-  for(const d of map.decor) ents.push({y:d.y,kind:'decor',d});
-  for(const n of world.npcs) if(!n.hidden) ents.push({y:n.y,kind:'npc',d:n});
+  const lip9=world.overlook?world.overlook.cliffY:-1e9;   /* nothing stands on the painted sky above the cliff lip */
+  for(const d of map.decor){ if(d.y<lip9) continue; ents.push({y:d.y,kind:'decor',d}); }
+  for(const n of world.npcs) if(!n.hidden&&n.y>=lip9) ents.push({y:n.y,kind:'npc',d:n});
   if(world.player&&!world.player.hidden) ents.push({y:world.player.y,kind:'player',d:world.player});
   ents.sort((a,b)=>a.y-b.y);
   for(const e of ents){
