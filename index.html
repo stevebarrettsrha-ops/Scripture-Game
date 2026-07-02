@@ -1968,101 +1968,309 @@ function wNoise(x,y){const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy;
   const u=fx*fx*(3-2*fx),v=fy*fy*(3-2*fy);
   return a*(1-u)*(1-v)+b*u*(1-v)+c*(1-u)*v+d*u*v;}
 function wFbm(x,y){let t=0,a=.5,f=1;for(let o=0;o<4;o++){t+=a*wNoise(x*f+o*40,y*f-o*30);f*=2;a*=.5;}return t;}
-function wRegion(u){ return u<.16?'eden':u<.32?'nod':u<.50?'ararat':u<.66?'shinar':u<.82?'kenaan':'mitsrayim'; }
+/* ===== The world of the fathers — the ancient Near East, laid out to the witness
+   of the Scriptures and the geography of the ancient world. West is the Great Sea
+   and Mitsrayim with the Ye'or (Nile); the centre is Kenaʿan — coast, hill country,
+   and the Yardĕn valley from Kinnereth down to the Salt Sea — with the Negev and
+   the wilderness of Sinai below; north are the mountains, Ararat among them;
+   eastward lie Aram-Naharayim and the two rivers, Perath and Ḥiddeqel, the plain
+   of Shinʿar with Baḇel and Ur of the Kasdim; and in the uttermost east the garden
+   of Ĕḏen, whence the river parts into four heads (BERĔSHITH 2:10–14).
+   The land itself is built of blocks: every level of ground is a block set upon
+   the block beneath. One block is a step that man and beast can climb; a face of
+   two or more is a cliff, and the ways up the mountains are cut as stairs. ===== */
+const WORLD_SITES={ /* chapter id → [u,v], its place on the world (fractions of w,h) */
+  c2:[.928,.45], c3:[.939,.43], c4:[.967,.58], c5:[.894,.60], c6:[.867,.64],
+  c6b:[.783,.56], c7:[.728,.48], c8:[.700,.40], c9:[.678,.30], c9b:[.633,.13],
+  c10:[.611,.17], c10a:[.644,.22], c11:[.736,.625], c11a:[.811,.715], c11b:[.833,.76],
+  c12:[.586,.225], c12a:[.122,.79], c13:[.289,.64], c13a:[.239,.74], c14:[.286,.63],
+  c14b:[.392,.67], c15:[.400,.695], c15b:[.428,.72], c16:[.258,.71], c17:[.300,.55],
+  c17a:[.594,.21], c17b:[.244,.75], c17c:[.289,.645], c18:[.261,.705], c18b:[.222,.69],
+  c18a:[.264,.715], c19:[.306,.515], c20:[.589,.22], c20a:[.600,.20], c21:[.394,.48],
+  c21b:[.317,.44], c21a:[.297,.58], c22:[.303,.40], c22a:[.122,.81], c22b:[.272,.60],
+  c23:[.117,.83], c24:[.128,.80], c25:[.144,.76],
+  b1:[.906,.52], h1:[.750,.44], x37:[.236,.91], v1:[.244,.89], n2:[.306,.84],
+};
+const WORLD_TOWNS=[ /* the towns and cities of the ancient world, each in its place and era */
+  {id:'hanokcity', name:'ḤANOḴ',   sub:'the city Qayin built',        u:.958,v:.62,  after:'c6',  huts:3},
+  {id:'babel',     name:'BAḆEL',   sub:'in the plain of Shinʿar',     u:.736,v:.612, after:'c10a',huts:5, tower:true, brick:true},
+  {id:'ur',        name:'UR OF THE KASDIM', sub:'by the mouth of the rivers', u:.838,v:.768, after:'c10a', huts:5, brick:true},
+  {id:'haran',     name:'ḤARAN',   sub:'in Aram-Naharayim',           u:.592,v:.215, after:'c10a',huts:4},
+  {id:'shekem',    name:'SHEḴEM',  sub:'in the land of Kenaʿan',      u:.317,v:.432, after:'c11b',huts:4},
+  {id:'bethel',    name:'BĔYTH ĂL',sub:'Luz that was',                u:.306,v:.508, after:'c11b',huts:3},
+  {id:'shalem',    name:'SHALĔM',  sub:'city of Malkitseḏeq',         u:.297,v:.552, after:'c11b',huts:4},
+  {id:'hebron',    name:'ḤEḆRON',  sub:'by the terebinths of Mamrĕ',  u:.281,v:.632, after:'c11b',huts:4},
+  {id:'gerar',     name:'GERAR',   sub:'of the Pelishtim',            u:.219,v:.683, after:'c11b',huts:4},
+  {id:'sedom',     name:'SEḎOM',   sub:'in the round of the Yardĕn',  u:.398,v:.682, after:'c11b',huts:5, ruin:'c15'},
+  {id:'beersheva', name:'BE’ĔRSHEḆA', sub:'the well of the oath',     u:.256,v:.703, after:'c16', huts:3},
+  {id:'tsoan',     name:'TSOʻAN',  sub:'of Mitsrayim, by the Ye’or',  u:.117,v:.80,  after:'c11b',huts:6, brick:true},
+  {id:'dothan',    name:'DOTHAN',  sub:'by the caravan road',         u:.300,v:.393, after:'c21b',huts:3},
+];
+/* which land of the world a tile lies in */
+function worldRegionAt(w,h,x,y){
+  const u=x/w, v=y/h;
+  if(Math.hypot((u-.93)/.075,(v-.46)/.115)<1) return 'eden';
+  if(u>.945||(u>.885&&v>.55&&v<.82)) return 'nod';
+  if(Math.hypot((u-.62)/.085,(v-.11)/.115)<1) return 'ararat';
+  if(v<.125) return 'tsafon';
+  if(u<.175&&v>.68) return 'mitsrayim';
+  if(v>.78&&u<.33) return 'sinai';
+  if(v>.655&&u<.31) return 'negev';
+  if(Math.abs(u-.388)<.022&&v>.25&&v<.70) return 'yarden';
+  if(u<.375&&v<.70) return 'kenaan';
+  if(u>=.40&&u<.50&&v>.42&&v<.80) return 'qedem';
+  if(v<.42&&u<.82) return 'aram';
+  if(u>.58&&v>.42) return 'shinar';
+  return 'arav';
+}
 function generateWorldMap(cfg){
-  const w=cfg.w||240, h=cfg.h||140, rng=mulberry32(cfg.seed||99);
-  const tiles=new Uint8Array(w*h), decor=[];
-  /* terrain — the lands of Berĕshith, west to east */
+  const w=cfg.w||360, h=cfg.h||200, rng=mulberry32(cfg.seed||99), S=w/360;
+  const tiles=new Uint8Array(w*h), elev=new Uint8Array(w*h), fert=new Uint8Array(w*h), decor=[];
+  const idx=(x,y)=>y*w+x;
+  const inb=(x,y)=>x>=0&&y>=0&&x<w&&y<h;
+  const region=(x,y)=>worldRegionAt(w,h,x,y);
+  const massif=(x,y,cx,cy,r)=>{ const d=Math.hypot(x-cx,y-cy)/r; return d>=1?0:(1-d*d)*(1-d*d); };
+  const segd=(x,y,x1,y1,x2,y2)=>{ const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy;
+    const t=L2?clamp(((x-x1)*dx+(y-y1)*dy)/L2,0,1):0; return Math.hypot(x-(x1+dx*t),y-(y1+dy*t)); };
+  /* --- the shape of the land: a heightfield of whole blocks --- */
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
-    const reg=wRegion(x/w), e=wFbm(x/15,y/15), m=wFbm((x+200)/19,(y+90)/19);
-    let t;
-    if(reg==='eden'){ t=m>.42?T.GRASS:T.GRASS2; if(wFbm(x/5,y/5)>.6)t=T.FLOWER; }            // the garden
-    else if(reg==='nod'){ t=m<.42?T.SAND:T.DIRT; }                                            // east of Eden
-    else if(reg==='ararat'){ const mt=wFbm(x/8+10,y/8); t=mt>.62?T.MTN:(e>.55?T.ROCK:T.DIRT); }
-    else if(reg==='shinar'){ t=m>.5?T.GRASS2:T.DIRT; }                                        // the plain
-    else if(reg==='kenaan'){ t=m>.5?T.GRASS:(e>.62?T.DIRT:T.GRASS2); }                        // the land of promise
-    else { t=m<.5?T.SAND:T.DIRT; }                                                             // mitsrayim
-    tiles[y*w+x]=t;
+    const u=x/w,v=y/h;
+    let hg=1+wFbm(x/(26*S),y/(26*S))*1.7+wFbm(x/(9*S)+7,y/(9*S)+3)*.8;
+    const nb=1-v/.15; if(nb>0) hg+=nb*nb*5.5*(.55+wFbm(x/(11*S),y/(11*S))*.9);   // the northern ranges
+    hg+=massif(x,y,w*.62,h*.11,17*S)*7.5;                                        // Ararat
+    hg+=massif(x,y,w*.235,h*.91,9*S)*5.5;                                        // Mount Sinai
+    const dl=segd(x,y,w*.265,h*.14,w*.285,h*.27); if(dl<8*S) hg+=(1-dl/(8*S))*3.5;  // Leḇanon
+    const ch=Math.abs(u-.298); if(ch<.062&&v>.24&&v<.70) hg+=(1-ch/.062)*2.3*(.6+wFbm(x/(7*S),y/(7*S))*.8); // the hill country of Kenaʿan
+    const mo=Math.abs(u-.45); if(mo<.05&&v>.42&&v<.80) hg+=(1-mo/.05)*2.4;       // the heights of the east, beyond the Yardĕn
+    hg+=massif(x,y,w*.93,h*.46,20*S)*1.2;                                        // Ĕḏen rises gently
+    const rg=region(x,y);
+    if(rg==='mitsrayim'||rg==='shinar') hg=Math.min(hg,1.9);                     // the river plains
+    if(rg==='yarden') hg=Math.min(hg,1.3);                                       // the rift, deepest of valleys
+    elev[idx(x,y)]=clamp(Math.round(hg),1,8);
   }
-  /* the mountains of Ararat — where the ark came to rest (snow at the peak) */
-  const mx=Math.floor(w*.41), my=Math.floor(h*.43);
-  for(let y=-8;y<=8;y++)for(let x=-11;x<=11;x++){ const X=mx+x,Y=my+y,d=Math.hypot(x/1.35,y);
-    if(X>1&&X<w-1&&Y>1&&Y<h-1&&d<8) tiles[Y*w+X]= d<2.2?T.SNOW : d<6.5?T.MTN : T.ROCK; }
-  /* a river went out of Eden, and was parted into four heads: Pishon, Giḥon, Ḥiddeqel, Perath */
-  { const sx=Math.floor(w*.06), sy=Math.floor(h*.5), len=Math.floor(w*.24);
-    [-0.62,-0.22,0.22,0.62].forEach((ang,k)=>{ for(let s=5;s<len;s++){
-      const cx=sx+Math.cos(ang)*s+Math.sin(s*.14+k)*2.2, cy=sy+Math.sin(ang)*s+Math.cos(s*.12+k)*2.2;
-      for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){ const X=Math.round(cx+dx),Y=Math.round(cy+dy),dd=Math.hypot(dx,dy);
-        if(X>1&&X<w-1&&Y>1&&Y<h-1){ if(dd<1)tiles[Y*w+X]=T.WATER; else if(!SOLID.has(tiles[Y*w+X])&&tiles[Y*w+X]!==T.WATER)tiles[Y*w+X]=T.SAND; } } } }); }
-  /* the Nile of Mitsrayim, far to the east */
-  { const cx0=Math.floor(w*.88); for(let y=0;y<h;y++){ const c=cx0+Math.sin(y*.1)*3;
-    for(let x=0;x<w;x++){ const dx=Math.abs(x-c);
-      if(dx<2)tiles[y*w+x]=dx<1?T.DEEP:T.WATER; else if(dx<3.2&&!SOLID.has(tiles[y*w+x]))tiles[y*w+x]=T.SAND; } } }
-  /* mountain border frame */
+  /* --- ground by land and height --- */
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const e=elev[idx(x,y)], rg=region(x,y), m=wFbm((x+200)/(19*S),(y+90)/(19*S));
+    let t;
+    if(e>=7) t=T.SNOW;
+    else if(e>=5) t=T.MTN;
+    else if(e===4) t=T.ROCK;
+    else if(rg==='eden') t=wFbm(x/(5*S),y/(5*S))>.58?T.FLOWER:(m>.42?T.GRASS:T.GRASS2);
+    else if(rg==='kenaan') t=m>.5?T.GRASS:(wFbm(x/6,y/6)>.62?T.DIRT:T.GRASS2);
+    else if(rg==='yarden') t=m>.4?T.GRASS2:T.GRASS;
+    else if(rg==='aram') t=m>.52?T.GRASS2:T.DIRT;
+    else if(rg==='shinar') t=m>.5?T.GRASS2:T.DIRT;
+    else if(rg==='ararat'||rg==='tsafon') t=m>.6?T.GRASS2:(e>=3?T.ROCK:T.DIRT);
+    else if(rg==='qedem') t=m>.55?T.GRASS2:T.DIRT;
+    else if(rg==='nod') t=m<.45?T.SAND:T.DIRT;
+    else t=m<.55?T.SAND:T.DIRT;                                                  // mitsrayim, negev, sinai, arav
+    tiles[idx(x,y)]=t;
+  }
+  /* --- the waters --- */
+  const sea=(x,y)=>{ const u=x/w,v=y/h;
+    if(v<.735&&u<.175-.055*v+wNoise(y/9,3.7)*.03) return true;                   // the Great Sea
+    if(Math.hypot((u-1.01)/.115,(v-1.03)/.20)<1) return true;                    // the Lower Sea
+    return false; };
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++) if(sea(x,y)){ tiles[idx(x,y)]=T.DEEP; elev[idx(x,y)]=0; }
+  const lake=(cx,cy,rx,ry)=>{ for(let y=Math.floor(cy-ry-2);y<=cy+ry+2;y++)for(let x=Math.floor(cx-rx-2);x<=cx+rx+2;x++){
+    if(!inb(x,y))continue; const d=Math.hypot((x-cx)/rx,(y-cy)/ry);
+    if(d<1){ tiles[idx(x,y)]=d<.7?T.DEEP:T.WATER; elev[idx(x,y)]=0; }
+    else if(d<1.25&&!SOLID.has(tiles[idx(x,y)])) tiles[idx(x,y)]=T.SAND; } };
+  lake(w*.385,h*.295,2.6*S,3.6*S);          // Kinnereth
+  lake(w*.392,h*.625,3.4*S,9.5*S);          // the Salt Sea
+  const river=(pts,wd)=>{ for(let i=0;i<pts.length-1;i++){
+      const ax=pts[i][0],ay=pts[i][1],bx=pts[i+1][0],by=pts[i+1][1];
+      const steps=Math.ceil(Math.hypot(bx-ax,by-ay)*2);
+      for(let s2=0;s2<=steps;s2++){ const tt=s2/steps;
+        const cx=lerp(ax,bx,tt)+Math.sin((i*7+tt*9)*1.7)*1.6, cy=lerp(ay,by,tt)+Math.cos((i*5+tt*8)*1.3)*1.2;
+        const R=Math.ceil(wd+3.5);
+        for(let dy=-R;dy<=R;dy++)for(let dx=-R;dx<=R;dx++){
+          const X=Math.round(cx+dx),Y=Math.round(cy+dy); if(!inb(X,Y))continue;
+          const dd=Math.hypot(dx,dy), t9=tiles[idx(X,Y)];
+          if(dd<wd) tiles[idx(X,Y)]=wd>1.6&&dd<wd-1.2?T.DEEP:T.WATER;
+          else if(dd<wd+1.3&&t9!==T.WATER&&t9!==T.DEEP&&!SOLID.has(t9)) tiles[idx(X,Y)]=T.SAND;
+          if(dd<wd+3.5) fert[idx(X,Y)]=1;
+        } } } };
+  /* the Ye'or (Nile) with its delta */
+  river([[w*.10,h-2],[w*.105,h*.86],[w*.115,h*.73]],1.9);
+  river([[w*.115,h*.73],[w*.093,h*.685]],1.5);
+  river([[w*.115,h*.73],[w*.138,h*.675]],1.5);
+  /* Perath and Ḥiddeqel, the two rivers of Aram-Naharayim */
+  river([[w*.57,h*.06],[w*.60,h*.25],[w*.66,h*.42],[w*.74,h*.60],[w*.83,h*.74],[w*.905,h*.845]],2.0);
+  river([[w*.67,h*.05],[w*.70,h*.24],[w*.75,h*.40],[w*.82,h*.56],[w*.88,h*.70],[w*.925,h*.815]],1.6);
+  /* the Yardĕn, from Kinnereth down to the Salt Sea */
+  river([[w*.385,h*.315],[w*.390,h*.45],[w*.392,h*.575]],1.5);
+  /* a river went out of Ĕḏen to water the garden, and from there it was parted
+     and became four heads: Pishon, Giḥon, Ḥiddeqel, Perath (BERĔSHITH 2:10–14) */
+  river([[w*.935,h*.44],[w*.905,h*.47]],1.6);
+  river([[w*.905,h*.47],[w*.845,h*.395]],1.45);
+  river([[w*.905,h*.47],[w*.845,h*.545]],1.45);
+  river([[w*.905,h*.47],[w*.875,h*.315]],1.45);
+  river([[w*.905,h*.47],[w*.880,h*.615]],1.45);
+  /* the watered ground turns the desert green along the rivers */
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+    if(!fert[idx(x,y)]) continue; const t=tiles[idx(x,y)];
+    const nw=[tiles[idx(x-1,y)],tiles[idx(x+1,y)],tiles[idx(x,y-1)],tiles[idx(x,y+1)]]
+      .some(t2=>t2===T.WATER||t2===T.DEEP);
+    if(nw) continue;                                    // keep the banks of sand
+    if(t===T.SAND&&wNoise(x/3,y/3)>.35) tiles[idx(x,y)]=(x+y)%3?T.GRASS2:T.GRASS;
+    else if(t===T.DIRT&&(x+y)%2) tiles[idx(x,y)]=T.GRASS2;
+  }
+  /* --- water lies one block beneath its banks --- */
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const t=tiles[idx(x,y)]; if(t!==T.WATER&&t!==T.DEEP) continue;
+    let mn=99; for(let dy=-1;dy<=1;dy++)for(let dx=-1;dx<=1;dx++){
+      const X=x+dx,Y=y+dy; if(!inb(X,Y))continue; const t2=tiles[idx(X,Y)];
+      if(t2!==T.WATER&&t2!==T.DEEP) mn=Math.min(mn,elev[idx(X,Y)]); }
+    elev[idx(x,y)]=mn===99?0:Math.max(0,mn-1);
+  }
+  /* --- the ends of the earth: sheer rock no one may pass --- */
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){ const edge=Math.min(x,y,w-1-x,h-1-y);
-    if(edge===0||(edge===1&&rng()<.6)) tiles[y*w+x]=T.MTN; }
+    if(edge<=1||(edge===2&&rng()<.5)){ tiles[idx(x,y)]=T.MTN; elev[idx(x,y)]=9; } }
+  /* --- trees, bushes and rocks, land by land --- */
   const RD={
-    eden:{d:.07,b:.05,col:['#3f8f3a','#4a9c42','#39852c','#5aa84a']},
-    nod:{d:.012,b:.012,col:['#6e7a3e'],dead:.4,palm:true},
-    ararat:{d:.01,b:.006,col:['#5d6e3e'],dead:.6,rock:.05},
-    shinar:{d:.018,b:.02,col:['#6e8a3e','#7a8a4a']},
-    kenaan:{d:.05,b:.04,col:['#3f7032','#4a7c3a','#5d7a35']},
-    mitsrayim:{d:.008,b:.004,col:['#7a8a4a'],palm:true,rock:.01},
+    eden:{d:.075,b:.05,col:['#3f8f3a','#4a9c42','#39852c','#5aa84a']},
+    kenaan:{d:.045,b:.04,col:['#3f7032','#4a7c3a','#5d7a35']},
+    yarden:{d:.05,b:.04,col:['#4a8c3a','#3f7032'],palm:true},
+    aram:{d:.02,b:.02,col:['#6e8a3e','#7a8a4a']},
+    shinar:{d:.016,b:.018,col:['#6e8a3e'],palm:true},
+    ararat:{d:.012,b:.008,col:['#4e6a3e'],dead:.5,rock:.05},
+    tsafon:{d:.02,b:.01,col:['#3f6a3e','#4e6a3e'],rock:.04},
+    qedem:{d:.012,b:.012,col:['#5d6e3e'],dead:.3,rock:.03},
+    nod:{d:.010,b:.010,col:['#6e7a3e'],dead:.45,palm:true},
+    mitsrayim:{d:.010,b:.005,col:['#7a8a4a'],palm:true},
+    negev:{d:.006,b:.006,col:['#6e7a3e'],dead:.4,rock:.02},
+    sinai:{d:.004,b:.004,col:['#6e7a3e'],dead:.5,rock:.05},
+    arav:{d:.004,b:.004,col:['#7a8a4a'],dead:.4,palm:true,rock:.02},
   };
   for(let y=2;y<h-2;y++)for(let x=2;x<w-2;x++){
-    const tl=tiles[y*w+x];
-    if(SOLID.has(tl)||tl===T.WATER||tl===T.DEEP||tl===T.PATH) continue;
-    const rd=RD[wRegion(x/w)], r=rng();
-    if(tl===T.SAND){ if(rd.palm&&r<rd.d*1.6) decor.push({type:'palm',x:x+rng()*.5,y:y+rng()*.5,col:'#7a8a4a',solid:true}); continue; }
-    if(r<rd.d){ const dead=rd.dead&&rng()<rd.dead;
-      decor.push({type:'tree',x:x+rng()*.6,y:y+rng()*.6,col:pick(rng,rd.col),dead,solid:true}); }
-    else if(r<rd.d+rd.b){ decor.push({type:'bush',x:x+rng()*.6,y:y+rng()*.6,col:pick(rng,rd.col)}); }
+    const tl=tiles[idx(x,y)];
+    if(SOLID.has(tl)||tl===T.PATH||tl===T.SNOW) continue;
+    if(elev[idx(x,y)]>=5) continue;                                  // above the treeline
+    const rg=region(x,y), rd=RD[rg]||RD.arav, r=rng();
+    const fb=fert[idx(x,y)]?1.8:1;                                   // the watered land bears more
+    if(tl===T.SAND){
+      if(rd.palm&&r<rd.d*1.7*fb) decor.push({type:'palm',x:x+rng()*.5,y:y+rng()*.5,col:'#7a8a4a',solid:true});
+      else if(rd.rock&&r<rd.rock*.5) decor.push({type:'rock',x:x+rng()*.5,y:y+rng()*.5,solid:true});
+      continue; }
+    if(r<rd.d*fb){ const dead=rd.dead&&rng()<rd.dead;
+      decor.push({type:'tree',x:x+rng()*.6,y:y+rng()*.6,col:pick(rng,rd.col),dead,solid:true,
+                  fruit:rg==='eden'&&rng()<.3?pick(rng,['#e8a23c','#c84a6a','#d8b13c']):null}); }
+    else if(r<rd.d*fb+rd.b){ decor.push({type:'bush',x:x+rng()*.6,y:y+rng()*.6,col:pick(rng,rd.col),berry:rg==='eden'&&rng()<.4}); }
     else if(rd.rock&&rng()<rd.rock){ decor.push({type:'rock',x:x+rng()*.5,y:y+rng()*.5,solid:true}); }
   }
+  /* helpers shared by features, sites and towns */
+  const open=(x,y)=>{ const tl=tiles[idx(x,y)]; return tl!==T.WATER&&tl!==T.DEEP&&tl!==T.WALL&&elev[idx(x,y)]<9; };
+  const snap=(x,y)=>{ for(let r=0;r<14;r++)for(let a=0;a<16;a++){
+      const X=Math.round(x+Math.cos(a/16*6.283)*r), Y=Math.round(y+Math.sin(a/16*6.283)*r);
+      if(X>4&&X<w-4&&Y>4&&Y<h-4&&open(X,Y)) return [X,Y]; } return [Math.round(x),Math.round(y)]; };
+  const flatten=(X,Y,rad)=>{ const e0=elev[idx(clamp(X,0,w-1),clamp(Y,0,h-1))];
+    for(let yy=Math.max(2,Y-rad);yy<=Math.min(h-3,Y+rad);yy++)for(let xx=Math.max(2,X-rad);xx<=Math.min(w-3,X+rad);xx++){
+      const t9=tiles[idx(xx,yy)]; if(t9===T.WATER||t9===T.DEEP) continue;
+      elev[idx(xx,yy)]=e0;
+      if(SOLID.has(t9)) tiles[idx(xx,yy)]=T.DIRT; } };
+  /* explicit features from the scene (the gate of the garden, etc.) */
   (cfg.features||[]).forEach(f=>{
     const rad=f.clear!==undefined?f.clear:2;
     for(let i=decor.length-1;i>=0;i--){ if(!decor[i].id&&dist(decor[i].x,decor[i].y,f.x,f.y)<rad) decor.splice(i,1); }
-    if(f.flat){ for(let y=Math.max(1,Math.floor(f.y-f.flat));y<=Math.min(h-2,Math.ceil(f.y+f.flat));y++)
-      for(let x=Math.max(1,Math.floor(f.x-f.flat));x<=Math.min(w-2,Math.ceil(f.x+f.flat));x++)
-        if(SOLID.has(tiles[y*w+x])) tiles[y*w+x]=T.DIRT; }
+    if(f.flat) flatten(Math.round(f.x),Math.round(f.y),Math.ceil(f.flat));
     if(f.type!=='clearing') decor.push(Object.assign({},f));
   });
+  /* --- the journey: every chapter laid at its true place --- */
   if(typeof JOURNEY!=='undefined' && JOURNEY.length){
-    const open=(x,y)=>{ const tl=tiles[y*w+x]; return !SOLID.has(tl)&&tl!==T.WATER&&tl!==T.DEEP; };
-    const snap=(x,y)=>{ for(let r=0;r<12;r++)for(let a=0;a<14;a++){
-        const X=Math.round(x+Math.cos(a/14*6.283)*r), Y=Math.round(y+Math.sin(a/14*6.283)*r);
-        if(X>4&&X<w-4&&Y>4&&Y<h-4&&open(X,Y)) return [X,Y]; } return [Math.round(x),Math.round(y)]; };
     for(let i=0;i<JOURNEY.length;i++){ const s=JOURNEY[i], tt=JOURNEY.length>1?i/(JOURNEY.length-1):0;
-      let X=14+tt*(w-28), Y=h*0.5+Math.sin(tt*Math.PI*3)*(h*0.30);
+      const uv=WORLD_SITES[s.id];
+      let X=uv?uv[0]*w:14+tt*(w-28), Y=uv?uv[1]*h:h*.5;
       const sn=snap(X,Y); X=sn[0]; Y=sn[1]; s.x=X; s.y=Y;
-      for(let yy=Y-2;yy<=Y+2;yy++)for(let xx=X-2;xx<=X+2;xx++)
-        if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
+      flatten(X,Y,2);
       for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,X,Y)<2.2) decor.splice(k,1); }
       if(Save.data.done[s.id]) decor.push({type:'pillar',oil:true,x:X,y:Y});
     }
+    /* the roads: between one station and the next a way is always cut — across
+       the rivers as fords, and up the mountains as stairs of single blocks */
     for(let i=0;i<JOURNEY.length-1;i++){ const a=JOURNEY[i], bb=JOURNEY[i+1];
-      const steps=Math.max(1,Math.hypot(bb.x-a.x,bb.y-a.y)*1.4|0);
-      for(let st=0;st<=steps;st++){ const t=st/steps;
-        const X=Math.round(a.x+(bb.x-a.x)*t), Y=Math.round(a.y+(bb.y-a.y)*t);
-        if(X>1&&X<w-1&&Y>1&&Y<h-1){ tiles[Y*w+X]=T.PATH;   // a ford/pass — the way is always walkable
-          for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } } } }
+      const steps=Math.max(1,Math.hypot(bb.x-a.x,bb.y-a.y)*2|0);
+      let pe=elev[idx(a.x,a.y)], lx=a.x, ly=a.y;
+      const carve=(X,Y)=>{
+        if(X<2||X>w-3||Y<2||Y>h-3) return;
+        tiles[idx(X,Y)]=T.PATH;
+        let e2=elev[idx(X,Y)];
+        if(e2>pe+1)e2=pe+1; else if(e2<pe-1)e2=pe-1;
+        elev[idx(X,Y)]=e2; pe=e2;
+        for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,X,Y)<.9) decor.splice(k,1); } };
+      for(let st=0;st<=steps;st++){ const t2=st/steps;
+        const X=Math.round(a.x+(bb.x-a.x)*t2+Math.sin(t2*17+i)*1.4), Y=Math.round(a.y+(bb.y-a.y)*t2+Math.cos(t2*13+i)*1.1);
+        if(X!==lx&&Y!==ly) carve(X,ly);                  // keep the way whole — no diagonal gaps
+        if(X!==lx||Y!==ly) carve(X,Y);
+        lx=X; ly=Y; } }
   }
-  /* a settlement in Kenaʿan — dwellings you may enter (walk into the door, leave by the way out) */
-  { const vx=Math.floor(w*.73), vy=Math.floor(h*.5);
-    [[vx,vy-7],[vx+8,vy-2],[vx-6,vy+5],[vx+6,vy+8]].forEach((s,i)=>{ const hx=s[0],hy=s[1];
-      if(hx<3||hx>w-3||hy<3||hy>h-4) return;
-      for(let yy=hy-2;yy<=hy+3;yy++)for(let xx=hx-3;xx<=hx+3;xx++)
-        if(xx>1&&xx<w-1&&yy>1&&yy<h-1&&SOLID.has(tiles[yy*w+xx])) tiles[yy*w+xx]=T.DIRT;
-      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,hx,hy)<3.2) decor.splice(k,1); }
-      decor.push({type:'tent',solid:true,x:hx,y:hy,col:['#bda884','#c8b486','#b3a07f'][i%3]});
-      decor.push({type:'doorway',x:hx,y:hy+1.3,enter:true,id:'house'+i,examine:'A dwelling — step inside.'});
-    });
+  /* --- the towns and cities of the ancient world, each in its era --- */
+  const done=id=>!!(Save.data.done&&Save.data.done[id]);
+  for(const tn of WORLD_TOWNS){
+    if(tn.after&&!done(tn.after)) continue;
+    let X=Math.round(tn.u*w), Y=Math.round(tn.v*h);
+    const sn=snap(X,Y); X=sn[0]; Y=sn[1];
+    flatten(X,Y,4);
+    for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,X,Y)<4.6) decor.splice(k,1); }
+    if(tn.ruin&&done(tn.ruin)){
+      /* Seḏom after the overthrow: scorched ground and rubble */
+      for(let yy=Y-3;yy<=Y+3;yy++)for(let xx=X-3;xx<=X+3;xx++)
+        if(inb(xx,yy)&&Math.hypot(xx-X,yy-Y)<3.6&&!SOLID.has(tiles[idx(xx,yy)])) tiles[idx(xx,yy)]=T.MUD;
+      for(let i=0;i<6;i++) decor.push({type:'rock',x:X-2.6+rng()*5.2,y:Y-2.4+rng()*4.8,solid:true});
+      decor.push({type:'placename',x:X,y:Y+2.6,name:tn.name,sub:'overthrown, as it is written'});
+      continue;
+    }
+    if(tn.brick){ for(let yy=Y-2;yy<=Y+2;yy++)for(let xx=X-3;xx<=X+3;xx++)
+      if(inb(xx,yy)&&!SOLID.has(tiles[idx(xx,yy)])&&rng()<.7) tiles[idx(xx,yy)]=T.BRICK; }
+    const n=tn.huts||3;
+    for(let i=0;i<n;i++){ const a=i/n*Math.PI*2+.4, r=2.1+(i%2)*1.1;
+      const hx=X+Math.cos(a)*r, hy=Y+Math.sin(a)*r*.8;
+      decor.push({type:'tent',solid:true,x:hx,y:hy,col:['#bda884','#c8b486','#b3a07f','#c2a87a'][i%4]});
+      decor.push({type:'doorway',x:hx,y:hy+1.25,enter:true,id:'house_'+tn.id+'_'+i,examine:'A dwelling — step inside.'});
+    }
+    decor.push({type:'well',x:X,y:Y,solid:true});
+    decor.push({type:'firepit',x:X+1.4,y:Y+1.1,lit:true});
+    if(tn.tower) decor.push({type:'tower',x:X,y:Y-3.2,solid:true,stage:3});
+    decor.push({type:'placename',x:X,y:Y+3.1,name:tn.name,sub:tn.sub});
   }
+  /* --- the names written on the land --- */
+  const L=(u,v,name,sub)=>decor.push({type:'placename',x:u*w,y:v*h,name,sub});
+  L(.075,.32,'THE GREAT SEA');
+  L(.62,.058,'THE MOUNTAINS OF ARARAT','where the ark came to rest');
+  L(.93,.375,'THE GARDEN OF ĔḎEN','eastward — the river parts to four heads');
+  L(.955,.68,'THE LAND OF NOḎ','east of Ĕḏen');
+  L(.385,.245,'KINNERETH');
+  L(.392,.71,'THE SALT SEA','the vale of Siddim');
+  L(.388,.435,'THE YARDĔN');
+  L(.68,.47,'PERATH');
+  L(.78,.36,'ḤIDDEQEL');
+  L(.105,.885,'THE YE’OR');
+  L(.298,.465,'THE HILL COUNTRY','of Kenaʿan');
+  L(.235,.855,'MOUNT SINAI','the mountain of Aluahim');
+  L(.27,.775,'THE WILDERNESS OF PARAN');
+  L(.50,.58,'THE GREAT WILDERNESS','of Araḇ');
+  L(.72,.55,'SHINʿAR');
+  L(.60,.155,'ARAM-NAHARAYIM','between the two rivers');
+  L(.45,.56,'THE HEIGHTS OF THE EAST');
   decor.sort((a,b)=>a.y-b.y);
-  return {w,h,tiles,decor,biome:'plains',cfg,world:true};
+  return {w,h,tiles,elev,decor,biome:'plains',cfg,world:true};
 }
-function walkable(map,x,y){
-  if(SOLID.has(tileAt(map,x,y))) return false;
+function walkable(map,x,y,fx,fy){
+  const tl=tileAt(map,x,y);
+  if(map.elev){
+    /* the stepped world: rock and mountain are terraces you may stand on —
+       what stops you is the height of the block face, not the stone itself */
+    const tx=Math.floor(x), ty=Math.floor(y);
+    if(tx<0||ty<0||tx>=map.w||ty>=map.h) return false;
+    if(tl===T.WATER||tl===T.DEEP||tl===T.WALL) return false;
+    const e=map.elev[ty*map.w+tx];
+    if(e>=9) return false;                                   // sheer rock — no hold at the ends of the earth
+    if(fx!==undefined&&fy!==undefined){
+      const fe=map.elev[clamp(Math.floor(fy),0,map.h-1)*map.w+clamp(Math.floor(fx),0,map.w-1)];
+      if(Math.abs(e-fe)>1) return false;                     // one block is a step; two is a cliff
+    }
+  }
+  else if(SOLID.has(tl)) return false;
   for(const d of map.decor){
     if(!d.solid) continue;
     if(d.type==='ark'){
@@ -2193,6 +2401,163 @@ function shadeC(hex,amt){
   return `rgb(${r|0},${g2|0},${b2|0})`;
 }
 
+/* ===== stepped-block terrain (the seamless world) =====
+   Every level of ground is a block laid upon the block beneath: cliffs show
+   their stacked faces, and any single step can be climbed by man and beast. */
+const ESTEP=12;                                   // px of height for one block level
+function elevAt(map,x,y){
+  if(!map.elev) return 0;
+  const tx=clamp(Math.floor(x),0,map.w-1), ty=clamp(Math.floor(y),0,map.h-1);
+  return map.elev[ty*map.w+tx];
+}
+function elevAtF(map,x,y){
+  /* smooth height under a walker's feet, blended across the tile corners */
+  if(!map.elev) return 0;
+  const fx=x-.5, fy=y-.5;
+  const x0=clamp(Math.floor(fx),0,map.w-1), y0=clamp(Math.floor(fy),0,map.h-1);
+  const x1=Math.min(x0+1,map.w-1), y1=Math.min(y0+1,map.h-1);
+  const u=clamp(fx-x0,0,1), v=clamp(fy-y0,0,1);
+  const E=(X,Y)=>map.elev[Y*map.w+X];
+  return E(x0,y0)*(1-u)*(1-v)+E(x1,y0)*u*(1-v)+E(x0,y1)*(1-u)*v+E(x1,y1)*u*v;
+}
+const FACE_COL={};        // the colour of a block's cut face, by the ground above it
+FACE_COL[T.GRASS]='#6b5a40'; FACE_COL[T.GRASS2]='#66563d'; FACE_COL[T.FLOWER]='#6b5a40';
+FACE_COL[T.PATH]='#8a744f'; FACE_COL[T.SAND]='#a98f5e'; FACE_COL[T.DIRT]='#6e5d42';
+FACE_COL[T.ROCK]='#5d5548'; FACE_COL[T.MTN]='#4e463c'; FACE_COL[T.SNOW]='#8d919c';
+FACE_COL[T.MUD]='#57492f'; FACE_COL[T.BRICK]='#8a6238'; FACE_COL[T.TILLED]='#6e5d42';
+function drawWorldEnt(g,world,e,sx,sy,t){
+  const d=e.d;
+  if(e.kind==='decor'&&d.type==='placename'){
+    g.save();
+    g.font='600 15px Georgia'; g.textAlign='center'; g.textBaseline='middle';
+    g.strokeStyle='rgba(20,14,6,.75)'; g.lineWidth=3.5; g.lineJoin='round';
+    g.strokeText(d.name,sx,sy);
+    g.fillStyle='rgba(240,228,190,.88)'; g.fillText(d.name,sx,sy);
+    if(d.sub){ g.font='italic 11px Georgia';
+      g.strokeStyle='rgba(20,14,6,.6)'; g.lineWidth=3; g.strokeText(d.sub,sx,sy+15);
+      g.fillStyle='rgba(226,212,170,.78)'; g.fillText(d.sub,sx,sy+15); }
+    g.restore();
+    return;
+  }
+  if(e.kind==='decor') drawProp(g,sx,sy,d,t);
+  else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
+  else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale,spotted:d.spotted});
+  else if(d.mount){
+    drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale,riderHold:d.hold});
+    if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
+  }
+  else {
+    drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
+    if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
+    if(d.marker){ // objective marker
+      const mb=Math.sin(t/250)*4;
+      g.fillStyle='rgba(232,198,106,.9)';
+      g.beginPath(); g.moveTo(sx,sy-TILE*2-mb); g.lineTo(sx-6,sy-TILE*2.3-mb); g.lineTo(sx+6,sy-TILE*2.3-mb);
+      g.closePath(); g.fill();
+    }
+  }
+}
+function drawWorldElev(g,world,t,offX,offY,x0,x1,y0,y1){
+  const map=world.map, W=map.w;
+  const ext=Math.min(map.h-1,y1+4);           // tall blocks below the view still rise into it
+  /* gather every walker and prop into its ground row, so nearer, higher ground
+     is painted over what stands behind it */
+  const buckets=new Map();
+  const put=(yy,e)=>{ const r=clamp(Math.floor(yy),y0,ext);
+    let b=buckets.get(r); if(!b){ b=[]; buckets.set(r,b); } b.push(e); };
+  for(const d of map.decor){
+    const px=d.x*TILE+offX; if(px<-TILE*8||px>VW+TILE*8) continue;
+    const py=d.y*TILE+offY; if(py<-TILE*9||py>VH+TILE*7) continue;
+    put(d.y,{y:d.y,kind:'decor',d});
+  }
+  for(const n of world.npcs) if(!n.hidden) put(n.y,{y:n.y,kind:'npc',d:n});
+  if(world.player&&!world.player.hidden) put(world.player.y,{y:world.player.y,kind:'player',d:world.player});
+  for(let y=y0;y<=ext;y++){
+    for(let x=x0;x<=x1;x++){
+      const id=map.tiles[y*W+x], e=map.elev[y*W+x];
+      const sx=x*TILE+offX, sy=y*TILE+offY-e*ESTEP;
+      g.fillStyle=tileColor(map,id,x,y);
+      g.fillRect(sx,sy,TILE+1,TILE+1);
+      if(e>1){ g.fillStyle='rgba(255,252,238,'+Math.min(.14,(e-1)*.03).toFixed(3)+')'; g.fillRect(sx,sy,TILE+1,TILE+1); }
+      const eN=y>0?map.elev[(y-1)*W+x]:e, eS=y<map.h-1?map.elev[(y+1)*W+x]:0;
+      const eW=x>0?map.elev[y*W+x-1]:e, eE=x<W-1?map.elev[y*W+x+1]:e;
+      /* ground detail, as in the flat world */
+      if(id===T.GRASS||id===T.GRASS2){
+        const n2=hash2(x*53,y*29);
+        if(n2>.4){ g.fillStyle='rgba(0,0,0,.06)';
+          g.fillRect(sx+(n2*97%1)*TILE*.8,sy+(n2*61%1)*TILE*.8,3,2);
+          g.fillRect(sx+(n2*43%1)*TILE*.8,sy+(n2*83%1)*TILE*.8,2,3); }
+      } else if(id===T.FLOWER){
+        const n=hash2(x*31,y*17);
+        const cols=['#e8d06a','#d87a9a','#e8e8e8','#b87ad8'];
+        for(let i=0;i<3;i++){
+          const fx=sx+((n*7919+i*271)%1)*TILE*.8+TILE*.1;
+          const fy=sy+((n*104729+i*577)%1)*TILE*.8+TILE*.1;
+          g.fillStyle=cols[(i+Math.floor(n*4))%4];
+          g.fillRect(fx,fy,3,3);
+          g.fillStyle='#e8c66a'; g.fillRect(fx+1,fy+1,1,1);
+        }
+      } else if(id===T.WATER||id===T.DEEP){
+        const ph=Math.sin(t/600+x*1.3+y*2.1);
+        if(ph>.55){ g.fillStyle='rgba(255,255,255,.13)';
+          g.fillRect(sx+TILE*.15,sy+TILE*.4+Math.sin(t/400+x)*3,TILE*.5,2); }
+        const up=y>0?map.tiles[(y-1)*W+x]:id;
+        if(up!==T.WATER&&up!==T.DEEP){
+          g.fillStyle='rgba(255,255,255,'+(.25+Math.sin(t/500+x)*.12).toFixed(3)+')';
+          g.fillRect(sx,sy,TILE,3);
+        }
+      } else if(id===T.TILLED){
+        g.fillStyle='rgba(0,0,0,.18)';
+        for(let i=0;i<3;i++) g.fillRect(sx,sy+5+i*TILE/3,TILE,2);
+      } else if(id===T.SNOW){
+        const n3=hash2(x*11,y*23);
+        g.fillStyle='rgba(255,255,255,.5)';
+        g.fillRect(sx+(n3*89%1)*TILE*.7,sy+(n3*47%1)*TILE*.7,4,2);
+      } else if(id===T.MTN||id===T.ROCK){
+        const n3=hash2(x*13,y*7);
+        g.fillStyle='rgba(0,0,0,.14)';
+        g.fillRect(sx+(n3*71%1)*TILE*.7,sy+(n3*37%1)*TILE*.7,5,3);
+        g.fillRect(sx+(n3*29%1)*TILE*.7,sy+(n3*93%1)*TILE*.7,3,4);
+      } else if(id===T.BRICK){
+        g.strokeStyle='rgba(0,0,0,.12)'; g.lineWidth=1;
+        g.beginPath(); g.moveTo(sx,sy+TILE/2); g.lineTo(sx+TILE,sy+TILE/2);
+        g.moveTo(sx+TILE/2,sy); g.lineTo(sx+TILE/2,sy+TILE/2); g.stroke();
+      }
+      /* rims: light where the ground breaks away, shade where a wall rises behind */
+      if(eN<e){ g.fillStyle='rgba(255,252,230,.22)'; g.fillRect(sx,sy,TILE+1,2); }
+      if(eN>e){ g.fillStyle='rgba(0,0,0,.15)'; g.fillRect(sx,sy,TILE+1,5); }
+      if(eW<e){ g.fillStyle='rgba(255,252,230,.10)'; g.fillRect(sx,sy,2,TILE+1); }
+      if(eW>e){ g.fillStyle='rgba(0,0,0,.10)'; g.fillRect(sx,sy,4,TILE+1); }
+      if(eE<e){ g.fillStyle='rgba(0,0,0,.14)'; g.fillRect(sx+TILE-1,sy,2,TILE+1); }
+      /* the stacked face of the block, one course per level */
+      if(eS<e){
+        const base=FACE_COL[id]||'#5d5548';
+        for(let L=e;L>eS;L--){
+          const by=sy+TILE+(e-L)*ESTEP;
+          const vn=(hash2(x*31,L*17)-.5)*16;
+          g.fillStyle=shadeC(base,vn-(e-L)*7);
+          g.fillRect(sx,by,TILE+1,ESTEP);
+          g.fillStyle='rgba(0,0,0,.28)'; g.fillRect(sx,by,TILE+1,1.5);
+          g.fillStyle='rgba(0,0,0,.13)';
+          g.fillRect(sx+((L%2)?TILE*.52:TILE*.22),by+2,1.5,ESTEP-3);   // block joints, offset by course
+        }
+      }
+    }
+    /* the walkers and props whose feet stand on this row */
+    const b=buckets.get(y);
+    if(b){
+      b.sort((a,q)=>a.y-q.y);
+      for(const ent of b){
+        const d=ent.d;
+        const lift=elevAtF(map,d.x,d.y)*ESTEP;
+        const sx=d.x*TILE+offX, sy=d.y*TILE+offY-lift;
+        if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
+        drawWorldEnt(g,world,ent,sx,sy,t);
+      }
+    }
+  }
+}
+
 function drawWorld(g,world,t){
   const map=world.map;
   const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
@@ -2204,7 +2569,8 @@ function drawWorld(g,world,t){
   // tiles
   if(world.overlook){ const lipY=world.overlook.cliffY*TILE+offY;
     Sky.overlook(g,lipY,world.overlook.kind,t,world.overlook); }
-  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+  if(map.elev){ drawWorldElev(g,world,t,offX,offY,x0,x1,y0,y1); }
+  else for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     if(world.overlook&&y<world.overlook.cliffY) continue;
     const id=map.tiles[y*map.w+x];
     const sx=x*TILE+offX, sy=y*TILE+offY;
@@ -2277,7 +2643,7 @@ function drawWorld(g,world,t){
   // items (pickups)
   for(const it of world.items){
     if(it.taken) continue;
-    const sx=it.x*TILE+offX, sy=it.y*TILE+offY;
+    const sx=it.x*TILE+offX, sy=it.y*TILE+offY-elevAtF(map,it.x,it.y)*ESTEP;
     const bob=Math.sin(t/300+it.x*3)*3;
     const gl=g.createRadialGradient(sx,sy-8+bob,2,sx,sy-8+bob,16);
     gl.addColorStop(0,'rgba(255,235,150,.5)'); gl.addColorStop(1,'rgba(255,235,150,0)');
@@ -2285,38 +2651,24 @@ function drawWorld(g,world,t){
     drawItem(g,sx,sy-8+bob,it.kind,t);
     if(Math.random()<.02) Particles.spawn({x:it.x*TILE,y:it.y*TILE-10,vx:0,vy:-.02,life:700,max:700,type:'mote'});
   }
-  // depth-sorted: decor + characters
-  const ents=[];
-  for(const d of map.decor) ents.push({y:d.y,kind:'decor',d});
-  for(const n of world.npcs) if(!n.hidden) ents.push({y:n.y,kind:'npc',d:n});
-  if(world.player&&!world.player.hidden) ents.push({y:world.player.y,kind:'player',d:world.player});
-  ents.sort((a,b)=>a.y-b.y);
-  for(const e of ents){
-    const d=e.d;
-    const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
-    if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
-    if(e.kind==='decor') drawProp(g,sx,sy,d,t);
-    else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
-    else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale,spotted:d.spotted});
-    else if(d.mount){
-      drawAnimal(g,sx,sy,d.mount,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,rider:d.char,riderScale:d.scale,riderHold:d.hold});
-      if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
-    }
-    else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
-      if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
-      if(d.marker){ // objective marker
-        const mb=Math.sin(t/250)*4;
-        g.fillStyle='rgba(232,198,106,.9)';
-        g.beginPath(); g.moveTo(sx,sy-TILE*2-mb); g.lineTo(sx-6,sy-TILE*2.3-mb); g.lineTo(sx+6,sy-TILE*2.3-mb);
-        g.closePath(); g.fill();
-      }
+  // depth-sorted: decor + characters (the stepped world draws its own, row by row)
+  if(!map.elev){
+    const ents=[];
+    for(const d of map.decor) ents.push({y:d.y,kind:'decor',d});
+    for(const n of world.npcs) if(!n.hidden) ents.push({y:n.y,kind:'npc',d:n});
+    if(world.player&&!world.player.hidden) ents.push({y:world.player.y,kind:'player',d:world.player});
+    ents.sort((a,b)=>a.y-b.y);
+    for(const e of ents){
+      const d=e.d;
+      const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
+      if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
+      drawWorldEnt(g,world,e,sx,sy,t);
     }
   }
   // goto target marker
   if(world.gotoMark){
     const m=world.gotoMark;
-    const sx=m.x*TILE+offX, sy=m.y*TILE+offY;
+    const sx=m.x*TILE+offX, sy=m.y*TILE+offY-elevAtF(map,m.x,m.y)*ESTEP;
     const pul=.5+Math.sin(t/300)*.5;
     g.strokeStyle=`rgba(232,198,106,${.35+pul*.4})`;
     g.lineWidth=2.5;
@@ -2332,7 +2684,7 @@ function drawWorld(g,world,t){
     const a=Math.atan2(world.guide.y-p.y,world.guide.x-p.x);
     const lead=Math.sin(t/300)*5;
     const ax=p.x*TILE+offX+Math.cos(a)*(TILE*1.9+lead);
-    const ay=p.y*TILE+offY-TILE*0.9+Math.sin(a)*(TILE*1.9+lead);
+    const ay=p.y*TILE+offY-TILE*0.9-elevAtF(map,p.x,p.y)*ESTEP+Math.sin(a)*(TILE*1.9+lead);
     const pul=.6+Math.sin(t/260)*.4;
     g.save(); g.translate(ax,ay); g.rotate(a);
     g.fillStyle=`rgba(232,198,106,${.5+pul*.4})`;
@@ -2367,7 +2719,7 @@ function drawWorld(g,world,t){
     // light sources glow through night
     for(const d of map.decor){
       if((d.type==='firepit'&&d.lit!==false)||(d.type==='altar'&&d.stage>=3)||d.type==='treeLife'){
-        const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
+        const sx=d.x*TILE+offX, sy=d.y*TILE+offY-elevAtF(map,d.x,d.y)*ESTEP;
         const r=d.type==='treeLife'?TILE*5:(d.type==='firepit'&&d.big?TILE*5.6:TILE*3.4);
         const gl2=g.createRadialGradient(sx,sy-TILE*.5,TILE*.3,sx,sy-TILE*.5,r);
         gl2.addColorStop(0,'rgba(255,190,90,.32)'); gl2.addColorStop(1,'rgba(255,190,90,0)');
@@ -2833,6 +3185,15 @@ const Game={
     if(sc.map.world){
       if(this._worldSpawn){ wx=this._worldSpawn[0]; wy=this._worldSpawn[1]; }
       else if(Save.data.world){ wx=Save.data.world.x; wy=Save.data.world.y; }
+      /* a remembered place from an older shape of the world may no longer be
+         dry land — set such a traveller back on the way at the nearest station */
+      if(!walkable(map,wx,wy)){
+        let best=null,bd=1e9;
+        for(const s of (typeof JOURNEY!=='undefined'?JOURNEY:[])){
+          const d9=dist(s.x,s.y,wx,wy); if(d9<bd&&walkable(map,s.x,s.y-1)){ bd=d9; best=s; } }
+        if(best){ wx=best.x; wy=best.y-1; }
+        else if(sc.playerPos){ wx=sc.playerPos[0]; wy=sc.playerPos[1]; }
+      }
     }
     this._worldSpawn=null;
     const player=sc.player?{
@@ -3175,8 +3536,8 @@ const Game={
         const ms=p.speed*(p.mount?1.65:1);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
         const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        if((walkable(w.map,nx,p.y,p.x,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkable(w.map,p.x,ny,p.x,p.y)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
@@ -3216,8 +3577,8 @@ const Game={
             e._st=this.t+1400; Camera.shake=Math.max(Camera.shake,2); Sound.sfx('bad');
             const a2=Math.atan2(p.y-e.y,p.x-e.x);
             const sx2=p.x+Math.cos(a2)*.55, sy2=p.y+Math.sin(a2)*.55;
-            if(walkable(w.map,sx2,p.y)) p.x=sx2;
-            if(walkable(w.map,p.x,sy2)) p.y=sy2;
+            if(walkable(w.map,sx2,p.y,p.x,p.y)) p.x=sx2;
+            if(walkable(w.map,p.x,sy2,p.x,p.y)) p.y=sy2;
           }
         }
       } else if(e.chase&&p&&!e.lying&&!this.dlgChar&&!this.script){
@@ -3237,9 +3598,9 @@ const Game={
           const a=Math.atan2(e.y-p.y,e.x-p.x);
           let fx=clamp(e.x+Math.cos(a)*2.4,2,w.map.w-3), fy=clamp(e.y+Math.sin(a)*2.4,2,w.map.h-3);
           if(fly){ e.flying=true; e.speed=.15; } else { e.speed=.09; }
-          if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy};
+          if(walkable(w.map,fx,fy,e.x,e.y)) e.target={x:fx,y:fy};
           else { const a2=a+Math.PI/2; fx=clamp(e.x+Math.cos(a2)*2.2,2,w.map.w-3); fy=clamp(e.y+Math.sin(a2)*2.2,2,w.map.h-3);
-            if(walkable(w.map,fx,fy)) e.target={x:fx,y:fy}; }
+            if(walkable(w.map,fx,fy,e.x,e.y)) e.target={x:fx,y:fy}; }
         } else if(e.flying&&dp>fr+2.5){ e.flying=false; }
       } else if(e!==p&&e.wander&&!blocked){
         if(!e.wt||this.t>e.wt){
@@ -3247,7 +3608,7 @@ const Game={
           if(Math.random()<.6){
             const a=Math.random()*Math.PI*2, d2=.8+Math.random()*1.6;
             const nx=clamp(e.x+Math.cos(a)*d2,2,w.map.w-3), ny=clamp(e.y+Math.sin(a)*d2,2,w.map.h-3);
-            if(walkable(w.map,nx,ny)&&(!e.home||dist(nx,ny,e.home.x,e.home.y)<(e.range||3)))
+            if(walkable(w.map,nx,ny,e.x,e.y)&&(!e.home||dist(nx,ny,e.home.x,e.home.y)<(e.range||3)))
               { e.target={x:nx,y:ny}; e.speed=.025; }
           }
         }
@@ -4593,16 +4954,17 @@ const STORY=[
   scene:{
    map:{world:true, w:360, h:200, seed:7777,
      features:[
-       /* the gate of the Garden, to the west (Aḏam & Ḥawwah came out eastward) */
-       {type:'gate',x:9,y:100,solid:true,clear:2},
+       /* the gate of the Garden — Ĕḏen lies in the uttermost east, and the two
+          were sent out of it into the wide world */
+       {type:'gate',x:314,y:96,solid:true,clear:2,flat:2},
      ]},
-   player:'adam_c', playerPos:[24,100],
+   player:'adam_c', playerPos:[310,98],
    npcs:[
      /* at the first there are only the two — Aḏam (you) and Ḥawwah */
-     {id:'chavvah',char:'chavvah_c',x:22,y:101,wander:false,follow:true,noTalk:true},
+     {id:'chavvah',char:'chavvah_c',x:312,y:99,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:38,y:100,radius:-1,dynamic:true,text:'Walk on — follow the way'},
+     {type:'goto',x:302,y:98,radius:-1,dynamic:true,text:'Walk on — follow the way'},
    ],
    onStart:[
      {call:G=>{
@@ -4614,13 +4976,28 @@ const STORY=[
        for(let i=0;i<24;i++) place({id:'beast'+i,animal:beasts[i%beasts.length],range:3+R()*3});
        for(let i=0;i<5;i++)  place({id:'fowl'+i,animal:'bird',range:6,flying:true});
        /* a mount that waits where you leave it — a horse on green land, a camel in the wilderness */
-       G.world.npcs.push(makeNpc({id:'ride',animal:'horse',rideable:true,wander:false,x:27,y:101,noTalk:true}));
+       G.world.npcs.push(makeNpc({id:'ride',animal:'horse',rideable:true,wander:false,x:308,y:100,noTalk:true}));
        /* the generations multiply — anonymous folk of the earth (never the named figures
-          of the story, who belong to their own chapters). None until the journey begins. */
+          of the story, who belong to their own chapters). None until the journey begins.
+          They gather about the towns and cities of their eras. */
        const cdone=(typeof JOURNEY!=='undefined'?JOURNEY:[]).filter(s=>!s.book&&done(s.id)).length;
        const folk=['builder','builder2','builder3','servant','steward','shepherd','oldman','gerarman','amorite'];
-       const people=cdone<1?0:Math.min(cdone*4,80);
-       for(let i=0;i<people;i++) place({id:'folk'+i,char:folk[i%folk.length],wander:true,range:2.6});
+       let fi=0;
+       const settle=(cx,cy,n)=>{ for(let i=0;i<n;i++){
+         const a=R()*Math.PI*2, r2=1.5+R()*3.5;
+         const x=clamp(cx+Math.cos(a)*r2,8,m.w-8), y=clamp(cy+Math.sin(a)*r2,8,m.h-8);
+         if(walkable(m,x,y)) G.world.npcs.push(makeNpc({id:'folk'+(fi++),char:folk[fi%folk.length],
+           x,y,wander:true,range:3.2,home:{x:cx,y:cy},noTalk:true})); } };
+       if(cdone>=1&&typeof WORLD_TOWNS!=='undefined'){
+         for(const tn of WORLD_TOWNS){
+           if(tn.after&&!done(tn.after)) continue;
+           if(tn.ruin&&done(tn.ruin)) continue;                 /* none dwell in the overthrown city */
+           settle(tn.u*m.w,tn.v*m.h,3+Math.min(3,tn.huts||3));
+         }
+         /* and travellers on the roads of the world */
+         const wanderers=Math.min(cdone*2,24);
+         for(let i=0;i<wanderers;i++) place({id:'traveller'+i,char:folk[i%folk.length],wander:true,range:4});
+       }
      }},
    ],
   },
@@ -7981,8 +8358,22 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
     const off=document.createElement('canvas'); off.width=m.w; off.height=m.h;
     const og=off.getContext('2d'), img=og.createImageData(m.w,m.h);
     for(let i=0;i<m.w*m.h;i++){ const c=pal[m.tiles[i]]||[60,55,45];
-      img.data[i*4]=c[0];img.data[i*4+1]=c[1];img.data[i*4+2]=c[2];img.data[i*4+3]=255; }
+      const sh=m.elev?1+ (m.elev[i]-1)*.07:1;                 // higher ground reads lighter
+      img.data[i*4]=Math.min(255,c[0]*sh);img.data[i*4+1]=Math.min(255,c[1]*sh);
+      img.data[i*4+2]=Math.min(255,c[2]*sh);img.data[i*4+3]=255; }
     og.putImageData(img,0,0); g2.imageSmoothingEnabled=false; g2.clearRect(0,0,W,H); g2.drawImage(off,0,0,W,H);
+    /* the towns and cities of the age */
+    if(typeof WORLD_TOWNS!=='undefined'){
+      g2.font='9px Georgia'; g2.textAlign='center';
+      for(const tn of WORLD_TOWNS){
+        if(tn.after&&!(Save.data.done&&Save.data.done[tn.after])) continue;
+        const tx=tn.u*W, ty=tn.v*H, ruined=tn.ruin&&Save.data.done&&Save.data.done[tn.ruin];
+        g2.fillStyle=ruined?'rgba(150,120,100,.8)':'rgba(240,222,170,.9)';
+        g2.fillRect(tx-1.5,ty-1.5,3,3);
+        g2.fillStyle=ruined?'rgba(170,140,120,.75)':'rgba(240,228,190,.85)';
+        g2.fillText(tn.name.charAt(0)+tn.name.slice(1).toLowerCase(),tx,ty-4);
+      }
+    }
     for(let i=0;i<JOURNEY.length;i++){ const s=JOURNEY[i],sx=s.x/m.w*W,sy=s.y/m.h*H;
       const dn=Save.data.done[s.id],rch=reached(i);
       if(rch&&!dn){ g2.beginPath(); g2.arc(sx,sy,10,0,7); g2.strokeStyle='rgba(255,233,168,.7)'; g2.lineWidth=2; g2.stroke(); }
@@ -8021,19 +8412,28 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
   hint.style.cssText='position:fixed;right:16px;bottom:14px;z-index:25;color:#cdbf9a;font-size:12px;'+
     'letter-spacing:.08em;opacity:.8;pointer-events:none;text-shadow:0 1px 3px rgba(0,0,0,.8);display:none';
   document.body.appendChild(banner); document.body.appendChild(hint);
-  const label=(x,w)=>{ const u=x/w;
-    return u<.16?['ĔḎEN','the garden, and the river with four heads']:
-      u<.32?['THE LAND OF NOḎ','east of Eden, where Qayin dwelt']:
-      u<.50?['THE MOUNTAINS OF ARARAT','where the ark came to rest']:
-      u<.66?['THE PLAIN OF SHINʿAR','where they built the tower']:
-      u<.82?['KENAʿAN','the land of promise']:
-      ['MITSRAYIM','the land of the Nile']; };
+  const NAMES={
+    eden:['ĔḎEN','the garden, and the river with four heads'],
+    nod:['THE LAND OF NOḎ','east of Ĕḏen, where Qayin dwelt'],
+    ararat:['THE MOUNTAINS OF ARARAT','where the ark came to rest'],
+    tsafon:['THE MOUNTAINS OF THE NORTH','the far ranges'],
+    mitsrayim:['MITSRAYIM','the land of the Ye’or'],
+    sinai:['THE WILDERNESS OF SINAI','the mountain of Aluahim'],
+    negev:['THE NEGEV','the dry south country'],
+    yarden:['THE YARDĔN VALLEY','from Kinnereth to the Salt Sea'],
+    kenaan:['KENAʿAN','the land of promise'],
+    qedem:['THE HEIGHTS OF THE EAST','beyond the Yardĕn'],
+    aram:['ARAM-NAHARAYIM','between the two rivers'],
+    shinar:['THE PLAIN OF SHINʿAR','where they built the tower'],
+    arav:['THE GREAT WILDERNESS','of Araḇ'],
+  };
+  const label=(x,y,m)=>NAMES[worldRegionAt(m.w,m.h,x,y)]||NAMES.arav;
   let last='';
   function tick(){
     const inWorld=Game.world&&Game.chapter&&Game.chapter.id==='freeroam'&&Game.state==='play';
     const mapOpen=document.getElementById('worldmap')&&document.getElementById('worldmap').style.display==='flex';
     if(inWorld&&!mapOpen){
-      const rl=label(Game.world.player.x,Game.world.map.w);
+      const rl=label(Game.world.player.x,Game.world.player.y,Game.world.map);
       if(rl[0]!==last){ last=rl[0];
         banner.innerHTML=rl[0]+'<small style="display:block;font-size:12px;letter-spacing:.4em;opacity:.7;margin-top:3px">'+rl[1]+'</small>';
         banner.style.opacity='1'; clearTimeout(banner._t); banner._t=setTimeout(()=>banner.style.opacity='0',2200); }
