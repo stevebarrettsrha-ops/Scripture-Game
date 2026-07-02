@@ -217,9 +217,14 @@ function sunState(){
   return { u:R*Math.sin(A), v:R*Math.cos(A), y:0.36, R, A };
 }
 function moonState(){
-  const A=-(simHours/24.84)*2*Math.PI+2.4;
+  /* her age runs 0..29.53 days: with the sun when new, opposite him when full,
+     and the two only meet again at the month's turning (an eclipse season) */
+  const totalDays=dayOfYear+simHours/24;
+  const age=(totalDays+32.55)%29.53;
+  const sunA=-(simHours/24)*2*Math.PI+Math.PI;
+  const A=sunA-2*Math.PI*age/29.53;
   const R=0.5-0.13*Math.cos(2*Math.PI*((dayOfYear-14)%365.25-172)/365.25);
-  return { u:R*Math.sin(A), v:R*Math.cos(A), y:0.31, R, A };
+  return { u:R*Math.sin(A), v:R*Math.cos(A), y:0.31, R, A, age };
 }
 
 /* night overlay: darkness fleeing the circuit of the sun */
@@ -264,10 +269,17 @@ function drawBody(b,isSun,t){
     g.fillStyle='rgba(140,150,168,.5)';
     for(const [ox,oy,cr] of [[-.32,-.18,.20],[.22,.10,.14],[-.02,.34,.11]]){
       g.beginPath(); g.arc(px+ox*R,py+oy*R,cr*R,0,Math.PI*2); g.fill(); }
-    /* her phase follows her distance from the sun */
-    const sun=sunState(); const ph=b.A-sun.A;
-    g.fillStyle='rgba(8,12,26,.62)';
-    g.beginPath(); g.arc(px+Math.cos(ph)*R*.85,py+Math.sin(ph)*R*.40,R*.92,0,Math.PI*2); g.fill();
+    /* her phase follows her age: covered when she walks with the sun,
+       clear-faced when she stands opposite him, the dark limb away from him */
+    const sun=sunState();
+    const [sx,sy]=P3(sun.u,sun.v,sun.y);
+    let nx=px-sx, ny=py-sy; const nl=Math.hypot(nx,ny)||1; nx/=nl; ny/=nl;
+    const c=Math.cos(2*Math.PI*(b.age||0)/29.53);          // 1 new … -1 full
+    const d=(1-c)*1.02*R;
+    if(d<2.0*R){
+      g.fillStyle='rgba(8,12,26,.68)';
+      g.beginPath(); g.arc(px+nx*d,py+ny*d,R*1.03,0,Math.PI*2); g.fill();
+    }
   }
 }
 let lastT=0;
@@ -414,9 +426,11 @@ function frame(t){
   const hh=Math.floor(simHours), mm=Math.floor((simHours%1)*60);
   const D=Math.floor(dayOfYear%365.25)+1;
   const north=sun.R<0.5;
+  const age=moon.age, moonWord=age<1.5?'new — she walks with the sun':(Math.abs(age-14.77)<1.5?'full — she stands opposite him':(age<14.77?'waxing':'waning'));
   document.getElementById('clock').innerHTML=
     `day ${D} of the year · ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}<br>`+
-    `the sun runs the ${north?'northern':'southern'} course${Math.abs(sun.R-0.37)<0.006?' — the summer turning':(Math.abs(sun.R-0.63)<0.006?' — the winter turning':'')}`;
+    `the sun runs the ${north?'northern':'southern'} course${Math.abs(sun.R-0.37)<0.006?' — the summer turning':(Math.abs(sun.R-0.63)<0.006?' — the winter turning':'')}<br>`+
+    `the moon is ${age.toFixed(1)} days old · ${moonWord}`;
 
   requestAnimationFrame(frame);
 }
