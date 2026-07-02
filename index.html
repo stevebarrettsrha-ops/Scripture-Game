@@ -643,6 +643,29 @@ function sprRender(g,ops,u,flip){
 
 function drawChar(g,px,py,charId,o){
   o=o||{};
+  /* the garment of light: before the fall the two were clothed in radiance,
+     and were not ashamed — the light itself was their covering */
+  if(o.lightBody){
+    const tl=o.t||0, pul=.8+Math.sin(tl/380+px*.01)*.2;
+    const gl=g.createRadialGradient(px,py-TILE*.65,4,px,py-TILE*.65,TILE*1.55);
+    gl.addColorStop(0,'rgba(255,240,170,'+(.42*pul).toFixed(3)+')');
+    gl.addColorStop(.55,'rgba(255,218,120,'+(.18*pul).toFixed(3)+')');
+    gl.addColorStop(1,'rgba(255,205,90,0)');
+    g.fillStyle=gl; g.beginPath(); g.arc(px,py-TILE*.65,TILE*1.55,0,Math.PI*2); g.fill();
+    const oc=drawChar._lb||(drawChar._lb=document.createElement('canvas'));
+    if(oc.width!==220){ oc.width=220; oc.height=220; }
+    const og=oc.getContext('2d');
+    og.clearRect(0,0,220,220);
+    drawChar(og,110,168,charId,Object.assign({},o,{lightBody:false}));
+    og.globalCompositeOperation='source-atop';
+    og.fillStyle='rgba(255,226,130,.62)'; og.fillRect(0,0,220,220);
+    og.fillStyle='rgba(255,246,200,'+(.20+.12*Math.sin(tl/240)).toFixed(3)+')'; og.fillRect(0,0,220,220);
+    og.globalCompositeOperation='source-over';
+    g.drawImage(oc,px-110,py-168);
+    if(Math.random()<.10) Particles.spawn({x:px+(Math.random()-.5)*TILE*.7,y:py-TILE*.4-Math.random()*TILE*.9,
+      vx:(Math.random()-.5)*.01,vy:-.04-Math.random()*.03,life:900,max:900,type:'holy',screen:true});
+    return;
+  }
   const c=CHARS[charId]||CHARS.adam;
   if(c.dragon){ drawDragon(g,px,py,o); return; }
   if(c.serpent){ drawSerpent(g,px,py,o); return; }
@@ -2594,7 +2617,7 @@ function drawWorldEnt(g,world,e,sx,sy,t){
     if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
   }
   else {
-    drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
+    drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand,lightBody:d.lightBody});
     if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
     if(d.marker){ // objective marker
       const mb=Math.sin(t/250)*4;
@@ -3368,7 +3391,7 @@ const Game={
     }
     this._worldSpawn=null;
     const player=sc.player?{
-      char:sc.player, x:wx, y:wy,
+      char:sc.player, x:wx, y:wy, lightBody:sc.playerLight||null,
       dir:'down', moving:false, speed:.085, mount:sc.playerMount||null, hold:sc.playerHold||null
     }:null;
     if(player){
@@ -3560,7 +3583,7 @@ const Game={
       if(d._story&&d.solid&&!d.id&&!d.examine&&dist(d.x,d.y,cx,cy)<rad) m.decor.splice(i,1); } };
     const p=w.player;
     if(p&&sc.playerPos){ p.x=sc.playerPos[0]; p.y=sc.playerPos[1]; }
-    if(p){ p.char=sc.player||p.char; p.mount=sc.playerMount||null; p.hold=sc.playerHold||null; p.target=null; clearNear(p.x,p.y,2.3); }
+    if(p){ p.char=sc.player||p.char; p.mount=sc.playerMount||null; p.hold=sc.playerHold||null; p.lightBody=sc.playerLight||null; p.target=null; clearNear(p.x,p.y,2.3); }
     for(const ob9 of (sc.objectives||[])) if(ob9.x!==undefined) clearNear(ob9.x,ob9.y,1.5);
     m.decor.sort((a,b)=>a.y-b.y);
     /* the walker's companions wait out the telling */
@@ -3643,7 +3666,7 @@ const Game={
       $('hud-chapter').textContent=this.chapter.title;
       this.setupObjectives(this.chapter.scene.objectives);
       const p=this.world.player, hp=this.worldHero();
-      if(p){ p.char=hp.hero; p.mount=null; p.hold=null; p.target=null; }
+      if(p){ p.char=hp.hero; p.mount=null; p.hold=null; p.lightBody=null; p.target=null; }
       const wf=this.world.npcs.find(n=>n.id==='chavvah');
       if(wf){ if(hp.wife){ wf.char=hp.wife; wf.hidden=false; wf.x=p.x-1; wf.y=p.y+.5; wf.target=null; } else wf.hidden=true; }
       const rd=this.world.npcs.find(n=>n.id==='ride');
@@ -5458,6 +5481,7 @@ const STORY=[
        {type:'clearing',x:24,y:18,flat:3},
      ]},
    time:'day', music:'eden',
+   playerLight:true,   /* before the fall: a body of light, after the image above */
    player:'adam', playerPos:[12,24],
    npcs:[
      {id:'sheep1',animal:'sheep',x:16,y:20,range:3,
@@ -5509,7 +5533,7 @@ const STORY=[
      {wait:1300},
      {fade:'out'},{sfx:'holy'},
      {call:g=>{ const w=g.world; w.time='dusk'; }},
-     {spawn:{id:'chavvah',char:'chavvah',x:25,y:19,wander:false}},
+     {spawn:{id:'chavvah',char:'chavvah',x:25,y:19,wander:false,lightBody:true}},
      {teleport:['player',23,19]},
      {fade:'in'},{wait:600},
      {say:['narrator','And He took one of his ribs, and closed up the flesh in its place. And the rib which He had taken from the man He made into a woman, and He brought her to the man.']},
@@ -5539,9 +5563,10 @@ const STORY=[
        {type:'clearing',x:24,y:18,flat:3},
      ]},
    time:'day', music:'tense',
+   playerLight:true,
    player:'chavvah', playerPos:[18,22],
    npcs:[
-     {id:'adam',char:'adam',x:14,y:26,wander:true,range:2,dlg:[['adam','The garden is wide and good. I shall be near the river, beloved.']]},
+     {id:'adam',char:'adam',x:14,y:26,wander:true,range:2,lightBody:true,dlg:[['adam','The garden is wide and good. I shall be near the river, beloved.']]},
      {id:'serpent',char:'serpent',x:28,y:15,wander:false,
       script:[
        {say:['serpent','Is it true that Aluahim has said, “Do not eat of every tree of the garden”?']},
@@ -5559,11 +5584,15 @@ const STORY=[
        {move:['player',26.5,14.6,.04]},
        {sfx:'bad'},{music:'sorrow'},{wait:600},
        {say:['narrator','And she took of its fruit and ate.']},
+       {call:g=>{ g.world.player.lightBody=null;
+          Particles.burst(g.world.player.x*TILE,(g.world.player.y-1)*TILE,'holy',22); }},{sfx:'bad'},
        {charSwap:['player','chavvah_f']},
        {burst:[26.5,14.6,'ash',16]},{wait:400},
        {move:['adam',25,16,.05]},
        {say:['narrator','And she also gave to her husband with her — and he ate.']},
        {say:['narrator','Then the eyes of both of them were opened, and they knew that they were naked.']},
+       {call:g=>{ const a=g.world.npcs.find(n=>n.id==='adam');
+          if(a){ a.lightBody=null; Particles.burst(a.x*TILE,(a.y-1)*TILE,'holy',22); } }},
        {charSwap:['adam','adam_f']},{burst:[25,16,'ash',16]},
        {sfx:'thunder'},{time:'dusk'},{wait:800},
        {say:['narrator','And they sewed fig leaves together and made loin coverings for themselves.']},
