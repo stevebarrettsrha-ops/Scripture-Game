@@ -1548,41 +1548,74 @@ function drawProp(g,px,py,p,t){
       R(-5.4,-9.4,10.8,1.6,'#8d7048');
       break; }
     case 'tower': {
-      /* the tower of Baḇel, built of blocks like the land itself: every brick a
-         block with a lit top face, a front face and seams — laid block upon block */
-      const st=p.stage||1; // built tiers
-      const W2=TILE*4.6, BH=TILE*1.7;
+      /* the ziggurat of Baḇel in three dimensions, after the Etemenanki: stepped
+         tiers with buttressed faces, a sunlit deck on every stage, the side wall
+         receding in depth, and the great stair climbing the front — all of it
+         built of blocks, laid block upon block */
+      const st=p.stage||1;
+      const W0=TILE*5.6, BH=TILE*1.5, DEP=TILE*2.0;
+      const sxd=DEP*.60, syd=DEP*.36;                    /* the depth vector, receding up-right */
+      const F='#b58450', F2='#a8794a';
       g.fillStyle='rgba(0,0,0,.3)';
-      g.beginPath(); g.ellipse(0,TILE*.35,W2*.7,TILE*.5,0,0,Math.PI*2); g.fill();
-      const drawBlock=(bx,by,bw,bh,base)=>{
-        g.fillStyle=shadeHex(base,26); g.fillRect(bx,by,bw,bh*.38);          /* lit top face */
-        g.fillStyle=base;              g.fillRect(bx,by+bh*.38,bw,bh*.62);   /* front face */
-        g.fillStyle=shadeHex(base,-26); g.fillRect(bx+bw-1.6,by,1.6,bh);     /* right seam */
-        g.fillStyle='rgba(0,0,0,.25)'; g.fillRect(bx,by+bh-1.4,bw,1.4);      /* bed joint */
-      };
+      g.beginPath(); g.ellipse(sxd*.4,TILE*.3,W0*.8,TILE*.62,0,0,Math.PI*2); g.fill();
+      const tierGeom=lv=>{ const w=W0*(1-lv*.15);
+        return { w:w, cx:lv*sxd*.30, yb:-lv*(BH+syd*.30) }; };
+      const face=(pts,col)=>{ g.fillStyle=col; g.beginPath();
+        g.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) g.lineTo(pts[i][0],pts[i][1]);
+        g.closePath(); g.fill(); };
       for(let lv=0;lv<st;lv++){
-        const w=W2*(1-lv*.16), y=-lv*BH;
+        const tg=tierGeom(lv), w=tg.w, cx=tg.cx, yb=tg.yb, yt=yb-BH;
+        /* the side wall, receding into the light */
+        face([[cx+w/2,yt],[cx+w/2,yb],[cx+w/2+sxd,yb-syd],[cx+w/2+sxd,yt-syd]],shadeHex(F,-34));
+        g.fillStyle='rgba(0,0,0,.12)';
+        for(let i=1;i<4;i++) g.fillRect(cx+w/2+i*sxd/4-1,yt-i*syd/4,2,BH);
+        /* the sunlit deck */
+        face([[cx-w/2,yt],[cx+w/2,yt],[cx+w/2+sxd,yt-syd],[cx-w/2+sxd,yt-syd]],shadeHex(F,30));
+        g.fillStyle='rgba(0,0,0,.10)'; g.fillRect(cx-w/2,yt,w,2);
+        /* the front face: chunky blocks with lit tops */
         const cols=Math.max(3,6-lv), bw=w/cols;
-        for(let cI=0;cI<cols;cI++)
-          drawBlock(-w/2+cI*bw+.5,y-BH,bw-1,BH-1,(cI+lv)%2?'#a8794a':'#b58450');
-        /* the tier's top reads like a walkable block-top, with a shadow at its foot */
-        g.fillStyle=shadeHex('#b58450',34); g.fillRect(-w/2,y-BH,w,4);
-        g.fillStyle='rgba(0,0,0,.18)'; g.fillRect(-w/2,y-4,w,4);
+        for(let cI=0;cI<cols;cI++){ const base=(cI+lv)%2?F2:F, bx=cx-w/2+cI*bw;
+          g.fillStyle=shadeHex(base,14); g.fillRect(bx+.5,yt,bw-1,BH*.30);
+          g.fillStyle=base; g.fillRect(bx+.5,yt+BH*.30,bw-1,BH*.70);
+          g.fillStyle=shadeHex(base,-24); g.fillRect(bx+bw-2,yt,1.6,BH);
+        }
+        g.fillStyle='rgba(0,0,0,.16)';                   /* buttress ribs, as on the walls of Etemenanki */
+        for(let i=0;i<Math.floor(w/9);i++) g.fillRect(cx-w/2+4+i*9,yt+BH*.30,2.5,BH*.70-2);
+        g.fillStyle='rgba(0,0,0,.22)'; g.fillRect(cx-w/2,yb-1.6,w,1.6);
       }
-      /* built in real time: the new course rises block upon block */
+      /* the great stair, from the ground to the height */
+      { const top=tierGeom(st-1), topY=top.yb-BH, stW=TILE*1.15;
+        face([[-stW,0],[stW,0],[stW*.55+top.cx,topY],[-stW*.55+top.cx,topY]],'#c8a266');
+        g.strokeStyle='rgba(0,0,0,.28)'; g.lineWidth=1.4;
+        const steps=st*7;
+        for(let i=1;i<steps;i++){ const t9=i/steps, sy2=t9*topY, hw=stW*(1-.45*t9);
+          g.beginPath(); g.moveTo(-hw+top.cx*t9,sy2); g.lineTo(hw+top.cx*t9,sy2); g.stroke(); }
+        g.strokeStyle='#8a6a3e'; g.lineWidth=2.4;
+        g.beginPath(); g.moveTo(-stW,0); g.lineTo(-stW*.55+top.cx,topY);
+        g.moveTo(stW,0); g.lineTo(stW*.55+top.cx,topY); g.stroke(); }
+      /* the rising course on the working stage — block upon block, in real time */
       if(p.rise&&!p.rise.done){
-        const w9=W2*(1-st*.16), y9=-st*BH;
+        const nx9=tierGeom(st), w9=nx9.w, yb9=nx9.yb, cx9=nx9.cx;
         const cols=Math.max(3,6-st), bw=w9/cols;
-        const pr=p.prog||0, nb=Math.floor(pr*cols);
-        for(let cI=0;cI<nb;cI++)
-          drawBlock(-w9/2+cI*bw+.5,y9-BH*.62,bw-1,BH*.62-1,(cI+st)%2?'#a8794a':'#b58450');
-        if(nb<cols){ const bt=(pr*cols)%1;                                   /* the block now being set descends into place */
-          drawBlock(-w9/2+nb*bw+.5,y9-BH*.62-(1-bt)*TILE*1.5,bw-1,BH*.62-1,'#c29059'); }
+        const pr=p.prog||0, nb=Math.floor(pr*cols), hh=BH*.62;
+        const blk=(bx,by,base)=>{ g.fillStyle=shadeHex(base,20); g.fillRect(bx,by,bw-1,hh*.34);
+          g.fillStyle=base; g.fillRect(bx,by+hh*.34,bw-1,hh*.66);
+          g.fillStyle=shadeHex(base,-26); g.fillRect(bx+bw-2.4,by,1.6,hh); };
+        for(let cI=0;cI<nb;cI++) blk(cx9-w9/2+cI*bw+.5,yb9-hh,(cI+st)%2?F2:F);
+        if(nb<cols){ const bt=(pr*cols)%1;                /* the block now being set descends into place */
+          blk(cx9-w9/2+nb*bw+.5,yb9-hh-(1-bt)*TILE*1.6,'#c9995f'); }
         g.strokeStyle='#6e552f'; g.lineWidth=3;
-        g.beginPath(); g.moveTo(w9*.6,y9+BH*.4); g.lineTo(w9*.66,y9-BH); g.moveTo(-w9*.6,y9+BH*.4); g.lineTo(-w9*.66,y9-BH); g.stroke();
+        g.beginPath(); g.moveTo(cx9+w9*.58,yb9+BH*.3); g.lineTo(cx9+w9*.64,yb9-BH);
+        g.moveTo(cx9-w9*.58,yb9+BH*.3); g.lineTo(cx9-w9*.64,yb9-BH); g.stroke();
+      } else if((p.rise&&p.rise.done)||(!p.rise&&st>=3)){
+        /* the high place stands on the summit */
+        const t9=tierGeom(st-1), ty=t9.yb-BH, hw=t9.w*.20, hh=BH*.85;
+        const hx=t9.cx+sxd*.30, hy=ty-syd*.32;
+        face([[hx+hw,hy-hh],[hx+hw,hy],[hx+hw+sxd*.26,hy-syd*.26],[hx+hw+sxd*.26,hy-hh-syd*.26]],shadeHex('#7a5844',-26));
+        face([[hx-hw,hy-hh],[hx+hw,hy-hh],[hx+hw+sxd*.26,hy-hh-syd*.26],[hx-hw+sxd*.26,hy-hh-syd*.26]],shadeHex('#7a5844',20));
+        g.fillStyle='#7a5844'; g.fillRect(hx-hw,hy-hh,hw*2,hh);
+        g.fillStyle='#241a0e'; g.fillRect(hx-hw*.3,hy-hh*.66,hw*.6,hh*.66);
       }
-      if(p.scaffold){ g.strokeStyle='#6e552f'; g.lineWidth=3;
-        g.beginPath(); g.moveTo(W2*.55,0); g.lineTo(W2*.62,-st*BH); g.moveTo(-W2*.55,0); g.lineTo(-W2*.62,-st*BH); g.stroke(); }
       break; }
     case 'pillar': {
       shadow(2.6);
@@ -2458,6 +2491,11 @@ function walkable(map,x,y,fx,fy){
   else if(SOLID.has(tl)) return false;
   for(const d of map.decor){
     if(!d.solid) continue;
+    if(d.type==='tower'){
+      const dx9=x-d.x, dy9=y-d.y;
+      if(dx9>-3.1&&dx9<4.0&&dy9>-2.4&&dy9<0.5&&!(Math.abs(dx9)<1.05&&dy9>-0.2)) return false;
+      continue;
+    }
     if(d.type==='ark'){
       /* the hull is one solid mass — the only way in is the long ladder to the door in its midst */
       const dx=Math.abs(d.x-x), dy=y-d.y;
