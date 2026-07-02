@@ -1845,7 +1845,7 @@ function drawProp(g,px,py,p,t){
 }
 
 /* ================= MAP GENERATION ================= */
-const T={GRASS:0,GRASS2:1,FLOWER:2,PATH:3,SAND:4,WATER:5,DEEP:6,ROCK:7,MTN:8,DIRT:9,TILLED:10,FLOOR:11,WALL:12,SNOW:13,MUD:14,BRICK:15};
+const T={GRASS:0,GRASS2:1,FLOWER:2,PATH:3,SAND:4,WATER:5,DEEP:6,ROCK:7,MTN:8,DIRT:9,TILLED:10,FLOOR:11,WALL:12,SNOW:13,MUD:14,BRICK:15,FORD:16};
 const SOLID=new Set([T.WATER,T.DEEP,T.ROCK,T.MTN,T.WALL]);
 
 const BIOMES={
@@ -1980,7 +1980,7 @@ function wFbm(x,y){let t=0,a=.5,f=1;for(let o=0;o<4;o++){t+=a*wNoise(x*f+o*40,y*
    the block beneath. One block is a step that man and beast can climb; a face of
    two or more is a cliff, and the ways up the mountains are cut as stairs. ===== */
 const WORLD_SITES={ /* chapter id → [u,v], its place on the world (fractions of w,h) */
-  c2:[.928,.45], c3:[.939,.43], c4:[.967,.58], c5:[.894,.60], c6:[.867,.64],
+  c2:[.845,.475], c3:[.842,.43], c4:[.967,.58], c5:[.894,.60], c6:[.867,.64],
   c6b:[.783,.56], c7:[.728,.48], c8:[.700,.40], c9:[.678,.30], c9b:[.633,.13],
   c10:[.611,.17], c10a:[.644,.22], c11:[.736,.625], c11a:[.811,.715], c11b:[.833,.76],
   c12:[.586,.225], c12a:[.122,.79], c13:[.289,.64], c13a:[.239,.74], c14:[.286,.63],
@@ -1989,7 +1989,7 @@ const WORLD_SITES={ /* chapter id → [u,v], its place on the world (fractions o
   c18a:[.264,.715], c19:[.306,.515], c20:[.589,.22], c20a:[.600,.20], c21:[.394,.48],
   c21b:[.317,.44], c21a:[.297,.58], c22:[.303,.40], c22a:[.122,.81], c22b:[.272,.60],
   c23:[.117,.83], c24:[.128,.80], c25:[.144,.76],
-  b1:[.906,.52], h1:[.750,.44], x37:[.236,.91], v1:[.244,.89], n2:[.306,.84],
+  b1:[.850,.545], h1:[.750,.44], x37:[.236,.91], v1:[.244,.89], n2:[.306,.84],
 };
 const WORLD_TOWNS=[ /* the towns and cities of the ancient world, each in its place and era */
   {id:'hanokcity', name:'ḤANOḴ',   sub:'the city Qayin built',        u:.958,v:.62,  after:'c6',  huts:3},
@@ -2009,7 +2009,9 @@ const WORLD_TOWNS=[ /* the towns and cities of the ancient world, each in its pl
 /* which land of the world a tile lies in */
 function worldRegionAt(w,h,x,y){
   const u=x/w, v=y/h;
-  if(Math.hypot((u-.93)/.075,(v-.46)/.115)<1) return 'eden';
+  const gd=Math.hypot((u-.93)/.075,(v-.46)/.115);
+  if(gd<1) return 'eden';
+  if(gd<1.7) return 'edenwaste';
   if(u>.945||(u>.885&&v>.55&&v<.82)) return 'nod';
   if(Math.hypot((u-.62)/.085,(v-.11)/.115)<1) return 'ararat';
   if(v<.125) return 'tsafon';
@@ -2029,6 +2031,7 @@ function generateWorldMap(cfg){
   const idx=(x,y)=>y*w+x;
   const inb=(x,y)=>x>=0&&y>=0&&x<w&&y<h;
   const region=(x,y)=>worldRegionAt(w,h,x,y);
+  const gardenD=(x,y)=>Math.hypot((x-w*.93)/(.075*w),(y-h*.46)/(.115*h));   // 1 = the garden's bound
   const massif=(x,y,cx,cy,r)=>{ const d=Math.hypot(x-cx,y-cy)/r; return d>=1?0:(1-d*d)*(1-d*d); };
   const segd=(x,y,x1,y1,x2,y2)=>{ const dx=x2-x1,dy=y2-y1,L2=dx*dx+dy*dy;
     const t=L2?clamp(((x-x1)*dx+(y-y1)*dy)/L2,0,1):0; return Math.hypot(x-(x1+dx*t),y-(y1+dy*t)); };
@@ -2056,6 +2059,7 @@ function generateWorldMap(cfg){
     else if(e>=5) t=T.MTN;
     else if(e===4) t=T.ROCK;
     else if(rg==='eden') t=wFbm(x/(5*S),y/(5*S))>.58?T.FLOWER:(m>.42?T.GRASS:T.GRASS2);
+    else if(rg==='edenwaste') t=m<.5?T.DIRT:T.SAND;                              // without the garden, the ground is cursed
     else if(rg==='kenaan') t=m>.5?T.GRASS:(wFbm(x/6,y/6)>.62?T.DIRT:T.GRASS2);
     else if(rg==='yarden') t=m>.4?T.GRASS2:T.GRASS;
     else if(rg==='aram') t=m>.52?T.GRASS2:T.DIRT;
@@ -2127,9 +2131,22 @@ function generateWorldMap(cfg){
   /* --- the ends of the earth: sheer rock no one may pass --- */
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){ const edge=Math.min(x,y,w-1-x,h-1-y);
     if(edge<=1||(edge===2&&rng()<.5)){ tiles[idx(x,y)]=T.MTN; elev[idx(x,y)]=9; } }
+  /* --- the garden enclosed: "He drove out the man; and He placed kerubim at
+     the east of the garden of Ĕḏen, and the flaming sword which turned every
+     way, to guard the way to the tree of life" (BERĔSHITH 3:24).
+     A wall no man can pass rings the garden; the rivers alone go out under it. */
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    const d=gardenD(x,y);
+    if(d>=.90&&d<=1.0){
+      const t9=tiles[idx(x,y)];
+      if(t9===T.WATER||t9===T.DEEP) continue;             // the river flows out beneath the wall
+      tiles[idx(x,y)]=T.WALL; elev[idx(x,y)]=Math.min(8,elev[idx(x,y)]+2);
+    }
+  }
   /* --- trees, bushes and rocks, land by land --- */
   const RD={
     eden:{d:.075,b:.05,col:['#3f8f3a','#4a9c42','#39852c','#5aa84a']},
+    edenwaste:{d:.012,b:.008,col:['#6e7a3e'],dead:.75,rock:.03},
     kenaan:{d:.045,b:.04,col:['#3f7032','#4a7c3a','#5d7a35']},
     yarden:{d:.05,b:.04,col:['#4a8c3a','#3f7032'],palm:true},
     aram:{d:.02,b:.02,col:['#6e8a3e','#7a8a4a']},
@@ -2161,9 +2178,9 @@ function generateWorldMap(cfg){
   }
   /* helpers shared by features, sites and towns */
   const open=(x,y)=>{ const tl=tiles[idx(x,y)]; return tl!==T.WATER&&tl!==T.DEEP&&tl!==T.WALL&&elev[idx(x,y)]<9; };
-  const snap=(x,y)=>{ for(let r=0;r<14;r++)for(let a=0;a<16;a++){
+  const snap=(x,y,ok)=>{ ok=ok||open; for(let r=0;r<14;r++)for(let a=0;a<16;a++){
       const X=Math.round(x+Math.cos(a/16*6.283)*r), Y=Math.round(y+Math.sin(a/16*6.283)*r);
-      if(X>4&&X<w-4&&Y>4&&Y<h-4&&open(X,Y)) return [X,Y]; } return [Math.round(x),Math.round(y)]; };
+      if(X>4&&X<w-4&&Y>4&&Y<h-4&&ok(X,Y)) return [X,Y]; } return [Math.round(x),Math.round(y)]; };
   const flatten=(X,Y,rad)=>{ const e0=elev[idx(clamp(X,0,w-1),clamp(Y,0,h-1))];
     for(let yy=Math.max(2,Y-rad);yy<=Math.min(h-3,Y+rad);yy++)for(let xx=Math.max(2,X-rad);xx<=Math.min(w-3,X+rad);xx++){
       const t9=tiles[idx(xx,yy)]; if(t9===T.WATER||t9===T.DEEP) continue;
@@ -2193,7 +2210,9 @@ function generateWorldMap(cfg){
       let pe=elev[idx(a.x,a.y)], lx=a.x, ly=a.y;
       const carve=(X,Y)=>{
         if(X<2||X>w-3||Y<2||Y>h-3) return;
-        tiles[idx(X,Y)]=T.PATH;
+        if(gardenD(X,Y)<1.06) return;                    // no road breaches the garden or its wall
+        const t9=tiles[idx(X,Y)];
+        tiles[idx(X,Y)]=(t9===T.WATER||t9===T.DEEP||t9===T.FORD)?T.FORD:T.PATH;   // rivers are crossed by fords, not cut
         let e2=elev[idx(X,Y)];
         if(e2>pe+1)e2=pe+1; else if(e2<pe-1)e2=pe-1;
         elev[idx(X,Y)]=e2; pe=e2;
@@ -2209,7 +2228,8 @@ function generateWorldMap(cfg){
   for(const tn of WORLD_TOWNS){
     if(tn.after&&!done(tn.after)) continue;
     let X=Math.round(tn.u*w), Y=Math.round(tn.v*h);
-    const sn=snap(X,Y); X=sn[0]; Y=sn[1];
+    /* a town's heart stands on dry ground — never in the ford of a river */
+    const sn=snap(X,Y,(a,b)=>open(a,b)&&tiles[idx(a,b)]!==T.FORD); X=sn[0]; Y=sn[1];
     flatten(X,Y,4);
     for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&dist(decor[k].x,decor[k].y,X,Y)<4.6) decor.splice(k,1); }
     if(tn.ruin&&done(tn.ruin)){
@@ -2220,19 +2240,33 @@ function generateWorldMap(cfg){
       decor.push({type:'placename',x:X,y:Y+2.6,name:tn.name,sub:'overthrown, as it is written'});
       continue;
     }
+    const dry=(x,y)=>{ const t9=tiles[idx(clamp(Math.round(x),0,w-1),clamp(Math.round(y),0,h-1))];
+      return t9!==T.WATER&&t9!==T.DEEP&&t9!==T.FORD; };
     if(tn.brick){ for(let yy=Y-2;yy<=Y+2;yy++)for(let xx=X-3;xx<=X+3;xx++)
-      if(inb(xx,yy)&&!SOLID.has(tiles[idx(xx,yy)])&&rng()<.7) tiles[idx(xx,yy)]=T.BRICK; }
+      if(inb(xx,yy)&&!SOLID.has(tiles[idx(xx,yy)])&&dry(xx,yy)&&rng()<.7) tiles[idx(xx,yy)]=T.BRICK; }
     const n=tn.huts||3;
-    for(let i=0;i<n;i++){ const a=i/n*Math.PI*2+.4, r=2.1+(i%2)*1.1;
-      const hx=X+Math.cos(a)*r, hy=Y+Math.sin(a)*r*.8;
+    for(let i=0;i<n;i++){
+      /* every dwelling stands on dry ground — never in the river */
+      let hx=null,hy=null;
+      for(let k=0;k<9&&hx===null;k++){ const a=i/n*Math.PI*2+.4+k*.55, r=2.1+(i%2)*1.1+k*.22;
+        const cx2=X+Math.cos(a)*r, cy2=Y+Math.sin(a)*r*.8;
+        if(dry(cx2,cy2)&&dry(cx2,cy2-1)&&dry(cx2+1,cy2)&&dry(cx2-1,cy2)&&dry(cx2,cy2+1.4)){ hx=cx2; hy=cy2; } }
+      if(hx===null) continue;
       decor.push({type:'tent',solid:true,x:hx,y:hy,col:['#bda884','#c8b486','#b3a07f','#c2a87a'][i%4]});
       decor.push({type:'doorway',x:hx,y:hy+1.25,enter:true,id:'house_'+tn.id+'_'+i,examine:'A dwelling — step inside.'});
     }
     decor.push({type:'well',x:X,y:Y,solid:true});
-    decor.push({type:'firepit',x:X+1.4,y:Y+1.1,lit:true});
-    if(tn.tower) decor.push({type:'tower',x:X,y:Y-3.2,solid:true,stage:3});
+    if(dry(X+1.4,Y+1.1)) decor.push({type:'firepit',x:X+1.4,y:Y+1.1,lit:true});
+    if(tn.tower){ /* the tower rises on whichever side of the town is dry ground */
+      for(const off of [[0,-3.2],[-3.6,-1],[3.6,-1],[-3,2.6],[3,2.6],[0,4]]){
+        const txx=X+off[0], tyy=Y+off[1];
+        if(dry(txx,tyy)&&dry(txx-1.5,tyy)&&dry(txx+1.5,tyy)&&dry(txx,tyy-1.5)){
+          decor.push({type:'tower',x:txx,y:tyy,solid:true,stage:3}); break; } } }
     decor.push({type:'placename',x:X,y:Y+3.1,name:tn.name,sub:tn.sub});
   }
+  /* within the garden, seen from afar over the wall: the tree of life */
+  decor.push({type:'treeLife',x:w*.93,y:h*.462,solid:true});
+  decor.push({type:'treeKnow',x:w*.918,y:h*.452,solid:true});
   /* --- the names written on the land --- */
   const L=(u,v,name,sub)=>decor.push({type:'placename',x:u*w,y:v*h,name,sub});
   L(.075,.32,'THE GREAT SEA');
@@ -2254,6 +2288,62 @@ function generateWorldMap(cfg){
   L(.45,.56,'THE HEIGHTS OF THE EAST');
   decor.sort((a,b)=>a.y-b.y);
   return {w,h,tiles,elev,decor,biome:'plains',cfg,world:true};
+}
+/* ===== the breath of life: the world's creatures go about their ways =====
+   fish swim, dive under and come up with a splash; folk stop for a word with
+   one another on the road. Runs a light pass a few times a second. */
+function worldLifeTick(G){
+  const w=G.world, m=w.map, t=G.t;
+  if(!m||!m.world) return;
+  if(w._lifeT&&t<w._lifeT) return;
+  w._lifeT=t+600;
+  const isWater=tl=>tl===T.WATER||tl===T.DEEP;
+  for(const e of w.npcs){
+    if(e.swim){
+      /* swimming: keep to the waters, never the dry land */
+      if(!e.hidden&&!e.target&&Math.random()<.75){
+        for(let k=0;k<7;k++){
+          const a=Math.random()*6.283, d2=.8+Math.random()*2.2;
+          const nx=e.x+Math.cos(a)*d2, ny=e.y+Math.sin(a)*d2;
+          if(isWater(tileAt(m,nx,ny))&&isWater(tileAt(m,(e.x+nx)/2,(e.y+ny)/2))){
+            e.target={x:nx,y:ny}; e.speed=.016+Math.random()*.014; break; }
+        }
+      }
+      /* diving: under the water and up again, with a splash */
+      if(!e._diveT) e._diveT=t+2500+Math.random()*5000;
+      if(t>e._diveT){
+        e._diveT=t+(e.hidden?2200+Math.random()*3000:3500+Math.random()*6000);
+        e.hidden=!e.hidden; e.target=null;
+        const px=e.x*TILE, py=e.y*TILE;
+        if(Math.abs(px-Camera.x)<VW&&Math.abs(py-Camera.y)<VH){
+          Particles.burst(px,py-6,'splash',7);
+          for(let s=0;s<3;s++) Particles.spawn({x:px+(Math.random()-.5)*10,y:py-4,
+            vx:(Math.random()-.5)*.05,vy:-.06-Math.random()*.05,life:500,max:500,type:'splash'});
+        }
+      }
+    }
+    /* the end of a word by the way */
+    if(e._chatT&&t>e._chatT){ e._chatT=null; if(e.emote==='talk') e.emote=null; }
+  }
+  /* folk meet on the road and stop for a word */
+  if(!w._chatScanT||t>w._chatScanT){
+    w._chatScanT=t+1600;
+    const folk=w.npcs.filter(n=>!n.animal&&!n.hidden&&!n.follow&&n.wander!==undefined&&!n._chatT);
+    for(let i=0;i<folk.length;i++){
+      const a=folk[i]; if(a._chatT) continue;
+      for(let j=i+1;j<folk.length;j++){
+        const b=folk[j]; if(b._chatT) continue;
+        if(dist(a.x,a.y,b.x,b.y)<1.5&&Math.random()<.35){
+          a._chatT=b._chatT=t+2600+Math.random()*1800;
+          a.target=b.target=null; a.moving=b.moving=false;
+          a.wt=b.wt=a._chatT+400;               // hold the wanderer's next step until the talk ends
+          a.dir=b.x<a.x?'left':'right'; b.dir=a.x<b.x?'left':'right';
+          a.emote='talk'; b.emote='talk';
+          break;
+        }
+      }
+    }
+  }
 }
 function walkable(map,x,y,fx,fy){
   const tl=tileAt(map,x,y);
@@ -2350,6 +2440,8 @@ const Particles={
           g.fillRect(sx-1,sy-1,3,3); break;
         case 'ash': g.fillStyle=`rgba(140,130,120,${a*.7})`;
           g.fillRect(sx,sy,2,2); break;
+        case 'splash': g.fillStyle=`rgba(196,224,246,${a*.85})`;
+          g.fillRect(sx-1,sy-1,2.6,2.6); break;
         case 'rain': g.strokeStyle=`rgba(160,190,230,${a*.55})`; g.lineWidth=1;
           g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-2,sy+10); g.stroke(); break;
         case 'snow': g.fillStyle=`rgba(240,244,250,${a*.8})`;
@@ -2390,6 +2482,7 @@ function tileColor(map,id,x,y){
     case T.MTN: return shadeC('#5d564c',v);
     case T.WATER: return shadeC(b.water,v*.6);
     case T.DEEP: return shadeC(b.water,v*.5-30);
+    case T.FORD: return shadeC(b.water,v*.5+26);
     case T.SNOW: return shadeC('#e8ecf0',v*.4);
   }
   return '#777';
@@ -2425,6 +2518,7 @@ FACE_COL[T.GRASS]='#6b5a40'; FACE_COL[T.GRASS2]='#66563d'; FACE_COL[T.FLOWER]='#
 FACE_COL[T.PATH]='#8a744f'; FACE_COL[T.SAND]='#a98f5e'; FACE_COL[T.DIRT]='#6e5d42';
 FACE_COL[T.ROCK]='#5d5548'; FACE_COL[T.MTN]='#4e463c'; FACE_COL[T.SNOW]='#8d919c';
 FACE_COL[T.MUD]='#57492f'; FACE_COL[T.BRICK]='#8a6238'; FACE_COL[T.TILLED]='#6e5d42';
+FACE_COL[T.FORD]='#5d7488'; FACE_COL[T.WALL]='#3e3830'; FACE_COL[T.WATER]='#3d6383'; FACE_COL[T.DEEP]='#2e5273';
 function drawWorldEnt(g,world,e,sx,sy,t){
   const d=e.d;
   if(e.kind==='decor'&&d.type==='placename'){
@@ -2497,14 +2591,26 @@ function drawWorldElev(g,world,t,offX,offY,x0,x1,y0,y1){
           g.fillRect(fx,fy,3,3);
           g.fillStyle='#e8c66a'; g.fillRect(fx+1,fy+1,1,1);
         }
-      } else if(id===T.WATER||id===T.DEEP){
-        const ph=Math.sin(t/600+x*1.3+y*2.1);
-        if(ph>.55){ g.fillStyle='rgba(255,255,255,.13)';
-          g.fillRect(sx+TILE*.15,sy+TILE*.4+Math.sin(t/400+x)*3,TILE*.5,2); }
+      } else if(id===T.WATER||id===T.DEEP||id===T.FORD){
+        /* the waters move — ripples drift with the current */
+        const dr=(t*.022+x*13.7+y*29.3)%TILE;
+        g.fillStyle='rgba(255,255,255,.13)';
+        g.fillRect(sx+(dr%TILE)*.8,sy+TILE*.3+Math.sin(t/500+x+y)*2.5,TILE*.42,2);
+        g.fillRect(sx+((dr*1.7+TILE*.4)%TILE)*.7,sy+TILE*.66+Math.cos(t/430+x)*2,TILE*.3,2);
         const up=y>0?map.tiles[(y-1)*W+x]:id;
-        if(up!==T.WATER&&up!==T.DEEP){
+        if(up!==T.WATER&&up!==T.DEEP&&up!==T.FORD){
           g.fillStyle='rgba(255,255,255,'+(.25+Math.sin(t/500+x)*.12).toFixed(3)+')';
           g.fillRect(sx,sy,TILE,3);
+        }
+        if(id===T.FORD){
+          /* a shallow crossing — stepping stones stand clear of the stream */
+          const n4=hash2(x*19,y*41);
+          g.fillStyle='#8d8578';
+          [[.2,.3],[.55,.55],[.32,.72],[.7,.2]].forEach((s,i)=>{
+            if((n4*(i+3))%1<.78){ const rx=sx+s[0]*TILE+((n4*(i+7))%1)*4, ry=sy+s[1]*TILE;
+              g.beginPath(); g.ellipse(rx,ry,5,3.6,0,0,Math.PI*2); g.fill();
+              g.fillStyle='#9d968a'; g.beginPath(); g.ellipse(rx-1,ry-1,3,2,0,0,Math.PI*2); g.fill();
+              g.fillStyle='#8d8578'; } });
         }
       } else if(id===T.TILLED){
         g.fillStyle='rgba(0,0,0,.18)';
@@ -3589,7 +3695,7 @@ const Game={
         e._ri=((e._ri||0)+1)%e.route.length;
         const wp=e.route[e._ri];
         e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
-      } else if(e!==p&&e.animal&&p&&!blocked&&!e.lying&&!e.foe&&!e.route&&!e.rideable&&!e.group&&!e.dlg&&!e.script&&!e.tame){
+      } else if(e!==p&&e.animal&&p&&!blocked&&!e.lying&&!e.foe&&!e.route&&!e.rideable&&!e.group&&!e.dlg&&!e.script&&!e.tame&&!e.swim){
         /* skittish creatures: birds take wing, the creeping things scatter when you draw near */
         const dp=dist(e.x,e.y,p.x,p.y);
         const fly=(e.animal==='bird'||e.animal==='dove'||e.animal==='raven');
@@ -4954,40 +5060,71 @@ const STORY=[
   scene:{
    map:{world:true, w:360, h:200, seed:7777,
      features:[
-       /* the gate of the Garden — Ĕḏen lies in the uttermost east, and the two
-          were sent out of it into the wide world */
-       {type:'gate',x:314,y:96,solid:true,clear:2,flat:2},
+       /* the sealed gate of the Garden — the garden is walled about, and the way
+          back is kept by the flaming sword which turns every way (BERĔSHITH 3:24) */
+       {type:'gate',x:306.6,y:92.6,solid:true,clear:1.5,
+        examine:'The gate is shut, and the way is kept — kerubim, and the flame of a sword turning every way.'},
+       {type:'sword',x:306.6,y:91.2,clear:0},
      ]},
-   player:'adam_c', playerPos:[310,98],
+   player:'adam_c', playerPos:[303,94],
    npcs:[
      /* at the first there are only the two — Aḏam (you) and Ḥawwah */
-     {id:'chavvah',char:'chavvah_c',x:312,y:99,wander:false,follow:true,noTalk:true},
+     {id:'chavvah',char:'chavvah_c',x:301,y:95,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:302,y:98,radius:-1,dynamic:true,text:'Walk on — follow the way'},
+     {type:'goto',x:297,y:95,radius:-1,dynamic:true,text:'Walk on — follow the way'},
    ],
+   tick:G=>worldLifeTick(G),
    onStart:[
      {call:G=>{
        const m=G.world.map, done=id=>!!Save.data.done[id], R=Math.random;
-       const place=(def)=>{ let x,y,t=0; do{ x=8+R()*(m.w-16); y=8+R()*(m.h-16); t++; }while(!walkable(m,x,y)&&t<10);
-         if(walkable(m,x,y)) G.world.npcs.push(makeNpc(Object.assign({x,y,noTalk:true},def))); };
-       /* the beasts of the field roam the early earth */
-       const beasts=['sheep','ram','deer','sheep','donkey'];
-       for(let i=0;i<24;i++) place({id:'beast'+i,animal:beasts[i%beasts.length],range:3+R()*3});
-       for(let i=0;i<5;i++)  place({id:'fowl'+i,animal:'bird',range:6,flying:true});
+       const tile=(x,y)=>tileAt(m,x,y);
+       const findSpot=(ok,tries)=>{ for(let t9=0;t9<(tries||40);t9++){
+           const x=8+R()*(m.w-16), y=8+R()*(m.h-16);
+           if(ok(x,y)) return {x,y}; } return null; };
+       const place=(def)=>{ const s=findSpot((x,y)=>walkable(m,x,y),12);
+         if(s) G.world.npcs.push(makeNpc(Object.assign({noTalk:true},s,def))); };
+       const grassy=(x,y)=>{ const t9=tile(x,y); return (t9===T.GRASS||t9===T.GRASS2||t9===T.FLOWER)&&walkable(m,x,y); };
+       /* the beasts of the field graze in herds, each after its kind */
+       const KINDS=[['sheep','sheep','ram'],['sheep','sheep','sheep','ram'],['deer','deer','deer'],
+                    ['goat','goat','goat'],['cow','cow'],['donkey','donkey'],['camel','camel']];
+       for(let hIdx=0;hIdx<8;hIdx++){
+         const c=findSpot(grassy); if(!c) continue;
+         KINDS[hIdx%KINDS.length].forEach((an,i)=>{ const x=c.x+(R()-.5)*3.5, y=c.y+(R()-.5)*3;
+           if(walkable(m,x,y)) G.world.npcs.push(makeNpc({id:'herd'+hIdx+'_'+i,animal:an,noTalk:true,
+             x,y,wander:true,range:3.5,home:{x:c.x,y:c.y}})); });
+       }
+       for(let i=0;i<6;i++) place({id:'fowl'+i,animal:'bird',range:6,flying:true,wander:true});
+       /* the waters teem: fish that swim, dive under, and come up with a splash */
+       for(let i=0;i<16;i++){ const s=findSpot((x,y)=>tile(x,y)===T.WATER,60);
+         if(s) G.world.npcs.push(makeNpc({id:'fish'+i,animal:'fish',swim:true,noTalk:true,x:s.x,y:s.y})); }
+       /* the creeping things: frogs by the banks, lizards in the dry places, beetles in the grass */
+       const bank=(x,y)=>walkable(m,x,y)&&(tile(x+1,y)===T.WATER||tile(x-1,y)===T.WATER||tile(x,y+1)===T.WATER||tile(x,y-1)===T.WATER);
+       for(let i=0;i<9;i++){ const s=findSpot(bank,80);
+         if(s) G.world.npcs.push(makeNpc({id:'frog'+i,animal:'frog',noTalk:true,wander:true,range:1.6,home:s,x:s.x,y:s.y})); }
+       for(let i=0;i<8;i++){ const s=findSpot((x,y)=>tile(x,y)===T.SAND&&walkable(m,x,y),40);
+         if(s) G.world.npcs.push(makeNpc({id:'lizard'+i,animal:'lizard',noTalk:true,wander:true,range:2.2,home:s,x:s.x,y:s.y})); }
+       for(let i=0;i<8;i++){ const s=findSpot(grassy,40);
+         if(s) G.world.npcs.push(makeNpc({id:'beetle'+i,animal:'beetle',noTalk:true,wander:true,range:2,home:s,x:s.x,y:s.y})); }
        /* a mount that waits where you leave it — a horse on green land, a camel in the wilderness */
-       G.world.npcs.push(makeNpc({id:'ride',animal:'horse',rideable:true,wander:false,x:308,y:100,noTalk:true}));
+       G.world.npcs.push(makeNpc({id:'ride',animal:'horse',rideable:true,wander:false,x:302,y:96,noTalk:true}));
        /* the generations multiply — anonymous folk of the earth (never the named figures
           of the story, who belong to their own chapters). None until the journey begins.
-          They gather about the towns and cities of their eras. */
+          They gather about the towns and cities of their eras, and keep their daily rounds. */
        const cdone=(typeof JOURNEY!=='undefined'?JOURNEY:[]).filter(s=>!s.book&&done(s.id)).length;
        const folk=['builder','builder2','builder3','servant','steward','shepherd','oldman','gerarman','amorite'];
        let fi=0;
        const settle=(cx,cy,n)=>{ for(let i=0;i<n;i++){
          const a=R()*Math.PI*2, r2=1.5+R()*3.5;
          const x=clamp(cx+Math.cos(a)*r2,8,m.w-8), y=clamp(cy+Math.sin(a)*r2,8,m.h-8);
-         if(walkable(m,x,y)) G.world.npcs.push(makeNpc({id:'folk'+(fi++),char:folk[fi%folk.length],
-           x,y,wander:true,range:3.2,home:{x:cx,y:cy},noTalk:true})); } };
+         if(!walkable(m,x,y)) continue;
+         const def={id:'folk'+(fi++),char:folk[fi%folk.length],x,y,noTalk:true};
+         const round=[[cx,cy+.9],[cx+2.4,cy-1.6],[cx-2.2,cy+2],[cx+1.2,cy+2.6]]
+           .filter(wp=>walkable(m,wp[0],wp[1]));
+         if(i%2&&round.length>=2){ def.route=round; def.routeSpeed=.014+R()*.008; }  /* a daily round: the well, the doors, the edge of town */
+         else { def.wander=true; def.range=3.2; def.home={x:cx,y:cy}; }
+         G.world.npcs.push(makeNpc(def));
+       } };
        if(cdone>=1&&typeof WORLD_TOWNS!=='undefined'){
          for(const tn of WORLD_TOWNS){
            if(tn.after&&!done(tn.after)) continue;
@@ -8349,7 +8486,8 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
   const pal={}; pal[T.GRASS]=[123,189,73];pal[T.GRASS2]=[112,131,63];pal[T.FLOWER]=[140,154,82];
   pal[T.DIRT]=[138,122,82];pal[T.SAND]=[221,202,148];pal[T.PATH]=[200,170,110];
   pal[T.WATER]=[74,134,192];pal[T.DEEP]=[39,101,155];pal[T.MTN]=[93,86,76];
-  pal[T.ROCK]=[141,125,102];pal[T.SNOW]=[238,243,247];
+  pal[T.ROCK]=[141,125,102];pal[T.SNOW]=[238,243,247];pal[T.FORD]=[122,170,205];
+  pal[T.WALL]=[78,70,60];pal[T.BRICK]=[168,121,74];pal[T.MUD]=[110,93,66];
   let open=false, hover=-1;
   const reached=i=>{ const id=JOURNEY[i].id;
     return !!(Save.data.done[id] || (Save.data.visited&&Save.data.visited[id]) || i===Game.frontIdx()); };
@@ -8414,6 +8552,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
   document.body.appendChild(banner); document.body.appendChild(hint);
   const NAMES={
     eden:['ĔḎEN','the garden, and the river with four heads'],
+    edenwaste:['THE WASTE OF ĔḎEN','cursed is the ground for your sake'],
     nod:['THE LAND OF NOḎ','east of Ĕḏen, where Qayin dwelt'],
     ararat:['THE MOUNTAINS OF ARARAT','where the ark came to rest'],
     tsafon:['THE MOUNTAINS OF THE NORTH','the far ranges'],
