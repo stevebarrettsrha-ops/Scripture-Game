@@ -54,6 +54,7 @@
   <button class="btn" id="b-speed">⏩ Course: swift</button>
   <button class="btn" id="b-spin">🔄 Turning: on</button>
   <button class="btn" id="b-names">🏷 Names: on</button>
+  <button class="btn" id="b-moedim">✦ Appointed Times</button>
 </div>
 
 <script>
@@ -84,7 +85,7 @@ const DATA=window.EARTH_DATA, COUNTRIES=DATA.countries, VERSES=DATA.verses;
 const view={ yaw:0.65, pitch:0.52, zoom:1.05, spin:true, names:true, paused:false, speedIdx:1 };
 const SPEEDS=[ [1,'true'], [1200,'swift'], [14400,'a day in six breaths'] ];   // sim-seconds per real second
 let simHours=9.0;          // the world's clock
-let dayOfYear=100;         // spring, going up toward the summer course
+let dayOfYear=26;          // the year of Hanok: 364 days from the spring turning (here: the waving of the sheaf)
 
 /* ---------------- the disc texture: the LEGO-brick face of the earth ------ */
 const TEXN=1600, Tc=TEXN/2, Tr=TEXN/2;   // unit disc radius 1 -> Tr px
@@ -211,8 +212,10 @@ function discTransform(ctx,h){                       // the plane of the earth (
 
 /* ---------------- the luminaries ---------------- */
 function sunState(){
-  const D=dayOfYear%365.25;
-  const R=0.5-0.13*Math.cos(2*Math.PI*(D-172)/365.25);          // between the tropics, with the seasons
+  /* the year of Hanok: 364 days exactly, from the spring turning; the sun swings
+     between his northern and southern courses through the portals (HANOK 72) */
+  const D=dayOfYear;
+  const R=0.5-0.13*Math.sin(2*Math.PI*(D-1)/364);
   const A=-(simHours/24)*2*Math.PI+Math.PI;                     // westward, ever returning (QOHELETH 1:5)
   return { u:R*Math.sin(A), v:R*Math.cos(A), y:0.36, R, A };
 }
@@ -223,9 +226,24 @@ function moonState(){
   const age=(totalDays+32.55)%29.53;
   const sunA=-(simHours/24)*2*Math.PI+Math.PI;
   const A=sunA-2*Math.PI*age/29.53;
-  const R=0.5-0.13*Math.cos(2*Math.PI*((dayOfYear-14)%365.25-172)/365.25);
+  const R=0.5-0.13*Math.sin(2*Math.PI*(dayOfYear-16)/364);
   return { u:R*Math.sin(A), v:R*Math.cos(A), y:0.31, R, A, age };
 }
+
+/* the reckoning of Hanok and Yobelim: months of 30/30/31, weekdays fixed forever */
+function enochDate(d){
+  const q=Math.floor((d-1)/91), dq=(d-1)%91;
+  const mIn=dq<30?0:(dq<60?1:2);
+  return { q, month:q*3+mIn+1, day:dq-(mIn===0?0:(mIn===1?30:60))+1, weekday:((d-1)+3)%7+1 };
+}
+const WD=['','1st day','2nd day','3rd day','4th day','5th day','6th day','SHABBATH'];
+const FEASTS=[
+  {n:'PESACH',m:1,d:14,len:1},{n:'MATSTSOTH',m:1,d:15,len:7},{n:'FIRSTFRUITS — THE SHEAF',m:1,d:26,len:1},
+  {n:'SHAḆU‛OTH',m:3,d:15,len:1},{n:'YOM TERU‛AH',m:7,d:1,len:1},{n:'YOM HAKKIPPURIM',m:7,d:10,len:1},
+  {n:'SUKKOTH',m:7,d:15,len:8},
+];
+const dayFor=(m,d)=>{ const q=Math.floor((m-1)/3), mIn=(m-1)%3;
+  return q*91+(mIn===0?0:(mIn===1?30:60))+d; };
 
 /* night overlay: darkness fleeing the circuit of the sun */
 const NIGHT=document.createElement('canvas'); NIGHT.width=NIGHT.height=TEXN;
@@ -286,7 +304,7 @@ let lastT=0;
 function frame(t){
   const dt=Math.min(50,t-lastT||16); lastT=t;
   if(!view.paused){ simHours+=dt/1000*SPEEDS[view.speedIdx][0]/3600;
-    if(simHours>=24){ simHours-=24; dayOfYear=(dayOfYear+1)%365.25; } }
+    if(simHours>=24){ simHours-=24; dayOfYear=dayOfYear%364+1; } }
   if(view.spin&&!drag.on) view.yaw+=dt*0.000045;
   updateProj();
   g.setTransform(DPR,0,0,DPR,0,0);
@@ -424,13 +442,20 @@ function frame(t){
 
   /* the world's clock */
   const hh=Math.floor(simHours), mm=Math.floor((simHours%1)*60);
-  const D=Math.floor(dayOfYear%365.25)+1;
+  const D=Math.floor(dayOfYear), ed=enochDate(D);
   const north=sun.R<0.5;
   const age=moon.age, moonWord=age<1.5?'new — she walks with the sun':(Math.abs(age-14.77)<1.5?'full — she stands opposite him':(age<14.77?'waxing':'waning'));
+  let feast='', next=null, nd=999;
+  for(const f of FEASTS){ const s0=dayFor(f.m,f.d);
+    if(D>=s0&&D<s0+f.len){ feast=`✦ ${f.n}${f.len>1?' — day '+(D-s0+1)+' of '+f.len:''} ✦`; }
+    let dd=s0-D; if(dd<0) dd+=364; if(dd>0&&dd<nd){ nd=dd; next=f; } }
+  if(!feast&&ed.weekday===7) feast='✦ the SHABBATH ✦';
   document.getElementById('clock').innerHTML=
-    `day ${D} of the year · ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}<br>`+
-    `the sun runs the ${north?'northern':'southern'} course${Math.abs(sun.R-0.37)<0.006?' — the summer turning':(Math.abs(sun.R-0.63)<0.006?' — the winter turning':'')}<br>`+
-    `the moon is ${age.toFixed(1)} days old · ${moonWord}`;
+    `month ${ed.month}, day ${ed.day} · the ${WD[ed.weekday]} · ${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}<br>`+
+    `the sun runs the ${north?'northern':'southern'} course${Math.abs(sun.R-0.37)<0.004?' — the summer turning':(Math.abs(sun.R-0.63)<0.004?' — the winter turning':'')}<br>`+
+    `the moon is ${age.toFixed(1)} days old · ${moonWord}<br>`+
+    (feast?`<span style="color:#ffe27a;letter-spacing:.14em">${feast}</span>`:
+     `next appointed time: ${next.n} — in ${nd} day${nd===1?'':'s'}`);
 
   requestAnimationFrame(frame);
 }
@@ -493,6 +518,7 @@ $('b-spin').onclick=()=>{ view.spin=!view.spin;
 $('b-names').onclick=()=>{ view.names=!view.names;
   $('b-names').textContent='🏷 Names: '+(view.names?'on':'off');
   $('b-names').classList.toggle('off',!view.names); };
+$('b-moedim').onclick=()=>{ location.href='appointed-times.html'; };
 
 requestAnimationFrame(frame);
 </script>
