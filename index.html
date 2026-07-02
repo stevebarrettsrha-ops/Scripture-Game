@@ -1984,7 +1984,7 @@ const WORLD_SITES={ /* chapter id → [u,v], its place on the world (fractions o
   c6b:[.783,.56], c7:[.728,.48], c8:[.700,.40], c9:[.678,.30], c9b:[.633,.13],
   c10:[.611,.17], c10a:[.644,.22], c11:[.736,.625], c11a:[.811,.715], c11b:[.833,.76],
   c12:[.586,.225], c12a:[.122,.79], c13:[.289,.64], c13a:[.239,.74], c14:[.286,.63],
-  c14b:[.392,.67], c15:[.400,.695], c15b:[.428,.72], c16:[.258,.71], c17:[.300,.55],
+  c14b:[.392,.67], c15:[.345,.615], c15b:[.428,.72], c16:[.258,.71], c17:[.300,.55],
   c17a:[.594,.21], c17b:[.244,.75], c17c:[.289,.645], c18:[.261,.705], c18b:[.222,.69],
   c18a:[.264,.715], c19:[.306,.515], c20:[.589,.22], c20a:[.600,.20], c21:[.394,.48],
   c21b:[.317,.44], c21a:[.297,.58], c22:[.303,.40], c22a:[.122,.81], c22b:[.272,.60],
@@ -2363,8 +2363,9 @@ function sceneHasFn(o,d){
 function canStageWorld(ch){
   const sc=ch&&ch.scene; if(!sc||!sc.map) return false;
   if(WORLD_STAGE_EXCLUDE.has(ch.id)) return false;
-  if(sc.map.world||sc.map.biome==='interior'||sc.overlook) return false;
-  if(sc.worldStage) return true;          /* converted: its closures carry G.ox/G.oy themselves */
+  if(sc.map.world||sc.map.biome==='interior') return false;
+  if(sc.worldStage) return true;          /* converted: closures carry G.ox/G.oy; an overlook trades its painted sky for the real mountainside */
+  if(sc.overlook) return false;
   if(ch._stageable===undefined) ch._stageable=!sceneHasFn(sc,0);
   return ch._stageable;
 }
@@ -3507,7 +3508,7 @@ const Game={
         this._returnWorld={pos:[d.x,d.y+1.6]};
         if(this.world&&this.world.map&&this.world.map.world) this._keepWorld=this.world;
         try{Sound.sfx('blip');}catch(_){}
-        this.startChapter(allChapters().find(c=>c.id==='interior'));
+        this.enterDoor();
         return;
       }
     }
@@ -3523,7 +3524,8 @@ const Game={
     ox=clamp(ox,2-trim,m.w-2-cm.w+trim); oy=clamp(oy,2-trim,m.h-2-cm.h+trim);
     const sc={map:sc0.map};
     for(const k of Object.keys(sc0)) if(k!=='map') sc[k]=offsetStoryData(sc0[k],ox,oy,k);
-    const x0=ox+trim, x1=ox+cm.w-trim, y0=oy+trim, y1=oy+cm.h-trim;
+    const topSkip=sc0.overlook?Math.max(0,sc0.overlook.cliffY-2):0;   /* an overlook keeps only its ground — beyond the edge lies the world's own mountain */
+    const x0=ox+trim, x1=ox+cm.w-trim, y0=oy+Math.max(trim,topSkip), y1=oy+cm.h-trim;
     const e0=elevAt(m,site.x,site.y);
     const undo={x0,y0,x1,y1,tiles:new Uint8Array((x1-x0)*(y1-y0)),elev:new Uint8Array((x1-x0)*(y1-y0)),
                 wDecor:[],time:w.time,rain:w.rain};
@@ -3590,6 +3592,18 @@ const Game={
     this._staged=null; this._stagedScene=null;
     this.ox=0; this.oy=0;
   },
+  /* Zelda-style door: the room swaps in one slide — no black fade, no reload */
+  enterDoor(){
+    const ch=allChapters().find(c=>c.id==='interior');
+    const snap=document.createElement('canvas');
+    snap.width=canvas.width; snap.height=canvas.height;
+    snap.getContext('2d').drawImage(canvas,0,0);
+    if(this._staged) this.unstageScene();
+    this.chapter=ch;
+    Save.data.current=ch.id; Save.write();
+    this.startScene();
+    this._swipe={img:snap,t0:performance.now(),dur:430,dir:1};
+  },
   /* when the next station lies just ahead, say so — the walk itself begins it */
   maybeChain(){
     const f=this.frontIdx(), nx=JOURNEY[f], p=this.world&&this.world.player;
@@ -3647,6 +3661,10 @@ const Game={
       const kw=this._keepWorld; this._keepWorld=null;
       const eraTurn=(typeof WORLD_TOWNS!=='undefined')&&WORLD_TOWNS.some(tn=>tn.after===ch.id||tn.ruin===ch.id);
       if(kw&&kw.map&&kw.map.world&&!eraTurn){
+        let snap=null;
+        if(ch.id==='interior'){ snap=document.createElement('canvas');
+          snap.width=canvas.width; snap.height=canvas.height;
+          snap.getContext('2d').drawImage(canvas,0,0); }
         this.dlgQueue=[]; this.closeDlg();
         this.script=null; this.scriptBlocked=false; this.battle=null; this.mash=null;
         this.world=kw;
@@ -3664,6 +3682,7 @@ const Game={
         Camera.biasY=0;
         if(p) Camera.follow(p.x,p.y,this.world.map,true);
         this._storyCooldown=this.t+2500;
+        if(snap) this._swipe={img:snap,t0:performance.now(),dur:430,dir:-1};
         if(ch.id!=='interior'){ Sound.sfx('holy');
           toast('✦ Returned to the land — “'+ch.title+'” complete');
           this.maybeChain(); }
@@ -5991,6 +6010,7 @@ STORY.push(
        {type:'clearing',x:16,y:18,flat:3},
        {type:'rock',x:22,y:22,solid:true,clear:1},
      ]},
+   worldStage:true,   /* staged: the ark rests on the true slopes of Ararat */
    overlook:{kind:'flood', cliffY:13, drop:.62},
    time:'morning', music:'holy',
    player:'noach', playerPos:[16,23],
@@ -6789,6 +6809,7 @@ STORY.push(
        {type:'altar',stage:3,x:11,y:22,solid:true,clear:2,id:'altar',examine:'The place where Aḇraham had stood before YAHUAH.'},
        {type:'clearing',x:15,y:16,flat:3},
      ]},
+   worldStage:true,   /* staged: the rim of the hill country, looking over the plain */
    overlook:{kind:'sodom', cliffY:13, drop:.66},
    time:'morning', music:'sorrow',
    player:'avraham', playerPos:[15,22],
@@ -6821,6 +6842,7 @@ STORY.push(
        {type:'firepit',x:12.5,y:23,lit:true},
        {type:'clearing',x:16,y:17,flat:3},
      ]},
+   worldStage:true,   /* staged: the heights of the east above the ruined plain */
    overlook:{kind:'embers', cliffY:13, drop:.62},
    time:'dusk', music:'sorrow',
    player:'lot', playerPos:[16,23],
@@ -8599,6 +8621,15 @@ function frame(ts){
   Game.lastTime=ts;
   Game.update(dt);
   Game.render();
+  /* door-slide: the last room slides away, the new one already lives beneath */
+  if(Game._swipe){
+    const s=Game._swipe, p=Math.min(1,(performance.now()-s.t0)/s.dur);
+    const e=p*p*(3-2*p);
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+    ctx.drawImage(s.img,0,(s.dir>0?-1:1)*e*canvas.height);
+    ctx.restore();
+    if(p>=1) Game._swipe=null;
+  }
   requestAnimationFrame(frame);
 }
 
