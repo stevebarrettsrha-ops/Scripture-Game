@@ -2345,6 +2345,48 @@ function worldLifeTick(G){
     }
   }
 }
+/* ===== stories on the face of the world =====
+   A chapter reached by walking is not a boxed scene: its authored ground is laid
+   over the world at that very place, its people step onto the land, the telling
+   runs, and when it ends the world simply goes on — no cut, no reloading.
+   Chapters whose scenes carry hand-written code (closures) cannot be relocated
+   safely and still play as entered episodes; the world is kept and returned to
+   exactly as it was. */
+const WORLD_STAGE_EXCLUDE=new Set(['c2','c3']);   /* the garden tellings happen within the sealed garden — entered as memory */
+function sceneHasFn(o,d){
+  if(d>14||o===null||o===undefined) return false;
+  if(typeof o==='function') return true;
+  if(Array.isArray(o)) return o.some(v=>sceneHasFn(v,d+1));
+  if(typeof o==='object') return Object.keys(o).some(k=>sceneHasFn(o[k],d+1));
+  return false;
+}
+function canStageWorld(ch){
+  const sc=ch&&ch.scene; if(!sc||!sc.map) return false;
+  if(WORLD_STAGE_EXCLUDE.has(ch.id)) return false;
+  if(sc.map.world||sc.map.biome==='interior'||sc.overlook) return false;
+  if(ch._stageable===undefined) ch._stageable=!sceneHasFn(sc,0);
+  return ch._stageable;
+}
+/* deep-copy a scene's data with every coordinate carried to its place on the world */
+function offsetStoryData(v,ox,oy,key){
+  if(Array.isArray(v)){
+    if((key==='move'||key==='teleport')&&typeof v[1]==='number'&&typeof v[2]==='number')
+      return [v[0],v[1]+ox,v[2]+oy].concat(v.slice(3));
+    if(key==='burst'&&typeof v[0]==='number'&&typeof v[1]==='number')
+      return [v[0]+ox,v[1]+oy].concat(v.slice(2));
+    if((key==='camera'||key==='rally'||key==='playerPos'||key==='camStart')&&typeof v[0]==='number'&&typeof v[1]==='number')
+      return [v[0]+ox,v[1]+oy].concat(v.slice(2));
+    if(key==='route') return v.map(wp=>Array.isArray(wp)&&typeof wp[0]==='number'?[wp[0]+ox,wp[1]+oy].concat(wp.slice(2)):wp);
+    return v.map(x=>offsetStoryData(x,ox,oy,key));
+  }
+  if(v&&typeof v==='object'){
+    const o={};
+    for(const k of Object.keys(v)) o[k]=offsetStoryData(v[k],ox,oy,k);
+    if(typeof o.x==='number'&&typeof o.y==='number'){ o.x+=ox; o.y+=oy; }
+    return o;
+  }
+  return v;
+}
 function walkable(map,x,y,fx,fy){
   const tl=tileAt(map,x,y);
   if(map.elev){
@@ -3208,7 +3250,7 @@ const Game={
   checkAllObjectives(){
     if(!this.objectives||!this.objectives.length) return;
     if(this.objectives.every(o=>o.done)){
-      const sc=this.chapter.scene;
+      const sc=this._stagedScene||this.chapter.scene;
       setTimeout(()=>{
         if(sc.onComplete) this.runScript(sc.onComplete.slice(),()=>this.endScene());
         else this.endScene();
@@ -3219,6 +3261,7 @@ const Game={
   /* ---------- chapter flow ---------- */
   startChapter(ch){
     if(document.body.classList.contains('touch')&&!isFullscreen()) goFullscreen();
+    if(this._staged) this.unstageScene();     /* leaving a telling mid-way sets the world right again */
     this.chapter=ch;
     this.inv={}; this.flags={}; this.log=[];
     Save.data.current=ch.id; Save.write();
@@ -3284,6 +3327,14 @@ const Game={
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
+    /* a story reached by walking begins on the face of the world itself —
+       no boxed scene, no cut: the world remains and the telling unfolds in place */
+    if(this._stageAtSite&&this.world&&this.world.map&&this.world.map.world&&canStageWorld(ch)){
+      const site=this._stageAtSite; this._stageAtSite=null;
+      this.stageScene(ch,site);
+      return;
+    }
+    this._stageAtSite=null;
     const sc=ch.scene;
     const map=sc.map.world?generateWorldMap(sc.map):generateMap(sc.map);
     // seamless world: spawn at return-from-story > saved position > scene default
@@ -3354,6 +3405,12 @@ const Game={
     const ch=allChapters().find(c=>c.id===id);
     if(!ch){ this.say('narrator','(The way here is not yet opened.)'); return; }
     this._returnWorld={pos:[this.world.player.x,this.world.player.y]};
+    /* the living world is kept: staged stories play upon it, entered ones return to it */
+    if(this.world&&this.world.map&&this.world.map.world){
+      this._keepWorld=this.world;
+      const s=JOURNEY.find(j=>j.id===id);
+      if(s) this._stageAtSite={x:s.x,y:s.y};
+    }
     Sound.sfx('blip');
     this.startChapter(ch);
   },
@@ -3444,25 +3501,164 @@ const Game={
       if(dist(p.x,p.y,d.x,d.y)<1.0){
         this._storyCooldown=this.t+2500;
         this._returnWorld={pos:[d.x,d.y+1.6]};
+        if(this.world&&this.world.map&&this.world.map.world) this._keepWorld=this.world;
         try{Sound.sfx('blip');}catch(_){}
         this.startChapter(allChapters().find(c=>c.id==='interior'));
         return;
       }
     }
   },
+  /* ===== a story staged on the world itself ===== */
+  stageScene(ch,site){
+    const sc0=ch.scene, w=this.world, m=w.map;
+    const cm=generateMap(sc0.map);
+    const trim=2;                                        /* the authored border wall is left off — the world lies open around the telling */
+    const px=sc0.playerPos?sc0.playerPos[0]:Math.floor(cm.w/2);
+    const py=sc0.playerPos?sc0.playerPos[1]:Math.floor(cm.h/2);
+    let ox=Math.round(site.x-px), oy=Math.round(site.y-py);
+    ox=clamp(ox,2-trim,m.w-2-cm.w+trim); oy=clamp(oy,2-trim,m.h-2-cm.h+trim);
+    const sc={map:sc0.map};
+    for(const k of Object.keys(sc0)) if(k!=='map') sc[k]=offsetStoryData(sc0[k],ox,oy,k);
+    const x0=ox+trim, x1=ox+cm.w-trim, y0=oy+trim, y1=oy+cm.h-trim;
+    const e0=elevAt(m,site.x,site.y);
+    const undo={x0,y0,x1,y1,tiles:new Uint8Array((x1-x0)*(y1-y0)),elev:new Uint8Array((x1-x0)*(y1-y0)),
+                wDecor:[],time:w.time,rain:w.rain};
+    let k9=0;
+    for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++,k9++){
+      undo.tiles[k9]=m.tiles[y*m.w+x]; undo.elev[k9]=m.elev[y*m.w+x];
+      const ct=cm.tiles[(y-oy)*cm.w+(x-ox)];
+      m.tiles[y*m.w+x]=ct;
+      m.elev[y*m.w+x]= ct===T.SNOW?Math.min(8,e0+3)
+        : ct===T.MTN?Math.min(8,e0+2)
+        : ct===T.ROCK?Math.min(8,e0+1)
+        : (ct===T.WATER||ct===T.DEEP)?Math.max(0,e0-1) : e0;
+    }
+    /* the world's own props step aside for the telling; they return after */
+    for(let i=m.decor.length-1;i>=0;i--){ const d=m.decor[i];
+      if(d.x>=x0-1&&d.x<x1+1&&d.y>=y0-1&&d.y<y1+1){ undo.wDecor.push(d); m.decor.splice(i,1); } }
+    for(const d of cm.decor){
+      if(d.x<trim||d.y<trim||d.x>cm.w-trim||d.y>cm.h-trim) continue;
+      m.decor.push(Object.assign({},d,{x:d.x+ox,y:d.y+oy,_story:1}));
+    }
+    /* room to stand: no staged prop pins the walker or an objective */
+    const clearNear=(cx,cy,rad)=>{ for(let i=m.decor.length-1;i>=0;i--){ const d=m.decor[i];
+      if(d._story&&d.solid&&!d.id&&!d.examine&&dist(d.x,d.y,cx,cy)<rad) m.decor.splice(i,1); } };
+    const p=w.player;
+    if(p&&sc.playerPos){ p.x=sc.playerPos[0]; p.y=sc.playerPos[1]; }
+    if(p){ p.char=sc.player||p.char; p.mount=sc.playerMount||null; p.hold=sc.playerHold||null; p.target=null; clearNear(p.x,p.y,2.3); }
+    for(const ob9 of (sc.objectives||[])) if(ob9.x!==undefined) clearNear(ob9.x,ob9.y,1.5);
+    m.decor.sort((a,b)=>a.y-b.y);
+    /* the walker's companions wait out the telling */
+    for(const id9 of ['chavvah','ride']){ const n9=w.npcs.find(n=>n.id===id9);
+      if(n9){ n9._stHidden=!!n9.hidden; n9.hidden=true; } }
+    for(const nd of (sc.npcs||[])) w.npcs.push(Object.assign(makeNpc(nd),{_story:1}));
+    for(const it of (sc.items||[])) w.items.push(Object.assign({},it,{_story:1}));
+    w.time=sc.time||'day';
+    if(sc.rain){ w.rain=true; Sound.rain(true); } else { w.rain=false; Sound.rain(false); }
+    Sound.ambient(sc.music||'eden');
+    w.raysTarget=0; w.camFollow='player'; w.camTarget=null; w.gotoMark=null;
+    this.state='play';
+    $('hud').style.display='';
+    $('hud-chapter').textContent=ch.title;
+    this.setupObjectives(sc.objectives);
+    if(p) Camera.follow(p.x,p.y,m,true);
+    else if(sc.camStart){ Camera.x=sc.camStart[0]*TILE; Camera.y=sc.camStart[1]*TILE; }
+    this._staged={undo,ch};
+    this._stagedScene=sc;
+    if(sc.onStart) this.runScript(sc.onStart.slice());
+  },
+  unstageScene(){
+    const st=this._staged; if(!st) return;
+    const w=this.world, m=w.map, u=st.undo;
+    let k9=0;
+    for(let y=u.y0;y<u.y1;y++)for(let x=u.x0;x<u.x1;x++,k9++){
+      m.tiles[y*m.w+x]=u.tiles[k9]; m.elev[y*m.w+x]=u.elev[k9]; }
+    for(let i=m.decor.length-1;i>=0;i--) if(m.decor[i]._story) m.decor.splice(i,1);
+    for(const d of u.wDecor) m.decor.push(d);
+    m.decor.sort((a,b)=>a.y-b.y);
+    for(let i=w.npcs.length-1;i>=0;i--) if(w.npcs[i]._story) w.npcs.splice(i,1);
+    for(let i=w.items.length-1;i>=0;i--) if(w.items[i]._story) w.items.splice(i,1);
+    for(const id9 of ['chavvah','ride']){ const n9=w.npcs.find(n=>n.id===id9);
+      if(n9&&n9._stHidden!==undefined){ n9.hidden=n9._stHidden; delete n9._stHidden; } }
+    w.time=u.time; w.rain=u.rain; Sound.rain(u.rain);
+    w.raysTarget=0; w.camFollow='player'; w.camTarget=null; w.gotoMark=null;
+    this._staged=null; this._stagedScene=null;
+  },
+  /* when the next station lies just ahead, say so — the walk itself begins it */
+  maybeChain(){
+    const f=this.frontIdx(), nx=JOURNEY[f], p=this.world&&this.world.player;
+    if(!nx||nx.book||!p) return;
+    if(dist(p.x,p.y,nx.x,nx.y)<=11){
+      setTimeout(()=>{ try{toast('✦ The story continues just ahead — “'+nx.name+'”');}catch(_){} },1400);
+    }
+  },
   finishChapter(){
     const ch=this.chapter;
     Save.data.done[ch.id]=true; Save.write();
+    // a story told on the world itself: the telling ends, and the world goes on
+    if(this._staged){
+      const j=JOURNEY.findIndex(s=>s.id===ch.id);
+      if(j>=0) Save.data.front=j+1;
+      Save.write();
+      this.unstageScene();
+      this._returnWorld=null; this._keepWorld=null;
+      this.chapter=allChapters().find(c=>c.id==='freeroam');
+      $('hud-chapter').textContent=this.chapter.title;
+      this.setupObjectives(this.chapter.scene.objectives);
+      const p=this.world.player, hp=this.worldHero();
+      if(p){ p.char=hp.hero; p.mount=null; p.hold=null; p.target=null; }
+      const wf=this.world.npcs.find(n=>n.id==='chavvah');
+      if(wf){ if(hp.wife){ wf.char=hp.wife; wf.hidden=false; wf.x=p.x-1; wf.y=p.y+.5; wf.target=null; } else wf.hidden=true; }
+      const rd=this.world.npcs.find(n=>n.id==='ride');
+      if(rd&&rd.hidden){ rd.hidden=false; rd.x=p.x+1.3; rd.y=p.y+.7; rd.target=null; }
+      if(j>=0){ this.world.map.decor.push({type:'pillar',oil:true,x:JOURNEY[j].x,y:JOURNEY[j].y});
+        this.world.map.decor.sort((a,b)=>a.y-b.y); }
+      Sound.sfx('holy'); Sound.ambient('eden');
+      toast('✦ “'+ch.title+'” complete — the journey goes on where you stand');
+      this.state='play'; $('hud').style.display='';
+      this._storyCooldown=this.t+3000;
+      this.steerJourney();
+      this.maybeChain();
+      return;
+    }
     // seamless world: a story entered from the world returns there at the same spot
     if(this._returnWorld){
       const rw=this._returnWorld; this._returnWorld=null;
-      this._worldSpawn=rw.pos;
       // advance the journey cursor so the story continues forward from the one just finished
       const j=JOURNEY.findIndex(s=>s.id===ch.id);
       if(j>=0) Save.data.front=j+1;
       Save.write();
+      /* the living world was kept as it was — step back out into the same world
+         you left, everything where it stood (only a new era redraws the land) */
+      const kw=this._keepWorld; this._keepWorld=null;
+      const eraTurn=(typeof WORLD_TOWNS!=='undefined')&&WORLD_TOWNS.some(tn=>tn.after===ch.id||tn.ruin===ch.id);
+      if(kw&&kw.map&&kw.map.world&&!eraTurn){
+        this.dlgQueue=[]; this.closeDlg();
+        this.script=null; this.scriptBlocked=false; this.battle=null; this.mash=null;
+        this.world=kw;
+        this.chapter=allChapters().find(c=>c.id==='freeroam');
+        $('hud-chapter').textContent=this.chapter.title;
+        this.setupObjectives(this.chapter.scene.objectives);
+        const p=this.world.player, hp=this.worldHero();
+        if(p){ p.x=rw.pos[0]; p.y=rw.pos[1]; p.target=null; p.mount=null; p.hidden=false; p.char=hp.hero; p.hold=null; }
+        const wf=this.world.npcs.find(n=>n.id==='chavvah');
+        if(wf){ if(hp.wife){ wf.char=hp.wife; wf.hidden=false; wf.x=p.x-1; wf.y=p.y+.5; wf.target=null; } else wf.hidden=true; }
+        if(j>=0){ this.world.map.decor.push({type:'pillar',oil:true,x:JOURNEY[j].x,y:JOURNEY[j].y});
+          this.world.map.decor.sort((a,b)=>a.y-b.y); }
+        Sound.rain(!!this.world.rain); Sound.ambient('eden');
+        this.state='play'; $('hud').style.display='';
+        Camera.biasY=0;
+        if(p) Camera.follow(p.x,p.y,this.world.map,true);
+        this._storyCooldown=this.t+2500;
+        if(ch.id!=='interior'){ Sound.sfx('holy');
+          toast('✦ Returned to the land — “'+ch.title+'” complete');
+          this.maybeChain(); }
+        return;
+      }
+      this._worldSpawn=rw.pos;
       Sound.sfx('holy');
-      toast('✦ Returned to the land — “'+ch.title+'” complete');
+      toast(eraTurn?'✦ “'+ch.title+'” complete — the face of the land is changed'
+                   :'✦ Returned to the land — “'+ch.title+'” complete');
       this.startChapter(allChapters().find(c=>c.id==='freeroam'));
       return;
     }
@@ -3603,6 +3799,7 @@ const Game={
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkStoryArrival(); this.updateMount(); this.checkDoorways(); this.markVisited(); }
+    else if(this.world&&this.world.map&&this.world.map.world&&this.state==='play') worldLifeTick(this);   /* the world breathes on through a staged telling */
     this.updateScript(dt);
     if(this.mash){
       const m=this.mash;
