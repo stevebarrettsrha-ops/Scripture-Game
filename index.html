@@ -1949,15 +1949,19 @@ function generateMap(cfg){
   const rng=mulberry32(cfg.seed||1);
   const biome=BIOMES[cfg.biome]||BIOMES.plains;
   const tiles=new Uint8Array(w*h);
+  const elev=new Uint8Array(w*h); elev.fill(1);   /* every scene is built of blocks: mountains rise in real steps */
   const decor=[];
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     tiles[y*w+x]=biome.base[Math.floor(rng()*biome.base.length)];
   }
-  // border mountains/edge
+  // border mountains/edge — stepped in 3D: a climbable rocky fringe, then sheer heights
   if(cfg.biome!=='interior'){
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const edge=Math.min(x,y,w-1-x,h-1-y);
-      if(edge===0||(edge===1&&rng()<.7)||(edge===2&&rng()<.25)) tiles[y*w+x]=cfg.edgeWater?T.DEEP:T.MTN;
+      if(edge===0||(edge===1&&rng()<.7)||(edge===2&&rng()<.25)){
+        tiles[y*w+x]=cfg.edgeWater?T.DEEP:T.MTN;
+        if(!cfg.edgeWater) elev[y*w+x]=edge===0?9:(edge===1?4:2);
+      }
     }
   } else {
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
@@ -2036,7 +2040,9 @@ function generateMap(cfg){
     if(f.type!=='clearing') decor.push(Object.assign({},f));
   });
   decor.sort((a,b)=>a.y-b.y);
-  return {w,h,tiles,decor,biome:cfg.biome,cfg};
+  /* the waters lie beneath their banks; all else stands at its height */
+  for(let i=0;i<w*h;i++){ const t=tiles[i]; if(t===T.WATER||t===T.DEEP) elev[i]=0; }
+  return {w,h,tiles,elev,decor,biome:cfg.biome,cfg};
 }
 function tileAt(map,x,y){
   const tx=Math.floor(x),ty=Math.floor(y);
@@ -2307,6 +2313,24 @@ function generateWorldMap(cfg){
         if(X!==lx||Y!==ly) carve(X,Y);
         lx=X; ly=Y; } }
   }
+  /* --- hewn stairs to the great summits: every mountain may be climbed to its head --- */
+  const summitTrail=(x1,y1,x2,y2)=>{
+    const steps=Math.max(1,Math.hypot(x2-x1,y2-y1)*2|0);
+    let pe=elev[idx(clamp(Math.round(x1),2,w-3),clamp(Math.round(y1),2,h-3))], lx=null,ly=null;
+    const put=(PX,PY)=>{ if(PX<2||PX>w-3||PY<2||PY>h-3) return;
+      let e2=elev[idx(PX,PY)];
+      if(e2>pe+1)e2=pe+1; else if(e2<pe-1)e2=pe-1;
+      elev[idx(PX,PY)]=e2; pe=e2;
+      const t9=tiles[idx(PX,PY)];
+      if(t9!==T.SNOW&&(t9===T.MTN||SOLID.has(t9))) tiles[idx(PX,PY)]=T.ROCK;
+      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,PX,PY)<.9) decor.splice(k,1); } };
+    for(let st9=0;st9<=steps;st9++){ const t2=st9/steps;
+      const X=Math.round(x1+(x2-x1)*t2), Y=Math.round(y1+(y2-y1)*t2);
+      if(lx!==null&&X!==lx&&Y!==ly) put(X,ly);
+      put(X,Y); lx=X; ly=Y; } };
+  summitTrail(w*.62,h*.11+15,w*.62,h*.11);        /* Ararat, to its head */
+  summitTrail(w*.235+11,h*.91,w*.235,h*.91);      /* Sinai, to its head */
+  summitTrail(w*.275,h*.205,w*.272,h*.145);       /* the Lebanon ridge */
   /* --- the towns and cities of the ancient world, each in its era --- */
   const done=id=>!!(Save.data.done&&Save.data.done[id]);
   for(const tn of WORLD_TOWNS){
@@ -2710,6 +2734,7 @@ function drawWorldElev(g,world,t,offX,offY,x0,x1,y0,y1){
   for(const n of world.npcs) if(!n.hidden) put(n.y,{y:n.y,kind:'npc',d:n});
   if(world.player&&!world.player.hidden) put(world.player.y,{y:world.player.y,kind:'player',d:world.player});
   for(let y=y0;y<=ext;y++){
+    if(world.overlook&&y<world.overlook.cliffY) continue;
     for(let x=x0;x<=x1;x++){
       const id=map.tiles[y*W+x], e=map.elev[y*W+x];
       const sx=x*TILE+offX, sy=y*TILE+offY-e*ESTEP;
@@ -3474,7 +3499,8 @@ const Game={
         if(d9.solid&&!d9.id&&!d9.examine&&dist(d9.x,d9.y,ob9.x,ob9.y)<1.5) map.decor.splice(i9,1); }
     }
     if(sc.overlook){ const cY=sc.overlook.cliffY;
-      for(let y9=0;y9<cY;y9++)for(let x9=0;x9<map.w;x9++) map.tiles[y9*map.w+x9]=T.MTN; }
+      for(let y9=0;y9<cY;y9++)for(let x9=0;x9<map.w;x9++){ map.tiles[y9*map.w+x9]=T.MTN;
+        if(map.elev) map.elev[y9*map.w+x9]=9; } }
     this.world={
       map, player, npcs:(sc.npcs||[]).map(makeNpc),
       items:(sc.items||[]).map(it=>Object.assign({},it)),
@@ -3635,11 +3661,10 @@ const Game={
     for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++,k9++){
       undo.tiles[k9]=m.tiles[y*m.w+x]; undo.elev[k9]=m.elev[y*m.w+x];
       const ct=cm.tiles[(y-oy)*cm.w+(x-ox)];
+      const ce=cm.elev?cm.elev[(y-oy)*cm.w+(x-ox)]:1;
       m.tiles[y*m.w+x]=ct;
-      m.elev[y*m.w+x]= ct===T.SNOW?Math.min(8,e0+3)
-        : ct===T.MTN?Math.min(8,e0+2)
-        : ct===T.ROCK?Math.min(8,e0+1)
-        : (ct===T.WATER||ct===T.DEEP)?Math.max(0,e0-1) : e0;
+      m.elev[y*m.w+x]=(ct===T.WATER||ct===T.DEEP)?Math.max(0,e0-1)
+        :Math.min(8,Math.max(0,e0+Math.max(0,ce-1)));
     }
     /* the world's own props step aside for the telling; they return after */
     for(let i=m.decor.length-1;i>=0;i--){ const d=m.decor[i];
