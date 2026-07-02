@@ -931,6 +931,10 @@ function drawChar(g,px,py,charId,o){
         R(3.6,hy-1.2,4.8,2.6,'#7a5a34');
         R(3.6,hy-.7,4.8,.5,'#8d6a3e'); R(3.6,hy+.4,4.8,.5,'#6a4c2a');
         R(3.3,hy-1,(0.7),2.2,'#9a7a4a'); R(8.1,hy-1,(0.7),2.2,'#5d4426');
+      } else if(hold==='brick'){
+        R(3.6,hy-2,4.6,3,'#b58450');
+        R(3.6,hy-1.1,4.6,.5,'#8a5f36'); R(5.7,hy-2,.5,3,'#8a5f36');
+        R(3.6,hy-2,4.6,.6,'#c29059');
       } else if(hold==='sword'){
         R(5,hy-6.6,1.2,5.4,'#c8ccd4'); R(4.3,hy-1.4,2.6,1,wood); R(5.05,hy-.6,1.1,1.6,woodD);
       } else if(hold==='trumpet'){
@@ -961,6 +965,10 @@ function drawChar(g,px,py,charId,o){
         R(.6+hx,hy-1.2,4.8,2.6,'#7a5a34');
         R(.6+hx,hy-.7,4.8,.5,'#8d6a3e'); R(.6+hx,hy+.4,4.8,.5,'#6a4c2a');
         R(.3+hx,hy-1,.7,2.2,'#9a7a4a'); R(5.1+hx,hy-1,.7,2.2,'#5d4426');
+      } else if(hold==='brick'){
+        R(.6+hx,hy-2,4.6,3,'#b58450');
+        R(.6+hx,hy-1.1,4.6,.5,'#8a5f36'); R(2.7+hx,hy-2,.5,3,'#8a5f36');
+        R(.6+hx,hy-2,4.6,.6,'#c29059');
       } else if(hold==='sword'){
         R(2+hx,hy-6.6,1.2,5.4,'#c8ccd4'); R(1.3+hx,hy-1.4,2.6,1,wood); R(2.05+hx,hy-.6,1.1,1.6,woodD);
       } else if(hold==='trumpet'){
@@ -1431,7 +1439,7 @@ function drawProp(g,px,py,p,t){
     case 'ark': {
       // stage 0: keel, 1: hull, 2: complete; monumental structure drawn around anchor
       const sc=(p.scale||1), U2=TILE*sc;
-      const W=U2*17, H=U2*5;
+      const W=U2*22, H=U2*6.2;
       g.fillStyle='rgba(0,0,0,.25)';
       g.beginPath(); g.ellipse(0,U2*1.7,W*.55,U2*.5,0,0,Math.PI*2); g.fill();
       const st=p.stage||0;
@@ -1444,29 +1452,25 @@ function drawProp(g,px,py,p,t){
       g.fillStyle='#5d4426';
       for(let i=0;i<7;i++){ g.fillRect(-W/2+U2*.4,H*.13*i+H*.1,W-U2*.8,Math.max(2,2*sc)); }
       if(st>=1){
-        g.fillStyle='#8d7048'; g.fillRect(-W/2+U2*.6,-U2*1.5,W-U2*1.2,U2*1.55);
+        g.fillStyle='#8d7048'; g.fillRect(-W/2+U2*.6,-U2*2.3,W-U2*1.2,U2*2.35);
+        g.fillStyle='#9a7c50'; g.fillRect(-W/2+U2*.4,-U2*2.6,W-U2*.8,U2*.35);   /* the roof-ridge, a cubit above */
         g.fillStyle='#7a6038';
-        for(let i=0;i<11;i++) g.fillRect(-W/2+U2*.6+i*(W-U2*1.2)/11,-U2*1.5,Math.max(2,2*sc),U2*1.5);
-        // door
+        for(let i=0;i<15;i++) g.fillRect(-W/2+U2*.6+i*(W-U2*1.2)/15,-U2*2.3,Math.max(2,2*sc),U2*2.3);
+        // the one door, in the midst of the side
         g.fillStyle=p.doorOpen===false?'#4a3522':'#241a0e';
-        g.fillRect(-U2*.7,-U2*1.1,U2*1.4,U2*1.15);
+        g.fillRect(-U2*.8,-U2*1.7,U2*1.6,U2*1.75);
         if(p.doorOpen!==false){
-          g.fillStyle='#4a3522'; g.fillRect(-U2*.7,-U2*1.1,U2*.18,U2*1.15);
-          /* boarding ramp with ladder rungs, from the ground up to the door */
+          g.fillStyle='#4a3522'; g.fillRect(-U2*.8,-U2*1.7,U2*.2,U2*1.75);
+          /* the only way in: a long ladder from the ground below, up to the door */
           g.save();
-          g.fillStyle='#9a8458';
+          g.strokeStyle='#8d7048'; g.lineWidth=Math.max(2.5,3.4*sc);
           g.beginPath();
-          g.moveTo(-U2*.7,0); g.lineTo(U2*.7,0);
-          g.lineTo(U2*1.5,U2*2.1); g.lineTo(-U2*1.5,U2*2.1);
-          g.closePath(); g.fill();
-          g.strokeStyle='#5d4426'; g.lineWidth=Math.max(2,3*sc);
-          g.beginPath();
-          g.moveTo(-U2*.7,0); g.lineTo(-U2*1.5,U2*2.1);
-          g.moveTo(U2*.7,0); g.lineTo(U2*1.5,U2*2.1);
+          g.moveTo(-U2*.5,0); g.lineTo(-U2*.64,U2*3.5);
+          g.moveTo(U2*.5,0); g.lineTo(U2*.64,U2*3.5);
           g.stroke();
-          g.strokeStyle='#6e552f'; g.lineWidth=Math.max(2,2.4*sc);
-          for(let i=1;i<6;i++){
-            const ry=U2*2.1*i/6, rw=U2*(0.7+0.8*i/6);
+          g.strokeStyle='#6e552f'; g.lineWidth=Math.max(2,2.6*sc);
+          for(let i=0;i<=9;i++){
+            const ry=U2*3.5*i/9, rw=U2*(.5+.13*i/9);
             g.beginPath(); g.moveTo(-rw,ry); g.lineTo(rw,ry); g.stroke();
           }
           g.restore();
@@ -1557,6 +1561,18 @@ function drawProp(g,px,py,p,t){
           g.fillRect(-w/2+cI*w/8+(r%2?w/16:0),y-h+r*h/3+3,w/8-3,h/3-4);
         // ramp shadow
         g.fillStyle='rgba(0,0,0,.18)'; g.fillRect(-w/2,y-4,w,4);
+      }
+      /* built in real time: the new course rises block upon block */
+      if(p.rise&&!p.rise.done){
+        const w9=W2*(1-st*.16), h9=TILE*1.7, y9=-st*h9;
+        const total=8, pr=p.prog||0, nb=Math.floor(pr*total);
+        for(let cI=0;cI<nb;cI++){ g.fillStyle=cI%2?'#a8794a':'#b58450';
+          g.fillRect(-w9/2+cI*w9/8+1,y9-h9*.55,w9/8-3,h9*.55-2); }
+        if(nb<total){ const bt=(pr*total)%1, bx=-w9/2+nb*w9/8+1;
+          g.fillStyle='#c29059';
+          g.fillRect(bx,y9-h9*.55-(1-bt)*TILE*1.3,w9/8-3,h9*.55-2); }
+        g.strokeStyle='#6e552f'; g.lineWidth=3;
+        g.beginPath(); g.moveTo(w9*.6,y9+h9*.4); g.lineTo(w9*.66,y9-h9); g.moveTo(-w9*.6,y9+h9*.4); g.lineTo(-w9*.66,y9-h9); g.stroke();
       }
       if(p.scaffold){ g.strokeStyle='#6e552f'; g.lineWidth=3;
         g.beginPath(); g.moveTo(W2*.55,0); g.lineTo(W2*.62,-st*TILE*1.7); g.moveTo(-W2*.55,0); g.lineTo(-W2*.62,-st*TILE*1.7); g.stroke(); }
@@ -2436,8 +2452,9 @@ function walkable(map,x,y,fx,fy){
   for(const d of map.decor){
     if(!d.solid) continue;
     if(d.type==='ark'){
-      const dx=Math.abs(d.x-x);
-      if(dx<8.2&&y>d.y-2.6&&y<d.y+1.4&&dx>0.9) return false;   /* door gap at centre */
+      /* the hull is one solid mass — the only way in is the long ladder to the door in its midst */
+      const dx=Math.abs(d.x-x), dy=y-d.y;
+      if(dx<11&&dy>-3.4&&dy<1.6&&!(dx<0.75&&dy>0.15)) return false;
       continue;
     }
     if(d.type==='cave'){
@@ -3217,7 +3234,7 @@ const Game={
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
-      if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
+      if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); w._risers=undefined; return true; }
     if(op.addProp){ const pr=Object.assign({},op.addProp); if(this._staged) pr._story=1;
       w.map.decor.push(pr); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
     if(op.removeProp){ const i=w.map.decor.findIndex(d=>d.id===op.removeProp);
@@ -3594,6 +3611,7 @@ const Game={
     if(p){ p.char=sc.player||p.char; p.mount=sc.playerMount||null; p.hold=sc.playerHold||null; p.lightBody=sc.playerLight||null; p.target=null; clearNear(p.x,p.y,2.3); }
     for(const ob9 of (sc.objectives||[])) if(ob9.x!==undefined) clearNear(ob9.x,ob9.y,1.5);
     m.decor.sort((a,b)=>a.y-b.y);
+    w._risers=undefined;
     /* the walker's companions wait out the telling */
     for(const id9 of ['chavvah','ride']){ const n9=w.npcs.find(n=>n.id===id9);
       if(n9){ n9._stHidden=!!n9.hidden; n9.hidden=true; } }
@@ -3623,6 +3641,7 @@ const Game={
     for(let i=m.decor.length-1;i>=0;i--) if(m.decor[i]._story) m.decor.splice(i,1);
     for(const d of u.wDecor) m.decor.push(d);
     m.decor.sort((a,b)=>a.y-b.y);
+    w._risers=undefined;
     for(let i=w.npcs.length-1;i>=0;i--) if(w.npcs[i]._story) w.npcs.splice(i,1);
     for(let i=w.items.length-1;i>=0;i--) if(w.items[i]._story) w.items.splice(i,1);
     for(const id9 of ['chavvah','ride']){ const n9=w.npcs.find(n=>n.id===id9);
@@ -3926,6 +3945,21 @@ const Game={
         }
       }
       if(!fxLive) w.fx=null;
+    }
+    /* what is being built rises in real time — course upon course, block upon block */
+    if(w.map&&w.map.decor){
+      if(w._risers===undefined) w._risers=w.map.decor.filter(d=>d.rise);
+      for(const d of w._risers){
+        const r=d.rise; if(!r||r.done) continue;
+        d.prog=(d.prog||0)+dt*(r.rate||.0001);
+        if(d.prog>=1){
+          d.prog=0; d.stage=(d.stage||0)+1;
+          try{Sound.sfx('pickup');}catch(_){}
+          Camera.shake=Math.max(Camera.shake,.8);
+          Particles.burst(d.x*TILE,(d.y-(d.stage-1)*1.6)*TILE,'ash',12);
+          if(d.stage>=(r.max||3)) r.done=true;
+        }
+      }
     }
     // player movement
     const p=w.player;
@@ -5937,9 +5971,9 @@ STORY.push(
      {type:'collect',item:'pitch',need:3,text:'Gather pitch to cover it within and without'},
      {type:'interact',prop:'ark',text:'Raise the ark',hiddenUntil:2,
       script:[
-       {fade:'out'},{prop:['ark',{stage:1}]},{fade:'in'},
+       {prop:['ark',{rise:{rate:.0004,max:1}}]},{wait:3400},
        {toast:'Seasons pass. The hull rises…'},{wait:900},
-       {fade:'out'},{prop:['ark',{stage:2}]},{fade:'in'},
+       {prop:['ark',{rise:{rate:.0004,max:2}}]},{wait:3400},
        {toast:'The work of years is finished.'},{sfx:'chime'},{wait:700},
        {say:['noach','Three hundred cubits long, fifty wide, thirty high — exactly as He commanded. It is finished.']},
        {say:['noach','And one bundle more goes aboard, wrapped and dear: the garments of skin which Aluahim made for Aḏam and his wife when they went out of the garden — handed down from Ḥanoḵ to Methushelaḥ, and from Methushelaḥ to me. The first mercy shall not drown with the world.']},
@@ -5999,7 +6033,7 @@ STORY.push(
      {say:['narrator','And of the clean beasts, and of the beasts that are not clean, and of the birds — two by two they went in to Noaḥ into the ark, male and female, as Aluahim had commanded Noaḥ.']},
      {call:g=>{ let i=0; g.world.npcs.forEach(n=>{ if(n.group==='pairs'){
          n.follow=false; n.wander=false; n.arrived=false;
-         n.target={x:g.ox+25+((i%2)?0.6:-0.6), y:g.oy+14.8}; n.speed=.045+(i%4)*.009; i++; } }); }},
+         n.target={x:g.ox+25+((i%2)?0.6:-0.6), y:g.oy+13.55}; n.speed=.045+(i%4)*.009; i++; } }); }},
      {wait:3000},
      {call:g=>{ g.world.npcs.forEach(n=>{ if(n.group==='pairs') n.hidden=true; }); }},
      {burst:[25,14.8,'mote',18]},
@@ -6248,7 +6282,7 @@ STORY.push(
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:46, h:32, seed:61,
      features:[
-       {type:'tower',stage:1,scaffold:true,x:23,y:12,solid:true,clear:5,flat:4,id:'tower'},
+       {type:'tower',stage:1,scaffold:true,rise:{rate:.00008,max:3},x:23,y:12,solid:true,clear:5,flat:4,id:'tower'},
        {type:'tent',x:8,y:22,solid:true,clear:2,col:'#b3906a'},
        {type:'tent',x:36,y:24,solid:true,clear:2,col:'#a08a6a'},
        {type:'firepit',x:11,y:24,lit:true},
@@ -6258,8 +6292,11 @@ STORY.push(
    player:'builder', playerPos:[10,25],
    npcs:[
      {id:'amb_dk1',animal:'donkey',x:18,y:20,range:2,noTalk:true},
-     {id:'amb_hauler1',char:'builder',route:[[16,18],[23,14],[19,21]],noTalk:true,x:16,y:18},
-     {id:'amb_hauler2',char:'builder2',route:[[28,18],[24,13],[30,21]],noTalk:true,x:28,y:18},
+     {id:'amb_hauler1',char:'builder',route:[[16,18],[23,14],[19,21]],noTalk:true,x:16,y:18,hold:'brick'},
+     {id:'amb_hauler2',char:'builder2',route:[[28,18],[24,13],[30,21]],noTalk:true,x:28,y:18,hold:'brick'},
+     {id:'amb_hauler3',char:'builder3',route:[[14,14],[22,13.6],[15,17]],routeSpeed:.03,noTalk:true,x:14,y:14,hold:'brick'},
+     {id:'amb_mason1',char:'builder',x:21.6,y:13.2,wander:false,dir:'up',noTalk:true},
+     {id:'amb_mason2',char:'builder2',x:24.4,y:13.3,wander:false,dir:'up',noTalk:true},
      {id:'nimrod',char:'nimrod',x:23,y:17,wander:false,
       dlg:[['nimrod','Burn the bricks thoroughly! Brick for stone, and bitumen for mortar. We shall reach the shamayim itself and make a name for ourselves — one people, one tongue, one tower!']]},
      {id:'b2',char:'builder2',x:18,y:20,wander:true,range:2,
