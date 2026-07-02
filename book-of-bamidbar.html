@@ -2461,6 +2461,15 @@ const Particles={
           g.fillRect(sx-1,sy-1,3,3); break;
         case 'ash': g.fillStyle=`rgba(140,130,120,${a*.7})`;
           g.fillRect(sx,sy,2,2); break;
+        case 'brimstone': g.strokeStyle=`rgba(255,${140+(a*80|0)},40,${a})`; g.lineWidth=2.2;
+          g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-2,sy-13); g.stroke();
+          g.fillStyle=`rgba(255,232,150,${a*.9})`; g.fillRect(sx-1.5,sy-1.5,3,3); break;
+        case 'hail': g.fillStyle=`rgba(236,245,252,${a*.95})`; g.fillRect(sx-2,sy-2,4,4);
+          g.fillStyle=`rgba(178,204,226,${a*.8})`; g.fillRect(sx-2,sy,4,2); break;
+        case 'mannaflake': g.fillStyle=`rgba(248,244,230,${a*.92})`;
+          g.beginPath(); g.arc(sx+Math.sin(sy/11)*2.5,sy,1.8,0,Math.PI*2); g.fill(); break;
+        case 'smoke': g.fillStyle=`rgba(72,68,63,${a*.45})`;
+          g.beginPath(); g.arc(sx,sy,4+(1-a)*9,0,Math.PI*2); g.fill(); break;
         case 'rain': g.strokeStyle=`rgba(160,190,230,${a*.55})`; g.lineWidth=1;
           g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-2,sy+10); g.stroke(); break;
         case 'snow': g.fillStyle=`rgba(240,244,250,${a*.8})`;
@@ -3361,6 +3370,30 @@ const Game={
       this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
+    /* heaven-sent phenomena — fire and brimstone, hail, manna, smoke — while their hour lasts */
+    if(w.fx&&w.fx.length){
+      let fxLive=false;
+      for(const f of w.fx){
+        if(this.t>f.until) continue; fxLive=true;
+        if(f.kind==='firerain'){
+          for(let k=0;k<3;k++) Particles.spawn({x:(f.x+(Math.random()-.5)*2*(f.r||8))*TILE,y:(f.y-8-Math.random()*3)*TILE,
+            vx:(Math.random()-.5)*.03,vy:.30+Math.random()*.12,life:1050,max:1050,type:'brimstone'});
+          if(Math.random()<.18) Camera.shake=Math.max(Camera.shake,1.4);
+        } else if(f.kind==='hail'){
+          for(let k=0;k<4;k++) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW*1.1,y:Camera.y-VH*.62-Math.random()*VH*.4,
+            vx:.02,vy:.42+Math.random()*.15,life:1300,max:1300,type:'hail'});
+          if(Math.random()<.10) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW,y:Camera.y-VH*.62,
+            vx:(Math.random()-.5)*.05,vy:.5,life:900,max:900,type:'brimstone'});   /* fire flashing in the midst of the hail */
+        } else if(f.kind==='manna'){
+          if(Math.random()<.65) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW*1.05,y:Camera.y-VH*.58,
+            vx:(Math.random()-.5)*.012,vy:.035+Math.random()*.02,life:9000,max:9000,type:'mannaflake'});
+        } else if(f.kind==='smoke'){
+          if(Math.random()<.5) Particles.spawn({x:(f.x+(Math.random()-.5)*(f.r||2))*TILE,y:f.y*TILE,
+            vx:.004+(Math.random()-.5)*.006,vy:-.05-Math.random()*.04,life:5000,max:5000,type:'smoke'});
+        }
+      }
+      if(!fxLive) w.fx=null;
+    }
     // player movement
     const p=w.player;
     const blocked=(this.script&&!this.battle)||this.dlgChar;
@@ -5174,8 +5207,13 @@ STORY.push(
       ]},
      {type:'goto',x:34,y:18,radius:2.6,text:'The quail comes on the wind — but the craving carries its own judgment',hiddenUntil:2,
       script:[
-       {call:G=>{ for(let i=0;i<14;i++) G.world.npcs.push(makeNpc({id:'q'+i,animal:'bird',x:28+Math.random()*12,y:8+Math.random()*10,range:3,flying:true,noTalk:true})); }},
-       {sfx:'thunder'},{shake:1},{music:'storm'},
+       {call:G=>{ /* a wind from YAHUAH brings the quail in from the sea, and lets them fall by the camp */
+         for(let i=0;i<22;i++){ const b=makeNpc({id:'q'+i,animal:'bird',flying:true,wander:false,noTalk:true,
+             x:-2+Math.random()*4, y:6+Math.random()*14});
+           b.target={x:26+Math.random()*14,y:12+Math.random()*10}; b.speed=.10+Math.random()*.06;
+           b.onArrive=function(){ b.flying=false; b.wander=true; b.range=1.2; b.home={x:b.x,y:b.y}; };
+           G.world.npcs.push(b); } }},
+       {sfx:'thunder'},{shake:1},{music:'storm'},{wait:2200},
        {say:['narrator','And a wind from YAHUAH brought quail from the sea, and let them fall by the camp, about a day’s journey on this side and that, two cubits deep on the face of the earth. And the people rose and gathered the quail — he who gathered least gathered ten ḥomers.']},
        {say:['narrator','But while the flesh was yet between their teeth, the wrath of YAHUAH burned against the greed of the mixed multitude — and He struck them with a very great plague. And they called the name of that place Qiḇroth-Hatta’awah — the Graves of Craving — for there they buried the people who had lusted.']},
        {say:['mosheh_o','They wept for the food of slaves, and got their craving, and a grave with it. Manna from the shamayim was not enough for a heart still bound to the pots of Mitsrayim.']},

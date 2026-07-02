@@ -643,6 +643,29 @@ function sprRender(g,ops,u,flip){
 
 function drawChar(g,px,py,charId,o){
   o=o||{};
+  /* the garment of light: before the fall the two were clothed in radiance,
+     and were not ashamed — the light itself was their covering */
+  if(o.lightBody){
+    const tl=o.t||0, pul=.8+Math.sin(tl/380+px*.01)*.2;
+    const gl=g.createRadialGradient(px,py-TILE*.65,4,px,py-TILE*.65,TILE*1.55);
+    gl.addColorStop(0,'rgba(255,240,170,'+(.42*pul).toFixed(3)+')');
+    gl.addColorStop(.55,'rgba(255,218,120,'+(.18*pul).toFixed(3)+')');
+    gl.addColorStop(1,'rgba(255,205,90,0)');
+    g.fillStyle=gl; g.beginPath(); g.arc(px,py-TILE*.65,TILE*1.55,0,Math.PI*2); g.fill();
+    const oc=drawChar._lb||(drawChar._lb=document.createElement('canvas'));
+    if(oc.width!==220){ oc.width=220; oc.height=220; }
+    const og=oc.getContext('2d');
+    og.clearRect(0,0,220,220);
+    drawChar(og,110,168,charId,Object.assign({},o,{lightBody:false}));
+    og.globalCompositeOperation='source-atop';
+    og.fillStyle='rgba(255,226,130,.62)'; og.fillRect(0,0,220,220);
+    og.fillStyle='rgba(255,246,200,'+(.20+.12*Math.sin(tl/240)).toFixed(3)+')'; og.fillRect(0,0,220,220);
+    og.globalCompositeOperation='source-over';
+    g.drawImage(oc,px-110,py-168);
+    if(Math.random()<.10) Particles.spawn({x:px+(Math.random()-.5)*TILE*.7,y:py-TILE*.4-Math.random()*TILE*.9,
+      vx:(Math.random()-.5)*.01,vy:-.04-Math.random()*.03,life:900,max:900,type:'holy',screen:true});
+    return;
+  }
   const c=CHARS[charId]||CHARS.adam;
   if(c.dragon){ drawDragon(g,px,py,o); return; }
   if(c.serpent){ drawSerpent(g,px,py,o); return; }
@@ -699,8 +722,8 @@ function drawChar(g,px,py,charId,o){
   const skin=c.skin||'#7a4e29', hairC=c.hair||'#2c1a0c', robe=c.robe;
   const shoe=shade(skin,-32);
   const B=bob;
-  const torso=robe||skin;
-  const armC=robe?shade(torso,-12):skin;
+  const torso=(robe&&!c.leaf)?robe:skin;    /* fig leaves gird the loins only - the body above stays bare */
+  const armC=(robe&&!c.leaf)?shade(torso,-12):skin;
   const handC=o.whiteHand?'#f4f1e6':skin;
 
   if(!side){
@@ -715,7 +738,12 @@ function drawChar(g,px,py,charId,o){
       R(0.6,-8.6+B,2.8,7+(k<0?-1:0),skin);
       R(-3.4,-1.8+(k>0?-1.1:0),2.8,1.9,shoe);
       R(0.6,-1.8+(k<0?-1.1:0),2.8,1.9,shoe);
-      if(c.leaf){ R(-4.2,-9+B,8.4,3.4,'#5d7a35'); R(-3,-5.8+B,1.8,1.2,'#4d6a2b'); R(1.2,-5.8+B,1.8,1.2,'#4d6a2b'); }
+      if(c.leaf){ /* a lower garment only: broad leaves girded about the waist */
+        R(-4.4,-9+B,8.8,5,'#5d7a35');
+        R(-4.4,-4.6+B,8.8,.9,'#4d6a2b');
+        R(-3,-6.4+B,1.8,1.8,'#4d6a2b'); R(1.2,-6.4+B,1.8,1.8,'#4d6a2b');
+        R(-.6,-9+B,1.2,4.6,'#527030');
+      }
     }
     R(-4.5,-15+B,9,7,torso);
     if(c.coat){
@@ -724,7 +752,7 @@ function drawChar(g,px,py,charId,o){
       R(-4.5,-15+B,9,1,'#e8dcc0');
     }
     if(c.collar) R(-4.5,-15+B,9,2.2,c.collar);
-    if(robe&&!c.coat) R(-0.8,-15+B,1.6,7,shade(torso,10));
+    if(robe&&!c.coat&&!c.leaf) R(-0.8,-15+B,1.6,7,shade(torso,10));
     if(c.robeLine&&robe){
       R(-3.4,-15+B,.8,12.8,c.robeLine);
       R(2.6,-15+B,.8,12.8,c.robeLine);
@@ -813,7 +841,7 @@ function drawChar(g,px,py,charId,o){
       R(-0.2+k*1.7,-8.6+B,2.7,7,skin);
       R(-2.6-k*1.9,-1.8,3.3,1.9,shade(shoe,-6));
       R(-0.2+k*1.9,-1.8,3.5,1.9,shoe);
-      if(c.leaf){ R(-3.6,-9+B,7.2,3.4,'#5d7a35'); }
+      if(c.leaf){ R(-3.8,-9+B,7.6,5,'#5d7a35'); R(-3.8,-4.6+B,7.6,.9,'#4d6a2b'); }
     }
     /* torso */
     R(-3.8,-15+B,7.6,7,torso);
@@ -903,6 +931,10 @@ function drawChar(g,px,py,charId,o){
         R(3.6,hy-1.2,4.8,2.6,'#7a5a34');
         R(3.6,hy-.7,4.8,.5,'#8d6a3e'); R(3.6,hy+.4,4.8,.5,'#6a4c2a');
         R(3.3,hy-1,(0.7),2.2,'#9a7a4a'); R(8.1,hy-1,(0.7),2.2,'#5d4426');
+      } else if(hold==='brick'){
+        R(3.6,hy-2,4.6,3,'#b58450');
+        R(3.6,hy-1.1,4.6,.5,'#8a5f36'); R(5.7,hy-2,.5,3,'#8a5f36');
+        R(3.6,hy-2,4.6,.6,'#c29059');
       } else if(hold==='sword'){
         R(5,hy-6.6,1.2,5.4,'#c8ccd4'); R(4.3,hy-1.4,2.6,1,wood); R(5.05,hy-.6,1.1,1.6,woodD);
       } else if(hold==='trumpet'){
@@ -933,6 +965,10 @@ function drawChar(g,px,py,charId,o){
         R(.6+hx,hy-1.2,4.8,2.6,'#7a5a34');
         R(.6+hx,hy-.7,4.8,.5,'#8d6a3e'); R(.6+hx,hy+.4,4.8,.5,'#6a4c2a');
         R(.3+hx,hy-1,.7,2.2,'#9a7a4a'); R(5.1+hx,hy-1,.7,2.2,'#5d4426');
+      } else if(hold==='brick'){
+        R(.6+hx,hy-2,4.6,3,'#b58450');
+        R(.6+hx,hy-1.1,4.6,.5,'#8a5f36'); R(2.7+hx,hy-2,.5,3,'#8a5f36');
+        R(.6+hx,hy-2,4.6,.6,'#c29059');
       } else if(hold==='sword'){
         R(2+hx,hy-6.6,1.2,5.4,'#c8ccd4'); R(1.3+hx,hy-1.4,2.6,1,wood); R(2.05+hx,hy-.6,1.1,1.6,woodD);
       } else if(hold==='trumpet'){
@@ -1403,7 +1439,7 @@ function drawProp(g,px,py,p,t){
     case 'ark': {
       // stage 0: keel, 1: hull, 2: complete; monumental structure drawn around anchor
       const sc=(p.scale||1), U2=TILE*sc;
-      const W=U2*17, H=U2*5;
+      const W=U2*22, H=U2*6.2;
       g.fillStyle='rgba(0,0,0,.25)';
       g.beginPath(); g.ellipse(0,U2*1.7,W*.55,U2*.5,0,0,Math.PI*2); g.fill();
       const st=p.stage||0;
@@ -1416,29 +1452,25 @@ function drawProp(g,px,py,p,t){
       g.fillStyle='#5d4426';
       for(let i=0;i<7;i++){ g.fillRect(-W/2+U2*.4,H*.13*i+H*.1,W-U2*.8,Math.max(2,2*sc)); }
       if(st>=1){
-        g.fillStyle='#8d7048'; g.fillRect(-W/2+U2*.6,-U2*1.5,W-U2*1.2,U2*1.55);
+        g.fillStyle='#8d7048'; g.fillRect(-W/2+U2*.6,-U2*2.3,W-U2*1.2,U2*2.35);
+        g.fillStyle='#9a7c50'; g.fillRect(-W/2+U2*.4,-U2*2.6,W-U2*.8,U2*.35);   /* the roof-ridge, a cubit above */
         g.fillStyle='#7a6038';
-        for(let i=0;i<11;i++) g.fillRect(-W/2+U2*.6+i*(W-U2*1.2)/11,-U2*1.5,Math.max(2,2*sc),U2*1.5);
-        // door
+        for(let i=0;i<15;i++) g.fillRect(-W/2+U2*.6+i*(W-U2*1.2)/15,-U2*2.3,Math.max(2,2*sc),U2*2.3);
+        // the one door, in the midst of the side
         g.fillStyle=p.doorOpen===false?'#4a3522':'#241a0e';
-        g.fillRect(-U2*.7,-U2*1.1,U2*1.4,U2*1.15);
+        g.fillRect(-U2*.8,-U2*1.7,U2*1.6,U2*1.75);
         if(p.doorOpen!==false){
-          g.fillStyle='#4a3522'; g.fillRect(-U2*.7,-U2*1.1,U2*.18,U2*1.15);
-          /* boarding ramp with ladder rungs, from the ground up to the door */
+          g.fillStyle='#4a3522'; g.fillRect(-U2*.8,-U2*1.7,U2*.2,U2*1.75);
+          /* the only way in: a long ladder from the ground below, up to the door */
           g.save();
-          g.fillStyle='#9a8458';
+          g.strokeStyle='#8d7048'; g.lineWidth=Math.max(2.5,3.4*sc);
           g.beginPath();
-          g.moveTo(-U2*.7,0); g.lineTo(U2*.7,0);
-          g.lineTo(U2*1.5,U2*2.1); g.lineTo(-U2*1.5,U2*2.1);
-          g.closePath(); g.fill();
-          g.strokeStyle='#5d4426'; g.lineWidth=Math.max(2,3*sc);
-          g.beginPath();
-          g.moveTo(-U2*.7,0); g.lineTo(-U2*1.5,U2*2.1);
-          g.moveTo(U2*.7,0); g.lineTo(U2*1.5,U2*2.1);
+          g.moveTo(-U2*.5,0); g.lineTo(-U2*.64,U2*3.5);
+          g.moveTo(U2*.5,0); g.lineTo(U2*.64,U2*3.5);
           g.stroke();
-          g.strokeStyle='#6e552f'; g.lineWidth=Math.max(2,2.4*sc);
-          for(let i=1;i<6;i++){
-            const ry=U2*2.1*i/6, rw=U2*(0.7+0.8*i/6);
+          g.strokeStyle='#6e552f'; g.lineWidth=Math.max(2,2.6*sc);
+          for(let i=0;i<=9;i++){
+            const ry=U2*3.5*i/9, rw=U2*(.5+.13*i/9);
             g.beginPath(); g.moveTo(-rw,ry); g.lineTo(rw,ry); g.stroke();
           }
           g.restore();
@@ -1516,22 +1548,41 @@ function drawProp(g,px,py,p,t){
       R(-5.4,-9.4,10.8,1.6,'#8d7048');
       break; }
     case 'tower': {
-      const st=p.stage||1; // 1..3 height
-      const W2=TILE*4.6;
+      /* the tower of Baḇel, built of blocks like the land itself: every brick a
+         block with a lit top face, a front face and seams — laid block upon block */
+      const st=p.stage||1; // built tiers
+      const W2=TILE*4.6, BH=TILE*1.7;
       g.fillStyle='rgba(0,0,0,.3)';
       g.beginPath(); g.ellipse(0,TILE*.35,W2*.7,TILE*.5,0,0,Math.PI*2); g.fill();
+      const drawBlock=(bx,by,bw,bh,base)=>{
+        g.fillStyle=shadeHex(base,26); g.fillRect(bx,by,bw,bh*.38);          /* lit top face */
+        g.fillStyle=base;              g.fillRect(bx,by+bh*.38,bw,bh*.62);   /* front face */
+        g.fillStyle=shadeHex(base,-26); g.fillRect(bx+bw-1.6,by,1.6,bh);     /* right seam */
+        g.fillStyle='rgba(0,0,0,.25)'; g.fillRect(bx,by+bh-1.4,bw,1.4);      /* bed joint */
+      };
       for(let lv=0;lv<st;lv++){
-        const w=W2*(1-lv*.16), h=TILE*1.7, y=-lv*h;
-        g.fillStyle=lv%2?'#a8794a':'#b58450';
-        g.fillRect(-w/2,y-h,w,h);
-        g.fillStyle='#8a5f36';
-        for(let r=0;r<3;r++)for(let cI=0;cI<8;cI++)
-          g.fillRect(-w/2+cI*w/8+(r%2?w/16:0),y-h+r*h/3+3,w/8-3,h/3-4);
-        // ramp shadow
+        const w=W2*(1-lv*.16), y=-lv*BH;
+        const cols=Math.max(3,6-lv), bw=w/cols;
+        for(let cI=0;cI<cols;cI++)
+          drawBlock(-w/2+cI*bw+.5,y-BH,bw-1,BH-1,(cI+lv)%2?'#a8794a':'#b58450');
+        /* the tier's top reads like a walkable block-top, with a shadow at its foot */
+        g.fillStyle=shadeHex('#b58450',34); g.fillRect(-w/2,y-BH,w,4);
         g.fillStyle='rgba(0,0,0,.18)'; g.fillRect(-w/2,y-4,w,4);
       }
+      /* built in real time: the new course rises block upon block */
+      if(p.rise&&!p.rise.done){
+        const w9=W2*(1-st*.16), y9=-st*BH;
+        const cols=Math.max(3,6-st), bw=w9/cols;
+        const pr=p.prog||0, nb=Math.floor(pr*cols);
+        for(let cI=0;cI<nb;cI++)
+          drawBlock(-w9/2+cI*bw+.5,y9-BH*.62,bw-1,BH*.62-1,(cI+st)%2?'#a8794a':'#b58450');
+        if(nb<cols){ const bt=(pr*cols)%1;                                   /* the block now being set descends into place */
+          drawBlock(-w9/2+nb*bw+.5,y9-BH*.62-(1-bt)*TILE*1.5,bw-1,BH*.62-1,'#c29059'); }
+        g.strokeStyle='#6e552f'; g.lineWidth=3;
+        g.beginPath(); g.moveTo(w9*.6,y9+BH*.4); g.lineTo(w9*.66,y9-BH); g.moveTo(-w9*.6,y9+BH*.4); g.lineTo(-w9*.66,y9-BH); g.stroke();
+      }
       if(p.scaffold){ g.strokeStyle='#6e552f'; g.lineWidth=3;
-        g.beginPath(); g.moveTo(W2*.55,0); g.lineTo(W2*.62,-st*TILE*1.7); g.moveTo(-W2*.55,0); g.lineTo(-W2*.62,-st*TILE*1.7); g.stroke(); }
+        g.beginPath(); g.moveTo(W2*.55,0); g.lineTo(W2*.62,-st*BH); g.moveTo(-W2*.55,0); g.lineTo(-W2*.62,-st*BH); g.stroke(); }
       break; }
     case 'pillar': {
       shadow(2.6);
@@ -1984,7 +2035,7 @@ const WORLD_SITES={ /* chapter id → [u,v], its place on the world (fractions o
   c6b:[.783,.56], c7:[.728,.48], c8:[.700,.40], c9:[.678,.30], c9b:[.633,.13],
   c10:[.611,.17], c10a:[.644,.22], c11:[.736,.625], c11a:[.811,.715], c11b:[.833,.76],
   c12:[.586,.225], c12a:[.122,.79], c13:[.289,.64], c13a:[.239,.74], c14:[.286,.63],
-  c14b:[.392,.67], c15:[.400,.695], c15b:[.428,.72], c16:[.258,.71], c17:[.300,.55],
+  c14b:[.392,.67], c15:[.345,.615], c15b:[.428,.72], c16:[.258,.71], c17:[.300,.55],
   c17a:[.594,.21], c17b:[.244,.75], c17c:[.289,.645], c18:[.261,.705], c18b:[.222,.69],
   c18a:[.264,.715], c19:[.306,.515], c20:[.589,.22], c20a:[.600,.20], c21:[.394,.48],
   c21b:[.317,.44], c21a:[.297,.58], c22:[.303,.40], c22a:[.122,.81], c22b:[.272,.60],
@@ -2363,7 +2414,9 @@ function sceneHasFn(o,d){
 function canStageWorld(ch){
   const sc=ch&&ch.scene; if(!sc||!sc.map) return false;
   if(WORLD_STAGE_EXCLUDE.has(ch.id)) return false;
-  if(sc.map.world||sc.map.biome==='interior'||sc.overlook) return false;
+  if(sc.map.world||sc.map.biome==='interior') return false;
+  if(sc.worldStage) return true;          /* converted: closures carry G.ox/G.oy; an overlook trades its painted sky for the real mountainside */
+  if(sc.overlook) return false;
   if(ch._stageable===undefined) ch._stageable=!sceneHasFn(sc,0);
   return ch._stageable;
 }
@@ -2406,8 +2459,9 @@ function walkable(map,x,y,fx,fy){
   for(const d of map.decor){
     if(!d.solid) continue;
     if(d.type==='ark'){
-      const dx=Math.abs(d.x-x);
-      if(dx<8.2&&y>d.y-2.6&&y<d.y+1.4&&dx>0.9) return false;   /* door gap at centre */
+      /* the hull is one solid mass — the only way in is the long ladder to the door in its midst */
+      const dx=Math.abs(d.x-x), dy=y-d.y;
+      if(dx<11&&dy>-3.4&&dy<1.6&&!(dx<0.75&&dy>0.15)) return false;
       continue;
     }
     if(d.type==='cave'){
@@ -2482,6 +2536,15 @@ const Particles={
           g.fillRect(sx-1,sy-1,3,3); break;
         case 'ash': g.fillStyle=`rgba(140,130,120,${a*.7})`;
           g.fillRect(sx,sy,2,2); break;
+        case 'brimstone': g.strokeStyle=`rgba(255,${140+(a*80|0)},40,${a})`; g.lineWidth=2.2;
+          g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-2,sy-13); g.stroke();
+          g.fillStyle=`rgba(255,232,150,${a*.9})`; g.fillRect(sx-1.5,sy-1.5,3,3); break;
+        case 'hail': g.fillStyle=`rgba(236,245,252,${a*.95})`; g.fillRect(sx-2,sy-2,4,4);
+          g.fillStyle=`rgba(178,204,226,${a*.8})`; g.fillRect(sx-2,sy,4,2); break;
+        case 'mannaflake': g.fillStyle=`rgba(248,244,230,${a*.92})`;
+          g.beginPath(); g.arc(sx+Math.sin(sy/11)*2.5,sy,1.8,0,Math.PI*2); g.fill(); break;
+        case 'smoke': g.fillStyle=`rgba(72,68,63,${a*.45})`;
+          g.beginPath(); g.arc(sx,sy,4+(1-a)*9,0,Math.PI*2); g.fill(); break;
         case 'splash': g.fillStyle=`rgba(196,224,246,${a*.85})`;
           g.fillRect(sx-1,sy-1,2.6,2.6); break;
         case 'rain': g.strokeStyle=`rgba(160,190,230,${a*.55})`; g.lineWidth=1;
@@ -2583,7 +2646,7 @@ function drawWorldEnt(g,world,e,sx,sy,t){
     if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
   }
   else {
-    drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
+    drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand,lightBody:d.lightBody});
     if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
     if(d.marker){ // objective marker
       const mb=Math.sin(t/250)*4;
@@ -2925,6 +2988,9 @@ function drawItem(g,sx,sy,kind,t){
     case 'idol': g.fillStyle='#caa23c'; g.fillRect(-2,-3.2,4,4.4);
       g.beginPath(); g.arc(0,-4.6,2,0,Math.PI*2); g.fill();
       g.fillStyle='#8a6a1c'; g.fillRect(-2,-1.2,4,.9); break;
+    case 'leaf': g.fillStyle='#5d8a3c';
+      g.beginPath(); g.moveTo(0,-5); g.quadraticCurveTo(5.5,-2,0,5); g.quadraticCurveTo(-5.5,-2,0,-5); g.fill();
+      g.strokeStyle='#3f6428'; g.lineWidth=1; g.beginPath(); g.moveTo(0,-4); g.lineTo(0,4); g.stroke(); break;
     case 'flower': g.fillStyle='#d87a9a';
       for(let i=0;i<5;i++){const a=i/5*Math.PI*2; g.beginPath(); g.arc(Math.cos(a)*3,Math.sin(a)*3,2.2,0,Math.PI*2); g.fill();}
       g.fillStyle='#e8c66a'; g.beginPath(); g.arc(0,0,2,0,Math.PI*2); g.fill(); break;
@@ -2987,6 +3053,7 @@ function drawBattleUI(g,b,t){
 /* ================= GAME CORE ================= */
 const Game={
   state:'boot',        // boot,title,chapters,slides,play,complete,finale
+  ox:0, oy:0,          // where a telling stands on the world (0,0 when boxed) — closures add these to their authored coordinates
   world:null, chapter:null, slideIdx:0, slideList:null, slidePhase:null,
   script:null, scriptIdx:0, scriptWait:0, scriptBlocked:false,
   dlgQueue:[], dlgChar:null, dlgText:'', dlgShown:0, dlgDone:false, dlgCb:null, dlgChoices:null,
@@ -3174,11 +3241,12 @@ const Game={
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
-      if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
-    if(op.addProp){ w.map.decor.push(op.addProp); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
+      if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); w._risers=undefined; return true; }
+    if(op.addProp){ const pr=Object.assign({},op.addProp); if(this._staged) pr._story=1;
+      w.map.decor.push(pr); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
     if(op.removeProp){ const i=w.map.decor.findIndex(d=>d.id===op.removeProp);
       if(i>=0) w.map.decor.splice(i,1); return true; }
-    if(op.spawn){ w.npcs.push(makeNpc(op.spawn)); return true; }
+    if(op.spawn){ const n9=makeNpc(op.spawn); if(this._staged) n9._story=1; w.npcs.push(n9); return true; }
     if(op.despawn){ const i=w.npcs.findIndex(n=>n.id===op.despawn); if(i>=0) w.npcs.splice(i,1); return true; }
     if(op.burst){ Particles.burst(op.burst[0]*TILE,op.burst[1]*TILE,op.burst[2]||'holy',op.burst[3]||14); return true; }
     if(op.camera){ if(op.camera==='player') w.camFollow='player';
@@ -3335,6 +3403,7 @@ const Game={
       return;
     }
     this._stageAtSite=null;
+    this.ox=0; this.oy=0;
     const sc=ch.scene;
     const map=sc.map.world?generateWorldMap(sc.map):generateMap(sc.map);
     // seamless world: spawn at return-from-story > saved position > scene default
@@ -3354,7 +3423,7 @@ const Game={
     }
     this._worldSpawn=null;
     const player=sc.player?{
-      char:sc.player, x:wx, y:wy,
+      char:sc.player, x:wx, y:wy, lightBody:sc.playerLight||null,
       dir:'down', moving:false, speed:.085, mount:sc.playerMount||null, hold:sc.playerHold||null
     }:null;
     if(player){
@@ -3503,7 +3572,7 @@ const Game={
         this._returnWorld={pos:[d.x,d.y+1.6]};
         if(this.world&&this.world.map&&this.world.map.world) this._keepWorld=this.world;
         try{Sound.sfx('blip');}catch(_){}
-        this.startChapter(allChapters().find(c=>c.id==='interior'));
+        this.enterDoor();
         return;
       }
     }
@@ -3519,7 +3588,8 @@ const Game={
     ox=clamp(ox,2-trim,m.w-2-cm.w+trim); oy=clamp(oy,2-trim,m.h-2-cm.h+trim);
     const sc={map:sc0.map};
     for(const k of Object.keys(sc0)) if(k!=='map') sc[k]=offsetStoryData(sc0[k],ox,oy,k);
-    const x0=ox+trim, x1=ox+cm.w-trim, y0=oy+trim, y1=oy+cm.h-trim;
+    const topSkip=sc0.overlook?Math.max(0,sc0.overlook.cliffY-2):0;   /* an overlook keeps only its ground — beyond the edge lies the world's own mountain */
+    const x0=ox+trim, x1=ox+cm.w-trim, y0=oy+Math.max(trim,topSkip), y1=oy+cm.h-trim;
     const e0=elevAt(m,site.x,site.y);
     const undo={x0,y0,x1,y1,tiles:new Uint8Array((x1-x0)*(y1-y0)),elev:new Uint8Array((x1-x0)*(y1-y0)),
                 wDecor:[],time:w.time,rain:w.rain};
@@ -3545,9 +3615,10 @@ const Game={
       if(d._story&&d.solid&&!d.id&&!d.examine&&dist(d.x,d.y,cx,cy)<rad) m.decor.splice(i,1); } };
     const p=w.player;
     if(p&&sc.playerPos){ p.x=sc.playerPos[0]; p.y=sc.playerPos[1]; }
-    if(p){ p.char=sc.player||p.char; p.mount=sc.playerMount||null; p.hold=sc.playerHold||null; p.target=null; clearNear(p.x,p.y,2.3); }
+    if(p){ p.char=sc.player||p.char; p.mount=sc.playerMount||null; p.hold=sc.playerHold||null; p.lightBody=sc.playerLight||null; p.target=null; clearNear(p.x,p.y,2.3); }
     for(const ob9 of (sc.objectives||[])) if(ob9.x!==undefined) clearNear(ob9.x,ob9.y,1.5);
     m.decor.sort((a,b)=>a.y-b.y);
+    w._risers=undefined;
     /* the walker's companions wait out the telling */
     for(const id9 of ['chavvah','ride']){ const n9=w.npcs.find(n=>n.id===id9);
       if(n9){ n9._stHidden=!!n9.hidden; n9.hidden=true; } }
@@ -3565,6 +3636,7 @@ const Game={
     else if(sc.camStart){ Camera.x=sc.camStart[0]*TILE; Camera.y=sc.camStart[1]*TILE; }
     this._staged={undo,ch};
     this._stagedScene=sc;
+    this.ox=ox; this.oy=oy;
     if(sc.onStart) this.runScript(sc.onStart.slice());
   },
   unstageScene(){
@@ -3576,13 +3648,27 @@ const Game={
     for(let i=m.decor.length-1;i>=0;i--) if(m.decor[i]._story) m.decor.splice(i,1);
     for(const d of u.wDecor) m.decor.push(d);
     m.decor.sort((a,b)=>a.y-b.y);
+    w._risers=undefined;
     for(let i=w.npcs.length-1;i>=0;i--) if(w.npcs[i]._story) w.npcs.splice(i,1);
     for(let i=w.items.length-1;i>=0;i--) if(w.items[i]._story) w.items.splice(i,1);
     for(const id9 of ['chavvah','ride']){ const n9=w.npcs.find(n=>n.id===id9);
       if(n9&&n9._stHidden!==undefined){ n9.hidden=n9._stHidden; delete n9._stHidden; } }
-    w.time=u.time; w.rain=u.rain; Sound.rain(u.rain);
+    w.time=u.time; w.rain=u.rain; Sound.rain(u.rain); w.fx=null;
     w.raysTarget=0; w.camFollow='player'; w.camTarget=null; w.gotoMark=null;
     this._staged=null; this._stagedScene=null;
+    this.ox=0; this.oy=0;
+  },
+  /* Zelda-style door: the room swaps in one slide — no black fade, no reload */
+  enterDoor(){
+    const ch=allChapters().find(c=>c.id==='interior');
+    const snap=document.createElement('canvas');
+    snap.width=canvas.width; snap.height=canvas.height;
+    snap.getContext('2d').drawImage(canvas,0,0);
+    if(this._staged) this.unstageScene();
+    this.chapter=ch;
+    Save.data.current=ch.id; Save.write();
+    this.startScene();
+    this._swipe={img:snap,t0:performance.now(),dur:430,dir:1};
   },
   /* when the next station lies just ahead, say so — the walk itself begins it */
   maybeChain(){
@@ -3602,11 +3688,19 @@ const Game={
       Save.write();
       this.unstageScene();
       this._returnWorld=null; this._keepWorld=null;
+      /* a chapter that raises or ruins a city turns the era — the land is redrawn */
+      if((typeof WORLD_TOWNS!=='undefined')&&WORLD_TOWNS.some(tn=>tn.after===ch.id||tn.ruin===ch.id)){
+        this._worldSpawn=[this.world.player.x,this.world.player.y];
+        Sound.sfx('holy');
+        toast('✦ “'+ch.title+'” complete — the face of the land is changed');
+        this.startChapter(allChapters().find(c=>c.id==='freeroam'));
+        return;
+      }
       this.chapter=allChapters().find(c=>c.id==='freeroam');
       $('hud-chapter').textContent=this.chapter.title;
       this.setupObjectives(this.chapter.scene.objectives);
       const p=this.world.player, hp=this.worldHero();
-      if(p){ p.char=hp.hero; p.mount=null; p.hold=null; p.target=null; }
+      if(p){ p.char=hp.hero; p.mount=null; p.hold=null; p.lightBody=null; p.target=null; }
       const wf=this.world.npcs.find(n=>n.id==='chavvah');
       if(wf){ if(hp.wife){ wf.char=hp.wife; wf.hidden=false; wf.x=p.x-1; wf.y=p.y+.5; wf.target=null; } else wf.hidden=true; }
       const rd=this.world.npcs.find(n=>n.id==='ride');
@@ -3633,6 +3727,10 @@ const Game={
       const kw=this._keepWorld; this._keepWorld=null;
       const eraTurn=(typeof WORLD_TOWNS!=='undefined')&&WORLD_TOWNS.some(tn=>tn.after===ch.id||tn.ruin===ch.id);
       if(kw&&kw.map&&kw.map.world&&!eraTurn){
+        let snap=null;
+        if(ch.id==='interior'){ snap=document.createElement('canvas');
+          snap.width=canvas.width; snap.height=canvas.height;
+          snap.getContext('2d').drawImage(canvas,0,0); }
         this.dlgQueue=[]; this.closeDlg();
         this.script=null; this.scriptBlocked=false; this.battle=null; this.mash=null;
         this.world=kw;
@@ -3650,6 +3748,7 @@ const Game={
         Camera.biasY=0;
         if(p) Camera.follow(p.x,p.y,this.world.map,true);
         this._storyCooldown=this.t+2500;
+        if(snap) this._swipe={img:snap,t0:performance.now(),dur:430,dir:-1};
         if(ch.id!=='interior'){ Sound.sfx('holy');
           toast('✦ Returned to the land — “'+ch.title+'” complete');
           this.maybeChain(); }
@@ -3830,6 +3929,45 @@ const Game={
       this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
+    /* heaven-sent phenomena — fire and brimstone, hail, manna, smoke — while their hour lasts */
+    if(w.fx&&w.fx.length){
+      let fxLive=false;
+      for(const f of w.fx){
+        if(this.t>f.until) continue; fxLive=true;
+        if(f.kind==='firerain'){
+          for(let k=0;k<3;k++) Particles.spawn({x:(f.x+(Math.random()-.5)*2*(f.r||8))*TILE,y:(f.y-8-Math.random()*3)*TILE,
+            vx:(Math.random()-.5)*.03,vy:.30+Math.random()*.12,life:1050,max:1050,type:'brimstone'});
+          if(Math.random()<.18) Camera.shake=Math.max(Camera.shake,1.4);
+        } else if(f.kind==='hail'){
+          for(let k=0;k<4;k++) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW*1.1,y:Camera.y-VH*.62-Math.random()*VH*.4,
+            vx:.02,vy:.42+Math.random()*.15,life:1300,max:1300,type:'hail'});
+          if(Math.random()<.10) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW,y:Camera.y-VH*.62,
+            vx:(Math.random()-.5)*.05,vy:.5,life:900,max:900,type:'brimstone'});   /* fire flashing in the midst of the hail */
+        } else if(f.kind==='manna'){
+          if(Math.random()<.65) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW*1.05,y:Camera.y-VH*.58,
+            vx:(Math.random()-.5)*.012,vy:.035+Math.random()*.02,life:9000,max:9000,type:'mannaflake'});
+        } else if(f.kind==='smoke'){
+          if(Math.random()<.5) Particles.spawn({x:(f.x+(Math.random()-.5)*(f.r||2))*TILE,y:f.y*TILE,
+            vx:.004+(Math.random()-.5)*.006,vy:-.05-Math.random()*.04,life:5000,max:5000,type:'smoke'});
+        }
+      }
+      if(!fxLive) w.fx=null;
+    }
+    /* what is being built rises in real time — course upon course, block upon block */
+    if(w.map&&w.map.decor){
+      if(w._risers===undefined) w._risers=w.map.decor.filter(d=>d.rise);
+      for(const d of w._risers){
+        const r=d.rise; if(!r||r.done) continue;
+        d.prog=(d.prog||0)+dt*(r.rate||.0001);
+        if(d.prog>=1){
+          d.prog=0; d.stage=(d.stage||0)+1;
+          try{Sound.sfx('pickup');}catch(_){}
+          Camera.shake=Math.max(Camera.shake,.8);
+          Particles.burst(d.x*TILE,(d.y-(d.stage-1)*1.6)*TILE,'ash',12);
+          if(d.stage>=(r.max||3)) r.done=true;
+        }
+      }
+    }
     // player movement
     const p=w.player;
     const blocked=(this.script&&!this.battle)||this.dlgChar;
@@ -3960,7 +4098,10 @@ const Game={
           const o=(this.objectives||[]).find(o=>!o.done&&o.type==='collect'&&o.item===it.kind);
           if(o){ o.count++;
             this.renderObjectives();
-            if(o.count>=o.need) this.completeObjective(o.idx);
+            if(o.count>=o.need){
+              if(o.script&&!this.script) this.runScript(o.script.slice(),()=>this.completeObjective(o.idx));
+              else this.completeObjective(o.idx);
+            }
           }
         }
       }
@@ -4088,6 +4229,11 @@ function makeNpc(def){
 function campLife(G,o){
   o=o||{};
   const w=G.world, m=w.map;
+  /* staged on the open world: the camp is only what stands on the telling's own
+     ground — the world's distant fires and wells are not this camp's */
+  const st=G._staged&&G._staged.undo;
+  const inSt=d=>!st||(d.x>=st.x0&&d.x<st.x1&&d.y>=st.y0&&d.y<st.y1);
+  const bx0=st?st.x0:0, by0=st?st.y0:0, bx1=st?st.x1:m.w, by1=st?st.y1:m.h;
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
@@ -4095,18 +4241,18 @@ function campLife(G,o){
   const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
   const child=o.child||(has('sheth')?'sheth':null);
   let id9=0;
-  const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
+  const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); if(st) n9._story=1; w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
-    if(x<2.5||y<2.5||x>m.w-3||y>m.h-3) return false;
+    if(x<bx0+2.5||y<by0+2.5||x>bx1-3||y>by1-3) return false;
     if(!walkable(m,x,y)) return false;
     for(const d of m.decor){ if(d.solid&&Math.abs(d.x-x)<1.7&&Math.abs(d.y-y)<1.7) return false; }
     if(w.player&&dist(x,y,w.player.x,w.player.y)<3.2) return false;
     return true;
   };
-  const fires=m.decor.filter(d=>d.type==='firepit');
-  const wells=m.decor.filter(d=>d.type==='well');
-  const homes=m.decor.filter(d=>d.type==='tent'||d.type==='house');
-  const trees=m.decor.filter(d=>d.type==='tree'||d.type==='palm');
+  const fires=m.decor.filter(d=>d.type==='firepit'&&inSt(d));
+  const wells=m.decor.filter(d=>d.type==='well'&&inSt(d));
+  const homes=m.decor.filter(d=>(d.type==='tent'||d.type==='house')&&inSt(d));
+  const trees=m.decor.filter(d=>(d.type==='tree'||d.type==='palm')&&inSt(d));
   /* cooks tend the fires */
   let nf=0;
   for(const f of fires){
@@ -4117,11 +4263,11 @@ function campLife(G,o){
   /* wood-bearers carry their loads in to the fires */
   if(fires.length&&!o.noWood){
     const f=fires[0];
-    const sx=trees.length?trees[0].x+1:clamp(f.x-7,3,m.w-3), sy=trees.length?trees[0].y+1.5:clamp(f.y+3.5,3,m.h-3);
+    const sx=trees.length?trees[0].x+1:clamp(f.x-7,bx0+3,bx1-3), sy=trees.length?trees[0].y+1.5:clamp(f.y+3.5,by0+3,by1-3);
     add({char:man,x:sx,y:sy,route:[[f.x+1.8,f.y+.2],[sx,sy]],routeSpeed:.02,hold:'wood'});
     const f2=fires[1]||f;
-    add({char:man2,x:clamp(f2.x-4,3,m.w-3),y:clamp(f2.y+2,3,m.h-3),
-         route:[[f2.x-1.8,f2.y+.5],[clamp(f2.x-6,3,m.w-3),clamp(f2.y+3,3,m.h-3)]],routeSpeed:.016,hold:'wood'});
+    add({char:man2,x:clamp(f2.x-4,bx0+3,bx1-3),y:clamp(f2.y+2,by0+3,by1-3),
+         route:[[f2.x-1.8,f2.y+.5],[clamp(f2.x-6,bx0+3,bx1-3),clamp(f2.y+3,by0+3,by1-3)]],routeSpeed:.016,hold:'wood'});
   }
   /* water-bearers between the well and the tents */
   if(wells.length&&homes.length&&!o.noWater){
@@ -4133,7 +4279,7 @@ function campLife(G,o){
   if(!o.noFlock&&has('shepherd')){
     let fx=null,fy=null;
     for(let i=0;i<70&&fx===null;i++){
-      const tx=3+hash2(i,o.seed||7)*(m.w-7), ty=3+hash2(i*3+1,11)*(m.h-7);
+      const tx=bx0+3+hash2(i,o.seed||7)*(bx1-bx0-7), ty=by0+3+hash2(i*3+1,11)*(by1-by0-7);
       if(free(tx,ty)&&free(tx+1.6,ty+1.2)&&homes.every(h=>dist(h.x,h.y,tx,ty)>3.4)){ fx=tx; fy=ty; }
     }
     if(fx!==null){
@@ -4164,7 +4310,7 @@ function campLife(G,o){
     }
   }
   /* settle some of the drifting crowd: pairs stop and talk */
-  const drifters=w.npcs.filter(n=>n.wander&&n.noTalk&&!n.animal&&!n.child&&!n.group&&!n.follow&&!n.route&&!n.hidden&&!n.foe&&!String(n.id).startsWith('life'));
+  const drifters=w.npcs.filter(n=>n.wander&&n.noTalk&&!n.animal&&!n.child&&!n.group&&!n.follow&&!n.route&&!n.hidden&&!n.foe&&!String(n.id).startsWith('life')&&(!st||n._story));
   for(let i=0;i+1<Math.min(drifters.length,Math.ceil(drifters.length*.55));i+=2){
     const a9=drifters[i], b9=drifters[i+1];
     a9.wander=false; a9.target=null; a9.moving=false;
@@ -5387,6 +5533,7 @@ const STORY=[
        {type:'clearing',x:24,y:18,flat:3},
      ]},
    time:'day', music:'eden',
+   playerLight:true,   /* before the fall: a body of light, after the image above */
    player:'adam', playerPos:[12,24],
    npcs:[
      {id:'sheep1',animal:'sheep',x:16,y:20,range:3,
@@ -5438,7 +5585,7 @@ const STORY=[
      {wait:1300},
      {fade:'out'},{sfx:'holy'},
      {call:g=>{ const w=g.world; w.time='dusk'; }},
-     {spawn:{id:'chavvah',char:'chavvah',x:25,y:19,wander:false}},
+     {spawn:{id:'chavvah',char:'chavvah',x:25,y:19,wander:false,lightBody:true}},
      {teleport:['player',23,19]},
      {fade:'in'},{wait:600},
      {say:['narrator','And He took one of his ribs, and closed up the flesh in its place. And the rib which He had taken from the man He made into a woman, and He brought her to the man.']},
@@ -5468,9 +5615,10 @@ const STORY=[
        {type:'clearing',x:24,y:18,flat:3},
      ]},
    time:'day', music:'tense',
+   playerLight:true,
    player:'chavvah', playerPos:[18,22],
    npcs:[
-     {id:'adam',char:'adam',x:14,y:26,wander:true,range:2,dlg:[['adam','The garden is wide and good. I shall be near the river, beloved.']]},
+     {id:'adam',char:'adam',x:14,y:26,wander:true,range:2,lightBody:true,dlg:[['adam','The garden is wide and good. I shall be near the river, beloved.']]},
      {id:'serpent',char:'serpent',x:28,y:15,wander:false,
       script:[
        {say:['serpent','Is it true that Aluahim has said, “Do not eat of every tree of the garden”?']},
@@ -5488,20 +5636,31 @@ const STORY=[
        {move:['player',26.5,14.6,.04]},
        {sfx:'bad'},{music:'sorrow'},{wait:600},
        {say:['narrator','And she took of its fruit and ate.']},
-       {charSwap:['player','chavvah_f']},
+       {call:g=>{ g.world.player.lightBody=null;
+          Particles.burst(g.world.player.x*TILE,(g.world.player.y-1)*TILE,'holy',22); }},{sfx:'bad'},
        {burst:[26.5,14.6,'ash',16]},{wait:400},
        {move:['adam',25,16,.05]},
        {say:['narrator','And she also gave to her husband with her — and he ate.']},
        {say:['narrator','Then the eyes of both of them were opened, and they knew that they were naked.']},
-       {charSwap:['adam','adam_f']},{burst:[25,16,'ash',16]},
+       {call:g=>{ const a=g.world.npcs.find(n=>n.id==='adam');
+          if(a){ a.lightBody=null; Particles.burst(a.x*TILE,(a.y-1)*TILE,'holy',22); } }},
+       {burst:[25,16,'ash',16]},
        {sfx:'thunder'},{time:'dusk'},{wait:800},
-       {say:['narrator','And they sewed fig leaves together and made loin coverings for themselves.']},
+       {say:['narrator','And their eyes were opened to their nakedness - and they looked about for the broad leaves of the fig tree, to cover themselves.']},
+       {call:g=>{ [[20.5,14.2],[28.6,15.4],[23.2,11.8],[26.2,17.6],[21.4,17.2],[29.4,12.4]].forEach(function(s){
+          g.world.items.push({kind:'leaf',x:s[0],y:s[1]}); }); }},
        {complete:0},
       ]},
    ],
    objectives:[
      {type:'talk',npc:'serpent',text:'Something stirs by the tree in the midst of the garden…'},
-     {type:'goto',x:16,y:25,radius:3,text:'Hide among the trees of the garden',hiddenUntil:1},
+     {type:'collect',item:'leaf',need:4,hiddenUntil:1,text:'Gather fig leaves to sew coverings',
+      script:[
+       {say:['narrator','And they sewed fig leaves together and made loin coverings for themselves.']},
+       {charSwap:['player','chavvah_f']},{charSwap:['adam','adam_f']},
+       {burst:[25,16,'leaf',16]},{sfx:'blip'},
+      ]},
+     {type:'goto',x:16,y:25,radius:3,text:'Hide among the trees of the garden',hiddenUntil:2},
    ],
    onComplete:[
      {time:'dusk'},{rays:.9,raysX:18},{sfx:'holy'},{music:'sorrow'},
@@ -5578,7 +5737,7 @@ const STORY=[
    {art:'wilderness', music:'desert', text:'And Aḏam knew Ḥawwah his wife and she conceived and bore Qayin… And again, she gave birth to his brother Heḇal. And Heḇal became a keeper of sheep, but Qayin became a tiller of the ground.', ref:'BERĔSHITH 4:1–2'},
    {art:'offering', music:'tense', text:'And unto Qayin and his offering YAHUAH did not turn — for he had brought from the inferior fruit of the ground before YAHUAH. And Qayin was jealous against his brother Heḇal on account of this, and he sought a pretext to slay him.', ref:'YASHAR 1:16'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:46, h:34, seed:21,
      features:[
        {type:'altar',stage:1,x:23,y:10,solid:true,clear:2,flat:2,id:'altar_q'},
@@ -5598,7 +5757,7 @@ const STORY=[
    player:'qayin', playerPos:[12,24],
    onStart:[
      {call:g=>{ const m=g.world.map;
-       for(let y=13;y<=21;y++)for(let x=11;x<=19;x++)
+       for(let y=13+g.oy;y<=21+g.oy;y++)for(let x=11+g.ox;x<=19+g.ox;x++)
          if(!SOLID.has(m.tiles[y*m.w+x])) m.tiles[y*m.w+x]=10; }},
    ],
    npcs:[
@@ -5718,7 +5877,7 @@ STORY.push(
    {art:'watchers', music:'tense', text:'And it came to be, when men began to increase on the face of the earth… that the sons of Aluahim saw the daughters of men, that they were good, and they took wives for themselves of all whom they chose. And the Nephilim were on the earth in those days — the mighty men of old, the men of name.', ref:'BERĔSHITH 6:1–4'},
    {art:'corrupt', music:'sorrow', text:'And the sons of men turned from YAHUAH; they corrupted the earth, they robbed and plundered every man his neighbour as well as his relative — and the earth was filled with violence. And their judges and rulers took the wives of men by force.', ref:'YASHAR 4:17–18'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:48, h:32, seed:66,
      features:[
        {type:'tower',stage:2,scaffold:true,x:38,y:10,solid:true,clear:4,flat:4,id:'forgeworks',examine:'A tower of burnt brick, hung with scaffolds — the works of the teaching of Azazal.'},
@@ -5819,9 +5978,9 @@ STORY.push(
      {type:'collect',item:'pitch',need:3,text:'Gather pitch to cover it within and without'},
      {type:'interact',prop:'ark',text:'Raise the ark',hiddenUntil:2,
       script:[
-       {fade:'out'},{prop:['ark',{stage:1}]},{fade:'in'},
+       {prop:['ark',{rise:{rate:.0004,max:1}}]},{wait:3400},
        {toast:'Seasons pass. The hull rises…'},{wait:900},
-       {fade:'out'},{prop:['ark',{stage:2}]},{fade:'in'},
+       {prop:['ark',{rise:{rate:.0004,max:2}}]},{wait:3400},
        {toast:'The work of years is finished.'},{sfx:'chime'},{wait:700},
        {say:['noach','Three hundred cubits long, fifty wide, thirty high — exactly as He commanded. It is finished.']},
        {say:['noach','And one bundle more goes aboard, wrapped and dear: the garments of skin which Aluahim made for Aḏam and his wife when they went out of the garden — handed down from Ḥanoḵ to Methushelaḥ, and from Methushelaḥ to me. The first mercy shall not drown with the world.']},
@@ -5844,7 +6003,7 @@ STORY.push(
   intro:[
    {art:'beasts', music:'eden', text:'“Of the birds after their kind and of the livestock after their kind, of all creeping creatures of the ground after their kind — two of each shall come to you, to keep them alive.”', ref:'BERĔSHITH 6:20'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'wild', w:50, h:36, seed:31,
      features:[
        {type:'ark',stage:2,x:25,y:13,solid:true,clear:10,flat:9,id:'ark'},
@@ -5881,7 +6040,7 @@ STORY.push(
      {say:['narrator','And of the clean beasts, and of the beasts that are not clean, and of the birds — two by two they went in to Noaḥ into the ark, male and female, as Aluahim had commanded Noaḥ.']},
      {call:g=>{ let i=0; g.world.npcs.forEach(n=>{ if(n.group==='pairs'){
          n.follow=false; n.wander=false; n.arrived=false;
-         n.target={x:25+((i%2)?0.6:-0.6), y:14.8}; n.speed=.045+(i%4)*.009; i++; } }); }},
+         n.target={x:g.ox+25+((i%2)?0.6:-0.6), y:g.oy+13.55}; n.speed=.045+(i%4)*.009; i++; } }); }},
      {wait:3000},
      {call:g=>{ g.world.npcs.forEach(n=>{ if(n.group==='pairs') n.hidden=true; }); }},
      {burst:[25,14.8,'mote',18]},
@@ -5972,6 +6131,7 @@ STORY.push(
        {type:'clearing',x:16,y:18,flat:3},
        {type:'rock',x:22,y:22,solid:true,clear:1},
      ]},
+   worldStage:true,   /* staged: the ark rests on the true slopes of Ararat */
    overlook:{kind:'flood', cliffY:13, drop:.62},
    time:'morning', music:'holy',
    player:'noach', playerPos:[16,23],
@@ -6045,7 +6205,7 @@ STORY.push(
   intro:[
    {art:'land', music:'eden', text:'And the sons of Noaḥ who went out of the ark were Shĕm, Ḥam and Yahpheth — and from these the whole earth was populated. And Noaḥ, a man of the soil, began and planted a vineyard.', ref:'BERĔSHITH 9:18–20'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:46, h:32, seed:76,
      features:[
        {type:'tent',x:29,y:11,solid:true,clear:2,col:'#b3a07f',id:'tent',examine:'The tent of Noaḥ.'},
@@ -6086,10 +6246,10 @@ STORY.push(
        {call:g=>{ const y=g.world.npcs.find(n=>n.id==='yepheth'); if(y){y.wander=false; y.x=g.world.player.x+1.4; y.y=g.world.player.y;} }},
        {say:['narrator','And Shĕm and Yahpheth took the garment and laid it on both their shoulders — and went backward, and covered the nakedness of their father; and their faces were turned away, and they did not see their father’s nakedness.']},
        {call:g=>{ const p=g.world.player, y=g.world.npcs.find(n=>n.id==='yepheth');
-         p.x=28.4; p.y=12.6; p.dir='down'; if(y){y.x=29.8; y.y=12.6; y.dir='down';} }},
+         p.x=g.ox+28.4; p.y=g.oy+12.6; p.dir='down'; if(y){y.x=g.ox+29.8; y.y=g.oy+12.6; y.dir='down';} }},
        {wait:1100},{sfx:'chime'},
        {call:g=>{ const p=g.world.player, y=g.world.npcs.find(n=>n.id==='yepheth');
-         p.x=27; p.y=15; p.dir='up'; if(y){y.x=30.5; y.y=15; y.dir='up'; y.wander=true; y.home={x:30.5,y:15};} }},
+         p.x=g.ox+27; p.y=g.oy+15; p.dir='up'; if(y){y.x=g.ox+30.5; y.y=g.oy+15; y.dir='up'; y.wander=true; y.home={x:g.ox+30.5,y:g.oy+15};} }},
        {fade:'out'},{toast:'And Noaḥ awoke from his wine…'},{time:'morning'},{wait:1400},{fade:'in'},
        {show:'noach'},{teleport:['noach',29,13.5]},{move:['noach',27.5,15.5,.04]},
        {say:['narrator','And Noaḥ awoke from his wine, and knew what his younger son had done to him.']},
@@ -6098,9 +6258,9 @@ STORY.push(
       ]},
      {type:'goto',x:25,y:19,radius:2.2,text:'Gather at the fire — your father divides the earth',hiddenUntil:4,
       script:[
-       {call:g=>{ const n=g.world.npcs.find(n=>n.id==='noach'); if(n){n.target={x:24,y:18};}
-         const c=g.world.npcs.find(n=>n.id==='cham'); if(c){c.wander=false; c.target={x:26.2,y:19.6};}
-         const y=g.world.npcs.find(n=>n.id==='yepheth'); if(y){y.wander=false; y.target={x:23.6,y:20};} }},
+       {call:g=>{ const n=g.world.npcs.find(n=>n.id==='noach'); if(n){n.target={x:g.ox+24,y:g.oy+18};}
+         const c=g.world.npcs.find(n=>n.id==='cham'); if(c){c.wander=false; c.target={x:g.ox+26.2,y:g.oy+19.6};}
+         const y=g.world.npcs.find(n=>n.id==='yepheth'); if(y){y.wander=false; y.target={x:g.ox+23.6,y:g.oy+20};} }},
        {wait:1400},
        {say:['narrator','And Noaḥ called his sons, and they drew close to him, they and their children — and he divided the earth into the lots which his three sons were to take in possession, and a mal’ak of the presence was with them.']},
        {say:['noach','To you, Shĕm — the middle of the earth: for the Garden of Ĕḏen is the holy of holies and the dwelling of YAHUAH, and Mount Tsiyon the centre of the navel of the earth. Your portion holds the holy places.']},
@@ -6126,10 +6286,10 @@ STORY.push(
    {art:'corrupt', music:'royal', text:'And Nimroḏ became strong when he put on the garments, and he was a mighty hunter in the earth… and he reigned upon the earth. Therefore it became a saying: “Like Nimroḏ, a mighty hunter before YAHUAH.”', ref:'YASHAR 7:30–33; BERĔSHITH 10:9'},
    {art:'babel', music:'royal', text:'And all the earth had one language and one speech… And they said, “Come, let us build ourselves a city and a tower whose top is in the shamayim, and make a name for ourselves, lest we be scattered over the face of all the earth.”', ref:'BERĔSHITH 11:1,4'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:46, h:32, seed:61,
      features:[
-       {type:'tower',stage:1,scaffold:true,x:23,y:12,solid:true,clear:5,flat:4,id:'tower'},
+       {type:'tower',stage:1,scaffold:true,rise:{rate:.00008,max:3},x:23,y:12,solid:true,clear:5,flat:4,id:'tower'},
        {type:'tent',x:8,y:22,solid:true,clear:2,col:'#b3906a'},
        {type:'tent',x:36,y:24,solid:true,clear:2,col:'#a08a6a'},
        {type:'firepit',x:11,y:24,lit:true},
@@ -6139,8 +6299,11 @@ STORY.push(
    player:'builder', playerPos:[10,25],
    npcs:[
      {id:'amb_dk1',animal:'donkey',x:18,y:20,range:2,noTalk:true},
-     {id:'amb_hauler1',char:'builder',route:[[16,18],[23,14],[19,21]],noTalk:true,x:16,y:18},
-     {id:'amb_hauler2',char:'builder2',route:[[28,18],[24,13],[30,21]],noTalk:true,x:28,y:18},
+     {id:'amb_hauler1',char:'builder',route:[[16,18],[23,14],[19,21]],noTalk:true,x:16,y:18,hold:'brick'},
+     {id:'amb_hauler2',char:'builder2',route:[[28,18],[24,13],[30,21]],noTalk:true,x:28,y:18,hold:'brick'},
+     {id:'amb_hauler3',char:'builder3',route:[[14,14],[22,13.6],[15,17]],routeSpeed:.03,noTalk:true,x:14,y:14,hold:'brick'},
+     {id:'amb_mason1',char:'builder',x:21.6,y:13.2,wander:false,dir:'up',noTalk:true},
+     {id:'amb_mason2',char:'builder2',x:24.4,y:13.3,wander:false,dir:'up',noTalk:true},
      {id:'nimrod',char:'nimrod',x:23,y:17,wander:false,
       dlg:[['nimrod','Burn the bricks thoroughly! Brick for stone, and bitumen for mortar. We shall reach the shamayim itself and make a name for ourselves — one people, one tongue, one tower!']]},
      {id:'b2',char:'builder2',x:18,y:20,wander:true,range:2,
@@ -6190,7 +6353,7 @@ STORY.push(
      {call:g=>{ const exits=[[3,8],[43,6],[3,26],[43,29],[23,30],[5,17],[41,17],[23,3]];
        let i=0; g.world.npcs.forEach(n=>{ if(n.group==='crowd'){
          n.wander=false; const e=exits[i%exits.length];
-         n.target={x:e[0],y:e[1]}; n.speed=.05+(i%3)*.012; i++; } }); }},
+         n.target={x:e[0]+g.ox,y:e[1]+g.oy}; n.speed=.05+(i%3)*.012; i++; } }); }},
      {wait:1800},
    ],
   },
@@ -6211,7 +6374,7 @@ STORY.push(
    {art:'corrupt', music:'tense', text:'And Prince Mastema sent ravens and birds to devour the seed that was sown in the land, in order to destroy the land and rob the children of men of their labours. Before they could plow in the seed, the ravens picked it from the surface of the ground.', ref:'YOḆELIM 11:11'},
    {art:'journey', music:'sorrow', text:'And the years began to be barren because of the birds, and they devoured all the fruit of the trees — and it was only with great effort that men could harvest a little fruit from the earth in their days.', ref:'YOḆELIM 11:13'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:46, h:32, seed:621,
      features:[
        {type:'tent',x:10,y:12,solid:true,clear:2,col:'#b3a07f'},
@@ -6241,7 +6404,7 @@ STORY.push(
        if(n.group!=='ravens'||n.fled) continue;
        if(dist(n.x,n.y,p.x,p.y)<2.1){
          n.fled=true; n.flying=true; n.wander=false;
-         n.target={x:n.x+(n.x>p.x?16:-16), y:-4}; n.speed=.13;
+         n.target={x:n.x+(n.x>p.x?16:-16), y:G.oy-4}; n.speed=.13;
          Sound.sfx('pickup');
          Particles.burst(n.x*TILE,n.y*TILE,'ash',6);
          if(o){ o.count++; G.renderObjectives(); if(o.count>=o.need) G.completeObjective(o.idx); }
@@ -6251,7 +6414,7 @@ STORY.push(
    onStart:[
      {call:g=>{ const m=g.world.map;
        for(const [cx,cy] of [[20,15],[28,20],[23,24]])
-         for(let y=cy-1;y<=cy+1;y++)for(let x=cx-2;x<=cx+2;x++)
+         for(let y=cy-1+g.oy;y<=cy+1+g.oy;y++)for(let x=cx-2+g.ox;x<=cx+2+g.ox;x++)
            if(!SOLID.has(m.tiles[y*m.w+x])) m.tiles[y*m.w+x]=10; }},
      {say:['narrator','The time came for the sowing of seed in the land, and they all went out together to protect their seed against the ravens — and Aḇram went out with those that went, and the child was a lad of fourteen years.']},
      {say:['avram_y','Descend not! Return to the place from where you came!']},
@@ -6341,7 +6504,7 @@ STORY.push(
   intro:[
    {art:'journey', music:'desert', text:'And YAHUAH said to Aḇram, “Go yourself out of your land, from your relatives and from your father’s house, to a land which I show you. And I shall make you a great nation and barak you and make your name great — and you shall be a blessing!”', ref:'BERĔSHITH 12:1–2'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'desert', w:50, h:34, seed:71,
      features:[
        {type:'tent',x:14,y:14,solid:true,clear:2,col:'#c8b486',id:'tent',examine:'Your tent in Ḥaran, pitched these many years.'},
@@ -6444,7 +6607,7 @@ STORY.push(
   intro:[
    {art:'journey', music:'desert', text:'And Aḇram was very rich in livestock, in silver and in gold… and Lot also had flocks and herds and tents. And the land was not able to bear them dwelling together — and there was strife.', ref:'BERĔSHITH 13:2,5–7'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:50, h:34, seed:81,
      features:[
        {type:'tent',x:16,y:14,solid:true,clear:2,col:'#c8b486'},
@@ -6654,7 +6817,7 @@ STORY.push(
    {art:'corrupt', music:'tense', text:'And the men of Seḏom set beds in the streets — and a traveller they would seize and stretch upon them. And when a poor man came to their land, they gave him silver and gold, and proclaimed through the city that no one give him a morsel of bread — until he died of hunger; and at his death they came and took back their silver and gold.', ref:'YASHAR 19:3–9'},
    {art:'corrupt', music:'sorrow', text:'And a young woman who pitied a starving stranger and carried him bread was judged by their judges, anointed with honey from head to foot, and given to the bees — and her cry ascended to the shamayim. And YAHUAH was provoked at this, and at all the works of the cities of Seḏom: “The cry of it has grown great before Me.”', ref:'YASHAR 19:41–44'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:50, h:30, seed:119,
      features:[
        {type:'doorway',x:24.5,y:14.05,id:'lotdoor',examine:'The door of Lot’s house in Seḏom.'},
@@ -6675,9 +6838,9 @@ STORY.push(
    ],
    onStart:[
      {call:g=>{ const m=g.world.map;
-       for(let y=10;y<=13;y++)for(let x=22;x<=27;x++) m.tiles[y*m.w+x]=12;
+       for(let y=10+g.oy;y<=13+g.oy;y++)for(let x=22+g.ox;x<=27+g.ox;x++) m.tiles[y*m.w+x]=12;
        for(let i=m.decor.length-1;i>=0;i--){ const d=m.decor[i];
-         if(!d.id&&d.x>=21&&d.x<=28&&d.y>=9&&d.y<=14) m.decor.splice(i,1); } }},
+         if(!d.id&&d.x>=21+g.ox&&d.x<=28+g.ox&&d.y>=9+g.oy&&d.y<=14+g.oy) m.decor.splice(i,1); } }},
    ],
    objectives:[
      {type:'goto',x:24,y:22,radius:2.2,text:'Evening: sit in the gate of Seḏom',
@@ -6741,6 +6904,8 @@ STORY.push(
        {time:'storm'},{music:'storm'},{shake:3},{sfx:'thunder'},
        {addProp:{type:'cloud_pillar',x:24,y:11}},{addProp:{type:'cloud_pillar',x:21,y:13}},{addProp:{type:'cloud_pillar',x:28,y:12}},
        {burst:[24,12,'spark',30]},{burst:[27,13,'spark',24]},{burst:[21,12,'spark',24]},
+       {call:g=>{ g.world.fx=[{kind:'firerain',x:g.ox+24.5,y:g.oy+11.5,r:8,until:g.t+12000}]; }},
+       {shake:3},{sfx:'thunder'},
        {say:['narrator','Then YAHUAH rained sulphur and fire on Seḏom and Amorah, from YAHUAH out of the shamayim — and He overthrew those cities, and all the plain, and all the inhabitants of the cities, and that which grew on the ground.']},
        {call:g=>{ const w2=g.world.npcs.find(n=>n.id==='wife');
           if(w2){ w2.follow=false; w2.target=null; w2.dir='left'; } }},
@@ -6770,6 +6935,7 @@ STORY.push(
        {type:'altar',stage:3,x:11,y:22,solid:true,clear:2,id:'altar',examine:'The place where Aḇraham had stood before YAHUAH.'},
        {type:'clearing',x:15,y:16,flat:3},
      ]},
+   worldStage:true,   /* staged: the rim of the hill country, looking over the plain */
    overlook:{kind:'sodom', cliffY:13, drop:.66},
    time:'morning', music:'sorrow',
    player:'avraham', playerPos:[15,22],
@@ -6778,6 +6944,7 @@ STORY.push(
      {type:'goto',x:15,y:15,radius:2.4,text:'Go to the edge where you stood before YAHUAH — look toward Seḏom',
       script:[
        {shake:1.5},{sfx:'thunder'},{wait:600},
+       {call:g=>{ g.world.fx=[{kind:'smoke',x:g.ox+15,y:g.oy+9,r:6,until:g.t+30000}]; }},
        {say:['narrator','And Aḇraham looked toward Seḏom and Amorah, toward all the land of the plain — and saw, and see: the smoke of the land went up like the smoke of a furnace.']},
        {say:['avraham','Not even ten… O Seḏom. O Lot, my brother’s son…']},
        {say:['narrator','But Aluahim remembered Aḇraham, and sent Lot out of the midst of the overthrow. In the smallest town of the plain, spared at his asking, Lot lived — drawn out by the hand of messengers when he lingered.']},
@@ -6802,6 +6969,7 @@ STORY.push(
        {type:'firepit',x:12.5,y:23,lit:true},
        {type:'clearing',x:16,y:17,flat:3},
      ]},
+   worldStage:true,   /* staged: the heights of the east above the ruined plain */
    overlook:{kind:'embers', cliffY:13, drop:.62},
    time:'dusk', music:'sorrow',
    player:'lot', playerPos:[16,23],
@@ -6834,7 +7002,7 @@ STORY.push(
    {art:'rest', music:'holy', text:'“Restore the man’s wife, for he is a naḇi, and he shall pray for you, and you shall live.” And Aḇimeleḵ restored Sarah with sheep and cattle and a thousand pieces of silver — and Aḇraham prayed, and Aluahim healed Aḇimeleḵ’s house; for YAHUAH had closed up all the wombs of the house because of Sarah.', ref:'BERĔSHITH 20:7,14–18'},
    {art:'journey', music:'eden', text:'And YAHUAH visited Sarah as He had said… And Sarah conceived and bore Aḇraham a son in his old age, at the appointed time of which Aluahim had spoken to him. And Aḇraham called his name Yahtsḥaq — “laughter.”', ref:'BERĔSHITH 21:1–3'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'desert', w:46, h:32, seed:111,
      features:[
        {type:'tent',x:16,y:14,solid:true,clear:2,col:'#c8b486'},
@@ -6888,7 +7056,7 @@ STORY.push(
    {art:'moriah', music:'sorrow', text:'And it came to be after these matters that Aluahim tried Aḇraham… “Take your son, now, your only son Yahtsḥaq, whom you love… and offer him there as a burnt offering on one of the mountains which I command you.”', ref:'BERĔSHITH 22:1–2'},
    {art:'moriah', text:'And Aḇraham rose early in the morning… and the two of them went together, three days’ journey, to the land of Moriyah.', ref:'BERĔSHITH 22:3–4'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'rocky', w:44, h:34, seed:121,
      features:[
        {type:'altar',stage:0,x:22,y:8,solid:true,clear:2,flat:3,id:'altar'},
@@ -6923,8 +7091,8 @@ STORY.push(
        {despawn:'oldman'},{sfx:'bad'},{burst:[22,15,'ash',14]},
        {say:['narrator','And seeing he could not prevail, he hid himself — and passed before them on the road, and became a great brook of water where no brook had ever run.']},
        {call:g=>{ const m=g.world.map; g._brookTiles=[];
-         for(let y=12;y<=14;y++)for(let x=17;x<=27;x++){
-           if(!SOLID.has(m.tiles[y*m.w+x])){ g._brookTiles.push([x,y,m.tiles[y*m.w+x]]); m.tiles[y*m.w+x]=(y===13)?6:5; } } }},
+         for(let y=12+g.oy;y<=14+g.oy;y++)for(let x=17+g.ox;x<=27+g.ox;x++){
+           if(!SOLID.has(m.tiles[y*m.w+x])){ g._brookTiles.push([x,y,m.tiles[y*m.w+x]]); m.tiles[y*m.w+x]=(y===13+g.oy)?6:5; } } }},
        {sfx:'thunder'},{shake:1.5},{wait:800},
        {say:['yitschaq','Father — water! A river across the whole mountainside, where the path climbed dry a moment ago!']},
        {say:['avraham','Then we walk through it, my son. We go at the word of YAHUAH — and no water of his making shall turn us.']},
@@ -6970,7 +7138,7 @@ STORY.push(
    {art:'rest', music:'sorrow', text:'And the life of Sarah was one hundred and twenty-seven years — and Sarah died in Ḥeḇron, and Aḇraham came to mourn for her and to weep for her. And he bought from Ephron the cave of Maḵpĕlah for four hundred sheqels of silver, and buried Sarah his wife there.', ref:'BERĔSHITH 23'},
    {art:'journey', music:'desert', text:'And Aḇraham said to the oldest servant of his house: “Swear by YAHUAH, the Aluahim of the shamayim, that you do not take a wife for my son from the daughters of Kena‛an — but go to my land and my relatives, and take a wife for my son Yahtsḥaq.”', ref:'BERĔSHITH 24:2–4'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:46, h:30, seed:96,
      features:[
        {type:'well',x:24,y:14,solid:true,clear:2,id:'well',examine:'The well outside the city of Naḥor, at evening — the time when women go out to draw water.'},
@@ -6996,7 +7164,7 @@ STORY.push(
        {say:['narrator','And it came to be, before he had ended speaking, that see — Riḇqah came out, with her jar on her shoulder; and the young woman was very good-looking.']},
        {say:['abservant','Please let me drink a little water from your jar.']},
        {say:['rivqah','Drink, my master. — And let me draw water for your camels too, until they have finished drinking.']},
-       {call:g=>{ g.world.npcs.forEach(n=>{ if(n.animal==='camel'){ n.follow=false; n.target={x:24+(n.id==='cam1'?-1.5:1.2),y:15.6}; n.speed=.04; } }); }},
+       {call:g=>{ g.world.npcs.forEach(n=>{ if(n.animal==='camel'){ n.follow=false; n.target={x:g.ox+24+(n.id==='cam1'?-1.5:1.2),y:g.oy+15.6}; n.speed=.04; } }); }},
        {wait:1600},{sfx:'pickup'},
        {say:['narrator','And she quickly emptied her jar into the trough, and ran back to the well to draw — and drew for all his camels. And the man, wondering at her, remained silent, to know whether YAHUAH had prospered his way or not.']},
        {say:['abservant','Whose daughter are you? Is there room in your father’s house for us to spend the night?']},
@@ -7016,7 +7184,7 @@ STORY.push(
   intro:[
    {art:'rest', music:'desert', text:'And Yahtsḥaq came from the way of Be’ĕr Laḥai Ro’i, for he dwelt in the South — and Yahtsḥaq went out to meditate in the field, toward evening.', ref:'BERĔSHITH 24:62–63'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:48, h:30, seed:98,
      features:[
        {type:'tent',x:13,y:12,solid:true,clear:3,col:'#c8b486',id:'sarahtent',examine:'The tent of Sarah his mother — quiet since her death.'},
@@ -7042,7 +7210,7 @@ STORY.push(
        {say:['narrator','And Riḇqah lifted her eyes, and saw Yahtsḥaq — and she came down from the camel.']},
        {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
          if(r){ r.mount=null; }
-         g.world.npcs.push(makeNpc({id:'rcam',animal:'camel',x:35.5,y:17.5,wander:false,noTalk:true})); }},
+         g.world.npcs.push(Object.assign(makeNpc({id:'rcam',animal:'camel',x:g.ox+35.5,y:g.oy+17.5,wander:false,noTalk:true}),g._staged?{_story:1}:{})); }},
        {say:['rivqah','Who is this man, walking in the field to meet us?']},
        {say:['abservant','It is my master.']},
        {say:['narrator','And she took her veil, and covered herself.']},
@@ -7057,7 +7225,7 @@ STORY.push(
       script:[
        {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
          if(r){ r.wander=false; r.follow=true; }
-         const sv=g.world.npcs.find(n=>n.id==='servant'); if(sv){ sv.follow=false; sv.target={x:18,y:16}; } }},
+         const sv=g.world.npcs.find(n=>n.id==='servant'); if(sv){ sv.follow=false; sv.target={x:g.ox+18,y:g.oy+16}; } }},
        {wait:400},
        {say:['narrator','And Yahtsḥaq brought her into the tent of Sarah his mother. And he took Riḇqah, and she became his wife — and he loved her.']},
        {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
@@ -7362,7 +7530,7 @@ STORY.push(
   intro:[
    {art:'journey', music:'sorrow', text:'So Ya‘aqoḇ went out from Be’ĕrsheḇa toward Ḥaran — alone, with a stone field for his bed, the blessing on his head and the wrath of his brother behind him.', ref:'BERĔSHITH 28:10'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'night_camp', w:44, h:30, seed:141,
      features:[
        {type:'stone',x:24,y:14,id:'stone',examine:'A stone of the place. It will do for a pillow, for a man with nowhere softer to be.'},
@@ -7407,7 +7575,7 @@ STORY.push(
   intro:[
    {art:'journey', music:'desert', text:'Then Ya‘aqoḇ moved on and came to the land of the people of the East — and see, a well in the field, and three flocks of sheep lying by it, and a great stone on the well’s mouth.', ref:'BERĔSHITH 29:1–2'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:46, h:32, seed:151,
      features:[
        {type:'well',x:24,y:15,solid:true,clear:2,id:'well',examine:'A great stone lies over the mouth of the well.'},
@@ -7490,7 +7658,7 @@ STORY.push(
        {say:['yaaqov','What is this you have done to me?! Was it not for Raḥal that I served you? Why then have you deceived me?']},
        {say:['lavan','It is not done this way in our place, to give the younger before the first-born. Complete the week of this one — then we give you the other also, for the service of yet another seven years.']},
        {say:['narrator','And Ya‘aqoḇ did so, and completed her week — and Laḇan gave him Raḥal his daughter as wife also. And he loved Raḥal more than Lĕ’ah — and served Laḇan yet another seven years. The trickster was tricked, measure for measure.']},
-       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rachel'); if(r){ r.target={x:12,y:16}; r.speed=.05; } }},
+       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rachel'); if(r){ r.target={x:g.ox+12,y:g.oy+16}; r.speed=.05; } }},
        {sfx:'chime'},
       ]},
    ],
@@ -7504,7 +7672,7 @@ STORY.push(
   intro:[
    {art:'camp', music:'desert', text:'And it came to be, when Raḥal had borne Yosĕph, that Ya‘aqoḇ said to Laḇan, “Send me away, that I may go to my own place and to my land… for you know my service which I have served you — your livestock has been with me, and YAHUAH has baruk you since my coming.”', ref:'BERĔSHITH 30:25–30'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:48, h:32, seed:153,
      features:[
        {type:'tent',x:10,y:10,solid:true,clear:3,col:'#b3a07f'},
@@ -7568,12 +7736,12 @@ STORY.push(
        {say:['voice','Lift your eyes and see: all the rams leaping on the flock are streaked, speckled and mottled — for I have seen all that Laḇan is doing to you. I am the Ăl of Bĕyth Ăl, where you anointed the standing column, where you made a vow to Me. Now rise, leave this land, and return to the land of your relatives — and I am with you.']},
        {rays:0},{time:'morning'},{music:'tense'},
        {call:g=>{ ['rachel','leah'].forEach(id=>{ const n=g.world.npcs.find(n=>n.id===id);
-          if(n){ n.wander=false; n.target={x:24+(id==='leah'?1.6:-1.6),y:22}; n.speed=.05; } }); }},
+          if(n){ n.wander=false; n.target={x:g.ox+24+(id==='leah'?1.6:-1.6),y:g.oy+22}; n.speed=.05; } }); }},
        {wait:1500},
        {say:['rachel','Is there yet any portion or inheritance for us in our father’s house? Are we not reckoned by him as strangers? For he has sold us, and has also entirely eaten up our silver. Whatever Aluahim has said to you — do it.']},
        {say:['narrator','And Laḇan had gone to shear his sheep — and Raḥal stole the house idols that were her father’s. And Ya‘aqoḇ rose, and set his sons and his wives on camels, and drove off all his livestock — and fled, he and all that he had, toward the mountains of Gil‛aḏ.']},
        {call:g=>{ g.world.npcs.forEach(n=>{ if(['rachel','leah','sp1','sp2','sp3','sp4','sp5','spcam','spserv','mg1','mg2'].includes(n.id)){
-          n.wander=false; n.target={x:46,y:24+Math.random()*3-1.5}; n.speed=.04+Math.random()*.02; } }); }},
+          n.wander=false; n.target={x:g.ox+46,y:g.oy+24+Math.random()*3-1.5}; n.speed=.04+Math.random()*.02; } }); }},
        {wait:2000},
       ]},
    ],
@@ -7590,7 +7758,7 @@ STORY.push(
   intro:[
    {art:'wrestle', music:'night', text:'And Ya‘aqoḇ was left alone. And a Man wrestled with him until the breaking of day.', ref:'BERĔSHITH 32:24'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'night_camp', w:44, h:30, seed:161, river:{x:10,width:4,curve:1.5,ford:15},
      features:[{type:'clearing',x:26,y:15,flat:3}]},
    time:'deepnight', music:'night',
@@ -7661,7 +7829,7 @@ STORY.push(
        {say:['narrator','And he put the female servants and their children in front, and Lĕ’ah and her children behind, and Raḥal and Yosĕph last — and he himself passed over before them.']},
        {call:G=>{ for(const id of ['leah','rachel','hm1','hm2','boy1','boy2']){
          const n=G.world.npcs.find(n=>n.id===id);
-         if(n){ n.wander=false; n.target={x:33+Math.random()*2.4,y:14+Math.random()*2}; n.speed=.09; } } }},
+         if(n){ n.wander=false; n.target={x:G.ox+33+Math.random()*2.4,y:G.oy+14+Math.random()*2}; n.speed=.09; } } }},
        {spawn:{id:'esav',char:'esav',x:42,y:14,wander:false,noTalk:true}},
        {spawn:{id:'em1',char:'shepherd',x:43,y:13,wander:false,noTalk:true}},
        {spawn:{id:'em2',char:'builder',x:43.5,y:15,wander:false,noTalk:true}},
@@ -7670,9 +7838,9 @@ STORY.push(
        {spawn:{id:'em5',char:'shepherd',x:42.8,y:12,wander:false,noTalk:true}},
        {move:['em1',41.6,13.6,.05,'bg']},{move:['em2',42,15.4,.05,'bg']},{move:['em3',41.4,16.6,.05,'bg']},
        {call:G=>{ const cs=['shepherd','builder','servant','builder2','builder3'];
-         for(let i=0;i<40;i++) G.world.npcs.push(makeNpc({id:'esmen'+i,char:cs[i%5],
-           x:39.5+(i%5)*.9+Math.random()*.5,y:8+Math.floor(i/5)*1.5+Math.random()*.6,
-           wander:true,range:.8,noTalk:true})); }},
+         for(let i=0;i<40;i++) G.world.npcs.push(Object.assign(makeNpc({id:'esmen'+i,char:cs[i%5],
+           x:G.ox+39.5+(i%5)*.9+Math.random()*.5,y:G.oy+8+Math.floor(i/5)*1.5+Math.random()*.6,
+           wander:true,range:.8,noTalk:true}),G._staged?{_story:1}:{})); }},
        {say:['narrator','And Ya‘aqoḇ lifted his eyes and looked, and see — Ĕsaw was coming, and with him four hundred men. And he bowed himself to the ground seven times, until he came near to his brother.']},
        {say:['narrator','And Ĕsaw ran to meet him—']},
        {call:G=>{ const p=G.world.player, n=G.world.npcs.find(n=>n.id==='esav');
@@ -7699,7 +7867,7 @@ STORY.push(
    {art:'camp', music:'sorrow', text:'And Dinah, the daughter of Lĕ’ah, whom she had borne to Ya‘aqoḇ, went out to see the daughters of the land. And Sheḵem, son of Ḥamor the Ḥiwwite, prince of the land, saw her — and took her, and humbled her.', ref:'BERĔSHITH 34:1–2'},
    {art:'camp', music:'tense', text:'And Ya‘aqoḇ heard that he had defiled Dinah his daughter — and he kept silent until his sons came in from the field. And the men were grieved and very wroth, because he had done a senseless deed in Yasharal — which should not be done.', ref:'BERĔSHITH 34:5–7'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:46, h:30, seed:163,
      features:[
        {type:'doorway',x:30.5,y:12.05,id:'shekemhouse',examine:'The house of Sheḵem, son of Ḥamor — Dinah is held within.'},
@@ -7731,14 +7899,14 @@ STORY.push(
      {id:'sm2',char:'builder3',x:27,y:13.6,wander:true,range:1.6,noTalk:true},
    ],
    onStart:[
-     {call:G=>{ const m=G.world.map;
+     {call:G=>{ const m=G.world.map, ox=G.ox, oy=G.oy;
        const blocks=[[28,33,9,11],[36,40,15,17],[20,24,8,10],[33,38,21,23]];
        for(const [x1,x2,y1,y2] of blocks)
-         for(let y=y1;y<=y2;y++)for(let x=x1;x<=x2;x++) m.tiles[y*m.w+x]=T.WALL;
+         for(let y=y1+oy;y<=y2+oy;y++)for(let x=x1+ox;x<=x2+ox;x++) m.tiles[y*m.w+x]=T.WALL;
        for(let i=m.decor.length-1;i>=0;i--){ const d=m.decor[i];
          if(d.id||d.type==='well'||d.type==='tent'||d.type==='firepit') continue;
          for(const [x1,x2,y1,y2] of blocks)
-           if(d.x>=x1-1&&d.x<=x2+1&&d.y>=y1-1&&d.y<=y2+1.5){ m.decor.splice(i,1); break; }
+           if(d.x>=x1-1+ox&&d.x<=x2+1+ox&&d.y>=y1-1+oy&&d.y<=y2+1.5+oy){ m.decor.splice(i,1); break; }
      } }},
    ],
    objectives:[
@@ -7810,7 +7978,7 @@ STORY.push(
   intro:[
    {art:'ladder', music:'holy', text:'And Aluahim said to Ya‘aqoḇ, “Arise, go up to Bĕyth Al and dwell there, and make a mizbe’ach there to the Ăl who appeared to you when you fled from Ĕsaw your brother.”', ref:'BERĔSHITH 35:1'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:52, h:32, seed:167,
      features:[
        {type:'tree',x:14,y:13,solid:true,clear:2,col:'#3f7032',id:'terebinth',examine:'The terebinth tree which is near Sheḵem.'},
@@ -7916,7 +8084,7 @@ STORY.push(
    {art:'dreams', music:'night', text:'“Please listen to this dream which I have dreamed: we were binding sheaves in the field, and see, my sheaf rose up and stood upright — and your sheaves stood all around and bowed down to my sheaf.”', ref:'BERĔSHITH 37:6–7'},
    {art:'coat', music:'tense', text:'And Yasharal loved Yosĕph more than all his children… and he made him a long robe. But when his brothers saw that their father loved him more, they hated him, and were not able to speak peaceably to him.', ref:'BERĔSHITH 37:3–4'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:50, h:34, seed:171,
      features:[
        {type:'pit',x:33,y:14,id:'pit',clear:2},
@@ -8266,7 +8434,7 @@ STORY.push(
    {art:'reunion', music:'royal', text:'And Yosĕph brought in Ya‘aqoḇ his father and set him before Pharaoh — and Ya‘aqoḇ baruk Pharaoh. And Pharaoh said, “How old are you?” And Ya‘aqoḇ said, “The days of the years of my sojournings are one hundred and thirty years. Few and evil have been the days of the years of my life, and they have not reached the days of my fathers.”', ref:'BERĔSHITH 47:7–10'},
    {art:'egypt', music:'tense', text:'And the scarcity was severe, and there was no bread in all the land. And Yosĕph gathered all the silver for the grain, and then the livestock, and then the ground — so Yosĕph bought all the land of Mitsrayim for Pharaoh; only the ground of the kohanim he did not buy. And he set a law over the land: a fifth of the harvest is Pharaoh’s. But Yasharal dwelt in Goshen, and acquired property, and bore fruit, and increased exceedingly.', ref:'BERĔSHITH 47:13–27'},
   ],
-  scene:{
+  scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:46, h:32, seed:201,
      features:[
        {type:'tent',x:14,y:13,solid:true,clear:2,col:'#c8b486'},
@@ -8580,6 +8748,15 @@ function frame(ts){
   Game.lastTime=ts;
   Game.update(dt);
   Game.render();
+  /* door-slide: the last room slides away, the new one already lives beneath */
+  if(Game._swipe){
+    const s=Game._swipe, p=Math.min(1,(performance.now()-s.t0)/s.dur);
+    const e=p*p*(3-2*p);
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+    ctx.drawImage(s.img,0,(s.dir>0?-1:1)*e*canvas.height);
+    ctx.restore();
+    if(p>=1) Game._swipe=null;
+  }
   requestAnimationFrame(frame);
 }
 

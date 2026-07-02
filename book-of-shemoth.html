@@ -2411,6 +2411,15 @@ const Particles={
           g.fillRect(sx-1,sy-1,3,3); break;
         case 'ash': g.fillStyle=`rgba(140,130,120,${a*.7})`;
           g.fillRect(sx,sy,2,2); break;
+        case 'brimstone': g.strokeStyle=`rgba(255,${140+(a*80|0)},40,${a})`; g.lineWidth=2.2;
+          g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-2,sy-13); g.stroke();
+          g.fillStyle=`rgba(255,232,150,${a*.9})`; g.fillRect(sx-1.5,sy-1.5,3,3); break;
+        case 'hail': g.fillStyle=`rgba(236,245,252,${a*.95})`; g.fillRect(sx-2,sy-2,4,4);
+          g.fillStyle=`rgba(178,204,226,${a*.8})`; g.fillRect(sx-2,sy,4,2); break;
+        case 'mannaflake': g.fillStyle=`rgba(248,244,230,${a*.92})`;
+          g.beginPath(); g.arc(sx+Math.sin(sy/11)*2.5,sy,1.8,0,Math.PI*2); g.fill(); break;
+        case 'smoke': g.fillStyle=`rgba(72,68,63,${a*.45})`;
+          g.beginPath(); g.arc(sx,sy,4+(1-a)*9,0,Math.PI*2); g.fill(); break;
         case 'rain': g.strokeStyle=`rgba(160,190,230,${a*.55})`; g.lineWidth=1;
           g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-2,sy+10); g.stroke(); break;
         case 'snow': g.fillStyle=`rgba(240,244,250,${a*.8})`;
@@ -3312,6 +3321,30 @@ const Game={
       this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
+    /* heaven-sent phenomena — fire and brimstone, hail, manna, smoke — while their hour lasts */
+    if(w.fx&&w.fx.length){
+      let fxLive=false;
+      for(const f of w.fx){
+        if(this.t>f.until) continue; fxLive=true;
+        if(f.kind==='firerain'){
+          for(let k=0;k<3;k++) Particles.spawn({x:(f.x+(Math.random()-.5)*2*(f.r||8))*TILE,y:(f.y-8-Math.random()*3)*TILE,
+            vx:(Math.random()-.5)*.03,vy:.30+Math.random()*.12,life:1050,max:1050,type:'brimstone'});
+          if(Math.random()<.18) Camera.shake=Math.max(Camera.shake,1.4);
+        } else if(f.kind==='hail'){
+          for(let k=0;k<4;k++) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW*1.1,y:Camera.y-VH*.62-Math.random()*VH*.4,
+            vx:.02,vy:.42+Math.random()*.15,life:1300,max:1300,type:'hail'});
+          if(Math.random()<.10) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW,y:Camera.y-VH*.62,
+            vx:(Math.random()-.5)*.05,vy:.5,life:900,max:900,type:'brimstone'});   /* fire flashing in the midst of the hail */
+        } else if(f.kind==='manna'){
+          if(Math.random()<.65) Particles.spawn({x:Camera.x+(Math.random()-.5)*VW*1.05,y:Camera.y-VH*.58,
+            vx:(Math.random()-.5)*.012,vy:.035+Math.random()*.02,life:9000,max:9000,type:'mannaflake'});
+        } else if(f.kind==='smoke'){
+          if(Math.random()<.5) Particles.spawn({x:(f.x+(Math.random()-.5)*(f.r||2))*TILE,y:f.y*TILE,
+            vx:.004+(Math.random()-.5)*.006,vy:-.05-Math.random()*.04,life:5000,max:5000,type:'smoke'});
+        }
+      }
+      if(!fxLive) w.fx=null;
+    }
     // player movement
     const p=w.player;
     const blocked=(this.script&&!this.battle)||this.dlgChar;
@@ -5871,9 +5904,11 @@ STORY.push(
      {type:'goto',x:24,y:13,radius:2,text:'Stretch out your staff toward the shamayim',hiddenUntil:1,
       script:[
        {time:'storm'},{rain:true},{music:'storm'},{sfx:'thunder'},{shake:3},
+       {call:G=>{ G.world.fx=[{kind:'hail',until:G.t+600000}]; }},{wait:1600},
        {say:['narrator','And YAHUAH gave thunder and hail, and fire came down to the earth — hail, and fire flashing in the midst of the hail, very heavy. And the hail smote every plant of the field and broke every tree; only in the land of Goshen, where the children of Yasharal were, there was no hail.']},
        {say:['pharaoh','I HAVE SINNED this time! YAHUAH is the righteous One, and I and my people are the wrong ones! Pray to YAHUAH — there has been enough of the thunder and hail — and I shall let you go!']},
        {say:['mosheh_o','As soon as I go out of the city, I shall spread out my hands to YAHUAH; the thunder shall cease, and the hail shall be no more — so that you know that the earth belongs to YAHUAH. But as for you and your servants: I know that you do not yet fear before YAHUAH Aluahim.']},
+       {call:G=>{ G.world.fx=null; }},
        {rain:false},{time:'day'},{music:'tense'},{shake:0},
        {say:['narrator','And the flax and the barley were smitten, for the barley was in the head — but the wheat and the spelt were not smitten, for they ripen late. And when Pharaoh saw that the rain had ceased, he sinned again, and hardened his heart, he and his servants.']},
       ]},
@@ -6374,14 +6409,26 @@ STORY.push(
       script:[
        {say:['mosheh_o','At evening you shall know that YAHUAH has brought you out of Mitsrayim — and in the morning you shall see the esteem of YAHUAH. For He has heard your grumblings. And what are we, that you grumble against us? Your grumblings are not against us, but against YAHUAH.']},
        {say:['voice','See, I am raining bread from the shamayim for you. And the people shall go out and gather a day’s portion every day, in order to try them, whether they walk in My Torah or not. And on the sixth day they shall prepare what they bring in — twice as much.']},
-       {call:G=>{ for(let i=0;i<3;i++){ G.world.npcs.push(makeNpc({id:'qbird'+i,animal:'bird',x:20+Math.random()*8,y:13+Math.random()*5,range:3,noTalk:true})); } }},
+       {time:'dusk'},
+       {call:G=>{ /* at evening, the quail come up and settle over the camp */
+         for(let i=0;i<16;i++){ const b=makeNpc({id:'qbird'+i,animal:'bird',flying:true,wander:false,noTalk:true,
+             x:42+Math.random()*3, y:8+Math.random()*12});
+           b.target={x:17+Math.random()*15,y:11+Math.random()*9}; b.speed=.08+Math.random()*.05;
+           b.onArrive=function(){ b.flying=false; b.wander=true; b.range=1.1; b.home={x:b.x,y:b.y}; };
+           G.world.npcs.push(b); } }},
+       {wait:2600},
        {say:['narrator','And it came to be, at evening, that quail came up and covered the camp. And in the morning the dew lay round about — and when the dew lifted, see: on the surface of the wilderness a fine, flake-like thing, fine as frost. And they said to one another, “Man hu?” — “What is it?” — for they did not know what it was.']},
+       {call:G=>{ /* morning: the quail are gone, and bread rains from the shamayim */
+         G.world.npcs.forEach(n=>{ if(String(n.id).indexOf('qbird')===0) n.hidden=true; });
+         G.world.fx=[{kind:'manna',until:G.t+600000}]; }},
+       {time:'morning'},{sfx:'holy'},
        {say:['mosheh_o','It is the bread which YAHUAH has given you to eat. Gather of it, each one according to his need — an omer a head. Let no one leave any of it until morning.']},
       ]},
    ],
    items:[
      {kind:'manna',x:22,y:15},{kind:'manna',x:26,y:17},{kind:'manna',x:24,y:19},
      {kind:'manna',x:28,y:14.5},{kind:'manna',x:21,y:18.5},
+     {kind:'manna',x:18.5,y:14},{kind:'manna',x:30,y:18},{kind:'manna',x:25,y:13.5},
    ],
    onStart:[
      {call:G=>campRing(G,36,{tribal:true,keep:[[8,11,36,21]]})},
