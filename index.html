@@ -722,8 +722,8 @@ function drawChar(g,px,py,charId,o){
   const skin=c.skin||'#7a4e29', hairC=c.hair||'#2c1a0c', robe=c.robe;
   const shoe=shade(skin,-32);
   const B=bob;
-  const torso=robe||skin;
-  const armC=robe?shade(torso,-12):skin;
+  const torso=(robe&&!c.leaf)?robe:skin;    /* fig leaves gird the loins only - the body above stays bare */
+  const armC=(robe&&!c.leaf)?shade(torso,-12):skin;
   const handC=o.whiteHand?'#f4f1e6':skin;
 
   if(!side){
@@ -738,7 +738,12 @@ function drawChar(g,px,py,charId,o){
       R(0.6,-8.6+B,2.8,7+(k<0?-1:0),skin);
       R(-3.4,-1.8+(k>0?-1.1:0),2.8,1.9,shoe);
       R(0.6,-1.8+(k<0?-1.1:0),2.8,1.9,shoe);
-      if(c.leaf){ R(-4.2,-9+B,8.4,3.4,'#5d7a35'); R(-3,-5.8+B,1.8,1.2,'#4d6a2b'); R(1.2,-5.8+B,1.8,1.2,'#4d6a2b'); }
+      if(c.leaf){ /* a lower garment only: broad leaves girded about the waist */
+        R(-4.4,-9+B,8.8,5,'#5d7a35');
+        R(-4.4,-4.6+B,8.8,.9,'#4d6a2b');
+        R(-3,-6.4+B,1.8,1.8,'#4d6a2b'); R(1.2,-6.4+B,1.8,1.8,'#4d6a2b');
+        R(-.6,-9+B,1.2,4.6,'#527030');
+      }
     }
     R(-4.5,-15+B,9,7,torso);
     if(c.coat){
@@ -747,7 +752,7 @@ function drawChar(g,px,py,charId,o){
       R(-4.5,-15+B,9,1,'#e8dcc0');
     }
     if(c.collar) R(-4.5,-15+B,9,2.2,c.collar);
-    if(robe&&!c.coat) R(-0.8,-15+B,1.6,7,shade(torso,10));
+    if(robe&&!c.coat&&!c.leaf) R(-0.8,-15+B,1.6,7,shade(torso,10));
     if(c.robeLine&&robe){
       R(-3.4,-15+B,.8,12.8,c.robeLine);
       R(2.6,-15+B,.8,12.8,c.robeLine);
@@ -836,7 +841,7 @@ function drawChar(g,px,py,charId,o){
       R(-0.2+k*1.7,-8.6+B,2.7,7,skin);
       R(-2.6-k*1.9,-1.8,3.3,1.9,shade(shoe,-6));
       R(-0.2+k*1.9,-1.8,3.5,1.9,shoe);
-      if(c.leaf){ R(-3.6,-9+B,7.2,3.4,'#5d7a35'); }
+      if(c.leaf){ R(-3.8,-9+B,7.6,5,'#5d7a35'); R(-3.8,-4.6+B,7.6,.9,'#4d6a2b'); }
     }
     /* torso */
     R(-3.8,-15+B,7.6,7,torso);
@@ -2959,6 +2964,9 @@ function drawItem(g,sx,sy,kind,t){
     case 'idol': g.fillStyle='#caa23c'; g.fillRect(-2,-3.2,4,4.4);
       g.beginPath(); g.arc(0,-4.6,2,0,Math.PI*2); g.fill();
       g.fillStyle='#8a6a1c'; g.fillRect(-2,-1.2,4,.9); break;
+    case 'leaf': g.fillStyle='#5d8a3c';
+      g.beginPath(); g.moveTo(0,-5); g.quadraticCurveTo(5.5,-2,0,5); g.quadraticCurveTo(-5.5,-2,0,-5); g.fill();
+      g.strokeStyle='#3f6428'; g.lineWidth=1; g.beginPath(); g.moveTo(0,-4); g.lineTo(0,4); g.stroke(); break;
     case 'flower': g.fillStyle='#d87a9a';
       for(let i=0;i<5;i++){const a=i/5*Math.PI*2; g.beginPath(); g.arc(Math.cos(a)*3,Math.sin(a)*3,2.2,0,Math.PI*2); g.fill();}
       g.fillStyle='#e8c66a'; g.beginPath(); g.arc(0,0,2,0,Math.PI*2); g.fill(); break;
@@ -4049,7 +4057,10 @@ const Game={
           const o=(this.objectives||[]).find(o=>!o.done&&o.type==='collect'&&o.item===it.kind);
           if(o){ o.count++;
             this.renderObjectives();
-            if(o.count>=o.need) this.completeObjective(o.idx);
+            if(o.count>=o.need){
+              if(o.script&&!this.script) this.runScript(o.script.slice(),()=>this.completeObjective(o.idx));
+              else this.completeObjective(o.idx);
+            }
           }
         }
       }
@@ -5586,22 +5597,29 @@ const STORY=[
        {say:['narrator','And she took of its fruit and ate.']},
        {call:g=>{ g.world.player.lightBody=null;
           Particles.burst(g.world.player.x*TILE,(g.world.player.y-1)*TILE,'holy',22); }},{sfx:'bad'},
-       {charSwap:['player','chavvah_f']},
        {burst:[26.5,14.6,'ash',16]},{wait:400},
        {move:['adam',25,16,.05]},
        {say:['narrator','And she also gave to her husband with her — and he ate.']},
        {say:['narrator','Then the eyes of both of them were opened, and they knew that they were naked.']},
        {call:g=>{ const a=g.world.npcs.find(n=>n.id==='adam');
           if(a){ a.lightBody=null; Particles.burst(a.x*TILE,(a.y-1)*TILE,'holy',22); } }},
-       {charSwap:['adam','adam_f']},{burst:[25,16,'ash',16]},
+       {burst:[25,16,'ash',16]},
        {sfx:'thunder'},{time:'dusk'},{wait:800},
-       {say:['narrator','And they sewed fig leaves together and made loin coverings for themselves.']},
+       {say:['narrator','And their eyes were opened to their nakedness - and they looked about for the broad leaves of the fig tree, to cover themselves.']},
+       {call:g=>{ [[20.5,14.2],[28.6,15.4],[23.2,11.8],[26.2,17.6],[21.4,17.2],[29.4,12.4]].forEach(function(s){
+          g.world.items.push({kind:'leaf',x:s[0],y:s[1]}); }); }},
        {complete:0},
       ]},
    ],
    objectives:[
      {type:'talk',npc:'serpent',text:'Something stirs by the tree in the midst of the garden…'},
-     {type:'goto',x:16,y:25,radius:3,text:'Hide among the trees of the garden',hiddenUntil:1},
+     {type:'collect',item:'leaf',need:4,hiddenUntil:1,text:'Gather fig leaves to sew coverings',
+      script:[
+       {say:['narrator','And they sewed fig leaves together and made loin coverings for themselves.']},
+       {charSwap:['player','chavvah_f']},{charSwap:['adam','adam_f']},
+       {burst:[25,16,'leaf',16]},{sfx:'blip'},
+      ]},
+     {type:'goto',x:16,y:25,radius:3,text:'Hide among the trees of the garden',hiddenUntil:2},
    ],
    onComplete:[
      {time:'dusk'},{rays:.9,raysX:18},{sfx:'holy'},{music:'sorrow'},
