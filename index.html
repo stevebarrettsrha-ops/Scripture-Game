@@ -1548,41 +1548,74 @@ function drawProp(g,px,py,p,t){
       R(-5.4,-9.4,10.8,1.6,'#8d7048');
       break; }
     case 'tower': {
-      /* the tower of Baḇel, built of blocks like the land itself: every brick a
-         block with a lit top face, a front face and seams — laid block upon block */
-      const st=p.stage||1; // built tiers
-      const W2=TILE*4.6, BH=TILE*1.7;
+      /* the ziggurat of Baḇel in three dimensions, after the Etemenanki: stepped
+         tiers with buttressed faces, a sunlit deck on every stage, the side wall
+         receding in depth, and the great stair climbing the front — all of it
+         built of blocks, laid block upon block */
+      const st=p.stage||1;
+      const W0=TILE*5.6, BH=TILE*1.5, DEP=TILE*2.0;
+      const sxd=DEP*.60, syd=DEP*.36;                    /* the depth vector, receding up-right */
+      const F='#b58450', F2='#a8794a';
       g.fillStyle='rgba(0,0,0,.3)';
-      g.beginPath(); g.ellipse(0,TILE*.35,W2*.7,TILE*.5,0,0,Math.PI*2); g.fill();
-      const drawBlock=(bx,by,bw,bh,base)=>{
-        g.fillStyle=shadeHex(base,26); g.fillRect(bx,by,bw,bh*.38);          /* lit top face */
-        g.fillStyle=base;              g.fillRect(bx,by+bh*.38,bw,bh*.62);   /* front face */
-        g.fillStyle=shadeHex(base,-26); g.fillRect(bx+bw-1.6,by,1.6,bh);     /* right seam */
-        g.fillStyle='rgba(0,0,0,.25)'; g.fillRect(bx,by+bh-1.4,bw,1.4);      /* bed joint */
-      };
+      g.beginPath(); g.ellipse(sxd*.4,TILE*.3,W0*.8,TILE*.62,0,0,Math.PI*2); g.fill();
+      const tierGeom=lv=>{ const w=W0*(1-lv*.15);
+        return { w:w, cx:lv*sxd*.30, yb:-lv*(BH+syd*.30) }; };
+      const face=(pts,col)=>{ g.fillStyle=col; g.beginPath();
+        g.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) g.lineTo(pts[i][0],pts[i][1]);
+        g.closePath(); g.fill(); };
       for(let lv=0;lv<st;lv++){
-        const w=W2*(1-lv*.16), y=-lv*BH;
+        const tg=tierGeom(lv), w=tg.w, cx=tg.cx, yb=tg.yb, yt=yb-BH;
+        /* the side wall, receding into the light */
+        face([[cx+w/2,yt],[cx+w/2,yb],[cx+w/2+sxd,yb-syd],[cx+w/2+sxd,yt-syd]],shadeHex(F,-34));
+        g.fillStyle='rgba(0,0,0,.12)';
+        for(let i=1;i<4;i++) g.fillRect(cx+w/2+i*sxd/4-1,yt-i*syd/4,2,BH);
+        /* the sunlit deck */
+        face([[cx-w/2,yt],[cx+w/2,yt],[cx+w/2+sxd,yt-syd],[cx-w/2+sxd,yt-syd]],shadeHex(F,30));
+        g.fillStyle='rgba(0,0,0,.10)'; g.fillRect(cx-w/2,yt,w,2);
+        /* the front face: chunky blocks with lit tops */
         const cols=Math.max(3,6-lv), bw=w/cols;
-        for(let cI=0;cI<cols;cI++)
-          drawBlock(-w/2+cI*bw+.5,y-BH,bw-1,BH-1,(cI+lv)%2?'#a8794a':'#b58450');
-        /* the tier's top reads like a walkable block-top, with a shadow at its foot */
-        g.fillStyle=shadeHex('#b58450',34); g.fillRect(-w/2,y-BH,w,4);
-        g.fillStyle='rgba(0,0,0,.18)'; g.fillRect(-w/2,y-4,w,4);
+        for(let cI=0;cI<cols;cI++){ const base=(cI+lv)%2?F2:F, bx=cx-w/2+cI*bw;
+          g.fillStyle=shadeHex(base,14); g.fillRect(bx+.5,yt,bw-1,BH*.30);
+          g.fillStyle=base; g.fillRect(bx+.5,yt+BH*.30,bw-1,BH*.70);
+          g.fillStyle=shadeHex(base,-24); g.fillRect(bx+bw-2,yt,1.6,BH);
+        }
+        g.fillStyle='rgba(0,0,0,.16)';                   /* buttress ribs, as on the walls of Etemenanki */
+        for(let i=0;i<Math.floor(w/9);i++) g.fillRect(cx-w/2+4+i*9,yt+BH*.30,2.5,BH*.70-2);
+        g.fillStyle='rgba(0,0,0,.22)'; g.fillRect(cx-w/2,yb-1.6,w,1.6);
       }
-      /* built in real time: the new course rises block upon block */
+      /* the great stair, from the ground to the height */
+      { const top=tierGeom(st-1), topY=top.yb-BH, stW=TILE*1.15;
+        face([[-stW,0],[stW,0],[stW*.55+top.cx,topY],[-stW*.55+top.cx,topY]],'#c8a266');
+        g.strokeStyle='rgba(0,0,0,.28)'; g.lineWidth=1.4;
+        const steps=st*7;
+        for(let i=1;i<steps;i++){ const t9=i/steps, sy2=t9*topY, hw=stW*(1-.45*t9);
+          g.beginPath(); g.moveTo(-hw+top.cx*t9,sy2); g.lineTo(hw+top.cx*t9,sy2); g.stroke(); }
+        g.strokeStyle='#8a6a3e'; g.lineWidth=2.4;
+        g.beginPath(); g.moveTo(-stW,0); g.lineTo(-stW*.55+top.cx,topY);
+        g.moveTo(stW,0); g.lineTo(stW*.55+top.cx,topY); g.stroke(); }
+      /* the rising course on the working stage — block upon block, in real time */
       if(p.rise&&!p.rise.done){
-        const w9=W2*(1-st*.16), y9=-st*BH;
+        const nx9=tierGeom(st), w9=nx9.w, yb9=nx9.yb, cx9=nx9.cx;
         const cols=Math.max(3,6-st), bw=w9/cols;
-        const pr=p.prog||0, nb=Math.floor(pr*cols);
-        for(let cI=0;cI<nb;cI++)
-          drawBlock(-w9/2+cI*bw+.5,y9-BH*.62,bw-1,BH*.62-1,(cI+st)%2?'#a8794a':'#b58450');
-        if(nb<cols){ const bt=(pr*cols)%1;                                   /* the block now being set descends into place */
-          drawBlock(-w9/2+nb*bw+.5,y9-BH*.62-(1-bt)*TILE*1.5,bw-1,BH*.62-1,'#c29059'); }
+        const pr=p.prog||0, nb=Math.floor(pr*cols), hh=BH*.62;
+        const blk=(bx,by,base)=>{ g.fillStyle=shadeHex(base,20); g.fillRect(bx,by,bw-1,hh*.34);
+          g.fillStyle=base; g.fillRect(bx,by+hh*.34,bw-1,hh*.66);
+          g.fillStyle=shadeHex(base,-26); g.fillRect(bx+bw-2.4,by,1.6,hh); };
+        for(let cI=0;cI<nb;cI++) blk(cx9-w9/2+cI*bw+.5,yb9-hh,(cI+st)%2?F2:F);
+        if(nb<cols){ const bt=(pr*cols)%1;                /* the block now being set descends into place */
+          blk(cx9-w9/2+nb*bw+.5,yb9-hh-(1-bt)*TILE*1.6,'#c9995f'); }
         g.strokeStyle='#6e552f'; g.lineWidth=3;
-        g.beginPath(); g.moveTo(w9*.6,y9+BH*.4); g.lineTo(w9*.66,y9-BH); g.moveTo(-w9*.6,y9+BH*.4); g.lineTo(-w9*.66,y9-BH); g.stroke();
+        g.beginPath(); g.moveTo(cx9+w9*.58,yb9+BH*.3); g.lineTo(cx9+w9*.64,yb9-BH);
+        g.moveTo(cx9-w9*.58,yb9+BH*.3); g.lineTo(cx9-w9*.64,yb9-BH); g.stroke();
+      } else if((p.rise&&p.rise.done)||(!p.rise&&st>=3)){
+        /* the high place stands on the summit */
+        const t9=tierGeom(st-1), ty=t9.yb-BH, hw=t9.w*.20, hh=BH*.85;
+        const hx=t9.cx+sxd*.30, hy=ty-syd*.32;
+        face([[hx+hw,hy-hh],[hx+hw,hy],[hx+hw+sxd*.26,hy-syd*.26],[hx+hw+sxd*.26,hy-hh-syd*.26]],shadeHex('#7a5844',-26));
+        face([[hx-hw,hy-hh],[hx+hw,hy-hh],[hx+hw+sxd*.26,hy-hh-syd*.26],[hx-hw+sxd*.26,hy-hh-syd*.26]],shadeHex('#7a5844',20));
+        g.fillStyle='#7a5844'; g.fillRect(hx-hw,hy-hh,hw*2,hh);
+        g.fillStyle='#241a0e'; g.fillRect(hx-hw*.3,hy-hh*.66,hw*.6,hh*.66);
       }
-      if(p.scaffold){ g.strokeStyle='#6e552f'; g.lineWidth=3;
-        g.beginPath(); g.moveTo(W2*.55,0); g.lineTo(W2*.62,-st*BH); g.moveTo(-W2*.55,0); g.lineTo(-W2*.62,-st*BH); g.stroke(); }
       break; }
     case 'pillar': {
       shadow(2.6);
@@ -1916,15 +1949,19 @@ function generateMap(cfg){
   const rng=mulberry32(cfg.seed||1);
   const biome=BIOMES[cfg.biome]||BIOMES.plains;
   const tiles=new Uint8Array(w*h);
+  const elev=new Uint8Array(w*h); elev.fill(1);   /* every scene is built of blocks: mountains rise in real steps */
   const decor=[];
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     tiles[y*w+x]=biome.base[Math.floor(rng()*biome.base.length)];
   }
-  // border mountains/edge
+  // border mountains/edge — stepped in 3D: a climbable rocky fringe, then sheer heights
   if(cfg.biome!=='interior'){
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
       const edge=Math.min(x,y,w-1-x,h-1-y);
-      if(edge===0||(edge===1&&rng()<.7)||(edge===2&&rng()<.25)) tiles[y*w+x]=cfg.edgeWater?T.DEEP:T.MTN;
+      if(edge===0||(edge===1&&rng()<.7)||(edge===2&&rng()<.25)){
+        tiles[y*w+x]=cfg.edgeWater?T.DEEP:T.MTN;
+        if(!cfg.edgeWater) elev[y*w+x]=edge===0?9:(edge===1?4:2);
+      }
     }
   } else {
     for(let y=0;y<h;y++)for(let x=0;x<w;x++){
@@ -2003,7 +2040,9 @@ function generateMap(cfg){
     if(f.type!=='clearing') decor.push(Object.assign({},f));
   });
   decor.sort((a,b)=>a.y-b.y);
-  return {w,h,tiles,decor,biome:cfg.biome,cfg};
+  /* the waters lie beneath their banks; all else stands at its height */
+  for(let i=0;i<w*h;i++){ const t=tiles[i]; if(t===T.WATER||t===T.DEEP) elev[i]=0; }
+  return {w,h,tiles,elev,decor,biome:cfg.biome,cfg};
 }
 function tileAt(map,x,y){
   const tx=Math.floor(x),ty=Math.floor(y);
@@ -2274,6 +2313,24 @@ function generateWorldMap(cfg){
         if(X!==lx||Y!==ly) carve(X,Y);
         lx=X; ly=Y; } }
   }
+  /* --- hewn stairs to the great summits: every mountain may be climbed to its head --- */
+  const summitTrail=(x1,y1,x2,y2)=>{
+    const steps=Math.max(1,Math.hypot(x2-x1,y2-y1)*2|0);
+    let pe=elev[idx(clamp(Math.round(x1),2,w-3),clamp(Math.round(y1),2,h-3))], lx=null,ly=null;
+    const put=(PX,PY)=>{ if(PX<2||PX>w-3||PY<2||PY>h-3) return;
+      let e2=elev[idx(PX,PY)];
+      if(e2>pe+1)e2=pe+1; else if(e2<pe-1)e2=pe-1;
+      elev[idx(PX,PY)]=e2; pe=e2;
+      const t9=tiles[idx(PX,PY)];
+      if(t9!==T.SNOW&&(t9===T.MTN||SOLID.has(t9))) tiles[idx(PX,PY)]=T.ROCK;
+      for(let k=decor.length-1;k>=0;k--){ if(!decor[k].id&&decor[k].solid&&dist(decor[k].x,decor[k].y,PX,PY)<.9) decor.splice(k,1); } };
+    for(let st9=0;st9<=steps;st9++){ const t2=st9/steps;
+      const X=Math.round(x1+(x2-x1)*t2), Y=Math.round(y1+(y2-y1)*t2);
+      if(lx!==null&&X!==lx&&Y!==ly) put(X,ly);
+      put(X,Y); lx=X; ly=Y; } };
+  summitTrail(w*.62,h*.11+15,w*.62,h*.11);        /* Ararat, to its head */
+  summitTrail(w*.235+11,h*.91,w*.235,h*.91);      /* Sinai, to its head */
+  summitTrail(w*.275,h*.205,w*.272,h*.145);       /* the Lebanon ridge */
   /* --- the towns and cities of the ancient world, each in its era --- */
   const done=id=>!!(Save.data.done&&Save.data.done[id]);
   for(const tn of WORLD_TOWNS){
@@ -2458,6 +2515,11 @@ function walkable(map,x,y,fx,fy){
   else if(SOLID.has(tl)) return false;
   for(const d of map.decor){
     if(!d.solid) continue;
+    if(d.type==='tower'){
+      const dx9=x-d.x, dy9=y-d.y;
+      if(dx9>-3.1&&dx9<4.0&&dy9>-2.4&&dy9<0.5&&!(Math.abs(dx9)<1.05&&dy9>-0.2)) return false;
+      continue;
+    }
     if(d.type==='ark'){
       /* the hull is one solid mass — the only way in is the long ladder to the door in its midst */
       const dx=Math.abs(d.x-x), dy=y-d.y;
@@ -2672,6 +2734,7 @@ function drawWorldElev(g,world,t,offX,offY,x0,x1,y0,y1){
   for(const n of world.npcs) if(!n.hidden) put(n.y,{y:n.y,kind:'npc',d:n});
   if(world.player&&!world.player.hidden) put(world.player.y,{y:world.player.y,kind:'player',d:world.player});
   for(let y=y0;y<=ext;y++){
+    if(world.overlook&&y<world.overlook.cliffY) continue;
     for(let x=x0;x<=x1;x++){
       const id=map.tiles[y*W+x], e=map.elev[y*W+x];
       const sx=x*TILE+offX, sy=y*TILE+offY-e*ESTEP;
@@ -3436,7 +3499,8 @@ const Game={
         if(d9.solid&&!d9.id&&!d9.examine&&dist(d9.x,d9.y,ob9.x,ob9.y)<1.5) map.decor.splice(i9,1); }
     }
     if(sc.overlook){ const cY=sc.overlook.cliffY;
-      for(let y9=0;y9<cY;y9++)for(let x9=0;x9<map.w;x9++) map.tiles[y9*map.w+x9]=T.MTN; }
+      for(let y9=0;y9<cY;y9++)for(let x9=0;x9<map.w;x9++){ map.tiles[y9*map.w+x9]=T.MTN;
+        if(map.elev) map.elev[y9*map.w+x9]=9; } }
     this.world={
       map, player, npcs:(sc.npcs||[]).map(makeNpc),
       items:(sc.items||[]).map(it=>Object.assign({},it)),
@@ -3536,7 +3600,7 @@ const Game={
     const abr=['c11','c11a','c11b','c12','c12a','c13','c13a','c14','c14b','c15','c15b','c16','c17'];
     const isa=['c17a','c17b','c17c','c18','c18b'];
     const yaa=['c18a','c19','c20','c20a','c21','c21b','c21a'];
-    const yos=['c22','c22a'];
+    const yos=['c22','c22b','c22a'];
     if(yos.includes(id)) return {hero:'yoseph',wife:null};
     if(yaa.includes(id)) return {hero:'yaaqov',wife:'rachel'};
     if(isa.includes(id)) return {hero:'yitschaq',wife:'rivqah'};
@@ -3597,11 +3661,10 @@ const Game={
     for(let y=y0;y<y1;y++)for(let x=x0;x<x1;x++,k9++){
       undo.tiles[k9]=m.tiles[y*m.w+x]; undo.elev[k9]=m.elev[y*m.w+x];
       const ct=cm.tiles[(y-oy)*cm.w+(x-ox)];
+      const ce=cm.elev?cm.elev[(y-oy)*cm.w+(x-ox)]:1;
       m.tiles[y*m.w+x]=ct;
-      m.elev[y*m.w+x]= ct===T.SNOW?Math.min(8,e0+3)
-        : ct===T.MTN?Math.min(8,e0+2)
-        : ct===T.ROCK?Math.min(8,e0+1)
-        : (ct===T.WATER||ct===T.DEEP)?Math.max(0,e0-1) : e0;
+      m.elev[y*m.w+x]=(ct===T.WATER||ct===T.DEEP)?Math.max(0,e0-1)
+        :Math.min(8,Math.max(0,e0+Math.max(0,ce-1)));
     }
     /* the world's own props step aside for the telling; they return after */
     for(let i=m.decor.length-1;i>=0;i--){ const d=m.decor[i];
@@ -5579,7 +5642,7 @@ const STORY=[
      {say:['narrator','The garden lies before you. Walk with the arrow keys or WASD — gather, tend, and see all that YAHUAH Aluahim has made. Press E to draw near to His creatures.']},
    ],
    onComplete:[
-     {say:['voice','It is not good for the man to be alone. I shall make a helper as his counterpart.']},
+     {say:['voice','It is not good for the man to be alone — as I said before the naming began; and among all the living that Aḏam has named, there was found no helper as his counterpart. I shall make a helper for him.']},
      {say:['narrator','And YAHUAH Aluahim caused a deep sleep to fall on the man, and he slept.']},
      {call:g=>{ g.world.player.lying=true; g.world.player.moving=false; }},
      {wait:1300},
@@ -5669,7 +5732,7 @@ const STORY=[
      {say:['adam','I heard Your sound in the garden and I was afraid, because I was naked, so I hid myself.']},
      {say:['voice','Who made you know that you were naked? Have you eaten of the tree of which I commanded you not to eat?']},
      {say:['adam','The woman whom You gave to be with me — she gave me of the tree, and I ate.']},
-     {say:['voice','Ḥawwah — what is this you have done?']},
+     {say:['voice','Woman — what is this you have done?']},
      {say:['chavvah','The serpent deceived me, and I ate.']},
      {say:['voice','Because you have done this, you are cursed more than all livestock and more than every beast of the field. On your belly you shall go, and eat dust all the days of your life.']},
      {sfx:'thunder'},{shake:2},{burst:[28,15,'ash',24]},
@@ -5840,7 +5903,7 @@ const STORY=[
        {say:['hevel','And what is there between me and you — that you eat the flesh of my flock and clothe yourself with their wool? Put off the wool of my sheep with which you have clothed yourself, and recompense me for their fruit and flesh which you have eaten — and then I will go from your land, as you have said.']},
        {say:['qayin','…And if I slay you this day — who will require your blood from me?']},
        {say:['hevel','Aluahim, who made us in the earth — He will avenge my cause. He will require my blood from you if you slay me, for YAHUAH is the judge and arbiter, and He requites every man according to his evil. If you slay me here, surely Aluahim knows your secret thoughts, and will judge you for this evil.']},
-       {say:['narrator','And when Qayin heard the words his brother had spoken, behold — his anger was kindled. And he hurried and took the iron of his ploughing instrument…']},
+       {say:['narrator','And when Qayin heard the words his brother had spoken, behold — his anger was kindled. And he took up a stone of the field…']},
        {fade:'out'},{sfx:'thunder'},{music:'sorrow'},{wait:1000},
        {despawn:'hevel'},{time:'night'},
        {fade:'in'},{wait:700},
@@ -6038,6 +6101,7 @@ STORY.push(
    onComplete:[
      {say:['noach','Sons! Wives! The hour has come — into the ark, all of us. Seven days, and the rain begins.']},
      {say:['narrator','And of the clean beasts, and of the beasts that are not clean, and of the birds — two by two they went in to Noaḥ into the ark, male and female, as Aluahim had commanded Noaḥ.']},
+     {say:['noach','And of every CLEAN beast, seven pairs, the male and his female — so YAHUAH commanded — and of the birds of the shamayim seven pairs also, to keep seed alive on the face of all the earth. From these, when the earth is washed, shall come the offering.']},
      {call:g=>{ let i=0; g.world.npcs.forEach(n=>{ if(n.group==='pairs'){
          n.follow=false; n.wander=false; n.arrived=false;
          n.target={x:g.ox+25+((i%2)?0.6:-0.6), y:g.oy+13.55}; n.speed=.045+(i%4)*.009; i++; } }); }},
@@ -6066,7 +6130,7 @@ STORY.push(
   ],
   complete:'And those that entered went in male and female of all flesh — and YAHUAH shut him in.'
 },
-{ id:'c9', title:'The Waters Prevailed', ref:'BERĔSHITH 7:17–8:12',
+{ id:'c9', title:'The Waters Prevailed', ref:'BERĔSHITH 7:17–8:3',
   intro:[
    {art:'flood', music:'storm', text:'And the waters prevailed exceedingly on the earth and all the high mountains under all the shamayim were covered… But only Noaḥ was left, and those with him in the ark.', ref:'BERĔSHITH 7:19,23'},
    {art:'flood', music:'night', text:'And Aluahim remembered Noaḥ and all that was with him in the ark. And Aluahim made a wind to pass over the earth, and the waters subsided.', ref:'BERĔSHITH 8:1'},
@@ -6081,46 +6145,27 @@ STORY.push(
    time:'night', music:'night', rain:true,
    player:'noach', playerPos:[8,10],
    npcs:[
-     {id:'wife',char:'noach_w',x:5,y:10,wander:true,range:1.5,dlg:[['noach_w','One hundred and fifty days the waters prevailed… and now, listen — the rain has grown gentle. He remembers us.']]},
+     {id:'wife',char:'noach_w',x:5,y:10,wander:true,range:1.5,dlg:[['noach_w','One hundred and fifty days the waters prevailed… and now, listen — the rain has ceased, and the deep is stopped. The waters are going down. He remembers us.']]},
      {id:'shem',char:'shem',x:12,y:8,wander:true,range:2,dlg:[['shem','We came to rest with a great groan of timber — on the mountains of Ararat, father, I am sure of it.']]},
      {id:'dove',animal:'dove',x:21,y:8,wander:false,noTalk:true},
      {id:'raven',animal:'raven',x:22,y:9,wander:false,noTalk:true},
    ],
    objectives:[
      {type:'talk',npc:'wife',text:'Speak with your household'},
-     {type:'interact',prop:'window',text:'Open the window and send out the raven',hiddenUntil:1,
+     {type:'interact',prop:'window',text:'Watch at the window — the waters are going down',hiddenUntil:1,
       script:[
        {rain:false},{time:'dusk'},
-       {say:['noach','Go, black wings. Tell us what is left of the world.']},
-       {call:g=>{ const r=g.world.npcs.find(n=>n.id==='raven'); if(r){r.flying=true; r.target={x:30,y:-4}; r.speed=.09;} }},
-       {wait:1400},
-       {say:['narrator','And he sent out a raven, which kept going out and turning back until the waters dried up from the earth.']},
-      ]},
-     {type:'interact',prop:'window',id:'dove1',text:'Send out the dove',hiddenUntil:2,
-      script:[
-       {say:['noach','Now you, gentle one — go, and see whether the waters have receded from the face of the ground.']},
-       {call:g=>{ const d=g.world.npcs.find(n=>n.id==='dove'); if(d){d.flying=true; d.target={x:30,y:-4}; d.speed=.08;} }},
-       {wait:1500},
-       {call:g=>{ const d=g.world.npcs.find(n=>n.id==='dove'); if(d){d.x=30;d.y=-4;d.target={x:21,y:8};} }},
-       {wait:1500},
-       {say:['narrator','But the dove found no resting place for the sole of her foot, and she returned to him into the ark — for the waters were on the face of all the earth. And he put out his hand and took her, and pulled her in to himself into the ark.']},
-       {fade:'out'},{toast:'And he waited yet another seven days…'},{wait:1400},{fade:'in'},
-       {say:['noach','Again, gentle one. Go.']},
-       {call:g=>{ const d=g.world.npcs.find(n=>n.id==='dove'); if(d){d.flying=true; d.target={x:30,y:-4}; d.speed=.08;} }},
-       {wait:1500},{fade:'out'},{toast:'And the dove came to him in the evening…'},
-       {call:g=>{ const d=g.world.npcs.find(n=>n.id==='dove'); if(d){d.x=30;d.y=-4;d.target={x:21,y:8};d.leaf=true;} }},
-       {fade:'in'},{wait:1600},
-       {sfx:'chime'},
-       {say:['noach','See — a freshly plucked olive leaf in her mouth! The waters have receded from the earth.']},
+       {say:['narrator','And Aluahim remembered Noaḥ, and all the living beings that were with him in the ark. And the fountains of the deep and the windows of the shamayim were stopped, and the rain from the shamayim was restrained — and the waters receded steadily from the earth, going and receding.']},
+       {say:['noach','The rain has ceased, and the deep is shut. Now we wait upon Him — until the day He sets this house of gopher-wood down upon the earth again.']},
       ]},
    ],
   },
   outro:[
-   {art:'land', music:'holy', text:'And he waited yet another seven days and sent out the dove, and she did not return to him again… And in the second month, on the twenty-seventh day of the month, the earth was dry.', ref:'BERĔSHITH 8:12,14'},
+   {art:'flood', music:'night', text:'And the waters receded steadily from the earth — going and receding; and after the end of the hundred and fifty days the waters diminished.', ref:'BERĔSHITH 8:3'},
   ],
-  complete:'And see, a freshly plucked olive leaf was in her mouth. And Noaḥ knew that the waters had receded from the earth.'
+  complete:'And Aluahim remembered Noaḥ — and the waters receded steadily from the earth.'
 },
-{ id:'c9b', title:'The Mountains of Ararat', ref:'BERĔSHITH 8:1–5',
+{ id:'c9b', title:'The Mountains of Ararat', ref:'BERĔSHITH 8:1–12',
   intro:[
    {art:'flood', music:'holy', text:'And Aluahim made a wind to pass over the earth, and the waters subsided… And the ark came to rest, in the seventh month, on the mountains of Ararat. And the waters decreased steadily, and the tops of the mountains were seen.', ref:'BERĔSHITH 8:1–5'},
   ],
@@ -6779,7 +6824,8 @@ STORY.push(
      {type:'goto',x:28,y:18.6,radius:2.6,id:'serve',text:'Set the meal before them',hiddenUntil:3,
       script:[
        {say:['narrator','And he took curds and milk and the calf which he had prepared, and set it before them — and he stood by them under the tree as they ate.']},
-       {say:['malak','Where is Sarah your wife? …I shall certainly return to you according to the time of life, and see — Sarah your wife is to have a son!']},
+       {say:['malak','Where is Sarah your wife?']},
+       {say:['voice','I shall certainly return to you according to the time of life, and see — Sarah your wife is to have a son!']},
        {say:['narrator','And Sarah laughed within herself, saying, “After I have grown old, shall I have pleasure, my master being old too?”']},
        {rays:.7,raysX:30},{sfx:'holy'},
        {say:['voice','Why did Sarah laugh? Is any matter too hard for YAHUAH? At the appointed time I am going to return to you, and Sarah is to have a son.']},
@@ -7028,7 +7074,7 @@ STORY.push(
        {say:['hagar','Master… Sarah has said that my son and I must go. The bread and the skin of water are on my shoulder. Is there a word for me before the wilderness?']},
        {say:['avraham','It grieves me to my bones, Haḡar. But Aluahim has said: in Yahtsḥaq the seed is called — and of your son also He will make a nation, because he is my seed.']},
        {move:['hagar',43,28,.05,'bg']},
-       {say:['narrator','And Aluahim was with the boy in the Wilderness of Paran. When the water in the skin was used up, Aluahim opened her eyes and she saw a well of water — and heard the boy’s voice, and made him a promise of nations.']},
+       {say:['narrator','And Aluahim was with the boy. In the Wilderness of Be’ĕrsheḇa, when the water in the skin was used up, Aluahim opened her eyes and she saw a well of water — and heard the boy’s voice, and made him a promise of nations. And he grew, and dwelt in the Wilderness of Paran.']},
       ]},
    ],
    onStart:[
@@ -7299,7 +7345,6 @@ STORY.push(
 { id:'c18', title:'The Birthright', ref:'BERĔSHITH 25; 27 · YASHAR 27',
   intro:[
    {art:'journey', music:'desert', text:'And Yahtsḥaq prayed to YAHUAH for his wife, because she was barren. And YAHUAH answered him, and Riḇqah his wife conceived… two nations are in your womb, and the older shall serve the younger.', ref:'BERĔSHITH 25:21,23'},
-   {art:'journey', text:'And there was a famine, and Yahtsḥaq went to Gerar — and YAHUAH appeared to him: “Do not go down to Mitsrayim; dwell in this land, and I shall be with you.” And he dug again the wells of his father: over Ĕseq they strove, and over Sitnah — but the third he called REḤOḆOTH, “for now YAHUAH has made room for us, and we shall bear fruit in the land.”', ref:'BERĔSHITH 26:1–3,18–22'},
   ],
   scene:{
    map:{biome:'plains', w:46, h:32, seed:131,
@@ -8140,6 +8185,69 @@ STORY.push(
   ],
   complete:'Then we shall see what becomes of his dreams. — But YAHUAH was with Yosĕph.'
 },
+{ id:'c22b', title:'Tamar', ref:'BERĔSHITH 38',
+  intro:[
+   {art:'journey', music:'sorrow', text:'And in those days Yahuḏah went down from his brothers, and turned aside to a man of Aḏullam named Ḥirah. And Yahuḏah took a wife, and she bore him Ĕr, and Onan, and Shĕlah. And Yahuḏah took a wife for Ĕr his first-born, and her name was Tamar.', ref:'BERĔSHITH 38:1–6'},
+   {art:'rest', music:'sorrow', text:'But Ĕr was evil in the eyes of YAHUAH, and YAHUAH took his life. And Onan, who would not raise up seed for his brother, did evil also — and He took his life too. And Yahuḏah said to Tamar his daughter-in-law, “Remain a widow in your father’s house until my son Shĕlah is grown” — for he feared that he also might die. And Tamar went, and waited. And Shĕlah grew — and she was not given to him as a wife.', ref:'BERĔSHITH 38:7–14'},
+  ],
+  scene:{
+   map:{biome:'desert', w:46, h:28, seed:178,
+     features:[
+       {type:'tent',x:10,y:14,solid:true,clear:2,col:'#c8b486'},
+       {type:'firepit',x:12,y:15.5,lit:true},
+       {type:'well',x:30,y:18,solid:true,clear:2},
+       {type:'palm',x:32,y:12,solid:true},
+       {type:'clearing',x:28,y:14,flat:2},
+     ]},
+   time:'day', music:'desert',
+   player:'yahudah', playerPos:[11,17], playerHold:'staff',
+   npcs:[
+     {id:'amb_sheep1',animal:'sheep',x:27,y:16.5,range:2,noTalk:true},
+     {id:'amb_sheep2',animal:'sheep',x:29,y:15.4,range:2,noTalk:true},
+     {id:'amb_shearer',char:'shepherd',route:[[26,16],[31,17],[28,18]],noTalk:true,x:26,y:16},
+     {id:'hirah',char:'hirah',x:13,y:16.5,wander:false,
+      script:[
+       {say:['hirah','The days of mourning for your wife are past, friend. Your sheepshearers are at Timnah — come, let us go up to the shearing.']},
+       {say:['narrator','And it was told Tamar: “See, your father-in-law is going up to Timnah to shear his sheep.” And she put off her widow’s garments, and covered herself with a veil and wrapped herself, and sat at the entrance to Ĕnayim, which is on the way to Timnah — for she saw that Shĕlah was grown, and she had not been given to him as a wife.']},
+      ]},
+     {id:'tamar',char:'tamar_v',x:28,y:13.4,wander:false,hidden:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'talk',npc:'hirah',text:'Go up with Ḥirah to the sheepshearing at Timnah'},
+     {type:'goto',x:28,y:14.6,radius:2.2,text:'Take the road to Timnah, past the entrance of Ĕnayim',hiddenUntil:1,
+      script:[
+       {show:'tamar'},{face:['tamar','down']},
+       {say:['narrator','And Yahuḏah saw her — and did not know that she was his daughter-in-law, for she had covered her face.']},
+       {say:['tamar_v','What will you give me?']},
+       {say:['yahudah','I shall send you a young goat from the flock.']},
+       {say:['tamar_v','Will you give me a pledge until you send it? Your seal and your cord — and the staff that is in your hand.']},
+       {hold:['player']},{hold:['tamar','staff']},
+       {say:['narrator','And he gave them to her, and came in to her — and she conceived by him. And she arose and went away, and laid aside her veil, and put on the garments of her widowhood.']},
+       {fade:'out'},{hide:'tamar'},
+       {toast:'And Yahuḏah sent the young goat by the hand of his friend the Aḏullamite, to take back the pledge — but he did not find her.'},{wait:1900},
+       {toast:'“There was no qedĕshah in this place,” said the men of Ĕnayim. And Yahuḏah said, “Let her keep them, lest we become despised.”'},{wait:2000},
+       {time:'dusk'},{fade:'in'},
+      ]},
+     {type:'goto',x:12,y:16.5,radius:2.4,text:'Three months later — word comes concerning Tamar',hiddenUntil:2,
+      script:[
+       {say:['hirah','Yahuḏah — it is told: Tamar your daughter-in-law has whored, and see, she has conceived by whoring.']},
+       {say:['yahudah','Bring her out — and let her be burned!']},
+       {spawn:{id:'tamar2',char:'tamar',x:3,y:17.5,wander:false,noTalk:true,hold:'staff'}},
+       {move:['tamar2',10,17.2,.06]},
+       {say:['tamar','I am with child by the man to whom these belong. Please examine them — whose are these: the seal, and the cord, and the staff?']},
+       {wait:600},{sfx:'bad'},
+       {say:['yahudah','…They are mine. My seal. My cord. My staff in her hand. The widow I sent away to wait for a son I never meant to give her.']},
+       {say:['yahudah','She is more righteous than I — because I did not give her to Shĕlah my son.']},
+       {say:['narrator','And he never knew her again. And it came to be, at the time for giving birth, that see — twins were in her womb: Perets and Zeraḥ. And from Perets runs the line of the Sceptre that shall not turn aside from Yahuḏah.']},
+       {sfx:'holy'},{burst:[10,17,'holy',16]},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'holy', text:'And from Perets, son of Yahuḏah by Tamar: Ḥetsron, and Ram, and Amminaḏaḇ, and Naḥshon… down to Dawiḏ the sovereign. The wronged widow who waited is written into the line of the Sceptre itself.', ref:'BERĔSHITH 38:27–30 · RUTH 4:18–22'},
+  ],
+  complete:'“She is more righteous than I.” — And Perets and Zeraḥ were born, and the line of the Sceptre ran on.'
+},
 { id:'c22a', title:'The House of Potiphar', ref:'BERĔSHITH 39',
   intro:[
    {art:'egypt', music:'tense', text:'And Yosĕph was taken down to Mitsrayim, and Potiphar, an officer of Pharaoh, captain of the guard, bought him from the Yishma‛Alites. And YAHUAH was with Yosĕph, and he became a prosperous man in the house of his master the Mitsrite.', ref:'BERĔSHITH 39:1–2'},
@@ -8209,69 +8317,6 @@ STORY.push(
    {art:'egypt', music:'sorrow', text:'But YAHUAH was with Yosĕph and extended kindness to him, and gave him favour in the eyes of the prison warden — and whatever they did there, it was his doing, because YAHUAH was with him; and what he did, YAHUAH made it prosper.', ref:'BERĔSHITH 39:21–23'},
   ],
   complete:'How shall I do this great evil and sin against Aluahim? — He fled and left his garment behind; and YAHUAH was with him, even in the prison.'
-},
-{ id:'c22b', title:'Tamar', ref:'BERĔSHITH 38',
-  intro:[
-   {art:'journey', music:'sorrow', text:'And in those days Yahuḏah went down from his brothers, and turned aside to a man of Aḏullam named Ḥirah. And Yahuḏah took a wife, and she bore him Ĕr, and Onan, and Shĕlah. And Yahuḏah took a wife for Ĕr his first-born, and her name was Tamar.', ref:'BERĔSHITH 38:1–6'},
-   {art:'rest', music:'sorrow', text:'But Ĕr was evil in the eyes of YAHUAH, and YAHUAH took his life. And Onan, who would not raise up seed for his brother, did evil also — and He took his life too. And Yahuḏah said to Tamar his daughter-in-law, “Remain a widow in your father’s house until my son Shĕlah is grown” — for he feared that he also might die. And Tamar went, and waited. And Shĕlah grew — and she was not given to him as a wife.', ref:'BERĔSHITH 38:7–14'},
-  ],
-  scene:{
-   map:{biome:'desert', w:46, h:28, seed:178,
-     features:[
-       {type:'tent',x:10,y:14,solid:true,clear:2,col:'#c8b486'},
-       {type:'firepit',x:12,y:15.5,lit:true},
-       {type:'well',x:30,y:18,solid:true,clear:2},
-       {type:'palm',x:32,y:12,solid:true},
-       {type:'clearing',x:28,y:14,flat:2},
-     ]},
-   time:'day', music:'desert',
-   player:'yahudah', playerPos:[11,17], playerHold:'staff',
-   npcs:[
-     {id:'amb_sheep1',animal:'sheep',x:27,y:16.5,range:2,noTalk:true},
-     {id:'amb_sheep2',animal:'sheep',x:29,y:15.4,range:2,noTalk:true},
-     {id:'amb_shearer',char:'shepherd',route:[[26,16],[31,17],[28,18]],noTalk:true,x:26,y:16},
-     {id:'hirah',char:'hirah',x:13,y:16.5,wander:false,
-      script:[
-       {say:['hirah','The days of mourning for your wife are past, friend. Your sheepshearers are at Timnah — come, let us go up to the shearing.']},
-       {say:['narrator','And it was told Tamar: “See, your father-in-law is going up to Timnah to shear his sheep.” And she put off her widow’s garments, and covered herself with a veil and wrapped herself, and sat at the entrance to Ĕnayim, which is on the way to Timnah — for she saw that Shĕlah was grown, and she had not been given to him as a wife.']},
-      ]},
-     {id:'tamar',char:'tamar_v',x:28,y:13.4,wander:false,hidden:true,noTalk:true},
-   ],
-   objectives:[
-     {type:'talk',npc:'hirah',text:'Go up with Ḥirah to the sheepshearing at Timnah'},
-     {type:'goto',x:28,y:14.6,radius:2.2,text:'Take the road to Timnah, past the entrance of Ĕnayim',hiddenUntil:1,
-      script:[
-       {show:'tamar'},{face:['tamar','down']},
-       {say:['narrator','And Yahuḏah saw her — and did not know that she was his daughter-in-law, for she had covered her face.']},
-       {say:['tamar_v','What will you give me?']},
-       {say:['yahudah','I shall send you a young goat from the flock.']},
-       {say:['tamar_v','Will you give me a pledge until you send it? Your seal and your cord — and the staff that is in your hand.']},
-       {hold:['player']},{hold:['tamar','staff']},
-       {say:['narrator','And he gave them to her, and came in to her — and she conceived by him. And she arose and went away, and laid aside her veil, and put on the garments of her widowhood.']},
-       {fade:'out'},{hide:'tamar'},
-       {toast:'And Yahuḏah sent the young goat by the hand of his friend the Aḏullamite, to take back the pledge — but he did not find her.'},{wait:1900},
-       {toast:'“There was no qedĕshah in this place,” said the men of Ĕnayim. And Yahuḏah said, “Let her keep them, lest we become despised.”'},{wait:2000},
-       {time:'dusk'},{fade:'in'},
-      ]},
-     {type:'goto',x:12,y:16.5,radius:2.4,text:'Three months later — word comes concerning Tamar',hiddenUntil:2,
-      script:[
-       {say:['hirah','Yahuḏah — it is told: Tamar your daughter-in-law has whored, and see, she has conceived by whoring.']},
-       {say:['yahudah','Bring her out — and let her be burned!']},
-       {spawn:{id:'tamar2',char:'tamar',x:3,y:17.5,wander:false,noTalk:true,hold:'staff'}},
-       {move:['tamar2',10,17.2,.06]},
-       {say:['tamar','I am with child by the man to whom these belong. Please examine them — whose are these: the seal, and the cord, and the staff?']},
-       {wait:600},{sfx:'bad'},
-       {say:['yahudah','…They are mine. My seal. My cord. My staff in her hand. The widow I sent away to wait for a son I never meant to give her.']},
-       {say:['yahudah','She is more righteous than I — because I did not give her to Shĕlah my son.']},
-       {say:['narrator','And he never knew her again. And it came to be, at the time for giving birth, that see — twins were in her womb: Perets and Zeraḥ. And from Perets runs the line of the Sceptre that shall not turn aside from Yahuḏah.']},
-       {sfx:'holy'},{burst:[10,17,'holy',16]},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'stars', music:'holy', text:'And from Perets, son of Yahuḏah by Tamar: Ḥetsron, and Ram, and Amminaḏaḇ, and Naḥshon… down to Dawiḏ the sovereign. The wronged widow who waited is written into the line of the Sceptre itself.', ref:'BERĔSHITH 38:27–30 · RUTH 4:18–22'},
-  ],
-  complete:'“She is more righteous than I.” — And Perets and Zeraḥ were born, and the line of the Sceptre ran on.'
 },
 { id:'c23', title:'Dreams in the Dungeon', ref:'BERĔSHITH 39–41',
   intro:[
