@@ -1666,6 +1666,33 @@ function drawProp(g,px,py,p,t){
     case 'gate': {
       // garden gate: two golden posts + arch
       const gw=TILE*2.2;
+      if(p.side){
+        /* the gate stands in the west wall of the garden, seen edge-on: the near
+           jamb, the far jamb behind it in depth, and the arch spanning between */
+        const gh=TILE*2.6, dx9=TILE*.95, dy9=TILE*.62;
+        g.fillStyle='rgba(0,0,0,.25)';
+        g.beginPath(); g.ellipse(dx9*.4,2,TILE*1.05,TILE*.32,0,0,Math.PI*2); g.fill();
+        g.fillStyle='#c9a34b'; g.fillRect(dx9-4,-gh-dy9,8,gh);            /* far jamb */
+        g.strokeStyle='#e8c66a'; g.lineWidth=6;
+        g.beginPath(); g.moveTo(0,-gh); g.quadraticCurveTo(dx9*.5,-gh-dy9*.9-TILE*.42,dx9,-gh-dy9); g.stroke();
+        g.strokeStyle='#b8923c'; g.lineWidth=2.4;
+        g.beginPath(); g.moveTo(0,-gh); g.quadraticCurveTo(dx9*.5,-gh-dy9*.9-TILE*.42,dx9,-gh-dy9); g.stroke();
+        g.fillStyle='#e8c66a'; g.fillRect(-4,-gh,8,gh);                    /* near jamb */
+        g.fillStyle='#f5e3a8'; g.fillRect(-4,-gh,3,gh);
+        const gl9=g.createRadialGradient(dx9*.5,-gh*.6,TILE*.3,dx9*.5,-gh*.6,TILE*2.2);
+        gl9.addColorStop(0,`rgba(255,230,140,${.20+Math.sin(t/500)*.08})`); gl9.addColorStop(1,'rgba(255,230,140,0)');
+        g.fillStyle=gl9; g.beginPath(); g.arc(dx9*.5,-gh*.6,TILE*2.2,0,Math.PI*2); g.fill();
+        if(p.guard!==false){
+          /* the keruv hovers over the gate, turned toward the way out, a sword in his hand */
+          const bob=Math.sin(t/460)*4;
+          const kx=dx9*.5, ky=-gh-dy9-TILE*.12+bob;
+          const gl2=g.createRadialGradient(kx,ky-TILE*.9,4,kx,ky-TILE*.9,TILE*1.25);
+          gl2.addColorStop(0,'rgba(255,244,200,.5)'); gl2.addColorStop(1,'rgba(255,244,200,0)');
+          g.fillStyle=gl2; g.beginPath(); g.arc(kx,ky-TILE*.9,TILE*1.25,0,Math.PI*2); g.fill();
+          drawChar(g,kx,ky,'cherub',{t,dir:'left',hold:'sword',scale:.55});
+        }
+        break;
+      }
       g.fillStyle='rgba(0,0,0,.25)';
       g.beginPath(); g.ellipse(0,2,gw*.8,TILE*.3,0,0,Math.PI*2); g.fill();
       const grd=g.createLinearGradient(0,-TILE*3.4,0,0);
@@ -5474,9 +5501,9 @@ const STORY=[
      features:[
        /* the sealed gate of the Garden — the garden is walled about, and the way
           back is kept by the flaming sword which turns every way (BERĔSHITH 3:24) */
-       {type:'gate',x:306.6,y:92.6,solid:true,clear:1.5,
+       {type:'gate',side:true,x:306.6,y:92.6,solid:true,clear:1.5,
         examine:'The gate is shut, and the way is kept — kerubim, and the flame of a sword turning every way.'},
-       {type:'sword',x:306.6,y:91.2,clear:0},
+       {type:'sword',x:305.3,y:92.4,clear:0},
      ]},
    player:'adam_c', playerPos:[303,94],
    npcs:[
@@ -5763,7 +5790,7 @@ const STORY=[
   scene:{
    map:{biome:'eden', w:52, h:30, seed:11,
      features:[
-       {type:'gate',x:43,y:15,solid:true,clear:3,flat:2,id:'gate'},
+       {type:'gate',side:true,guard:false,x:43,y:15,solid:true,clear:3,flat:2,id:'gate'},
        {type:'treeLife',x:10,y:14,solid:true,clear:3,id:'treelife'},
        {type:'clearing',x:43,y:18,flat:3},
      ],
@@ -5781,7 +5808,7 @@ const STORY=[
      {say:['narrator','Therefore YAHUAH Aluahim sent him out of the garden of Ĕḏen, to till the ground from which he was taken.']},
    ],
    onComplete:[
-     {spawn:{id:'cherub',char:'cherub',x:43,y:13.5,wander:false,noTalk:true}},
+     {prop:['gate',{guard:true}]},{burst:[43,12,'holy',18]},
      {addProp:{type:'sword',x:43,y:12.5,id:'sword'}},
      {sfx:'holy'},{burst:[43,13,'holy',22]},{wait:600},
      {say:['narrator','And He placed keruḇim at the east of the garden of Ĕḏen, and a flaming sword which turned every way, to guard the way to the tree of life.']},
