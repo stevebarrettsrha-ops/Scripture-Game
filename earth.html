@@ -54,6 +54,7 @@
   <button class="btn" id="b-speed">⏩ Course: swift</button>
   <button class="btn" id="b-drag">🖐 Drag: turn the view</button>
   <button class="btn" id="b-names">🏷 Names: on</button>
+  <button class="btn" id="b-sites">🏺 Sites: your journey</button>
   <button class="btn" id="b-moedim">✦ Appointed Times</button>
 </div>
 
@@ -167,8 +168,10 @@ function buildTexture(){
 }
 buildTexture();
 
-/* areas, for choosing which names appear at each zoom */
+/* areas, for choosing which names appear at each zoom — and a settled colour for the near view */
 for(const c of COUNTRIES){
+  const r0=Math.hypot(c.c[0],c.c[1]), lat0=90-r0*180, lon0=Math.atan2(c.c[0],c.c[1])*180/Math.PI;
+  c.col=biome(lat0,lon0,hash(c.c[0]*97,c.c[1]*61))[0];
   let a=0,best=0;
   for(const ring of c.p){ let s=0;
     for(let i=0;i<ring.length;i++){ const [x1,y1]=ring[i],[x2,y2]=ring[(i+1)%ring.length];
@@ -186,6 +189,61 @@ const ANCIENTS=[
   {n:'MADAI', p:LL(52,34)}, {n:'YAWAN', p:LL(22.5,39.2)}, {n:'TARSHISH', p:LL(-4.5,37.6)},
   {n:'GOMER', p:LL(33,39.4)}, {n:'MAGOG', p:LL(48,47.5)},
 ];
+
+/* ---------------- the ancient sites of the land, revealed by your journey ----------------
+   The earth reads the same saves the books write: as the player walks each story,
+   the places where it happened appear on the face of the land.                      */
+function bookProgress(key,total){
+  try{ const d=JSON.parse(localStorage.getItem(key));
+    return d&&d.done?Math.min(1,Object.keys(d.done).length/total):0; }catch(e){ return 0; }
+}
+const PROG={
+  bereshith:bookProgress('bereshith_v2',45),
+  shemoth:  bookProgress('shemoth_v1',40),
+  bamidbar: bookProgress('bamidbar_v1',19),
+  devarim:  bookProgress('devarim_v1',19),
+};
+/* u:[book, fraction of that book walked] — the site appears when the journey reaches it */
+const SITES=[
+  /* the waters and the land, for bearings — always shown */
+  {n:'THE GREAT SEA', ll:[33.6,32.6], geo:true},
+  {n:'THE SALT SEA', ll:[35.49,31.33], geo:true},
+  {n:'SEA OF KINNERETH', ll:[35.59,32.82], geo:true},
+  {n:'THE YARDĔN', ll:[35.57,32.30], geo:true},
+  {n:'THE NEGEV', ll:[34.85,30.85], geo:true},
+  /* BERĔSHITH — the fathers in the land */
+  {n:'SHEKEM', ll:[35.282,32.213], note:'Aḇram’s first altar in the land, at the terebinth of Moreh', ref:'BERĔSHITH 12:6–7', u:['bereshith',.24]},
+  {n:'BĔYTH ĂL', ll:[35.240,31.930], note:'the altar between Bĕyth Ăl and Ai — and the ladder set up to the shamayim', ref:'BERĔSHITH 12:8 · 28:12–19', u:['bereshith',.24]},
+  {n:'MAMRĔ — ḤEḆRON', ll:[35.110,31.525], note:'the terebinths of Mamrĕ, the three visitors, and the burial-place of Makpelah', ref:'BERĔSHITH 13:18 · 18 · 23', u:['bereshith',.30]},
+  {n:'SEDOM', ll:[35.40,31.08], note:'overthrown with fire and brimstone from YAHUAH out of the shamayim', ref:'BERĔSHITH 19:24–25', u:['bereshith',.36]},
+  {n:'GERAR', ll:[34.61,31.38], note:'where Aḇraham and Yahtsḥaq sojourned among the Philistines', ref:'BERĔSHITH 20 · 26', u:['bereshith',.42]},
+  {n:'BE’ĔRSHEḆA', ll:[34.79,31.245], note:'the well of the oath — the tamarisk planted in the Name of YAHUAH', ref:'BERĔSHITH 21:31–33', u:['bereshith',.44]},
+  {n:'MOUNT MORIYAH', ll:[35.235,31.778], note:'the binding of Yahtsḥaq — on the mount of YAHUAH it is provided', ref:'BERĔSHITH 22', u:['bereshith',.47]},
+  {n:'PENU’ĔL', ll:[35.70,32.19], note:'where Ya‛aqoḇ wrestled until the breaking of day, and was named Yasharal', ref:'BERĔSHITH 32:24–30', u:['bereshith',.60]},
+  {n:'BĔYTH LEḤEM', ll:[35.21,31.705], note:'on the way to Ephrath — where Raḥĕl was buried', ref:'BERĔSHITH 35:19', u:['bereshith',.63]},
+  {n:'DOTHAN', ll:[35.24,32.414], note:'where Yosĕph was sold by his brothers to the traders', ref:'BERĔSHITH 37:17–28', u:['bereshith',.68]},
+  /* SHEMOTH — the way out */
+  {n:'ḤORĔḆ — MOUNT SINAI', ll:[33.973,28.539], note:'the bush that burned, and the mountain of the covenant, wrapped in fire', ref:'SHEMOTH 3 · 19–20', u:['shemoth',.20]},
+  /* BAMIḎBAR — the wilderness */
+  {n:'QAḎĔSH BARNĔA', ll:[34.49,30.687], note:'from here the twelve went up to see the land — and a generation turned back', ref:'BAMIḎBAR 13–14', u:['bamidbar',.40]},
+  {n:'MOSĔRAH — MOUNT HOR', ll:[35.407,30.317], note:'where Aharon died, and Al‛azar his son became kohen in his place', ref:'BAMIḎBAR 20:22–29 · DEḆARIM 10:6', u:['bamidbar',.60]},
+  {n:'ḤESHBON', ll:[35.809,31.805], note:'the city of Siḥon sovereign of the Amorites, taken by Yasharal', ref:'BAMIḎBAR 21:21–26', u:['bamidbar',.75]},
+  {n:'EDRE‛I', ll:[36.10,32.60], note:'where Og of Bashan, the last of the Rephaim, came out and fell', ref:'BAMIḎBAR 21:33–35', u:['bamidbar',.75]},
+  {n:'SHITTIM — PLAINS OF MO’AḆ', ll:[35.65,31.84], note:'the last camp — where Mosheh spoke all the words of DEḆARIM', ref:'BAMIḎBAR 25:1 · DEḆARIM 1:1', u:['bamidbar',.85]},
+  /* DEḆARIM — the words beyond the Yardĕn */
+  {n:'TOP OF PISGAH', ll:[35.71,31.76], note:'“Go up to the top of Pisgah, and lift up your eyes — and look with your eyes”', ref:'DEḆARIM 3:27', u:['devarim',.14]},
+  {n:'BETSER', ll:[35.90,31.60], note:'a city of refuge in the wilderness, for the Re’uḇĕnites', ref:'DEḆARIM 4:43', u:['devarim',.20]},
+  {n:'RAMOTH IN GIL‛AḎ', ll:[36.02,32.55], note:'a city of refuge, for the Gaḏites', ref:'DEḆARIM 4:43', u:['devarim',.20]},
+  {n:'GOLAN', ll:[35.85,32.90], note:'a city of refuge in Bashan, for the Menashshites', ref:'DEḆARIM 4:43', u:['devarim',.20]},
+  {n:'MOUNT GERIZIM', ll:[35.273,32.200], note:'the mountain of the blessing, when you pass over the Yardĕn', ref:'DEḆARIM 11:29 · 27:12', u:['devarim',.76]},
+  {n:'MOUNT ĔYḆAL', ll:[35.273,32.234], note:'the mountain of the curse — the stones plastered, and the Torah written very plainly', ref:'DEḆARIM 27:2–13', u:['devarim',.76]},
+  {n:'YAHRIḤO', ll:[35.444,31.870], note:'the city of palm trees, shown to Mosheh from the mountain', ref:'DEḆARIM 34:3', u:['devarim',.95]},
+  {n:'MOUNT NEḆO', ll:[35.725,31.768], note:'where Mosheh saw all the land, and died there — and no one knows his burial place', ref:'DEḆARIM 34:1–6', u:['devarim',.95]},
+  {n:'DAN', ll:[35.652,33.249], note:'the far north of the vista — “all the land, Gil‛aḏ as far as Dan”', ref:'DEḆARIM 34:1', u:['devarim',.95]},
+];
+for(const st of SITES) st.p=LL(st.ll[0],st.ll[1]);
+let siteMode=0;   // 0: with your journey · 1: all · 2: off
+const siteShown=st=>st.geo?siteMode<2:(siteMode===1||(siteMode===0&&st.u&&PROG[st.u[0]]>=st.u[1]));
 
 /* ---------------- the stars of the shamayim ---------------- */
 const STARS=[]; for(let i=0;i<340;i++){ const x=Math.random(),y=Math.random();
@@ -279,7 +337,8 @@ function domeSilhouette(ctx){
 }
 function drawBody(b,isSun,t){
   const [px,py]=P3(b.u,b.v,b.y);
-  const R=S*(isSun?0.052:0.042);
+  const R=Math.min(S*(isSun?0.052:0.042), Math.min(W,H)*(isSun?0.065:0.052));
+  if(px<-R*5||px>W+R*5||py<-R*5||py>H+R*5) return;
   if(isSun){
     const gl=g.createRadialGradient(px,py,R*.3,px,py,R*4.4);
     gl.addColorStop(0,'rgba(255,236,170,.85)'); gl.addColorStop(.35,'rgba(255,214,110,.30)');
@@ -366,12 +425,31 @@ function frame(t){
   /* the face of the earth */
   const texScale=S/Tr;                          // >1 means the bricks are magnified
   discTransform(g,0);
-  g.imageSmoothingEnabled=texScale<1.15;        // hard brick edges when drawn near
-  g.drawImage(TEX,0,0);
-  g.imageSmoothingEnabled=true;
+  if(texScale<=4.5){
+    g.imageSmoothingEnabled=texScale<1.15;      // hard brick edges when drawn near
+    g.drawImage(TEX,0,0);
+    g.imageSmoothingEnabled=true;
+  } else {
+    /* drawn very near, the map is redrawn true: the sea, the lands, the courses */
+    g.beginPath(); g.arc(Tc,Tc,Tr*1.001,0,Math.PI*2);
+    g.fillStyle='#33689c'; g.fill();
+    g.beginPath(); g.arc(Tc,Tc,Tr,0,Math.PI*2);
+    g.arc(Tc,Tc,ICE_R*Tr,0,Math.PI*2,true);
+    g.fillStyle='#e6ebf2'; g.fill();
+    for(const c of COUNTRIES){ g.fillStyle=c.col;
+      for(const ring of c.p){ g.beginPath();
+        for(let i=0;i<ring.length;i++){ const x=Tc+ring[i][0]*Tr, y=Tc+ring[i][1]*Tr;
+          i?g.lineTo(x,y):g.moveTo(x,y); }
+        g.closePath(); g.fill(); } }
+    for(const [rr,al] of [[.37,.2],[.5,.13],[.63,.2]]){
+      g.beginPath(); g.arc(Tc,Tc,rr*Tr,0,Math.PI*2);
+      g.strokeStyle=`rgba(232,198,106,${al})`; g.lineWidth=2.4/texScale;
+      g.setLineDash([16/texScale,22/texScale]); g.stroke(); g.setLineDash([]);
+    }
+  }
   /* when drawn near, the borders of the nations are re-drawn true, not stretched */
   if(texScale>1.1){
-    g.strokeStyle='rgba(18,14,7,.5)'; g.lineWidth=1.6*DPR/(texScale*DPR)*Tr/Tr; g.lineWidth=1.7/texScale; g.lineJoin='round';
+    g.strokeStyle='rgba(18,14,7,.5)'; g.lineWidth=1.7/texScale; g.lineJoin='round';
     for(const c of COUNTRIES) for(const ring of c.p){
       g.beginPath();
       for(let i=0;i<ring.length;i++){ const x=Tc+ring[i][0]*Tr, y=Tc+ring[i][1]*Tr;
@@ -382,10 +460,11 @@ function frame(t){
   paintNight(sun);
   g.drawImage(NIGHT,0,0);
   { /* the warmth under the sun */
+    const gr=Math.min(.20*Tr,(Math.min(W,H)*.40)/texScale);
     const sx=Tc+sun.u*Tr, sy=Tc+sun.v*Tr;
-    const dg=g.createRadialGradient(sx,sy,0,sx,sy,Tr*.20);
+    const dg=g.createRadialGradient(sx,sy,0,sx,sy,gr);
     dg.addColorStop(0,'rgba(255,224,130,.20)'); dg.addColorStop(1,'rgba(255,224,130,0)');
-    g.fillStyle=dg; g.beginPath(); g.arc(sx,sy,Tr*.20,0,Math.PI*2); g.fill(); }
+    g.fillStyle=dg; g.beginPath(); g.arc(sx,sy,gr,0,Math.PI*2); g.fill(); }
 
   /* the clouds, a little above the face of it */
   discTransform(g,0.035);
@@ -412,6 +491,7 @@ function frame(t){
       for(const c of COUNTRIES){
         if(c.a<thr) continue;
         const [px,py]=P3(c.c[0],c.c[1],0);
+        if(px<-120||px>W+120||py<-60||py>H+60) continue;
         g.fillStyle='rgba(12,10,4,.55)'; g.fillText(c.n,px+1,py+1);
         g.fillStyle='rgba(244,238,220,.82)'; g.fillText(c.n,px,py);
       }
@@ -442,6 +522,53 @@ function frame(t){
         g.fillStyle='rgba(12,10,4,.6)'; g.fillText(a.n,px+1,py+1);
         g.fillStyle='rgba(232,198,106,.9)'; g.fillText(a.n,px,py);
       }
+    }
+  }
+
+  /* the ancient sites of the land, when you draw near */
+  if(view.zoom>3.4&&siteMode<2){
+    const placedS=[];
+    const fs3=Math.max(10,Math.min(19,S*0.0135));
+    const noteOn=view.zoom>=10;
+    const boxH=noteOn?fs3*5.2:fs3*2.8;
+    const clashS=(x,y,w)=>placedS.some(r=>Math.abs(x-r[0])<(w+r[2])/2+8&&Math.abs(y-r[1])<boxH);
+    g.textAlign='center'; g.textBaseline='middle';
+    for(const st of SITES){
+      if(st.geo||!siteShown(st)) continue;
+      const [px,py]=P3(st.p[0],st.p[1],0);
+      if(px<-80||px>W+80||py<-80||py>H+80) continue;
+      g.font=`${fs3}px Georgia,serif`;
+      const lw=Math.max(g.measureText(st.n).width, noteOn&&st.note?g.measureText(st.note).width*.78:0);
+      if(clashS(px,py,lw)) continue;
+      placedS.push([px,py,lw]);
+      /* the marker: a small gold-ringed point on the land */
+      g.beginPath(); g.arc(px,py,Math.max(2.4,fs3*.22),0,Math.PI*2);
+      g.fillStyle='#ffe9a8'; g.fill();
+      g.beginPath(); g.arc(px,py,Math.max(4,fs3*.42),0,Math.PI*2);
+      g.strokeStyle='rgba(232,198,106,.8)'; g.lineWidth=1.3; g.stroke();
+      g.fillStyle='rgba(12,10,4,.65)'; g.fillText(st.n,px+1,py-fs3*1.2+1);
+      g.fillStyle='#f4dfa8'; g.fillText(st.n,px,py-fs3*1.2);
+      if(noteOn&&st.note){
+        g.font=`italic ${fs3*.76}px Georgia,serif`;
+        g.fillStyle='rgba(10,8,4,.6)'; g.fillText(st.note,px+1,py+fs3*1.05+1);
+        g.fillStyle='rgba(232,222,196,.95)'; g.fillText(st.note,px,py+fs3*1.05);
+        g.fillStyle='rgba(232,198,106,.85)';
+        g.font=`${fs3*.64}px Georgia,serif`;
+        g.fillText('— '+st.ref+' —',px,py+fs3*2.05);
+        g.font=`${fs3}px Georgia,serif`;
+      }
+    }
+    /* the waters and regions, drawn where room remains */
+    if(view.zoom>4.5) for(const st of SITES){
+      if(!st.geo) continue;
+      const [px,py]=P3(st.p[0],st.p[1],0);
+      if(px<-80||px>W+80||py<-80||py>H+80) continue;
+      g.font=`italic ${fs3*1.02}px Georgia,serif`;
+      const lw=g.measureText(st.n).width;
+      if(clashS(px,py,lw)) continue;
+      placedS.push([px,py,lw]);
+      g.fillStyle='rgba(190,215,235,.6)';
+      g.fillText(st.n,px,py);
     }
   }
 
@@ -518,7 +645,7 @@ cv.addEventListener('pointermove',e=>{
       const mx=(drag.x+drag.p2.x)/2, my=(drag.y+drag.p2.y)/2;
       const [au,av]=screenToDisc(mx,my);
       const z0=view.zoom;
-      view.zoom=Math.max(.55,Math.min(22,drag.z0*d/drag.d0));
+      view.zoom=Math.max(.55,Math.min(240,drag.z0*d/drag.d0));
       const k=1-z0/view.zoom;
       view.pu+=(au-view.pu)*k; view.pv+=(av-view.pv)*k;
     }
@@ -542,7 +669,7 @@ cv.addEventListener('pointerup',endP); cv.addEventListener('pointercancel',endP)
 cv.addEventListener('wheel',e=>{ e.preventDefault();
   const [au,av]=screenToDisc(e.clientX,e.clientY);           // hold this land under the cursor
   const z0=view.zoom;
-  view.zoom=Math.max(.55,Math.min(22,view.zoom*Math.exp(-e.deltaY*0.0011)));
+  view.zoom=Math.max(.55,Math.min(240,view.zoom*Math.exp(-e.deltaY*0.0011)));
   const k=1-z0/view.zoom;
   view.pu+=(au-view.pu)*k; view.pv+=(av-view.pv)*k;
 },{passive:false});
@@ -561,6 +688,9 @@ $('b-drag').onclick=()=>{ view.dragMove=!view.dragMove;
 $('b-names').onclick=()=>{ view.names=!view.names;
   $('b-names').textContent='🏷 Names: '+(view.names?'on':'off');
   $('b-names').classList.toggle('off',!view.names); };
+$('b-sites').onclick=()=>{ siteMode=(siteMode+1)%3;
+  $('b-sites').textContent='🏺 Sites: '+['your journey','all','off'][siteMode];
+  $('b-sites').classList.toggle('off',siteMode===2); };
 $('b-moedim').onclick=()=>{ location.href='appointed-times.html'; };
 
 requestAnimationFrame(frame);
