@@ -43,16 +43,16 @@
 
 <div class="hud" id="head">
   <div class="t">THE EARTH</div>
-  <div class="s">the world within the firmament · fully at His command</div>
+  <div class="s">the world within the firmament — the earth stands fast, and the lights run their courses</div>
 </div>
 <div class="hud" id="clock"></div>
 <div class="hud" id="verse"><div class="vt" id="verse-t"></div><div class="vr" id="verse-r"></div></div>
-<div class="hud" id="hint">drag to turn the heavens &nbsp;·&nbsp; scroll or pinch to draw near &nbsp;·&nbsp; double-tap to return</div>
+<div class="hud" id="hint">the earth stands fast — drag to turn your view &nbsp;·&nbsp; scroll on any land to draw near to it &nbsp;·&nbsp; double-tap to return</div>
 <button class="btn" id="back">⟵ Berĕshith</button>
 <div id="ui">
   <button class="btn" id="b-time">⏸ Hold the sun</button>
   <button class="btn" id="b-speed">⏩ Course: swift</button>
-  <button class="btn" id="b-spin">🔄 Turning: on</button>
+  <button class="btn" id="b-drag">🖐 Drag: turn the view</button>
   <button class="btn" id="b-names">🏷 Names: on</button>
   <button class="btn" id="b-moedim">✦ Appointed Times</button>
 </div>
@@ -74,7 +74,7 @@ window.EARTH_DATA={"countries":[{"n":"Fiji","c":[0.0205,-0.598],"p":[[[0,-0.5895
    ========================================================================== */
 const cv=document.getElementById('cv'), g=cv.getContext('2d');
 let W=0,H=0,DPR=1;
-function resize(){ DPR=Math.min(2,window.devicePixelRatio||1);
+function resize(){ DPR=Math.min(3,Math.max(2,window.devicePixelRatio||1));
   W=window.innerWidth; H=window.innerHeight;
   cv.width=W*DPR; cv.height=H*DPR; }
 window.addEventListener('resize',resize); resize();
@@ -82,13 +82,13 @@ window.addEventListener('resize',resize); resize();
 const DATA=window.EARTH_DATA, COUNTRIES=DATA.countries, VERSES=DATA.verses;
 
 /* ---------------- view state ---------------- */
-const view={ yaw:0.65, pitch:0.52, zoom:1.05, spin:true, names:true, paused:false, speedIdx:1 };
+const view={ yaw:0.65, pitch:0.52, zoom:1.05, pu:0, pv:0, dragMove:false, names:true, paused:false, speedIdx:1 };
 const SPEEDS=[ [1,'true'], [1200,'swift'], [14400,'a day in six breaths'] ];   // sim-seconds per real second
 let simHours=9.0;          // the world's clock
 let dayOfYear=26;          // the year of Hanok: 364 days from the spring turning (here: the waving of the sheaf)
 
 /* ---------------- the disc texture: the LEGO-brick face of the earth ------ */
-const TEXN=1600, Tc=TEXN/2, Tr=TEXN/2;   // unit disc radius 1 -> Tr px
+const TEXN=2560, Tc=TEXN/2, Tr=TEXN/2;   // unit disc radius 1 -> Tr px
 const TEX=document.createElement('canvas'); TEX.width=TEX.height=TEXN;
 const ICE_R=0.952;                        // the ice wall begins here
 function hash(x,y){ let h=Math.sin(x*127.1+y*311.7)*43758.5453; return h-Math.floor(h); }
@@ -148,7 +148,7 @@ function buildTexture(){
     t.strokeStyle='rgba(0,0,0,.10)'; t.lineWidth=1; t.stroke();
   }
   // 3) the borders of the nations, drawn faint over the bricks
-  t.strokeStyle='rgba(20,16,8,.30)'; t.lineWidth=1.4; t.lineJoin='round';
+  t.strokeStyle='rgba(20,16,8,.32)'; t.lineWidth=2.2; t.lineJoin='round';
   for(const c of COUNTRIES) for(const ring of c.p){
     t.beginPath();
     for(let i=0;i<ring.length;i++){ const x=Tc+ring[i][0]*Tr, y=Tc+ring[i][1]*Tr;
@@ -158,12 +158,12 @@ function buildTexture(){
   // 4) the courses of the sun: the two tropics and the equator, drawn as rings
   for(const [rr,al] of [[.37,.16],[.5,.10],[.63,.16]]){
     t.beginPath(); t.arc(Tc,Tc,rr*Tr,0,Math.PI*2);
-    t.strokeStyle=`rgba(232,198,106,${al})`; t.lineWidth=2; t.setLineDash([10,14]); t.stroke();
+    t.strokeStyle=`rgba(232,198,106,${al})`; t.lineWidth=3; t.setLineDash([16,22]); t.stroke();
     t.setLineDash([]);
   }
   // 5) the rim of the deep, where the ice meets the sea
   t.beginPath(); t.arc(Tc,Tc,ICE_R*Tr,0,Math.PI*2);
-  t.strokeStyle='rgba(220,235,245,.35)'; t.lineWidth=3; t.stroke();
+  t.strokeStyle='rgba(220,235,245,.35)'; t.lineWidth=4.5; t.stroke();
 }
 buildTexture();
 
@@ -188,8 +188,9 @@ const ANCIENTS=[
 ];
 
 /* ---------------- the stars of the shamayim ---------------- */
-const STARS=[]; for(let i=0;i<340;i++) STARS.push({x:Math.random(),y:Math.random(),
-  s:.4+Math.random()*1.5, tw:Math.random()*6.28, sp:.5+Math.random()*1.4});
+const STARS=[]; for(let i=0;i<340;i++){ const x=Math.random(),y=Math.random();
+  STARS.push({ r:Math.hypot(x-.5,y-.5), a:Math.atan2(y-.5,x-.5),
+    s:.4+Math.random()*1.5, tw:Math.random()*6.28, sp:.5+Math.random()*1.4}); }
 
 /* ---------------- the clouds, between earth and firmament ---------------- */
 const CLOUDS=[]; for(let i=0;i<13;i++) CLOUDS.push({ a:Math.random()*6.28, r:.14+Math.random()*.62,
@@ -202,12 +203,19 @@ function updateProj(){
   sinP=Math.sin(view.pitch); cosP=Math.cos(view.pitch);
   sinY=Math.sin(view.yaw);  cosY=Math.cos(view.yaw);
 }
-const P3=(u,v,y)=>{ const x1=u*cosY-v*sinY, z1=u*sinY+v*cosY;
+const P3=(u,v,y)=>{ const uu=u-view.pu, vv=v-view.pv;
+  const x1=uu*cosY-vv*sinY, z1=uu*sinY+vv*cosY;
   return [cx+x1*S, cy+(z1*sinP-(y||0)*cosP)*S, z1]; };
+/* the point of the earth's face under a screen point (its plane, y=0) */
+function screenToDisc(mx,my){
+  const x1=(mx-cx)/S, z1=(my-cy)/(S*Math.max(.05,sinP));
+  return [view.pu + x1*cosY + z1*sinY, view.pv - x1*sinY + z1*cosY];
+}
 function discTransform(ctx,h){                       // the plane of the earth (or a layer h above it)
   const a=S*cosY/Tr, b=S*sinY*sinP/Tr, c=-S*sinY/Tr, d=S*cosY*sinP/Tr;
+  const ox=(view.pu*cosY-view.pv*sinY)*S, oy=(view.pu*sinY+view.pv*cosY)*S*sinP;
   ctx.setTransform((a)*DPR,(b)*DPR,(c)*DPR,(d)*DPR,
-    (cx-a*Tc-c*Tc)*DPR,(cy-b*Tc-d*Tc-(h||0)*S*cosP)*DPR);
+    (cx-a*Tc-c*Tc-ox)*DPR,(cy-b*Tc-d*Tc-oy-(h||0)*S*cosP)*DPR);
 }
 
 /* ---------------- the luminaries ---------------- */
@@ -305,16 +313,21 @@ function frame(t){
   const dt=Math.min(50,t-lastT||16); lastT=t;
   if(!view.paused){ simHours+=dt/1000*SPEEDS[view.speedIdx][0]/3600;
     if(simHours>=24){ simHours-=24; dayOfYear=dayOfYear%364+1; } }
-  if(view.spin&&!drag.on) view.yaw+=dt*0.000045;
+  { const pl=Math.hypot(view.pu,view.pv); if(pl>0.98){ view.pu*=0.98/pl; view.pv*=0.98/pl; } }
   updateProj();
   g.setTransform(DPR,0,0,DPR,0,0);
+  g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
 
   /* the deep and the stars */
   g.fillStyle='#04060d'; g.fillRect(0,0,W,H);
+  /* the host of the shamayim wheels slowly about the height — the earth does not move */
+  const wheelA=t*0.0000075;
+  const smax=Math.max(W,H);
   for(const st of STARS){
-    const a=.35+.5*Math.abs(Math.sin(t*.001*st.sp+st.tw));
-    g.fillStyle=`rgba(235,240,250,${a})`;
-    g.fillRect(st.x*W,st.y*H,st.s,st.s);
+    const al=.35+.5*Math.abs(Math.sin(t*.001*st.sp+st.tw));
+    const a2=st.a+wheelA;
+    g.fillStyle=`rgba(235,240,250,${al})`;
+    g.fillRect(W/2+Math.cos(a2)*st.r*smax, H/2+Math.sin(a2)*st.r*smax, st.s, st.s);
   }
 
   const sun=sunState(), moon=moonState();
@@ -351,8 +364,21 @@ function frame(t){
     g.fillStyle=wg; g.fill(); }
 
   /* the face of the earth */
+  const texScale=S/Tr;                          // >1 means the bricks are magnified
   discTransform(g,0);
+  g.imageSmoothingEnabled=texScale<1.15;        // hard brick edges when drawn near
   g.drawImage(TEX,0,0);
+  g.imageSmoothingEnabled=true;
+  /* when drawn near, the borders of the nations are re-drawn true, not stretched */
+  if(texScale>1.1){
+    g.strokeStyle='rgba(18,14,7,.5)'; g.lineWidth=1.6*DPR/(texScale*DPR)*Tr/Tr; g.lineWidth=1.7/texScale; g.lineJoin='round';
+    for(const c of COUNTRIES) for(const ring of c.p){
+      g.beginPath();
+      for(let i=0;i<ring.length;i++){ const x=Tc+ring[i][0]*Tr, y=Tc+ring[i][1]*Tr;
+        i?g.lineTo(x,y):g.moveTo(x,y); }
+      g.closePath(); g.stroke();
+    }
+  }
   paintNight(sun);
   g.drawImage(NIGHT,0,0);
   { /* the warmth under the sun */
@@ -381,7 +407,7 @@ function frame(t){
     g.textAlign='center'; g.textBaseline='middle';
     if(zl>1.35){
       const thr=zl>2.6?0:(zl>1.9?0.0009:0.003);
-      const fs=Math.max(9,Math.min(15,S*0.016));
+      const fs=Math.max(9,Math.min(21,S*0.016));
       g.font=`${fs}px Georgia,serif`;
       for(const c of COUNTRIES){
         if(c.a<thr) continue;
@@ -390,7 +416,7 @@ function frame(t){
         g.fillStyle='rgba(244,238,220,.82)'; g.fillText(c.n,px,py);
       }
     }
-    const fs2=Math.max(10,Math.min(17,S*0.019));
+    const fs2=Math.max(10,Math.min(23,S*0.019));
     g.font=`${fs2}px Georgia,serif`;
     const showAnc=view.zoom>1.55, placed=[];
     const clash=(x,y,w)=>placed.some(r=>Math.abs(x-r[0])<(w+r[2])/2+8&&Math.abs(y-r[1])<fs2*1.5);
@@ -488,21 +514,39 @@ cv.addEventListener('pointermove',e=>{
     if(e.pointerId===drag.id){ drag.x=e.clientX; drag.y=e.clientY; }
     else{ drag.p2.x=e.clientX; drag.p2.y=e.clientY; }
     const d=Math.hypot(drag.p2.x-drag.x,drag.p2.y-drag.y);
-    if(drag.d0>0) view.zoom=Math.max(.55,Math.min(6.5,drag.z0*d/drag.d0));
+    if(drag.d0>0){
+      const mx=(drag.x+drag.p2.x)/2, my=(drag.y+drag.p2.y)/2;
+      const [au,av]=screenToDisc(mx,my);
+      const z0=view.zoom;
+      view.zoom=Math.max(.55,Math.min(22,drag.z0*d/drag.d0));
+      const k=1-z0/view.zoom;
+      view.pu+=(au-view.pu)*k; view.pv+=(av-view.pv)*k;
+    }
     return;
   }
   if(e.pointerId!==drag.id) return;
   const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
   drag.x=e.clientX; drag.y=e.clientY;
-  view.yaw+=dx*0.0052;
-  view.pitch=Math.max(0.14,Math.min(1.48,view.pitch+dy*0.0042));
+  if(view.dragMove){
+    const du=(dx/S)*cosY+(dy/(S*Math.max(.05,sinP)))*sinY;
+    const dv=-(dx/S)*sinY+(dy/(S*Math.max(.05,sinP)))*cosY;
+    view.pu-=du; view.pv-=dv;
+  } else {
+    view.yaw+=dx*0.0052;
+    view.pitch=Math.max(0.14,Math.min(1.48,view.pitch+dy*0.0042));
+  }
 });
 const endP=e=>{ if(drag.p2&&e.pointerId===drag.p2.id){ drag.p2=null; return; }
   if(e.pointerId===drag.id){ drag.on=false; drag.id=null; drag.p2=null; cv.classList.remove('dragging'); } };
 cv.addEventListener('pointerup',endP); cv.addEventListener('pointercancel',endP);
 cv.addEventListener('wheel',e=>{ e.preventDefault();
-  view.zoom=Math.max(.55,Math.min(6.5,view.zoom*Math.exp(-e.deltaY*0.0011))); },{passive:false});
-cv.addEventListener('dblclick',()=>{ view.yaw=0.65; view.pitch=0.52; view.zoom=1.05; });
+  const [au,av]=screenToDisc(e.clientX,e.clientY);           // hold this land under the cursor
+  const z0=view.zoom;
+  view.zoom=Math.max(.55,Math.min(22,view.zoom*Math.exp(-e.deltaY*0.0011)));
+  const k=1-z0/view.zoom;
+  view.pu+=(au-view.pu)*k; view.pv+=(av-view.pv)*k;
+},{passive:false});
+cv.addEventListener('dblclick',()=>{ view.yaw=0.65; view.pitch=0.52; view.zoom=1.05; view.pu=0; view.pv=0; });
 
 /* ---------------- the buttons ---------------- */
 const $=id=>document.getElementById(id);
@@ -512,9 +556,8 @@ $('b-time').onclick=()=>{ view.paused=!view.paused;
   $('b-time').classList.toggle('off',view.paused); };
 $('b-speed').onclick=()=>{ view.speedIdx=(view.speedIdx+1)%SPEEDS.length;
   $('b-speed').textContent='⏩ Course: '+SPEEDS[view.speedIdx][1]; };
-$('b-spin').onclick=()=>{ view.spin=!view.spin;
-  $('b-spin').textContent='🔄 Turning: '+(view.spin?'on':'off');
-  $('b-spin').classList.toggle('off',!view.spin); };
+$('b-drag').onclick=()=>{ view.dragMove=!view.dragMove;
+  $('b-drag').textContent=view.dragMove?'🖐 Drag: move the map':'🖐 Drag: turn the view'; };
 $('b-names').onclick=()=>{ view.names=!view.names;
   $('b-names').textContent='🏷 Names: '+(view.names?'on':'off');
   $('b-names').classList.toggle('off',!view.names); };
