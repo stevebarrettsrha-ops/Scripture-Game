@@ -44,7 +44,7 @@
     font-size:clamp(13px,2.05vmin,16px); }
   .word .r{ margin-top:.8vh; text-align:right; color:var(--gold); letter-spacing:.2em;
     font-size:clamp(9.5px,1.5vmin,11.5px); }
-  #alephbeth{ display:grid; grid-template-columns:repeat(auto-fill,minmax(146px,1fr));
+  #alephbeth,#script{ display:grid; grid-template-columns:repeat(auto-fill,minmax(146px,1fr));
     gap:12px; margin:2.2vh 0 1vh; }
   .ab{ background:linear-gradient(180deg,#ecdfba,#d9c89c); border:1px solid #b09b6f;
     border-radius:7px; text-align:center; padding:12px 6px 10px;
@@ -84,8 +84,13 @@
   </div>
 
   <h2>THE ANCIENT HEBREW LETTERS — THE ALEPH-BĔYTH</h2>
-  <div class="cap">the old pictures the Words are engraved in — each letter a sign bearing a meaning</div>
+  <div class="cap">the oldest pictures of the letters — each a sign bearing a meaning</div>
   <div id="alephbeth"></div>
+
+  <h2>THE PALEO-HEBREW SCRIPT</h2>
+  <div class="cap">the letters as they were written on stone and scroll until the first century —
+    the script the tablets above are engraved in</div>
+  <div id="script"></div>
 
   <h2>THE WORDS, AS THEY WERE SPOKEN</h2>
   <div id="words"></div>
@@ -141,6 +146,42 @@ const PALEO={
   'ת':[[[.5,.10],[.5,.90]],[[.24,.38],[.76,.38]]],                          /* the mark: two crossed sticks */
 };
 const FINALS={'ך':'כ','ם':'מ','ן':'נ','ף':'פ','ץ':'צ'};
+
+/* ===================== the Paleo-Hebrew script =====================
+   The letters as they were written on stone and scroll until the first
+   century A.D. — rendered as accurately as possible from the script chart.
+   (Tsade is not on the chart; it is drawn after the same script's manner.) */
+const SCRIPT={
+  'א':[['P','M',.16,.22,'L',.62,.50],['P','M',.16,.78,'L',.62,.50],
+       ['P','M',.76,.08,'L',.52,.92]],                                      /* alep: the crossed ox-head mark */
+  'ב':[[[.62,.12],[.36,.24],[.58,.42],[.62,.12]],
+       ['P','M',.58,.42,'Q',.54,.70,.26,.84]],                              /* bet */
+  'ג':[[[.32,.16],[.62,.30],[.52,.88]]],                                    /* gimel */
+  'ד':[[[.68,.18],[.24,.44],[.62,.62],[.68,.18]]],                          /* dalet: the triangle */
+  'ה':[[[.68,.10],[.58,.88]],[[.68,.16],[.28,.22]],
+       [[.64,.40],[.28,.44]],[[.61,.62],[.28,.65]]],                        /* he: the three arms */
+  'ו':[['P','M',.28,.10,'Q',.34,.28,.5,.31],['P','M',.72,.08,'Q',.62,.26,.5,.31],
+       [[.5,.31],[.46,.90]]],                                               /* waw */
+  'ז':[[[.32,.14],[.68,.14]],[[.32,.86],[.68,.86]],[[.56,.14],[.44,.86]]],  /* zayin */
+  'ח':[[[.28,.14],[.26,.86]],[[.74,.14],[.72,.86]],
+       [[.28,.18],[.74,.18]],[[.27,.50],[.73,.50]],[[.26,.82],[.72,.82]]],  /* het: the barred box */
+  'ט':[['c',.5,.5,.32],[[.32,.32],[.68,.68]],[[.68,.32],[.32,.68]]],        /* tet */
+  'י':[[[.60,.10],[.36,.22],[.58,.36],[.40,.52]],[[.40,.52],[.50,.72]]],    /* yod */
+  'כ':[['P','M',.28,.12,'L',.48,.42],['P','M',.58,.08,'L',.50,.42],
+       ['P','M',.76,.18,'L',.52,.44],['P','M',.50,.42,'L',.36,.88]],        /* kap */
+  'ל':[['P','M',.66,.08,'L',.48,.60,'Q',.42,.80,.28,.76,'Q',.20,.72,.26,.62]], /* lamed: the coiled crook */
+  'מ':[[[.14,.26],[.26,.12],[.38,.26],[.50,.12],[.62,.26]],[[.62,.26],[.48,.88]]], /* mem: waves and the long stroke */
+  'נ':[[[.34,.14],[.54,.24],[.38,.38],[.56,.50]],[[.56,.50],[.48,.90]]],    /* nun */
+  'ס':[[[.26,.16],[.72,.16]],[[.26,.34],[.72,.34]],[[.26,.52],[.72,.52]],
+       [[.52,.10],[.44,.92]]],                                              /* samek: the pillar through the bars */
+  'ע':[['c',.5,.5,.30]],                                                    /* ayin: the open eye */
+  'פ':[['P','M',.60,.12,'Q',.36,.06,.32,.24,'Q',.30,.38,.50,.36,'L',.46,.88]], /* pe */
+  'צ':[[[.28,.18],[.56,.28],[.32,.42],[.60,.52]],[[.60,.52],[.48,.90]]],    /* tsade, after the script's manner */
+  'ק':[['c',.5,.32,.22],[[.5,.54],[.5,.92]]],                               /* qop */
+  'ר':[[[.60,.12],[.34,.22],[.56,.38],[.60,.12]],[[.56,.38],[.38,.88]]],    /* res */
+  'ש':[[[.14,.26],[.32,.62],[.5,.26],[.68,.62],[.86,.26]]],                 /* sin: the pointed teeth */
+  'ת':[[[.26,.22],[.74,.78]],[[.74,.22],[.26,.78]]],                        /* taw: the crossed mark */
+};
 
 /* the Ten Words, in the short form of the tablets, with the Besorah's own English */
 const LINES1=[
@@ -233,7 +274,7 @@ function drawPaleo(str,cx,cy,size){
   let px=cx+widthTotal/2;                        /* begin at the right: the old tongue reads rightward */
   for(const ch of chars){
     if(ch===' '){ px-=size*.5+gap; continue; }
-    const glyph=PALEO[FINALS[ch]||ch];
+    const glyph=SCRIPT[FINALS[ch]||ch];          /* the tablets are written in the paleo script */
     if(glyph){
       px-=adv;
       engraveGlyph(glyph,px,cy-size*.5,adv,size);
@@ -312,6 +353,31 @@ const ALEPHBETH=[
       {dx:0,dy:0,col:'#7e2818',w:8.5} ]);
     const nmd=document.createElement('div'); nmd.className='nm'; nmd.textContent=nm;
     const mnd=document.createElement('div'); mnd.className='mn'; mnd.textContent=mn;
+    d.appendChild(nmd); d.appendChild(mnd);
+    box.appendChild(d);
+  } }
+
+/* ---------- the paleo-hebrew script chart ---------- */
+const SCRIPTCHART=[
+ ['א','Alep','silent'],['ב','Bet','b'],['ג','Gimel','g'],['ד','Dalet','d'],
+ ['ה','He','h'],['ו','Waw','w'],['ז','Zayin','z'],['ח','Het','ḥ'],
+ ['ט','Tet','t'],['י','Yod','y'],['כ','Kap','k'],['ל','Lamed','l'],
+ ['מ','Mem','m'],['נ','Nun','n'],['ס','Samek','s'],['ע','Ayin','silent'],
+ ['פ','Pe','p'],['צ','Tsade','ts'],['ק','Qop','q'],['ר','Res','r'],
+ ['ש','Sin','s / sh'],['ת','Taw','t'],
+];
+{ const box=document.getElementById('script');
+  for(const [ch,nm,snd] of SCRIPTCHART){
+    const d=document.createElement('div'); d.className='ab';
+    const s=document.createElementNS(NS,'svg');
+    s.setAttribute('viewBox','0 0 100 100');
+    s.setAttribute('role','img'); s.setAttribute('aria-label',nm);
+    d.appendChild(s);
+    glyphStrokes(s, SCRIPT[ch], 16, 15, 68, 68, [
+      {dx:2.4,dy:2.6,col:'rgba(70,36,18,.28)',w:8.5},
+      {dx:0,dy:0,col:'#7e2818',w:8.5} ]);
+    const nmd=document.createElement('div'); nmd.className='nm'; nmd.textContent=nm;
+    const mnd=document.createElement('div'); mnd.className='mn'; mnd.textContent=snd;
     d.appendChild(nmd); d.appendChild(mnd);
     box.appendChild(d);
   } }
