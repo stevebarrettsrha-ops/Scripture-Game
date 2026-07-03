@@ -329,11 +329,12 @@ function paintNight(sun){
 
 /* ---------------- drawing ---------------- */
 const DOME_R=1.05, DOME_H=0.56;
+let ECX=0,ECY=0;                              // the earth's centre on screen (the dome never leaves it)
 function domeSilhouette(ctx){
-  const rx=DOME_R*S, apexY=cy-DOME_H*S*cosP;
-  ctx.moveTo(cx-rx,cy);
-  ctx.bezierCurveTo(cx-rx*.98,apexY+(cy-apexY)*.30, cx-rx*.52,apexY, cx,apexY);
-  ctx.bezierCurveTo(cx+rx*.52,apexY, cx+rx*.98,apexY+(cy-apexY)*.30, cx+rx,cy);
+  const rx=DOME_R*S, apexY=ECY-DOME_H*S*cosP;
+  ctx.moveTo(ECX-rx,ECY);
+  ctx.bezierCurveTo(ECX-rx*.98,apexY+(ECY-apexY)*.30, ECX-rx*.52,apexY, ECX,apexY);
+  ctx.bezierCurveTo(ECX+rx*.52,apexY, ECX+rx*.98,apexY+(ECY-apexY)*.30, ECX+rx,ECY);
 }
 function drawBody(b,isSun,t){
   const [px,py]=P3(b.u,b.v,b.y);
@@ -372,8 +373,11 @@ function frame(t){
   const dt=Math.min(50,t-lastT||16); lastT=t;
   if(!view.paused){ simHours+=dt/1000*SPEEDS[view.speedIdx][0]/3600;
     if(simHours>=24){ simHours-=24; dayOfYear=dayOfYear%364+1; } }
-  { const pl=Math.hypot(view.pu,view.pv); if(pl>0.98){ view.pu*=0.98/pl; view.pv*=0.98/pl; } }
+  { const maxP=Math.min(.98, Math.max(0, 1.15*(1-1/Math.max(1,view.zoom))));
+    const pl=Math.hypot(view.pu,view.pv);
+    if(pl>maxP){ const k=maxP/(pl||1); view.pu*=k; view.pv*=k; } }
   updateProj();
+  { const e9=P3(0,0,0); ECX=e9[0]; ECY=e9[1]; }
   g.setTransform(DPR,0,0,DPR,0,0);
   g.imageSmoothingEnabled=true; g.imageSmoothingQuality='high';
 
@@ -392,33 +396,35 @@ function frame(t){
   const sun=sunState(), moon=moonState();
 
   /* the waters above the expanse, faintly */
-  { const apexY=cy-DOME_H*S*cosP;
-    const wg=g.createRadialGradient(cx,apexY,S*.1,cx,apexY,S*1.5);
+  { const apexY=ECY-DOME_H*S*cosP;
+    const wg=g.createRadialGradient(ECX,apexY,S*.1,ECX,apexY,S*1.5);
     wg.addColorStop(0,'rgba(60,110,180,.10)'); wg.addColorStop(1,'rgba(60,110,180,0)');
     g.fillStyle=wg; g.fillRect(0,0,W,H); }
 
   /* the back of the firmament */
   g.beginPath(); domeSilhouette(g);
-  g.ellipse(cx,cy,DOME_R*S,Math.max(1,DOME_R*S*sinP),0,0,Math.PI,true);
-  { const apexY=cy-DOME_H*S*cosP, gl=.35+.65*cosP;
+  g.ellipse(ECX,ECY,DOME_R*S,Math.max(1,DOME_R*S*sinP),0,0,Math.PI,true);
+  { const apexY=ECY-DOME_H*S*cosP, gl=.35+.65*cosP;
     const dg=g.createLinearGradient(0,apexY,0,cy);
     dg.addColorStop(0,`rgba(90,140,200,${.22*gl})`); dg.addColorStop(1,`rgba(60,100,160,${.06*gl})`);
     g.fillStyle=dg; g.fill(); }
 
+  /* the four-cornered foundation, and the earth set upon it as a seal upon clay */
+  drawFoundation(t);
   /* the bowl of the deep beneath, and the founded sides of the earth */
   const wallT=Math.max(1.5,S*0.05*cosP);
   { g.beginPath();
-    g.moveTo(cx-S,cy+wallT*.4);
-    g.quadraticCurveTo(cx,cy+wallT+S*0.40*cosP, cx+S,cy+wallT*.4);
-    g.ellipse(cx,cy+wallT*.4,S,Math.max(1,S*sinP*.99),0,0,Math.PI);
-    const bg=g.createRadialGradient(cx,cy+wallT,S*.2,cx,cy+wallT,S*1.1);
+    g.moveTo(ECX-S,ECY+wallT*.4);
+    g.quadraticCurveTo(ECX,ECY+wallT+S*0.40*cosP, ECX+S,ECY+wallT*.4);
+    g.ellipse(ECX,ECY+wallT*.4,S,Math.max(1,S*sinP*.99),0,0,Math.PI);
+    const bg=g.createRadialGradient(ECX,ECY+wallT,S*.2,ECX,ECY+wallT,S*1.1);
     bg.addColorStop(0,'#1c1712'); bg.addColorStop(1,'#050403');
     g.fillStyle=bg; g.fill(); }
   { /* the rim wall: ice above, the foundations below */
     g.beginPath();
-    g.ellipse(cx,cy,S,Math.max(1,S*sinP),0,0,Math.PI);
-    g.ellipse(cx,cy+wallT,S,Math.max(1,S*sinP),0,Math.PI,0,true);
-    const wg=g.createLinearGradient(0,cy,0,cy+wallT+S*sinP);
+    g.ellipse(ECX,ECY,S,Math.max(1,S*sinP),0,0,Math.PI);
+    g.ellipse(ECX,ECY+wallT,S,Math.max(1,S*sinP),0,Math.PI,0,true);
+    const wg=g.createLinearGradient(0,ECY,0,ECY+wallT+S*sinP);
     wg.addColorStop(0,'#e8eff5'); wg.addColorStop(.45,'#b8ccd8'); wg.addColorStop(1,'#5d5548');
     g.fillStyle=wg; g.fill(); }
 
@@ -578,19 +584,19 @@ function frame(t){
 
   /* the glass of the firmament, before all */
   g.beginPath(); domeSilhouette(g);
-  g.ellipse(cx,cy,DOME_R*S,Math.max(1,DOME_R*S*sinP),0,Math.PI,0,true);
-  { const apexY=cy-DOME_H*S*cosP, gl=.3+.7*cosP;
+  g.ellipse(ECX,ECY,DOME_R*S,Math.max(1,DOME_R*S*sinP),0,Math.PI,0,true);
+  { const apexY=ECY-DOME_H*S*cosP, gl=.3+.7*cosP;
     const fg=g.createLinearGradient(0,apexY,0,cy+DOME_R*S*sinP);
     fg.addColorStop(0,`rgba(150,195,235,${.13*gl})`); fg.addColorStop(.6,`rgba(120,170,215,${.06*gl})`);
     fg.addColorStop(1,`rgba(120,170,215,${.02*gl})`);
     g.fillStyle=fg; g.fill(); }
   { /* its sheen, like a hard mirror (IYOḆ 37:18) */
-    const apexY=cy-DOME_H*S*cosP;
+    const apexY=ECY-DOME_H*S*cosP;
     g.beginPath();
-    g.moveTo(cx-DOME_R*S*.78,cy-(cy-apexY)*.32);
-    g.quadraticCurveTo(cx-DOME_R*S*.30,apexY-(cy-apexY)*.06, cx+DOME_R*S*.14,apexY+(cy-apexY)*.10);
+    g.moveTo(ECX-DOME_R*S*.78,ECY-(ECY-apexY)*.32);
+    g.quadraticCurveTo(ECX-DOME_R*S*.30,apexY-(ECY-apexY)*.06, ECX+DOME_R*S*.14,apexY+(ECY-apexY)*.10);
     g.strokeStyle=`rgba(235,245,255,${.17*cosP})`; g.lineWidth=Math.max(2,S*.016); g.lineCap='round'; g.stroke(); }
-  g.beginPath(); g.ellipse(cx,cy,DOME_R*S,Math.max(1,DOME_R*S*sinP),0,0,Math.PI*2);
+  g.beginPath(); g.ellipse(ECX,ECY,DOME_R*S,Math.max(1,DOME_R*S*sinP),0,0,Math.PI*2);
   g.strokeStyle='rgba(210,230,245,.30)'; g.lineWidth=Math.max(1.5,S*.008); g.stroke();
 
   /* the world's clock */
@@ -611,6 +617,82 @@ function frame(t){
      `next appointed time: ${next.n} — in ${nd} day${nd===1?'':'s'}`);
 
   requestAnimationFrame(frame);
+}
+
+/* ---------------- the four-cornered foundation ----------------
+   The earth is set on a great square, as it is written of its four corners
+   and its columns — and beneath the corners, the pillars go down out of sight. */
+const SLAB_VERSES=[
+  {t:'“It is changed like clay under a seal…” — to take hold of the ends of the earth', r:'IYOḆ 38:14 · 13'},
+  {t:'“I saw four mal’akim standing at the four corners of the earth, holding the four ruchot of the earth”', r:'ḤAZON 7:1'},
+  {t:'“…and gather the outcasts of Yasharal from the four corners of the earth”', r:'YESHAYAHU 11:12'},
+  {t:'“The earth and all its inhabitants are melted; it is I who set its columns firm.”', r:'TEHILLIM 75:3'},
+];
+function drawFoundation(t){
+  if(view.zoom>8) return;                       // drawn near, the foundation lies beyond sight
+  const SQ=1.36, yT=-0.055, yB=-0.62;
+  const C4=[[-SQ,-SQ],[SQ,-SQ],[SQ,SQ],[-SQ,SQ]];
+  const top=C4.map(c=>P3(c[0],c[1],yT));
+  const bot=C4.map(c=>P3(c[0],c[1],yB));
+  /* the pillars first, going down from the corners into the darkness (IYOḆ 9:6) */
+  const pw=S*0.075, ph=S*0.9*Math.max(.25,cosP);
+  for(let i=0;i<4;i++){
+    const [bx,by]=bot[i];
+    const inx=(ECX-bx)*0.03, availableDown=ph;
+    const gr=g.createLinearGradient(0,by,0,by+availableDown);
+    gr.addColorStop(0,'rgba(96,82,60,.6)'); gr.addColorStop(.45,'rgba(60,50,38,.28)');
+    gr.addColorStop(1,'rgba(20,16,12,0)');
+    g.fillStyle=gr;
+    g.beginPath();
+    g.moveTo(bx-pw/2,by); g.lineTo(bx+pw/2,by);
+    g.lineTo(bx+pw*.36+inx,by+availableDown); g.lineTo(bx-pw*.36+inx,by+availableDown);
+    g.closePath(); g.fill();
+  }
+  /* the sides of the square that face the beholder */
+  for(let i=0;i<4;i++){
+    const a=top[i], b=top[(i+1)%4], a2=bot[i], b2=bot[(i+1)%4];
+    if((a[1]+b[1])/2<=ECY) continue;
+    const gr=g.createLinearGradient(0,(a[1]+b[1])/2,0,(a2[1]+b2[1])/2);
+    gr.addColorStop(0,'#3a3226'); gr.addColorStop(1,'#171310');
+    g.fillStyle=gr;
+    g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]);
+    g.lineTo(b2[0],b2[1]); g.lineTo(a2[0],a2[1]); g.closePath(); g.fill();
+  }
+  /* its face, the seal-ground the earth is pressed upon */
+  { g.beginPath();
+    g.moveTo(top[0][0],top[0][1]);
+    for(let i=1;i<4;i++) g.lineTo(top[i][0],top[i][1]);
+    g.closePath();
+    const gr=g.createRadialGradient(ECX,ECY,S*.2,ECX,ECY,S*2.0);
+    gr.addColorStop(0,'#57493466'); gr.addColorStop(.55,'#4a3e2c');
+    gr.addColorStop(1,'#241d15');
+    g.fillStyle='#4a3e2c'; g.fill();
+    g.fillStyle=gr; g.fill();
+    g.strokeStyle='rgba(232,198,106,.28)'; g.lineWidth=Math.max(1,S*.006); g.stroke(); }
+  /* the words upon its four edges */
+  if(sinP>.22){
+    const fs=Math.max(8,Math.min(19,S*.028));
+    g.textAlign='center'; g.textBaseline='middle';
+    for(let i=0;i<4;i++){
+      const c1=C4[i], c2=C4[(i+1)%4];
+      const mu=(c1[0]+c2[0])/2*.86, mv=(c1[1]+c2[1])/2*.86;
+      const [mx,my]=P3(mu,mv,yT);
+      if(mx<-W*.4||mx>W*1.4||my<-H*.4||my>H*1.4) continue;
+      const [e1x,e1y]=P3(c1[0]*.86,c1[1]*.86,yT), [e2x,e2y]=P3(c2[0]*.86,c2[1]*.86,yT);
+      let ang=Math.atan2(e2y-e1y,e2x-e1x);
+      if(ang>Math.PI/2||ang<-Math.PI/2) ang+=Math.PI;
+      const v9=SLAB_VERSES[i];
+      const al=Math.min(1,(sinP-.22)*2.2)*.9;
+      g.save(); g.translate(mx,my); g.rotate(ang);
+      g.font=`italic ${fs}px Georgia,serif`;
+      g.fillStyle=`rgba(16,12,6,${al*.7})`; g.fillText(v9.t,1,1);
+      g.fillStyle=`rgba(214,192,146,${al})`; g.fillText(v9.t,0,0);
+      g.font=`${fs*.72}px Georgia,serif`;
+      g.fillStyle=`rgba(232,198,106,${al*.85})`;
+      g.fillText('— '+v9.r+' —',0,fs*1.35);
+      g.restore();
+    }
+  }
 }
 
 /* ---------------- the verses, in their seasons ---------------- */

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0e1a">
+<title>THE TEN WORDS — Aseret haDeḇarim</title>
+<style>
+  :root{ --gold:#e8c66a; --gold-dim:#9a8351; --ink:#e8dfc8; --dim:#9a8f74;
+    --bg:#0a0e1a; --panel:rgba(16,20,36,.72); --rule:rgba(232,198,106,.22); }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  html,body{ background:var(--bg); color:var(--ink);
+    font-family:Georgia,'Times New Roman',serif; min-height:100%; }
+  body{ background:
+    radial-gradient(ellipse at 50% -12%, #241a30 0%, transparent 55%),
+    radial-gradient(ellipse at 15% 100%, #12182e 0%, transparent 50%), var(--bg);
+    padding-bottom:9vh; }
+  #stars{ position:fixed; inset:0; z-index:0; pointer-events:none; }
+  .wrap{ position:relative; z-index:1; max-width:1020px; margin:0 auto; padding:0 20px; }
+  header{ text-align:center; padding:5.5vh 0 1vh; }
+  header .t{ font-size:clamp(22px,4.4vmin,40px); letter-spacing:.3em; color:var(--gold);
+    text-shadow:0 0 22px rgba(232,198,106,.4); }
+  header .s{ margin-top:1.2vh; font-style:italic; color:var(--dim);
+    font-size:clamp(11px,1.8vmin,15px); letter-spacing:.12em; line-height:1.6; }
+  .nav{ display:flex; justify-content:center; gap:10px; margin:2.4vh 0 1vh; flex-wrap:wrap; }
+  .btn{ background:rgba(14,18,32,.85); color:var(--ink); border:1px solid var(--rule);
+    border-radius:4px; padding:9px 16px; font-family:inherit; letter-spacing:.14em;
+    font-size:clamp(10px,1.6vmin,13px); cursor:pointer; text-transform:uppercase;
+    text-decoration:none; transition:all .18s; display:inline-block; }
+  .btn:hover{ background:rgba(232,198,106,.14); border-color:var(--gold); }
+  #tablets{ display:block; width:100%; height:auto; margin:2vh 0 1vh; }
+  .cap{ text-align:center; font-style:italic; color:var(--dim); line-height:1.7;
+    font-size:clamp(11.5px,1.85vmin,14.5px); max-width:760px; margin:0 auto; }
+  .cap .r{ color:var(--gold); font-style:normal; letter-spacing:.2em;
+    font-size:clamp(9.5px,1.5vmin,12px); margin-top:.6vh; }
+  h2{ font-size:clamp(13px,2.2vmin,17px); letter-spacing:.28em; color:var(--gold);
+    text-align:center; margin:5vh 0 1.8vh; font-weight:normal; }
+  h2::before,h2::after{ content:'  ✦  '; color:var(--gold-dim); }
+  .word{ background:var(--panel); border:1px solid var(--rule); border-radius:6px;
+    padding:2vh 22px; margin-bottom:1.5vh; }
+  .word .n{ color:var(--gold); letter-spacing:.22em; font-size:clamp(11px,1.7vmin,13.5px);
+    margin-bottom:.9vh; }
+  .word .q{ font-style:italic; line-height:1.75; color:#efe6cf;
+    font-size:clamp(13px,2.05vmin,16px); }
+  .word .r{ margin-top:.8vh; text-align:right; color:var(--gold); letter-spacing:.2em;
+    font-size:clamp(9.5px,1.5vmin,11.5px); }
+  footer{ text-align:center; margin-top:5vh; color:var(--dim); font-style:italic;
+    font-size:clamp(11px,1.75vmin,14px); line-height:1.75; }
+  footer .r{ color:var(--gold); letter-spacing:.18em; font-style:normal;
+    font-size:clamp(9.5px,1.5vmin,11.5px); margin-top:.8vh; }
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="wrap">
+  <header>
+    <div class="t">THE TEN WORDS</div>
+    <div class="s">Aseret haDeḇarim — spoken with a great voice out of the midst of the fire,<br>
+      and written on two tablets of stone with the finger of Aluahim</div>
+  </header>
+  <div class="nav">
+    <a class="btn" href="index.html">⟵ Berĕshith</a>
+    <a class="btn" href="earth.html">🌍 The Earth</a>
+    <a class="btn" href="appointed-times.html">✦ Appointed Times</a>
+  </div>
+
+  <svg id="tablets" viewBox="0 0 1600 1150" xmlns="http://www.w3.org/2000/svg" role="img"
+    aria-label="Two stone tablets bearing the Ten Words in Paleo-Hebrew"></svg>
+
+  <div class="cap">
+    “And when He had ended speaking with him on Mount Sinai, He gave Mosheh two tablets of the Witness,
+    tablets of stone, written with the finger of Aluahim.”
+    <div class="r">— SHEMOTH 31:18</div>
+  </div>
+
+  <h2>THE WORDS, AS THEY WERE SPOKEN</h2>
+  <div id="words"></div>
+
+  <footer>
+    “These Words YAHUAH spoke to all your qahal, in the mountain from the midst of the fire, of the cloud
+    and of the thick darkness, with a loud voice — and He added no more. He wrote them on two tablets of
+    stone and gave them to me.”
+    <div class="r">— DEḆARIM 5:22</div>
+  </footer>
+</div>
+
+<script>
+'use strict';
+/* ===================== the Paleo-Hebrew letters, drawn as strokes =====================
+   Each letter of the old script, as on the earliest stones, given as strokes in a unit
+   box (x right, y down). Final forms are the same shapes in the old script.            */
+const PALEO={
+  'א':[[[.88,.22],[.14,.5]],[[.88,.78],[.14,.5]],[[.34,.08],[.34,.92]]],
+  'ב':[[[.72,.1],[.32,.18],[.36,.5],[.68,.44]],[[.52,.48],[.52,.78],[.2,.9]]],
+  'ג':[[[.7,.1],[.42,.44]],[[.42,.44],[.42,.9]]],
+  'ד':[[[.5,.1],[.8,.6],[.2,.6],[.5,.1]]],
+  'ה':[[[.72,.1],[.66,.9]],[[.7,.16],[.24,.16]],[[.69,.5],[.28,.5]],[[.67,.84],[.24,.84]]],
+  'ו':[[[.34,.1],[.5,.3],[.66,.1]],[[.5,.3],[.5,.9]]],
+  'ז':[[[.3,.14],[.7,.14]],[[.3,.86],[.7,.86]],[[.54,.14],[.46,.86]]],
+  'ח':[[[.28,.1],[.28,.9]],[[.72,.1],[.72,.9]],[[.28,.34],[.72,.34]],[[.28,.64],[.72,.64]]],
+  'י':[[[.34,.2],[.7,.2]],[[.7,.2],[.42,.5]],[[.42,.5],[.68,.52]],[[.42,.5],[.34,.86]]],
+  'כ':[[[.2,.12],[.5,.44]],[[.2,.44],[.5,.44]],[[.2,.74],[.5,.44]],[[.5,.44],[.72,.9]]],
+  'ל':[[[.62,.1],[.4,.28],[.4,.72],[.66,.9]]],
+  'מ':[[[.12,.36],[.27,.18],[.42,.36],[.57,.18]],[[.57,.18],[.72,.9]]],
+  'נ':[[[.6,.12],[.4,.3],[.58,.5],[.44,.9]]],
+  'ע':[['c',.5,.5,.33]],
+  'פ':[[[.64,.14],[.38,.26],[.36,.6],[.6,.74],[.6,.92]]],
+  'צ':[[[.34,.16],[.62,.32],[.34,.5],[.62,.64]],[[.62,.64],[.5,.92]]],
+  'ק':[['c',.5,.34,.24],[[.5,.58],[.5,.92]]],
+  'ר':[[[.48,.1],[.74,.28],[.5,.44],[.48,.1]],[[.5,.44],[.38,.9]]],
+  'ש':[[[.14,.2],[.32,.62],[.5,.24],[.68,.62],[.86,.2]]],
+  'ת':[[[.28,.24],[.72,.78]],[[.72,.24],[.28,.78]]],
+};
+const FINALS={'ך':'כ','ם':'מ','ן':'נ','ף':'פ','ץ':'צ'};
+
+/* the Ten Words, in the short form of the tablets, with the Besorah's own English */
+const LINES1=[
+  ['אנכי יהוה','I am YAHUAH your Aluahim'],
+  ['לא יהיה לך','You have no other mighty ones against My face'],
+  ['לא תשא','You do not bring the Name of YAHUAH to ruin'],
+  ['זכור את יום','Remember the Shabbath day, to set it apart'],
+  ['כבד את אביך','Respect your father and your mother'],
+];
+const LINES2=[
+  ['לא תרצח','You do not murder'],
+  ['לא תנאף','You do not commit adultery'],
+  ['לא תגנב','You do not steal'],
+  ['לא תענה','You do not bear false witness'],
+  ['לא תחמד','You do not covet'],
+];
+
+const NS='http://www.w3.org/2000/svg';
+const svg=document.getElementById('tablets');
+const el=(n,at,parent)=>{ const e=document.createElementNS(NS,n);
+  for(const k in at) e.setAttribute(k,at[k]); (parent||svg).appendChild(e); return e; };
+
+/* ---------- stone ---------- */
+const defs=el('defs',{});
+{ const gr=el('linearGradient',{id:'stone',x1:'0',y1:'0',x2:'0',y2:'1'},defs);
+  el('stop',{offset:'0%','stop-color':'#8d8276'},gr);
+  el('stop',{offset:'45%','stop-color':'#7a7064'},gr);
+  el('stop',{offset:'100%','stop-color':'#5f564b'},gr);
+  const gr2=el('linearGradient',{id:'stoneEdge',x1:'0',y1:'0',x2:'0',y2:'1'},defs);
+  el('stop',{offset:'0%','stop-color':'#4a4239'},gr2);
+  el('stop',{offset:'100%','stop-color':'#332d26'},gr2);
+  const gl=el('radialGradient',{id:'sinaiGlow',cx:'50%',cy:'8%',r:'85%'},defs);
+  el('stop',{offset:'0%','stop-color':'rgba(232,198,106,.20)'},gl);
+  el('stop',{offset:'100%','stop-color':'rgba(232,198,106,0)'},gl);
+}
+el('rect',{x:0,y:0,width:1600,height:1150,fill:'url(#sinaiGlow)'});
+
+function tabletPath(x,w,y,h){
+  const r=w*.42;
+  return `M ${x} ${y+h} L ${x} ${y+r*.62} Q ${x} ${y}, ${x+w*.5} ${y} Q ${x+w} ${y}, ${x+w} ${y+r*.62} L ${x+w} ${y+h} Z`;
+}
+function mulberry(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a);
+  t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+function drawTablet(x,w,y,h,lines,seed){
+  /* the hewn stone: shadow, body, bevel, grain */
+  el('path',{d:tabletPath(x+10,w,y+14,h),fill:'rgba(0,0,0,.5)'});
+  el('path',{d:tabletPath(x,w,y,h),fill:'url(#stoneEdge)'});
+  el('path',{d:tabletPath(x+7,w-14,y+7,h-14),fill:'url(#stone)'});
+  el('path',{d:tabletPath(x+7,w-14,y+7,h-14),fill:'none',stroke:'rgba(255,248,230,.20)','stroke-width':2.5});
+  const rng=mulberry(seed);
+  for(let i=0;i<26;i++){                          /* the grain and pocking of the rock */
+    const gx=x+20+rng()*(w-40), gy=y+26+rng()*(h-50), gl2=6+rng()*26, ga=rng()*6.28;
+    el('line',{x1:gx,y1:gy,x2:gx+Math.cos(ga)*gl2,y2:gy+Math.sin(ga)*gl2,
+      stroke:rng()<.5?'rgba(0,0,0,.10)':'rgba(255,248,230,.07)','stroke-width':1.6,'stroke-linecap':'round'});
+  }
+  /* a crack or two, as stone is */
+  el('path',{d:`M ${x+w*.2} ${y+8} q ${w*.04} ${h*.06}, ${-w*.02} ${h*.12}`,fill:'none',stroke:'rgba(0,0,0,.16)','stroke-width':2});
+  el('path',{d:`M ${x+w*.82} ${y+h-6} q ${-w*.03} ${-h*.05}, ${w*.01} ${-h*.1}`,fill:'none',stroke:'rgba(0,0,0,.14)','stroke-width':2});
+
+  /* the Words, engraved: five lines of the old letters, the English beneath each */
+  const rows=lines.length, pad=h*.10;
+  const rowH=(h-pad*1.6)/rows;
+  lines.forEach((ln,i)=>{
+    const cy2=y+pad+rowH*i+rowH*.34;
+    const chars=[...ln[0]];
+    const nL=chars.filter(c=>c!==' ').length, nS=chars.length-nL;
+    const fit=(w*.80)/(1.2*nL+.84*nS);
+    drawPaleo(ln[0], x+w/2, cy2, Math.min(rowH*.52, fit));
+    const tx=el('text',{x:x+w/2,y:cy2+rowH*.42,'text-anchor':'middle',
+      'font-family':'Georgia,serif','font-style':'italic','font-size':Math.min(21,rowH*.24),
+      fill:'#241f18'},svg);
+    tx.textContent=ln[1];
+    const tx2=el('text',{x:x+w/2-1,y:cy2+rowH*.42-1,'text-anchor':'middle',
+      'font-family':'Georgia,serif','font-style':'italic','font-size':Math.min(21,rowH*.24),
+      fill:'rgba(255,248,230,.5)'},svg);
+    tx2.textContent=ln[1];
+    if(i<rows-1) el('line',{x1:x+w*.16,y1:y+pad+rowH*(i+1)-rowH*.06,x2:x+w*.84,y2:y+pad+rowH*(i+1)-rowH*.06,
+      stroke:'rgba(0,0,0,.12)','stroke-width':1.4});
+  });
+}
+
+/* engrave one line of the old script, right to left */
+function drawPaleo(str,cx,cy,size){
+  const chars=[...str];
+  const adv=size*.86, gap=size*.34;
+  let widthTotal=0;
+  for(const ch of chars) widthTotal+=(ch===' '? size*.5 : adv)+gap;
+  widthTotal-=gap;
+  let px=cx+widthTotal/2;                        /* begin at the right: the old tongue reads rightward */
+  for(const ch of chars){
+    if(ch===' '){ px-=size*.5+gap; continue; }
+    const glyph=PALEO[FINALS[ch]||ch];
+    if(glyph){
+      px-=adv;
+      engraveGlyph(glyph,px,cy-size*.5,adv,size);
+      px-=gap;
+    }
+  }
+}
+function engraveGlyph(glyph,gx,gy,gw,gh){
+  const sw=Math.max(3,gh*.13);
+  for(const pass of [ {dx:-1.4,dy:-1.4,col:'rgba(20,16,10,.9)',w:sw},
+                      {dx:1.1,dy:1.1,col:'rgba(255,248,230,.30)',w:sw*.8},
+                      {dx:0,dy:0,col:'#3a332a',w:sw} ]){
+    for(const st of glyph){
+      if(st[0]==='c'){
+        el('circle',{cx:gx+st[1]*gw+pass.dx,cy:gy+st[2]*gh+pass.dy,r:st[3]*gh,
+          fill:'none',stroke:pass.col,'stroke-width':pass.w});
+      } else {
+        let d='';
+        st.forEach((pt,i)=>{ d+=(i?'L':'M')+(gx+pt[0]*gw+pass.dx)+' '+(gy+pt[1]*gh+pass.dy)+' '; });
+        el('path',{d,fill:'none',stroke:pass.col,'stroke-width':pass.w,
+          'stroke-linecap':'round','stroke-linejoin':'round'});
+      }
+    }
+  }
+}
+
+drawTablet(140,600,70,1010,LINES1,7);
+drawTablet(860,600,70,1010,LINES2,23);
+
+/* ---------- the Words in full, from the Besorah ---------- */
+const WORDS=[
+ ['THE FIRST WORD','“I am YAHUAH your Aluahim, who brought you out of the land of Mitsrayim, out of the house of slavery.','SHEMOTH 20:2'],
+ ['THE SECOND WORD','“You have no other mighty ones against My face. You do not make for yourself a carved image, or any likeness of that which is in the shamayim above, or which is in the earth beneath, or which is in the waters under the earth, you do not bow down to them nor serve them. For I, YAHUAH your Aluahim, am a jealous Al, visiting the crookedness of the fathers on the children to the third and fourth generations of those who hate Me, but showing kindness to thousands, to those who love Me and guard My commands.','SHEMOTH 20:3–6'],
+ ['THE THIRD WORD','“You do not bring the Name of YAHUAH your Aluahim to naught, because YAHUAH does not leave the one unpunished who brings His Name to ruin.','SHEMOTH 20:7'],
+ ['THE FOURTH WORD','“Remember the Shabbath day, to set it apart. Six days you labour and shall do all your work, but the seventh day is a Shabbath of YAHUAH your Aluahim. You do not do any work — you, nor your son, nor your daughter, nor your male servant, nor your female servant, nor your cattle, nor your stranger who is within your gates. For in six days YAHUAH made the shamayim and the earth, the sea and all that is in them, and rested the seventh day. Therefore YAHUAH baruk the Shabbath day and set it apart.','SHEMOTH 20:8–11'],
+ ['THE FIFTH WORD','“Respect your father and your mother, so that your days are prolonged upon the soil which YAHUAH your Aluahim is giving you.','SHEMOTH 20:12'],
+ ['THE SIXTH WORD','“You do not murder.','SHEMOTH 20:13'],
+ ['THE SEVENTH WORD','“You do not commit adultery.','SHEMOTH 20:14'],
+ ['THE EIGHTH WORD','“You do not steal.','SHEMOTH 20:15'],
+ ['THE NINTH WORD','“You do not bear false witness against your neighbour.','SHEMOTH 20:16'],
+ ['THE TENTH WORD','“You do not covet your neighbour’s house, you do not covet your neighbour’s wife, nor his male servant, nor his female servant, nor his ox, nor his donkey, or whatever belongs to your neighbour.”','SHEMOTH 20:17'],
+];
+{ const box=document.getElementById('words');
+  for(const [n,q,r] of WORDS){
+    const d=document.createElement('div'); d.className='word';
+    d.innerHTML=`<div class="n">✦ ${n}</div><div class="q">${q}</div><div class="r">— ${r}</div>`;
+    box.appendChild(d);
+  } }
+
+/* ---------- a quiet sky ---------- */
+{ const sc=document.getElementById('stars'), sg=sc.getContext('2d');
+  const fit=()=>{ const d=Math.min(3,Math.max(2,window.devicePixelRatio||1));
+    sc.width=window.innerWidth*d; sc.height=window.innerHeight*d;
+    sc.style.width=window.innerWidth+'px'; sc.style.height=window.innerHeight+'px';
+    sg.setTransform(d,0,0,d,0,0);
+    sg.clearRect(0,0,window.innerWidth,window.innerHeight);
+    for(let i=0;i<180;i++){ sg.fillStyle=`rgba(235,240,250,${.15+Math.random()*.5})`;
+      sg.fillRect(Math.random()*window.innerWidth,Math.random()*window.innerHeight,1.1,1.1); } };
+  fit(); window.addEventListener('resize',fit);
+}
+</script>
+</body>
+</html>
