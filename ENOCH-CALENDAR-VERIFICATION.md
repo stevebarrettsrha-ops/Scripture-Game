@@ -92,6 +92,37 @@ A related implementation note (independent of which anchor is chosen): because `
 
 ---
 
+## 6. The faithful followable design (implemented)
+
+Following this research, a real-world followable calendar was designed and built into the game
+(`calendar-of-hanok.html`, with `appointed-times.html` aligned to the same reckoning). Ḥanoḵ and
+Yoḇelim impose four hard constraints, and the design satisfies all of them with a single rule:
+
+**The rule of the turning:** *the New Year is the 4th day of the week that follows the day of equal
+night and day at Yarushalayim.*
+
+- The equal day (equilux, ~March 16–17 at Jerusalem's latitude) is computed from the sun's course, not
+  pegged to fixed Gregorian dates. It is the **364th day, the last of the year** — exactly where
+  1 Enoch 72:32 places it.
+- Because year-starts must be 4th days, consecutive New Years are always separated by **exactly 364 or
+  371 days** — the rule is self-correcting. Verified over 2020–2045: twenty years of 364 days, five
+  intercalations of a whole week (roughly every 5–6 years).
+- **Every year contains exactly 364 counted days** — no day skipped, none added, no "names that do not
+  exist" (Yoḇelim 6:30–32 satisfied).
+- **The seven-day week is never broken** — the New Year is found by waiting for the next 4th day, never
+  by renaming days, so the Sabbath cycle runs continuously (the fatal flaw of the Gregorian-pegged chart
+  is avoided).
+- The 0-or-7 extra days between years are shown openly as **"days of watching"** — a whole week outside
+  the count in which the turning of the sun is awaited. This is the design's one extra-textual element:
+  the books command the 364-day count and the equal-day sign but are silent on how to join them across
+  many years (no intercalation is attested at Qumran). Every alternative violates something explicit —
+  a pure 364-cycle abandons the equal-day sign within a generation (~1.24 days/year of drift); Gregorian
+  pegging breaks the week and miscounts days. Whole-week watching preserves every explicit command and
+  hides nothing.
+- All Qumran weekday invariants hold automatically and forever: Pesach the 3rd day, the Sheaf and
+  Shaḇu‛oth the 1st day, Teru‛ah and Sukkoth the 4th day, Kippurim the 6th day — and no appointed time
+  ever falls on the Shabbath.
+
 ## Sources
 
 **Primary (in-repo):** *The Complete Book of Enoch, SEV* (Jay Winter) — the Luminaries chapters = 1 Enoch 72 (portals, day/night parts, 72:32 equal day + 364), 75:1–2 (the four days "not reckoned" — men go wrong), 82:4–20 (the four leaders of the quarter days); Yoḇelim 6:17, 6:23, 6:30, 6:32, 6:38 as quoted in `appointed-times.html`.
