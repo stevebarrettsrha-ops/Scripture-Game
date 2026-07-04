@@ -3553,7 +3553,10 @@ const Game={
       items:(sc.items||[]).map(it=>Object.assign({},it)),
       time:sc.time||'day', rain:false, rays:0, raysTarget:0,
       camFollow:'player', camTarget:null, gotoMark:null,
-      overlook:sc.overlook||null
+      overlook:sc.overlook||null,
+      /* Ĕḏen before the fall: no fear of man is in the beasts yet — they do not flee.
+         The fear enters at the fall, and is declared to Noaḥ after the flood (BERĔSHITH 9:2). */
+      peace:!!sc.peace
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
     Sound.ambient(sc.music||'eden');
@@ -4146,8 +4149,9 @@ const Game={
         e._ri=((e._ri||0)+1)%e.route.length;
         const wp=e.route[e._ri];
         e.target={x:wp[0],y:wp[1]}; e.speed=e.routeSpeed||.028;
-      } else if(e!==p&&e.animal&&p&&!blocked&&!e.lying&&!e.foe&&!e.route&&!e.rideable&&!e.group&&!e.dlg&&!e.script&&!e.tame&&!e.swim){
-        /* skittish creatures: birds take wing, the creeping things scatter when you draw near */
+      } else if(e!==p&&e.animal&&p&&!blocked&&!w.peace&&!e.lying&&!e.foe&&!e.route&&!e.rideable&&!e.group&&!e.dlg&&!e.script&&!e.tame&&!e.swim){
+        /* skittish creatures: birds take wing, the creeping things scatter when you draw near —
+           but only once the fear of man is in them; in Ĕḏen before the fall (w.peace) they do not flee */
         const dp=dist(e.x,e.y,p.x,p.y);
         const fly=(e.animal==='bird'||e.animal==='dove'||e.animal==='raven');
         const fr=e.fleeRange||(fly?4:2.8);
@@ -5650,6 +5654,7 @@ const STORY=[
      ]},
    time:'day', music:'eden',
    playerLight:true,   /* before the fall: a body of light, after the image above */
+   peace:true,         /* Ĕḏen before the fall: the beasts have no fear of man — they come to be named, and do not flee */
    player:'adam', playerPos:[12,24],
    npcs:[
      {id:'sheep1',animal:'sheep',x:16,y:20,range:3,
@@ -5732,6 +5737,7 @@ const STORY=[
      ]},
    time:'day', music:'tense',
    playerLight:true,
+   peace:true,         /* still Ĕḏen: the beasts do not flee — until the fruit is eaten and fear enters */
    player:'chavvah', playerPos:[18,22],
    npcs:[
      {id:'adam',char:'adam',x:14,y:26,wander:true,range:2,lightBody:true,dlg:[['adam','The garden is wide and good. I shall be near the river, beloved.']]},
@@ -5762,7 +5768,8 @@ const STORY=[
           if(a){ a.lightBody=null; Particles.burst(a.x*TILE,(a.y-1)*TILE,'holy',22); } }},
        {burst:[25,16,'ash',16]},
        {sfx:'thunder'},{time:'dusk'},{wait:800},
-       {say:['narrator','And their eyes were opened to their nakedness - and they looked about for the broad leaves of the fig tree, to cover themselves.']},
+       {call:g=>{ g.world.peace=false; }},   /* the fall: the fear of man now enters the beasts, and they begin to flee */
+       {say:['narrator','And their eyes were opened to their nakedness - and they looked about for the broad leaves of the fig tree, to cover themselves. And the beasts of the field, that had come freely to be named, began to shy away and flee from before them.']},
        {call:g=>{ [[20.5,14.2],[28.6,15.4],[23.2,11.8],[26.2,17.6],[21.4,17.2],[29.4,12.4]].forEach(function(s){
           g.world.items.push({kind:'leaf',x:s[0],y:s[1]}); }); }},
        {complete:0},
@@ -6286,9 +6293,10 @@ STORY.push(
        {wait:900},
        {rays:.9,raysX:16},{music:'holy'},
        {say:['voice','Never again shall I curse the ground because of man… While the earth remains, seedtime and harvest, and cold and heat, and winter and summer, and day and night shall not cease.']},
+       {say:['voice','Be fruitful and increase, and fill the earth. And THE FEAR OF YOU AND THE DREAD OF YOU is now on every beast of the earth, on every bird of the shamayim, on all that creeps on the ground, and on all the fish of the sea — into your hand they have been given. Every moving thing that lives is food for you, as the green plants — only, do not eat flesh with its life, its blood.']},
        {say:['voice','And I shall establish My covenant with you and with your seed after you. I shall set My rainbow in the cloud — and it shall be for the sign of the covenant between Me and the earth.']},
        {rays:0},{sfx:'chime'},
-       {say:['noach','Look up, all of you — the bow in the cloud! The sign of the covenant between Aluahim and the earth, for all generations to come.']},
+       {say:['noach','Look up, all of you — the bow in the cloud! The sign of the covenant between Aluahim and the earth, for all generations to come. And see how even the beasts now draw back from us — the dread of man is upon them, as He has said.']},
       ]},
    ],
   },
