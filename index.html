@@ -63,6 +63,16 @@
     display:flex;flex-direction:column;gap:.9vh;align-items:flex-start}
   #world-buttons .btn.small{text-align:left;padding:.7vh 14px;
     font-size:clamp(11px,1.7vmin,14px)}
+  /* short labels for the corner buttons kick in on phones & smaller screens */
+  #world-buttons .lbl-short{display:none}
+  #world-buttons .ten-glow{font-weight:800;color:#ffe7a0;letter-spacing:.05em;
+    text-shadow:0 0 6px rgba(255,214,120,.95),0 0 14px rgba(255,190,70,.7),0 0 24px rgba(255,180,60,.45)}
+  @media (max-width:860px){
+    #world-buttons .lbl-full{display:none}
+    #world-buttons .lbl-short{display:inline}
+    #world-buttons{gap:1.1vh}
+    #world-buttons .btn.small{font-size:clamp(12px,3.4vw,16px);padding:.9vh 14px}
+  }
 
   /* ---------- chapter select ---------- */
   #chapter-screen{background:linear-gradient(180deg,rgba(6,8,16,.94),rgba(10,12,22,.97));
@@ -304,9 +314,9 @@
       <button class="btn small" id="btn-yahusha">🔒 YAHUSHA — Neḇi’im · The Prophets</button>
     </div>
     <div id="world-buttons">
-      <button class="btn small" id="btn-earth">🌍 EARTH — The World Within the Firmament</button>
-      <button class="btn small" id="btn-moedim">✦ THE APPOINTED TIMES — Mo‛edim</button>
-      <button class="btn small" id="btn-tenwords">📜 THE TEN WORDS — The Commandments</button>
+      <button class="btn small" id="btn-earth"><span class="lbl-full">🌍 EARTH — The World Within the Firmament</span><span class="lbl-short">🌍 EARTH</span></button>
+      <button class="btn small" id="btn-moedim"><span class="lbl-full">✦ THE APPOINTED TIMES — Mo‛edim</span><span class="lbl-short">🕐 APPOINTED</span></button>
+      <button class="btn small" id="btn-tenwords"><span class="lbl-full">📜 THE TEN WORDS — The Commandments</span><span class="lbl-short ten-glow">10</span></button>
     </div>
   </div>
 
@@ -360,8 +370,30 @@ function resize(){
   canvas.width=Math.round(VW*DPR); canvas.height=Math.round(VH*DPR);
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.imageSmoothingEnabled=false;
+  clearTitle();
+}
+/* keep the BERĔSHITH title clear of the corner buttons on phones & small screens:
+   the corner clusters are absolutely positioned (unaffected by this padding), so we
+   just start the title text below whichever cluster reaches lowest. */
+function clearTitle(){
+  const ts=$('title-screen'); if(!ts) return;
+  ts.style.paddingTop='';   /* reset, then measure the title at its natural position */
+  const tmain=document.querySelector('.title-main'), theb=document.querySelector('.title-hebrew');
+  if(!tmain) return;
+  const stageTop=$('stage').getBoundingClientRect().top;
+  let need=0;
+  for(const id of ['world-buttons','sys-buttons']){ const el=$(id); if(!el) continue;
+    const b=el.getBoundingClientRect();
+    for(const t of [theb,tmain]){ if(!t) continue; const r=t.getBoundingClientRect();
+      /* only push down when a corner cluster actually sits over the title (horizontal + vertical overlap) */
+      if(!(r.right<=b.left||r.left>=b.right) && r.top<b.bottom) need=Math.max(need, b.bottom-stageTop+14);
+    }
+  }
+  if(need>0) ts.style.paddingTop=need+'px';
 }
 window.addEventListener('resize',resize);
+window.addEventListener('load',()=>{ clearTitle(); requestAnimationFrame(clearTitle); });
+window.addEventListener('orientationchange',()=>setTimeout(clearTitle,120));
 
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 function hash2(x,y){let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))|0;h=Math.imul(h,1274126177);return((h^(h>>>16))>>>0)/4294967296}
@@ -8764,6 +8796,7 @@ function openTitle(){
   $('btn-yahusha').style.opacity=yOpen?'1':'.45';
   $('btn-yahusha').title=yOpen?'':'Unlocks at the end of DEḆARIM';
   showScreen('title-screen');
+  clearTitle(); requestAnimationFrame(clearTitle);   /* keep the title clear of the corner buttons */
 }
 
 /* ================= WIRING ================= */
