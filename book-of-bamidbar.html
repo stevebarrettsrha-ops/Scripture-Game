@@ -509,6 +509,7 @@ const CHARS={
   sihon:  {name:'Siḥon', skin:'#6e4a28', hair:'#2c1a0c', hairStyle:'short', robe:'#7a3a32', beard:'#2c1a0c', collar:'#8a6a1c', headcover:'#8a6a1c'},
   qorah:  {name:'Qoraḥ', skin:'#6e4a28', hair:'#2c1a0c', hairStyle:'short', robe:'#7d5d6e', beard:'#2c1a0c'},
   datan:  {name:'Datan', skin:'#774e2a', hair:'#33230f', hairStyle:'short', robe:'#8a6a45', beard:'#33230f'},
+  abiram: {name:'Aḇiram', skin:'#6e4926', hair:'#2a1c0e', hairStyle:'short', robe:'#7a5a3a', beard:'#2a1c0e'},
   kaleb:  {name:'Kalĕḇ', skin:'#6e4926', hair:'#2c1a0c', hairStyle:'short', robe:'#8d6a45', beard:'#3a2716'},
   pinchas:{name:'Pineḥas', skin:'#704a27', hair:'#2c1a0c', hairStyle:'short', robe:'#f0ead8', beard:'#2c1a0c', collar:'#caa23c'},
   balaq:  {name:'Balaq', skin:'#7a5a36', hair:'#1d1208', hairStyle:'short', robe:'#6a4e8a', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
@@ -693,7 +694,7 @@ function drawChar(g,px,py,charId,o){
   g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined) g.globalAlpha=o.alpha;
   /* shadow */
-  if(!o.submerged&&!o.riding){
+  if(!o.submerged&&!o.riding&&!o.sink){
     g.fillStyle='rgba(0,0,0,.25)';
     g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
   }
@@ -727,6 +728,13 @@ function drawChar(g,px,py,charId,o){
     const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
+  }
+  if(o.sink){
+    /* the earth swallows them whole: clip at the ground line and descend,
+       so the body vanishes feet-first as it goes down alive into the pit */
+    g.beginPath(); g.rect(-22*u,-72*u,44*u,72*u); g.clip();
+    g.translate(0,Math.round(o.sink*52*u));
+    g.rotate(Math.sin(o.sink*Math.PI)* (o.sinkTilt||0.12) * (dir==='left'?-1:1));
   }
   const ops=[];
   const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
@@ -1585,6 +1593,37 @@ function drawProp(g,px,py,p,t){
       g.beginPath(); g.ellipse(0,0,5*u,3.4*u,0,0,Math.PI*2); g.fill();
       g.strokeStyle='#5d4d38'; g.lineWidth=u*.8;
       g.beginPath(); g.ellipse(0,0,5*u,3.4*u,0,0,Math.PI*2); g.stroke();
+      break; }
+    case 'chasm': {
+      /* the mouth of the earth — opens from a thin crack to a gaping pit (p.open 0..1) */
+      const op=clamp(p.open||0,0,1);
+      if(op<=0.002) break;
+      const w2=9*op, h2=3.8*op;
+      /* the dark throat */
+      g.fillStyle='#0a0603';
+      g.beginPath(); g.ellipse(0,0,w2*u,h2*u,0,0,Math.PI*2); g.fill();
+      /* molten glow rising out of it */
+      const gl=g.createRadialGradient(0,0,u,0,0,w2*u*1.05);
+      gl.addColorStop(0,`rgba(255,150,50,${.6*op})`);
+      gl.addColorStop(.45,`rgba(190,55,20,${.4*op})`);
+      gl.addColorStop(1,'rgba(40,10,4,0)');
+      g.fillStyle=gl; g.beginPath(); g.ellipse(0,0,w2*u*1.1,h2*u*1.25,0,0,Math.PI*2); g.fill();
+      /* jagged, riven rim */
+      g.strokeStyle='#3a2a18'; g.lineWidth=u*.9; g.beginPath();
+      const N=16;
+      for(let i=0;i<=N;i++){ const a=i/N*Math.PI*2;
+        const jag=1+Math.sin(i*3.1+(p.x||0)*2.3)*.16+Math.cos(i*1.7)*.06;
+        const x=Math.cos(a)*w2*u*jag, y=Math.sin(a)*h2*u*jag;
+        i?g.lineTo(x,y):g.moveTo(x,y);
+      }
+      g.closePath(); g.stroke();
+      /* tongues of flame licking up from the crack */
+      const f=t/70;
+      for(let i=0;i<6;i++){ const fx=Math.sin(f+i*1.7)*w2*.5*u;
+        const fh=(4.5+Math.sin(f*1.4+i)*2.6)*op;
+        g.fillStyle=['#e8762a','#ffd54a','#f5a623'][i%3];
+        g.beginPath(); g.moveTo(fx-1.5*u,0); g.quadraticCurveTo(fx,-fh*u,fx+1.5*u,0); g.fill();
+      }
       break; }
     case 'pot': {
       shadow(2.6);
@@ -2633,7 +2672,7 @@ function drawWorld(g,world,t){
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,sink:d.sink,sinkTilt:d.sinkTilt,hold:d.hold,whiteHand:d.whiteHand});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -5374,48 +5413,162 @@ STORY.push(
 { id:'nact5', roman:'V', title:'The Rebellion', ref:'BAMIḎBAR 16–21', chapters:[
 { id:'n10', title:'Qoraḥ', ref:'BAMIḎBAR 16',
   intro:[
-   {art:'wilderness', music:'tense', text:'Now Qoraḥ son of Yitshar, a Lĕwite, with Datan and Aḇiram of Re’uḇĕn, and two hundred and fifty leaders of the congregation, rose up against Mosheh. “You take too much on yourselves! All the congregation are set-apart, every one of them, and YAHUAH is in their midst — why then do you lift yourselves above the assembly of YAHUAH?”', ref:'BAMIḎBAR 16:1–3'},
+   {art:'wilderness', music:'tense', text:'Now Qoraḥ son of Yitshar, a Lĕwite, with Datan and Aḇiram of Re’uḇĕn, and two hundred and fifty leaders of the congregation, men of name, rose up against Mosheh. “You take too much on yourselves! All the congregation are set-apart, every one of them, and YAHUAH is in their midst — why then do you lift yourselves above the assembly of YAHUAH?”', ref:'BAMIḎBAR 16:1–3'},
+   {art:'wilderness', music:'tense', text:'And Mosheh fell on his face, and said to Qoraḥ and all his company: “Tomorrow YAHUAH will show who is His and who is set-apart. This do: take censers, and put fire in them, and lay incense on them before YAHUAH — and the man whom YAHUAH chooses, he is the set-apart one. You take too much on yourselves, you sons of Lĕwi!”', ref:'BAMIḎBAR 16:4–7'},
   ],
   scene:{
    map:{biome:'desert', w:54, h:40, seed:1110,
      features:[
        {type:'mishkan',stage:2,x:23,y:9,solid:true,clear:5,flat:5,id:'mishkan'},
-       {type:'tent',x:12,y:20,solid:true,clear:2,col:'#a87f48',id:'datentent',examine:'The tents of Datan and Aḇiram — who would not even come up when called.'},
-       {type:'clearing',x:23,y:17,flat:3},
+       {type:'altar',x:23,y:13,stage:3,solid:true,clear:2,id:'altar',examine:'The bronze altar before the Dwelling — fire is always kept burning upon it.'},
+       {type:'tent',x:16.4,y:17.4,solid:true,clear:2,col:'#a87f48',id:'datentent',examine:'The tents of Datan and Aḇiram — who would not even come up when Mosheh called for them.'},
+       {type:'tent',x:19,y:17.7,solid:true,clear:1,col:'#9a7040'},
+       {type:'clearing',x:17.6,y:20.6,flat:3},
+       {type:'clearing',x:22,y:16,flat:3},
      ]},
    time:'day', music:'tense',
-   player:'mosheh_o', playerPos:[23,19],
+   player:'mosheh_o', playerPos:[21,17],
    npcs:[
-     {id:'qorah',char:'qorah',x:20,y:15,wander:false,hold:'censer',
+     {id:'qorah',char:'qorah',x:20,y:14,wander:false,hold:'censer',
       script:[
        {say:['qorah','We are ALL set-apart, Mosheh — every man of the congregation! Who made you and your brother princes over us? Here are our censers; let YAHUAH choose whom He will. Is the priesthood yours alone?']},
        {say:['mosheh_o','In the morning YAHUAH will show who is His, and who is set-apart. You take too much on yourselves, sons of Lĕwi — is it a small thing that He has separated you to stand before the congregation? And do you seek the priesthood ALSO? Take your censers, then, and stand before YAHUAH.']},
       ]},
-     {id:'datan',char:'datan',x:26,y:15,wander:false,noTalk:true},
-     {id:'rebel1',char:'hebrew2',x:18,y:16,wander:true,range:1.4,noTalk:true,hold:'censer'},
-     {id:'rebel2',char:'hebrew2',x:22,y:16,wander:true,range:1.4,noTalk:true,hold:'censer'},
+     {id:'rebel1',char:'hebrew2',x:18,y:15,wander:true,range:1.2,noTalk:true,hold:'censer'},
+     {id:'rebel2',char:'hebrew2',x:22,y:15,wander:true,range:1.2,noTalk:true,hold:'censer'},
+     {id:'datan',char:'datan',x:16.6,y:20,wander:false,noTalk:true},
+     {id:'abiram',char:'abiram',x:17.7,y:20.3,wander:false,noTalk:true},
+     {id:'dwife',char:'hebreww',x:18.5,y:19.9,wander:false,noTalk:true},
+     {id:'dchild',char:'hebrew',child:true,x:17.1,y:20.7,wander:false,noTalk:true},
+     {id:'aharon',char:'aharon_k',x:24.5,y:14,wander:false,noTalk:true},
    ],
    onStart:[
      {call:G=>campDivisions(G,{keep:[[10,7,32,22]]})},
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<14;i++) G.world.npcs.push(makeNpc({id:'onlook'+i,char:cs[i%4],child:i%8===7,
+         x:21+(i%7)*1.5+Math.random(),y:14+Math.floor(i/7)*1.5+Math.random(),wander:true,range:1,noTalk:true})); }},
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<16;i++) G.world.npcs.push(makeNpc({id:'plague'+i,char:cs[i%4],child:i%7===6,
+         x:26+(i%6)*1.5+Math.random(),y:24+Math.floor(i/6)*1.6+Math.random(),wander:true,range:1,noTalk:true})); }},
    ],
    objectives:[
      {type:'talk',npc:'qorah',text:'Answer Qoraḥ — let YAHUAH choose with the censers'},
-     {type:'goto',x:14,y:19,radius:2.4,text:'Go to the tents of Datan and Aḇiram — and warn the people away',hiddenUntil:1,
+     {type:'goto',x:17.6,y:23,radius:2.8,text:'Go to the tents of Datan and Aḇiram — and warn the people away',hiddenUntil:1,
       script:[
-       {say:['mosheh_o','Depart, I pray you, from the tents of these wrong men, and touch nothing of theirs, lest you be consumed in all their sins. By THIS you shall know that YAHUAH has sent me, and that I have not done these things of my own heart:']},
-       {say:['mosheh_o','If these men die a common death, then YAHUAH has not sent me. But if YAHUAH makes a new thing, and the earth opens its mouth and swallows them — then know that these men have despised YAHUAH.']},
-       {sfx:'thunder'},{shake:3},{music:'storm'},
-       {say:['narrator','And as he finished speaking, the ground split open beneath them, and the earth opened its mouth and swallowed them, and their households, and all the men of Qoraḥ, and all their goods — and they went down alive into the pit, and the earth closed over them.']},
-       {despawn:'datan'},{burst:[14,19,'ash',24]},{shake:3},{sfx:'bad'},
-       {say:['narrator','And fire came out from YAHUAH and consumed the two hundred and fifty men who offered the incense. And their bronze censers were beaten into a covering for the altar — a sign to the children of Yasharal, that no stranger who is not of the seed of Aharon should come near to burn incense before YAHUAH.']},
-       {despawn:'qorah'},{burst:[20,15,'spark',18]},
+       {say:['mosheh_o','Depart, I pray you, from the tents of these wrong men, and touch NOTHING of theirs, lest you be consumed in all their sins.']},
+       {call:G=>{ /* the congregation recoils from the doomed tents */
+         const w=G.world, keep=new Set(['datan','abiram','dwife','dchild','qorah','rebel1','rebel2','aharon']);
+         for(const n of w.npcs){ if(keep.has(n.id)||(n.id&&/^plague/.test(n.id))) continue;
+           const dx=n.x-17.6, dy=n.y-20, d=Math.hypot(dx,dy)||1;
+           if(d<11){ n.wander=false; n.speed=.05;
+             n.target={x:clamp(n.x+dx/d*8,2,w.map.w-2),y:clamp(n.y+dy/d*8,2,w.map.h-2)}; } } }},
+       {wait:500},
+       {say:['mosheh_o','By THIS you shall know that YAHUAH has sent me, and that I have not done these things of my own heart: if these men die a common death, then YAHUAH has not sent me. But if YAHUAH makes a NEW THING — if the earth opens its mouth and swallows them, and they go down ALIVE into the pit — then know that these men have despised YAHUAH.']},
+       {music:'storm'},
+       {call:G=>{ /* ===== THE EARTH OPENS, SWALLOWS THEM ALIVE, AND CLOSES OVER THEM ===== */
+         const w=G.world; G.scriptBlocked=true;
+         const CX=17.6, CY=20.3;
+         w.camFollow=null; w.camTarget=[CX,CY-1.5];
+         const sunk=['datan','abiram','dwife','dchild'].map(id=>w.npcs.find(n=>n.id===id)).filter(Boolean);
+         sunk.forEach(n=>{ n.wander=false; n.target=null; n.moving=false; n.dir='down'; n.emote='quest'; });
+         const chasm={type:'chasm',x:CX,y:CY-0.35,open:0,id:'earth_mouth',solid:false};
+         w.map.decor.push(chasm); w.map.decor.sort((a,b)=>a.y-b.y);
+         Sound.sfx('thunder');
+         const T0=performance.now(), OPEN=700, GAPE=1650, SINK=3500, CLOSE=4800;
+         let lastB=0, gaped=false, screamed=false;
+         const step=(now)=>{
+           const el=now-T0;
+           Camera.shake=Math.max(Camera.shake, el<CLOSE?(el<SINK?2.6:1.3):0.4);
+           if(el<OPEN){                     /* the ground splits — the first fire and brimstone break out */
+             chasm.open=lerp(0,.3,el/OPEN);
+             if(now-lastB>55){ lastB=now;
+               Particles.spawn({x:(CX+(Math.random()-.5)*3.5)*TILE,y:CY*TILE,vx:(Math.random()-.5)*.03,vy:-.11-Math.random()*.06,life:900,max:900,type:'brimstone'});
+               Particles.spawn({x:(CX+(Math.random()-.5)*4)*TILE,y:CY*TILE,vx:(Math.random()-.5)*.02,vy:-.05,life:1200,max:1200,type:'ash'}); }
+           } else if(el<GAPE){              /* the mouth gapes wide */
+             if(!gaped){ gaped=true; Sound.sfx('bad'); }
+             chasm.open=lerp(.3,1,(el-OPEN)/(GAPE-OPEN));
+             if(now-lastB>42){ lastB=now;
+               for(let k=0;k<2;k++) Particles.spawn({x:(CX+(Math.random()-.5)*8)*TILE,y:(CY-Math.random())*TILE,vx:(Math.random()-.5)*.05,vy:-.15-Math.random()*.1,life:1000,max:1000,type:'brimstone'});
+               Particles.spawn({x:(CX+(Math.random()-.5)*9)*TILE,y:(CY-1)*TILE,vx:(Math.random()-.5)*.02,vy:-.02,life:1600,max:1600,type:'smoke'});
+               Particles.spawn({x:(CX+(Math.random()-.5)*6)*TILE,y:CY*TILE,vx:(Math.random()-.5)*.08,vy:-.1,life:650,max:650,type:'spark'}); }
+           } else if(el<SINK){              /* down alive into the pit */
+             chasm.open=1; const f=(el-GAPE)/(SINK-GAPE);
+             if(!screamed){ screamed=true; Sound.sfx('bad'); }
+             sunk.forEach((n,i)=>{ n.sink=clamp(f*1.15-i*0.05,0,1);
+               n.x=lerp(n.x,CX+(i-1.5)*0.45,0.05); n.y=lerp(n.y,CY,0.05);
+               if(n.sink>0.6) n.emote=null; });
+             if(now-lastB>70){ lastB=now;
+               Particles.spawn({x:(CX+(Math.random()-.5)*8)*TILE,y:(CY-Math.random()*1.6)*TILE,vx:(Math.random()-.5)*.04,vy:-.09,life:1000,max:1000,type:'brimstone'});
+               Particles.spawn({x:(CX+(Math.random()-.5)*9)*TILE,y:(CY-1)*TILE,vx:(Math.random()-.5)*.02,vy:-.025,life:1700,max:1700,type:'smoke'}); }
+           } else if(el<CLOSE){             /* the earth closes over them */
+             const f=(el-SINK)/(CLOSE-SINK);
+             sunk.forEach(n=>{ n.sink=1; n.hidden=true; });
+             chasm.open=lerp(1,0,f);
+             if(now-lastB>80){ lastB=now;
+               Particles.spawn({x:(CX+(Math.random()-.5)*6)*TILE,y:CY*TILE,vx:(Math.random()-.5)*.03,vy:-.03,life:1400,max:1400,type:'smoke'});
+               Particles.spawn({x:(CX+(Math.random()-.5)*7)*TILE,y:CY*TILE,vx:(Math.random()-.5)*.05,vy:-.02,life:900,max:900,type:'ash'}); }
+           } else {                         /* sealed — not a trace remains */
+             const i=w.map.decor.findIndex(d=>d.id==='earth_mouth'); if(i>=0) w.map.decor.splice(i,1);
+             sunk.forEach(n=>{ const j=w.npcs.indexOf(n); if(j>=0) w.npcs.splice(j,1); });
+             Camera.shake=0; w.camFollow='player'; w.camTarget=null; G.scriptBlocked=false; return;
+           }
+           requestAnimationFrame(step);
+         };
+         requestAnimationFrame(step);
+       }},
+       {say:['narrator','And as he finished speaking, the ground SPLIT OPEN beneath them, and the earth opened its mouth and swallowed them, and their households, and all the men of Qoraḥ, and all their goods. They went DOWN ALIVE into the pit — and the earth closed over them, and they perished from the midst of the assembly.']},
+       {call:G=>{ /* ===== FIRE FROM YAHUAH CONSUMES THE 250 WHO OFFERED INCENSE ===== */
+         const w=G.world; G.scriptBlocked=true;
+         const men=['qorah','rebel1','rebel2'].map(id=>w.npcs.find(n=>n.id===id)).filter(Boolean);
+         men.forEach(n=>{ n.wander=false; n.target=null; n.moving=false; });
+         w.camFollow=null; w.camTarget=[20,14];
+         Sound.sfx('thunder');
+         const T0=performance.now(), DUR=2600; let lastB=0, consumed=false;
+         const step=(now)=>{ const el=now-T0;
+           Camera.shake=Math.max(Camera.shake, el<DUR?1.5:0);
+           if(now-lastB>38){ lastB=now;
+             men.forEach(n=>{ if(n.hidden) return;
+               Particles.spawn({x:(n.x+(Math.random()-.5)*2)*TILE,y:(n.y-10-Math.random()*3)*TILE,vx:(Math.random()-.5)*.02,vy:.32+Math.random()*.12,life:850,max:850,type:'brimstone'});
+               if(Math.random()<.6) Particles.spawn({x:(n.x+(Math.random()-.5)*3)*TILE,y:(n.y-1)*TILE,vx:(Math.random()-.5)*.03,vy:-.03,life:1400,max:1400,type:'smoke'});
+               if(Math.random()<.5) Particles.spawn({x:(n.x+(Math.random()-.5)*2)*TILE,y:n.y*TILE,vx:(Math.random()-.5)*.08,vy:-.1,life:600,max:600,type:'spark'}); }); }
+           if(el>900 && !consumed){ consumed=true; Sound.sfx('bad');
+             men.forEach(n=>{ Particles.burst(n.x*TILE,n.y*TILE,'spark',18); Particles.burst(n.x*TILE,n.y*TILE,'ash',10); n.hidden=true; }); }
+           if(el<DUR){ requestAnimationFrame(step); return; }
+           Camera.shake=0; w.camFollow='player'; w.camTarget=null; G.scriptBlocked=false;
+         };
+         requestAnimationFrame(step);
+       }},
+       {say:['narrator','And FIRE came out from YAHUAH and consumed the two hundred and fifty men who offered the incense. And El‛azar the priest took up their bronze censers, and they were beaten into a covering for the altar — a sign to the children of Yasharal, that no stranger who is not of the seed of Aharon should come near to burn incense before YAHUAH.']},
+       {music:'tense'},
+      ]},
+     {type:'goto',x:28,y:26,radius:2.8,text:'Next day: the plague has begun — send Aharon with the censer, between the dead and the living',hiddenUntil:2,
+      script:[
+       {say:['narrator','But on the next day all the congregation MURMURED against Mosheh and Aharon, saying, “YOU have killed the people of YAHUAH!” And when the congregation gathered against them, they turned toward the Tent — and see, the cloud covered it, and the esteem of YAHUAH appeared.']},
+       {rays:.7,raysX:23},{sfx:'thunder'},{music:'storm'},
+       {say:['voice','Rise up from the midst of this congregation, that I may consume them in a moment.']},
+       {say:['narrator','And Mosheh and Aharon fell on their faces. And already the plague had begun among the people.']},
+       {call:G=>{ const w=G.world;
+         for(const n of w.npcs){ if(n.id&&/^plague/.test(n.id)){ n.wander=false; n.target=null; n.lying=true; } }
+         w.fx=w.fx||[]; w.fx.push({kind:'smoke',x:30,y:26,r:8,until:G.t+9000}); }},
+       {say:['mosheh_o','Aharon — QUICKLY! Take the censer, and put fire in it from off the altar, and lay on incense, and carry it swiftly to the congregation, and make atonement for them. For wrath has gone out from YAHUAH — the plague has begun!']},
+       {call:G=>{ const w=G.world, ah=w.npcs.find(n=>n.id==='aharon');
+         if(ah){ ah.hold='censer'; ah.wander=false; ah.speed=.10; ah.target={x:29,y:25}; } }},
+       {wait:1100},
+       {say:['narrator','And Aharon RAN into the midst of the assembly, and put on the incense, and made atonement for the people. And he STOOD BETWEEN THE DEAD AND THE LIVING — and the plague was stayed.']},
+       {call:G=>{ const w=G.world, ah=w.npcs.find(n=>n.id==='aharon');
+         const cx=ah?ah.x:29, cy=ah?ah.y:25;
+         for(let k=0;k<30;k++) Particles.spawn({x:(cx+(Math.random()-.5)*8)*TILE,y:(cy-Math.random()*2)*TILE,vx:(Math.random()-.5)*.02,vy:-.02-Math.random()*.02,life:2400,max:2400,type:'holy'});
+         Sound.sfx('holy'); w.fx=(w.fx||[]).filter(f=>f.kind!=='smoke');
+         let i=0; for(const n of w.npcs){ if(n.id&&/^plague/.test(n.id)){ if(i++%2===0) n.lying=false; } } }},
+       {say:['narrator','Now those who died in the plague were fourteen thousand seven hundred — besides those who died in the matter of Qoraḥ. And Aharon returned to Mosheh at the door of the Tent, for the plague was stopped. The censer that ambition had seized became the incense that mercy carried: the same fire that consumed the proud, atoned for the fallen.']},
+       {rays:0},{music:'sorrow'},
       ]},
    ],
   },
   outro:[
-   {art:'wilderness', music:'sorrow', text:'The earth opened, and the fire fell — and the censers of the rebels became a covering on the altar, a warning hammered thin: the Presence is not seized by ambition, but received by appointment. Yet even the next morning, the people murmured again.', ref:'BAMIḎBAR 16:31–40'},
+   {art:'wilderness', music:'sorrow', text:'The earth opened and the fire fell; and the next day a plague, stayed only by a priest who ran and stood between the dead and the living with a censer of incense. The bronze of the rebels’ censers was hammered thin over the altar — a warning worn where every eye would see it: the Presence is not seized by ambition, but received by appointment.', ref:'BAMIḎBAR 16:31–50'},
   ],
-  complete:'The earth opened its mouth — and the assembly learned that the priesthood is given, not grasped.'
+  complete:'The earth opened its mouth, the fire fell, and a censer stayed the plague — the assembly learned that the priesthood is given, not grasped.'
 },
 { id:'n11', title:'The Rod That Budded', ref:'BAMIḎBAR 17',
   intro:[
