@@ -5938,6 +5938,10 @@ STORY.push(
        {show:'foe1'},{show:'foe2'},{show:'foe3'},
        {say:['narrator','And the sovereign of Ai saw it, and the men of the city hurried and rose early, and went out against Yasharal to battle — for he did not know there was an ambush against him behind the city.']},
        {say:['yahoshua','FALL BACK! Flee before them, toward the wilderness — let every man of Ai be drawn from the gate!']},
+       /* the men of Ai pour out of the gate in pursuit; the host of Yasharal feigns flight toward the wilderness */
+       {call:G=>{ const w=G.world; Army.clear(w);
+          Army.spawn(w,{team:'def',pal:'kenaan',x:29,y:12.5,cols:16,rows:4,gap:.78,ranged:true,state:'form',tx:29,ty:23});
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:29,y:20,cols:14,rows:4,gap:.8,state:'form',tx:29,ty:31}); }},
        {move:['player',29,24,.09]},
        {say:['narrator','And all the people who were in Ai were called together to pursue them. And they pursued Yahusha, and were DRAWN AWAY from the city — not a man was left in Ai or Bĕyth Ăl who did not go out after Yasharal. And they left the city OPEN.']},
       ]},
@@ -5952,9 +5956,16 @@ STORY.push(
           G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {burst:[29,8,'smoke',24]},{burst:[27,9,'spark',16]},{burst:[31,9,'spark',16]},
        {move:['amb1',26,11,.08,'bg']},{move:['amb2',31,11,.08,'bg']},
-       {say:['narrator','And the men of Ai looked behind them — and the smoke of the city went up to the heavens, and they had no power to flee this way or that. And the people who had fled to the wilderness TURNED BACK on the pursuers.']},
+       /* the ambush host rises behind the city, and Yasharal turns — the men of Ai caught between two camps */
+       {call:G=>{ const w=G.world;
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:22,y:10,cols:12,rows:3,gap:.8,ranged:true,state:'fight'});
+          Army.order(w,'atk',{state:'fight'}); Army.order(w,'def',{state:'fight'}); Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
+       {say:['narrator','And the men of Ai looked behind them — and the smoke of the city went up to the heavens, and they had no power to flee this way or that. And the people who had fled to the wilderness TURNED BACK on the pursuers, and Yasharal cut them down, until there was neither survivor nor escapee.']},
        {battle:{foes:['foe1','foe2','foe3'],hits:2,text:'They are caught between the camps — strike!',
          won:'Not one of them was left to flee. And Yahusha did not draw back the hand that held the spear until the ban was completed.'}},
+       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
+          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
+          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},
       ]},
    ],
   },
@@ -6121,8 +6132,15 @@ STORY.push(
        {rays:.6,raysX:26},
        {say:['voice','Do not be afraid of them, for I have given them into your hand. NOT A MAN of them shall stand before you.']},
        {rays:0},
+       /* the all-night march falls suddenly on the five armies gathered before Giḇ‛on */
+       {call:G=>{ const w=G.world; Army.clear(w);
+          Army.spawn(w,{team:'def',pal:'amorite',x:26,y:13,cols:18,rows:5,gap:.78,ranged:true,state:'fight'});
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:26,y:27,cols:18,rows:5,gap:.78,ranged:true,state:'fight'});
+          Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
        {battle:{foes:['foe1','foe2','foe3','foe4'],hits:2,text:'YAHUAH has given them into your hand — strike!',
          won:'And YAHUAH confused them before Yasharal, and smote them with a great slaughter at Giḇ‛on.'}},
+       /* the coalition breaks and flees north, down toward the Bĕyth Ḥoron descent */
+       {call:G=>{ Army.order(G.world,'def',{state:'form',tx:30,ty:5}); Army.order(G.world,'atk',{state:'fight'}); }},
       ]},
      {type:'goto',x:30,y:18,radius:2.4,text:'Pursue by the road of the Bĕyth Ḥoron descent — the heavens fight',hiddenUntil:1,
       script:[
@@ -6130,6 +6148,9 @@ STORY.push(
        {call:G=>{ G.world.fx=(G.world.fx||[]); G.world.fx.push({kind:'hail',x:30,y:14,r:14,until:G.t+13000}); }},
        {sfx:'thunder'},{shake:1.2},
        {say:['narrator','And it came to be, as they fled before Yasharal on the descent of Bĕyth Ḥoron, that YAHUAH threw down GREAT STONES from the heavens on them as far as Azĕqah — and they died. More died from the hailstones than the children of Yasharal killed with the sword.']},
+       /* the great stones from heaven fall on the fleeing coalition — more slain than by the sword */
+       {call:G=>{ const w=G.world; if(w.army) for(const u of w.army){ if(u.team==='def'&&!u.dead){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); } }
+          Army.order(w,'atk',{state:'form'}); }},
        {hide:'k1'},
        {say:['narrator','And the five sovereigns fled, and hid themselves in the cave at Maqqĕdah.']},
       ]},
@@ -6187,8 +6208,16 @@ STORY.push(
        {say:['voice','Do not be afraid because of them — for tomorrow, about this time, I am giving all of them up slain before Yasharal. Their horses you shall hamstring, and their chariots you shall burn with fire.']},
        {rays:0},
        {say:['kaleb','As numerous as the sand on the seashore, with horses enough to shake the ground — and the word says they are already given. Fall on them, Yahusha. The sword of a man moves faster when YAHUAH has gone ahead of it.']},
+       /* the whole coalition of the north — as sand on the seashore — met suddenly by the waters of Merom */
+       {call:G=>{ const w=G.world; Army.clear(w);
+          Army.spawn(w,{team:'def',pal:'amorite',x:29,y:12,cols:22,rows:6,gap:.72,ranged:true,state:'fight'});
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:29,y:27,cols:16,rows:4,gap:.78,ranged:true,state:'fight'});
+          Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
        {battle:{foes:['foe1','foe2','foe3','foe4'],hits:2,text:'Suddenly — before their chariots can form!',
          won:'And YAHUAH gave them into the hand of Yasharal, who smote them and pursued them to Great Tsiḏon, until none of them remained.'}},
+       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
+          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
+          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},
       ]},
      {type:'interact',prop:'char1',text:'Burn the first rank of chariots, as YAHUAH commanded',hiddenUntil:1,
       script:[
