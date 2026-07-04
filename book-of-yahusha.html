@@ -2791,9 +2791,107 @@ const Particles={
           g.beginPath(); g.arc(sx,sy,1.8,0,Math.PI*2); g.fill(); break;
         case 'feather': g.fillStyle=`rgba(240,236,224,${a*.9})`;
           g.beginPath(); g.ellipse(sx,sy,3,1.4,p.life/200,0,Math.PI*2); g.fill(); break;
+        case 'arrow': { const vl=Math.hypot(p.vx,p.vy)||1;   /* a loosed arrow, drawn along its flight */
+          g.strokeStyle=`rgba(58,44,26,${clamp(a*1.6,0,1)})`; g.lineWidth=1.4;
+          g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-p.vx/vl*9,sy-p.vy/vl*9); g.stroke();
+          g.fillStyle=`rgba(210,205,190,${clamp(a*1.6,0,1)})`; g.fillRect(sx-1,sy-1,2,2); break; }
       }
     }
   }
+};
+
+/* ================= MASS BATTLE — battalions of foot and archers ================= */
+/* a single lightweight soldier: shadow, spear, body, head — a few draw ops so hundreds render */
+function drawUnit(g,sx,sy,u,t){
+  const c=u.col;
+  if(u.dead){
+    const a=clamp(u.fade===undefined?1:u.fade,0,1); if(a<=0) return;
+    g.globalAlpha=a*.85;
+    g.fillStyle='rgba(0,0,0,.16)'; g.beginPath(); g.ellipse(sx,sy+1,4.6,1.6,0,0,Math.PI*2); g.fill();
+    g.fillStyle=c.robe; g.fillRect(sx-4,sy-2.4,8,2.6);
+    g.fillStyle=c.skin; g.beginPath(); g.arc(sx+(u.dir||1)*4.4,sy-1.2,1.7,0,Math.PI*2); g.fill();
+    g.globalAlpha=1; return;
+  }
+  const bob=u.moving?Math.sin(t/110+u.ph)*1.3:Math.sin(t/520+u.ph)*.5;
+  const y0=sy+bob;
+  g.fillStyle='rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(sx,sy+1,4,1.5,0,0,Math.PI*2); g.fill();
+  g.strokeStyle='#6a5330'; g.lineWidth=1;                     /* spear */
+  g.beginPath(); g.moveTo(sx+u.dir*1.6,y0-5); g.lineTo(sx+u.dir*2.6,y0-15); g.stroke();
+  g.fillStyle='#d2ccbf'; g.beginPath();
+  g.moveTo(sx+u.dir*2.6,y0-17); g.lineTo(sx+u.dir*1.7,y0-14); g.lineTo(sx+u.dir*3.5,y0-14); g.closePath(); g.fill();
+  g.fillStyle=c.robe; g.fillRect(sx-2.4,y0-8,4.8,7);          /* body */
+  g.fillStyle=c.trim; g.fillRect(sx-2.4,y0-8,4.8,1.3);        /* sash */
+  if(u.shield){ g.fillStyle=c.trim; g.beginPath(); g.ellipse(sx-u.dir*2.7,y0-4.4,1.5,2.7,0,0,Math.PI*2); g.fill(); }
+  g.fillStyle=c.skin; g.beginPath(); g.arc(sx,y0-9.4,2.1,0,Math.PI*2); g.fill();   /* head */
+}
+
+const Army={
+  MAX:260,
+  PAL:{
+    yasharal:{robe:'#a5402f', trim:'#e4c86a', skin:'#7a4e29'},   /* the host of Yasharal — red and bronze */
+    kenaan:  {robe:'#3f5f96', trim:'#cfc7b4', skin:'#6e4a28'},   /* the men of the city — blue */
+    amorite: {robe:'#6a4e86', trim:'#caa23c', skin:'#644323'},   /* the sovereigns' armies — purple */
+  },
+  clear(w){ if(w) w.army=null; },
+  /* spawn a block of ranks; front ranks carry shields, rear ranks may be archers */
+  spawn(w,o){
+    w.army=w.army||[];
+    const pal=this.PAL[o.pal]||this.PAL.yasharal, team=o.team||'atk';
+    const cols=o.cols||12, rows=o.rows||6, gap=o.gap||.8;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      if(w.army.length>=this.MAX) return;
+      w.army.push({
+        team, col:pal,
+        x:o.x+(c-(cols-1)/2)*gap+(Math.random()-.5)*.2,
+        y:o.y+(r-(rows-1)/2)*gap*.7+(Math.random()-.5)*.15,
+        hp:1, dead:false, state:o.state||'form',
+        tx:o.tx!==undefined?o.tx:o.x, ty:o.ty!==undefined?o.ty:o.y,
+        spd:(o.spd||.0016)*(.8+Math.random()*.4),
+        ph:Math.random()*6, foe:null, cd:Math.random()*400,
+        dir:o.dir!==undefined?o.dir:(team==='atk'?1:-1),
+        ranged:!!o.ranged&&Math.random()<.35, shield:Math.random()<.4, acd:Math.random()*1500,
+      });
+    }
+  },
+  order(w,team,o){ if(!w||!w.army) return; for(const u of w.army){ if(u.team!==team||u.dead) continue;
+    if(o.tx!==undefined)u.tx=o.tx; if(o.ty!==undefined)u.ty=o.ty; if(o.state)u.state=o.state; if(o.dir!==undefined)u.dir=o.dir; } },
+  count(w,team){ if(!w||!w.army) return 0; let n=0; for(const u of w.army) if(u.team===team&&!u.dead)n++; return n; },
+  update(w,dt,t){
+    const A=w&&w.army; if(!A||!A.length) return;
+    /* living centroid of each host — used to advance on the enemy and to aim the arrows */
+    let ax=0,ay=0,an=0, bx=0,by=0,bn=0;
+    for(let i=0;i<A.length;i++){ const u=A[i]; if(u.dead) continue;
+      if(u.team==='atk'){ax+=u.x;ay+=u.y;an++;} else {bx+=u.x;by+=u.y;bn++;} }
+    const cenA=an?{x:ax/an,y:ay/an}:null, cenD=bn?{x:bx/bn,y:by/bn}:null;
+    for(let i=0;i<A.length;i++){
+      const u=A[i];
+      if(u.dead){ u.fade=(u.fade===undefined?1:u.fade)-dt*.00035; continue; }
+      u.ph+=dt*.01; let mvx=0,mvy=0;
+      const foeCen=(u.team==='atk')?cenD:cenA;
+      if(u.state==='fight'){
+        if(!u.foe||u.foe.dead){ let bd=1e9,bf=null;
+          for(let j=0;j<A.length;j++){ const e=A[j]; if(e.dead||e.team===u.team) continue;
+            const dx=e.x-u.x,dy=e.y-u.y,d=dx*dx+dy*dy; if(d<bd){bd=d;bf=e;} }
+          u.foe=bf; }
+        if(u.foe){ const dx=u.foe.x-u.x,dy=u.foe.y-u.y,d=Math.hypot(dx,dy)||1;
+          if(d>.5){ mvx=dx/d; mvy=dy/d; u.moving=true; }
+          else { u.moving=false; u.cd-=dt;
+            if(u.cd<=0){ u.cd=300+Math.random()*400;
+              if(Math.random()<.5&&!u.foe.dead){ u.foe.hp-=1;
+                if(u.foe.hp<=0){ u.foe.dead=true; u.foe.deadT=t; Particles.burst(u.foe.x*TILE,u.foe.y*TILE,'spark',3); u.foe=null; } } }
+            mvx=(Math.random()-.5)*.4; mvy=(Math.random()-.5)*.4; }
+        } else if(foeCen){ const dx=foeCen.x-u.x,dy=foeCen.y-u.y,l=Math.hypot(dx,dy)||1; mvx=dx/l; mvy=dy/l; u.moving=true; }
+      } else { const dx=u.tx-u.x,dy=u.ty-u.y,d=Math.hypot(dx,dy);
+        if(d>.15){ mvx=dx/d; mvy=dy/d; u.moving=true; } else u.moving=false; }
+      if(mvx) u.dir=mvx<0?-1:1;
+      u.x=clamp(u.x+mvx*u.spd*dt,1,w.map.w-2);
+      u.y=clamp(u.y+mvy*u.spd*dt,1,w.map.h-2);
+      /* archers loose volleys toward the enemy host, arrows arcing down out of the sky */
+      if(u.ranged&&foeCen){ u.acd-=dt; if(u.acd<=0){ u.acd=1000+Math.random()*1000;
+        const dx=foeCen.x-u.x,dy=foeCen.y-u.y,l=Math.hypot(dx,dy)||1;
+        Particles.spawn({x:u.x*TILE,y:(u.y-1)*TILE,vx:dx/l*.2,vy:dy/l*.2-.07,grav:.0006,life:1600,max:1600,type:'arrow'}); } }
+    }
+  },
 };
 
 const TINTS={
@@ -2934,12 +3032,14 @@ function drawWorld(g,world,t){
   const lip9=world.overlook?world.overlook.cliffY:-1e9;   /* nothing stands on the painted sky above the cliff lip */
   for(const d of map.decor){ if(d.y<lip9) continue; ents.push({y:d.y,kind:'decor',d}); }
   for(const n of world.npcs) if(!n.hidden&&n.y>=lip9) ents.push({y:n.y,kind:'npc',d:n});
+  if(world.army) for(const u of world.army){ if(u.dead&&u.fade!==undefined&&u.fade<=0) continue; if(u.y>=lip9) ents.push({y:u.y,kind:'unit',d:u}); }
   if(world.player&&!world.player.hidden) ents.push({y:world.player.y,kind:'player',d:world.player});
   ents.sort((a,b)=>a.y-b.y);
   for(const e of ents){
     const d=e.d;
     const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
     if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
+    if(e.kind==='unit'){ drawUnit(g,sx,sy,d,t); continue; }
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale,spotted:d.spotted});
@@ -3687,6 +3787,7 @@ const Game={
       this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
+    Army.update(w,dt,this.t);   /* the march and clash of the battalions */
     /* heaven-sent phenomena — fire and brimstone, hail, manna, smoke — while their hour lasts */
     if(w.fx&&w.fx.length){
       let fxLive=false;
@@ -5697,6 +5798,10 @@ STORY.push(
       script:[
        {sfx:'holy'},{sfx:'thunder'},
        {say:['yahoshua','SHOUT — for YAHUAH has given you the city! And the city shall be under the ban, it and all that is in it, to YAHUAH. ONLY Raḥaḇ the innkeeper shall live, she and all who are with her in the house, because she hid the messengers we sent. But keep yourselves from that which is under the ban — lest you make the camp of Yasharal a curse, and trouble it. All the silver and gold, the bronze and iron, are SET-APART to YAHUAH.']},
+       /* the whole host of Yasharal massed at the wall, and the men of Yeriḥo stood upon the parapets within */
+       {call:G=>{ const w=G.world; Army.clear(w);
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:25,y:33.5,cols:22,rows:5,gap:.78,ranged:true,state:'form',tx:25,ty:33.5});
+          Army.spawn(w,{team:'def',pal:'kenaan',x:25,y:15.5,cols:15,rows:5,gap:.8,ranged:true,state:'form',tx:25,ty:15.5}); }},
        {shake:2.2},{sfx:'thunder'},
        {call:G=>{ const ids=['w1','w2','w3','w4','w5','w6','w7','w8','w9','citygate'];
           for(const id of ids){ const i=G.world.map.decor.findIndex(d=>d.id===id);
@@ -5704,10 +5809,17 @@ STORY.push(
               G.world.map.decor.push({type:'rock',x:d.x,y:d.y,solid:false}); } }
           G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {burst:[25,17,'ash',26]},{burst:[20,20,'smoke',18]},{burst:[30,15,'smoke',18]},{shake:1.4},
-       {say:['narrator','And the people shouted, and the priests blew the shophars. And it came to be, when the people heard the sound of the shophar, that the people shouted with a GREAT SHOUT — and the WALL FELL DOWN FLAT. And the people went up into the city, every man straight before him, and they took the city.']},
+       {say:['narrator','And the people shouted with a GREAT SHOUT, and the priests blew the shophars — and when the people heard the sound of the shophar, the WALL FELL DOWN FLAT before them.']},
+       /* every man straight before him — the host pours through the breach and the melee is joined */
+       {call:G=>{ Army.order(G.world,'atk',{state:'fight'}); Army.order(G.world,'def',{state:'fight'}); Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
+       {say:['narrator','And the people went up into the city, EVERY MAN STRAIGHT BEFORE HIM — the host of Yasharal pouring over the rubble, and the men of Yeriḥo falling back into their own streets.']},
        {show:'def1'},{show:'def2'},
-       {battle:{foes:['def1','def2'],hits:2,text:'Take the city — every man straight before him!',
+       {battle:{foes:['def1','def2'],hits:2,text:'Into the breach — strike, every man straight before him!',
          won:'The city fell in an hour — all of it put under the ban, to YAHUAH.'}},
+       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
+          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
+          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},   /* the host stands victorious where it fought */
+       {say:['narrator','And they utterly destroyed all that was in the city, and took it — for the shout of a people that trusts is stronger than any wall of stone.']},
       ]},
      {type:'interact',prop:'rachav_house',text:'Bring out Raḥaḇ, and all who are hers — as it was sworn',hiddenUntil:3,
       script:[
