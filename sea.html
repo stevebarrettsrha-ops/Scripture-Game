@@ -145,108 +145,141 @@ function drawParticles(g){ const C=CELL;
    ============================================================ */
 function shadow(g,sx,sy,rw){ g.fillStyle='rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(sx,sy,rw,rw*.4,0,0,Math.PI*2); g.fill(); }
 
+/* everyone marches NORTH (up the corridor) — figures are drawn from behind,
+   the head showing hair not a face, legs striding along the line of march */
 function drawPerson(g,sx,sy,u,t){
   const C=CELL, c=u.col;
   if(u.drown){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
     g.fillStyle=c.robe; g.beginPath(); g.arc(sx,sy,C*.16,0,Math.PI*2); g.fill(); g.globalAlpha=1; return; }
-  const bob=u.moving?Math.sin(t/120+u.ph)*C*.05:Math.sin(t/560+u.ph)*C*.02;
-  const y0=sy+bob;
-  shadow(g,sx,sy,C*.26);
-  /* legs */
-  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.09;
-  g.beginPath(); g.moveTo(sx-C*.09,y0-C*.05); g.lineTo(sx-C*.09,y0); g.moveTo(sx+C*.09,y0-C*.05); g.lineTo(sx+C*.09,y0); g.stroke();
-  /* body */
-  g.fillStyle=c.robe; g.fillRect(sx-C*.16,y0-C*.52,C*.32,C*.48);
-  g.fillStyle=c.trim; g.fillRect(sx-C*.16,y0-C*.52,C*.32,C*.08);
-  if(u.bundle){ g.fillStyle='#8a6f45'; g.fillRect(sx-C*.2,y0-C*.62,C*.4,C*.18); }  /* a bundle on the back/shoulder */
-  if(u.staff){ g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.18,y0-C*.05); g.lineTo(sx+C*.22,y0-C*.9); g.stroke(); }
-  /* head */
-  g.fillStyle=c.skin; g.beginPath(); g.arc(sx,y0-C*.62,C*.14,0,Math.PI*2); g.fill();
-  g.fillStyle=c.hair; g.beginPath(); g.arc(sx,y0-C*.66,C*.15,Math.PI*.98,Math.PI*2.02); g.fill();
-  if(u.kind==='woman'){ g.fillStyle=c.trim; g.beginPath(); g.arc(sx,y0-C*.64,C*.17,Math.PI*.8,Math.PI*2.2); g.fill(); }  /* veil */
+  const stride=u.moving?Math.sin(t/120+u.ph):0;
+  const y0=sy+(u.moving?Math.abs(Math.sin(t/120+u.ph))*C*.03:0);
+  shadow(g,sx,sy,C*.24);
+  /* legs striding fore-and-aft along the march */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.1;
+  g.beginPath(); g.moveTo(sx-C*.08,y0-C*.06); g.lineTo(sx-C*.08,y0+stride*C*.05);
+  g.moveTo(sx+C*.08,y0-C*.06); g.lineTo(sx+C*.08,y0-stride*C*.05); g.stroke();
+  /* robe from behind, arms at the sides */
+  g.fillStyle=c.robe; g.fillRect(sx-C*.17,y0-C*.56,C*.34,C*.52);
+  g.fillStyle=c.robe; g.fillRect(sx-C*.23,y0-C*.5,C*.07,C*.34); g.fillRect(sx+C*.16,y0-C*.5,C*.07,C*.34);
+  g.fillStyle=c.trim; g.fillRect(sx-C*.17,y0-C*.3,C*.34,C*.06);
+  if(u.bundle){ g.fillStyle='#8a6f45'; g.fillRect(sx-C*.15,y0-C*.66,C*.3,C*.2); }  /* a pack on the back */
+  if(u.staff){ g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.21,y0+C*.02); g.lineTo(sx+C*.23,y0-C*.9); g.stroke(); }
+  /* the back of the head — hair and a hint of neck; no face, they walk away northward */
+  g.fillStyle=c.skin; g.fillRect(sx-C*.05,y0-C*.63,C*.1,C*.09);
+  g.fillStyle=c.hair; g.beginPath(); g.arc(sx,y0-C*.72,C*.15,0,Math.PI*2); g.fill();
+  if(u.kind==='woman'){ /* a shawl hanging down the back */
+    g.fillStyle=c.trim; g.beginPath(); g.moveTo(sx-C*.15,y0-C*.72); g.lineTo(sx+C*.15,y0-C*.72); g.lineTo(sx+C*.1,y0-C*.3); g.lineTo(sx-C*.1,y0-C*.3); g.closePath(); g.fill();
+    g.fillStyle=c.hair; g.beginPath(); g.arc(sx,y0-C*.74,C*.12,0,Math.PI*2); g.fill();
+  }
 }
 function drawChild(g,sx,sy,u,t){
-  const C=CELL, c=u.col; const bob=u.moving?Math.sin(t/100+u.ph)*C*.04:0; const y0=sy+bob;
-  shadow(g,sx,sy,C*.16);
-  g.fillStyle=c.robe; g.fillRect(sx-C*.1,y0-C*.3,C*.2,C*.3);
-  g.fillStyle=c.skin; g.beginPath(); g.arc(sx,y0-C*.38,C*.1,0,Math.PI*2); g.fill();
-  g.fillStyle=c.hair; g.beginPath(); g.arc(sx,y0-C*.41,C*.1,Math.PI,Math.PI*2); g.fill();
+  const C=CELL, c=u.col; const stride=u.moving?Math.sin(t/100+u.ph):0;
+  shadow(g,sx,sy,C*.14);
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.07;
+  g.beginPath(); g.moveTo(sx-C*.05,sy-C*.03); g.lineTo(sx-C*.05,sy+stride*C*.03);
+  g.moveTo(sx+C*.05,sy-C*.03); g.lineTo(sx+C*.05,sy-stride*C*.03); g.stroke();
+  g.fillStyle=c.robe; g.fillRect(sx-C*.1,sy-C*.34,C*.2,C*.32);
+  g.fillStyle=c.hair; g.beginPath(); g.arc(sx,sy-C*.42,C*.1,0,Math.PI*2); g.fill();
 }
-/* baggage beasts — sheep / goat / donkey / ox */
+/* baggage beasts — sheep / goat / donkey / ox — walking north, seen from behind:
+   rump toward the viewer, head at the far (north) end, four legs, tail hanging */
 function drawBeast(g,sx,sy,kind,t,ph,moving){
-  const C=CELL; const bob=(moving?Math.sin(t/140+ph)*C*.03:Math.sin(t/700+ph)*C*.015);
-  shadow(g,sx,sy,kind==='ox'||kind==='donkey'?C*.42:C*.28);
+  const C=CELL; const sway=moving?Math.sin(t/150+ph)*C*.03:0;
+  const big=(kind==='ox'||kind==='donkey');
   const col= kind==='ox'?'#7a6248':kind==='donkey'?'#8a8072':kind==='goat'?'#b8ac93':'#e6e2d6';
-  const big= kind==='ox'||kind==='donkey';
-  const bw=big?.44:.3, bh=big?.2:.15;
-  g.strokeStyle='#4a3a28'; g.lineWidth=C*.06;
-  for(const lx of (big?[-.26,-.08,.08,.26]:[-.16,.16])){ g.beginPath(); g.moveTo(sx+lx*C,sy-C*.24); g.lineTo(sx+lx*C,sy); g.stroke(); }
-  g.fillStyle=col; g.beginPath(); g.ellipse(sx,sy-C*.36+bob,C*bw,C*bh,0,0,Math.PI*2); g.fill();
-  g.fillStyle=col; g.beginPath(); g.ellipse(sx+C*(bw+.06),sy-C*(bh+.24)+bob,C*.13,C*.1,0,0,Math.PI*2); g.fill();  /* head */
+  const bw=big?.28:.2, bl=big?.62:.44;   /* body half-width and half-length (along the march) */
+  shadow(g,sx,sy,C*bw*1.5);
+  /* four legs at the corners, striding */
+  g.strokeStyle='#4a3a28'; g.lineWidth=C*.06; let li=0;
+  for(const dy of [-bl*.5,bl*.45]) for(const dx of [-bw*.7,bw*.7]){
+    const st=Math.sin(t/150+ph+li)*C*.05*(moving?1:0); li++;
+    g.beginPath(); g.moveTo(sx+dx*C,sy+dy*C-C*.02); g.lineTo(sx+dx*C,sy+dy*C+C*.09+st); g.stroke(); }
+  /* tail at the rump (bottom, toward the viewer) */
+  g.strokeStyle=col; g.lineWidth=C*.05;
+  g.beginPath(); g.moveTo(sx,sy+bl*.48*C); g.lineTo(sx+sway,sy+bl*.48*C+C*.16); g.stroke();
+  /* back / body — a vertical oval */
+  g.fillStyle=col; g.beginPath(); g.ellipse(sx,sy-C*.04,C*bw,C*bl*.5,0,0,Math.PI*2); g.fill();
+  /* head at the north end, turned away */
+  g.fillStyle=col; g.beginPath(); g.ellipse(sx+sway,sy-C*(bl*.5+.02),C*bw*.62,C*.13,0,0,Math.PI*2); g.fill();
   if(kind==='ox'){ g.strokeStyle='#e8e0d0'; g.lineWidth=C*.05; g.beginPath();
-    g.moveTo(sx+C*(bw),sy-C*(bh+.34)+bob); g.lineTo(sx+C*(bw+.14),sy-C*(bh+.46)+bob); g.stroke(); }
-  if(kind==='goat'){ g.strokeStyle='#6a5a44'; g.lineWidth=C*.04; g.beginPath();
-    g.moveTo(sx+C*(bw+.06),sy-C*(bh+.34)+bob); g.lineTo(sx+C*(bw+.16),sy-C*(bh+.5)+bob); g.stroke(); }
+    g.moveTo(sx-C*bw*.5,sy-C*(bl*.5+.06)); g.lineTo(sx-C*bw*.95,sy-C*(bl*.5+.2));
+    g.moveTo(sx+C*bw*.5,sy-C*(bl*.5+.06)); g.lineTo(sx+C*bw*.95,sy-C*(bl*.5+.2)); g.stroke(); }
+  else if(kind==='donkey'){ g.fillStyle=col; g.beginPath();
+    g.ellipse(sx-C*bw*.45+sway,sy-C*(bl*.5+.14),C*.04,C*.11,0,0,Math.PI*2);
+    g.ellipse(sx+C*bw*.45+sway,sy-C*(bl*.5+.14),C*.04,C*.11,0,0,Math.PI*2); g.fill(); }
+  else if(kind==='goat'){ g.strokeStyle='#6a5a44'; g.lineWidth=C*.04; g.beginPath();
+    g.moveTo(sx-C*bw*.3,sy-C*(bl*.5+.08)); g.lineTo(sx-C*bw*.5,sy-C*(bl*.5+.22));
+    g.moveTo(sx+C*bw*.3,sy-C*(bl*.5+.08)); g.lineTo(sx+C*bw*.5,sy-C*(bl*.5+.22)); g.stroke(); }
 }
-/* an ox-drawn cart of goods */
+/* an ox-drawn cart of goods, going north: the ox pulls ahead, the cart follows behind */
 function drawCart(g,sx,sy,t,ph,moving){
   const C=CELL;
-  drawBeast(g,sx,sy+C*.02,'ox',t,ph,moving);
-  shadow(g,sx-C*.7,sy,C*.5);
-  g.fillStyle='#6a4a2a'; g.fillRect(sx-C*1.05,sy-C*.5,C*.7,C*.4);
-  g.fillStyle='#8a6f45'; g.fillRect(sx-C*1.05,sy-C*.62,C*.7,C*.16);   /* piled goods */
-  g.fillStyle='#2e2114'; g.beginPath(); g.arc(sx-C*.8,sy,C*.16,0,Math.PI*2); g.fill();  /* wheel */
-  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx-C*.4,sy-C*.3); g.lineTo(sx+C*.1,sy-C*.28); g.stroke();  /* yoke */
+  drawBeast(g,sx,sy-C*.95,'ox',t,ph,moving);
+  shadow(g,sx,sy+C*.08,C*.55);
+  g.strokeStyle='#4a3a24'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx,sy-C*.5); g.lineTo(sx,sy-C*.05); g.stroke();  /* pole */
+  g.fillStyle='#2e2114';
+  for(const wx of [-.42,.42]){ g.beginPath(); g.arc(sx+wx*C,sy+C*.02,C*.2,0,Math.PI*2); g.fill(); }   /* wheels either side */
+  g.fillStyle='#6a4a2a'; g.fillRect(sx-C*.34,sy-C*.28,C*.68,C*.5);
+  g.fillStyle='#8a6f45'; g.fillRect(sx-C*.3,sy-C*.42,C*.6,C*.2);   /* piled goods */
 }
-/* Egyptian chariot — two horses, box and driver, wobbling wheel */
+/* Egyptian chariot going NORTH: two horses ahead (seen from behind, heads up),
+   the car and driver behind, a wheel to left and right */
 function drawChariot(g,sx,sy,u,t){
-  const C=CELL, dir=-1;   /* pursuers face up */
+  const C=CELL;
   if(u.drown){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
-    g.fillStyle='#3a2c1c'; g.fillRect(sx-C*.5,sy-C*.2,C*1.0,C*.24); g.globalAlpha=1; return; }
-  shadow(g,sx,sy,C*.8);
-  const hb='#5a4230';
-  for(const off of [-.22,.22]){
-    g.fillStyle=hb; g.beginPath(); g.ellipse(sx+off*C,sy-C*.66,C*.2,C*.5,0,0,Math.PI*2); g.fill();
-    g.fillStyle='#4a351f'; g.beginPath(); g.ellipse(sx+off*C,sy-C*1.12,C*.1,C*.14,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#3a2c1c'; g.fillRect(sx-C*.4,sy-C*.2,C*.8,C*.26); g.globalAlpha=1; return; }
+  shadow(g,sx,sy,C*.7);
+  const hb='#5a4230', hb2='#4a351f';
+  for(const off of [-.26,.26]){
+    g.strokeStyle=hb2; g.lineWidth=C*.07;
+    for(const lx of [off-.09,off+.09]){ g.beginPath(); g.moveTo(sx+lx*C,sy-C*.55); g.lineTo(sx+lx*C,sy-C*.28); g.stroke(); }
+    g.fillStyle=hb; g.beginPath(); g.ellipse(sx+off*C,sy-C*.95,C*.16,C*.44,0,0,Math.PI*2); g.fill();   /* horse body, vertical */
+    g.fillStyle=hb2; g.beginPath(); g.ellipse(sx+off*C,sy-C*1.42,C*.1,C*.14,0,0,Math.PI*2); g.fill();  /* head up-corridor */
+    g.strokeStyle=hb2; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+off*C,sy-C*.55); g.lineTo(sx+off*C*.4,sy-C*.14); g.stroke();  /* trace to the car */
   }
-  const wob=u.wheelOff?Math.sin(t/70+u.ph)*C*.06:0;  /* "He took off their chariot wheels" */
-  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.09;
-  g.beginPath(); g.arc(sx+wob,sy+C*.28,C*.32,0,Math.PI*2); g.stroke();
-  for(let i=0;i<6;i++){ const a=t/460+i; g.beginPath(); g.moveTo(sx+wob,sy+C*.28); g.lineTo(sx+wob+Math.cos(a)*C*.3,sy+C*.28+Math.sin(a)*C*.3); g.stroke(); }
-  /* box + driver in Egyptian white & gold */
-  g.fillStyle=EGY.trim; g.fillRect(sx-C*.34,sy-C*.1,C*.68,C*.42);
-  g.fillStyle=EGY.robe; g.fillRect(sx-C*.16,sy-C*.62,C*.32,C*.44);
-  g.fillStyle=EGY.sash; g.fillRect(sx-C*.16,sy-C*.42,C*.32,C*.08);
-  g.fillStyle=EGY.skin; g.beginPath(); g.arc(sx,sy-C*.72,C*.13,0,Math.PI*2); g.fill();
-  g.fillStyle=EGY.hair; g.beginPath(); g.arc(sx,sy-C*.76,C*.15,Math.PI*.9,Math.PI*2.1); g.fill();
+  const wob=u.wheelOff?Math.sin(t/70+u.ph)*C*.05:0;  /* "He took off their chariot wheels" */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.08;
+  for(const wx of [-.44,.44]){ const ww=wx<0?-wob:wob;
+    g.beginPath(); g.arc(sx+wx*C+ww,sy+C*.04,C*.26,0,Math.PI*2); g.stroke();
+    for(let i=0;i<6;i++){ const a=t/460+i; g.beginPath(); g.moveTo(sx+wx*C+ww,sy+C*.04); g.lineTo(sx+wx*C+ww+Math.cos(a)*C*.24,sy+C*.04+Math.sin(a)*C*.24); g.stroke(); } }
+  /* the car and its driver, from behind, in Egyptian white and gold */
+  g.fillStyle=EGY.trim; g.fillRect(sx-C*.3,sy-C*.18,C*.6,C*.44);
+  g.fillStyle=EGY.robe; g.fillRect(sx-C*.14,sy-C*.6,C*.28,C*.42);
+  g.fillStyle=EGY.sash; g.fillRect(sx-C*.14,sy-C*.4,C*.28,C*.07);
+  g.fillStyle=EGY.hair; g.beginPath(); g.arc(sx,sy-C*.66,C*.14,0,Math.PI*2); g.fill();   /* back of the head */
 }
+/* Egyptian horseman going north: horse from behind (head up), rider on top */
 function drawHorseman(g,sx,sy,u,t){
   const C=CELL;
   if(u.drown){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
-    g.fillStyle='#5a4632'; g.fillRect(sx-C*.5,sy-C*.2,C*1.0,C*.22); g.globalAlpha=1; return; }
-  shadow(g,sx,sy,C*.5); const hb='#5a4230';
-  g.strokeStyle='#4a351f'; g.lineWidth=C*.07;
-  for(let i=0;i<4;i++){ const lx=sx+(i<2?-1:1)*C*.24; const sw=Math.sin(t/90+u.ph+i)*C*.05*(u.moving?1:0);
-    g.beginPath(); g.moveTo(lx,sy-C*.3); g.lineTo(lx+sw,sy); g.stroke(); }
-  g.fillStyle=hb; g.beginPath(); g.ellipse(sx,sy-C*.42,C*.24,C*.5,0,0,Math.PI*2); g.fill();
-  g.fillStyle=hb; g.beginPath(); g.ellipse(sx,sy-C*.9,C*.12,C*.16,0,0,Math.PI*2); g.fill();   /* head up-corridor */
-  g.fillStyle=EGY.robe; g.fillRect(sx-C*.13,sy-C*.66,C*.26,C*.34);
-  g.fillStyle=EGY.sash; g.fillRect(sx-C*.13,sy-C*.5,C*.26,C*.07);
-  g.fillStyle=EGY.skin; g.beginPath(); g.arc(sx,sy-C*.74,C*.12,0,Math.PI*2); g.fill();
-  g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.1,sy-C*.7); g.lineTo(sx+C*.18,sy-C*1.3); g.stroke();
+    g.fillStyle='#5a4632'; g.fillRect(sx-C*.28,sy-C*.2,C*.56,C*.5); g.globalAlpha=1; return; }
+  shadow(g,sx,sy,C*.4); const hb='#5a4230', hb2='#4a351f';
+  g.strokeStyle=hb2; g.lineWidth=C*.07;
+  for(const lx of [-.15,.15]) for(const ly of [-.38,.26]){ const st=Math.sin(t/90+u.ph+lx+ly)*C*.04*(u.moving?1:0);
+    g.beginPath(); g.moveTo(sx+lx*C,sy+ly*C); g.lineTo(sx+lx*C,sy+ly*C+C*.14+st); g.stroke(); }
+  g.strokeStyle=hb2; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx,sy+C*.32); g.lineTo(sx,sy+C*.5); g.stroke();   /* tail */
+  g.fillStyle=hb; g.beginPath(); g.ellipse(sx,sy-C*.02,C*.19,C*.44,0,0,Math.PI*2); g.fill();   /* body vertical */
+  g.fillStyle=hb2; g.beginPath(); g.ellipse(sx,sy-C*.5,C*.11,C*.15,0,0,Math.PI*2); g.fill();   /* head up */
+  g.fillStyle=EGY.robe; g.fillRect(sx-C*.13,sy-C*.5,C*.26,C*.36);
+  g.fillStyle=EGY.sash; g.fillRect(sx-C*.13,sy-C*.34,C*.26,C*.07);
+  g.fillStyle=EGY.hair; g.beginPath(); g.arc(sx,sy-C*.56,C*.12,0,Math.PI*2); g.fill();
+  g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.12,sy-C*.4); g.lineTo(sx+C*.16,sy-C*1.02); g.stroke();  /* spear */
 }
+/* Egyptian foot going north, from behind */
 function drawFoot(g,sx,sy,u,t){
   const C=CELL;
   if(u.drown){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
     g.fillStyle=EGY.robe; g.beginPath(); g.arc(sx,sy,C*.15,0,Math.PI*2); g.fill(); g.globalAlpha=1; return; }
-  const bob=u.moving?Math.sin(t/110+u.ph)*C*.05:0, y0=sy+bob;
-  shadow(g,sx,sy,C*.26);
-  g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.14,y0-C*.3); g.lineTo(sx+C*.2,y0-C*1.0); g.stroke();  /* spear */
-  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.09; g.beginPath(); g.moveTo(sx-C*.09,y0-C*.05); g.lineTo(sx-C*.09,y0); g.moveTo(sx+C*.09,y0-C*.05); g.lineTo(sx+C*.09,y0); g.stroke();
-  g.fillStyle=EGY.robe; g.fillRect(sx-C*.15,y0-C*.5,C*.3,C*.46);
-  g.fillStyle=EGY.sash; g.fillRect(sx-C*.15,y0-C*.36,C*.3,C*.07);
-  g.fillStyle=EGY.skin; g.beginPath(); g.arc(sx,y0-C*.6,C*.13,0,Math.PI*2); g.fill();
-  g.fillStyle=EGY.hair; g.beginPath(); g.arc(sx,y0-C*.64,C*.15,Math.PI*.9,Math.PI*2.1); g.fill();
+  const stride=u.moving?Math.sin(t/110+u.ph):0, y0=sy+(u.moving?Math.abs(Math.sin(t/110+u.ph))*C*.03:0);
+  shadow(g,sx,sy,C*.24);
+  g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.19,y0+C*.02); g.lineTo(sx+C*.21,y0-C*.95); g.stroke();  /* spear */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.1; g.beginPath();
+  g.moveTo(sx-C*.08,y0-C*.05); g.lineTo(sx-C*.08,y0+stride*C*.05);
+  g.moveTo(sx+C*.08,y0-C*.05); g.lineTo(sx+C*.08,y0-stride*C*.05); g.stroke();
+  g.fillStyle=EGY.robe; g.fillRect(sx-C*.15,y0-C*.52,C*.3,C*.48);
+  g.fillStyle=EGY.sash; g.fillRect(sx-C*.15,y0-C*.34,C*.3,C*.07);
+  g.fillStyle=EGY.skin; g.fillRect(sx-C*.05,y0-C*.6,C*.1,C*.08);   /* neck */
+  g.fillStyle=EGY.hair; g.beginPath(); g.arc(sx,y0-C*.68,C*.14,0,Math.PI*2); g.fill();   /* back of the head */
 }
 
 /* the pillar of cloud and fire, standing between the camps at the near shore */
