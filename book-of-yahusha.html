@@ -3518,10 +3518,16 @@ const Game={
     Save.data.current=ch.id; Save.write();
     fadeOut(()=>{
       hideAllScreens();
-      if(ch.intro&&ch.intro.length){ this.startSlides(ch.intro,'intro'); }
+      /* returning from the battle page: skip the intro and drop straight into the scene, past the fight */
+      if(this._resumeObj==null && ch.intro&&ch.intro.length){ this.startSlides(ch.intro,'intro'); }
       else this.startScene();
       fadeIn();
     });
+  },
+  /* hand the fight off to the dedicated battle page, and resume this chapter at objective `resumeIdx` on return */
+  toBattle(key,resumeIdx){
+    const ret='book-of-yahusha.html?resume='+encodeURIComponent(this.chapter.id+'.'+resumeIdx);
+    location.href='battle.html?b='+encodeURIComponent(key)+'&return='+encodeURIComponent(ret);
   },
   startSlides(slides,phase){
     this.state='slides'; this.slideList=slides; this.slideIdx=0; this.slidePhase=phase;
@@ -3612,6 +3618,11 @@ const Game={
     if(player) Camera.follow(player.x,player.y,map,true);
     else if(sc.camStart){ Camera.x=sc.camStart[0]*TILE; Camera.y=sc.camStart[1]*TILE; }
     if(sc.onStart) this.runScript(sc.onStart.slice());
+    /* resuming from the battle page — mark the objectives up to and including the fight as done */
+    if(this._resumeObj!=null){ const ri=this._resumeObj; this._resumeObj=null;
+      for(let i=0;i<ri && i<this.objectives.length;i++) this.objectives[i].done=true;
+      if(sc.onResume) this.runScript(sc.onResume.slice());   /* re-apply the aftermath (a fallen wall, a burnt city) */
+      this.renderObjectives(); this.updateMarkers(); this.checkAllObjectives(); }
   },
   endScene(){
     const ch=this.chapter;
@@ -5781,6 +5792,14 @@ STORY.push(
      {call:G=>{ G.world.map.decor.push({type:'arkcov',x:25,y:29,id:'ark',solid:false});
         G.world.map.decor.sort((a,b)=>a.y-b.y); }},
    ],
+   onResume:[
+     /* returning from the assault on the battle page: the wall lies flat in rubble where it fell */
+     {call:G=>{ const ids=['w1','w2','w3','w4','w5','w6','w7','w8','w9','citygate'];
+        for(const id of ids){ const i=G.world.map.decor.findIndex(d=>d.id===id);
+          if(i>=0){ const d=G.world.map.decor[i]; G.world.map.decor.splice(i,1);
+            G.world.map.decor.push({type:'rock',x:d.x,y:d.y,solid:false}); } }
+        G.world.map.decor.sort((a,b)=>a.y-b.y); }},
+   ],
    objectives:[
      {type:'goto',x:40,y:17,radius:2.4,text:'Go around the city — the armed men, the shophars, the ark. Speak not a word',
       script:[
@@ -5798,11 +5817,8 @@ STORY.push(
       script:[
        {sfx:'holy'},{sfx:'thunder'},
        {say:['yahoshua','SHOUT — for YAHUAH has given you the city! And the city shall be under the ban, it and all that is in it, to YAHUAH. ONLY Raḥaḇ the innkeeper shall live, she and all who are with her in the house, because she hid the messengers we sent. But keep yourselves from that which is under the ban — lest you make the camp of Yasharal a curse, and trouble it. All the silver and gold, the bronze and iron, are SET-APART to YAHUAH.']},
-       /* the whole host of Yasharal massed at the wall, and the men of Yeriḥo stood upon the parapets within */
-       {call:G=>{ const w=G.world; Army.clear(w);
-          Army.spawn(w,{team:'atk',pal:'yasharal',x:25,y:33.5,cols:22,rows:5,gap:.78,ranged:true,state:'form',tx:25,ty:33.5});
-          Army.spawn(w,{team:'def',pal:'kenaan',x:25,y:15.5,cols:15,rows:5,gap:.8,ranged:true,state:'form',tx:25,ty:15.5}); }},
        {shake:2.2},{sfx:'thunder'},
+       /* the wall falls flat here, on the field the host circled — the assault itself is fought on the battle page */
        {call:G=>{ const ids=['w1','w2','w3','w4','w5','w6','w7','w8','w9','citygate'];
           for(const id of ids){ const i=G.world.map.decor.findIndex(d=>d.id===id);
             if(i>=0){ const d=G.world.map.decor[i]; G.world.map.decor.splice(i,1);
@@ -5810,16 +5826,8 @@ STORY.push(
           G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {burst:[25,17,'ash',26]},{burst:[20,20,'smoke',18]},{burst:[30,15,'smoke',18]},{shake:1.4},
        {say:['narrator','And the people shouted with a GREAT SHOUT, and the priests blew the shophars — and when the people heard the sound of the shophar, the WALL FELL DOWN FLAT before them.']},
-       /* every man straight before him — the host pours through the breach and the melee is joined */
-       {call:G=>{ Army.order(G.world,'atk',{state:'fight'}); Army.order(G.world,'def',{state:'fight'}); Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
-       {say:['narrator','And the people went up into the city, EVERY MAN STRAIGHT BEFORE HIM — the host of Yasharal pouring over the rubble, and the men of Yeriḥo falling back into their own streets.']},
-       {show:'def1'},{show:'def2'},
-       {battle:{foes:['def1','def2'],hits:2,text:'Into the breach — strike, every man straight before him!',
-         won:'The city fell in an hour — all of it put under the ban, to YAHUAH.'}},
-       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
-          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
-          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},   /* the host stands victorious where it fought */
-       {say:['narrator','And they utterly destroyed all that was in the city, and took it — for the shout of a people that trusts is stronger than any wall of stone.']},
+       {say:['narrator','And the people went up into the city, EVERY MAN STRAIGHT BEFORE HIM — the host of Yasharal pouring over the rubble.']},
+       {call:G=>Game.toBattle('yeriho',3)},
       ]},
      {type:'interact',prop:'rachav_house',text:'Bring out Raḥaḇ, and all who are hers — as it was sworn',hiddenUntil:3,
       script:[
@@ -5925,6 +5933,13 @@ STORY.push(
      {id:'squad1',char:'hebrew',x:27,y:29,wander:false,noTalk:true,hold:'spear'},
      {id:'squad2',char:'hebrew2',x:31,y:29,wander:false,noTalk:true,hold:'spear'},
    ],
+   onResume:[
+     /* returning from the pincer at Ai: the city is a heap and a pillar of smoke */
+     {call:G=>{ G.world.map.decor.push({type:'firepit',lit:true,x:28,y:8,id:'aifire1'},{type:'firepit',lit:true,x:31,y:8.6,id:'aifire2'});
+        G.world.map.decor.sort((a,b)=>a.y-b.y); }},
+     {burst:[29,8,'smoke',24]},
+     {say:['narrator','Not one of Ai was left to flee. And Yahusha did not draw back the hand that held the spear until the ban was completed.']},
+   ],
    objectives:[
      {type:'goto',x:13,y:12,radius:2.6,text:'By night: set the ambush behind the city, between Bĕyth Ăl and Ai',
       script:[
@@ -5938,10 +5953,6 @@ STORY.push(
        {show:'foe1'},{show:'foe2'},{show:'foe3'},
        {say:['narrator','And the sovereign of Ai saw it, and the men of the city hurried and rose early, and went out against Yasharal to battle — for he did not know there was an ambush against him behind the city.']},
        {say:['yahoshua','FALL BACK! Flee before them, toward the wilderness — let every man of Ai be drawn from the gate!']},
-       /* the men of Ai pour out of the gate in pursuit; the host of Yasharal feigns flight toward the wilderness */
-       {call:G=>{ const w=G.world; Army.clear(w);
-          Army.spawn(w,{team:'def',pal:'kenaan',x:29,y:12.5,cols:16,rows:4,gap:.78,ranged:true,state:'form',tx:29,ty:23});
-          Army.spawn(w,{team:'atk',pal:'yasharal',x:29,y:20,cols:14,rows:4,gap:.8,state:'form',tx:29,ty:31}); }},
        {move:['player',29,24,.09]},
        {say:['narrator','And all the people who were in Ai were called together to pursue them. And they pursued Yahusha, and were DRAWN AWAY from the city — not a man was left in Ai or Bĕyth Ăl who did not go out after Yasharal. And they left the city OPEN.']},
       ]},
@@ -5956,16 +5967,8 @@ STORY.push(
           G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {burst:[29,8,'smoke',24]},{burst:[27,9,'spark',16]},{burst:[31,9,'spark',16]},
        {move:['amb1',26,11,.08,'bg']},{move:['amb2',31,11,.08,'bg']},
-       /* the ambush host rises behind the city, and Yasharal turns — the men of Ai caught between two camps */
-       {call:G=>{ const w=G.world;
-          Army.spawn(w,{team:'atk',pal:'yasharal',x:22,y:10,cols:12,rows:3,gap:.8,ranged:true,state:'fight'});
-          Army.order(w,'atk',{state:'fight'}); Army.order(w,'def',{state:'fight'}); Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
-       {say:['narrator','And the men of Ai looked behind them — and the smoke of the city went up to the heavens, and they had no power to flee this way or that. And the people who had fled to the wilderness TURNED BACK on the pursuers, and Yasharal cut them down, until there was neither survivor nor escapee.']},
-       {battle:{foes:['foe1','foe2','foe3'],hits:2,text:'They are caught between the camps — strike!',
-         won:'Not one of them was left to flee. And Yahusha did not draw back the hand that held the spear until the ban was completed.'}},
-       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
-          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
-          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},
+       {say:['narrator','And the men of Ai looked behind them — and the smoke of the city went up to the heavens, and they had no power to flee this way or that. And the people who had fled to the wilderness TURNED BACK on the pursuers — caught between the two camps.']},
+       {call:G=>Game.toBattle('ai',3)},
       ]},
    ],
   },
@@ -6126,21 +6129,18 @@ STORY.push(
      {id:'ally2',char:'hebrew2',x:26,y:25,wander:false,noTalk:true,hold:'spear'},
      {id:'givman',char:'givonite',x:17,y:15,wander:false,hidden:true,noTalk:true},
    ],
+   onResume:[
+     /* returning from the field before Giḇ‛on: the coalition is broken and flees north */
+     {sfx:'holy'},
+     {say:['narrator','And YAHUAH confused them before Yasharal, and smote them with a great slaughter at Giḇ‛on. The five armies break — and flee north, toward the descent of Bĕyth Ḥoron.']},
+   ],
    objectives:[
      {type:'goto',x:26,y:21,radius:2.4,text:'Fall on the five armies suddenly, out of the all-night march',
       script:[
        {rays:.6,raysX:26},
        {say:['voice','Do not be afraid of them, for I have given them into your hand. NOT A MAN of them shall stand before you.']},
-       {rays:0},
-       /* the all-night march falls suddenly on the five armies gathered before Giḇ‛on */
-       {call:G=>{ const w=G.world; Army.clear(w);
-          Army.spawn(w,{team:'def',pal:'amorite',x:26,y:13,cols:18,rows:5,gap:.78,ranged:true,state:'fight'});
-          Army.spawn(w,{team:'atk',pal:'yasharal',x:26,y:27,cols:18,rows:5,gap:.78,ranged:true,state:'fight'});
-          Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
-       {battle:{foes:['foe1','foe2','foe3','foe4'],hits:2,text:'YAHUAH has given them into your hand — strike!',
-         won:'And YAHUAH confused them before Yasharal, and smote them with a great slaughter at Giḇ‛on.'}},
-       /* the coalition breaks and flees north, down toward the Bĕyth Ḥoron descent */
-       {call:G=>{ Army.order(G.world,'def',{state:'form',tx:30,ty:5}); Army.order(G.world,'atk',{state:'fight'}); }},
+       {rays:0},{sfx:'holy'},{shake:1},
+       {call:G=>Game.toBattle('gibon',1)},
       ]},
      {type:'goto',x:30,y:18,radius:2.4,text:'Pursue by the road of the Bĕyth Ḥoron descent — the heavens fight',hiddenUntil:1,
       script:[
@@ -6201,6 +6201,11 @@ STORY.push(
      {id:'ally2',char:'hebrew2',x:30,y:27,wander:false,noTalk:true,hold:'sword'},
      {id:'kaleb',char:'kaleb',x:28,y:28,wander:false,noTalk:true,hold:'spear'},
    ],
+   onResume:[
+     /* returning from the waters of Merom: the coalition is broken, only the chariots and horses remain */
+     {sfx:'holy'},
+     {say:['narrator','And YAHUAH gave them into the hand of Yasharal, who smote them and pursued them to Great Tsiḏon, until none of them remained. Only their chariots and their horses are left upon the field.']},
+   ],
    objectives:[
      {type:'goto',x:28,y:22,radius:2.2,text:'Come against them suddenly by the waters of Merom',
       script:[
@@ -6208,16 +6213,8 @@ STORY.push(
        {say:['voice','Do not be afraid because of them — for tomorrow, about this time, I am giving all of them up slain before Yasharal. Their horses you shall hamstring, and their chariots you shall burn with fire.']},
        {rays:0},
        {say:['kaleb','As numerous as the sand on the seashore, with horses enough to shake the ground — and the word says they are already given. Fall on them, Yahusha. The sword of a man moves faster when YAHUAH has gone ahead of it.']},
-       /* the whole coalition of the north — as sand on the seashore — met suddenly by the waters of Merom */
-       {call:G=>{ const w=G.world; Army.clear(w);
-          Army.spawn(w,{team:'def',pal:'amorite',x:29,y:12,cols:22,rows:6,gap:.72,ranged:true,state:'fight'});
-          Army.spawn(w,{team:'atk',pal:'yasharal',x:29,y:27,cols:16,rows:4,gap:.78,ranged:true,state:'fight'});
-          Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
-       {battle:{foes:['foe1','foe2','foe3','foe4'],hits:2,text:'Suddenly — before their chariots can form!',
-         won:'And YAHUAH gave them into the hand of Yasharal, who smote them and pursued them to Great Tsiḏon, until none of them remained.'}},
-       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
-          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
-          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},
+       {sfx:'holy'},{shake:1},
+       {call:G=>Game.toBattle('merom',1)},
       ]},
      {type:'interact',prop:'char1',text:'Burn the first rank of chariots, as YAHUAH commanded',hiddenUntil:1,
       script:[
@@ -6813,6 +6810,10 @@ Input.init();
 resize();
 /* M0: if deep-linked from the world hub (?play=ID&return=URL), boot into that chapter */
 (function(){ const q=new URLSearchParams(location.search), play=q.get('play'), ret=q.get('return');
+  const resume=q.get('resume');
+  if(resume){ const dot=resume.lastIndexOf('.'); const cid=resume.slice(0,dot), idx=parseInt(resume.slice(dot+1),10);
+    const rch=allChapters().find(c=>c.id===cid);
+    if(rch){ Game._resumeObj=isNaN(idx)?0:idx; Game.startChapter(rch); return; } }
   const ch=play&&allChapters().find(c=>c.id===play);
   if(ch){ Game._returnHub=ret||'world-travel-styled.html'; Game.startChapter(ch); }
   else openTitle();
