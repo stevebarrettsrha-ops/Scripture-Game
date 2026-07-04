@@ -52,6 +52,7 @@
   .ab svg{ display:block; width:58px; height:58px; margin:0 auto 5px; }
   .ab .nm{ color:#8b2b1e; font-weight:bold; font-size:clamp(13px,2vmin,16px);
     letter-spacing:.05em; }
+  .ab .no{ color:#7a5f35; font-weight:normal; font-size:.82em; }
   .ab .mn{ color:#4a3c28; font-size:clamp(10px,1.55vmin,11.5px); line-height:1.5;
     margin-top:4px; }
   footer{ text-align:center; margin-top:5vh; color:var(--dim); font-style:italic;
@@ -257,11 +258,13 @@ function drawTablet(x,w,y,h,words,seed,startN){
   const gap=(avail-fixed-rowH*totalRows)/(words.length-1);
   let cy=y+pad*.9;
   words.forEach((wd,i)=>{
-    const n=String(startN+i);                     /* the number above the command */
+    const n=startN+i;                             /* the number above the command — the letter IS the number */
+    const NUMLET=['','א','ב','ג','ד','ה','ו','ז','ח','ט','י'];
+    drawPaleo(NUMLET[n], x+w/2-16, cy+numH*.5, 26);
     for(const p of [[-1.3,-1.3,'rgba(20,16,10,.9)'],[1,1,'rgba(255,248,230,.35)'],[0,0,'#3a332a']]){
-      const t=el('text',{x:x+w/2+p[0],y:cy+numH*.62+p[1],'text-anchor':'middle',
-        'font-family':'Georgia,serif','font-weight':'bold','font-size':26,fill:p[2]},svg);
-      t.textContent=n;
+      const t=el('text',{x:x+w/2+18+p[0],y:cy+numH*.66+p[1],'text-anchor':'middle',
+        'font-family':'Georgia,serif','font-weight':'bold','font-size':17,fill:p[2]},svg);
+      t.textContent=String(n);
     }
     cy+=numH;
     for(const row of wd.rows){
@@ -334,6 +337,10 @@ function engraveGlyph(glyph,gx,gy,gw,gh){
 drawTablet(140,600,70,1010,WORDS1,7,1);
 drawTablet(860,600,70,1010,WORDS2,23,6);
 
+/* every letter is also a number: the ones, the tens, the hundreds */
+const GEMATRIA={'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
+  'כ':20,'ל':30,'מ':40,'נ':50,'ס':60,'ע':70,'פ':80,'צ':90,'ק':100,'ר':200,'ש':300,'ת':400};
+
 /* ---------- the aleph-bĕyth, as on the chart of the ancient letters ---------- */
 const ALEPHBETH=[
  ['א','Alef','Ox · Strength · Leader'],
@@ -369,7 +376,8 @@ const ALEPHBETH=[
     glyphStrokes(s, PALEO[ch], 16, 15, 68, 68, [
       {dx:2.4,dy:2.6,col:'rgba(70,36,18,.28)',w:8.5},
       {dx:0,dy:0,col:'#7e2818',w:8.5} ]);
-    const nmd=document.createElement('div'); nmd.className='nm'; nmd.textContent=nm;
+    const nmd=document.createElement('div'); nmd.className='nm';
+    nmd.innerHTML=`${nm} <span class="no">· ${GEMATRIA[ch]}</span>`;
     const mnd=document.createElement('div'); mnd.className='mn'; mnd.textContent=mn;
     d.appendChild(nmd); d.appendChild(mnd);
     box.appendChild(d);
@@ -394,7 +402,8 @@ const SCRIPTCHART=[
     glyphStrokes(s, SCRIPT[ch], 16, 15, 68, 68, [
       {dx:2.4,dy:2.6,col:'rgba(70,36,18,.28)',w:8.5},
       {dx:0,dy:0,col:'#7e2818',w:8.5} ]);
-    const nmd=document.createElement('div'); nmd.className='nm'; nmd.textContent=nm;
+    const nmd=document.createElement('div'); nmd.className='nm';
+    nmd.innerHTML=`${nm} <span class="no">· ${GEMATRIA[ch]}</span>`;
     const mnd=document.createElement('div'); mnd.className='mn'; mnd.textContent=snd;
     d.appendChild(nmd); d.appendChild(mnd);
     box.appendChild(d);
