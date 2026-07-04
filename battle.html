@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0e1a">
+<title>Battle — BERĔSHITH</title>
+<style>
+  :root{ --gold:#e8c66a; --gold-dim:#a8893f; --parch:#efe3c8; }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
+  body{font-family:Georgia,'Times New Roman',serif;color:var(--parch);position:fixed;inset:0}
+  @supports(height:100dvh){ html,body{height:100dvh} }
+  #field{position:absolute;inset:0;width:100%;height:100%;display:block;image-rendering:auto}
+
+  .overlay{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;
+           justify-content:center;text-align:center;padding:0 6vw;
+           background:radial-gradient(ellipse at center,rgba(6,8,16,.35),rgba(4,6,12,.78));
+           opacity:0;pointer-events:none;transition:opacity .5s ease}
+  .overlay.show{opacity:1;pointer-events:auto}
+  .ov-ref{color:var(--gold);letter-spacing:.34em;text-transform:uppercase;font-size:clamp(11px,2vmin,15px);
+          margin-bottom:1.4vh;text-shadow:0 2px 8px #000}
+  .ov-title{font-size:clamp(30px,7vmin,64px);font-weight:bold;letter-spacing:.16em;color:#fff7e0;line-height:1.05;
+            text-shadow:0 0 30px rgba(232,198,106,.5),0 3px 0 #2b2008,0 0 90px rgba(255,235,170,.3)}
+  .ov-sub{font-style:italic;color:#cdbf9b;font-size:clamp(14px,2.5vmin,22px);margin-top:2vh;max-width:44ch;line-height:1.5}
+  .ov-forces{display:flex;gap:5vw;margin-top:3vh;align-items:center;justify-content:center;flex-wrap:wrap}
+  .force{display:flex;flex-direction:column;align-items:center;gap:.5vh}
+  .force .swatch{width:22px;height:22px;border-radius:4px;border:1px solid rgba(0,0,0,.4);box-shadow:0 1px 3px #000}
+  .force .fname{letter-spacing:.14em;text-transform:uppercase;font-size:clamp(11px,1.8vmin,14px);color:#e8dfc8}
+  .force .fnum{font-size:clamp(18px,3vmin,26px);color:var(--gold);font-weight:bold}
+  .force .vs{color:#8d8770;font-style:italic;align-self:center}
+  .btn{font-family:inherit;cursor:pointer;margin-top:4vh;
+       background:linear-gradient(180deg,rgba(34,28,12,.9),rgba(18,14,6,.94));
+       color:var(--gold);border:1px solid rgba(232,198,106,.5);border-radius:4px;
+       padding:1.4vh 6vw;font-size:clamp(16px,2.7vmin,22px);letter-spacing:.2em;text-transform:uppercase;
+       transition:all .2s;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  .btn:hover,.btn:focus-visible{color:#fff3cf;border-color:var(--gold);
+       box-shadow:0 0 22px rgba(232,198,106,.4),inset 0 0 18px rgba(232,198,106,.08);outline:none}
+  .btn:active{transform:scale(.98)}
+
+  /* live banner during the battle */
+  #banner{position:absolute;top:calc(1.6vh + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
+          z-index:15;display:flex;gap:16px;align-items:center;padding:7px 18px;border-radius:20px;
+          background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);
+          font-size:clamp(12px,2vmin,15px);letter-spacing:.08em;white-space:nowrap;box-shadow:0 2px 14px rgba(0,0,0,.5)}
+  #banner .side{display:flex;align-items:center;gap:7px}
+  #banner .dot{width:12px;height:12px;border-radius:3px;border:1px solid rgba(0,0,0,.4)}
+  #banner .cnt{color:var(--gold);font-weight:bold;min-width:2.6ch;text-align:right}
+  #banner .nm{color:#d8cba6;text-transform:uppercase;font-size:.86em;letter-spacing:.12em}
+  #hint{position:absolute;bottom:calc(2.4vh + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);
+        z-index:15;color:rgba(239,227,200,.6);font-style:italic;font-size:clamp(11px,1.8vmin,14px);letter-spacing:.12em;
+        text-shadow:0 1px 4px #000;animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:.95}}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+
+<div id="banner" class="hidden">
+  <div class="side"><span class="dot" id="b-atk-dot"></span><span class="nm" id="b-atk-nm"></span><span class="cnt" id="b-atk"></span></div>
+  <div style="color:#8d8770;font-style:italic">against</div>
+  <div class="side"><span class="cnt" id="b-def"></span><span class="nm" id="b-def-nm"></span><span class="dot" id="b-def-dot"></span></div>
+</div>
+<div id="hint" class="hidden">tap to spur the host forward</div>
+
+<div id="titleOv" class="overlay">
+  <div class="ov-ref" id="t-ref"></div>
+  <div class="ov-title" id="t-title"></div>
+  <div class="ov-sub" id="t-sub"></div>
+  <div class="ov-forces" id="t-forces"></div>
+  <button class="btn" id="t-begin">⚔ &nbsp;Join the battle</button>
+</div>
+
+<div id="overOv" class="overlay">
+  <div class="ov-ref" id="o-ref"></div>
+  <div class="ov-title" id="o-title"></div>
+  <div class="ov-sub" id="o-sub"></div>
+  <button class="btn" id="o-return">Return to the story &nbsp;▸</button>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   BATTLE — a self-contained war-fight arena.
+   Everything on ONE consistent scale: soldiers, horsemen,
+   chariots, donkeys and oxen, trees, rocks, walls, gate.
+   Launched from a story page with ?b=<preset>&return=<url>.
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const cv=$('field'), ctx=cv.getContext('2d');
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const lerp=(a,b,t)=>a+(b-a)*t;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+/* ---------- palettes (kept consistent with the story books) ----------
+   Only the OTHER nations are colour-coded, each by a single identifying hue.
+   Yasharal is NOT colour-coded: the host wears natural, undyed wool and linen,
+   varied man to man, so they read as a people rather than a faction. */
+const PAL={
+  kenaan:  {robe:'#3f5f96', trim:'#cfc7b4', skin:'#6e4a28', hair:'#1d1208'},   /* Kena‘anite city blue */
+  amorite: {robe:'#6a4e86', trim:'#caa23c', skin:'#644323', hair:'#1d1208'},   /* Amorite coalition purple */
+  midian:  {robe:'#3f8078', trim:'#d0b24a', skin:'#6e4a28', hair:'#1d1208'},   /* Miḏyanite desert teal */
+  amaleq:  {robe:'#9c3f39', trim:'#e0b048', skin:'#6e4526', hair:'#1a1008'},   /* Amaleqite desert red */
+  kush:    {robe:'#6f8a34', trim:'#d8c46a', skin:'#49301d', hair:'#0f0a06'},   /* Kushite olive & gold */
+  rebel:   {robe:'#864e5e', trim:'#caa23c', skin:'#5a3a20', hair:'#160e08'},   /* the rebel guard of Kush */
+};
+/* the natural garb of Yasharal — earth-toned homespun, no dye, chosen per man */
+const YASHARAL_GARB=[
+  {robe:'#cbb890', trim:'#7c5e34', skin:'#7a4e29', hair:'#2c1a0c'},
+  {robe:'#b49b6c', trim:'#6b5330', skin:'#6e4a28', hair:'#241407'},
+  {robe:'#a88a5e', trim:'#5c4527', skin:'#835531', hair:'#2c1a0c'},
+  {robe:'#c1ae83', trim:'#6f5836', skin:'#6b451f', hair:'#1d1208'},
+  {robe:'#9c8455', trim:'#54401f', skin:'#5f3e1f', hair:'#161009'},
+];
+const NEUTRAL='#efe3c8';  /* the parchment marker that stands for Yasharal in the UI (not a faction colour) */
+
+/* ---------- battle presets: the amount of the host per story ---------- */
+const BATTLES={
+  yeriho:{ ref:'YAHUSHA 6', title:'The Walls of Yeriḥo',
+    sub:'The seventh circuit, the great shout — the ram at the gate, and the wall falls flat before the host of Yasharal.',
+    field:[40,19], ground:'plain', siege:true, city:{y:3.0, span:9},
+    atk:{pal:'yasharal', name:'Yasharal', foot:96, archer:30, horse:12},
+    def:{pal:'kenaan',   name:'Yeriḥo',   foot:60, archer:24, horse:6},
+    win:'The wall fell down flat, and the people went up — every man straight before him. They took the city, and burned it with fire.' },
+  ai:{ ref:'YAHUSHA 8', title:'The Ambush of Ai',
+    sub:'The feigned flight draws the men of Ai from the gate — then the ambush rises, the city burns, and the host turns.',
+    field:[42,19], ground:'rocky', fire:true, pincer:true, city:{y:3.2, span:7},
+    atk:{pal:'yasharal', name:'Yasharal', foot:88, archer:26, horse:14},
+    def:{pal:'amorite',  name:'Ai',       foot:52, archer:16, horse:8},
+    win:'Caught between the ambush and the returning host, not a man of Ai was left to flee — and Yahusha made the city a heap forever.' },
+  gibon:{ ref:'YAHUSHA 10', title:'Sun, Stand Still Over Giḇ‛on',
+    sub:'The five sovereigns of the Amorites, met suddenly out of the all-night march — and great stones fall from the heavens.',
+    field:[44,21], ground:'plain', hail:true,
+    atk:{pal:'yasharal', name:'Yasharal', foot:104, archer:30, horse:20},
+    def:{pal:'amorite',  name:'Five Kings',foot:88, archer:26, horse:20, chariot:4},
+    win:'YAHUAH confused them before Yasharal — more died by the hailstones than by the sword.' },
+  merom:{ ref:'YAHUSHA 11', title:'The Waters of Merom',
+    sub:'The whole coalition of the north — as sand on the seashore, with horses and chariots very many.',
+    field:[48,23], ground:'plain', waters:true, chariots:true,
+    atk:{pal:'yasharal', name:'Yasharal', foot:112, archer:32, horse:22},
+    def:{pal:'amorite',  name:'The North', foot:120, archer:34, horse:28, chariot:8},
+    win:'YAHUAH gave them into the hand of Yasharal; their horses were hamstrung and their chariots burned with fire.' },
+
+  /* ---- BAMIḎBAR (Numbers) ---- */
+  sihon:{ ref:'BAMIḎBAR 21:21–31', title:'Siḥon at Yahats', biome:'rocky',
+    sub:'Siḥon would not let Yasharal pass — he gathered all his people and came out into the wilderness to fight.',
+    field:[44,21], ground:'rocky',
+    atk:{pal:'yasharal', name:'Yasharal', foot:100, archer:28, horse:12},
+    def:{pal:'amorite',  name:'Ḥeshbon',  foot:84,  archer:24, horse:12},
+    win:'Yasharal struck Siḥon with the edge of the sword and took his land, from the Arnon to the Yabboq.' },
+  og:{ ref:'BAMIḎBAR 21:33–35', title:'Og of Bashan at Edre‘i', biome:'bashan',
+    sub:'Og, the last of the Repha’im, came out with all his people to battle at Edre‘i — “do not fear him.”',
+    field:[44,21], ground:'plain',
+    atk:{pal:'yasharal', name:'Yasharal', foot:104, archer:28, horse:14},
+    def:{pal:'amorite',  name:'Bashan',   foot:92,  archer:22, horse:16},
+    win:'They struck Og, and his sons, and all his people, until no survivor was left — and took his land.' },
+  midian:{ ref:'BAMIḎBAR 31', title:'The War on Miḏyan', biome:'desert',
+    sub:'A thousand from every tribe, armed for battle, with Pineḥas and the trumpets of alarm — against Miḏyan and the counsel of Bil‘am.',
+    field:[46,22], ground:'desert', fire:true, city:{y:3.1, span:7},
+    atk:{pal:'yasharal', name:'Yasharal', foot:96,  archer:30, horse:16},
+    def:{pal:'midian',   name:'Miḏyan',   foot:88,  archer:24, horse:18, chariot:2},
+    win:'They warred against Miḏyan, slew her five kings and Bil‘am son of Be‘or, and burned all their cities and encampments with fire.' },
+
+  /* ---- SHEMOTH (Exodus) ---- */
+  amaleq:{ ref:'SHEMOTH 17:8–16', title:'Amaleq at Rephiḏim', biome:'rocky',
+    sub:'While the hands of Mosheh are lifted on the hill, Yahusha and the chosen men fight Amaleq below.',
+    field:[42,20], ground:'rocky',
+    atk:{pal:'yasharal', name:'Yasharal', foot:78, archer:20, horse:6},
+    def:{pal:'amaleq',   name:'Amaleq',   foot:70, archer:18, horse:10},
+    win:'Yahusha overwhelmed Amaleq with the edge of the sword — for the hands were steady until the going down of the sun.' },
+  kush:{ ref:'YASHAR 72–76', title:'The Siege of Kush', biome:'desert',
+    sub:'Nine years before the walls — and the host, led by Mosheh, breaks open the serpent quarter and takes the city.',
+    field:[42,20], ground:'desert', siege:true, city:{y:3.0, span:8},
+    atk:{pal:'kush',   name:'Kush',        foot:92, archer:28, horse:12},
+    def:{pal:'rebel',  name:'Rebel Guard', foot:56, archer:18, horse:6},
+    win:'The serpent quarter was broken open, the city taken — and the host made Mosheh sovereign over Kush.' },
+};
+
+/* ---------- config from URL ---------- */
+const Q=new URLSearchParams(location.search);
+const KEY=Q.get('b')||'yeriho';
+const CFG=Object.assign({}, BATTLES[KEY]||BATTLES.yeriho);
+/* optional overrides: ?atk=120&def=90 scale the hosts */
+(function(){
+  const oa=parseInt(Q.get('atk'),10), od=parseInt(Q.get('def'),10);
+  const scale=(side,total)=>{ if(!total||total<8) return; const cur=(side.foot||0)+(side.archer||0)+(side.horse||0);
+    const f=total/cur; side.foot=Math.round((side.foot||0)*f); side.archer=Math.round((side.archer||0)*f); side.horse=Math.round((side.horse||0)*f); };
+  if(oa) scale(CFG.atk,oa); if(od) scale(CFG.def,od);
+})();
+const RETURN=Q.get('return')||'index.html';
+/* the battle should resemble where the story left the player — take the scene's terrain and hour */
+const BIOME=(Q.get('biome')||CFG.biome||'').toLowerCase();
+const TIME=(Q.get('time')||CFG.time||'day').toLowerCase();
+if(Q.get('water')==='1') CFG.waters=true;
+/* biome → ground tone, kept in family with the story books */
+const GROUND={
+  desert:'#cbb27a', sand:'#cbb27a', dunes:'#d3ba82', wilderness:'#c2ad78', arabah:'#c2ad78', wasteland:'#bfa871',
+  plains:'#7f9450', plain:'#7f9450', grass:'#7f9450', field:'#7f9450', pasture:'#7d9a4c',
+  wild:'#8f9a54', valley:'#789a4e', river:'#7c9a52', jordan:'#7c9a52',
+  rocky:'#9a8c6a', rock:'#9a8c6a', hills:'#93925f', mountain:'#8f8574', ararat:'#8f8574',
+  eden:'#6f9a48', garden:'#6f9a48', city:'#9a8c6a', ruins:'#9a8c6a', bashan:'#7a8f4a',
+};
+function groundBase(){ return GROUND[BIOME] || (CFG.ground==='rocky'?'#9a8c6a':(CFG.ground==='desert'?'#cbb27a':'#7f9450')); }
+/* hour → a full-canvas wash so dawn, dusk and night read at a glance */
+const TIME_TINT={ dawn:'rgba(180,150,120,0.16)', morning:'rgba(255,236,190,0.10)',
+  dusk:'rgba(120,66,38,0.24)', evening:'rgba(120,66,38,0.24)', sunset:'rgba(140,70,40,0.26)',
+  night:'rgba(18,28,66,0.44)', midnight:'rgba(14,22,58,0.5)' };
+
+/* ---------- world / camera fit (whole field visible, one scale) ---------- */
+let CW=CFG.field[0], CH=CFG.field[1];
+let CELL=24, ox=0, oy=0, DPR=1;
+function fit(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  const w=window.innerWidth, h=window.innerHeight;
+  cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR);
+  cv.style.width=w+'px'; cv.style.height=h+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  /* fit the whole battlefield with a little margin so nothing is clipped */
+  CELL=Math.min(w/(CW+2), h/(CH+3));
+  ox=(w-CW*CELL)/2; oy=(h-CH*CELL)/2 + CELL*0.4;
+  VW=w; VH=h;
+}
+let VW=innerWidth, VH=innerHeight;
+addEventListener('resize',fit);
+const X=cx=>ox+cx*CELL, Y=cy=>oy+cy*CELL;
+
+/* ============================================================
+   RENDERERS — every figure in CELL units, so all are one scale
+   ============================================================ */
+function shadow(g,sx,sy,rw){ g.fillStyle='rgba(0,0,0,.20)'; g.beginPath(); g.ellipse(sx,sy,rw,rw*.4,0,0,Math.PI*2); g.fill(); }
+
+/* a foot soldier / archer — ~1 cell tall */
+function drawSoldier(g,sx,sy,u,t){
+  const c=u.col, C=CELL, dir=u.dir||1;
+  if(u.dead){ const a=clamp(u.fade,0,1); if(a<=0) return;
+    g.globalAlpha=a*.85; shadow(g,sx,sy,C*.42);
+    g.fillStyle=c.robe; g.fillRect(sx-C*.42,sy-C*.16,C*.84,C*.22);
+    g.fillStyle=c.skin; g.beginPath(); g.arc(sx+dir*C*.4,sy-C*.08,C*.12,0,Math.PI*2); g.fill();
+    g.globalAlpha=1; return; }
+  const bob=u.moving?Math.sin(t/110+u.ph)*C*.05:Math.sin(t/520+u.ph)*C*.02;
+  const y0=sy+bob;
+  shadow(g,sx,sy,C*.30);
+  /* weapon */
+  if(u.kind==='archer'){ g.strokeStyle='#6a5330'; g.lineWidth=C*.06;
+    g.beginPath(); g.arc(sx+dir*C*.2,y0-C*.5,C*.28,-1,1); g.stroke(); }
+  else { g.strokeStyle='#6a5330'; g.lineWidth=C*.06;
+    g.beginPath(); g.moveTo(sx+dir*C*.12,y0-C*.34); g.lineTo(sx+dir*C*.2,y0-C*1.02); g.stroke();
+    g.fillStyle='#d2ccbf'; g.beginPath();
+    g.moveTo(sx+dir*C*.2,y0-C*1.14); g.lineTo(sx+dir*C*.11,y0-C*.96); g.lineTo(sx+dir*C*.29,y0-C*.96); g.closePath(); g.fill(); }
+  /* legs */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.09;
+  g.beginPath(); g.moveTo(sx-C*.1,y0-C*.06); g.lineTo(sx-C*.1,y0); g.moveTo(sx+C*.1,y0-C*.06); g.lineTo(sx+C*.1,y0); g.stroke();
+  /* body */
+  g.fillStyle=c.robe; g.fillRect(sx-C*.17,y0-C*.55,C*.34,C*.5);
+  g.fillStyle=c.trim; g.fillRect(sx-C*.17,y0-C*.55,C*.34,C*.09);
+  if(u.shield){ g.fillStyle=c.trim; g.beginPath(); g.ellipse(sx-dir*C*.2,y0-C*.3,C*.11,C*.19,0,0,Math.PI*2); g.fill();
+    g.strokeStyle='rgba(0,0,0,.3)'; g.lineWidth=1; g.stroke(); }
+  /* head */
+  g.fillStyle=c.skin; g.beginPath(); g.arc(sx,y0-C*.66,C*.15,0,Math.PI*2); g.fill();
+  g.fillStyle=c.hair; g.beginPath(); g.arc(sx,y0-C*.7,C*.15,Math.PI*1.05,Math.PI*1.95); g.fill();
+}
+
+/* a horseman — rider on a horse, ~1.5 cells long, same scale family */
+function drawHorseman(g,sx,sy,u,t){
+  const c=u.col, C=CELL, dir=u.dir||1;
+  if(u.dead){ const a=clamp(u.fade,0,1); if(a<=0) return;
+    g.globalAlpha=a*.8; shadow(g,sx,sy,C*.6);
+    g.fillStyle='#5a4632'; g.fillRect(sx-C*.6,sy-C*.2,C*1.2,C*.26);
+    g.globalAlpha=1; return; }
+  const gallop=u.moving?Math.sin(t/90+u.ph):0;
+  shadow(g,sx,sy,C*.55);
+  const hb='#5a4230', hb2='#4a351f';
+  /* legs */
+  g.strokeStyle=hb2; g.lineWidth=C*.08;
+  for(let i=0;i<4;i++){ const lx=sx+(i<2?-1:1)*dir*C*.34*(i%2?1:.6); const sw=Math.sin(t/90+u.ph+i)*C*.06*(u.moving?1:0);
+    g.beginPath(); g.moveTo(lx,sy-C*.34); g.lineTo(lx+sw,sy); g.stroke(); }
+  /* body */
+  g.fillStyle=hb; g.beginPath(); g.ellipse(sx,sy-C*.46,C*.55,C*.24,0,0,Math.PI*2); g.fill();
+  /* neck + head */
+  g.fillStyle=hb; g.beginPath();
+  g.moveTo(sx+dir*C*.4,sy-C*.5); g.lineTo(sx+dir*C*.72,sy-C*.9); g.lineTo(sx+dir*C*.9,sy-C*.86);
+  g.lineTo(sx+dir*C*.62,sy-C*.44); g.closePath(); g.fill();
+  g.fillStyle=hb2; g.beginPath(); g.ellipse(sx+dir*C*.86,sy-C*.88,C*.12,C*.08,dir*.4,0,Math.PI*2); g.fill();
+  /* tail */
+  g.strokeStyle=hb2; g.lineWidth=C*.08; g.beginPath();
+  g.moveTo(sx-dir*C*.55,sy-C*.5); g.quadraticCurveTo(sx-dir*C*.8,sy-C*.4,sx-dir*C*.72,sy-C*.05); g.stroke();
+  /* rider */
+  g.fillStyle=c.robe; g.fillRect(sx-C*.14,sy-C*.95,C*.28,C*.42);
+  g.fillStyle=c.trim; g.fillRect(sx-C*.14,sy-C*.95,C*.28,C*.08);
+  g.fillStyle=c.skin; g.beginPath(); g.arc(sx,sy-C*1.04,C*.13,0,Math.PI*2); g.fill();
+  /* spear */
+  g.strokeStyle='#6a5330'; g.lineWidth=C*.06;
+  g.beginPath(); g.moveTo(sx+dir*C*.1,sy-C*.7); g.lineTo(sx+dir*C*.22,sy-C*1.4); g.stroke();
+}
+
+/* a chariot — two horses, box and wheel */
+function drawChariot(g,sx,sy,u,t){
+  const c=u.col, C=CELL, dir=u.dir||1;
+  if(u.dead){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
+    g.fillStyle='#3a2c1c'; g.fillRect(sx-C*.7,sy-C*.3,C*1.4,C*.3); g.globalAlpha=1; return; }
+  shadow(g,sx,sy,C*.8);
+  const hb='#5a4230';
+  /* two horses ahead */
+  for(const off of [-.22,.22]){
+    g.fillStyle=hb; g.beginPath(); g.ellipse(sx+dir*C*.7,sy-C*.4+off*C,C*.5,C*.2,0,0,Math.PI*2); g.fill();
+    g.fillStyle='#4a351f'; g.beginPath(); g.ellipse(sx+dir*C*1.12,sy-C*.66+off*C,C*.1,C*.07,0,0,Math.PI*2); g.fill();
+    g.strokeStyle='#4a351f'; g.lineWidth=C*.07;
+    g.beginPath(); g.moveTo(sx+dir*C*.5,sy-C*.28+off*C); g.lineTo(sx+dir*C*.5,sy+off*C); g.stroke();
+  }
+  /* wheel */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.09;
+  g.beginPath(); g.arc(sx-dir*C*.25,sy,C*.34,0,Math.PI*2); g.stroke();
+  for(let i=0;i<6;i++){ const a=t/500+i; g.beginPath(); g.moveTo(sx-dir*C*.25,sy); g.lineTo(sx-dir*C*.25+Math.cos(a)*C*.32,sy+Math.sin(a)*C*.32); g.stroke(); }
+  /* box + driver */
+  g.fillStyle=c.trim; g.fillRect(sx-dir*C*.5,sy-C*.5,C*.5,C*.42);
+  g.fillStyle=c.robe; g.fillRect(sx-dir*C*.32,sy-C*.9,C*.28,C*.42);
+  g.fillStyle=c.skin; g.beginPath(); g.arc(sx-dir*C*.18,sy-C*.98,C*.13,0,Math.PI*2); g.fill();
+}
+
+/* baggage beasts at the camps — donkey / ox, same scale */
+function drawBeast(g,sx,sy,kind,t,ph){
+  const C=CELL; const bob=Math.sin(t/700+ph)*C*.02;
+  shadow(g,sx,sy,C*.5);
+  const col= kind==='ox'?'#7a6248':(kind==='donkey'?'#8a8072':'#6a5642');
+  g.strokeStyle='#4a3a28'; g.lineWidth=C*.08;
+  for(const lx of [-.3,-.1,.1,.3]){ g.beginPath(); g.moveTo(sx+lx*C,sy-C*.3); g.lineTo(sx+lx*C,sy); g.stroke(); }
+  g.fillStyle=col; g.beginPath(); g.ellipse(sx,sy-C*.44+bob,C*.5,C*.22,0,0,Math.PI*2); g.fill();
+  g.fillStyle=col; g.beginPath(); g.ellipse(sx+C*.52,sy-C*.56+bob,C*.16,C*.12,0,0,Math.PI*2); g.fill();  /* head */
+  if(kind==='ox'){ g.strokeStyle='#e8e0d0'; g.lineWidth=C*.05;
+    g.beginPath(); g.moveTo(sx+C*.5,sy-C*.66+bob); g.lineTo(sx+C*.62,sy-C*.78+bob); g.moveTo(sx+C*.56,sy-C*.66+bob); g.lineTo(sx+C*.66,sy-C*.72+bob); g.stroke(); }
+  else { g.fillStyle=col; g.beginPath(); g.moveTo(sx+C*.46,sy-C*.66+bob); g.lineTo(sx+C*.44,sy-C*.82+bob); g.lineTo(sx+C*.5,sy-C*.66+bob); g.fill();
+         g.beginPath(); g.moveTo(sx+C*.56,sy-C*.66+bob); g.lineTo(sx+C*.6,sy-C*.82+bob); g.lineTo(sx+C*.62,sy-C*.66+bob); g.fill(); }   /* ears */
+}
+
+/* scenery — trees & rocks in the SAME CELL scale */
+function drawTree(g,sx,sy,t,ph){
+  const C=CELL, sway=Math.sin(t/1400+ph)*C*.05;
+  shadow(g,sx,sy,C*.7);
+  g.fillStyle='#6a4a2a'; g.fillRect(sx-C*.09,sy-C*1.1,C*.18,C*1.1);
+  g.fillStyle='#3f6b30'; g.beginPath(); g.arc(sx+sway,sy-C*1.5,C*.72,0,Math.PI*2); g.fill();
+  g.fillStyle='#4c7d3a'; g.beginPath(); g.arc(sx+sway-C*.4,sy-C*1.3,C*.5,0,Math.PI*2);
+  g.arc(sx+sway+C*.42,sy-C*1.32,C*.48,0,Math.PI*2); g.fill();
+  g.fillStyle='rgba(255,250,220,.10)'; g.beginPath(); g.arc(sx+sway-C*.2,sy-C*1.7,C*.4,0,Math.PI*2); g.fill();
+}
+function drawRock(g,sx,sy){
+  const C=CELL; shadow(g,sx,sy,C*.5);
+  g.fillStyle='#8a857a'; g.beginPath(); g.moveTo(sx-C*.5,sy); g.lineTo(sx-C*.34,sy-C*.42); g.lineTo(sx+C*.12,sy-C*.5); g.lineTo(sx+C*.48,sy-C*.28); g.lineTo(sx+C*.44,sy); g.closePath(); g.fill();
+  g.fillStyle='#a09a8c'; g.beginPath(); g.moveTo(sx-C*.34,sy-C*.42); g.lineTo(sx+C*.12,sy-C*.5); g.lineTo(sx+C*.02,sy-C*.24); g.lineTo(sx-C*.2,sy-C*.2); g.closePath(); g.fill();
+}
+/* a stretch of city wall with crenels + a gate, for sieges */
+function drawWallSeg(g,sx,sy,breached,t){
+  const C=CELL;
+  if(breached){ /* rubble */
+    g.fillStyle='#8a857a';
+    for(let i=0;i<5;i++){ const rx=sx+(i-2)*C*.24; g.beginPath();
+      g.arc(rx,sy-C*.1-((i*7)%3)*C*.08,C*.16,0,Math.PI*2); g.fill(); }
+    return;
+  }
+  shadow(g,sx,sy,C*.7);
+  g.fillStyle='#b9b09c'; g.fillRect(sx-C*.6,sy-C*1.2,C*1.2,C*1.2);
+  g.fillStyle='#c9c0ab'; g.fillRect(sx-C*.6,sy-C*1.2,C*1.2,C*.16);
+  g.fillStyle='#98907e';
+  for(let i=-2;i<=2;i++){ g.fillRect(sx+i*C*.24-C*.08,sy-C*1.38,C*.16,C*.2); }
+  g.strokeStyle='rgba(0,0,0,.14)'; g.lineWidth=1;
+  for(let r=0;r<4;r++) g.strokeRect(sx-C*.6,sy-C*1.2+r*C*.3,C*1.2,C*.3);
+}
+function drawGate(g,sx,sy,open){
+  const C=CELL; shadow(g,sx,sy,C*.9);
+  g.fillStyle='#b9b09c'; g.fillRect(sx-C*.85,sy-C*1.6,C*1.7,C*1.6);
+  g.fillStyle=open?'#2a1e12':'#5a3f22'; g.beginPath();
+  g.moveTo(sx-C*.4,sy); g.lineTo(sx-C*.4,sy-C*.9); g.arc(sx,sy-C*.9,C*.4,Math.PI,0); g.lineTo(sx+C*.4,sy); g.closePath(); g.fill();
+  g.fillStyle='#98907e';
+  for(let i=-3;i<=3;i++){ g.fillRect(sx+i*C*.24-C*.08,sy-C*1.78,C*.16,C*.22); }
+  /* towers */
+  for(const tx of [-1.0,1.0]){ g.fillStyle='#c9c0ab'; g.fillRect(sx+tx*C-C*.3,sy-C*2.0,C*.6,C*2.0);
+    g.fillStyle='#7a92c0'; g.beginPath(); g.moveTo(sx+tx*C-C*.34,sy-C*2.0); g.lineTo(sx+tx*C,sy-C*2.5); g.lineTo(sx+tx*C+C*.34,sy-C*2.0); g.closePath(); g.fill(); }
+}
+
+/* ---------- particles: arrows, sparks, smoke, dust, hail — one scale ---------- */
+const P=[];
+function spawn(p){ if(P.length<900) P.push(p); }
+function burst(cx,cy,kind,n){ for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=.02+Math.random()*.05;
+  spawn({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-.02,life:500+Math.random()*400,max:900,kind}); } }
+function updateParticles(dt){ for(let i=P.length-1;i>=0;i--){ const p=P[i];
+  p.x+=p.vx*dt/16; p.y+=p.vy*dt/16; if(p.grav)p.vy+=p.grav*dt; p.life-=dt; if(p.life<=0)P.splice(i,1); } }
+function drawParticles(g){ const C=CELL;
+  for(const p of P){ const sx=X(p.x),sy=Y(p.y),a=clamp(p.life/p.max,0,1);
+    if(p.kind==='arrow'){ const vl=Math.hypot(p.vx,p.vy)||1; g.strokeStyle=`rgba(58,44,26,${a})`; g.lineWidth=C*.05;
+      g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-p.vx/vl*C*.5,sy-p.vy/vl*C*.5); g.stroke(); }
+    else if(p.kind==='spark'){ g.fillStyle=`rgba(255,${150+a*80|0},60,${a})`; g.fillRect(sx-C*.05,sy-C*.05,C*.12,C*.12); }
+    else if(p.kind==='dust'){ g.fillStyle=`rgba(150,135,110,${a*.5})`; g.beginPath(); g.arc(sx,sy,C*.12*(1.4-a),0,Math.PI*2); g.fill(); }
+    else if(p.kind==='smoke'){ g.fillStyle=`rgba(70,64,58,${a*.4})`; g.beginPath(); g.arc(sx,sy,C*.2+(1-a)*C*.5,0,Math.PI*2); g.fill(); }
+    else if(p.kind==='hail'){ g.fillStyle=`rgba(236,245,252,${a})`; g.fillRect(sx-C*.08,sy-C*.08,C*.18,C*.18); }
+    else if(p.kind==='fire'){ g.fillStyle=`rgba(255,${120+a*100|0},40,${a})`; g.beginPath(); g.arc(sx,sy,C*.14,0,Math.PI*2); g.fill(); }
+  }
+}
+
+/* ============================================================
+   UNITS & ARMIES
+   ============================================================ */
+const A=[];   /* all units */
+let scenery=[], walls=[], gate=null, camps=[], city=null, ram=null, banners=[];
+let CEN={atk:null,def:null};   /* living centroid of each host — banners ride on it */
+function rngScene(){ return mulberry32(97+CW*31+CH*17); }
+
+/* a cluster of flat-roofed mud-brick houses — the town itself, so its fall can be seen */
+function drawHouse(g,h,burning,t){
+  const C=CELL, sx=X(h.x), sy=Y(h.y);
+  shadow(g,sx,sy,C*h.w*.55);
+  /* body */
+  g.fillStyle = burning ? '#5c4834' : h.wall;
+  g.fillRect(sx-C*h.w/2, sy-C*h.h, C*h.w, C*h.h);
+  /* flat roof lip */
+  g.fillStyle = burning ? '#33251a' : h.roof;
+  g.fillRect(sx-C*h.w/2, sy-C*h.h, C*h.w, C*.15);
+  /* doorway */
+  g.fillStyle = burning ? 'rgba(255,150,45,.85)' : '#2a1c10';
+  g.fillRect(sx-C*.1, sy-C*.44, C*.2, C*.44);
+  /* a small window — glows when the fire is within */
+  g.fillStyle = burning ? 'rgba(255,170,55,.9)' : 'rgba(0,0,0,.22)';
+  g.fillRect(sx-C*h.w*.30, sy-C*h.h*.62, C*.14, C*.14);
+  if(burning){ g.fillStyle='rgba(30,20,14,.35)'; g.fillRect(sx-C*h.w/2, sy-C*h.h, C*h.w, C*h.h*.5); }
+}
+
+/* a battering ram — a roofed engine on wheels with a swinging iron-headed log, driven up to the gate */
+function drawRam(g,r,t){
+  const C=CELL, sx=X(r.x), sy=Y(r.y);
+  shadow(g,sx,sy,C*.95);
+  const swing = r.battering ? Math.sin(t/150)*C*.4 : 0;   /* the log rocks back and forth as it strikes */
+  /* the suspended ram-log, pointing up toward the gate */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.06;
+  g.beginPath(); g.moveTo(sx-C*.5,sy-C*.7); g.lineTo(sx+swing*.4,sy-C*1.15);
+                 g.moveTo(sx+C*.5,sy-C*.7); g.lineTo(sx+swing*.4,sy-C*1.15); g.stroke();
+  g.strokeStyle='#5a4a34'; g.lineWidth=C*.26; g.lineCap='round';
+  g.beginPath(); g.moveTo(sx,sy-C*.55); g.lineTo(sx+swing,sy-C*1.5); g.stroke(); g.lineCap='butt';
+  g.fillStyle='#6b6b74'; g.beginPath(); g.arc(sx+swing,sy-C*1.55,C*.2,0,Math.PI*2); g.fill();  /* iron head */
+  /* the roofed frame */
+  g.fillStyle='#6a4a2a'; g.fillRect(sx-C*.62,sy-C*.72,C*1.24,C*.5);
+  g.fillStyle='#7a5a36'; g.beginPath(); g.moveTo(sx-C*.72,sy-C*.72); g.lineTo(sx,sy-C*1.02); g.lineTo(sx+C*.72,sy-C*.72); g.closePath(); g.fill();
+  /* wheels */
+  g.fillStyle='#2e2114';
+  for(const wx of [-.4,.4]){ g.beginPath(); g.arc(sx+wx*C,sy,C*.2,0,Math.PI*2); g.fill(); }
+}
+
+/* a war-standard carried above the ranks — the nations by their colour, Yasharal by a plain tribal ensign */
+function drawBanner(g,sx,sy,pal,team,t){
+  const C=CELL, sway=Math.sin(t/500+sx*.03)*C*.12;
+  g.strokeStyle='#4a3a24'; g.lineWidth=C*.07;
+  g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx,sy-C*2.5); g.stroke();
+  g.fillStyle='#caa23c'; g.beginPath(); g.arc(sx,sy-C*2.55,C*.1,0,Math.PI*2); g.fill();   /* gilt finial */
+  if(pal==='yasharal'){
+    /* Yasharal: a vertical ensign of undyed cloth with a simple emblem — not a faction colour */
+    g.fillStyle='#e7dcc0'; g.fillRect(sx+C*.02,sy-C*2.42,C*.62+sway*.2,C*.9);
+    g.strokeStyle='rgba(0,0,0,.18)'; g.lineWidth=1; g.strokeRect(sx+C*.02,sy-C*2.42,C*.62+sway*.2,C*.9);
+    g.fillStyle='#8a6f3a'; g.beginPath(); g.arc(sx+C*.34+sway*.1,sy-C*1.98,C*.14,0,Math.PI*2); g.fill();
+  } else {
+    /* the nation: a triangular pennant in its identifying hue */
+    const p=PAL[pal]||PAL.kenaan;
+    g.fillStyle=p.robe; g.beginPath();
+    g.moveTo(sx+C*.02,sy-C*2.45); g.lineTo(sx+C*.9+sway,sy-C*2.1); g.lineTo(sx+C*.02,sy-C*1.75); g.closePath(); g.fill();
+    g.fillStyle=p.trim; g.beginPath();
+    g.moveTo(sx+C*.02,sy-C*2.05); g.lineTo(sx+C*.5+sway*.6,sy-C*1.92); g.lineTo(sx+C*.02,sy-C*1.8); g.closePath(); g.fill();
+  }
+}
+
+function makeUnit(o){ return {
+  team:o.team, kind:o.kind||'foot',
+  col: o.pal==='yasharal' ? YASHARAL_GARB[(Math.random()*YASHARAL_GARB.length)|0] : (PAL[o.pal]||PAL.kenaan),
+  x:o.x, y:o.y, hp:o.kind==='chariot'?3:1, dead:false, fade:1,
+  state:o.state||'form', tx:o.tx!==undefined?o.tx:o.x, ty:o.ty!==undefined?o.ty:o.y,
+  spd:(o.kind==='horse'?.0030:o.kind==='chariot'?.0026:.0018)*(.8+Math.random()*.4),
+  ph:Math.random()*6, foe:null, cd:Math.random()*400, acd:Math.random()*1500,
+  dir:o.dir!==undefined?o.dir:(o.team==='atk'?1:-1),
+  shield:o.kind==='foot'&&Math.random()<.5,
+}; }
+
+function spawnHost(side, team, cyBase){
+  const advDir = team==='atk'? -1 : 1;   /* atk advances toward smaller y (up), def toward larger y (down) */
+  /* order front→rear: the mounted charge leads (chariots, then cavalry), the foot mass behind, archers at the rear */
+  const list=[];
+  for(let i=0;i<(side.chariot||0);i++) list.push('chariot');
+  for(let i=0;i<(side.horse||0);i++) list.push('horse');
+  for(let i=0;i<(side.foot||0);i++) list.push('foot');
+  for(let i=0;i<(side.archer||0);i++) list.push('archer');
+  /* denser ranks: tighter spacing, broader frontage, more men to a row */
+  const gap=0.6, frontage=CW*0.84, perRow=Math.max(18,Math.floor(frontage/gap));
+  for(let idx=0;idx<list.length;idx++){
+    const r=Math.floor(idx/perRow), c=idx%perRow, rowN=Math.min(perRow,list.length-r*perRow);
+    A.push(makeUnit({team,pal:side.pal,kind:list[idx],
+      x:CW/2+(c-(rowN-1)/2)*gap+(Math.random()-.5)*.18,
+      y:cyBase - advDir*r*0.62 + (Math.random()-.5)*.14, dir:1 }));
+  }
+}
+
+function count(team){ let n=0; for(const u of A) if(u.team===team&&!u.dead)n++; return n; }
+function order(team,o){ for(const u of A){ if(u.team!==team||u.dead) continue;
+  if(o.tx!==undefined)u.tx=o.tx; if(o.ty!==undefined)u.ty=o.ty; if(o.state)u.state=o.state; } }
+
+let GRID=null, GW=0;
+function buildGrid(){ GW=Math.ceil(CW)+1; GRID=new Array(GW*(Math.ceil(CH)+1));
+  for(const u of A){ if(u.dead) continue; const gi=(u.x|0)+(u.y|0)*GW; (GRID[gi]||(GRID[gi]=[])).push(u); } }
+function updateUnits(dt,t){
+  let ax=0,ay=0,an=0,bx=0,by=0,bn=0;
+  for(const u of A){ if(u.dead) continue; if(u.team==='atk'){ax+=u.x;ay+=u.y;an++;} else {bx+=u.x;by+=u.y;bn++;} }
+  const cenA=an?{x:ax/an,y:ay/an}:null, cenD=bn?{x:bx/bn,y:by/bn}:null;
+  CEN.atk=cenA; CEN.def=cenD;   /* the standards ride on the living centre of each host */
+  buildGrid();   /* coarse grid so units can gently keep their footing apart */
+  for(const u of A){
+    if(u.dead){ u.fade-=dt*.0004; continue; }
+    u.ph+=dt*.01; let mvx=0,mvy=0, spdMul=1;
+    const foeCen=u.team==='atk'?cenD:cenA;
+    if(u.state==='charge'){
+      /* the mounted charge surges ahead of the line, kicking a wall of dust, then piles into the melee */
+      const advY=u.team==='atk'?-1:1; mvx=(Math.random()-.5)*.14; mvy=advY; u.moving=true; spdMul=2.5;
+      u.chargeT-=dt;
+      if(Math.random()<.3) spawn({x:u.x,y:u.y,vx:0,vy:0,life:650,max:650,kind:'dust'});
+      const crossed = u.team==='atk'? u.y<CH*0.44 : u.y>CH*0.56;
+      if(u.chargeT<=0 || crossed) u.state='fight';
+    }
+    else if(u.state==='fight'){
+      /* only lock onto a NEARBY foe (within ~3 cells) so the battle keeps a broad front instead of collapsing to a point */
+      if(!u.foe||u.foe.dead){ let bd=9,bf=null;
+        for(const e of A){ if(e.dead||e.team===u.team) continue; const dx=e.x-u.x,dy=e.y-u.y,d=dx*dx+dy*dy; if(d<bd){bd=d;bf=e;} }
+        u.foe=bf; }
+      if(u.foe){ const dx=u.foe.x-u.x,dy=u.foe.y-u.y,d=Math.hypot(dx,dy)||1;
+        const reach=u.kind==='chariot'?1.1:.7;
+        if(d>reach){ mvx=dx/d; mvy=dy/d; u.moving=true; }
+        else { u.moving=false; u.cd-=dt;
+          if(u.cd<=0){ u.cd=(u.kind==='horse'?600:800)+Math.random()*700;
+            if(Math.random()<.22&&!u.foe.dead){ u.foe.hp-=1;
+              if(u.foe.hp<=0){ u.foe.dead=true; u.foe.deadT=t; burst(u.foe.x,u.foe.y,'spark',3); u.foe=null; } } }
+          mvx=(Math.random()-.5)*.4; mvy=(Math.random()-.5)*.4; }
+      } else { /* no foe near — advance the line toward the enemy side, holding frontage (x) */
+        const advY=u.team==='atk'?-1:1; mvx=(Math.random()-.5)*.12; mvy=advY; u.moving=true; }
+    } else { const dx=u.tx-u.x,dy=u.ty-u.y,d=Math.hypot(dx,dy);
+      if(d>.15){ mvx=dx/d; mvy=dy/d; u.moving=true; } else u.moving=false; }
+    if(mvx) u.dir=mvx<0?-1:1;
+    /* gentle separation from crowded neighbours — keeps ranks from collapsing into knots */
+    let sx=0,sy=0; const gx=u.x|0, gy=u.y|0;
+    for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){ const b=GRID[(gx+ox)+(gy+oy)*GW]; if(!b) continue;
+      for(const o of b){ if(o===u) continue; const dx=u.x-o.x,dy=u.y-o.y,d2=dx*dx+dy*dy; if(d2<.36&&d2>1e-4){ const d=Math.sqrt(d2); sx+=dx/d*(.6-d); sy+=dy/d*(.6-d); } } }
+    u.x=clamp(u.x+mvx*u.spd*spdMul*dt+sx*.06, .5, CW-.5);
+    u.y=clamp(u.y+mvy*u.spd*spdMul*dt+sy*.06, .5, CH-.5);
+    if(u.kind==='archer'&&foeCen){ u.acd-=dt; if(u.acd<=0){ u.acd=900+Math.random()*900;
+      const dx=foeCen.x-u.x,dy=foeCen.y-u.y,l=Math.hypot(dx,dy)||1;
+      spawn({x:u.x,y:u.y-.4,vx:dx/l*.12,vy:dy/l*.12-.05,grav:.00035,life:1600,max:1600,kind:'arrow'}); } }
+    if(u.moving&&Math.random()<.02) spawn({x:u.x,y:u.y,vx:0,vy:0,life:500,max:500,kind:'dust'});
+  }
+}
+
+/* ============================================================
+   SCENE BUILD
+   ============================================================ */
+function build(){
+  const rng=rngScene();
+  /* scatter trees & rocks, avoiding the central clash band */
+  scenery=[];
+  const n=Math.round(CW*CH*0.012);
+  for(let i=0;i<n;i++){ const x=1+rng()*(CW-2), y=1+rng()*(CH-2);
+    if(Math.abs(y-CH/2)<5 && x>CW*.2 && x<CW*.8) continue;   /* keep the field of battle clear */
+    scenery.push({x,y,kind:rng()<.62?'tree':'rock',ph:rng()*6}); }
+  scenery.sort((a,b)=>a.y-b.y);
+  /* baggage camps at the rear of each host */
+  camps=[];
+  for(let i=0;i<4;i++) camps.push({x:CW*.5+(i-1.5)*1.6, y:CH-2.2, kind:i%2?'ox':'donkey', ph:rng()*6});
+  for(let i=0;i<3;i++) camps.push({x:CW*.5+(i-1)*1.6, y:1.8, kind:'donkey', ph:rng()*6});
+  /* the defenders' town — drawn behind the wall, so it can be seen burning when it falls */
+  city=null;
+  if(CFG.city){
+    const span=CFG.city.span, cy=CFG.city.y, houses=[];
+    const tones=[['#c6b389','#a2895d'],['#bda87e','#98835a'],['#cbbb93','#a89065'],['#b6a374','#927c52']];
+    for(let i=0;i<span;i++){
+      const tn=tones[(i*3+1)%tones.length];
+      houses.push({ x:CW/2+(i-(span-1)/2)*1.15, y:cy+(i%2)*0.6,
+        w:0.9+rng()*0.35, h:0.8+rng()*(i%3===0?0.7:0.4), wall:tn[0], roof:tn[1] });
+    }
+    houses.sort((a,b)=>a.y-b.y);
+    city={ y:cy, span, houses, burning:false };
+  }
+  /* walls & gate for a siege — the city rampart runs the whole horizon, off both screen edges */
+  walls=[]; gate=null;
+  if(CFG.siege){ const wy=5;
+    /* extend past the visible field so the wall bleeds off-screen left and right */
+    const cxL=Math.floor(-ox/CELL)-2, cxR=Math.ceil((VW-ox)/CELL)+2;
+    for(let x=cxL;x<=cxR;x+=1.2){ if(Math.abs(x-CW/2)<1.6) continue; walls.push({x,y:wy,breached:false}); }
+    gate={x:CW/2,y:wy,open:false,breached:false};
+  }
+  /* a battering ram rolls up to the gate in a siege */
+  ram = CFG.siege ? {x:CW/2, y:CH*0.6, battering:false} : null;
+  /* the war-standards — a few carried above each host, riding on the moving centroid */
+  banners=[];
+  const bset=(team,n)=>{ for(let i=0;i<n;i++) banners.push({team, ox:(i-(n-1)/2)*3.4}); };
+  bset('atk',3); bset('def', CFG.def.chariot?3:2);
+  /* muster the two hosts across a broad frontage: attackers below, defenders above */
+  A.length=0;
+  spawnHost(CFG.atk,'atk', CH-3);
+  spawnHost(CFG.def,'def', CFG.siege?7.5:6);
+}
+/* the ram rolls up to the gate, then rocks and strikes until the wall is breached */
+function ramTick(dt){
+  if(!ram) return;
+  if(breachDone){ ram.battering=false; return; }
+  if(ram.y>6.3){ ram.y-=dt*0.0024; ram.battering=false; }
+  else { ram.battering=true;
+    if(Math.random()<.05){ burst(ram.x,5.4,'dust',5); burst(ram.x,5.4,'spark',3); } }
+}
+
+/* ============================================================
+   FLOW
+   ============================================================ */
+let state='title', tPrev=0, gt=0, battleT=0, overShown=false;
+const forcesEl=$('t-forces');
+function setupUI(){
+  $('t-ref').textContent=CFG.ref; $('t-title').textContent=CFG.title; $('t-sub').textContent=CFG.sub;
+  const tot=s=>((s.foot||0)+(s.archer||0)+(s.horse||0)+(s.chariot||0));
+  forcesEl.innerHTML='';
+  /* Yasharal gets a neutral parchment marker (no faction colour); the nations get their hue */
+  const swatchOf=side=> side.pal==='yasharal'
+    ? `background:transparent;border:1px solid ${NEUTRAL};box-shadow:inset 0 0 0 2px rgba(239,227,200,.28)`
+    : `background:${PAL[side.pal].robe}`;
+  const mk=(side)=>{ const d=document.createElement('div'); d.className='force';
+    d.innerHTML=`<div class="swatch" style="${swatchOf(side)}"></div><div class="fname">${side.name}</div><div class="fnum">${tot(side)}</div>`; return d; };
+  forcesEl.appendChild(mk(CFG.atk));
+  const vs=document.createElement('div'); vs.className='vs'; vs.textContent='—  against  —'; forcesEl.appendChild(vs);
+  forcesEl.appendChild(mk(CFG.def));
+  const dot=(el,side)=>{ if(side.pal==='yasharal'){ el.style.background='transparent'; el.style.borderColor=NEUTRAL; }
+    else el.style.background=PAL[side.pal].robe; };
+  dot($('b-atk-dot'),CFG.atk); dot($('b-def-dot'),CFG.def);
+  $('b-atk-nm').textContent=CFG.atk.name; $('b-def-nm').textContent=CFG.def.name;
+  $('titleOv').classList.add('show');
+}
+
+function beginBattle(){
+  $('titleOv').classList.remove('show');
+  $('banner').classList.remove('hidden'); $('hint').classList.remove('hidden');
+  state='charge'; battleT=0;
+  order('atk',{state:'fight'}); order('def',{state:'fight'});
+  /* the chariots and cavalry break into a charge ahead of the foot */
+  for(const u of A){ if(u.kind==='horse'||u.kind==='chariot'){ u.state='charge'; u.chargeT=1300+Math.random()*700; } }
+}
+function endBattle(){
+  state='over'; overShown=true;
+  $('banner').classList.add('hidden'); $('hint').classList.add('hidden');
+  $('o-ref').textContent=CFG.ref;
+  $('o-title').textContent='Victory';
+  $('o-sub').textContent=CFG.win;
+  $('overOv').classList.add('show');
+}
+
+/* siege: after the hosts engage, the wall breaches and the attackers pour through */
+let breachDone=false;
+function siegeTick(){
+  if(!CFG.siege||breachDone) return;
+  if(battleT>2600){ breachDone=true;
+    for(const w of walls){ if(Math.abs(w.x-CW/2)<7) w.breached=true; }
+    if(gate){ gate.breached=true; gate.open=true; }
+    if(city) city.burning=true;   /* and they burned the city with fire — Yahusha 6:24 */
+    burst(CW/2,6,'smoke',30); burst(CW/2,6,'dust',24);
+  }
+}
+/* the town ablaze — flame and smoke rise from the houses once the city has fallen */
+function cityFireTick(){
+  if(!city||!city.burning) return;
+  const span=CFG.city.span, cx=CW/2, cy=CFG.city.y;
+  if(Math.random()<.75) spawn({x:cx+(Math.random()-.5)*span*1.15, y:cy-Math.random()*.7,
+    vx:(Math.random()-.5)*.01, vy:-.03-Math.random()*.025, life:600+Math.random()*400, max:1000, kind:'fire'});
+  if(Math.random()<.55) spawn({x:cx+(Math.random()-.5)*span*1.25, y:cy-.7,
+    vx:.006, vy:-.03, life:1400, max:1400, kind:'smoke'});
+}
+/* heaven-sent hail / fire for the given battles, falling on the losing side */
+function skyTick(dt){
+  if(CFG.hail&&state==='charge'&&battleT>1500&&battleT<12000){
+    for(let k=0;k<3;k++) spawn({x:2+Math.random()*(CW-4),y:1+Math.random()*(CH*.4),vx:.02,vy:.14,life:1200,max:1200,kind:'hail'});
+    if(Math.random()<.02){ /* a stone strikes a fleeing foe */
+      const foes=A.filter(u=>u.team==='def'&&!u.dead); if(foes.length){ const f=foes[(Math.random()*foes.length)|0];
+        f.dead=true; f.deadT=gt; burst(f.x,f.y,'spark',4); } }
+  }
+  if(CFG.fire&&battleT>2600&&city) city.burning=true;   /* the ambush sets the city ablaze — Yahusha 8:19 */
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function drawGround(g){
+  const base = groundBase();
+  const dark = (BIOME==='rocky'||BIOME==='rock'||BIOME==='mountain'||BIOME==='ararat'||CFG.ground==='rocky'||CFG.ground==='desert');
+  g.fillStyle=base; g.fillRect(0,0,VW,VH);
+  /* subtle cell texture */
+  for(let cy=0;cy<CH;cy++) for(let cx=0;cx<CW;cx++){ if((cx+cy)&1) continue;
+    g.fillStyle= dark?'rgba(0,0,0,.03)':'rgba(255,255,255,.03)';
+    g.fillRect(X(cx),Y(cy),CELL,CELL); }
+  /* waters along the top — stretch off the top and both side edges */
+  if(CFG.waters){ const wb=Y(3.2);
+    g.fillStyle='#3f6f9c'; g.fillRect(0,0,VW,wb);
+    g.fillStyle='rgba(255,255,255,.08)'; for(let x=0;x<VW;x+=CELL*2) g.fillRect(x,Y(1.4),CELL*1.2,CELL*.12); }
+}
+/* a wash for the hour of day, so the battle matches the scene the player came from */
+function drawTimeTint(g){ const t=TIME_TINT[TIME]; if(!t) return; g.fillStyle=t; g.fillRect(0,0,VW,VH); }
+
+function render(){
+  drawGround(ctx);
+  /* build a depth-sorted list of everything so all overlaps read correctly */
+  const items=[];
+  for(const s of scenery) items.push({y:s.y,z:0,s});
+  if(city) for(const h of city.houses) items.push({y:h.y,z:0.5,house:h});
+  for(const w of walls) items.push({y:w.y,z:1,w});
+  if(gate) items.push({y:gate.y,z:1,g:gate});
+  if(ram) items.push({y:ram.y,z:1.4,ram});
+  for(const c of camps) items.push({y:c.y,z:0,camp:c});
+  for(const u of A){ if(u.dead&&u.fade<=0) continue; items.push({y:u.y+(u.dead?-0.01:0),z:2,u}); }
+  /* war-standards ride above the ranks on each host's living centre */
+  for(const b of banners){ const cen=CEN[b.team]; if(!cen) continue;
+    const bx=clamp(cen.x+b.ox,1,CW-1), by=cen.y+(b.team==='atk'?.25:-.25);
+    items.push({y:by,z:2.6,banner:{x:bx,y:by,team:b.team}}); }
+  items.sort((a,b)=>a.y-b.y || a.z-b.z);
+  for(const it of items){
+    if(it.s){ const sx=X(it.s.x),sy=Y(it.s.y); if(it.s.kind==='tree') drawTree(ctx,sx,sy,gt,it.s.ph); else drawRock(ctx,sx,sy); }
+    else if(it.house){ drawHouse(ctx,it.house,city.burning,gt); }
+    else if(it.w){ drawWallSeg(ctx,X(it.w.x),Y(it.w.y),it.w.breached,gt); }
+    else if(it.g){ drawGate(ctx,X(it.g.x),Y(it.g.y),it.g.open); }
+    else if(it.ram){ drawRam(ctx,it.ram,gt); }
+    else if(it.camp){ drawBeast(ctx,X(it.camp.x),Y(it.camp.y),it.camp.kind,gt,it.camp.ph); }
+    else if(it.banner){ drawBanner(ctx,X(it.banner.x),Y(it.banner.y),it.banner.team==='atk'?CFG.atk.pal:CFG.def.pal,it.banner.team,gt); }
+    else if(it.u){ const u=it.u,sx=X(u.x),sy=Y(u.y);
+      if(u.kind==='horse') drawHorseman(ctx,sx,sy,u,gt);
+      else if(u.kind==='chariot') drawChariot(ctx,sx,sy,u,gt);
+      else drawSoldier(ctx,sx,sy,u,gt); }
+  }
+  drawParticles(ctx);
+  drawTimeTint(ctx);   /* the hour of day */
+  /* vignette */
+  const vg=ctx.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.44,VW/2,VH/2,Math.max(VW,VH)*.72);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.42)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH);
+}
+
+function updateBanner(){ $('b-atk').textContent=count('atk'); $('b-def').textContent=count('def'); }
+
+function frame(ts){
+  const dt=Math.min(50,ts-(tPrev||ts)); tPrev=ts; gt+=dt;
+  if(state==='charge'){ battleT+=dt;
+    updateUnits(dt,gt); siegeTick(); ramTick(dt); skyTick(dt); cityFireTick(); updateBanner();
+    /* the battle is decided when one host is broken */
+    if(!overShown && (count('def')<=2 || count('atk')<=2 || battleT>26000)){
+      /* finish: the loser falls, the victor holds */
+      const loser = count('def')<=count('atk')?'def':'atk';
+      for(const u of A){ if(u.dead) continue; if(u.team===loser){ u.dead=true; u.deadT=gt; }
+        else { u.state='form'; u.tx=u.x; u.ty=u.y; u.foe=null; } }
+      setTimeout(endBattle, 900);
+      overShown=true;
+    }
+  } else { updateUnits(dt*.25,gt); }   /* gentle idle drift on title/over */
+  updateParticles(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+
+/* ---------- interaction: a tap spurs the host a step forward ---------- */
+cv.addEventListener('pointerdown',e=>{
+  if(state!=='charge') return;
+  for(const u of A){ if(u.team==='atk'&&!u.dead){ u.x+=(Math.random()-.3)*.2; u.spd=Math.min(.05,u.spd*1.02); } }
+  burst(CW/2,CH-6,'dust',6);
+});
+
+/* ---------- boot ---------- */
+$('t-begin').onclick=beginBattle;
+$('o-return').onclick=()=>{ location.href=RETURN; };
+fit(); build(); setupUI();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0e1a">
+<title>The Sea of Reeds — BERĔSHITH</title>
+<style>
+  :root{ --gold:#e8c66a; --gold-dim:#a8893f; --parch:#efe3c8; }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
+  body{font-family:Georgia,'Times New Roman',serif;color:var(--parch);position:fixed;inset:0}
+  @supports(height:100dvh){ html,body{height:100dvh} }
+  #field{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .overlay{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;
+           justify-content:center;text-align:center;padding:0 6vw;
+           background:radial-gradient(ellipse at center,rgba(6,10,22,.32),rgba(4,8,20,.78));
+           opacity:0;pointer-events:none;transition:opacity .6s ease}
+  .overlay.show{opacity:1;pointer-events:auto}
+  .ov-ref{color:var(--gold);letter-spacing:.34em;text-transform:uppercase;font-size:clamp(11px,2vmin,15px);
+          margin-bottom:1.4vh;text-shadow:0 2px 8px #000}
+  .ov-title{font-size:clamp(30px,7vmin,64px);font-weight:bold;letter-spacing:.14em;color:#eaf4ff;line-height:1.05;
+            text-shadow:0 0 30px rgba(150,200,240,.5),0 3px 0 #10233a,0 0 90px rgba(180,220,255,.3)}
+  .ov-sub{font-style:italic;color:#c7d5e2;font-size:clamp(14px,2.5vmin,22px);margin-top:2vh;max-width:46ch;line-height:1.5}
+  .btn{font-family:inherit;cursor:pointer;margin-top:4vh;
+       background:linear-gradient(180deg,rgba(20,30,46,.92),rgba(10,16,28,.95));
+       color:var(--gold);border:1px solid rgba(232,198,106,.5);border-radius:4px;
+       padding:1.4vh 6vw;font-size:clamp(16px,2.7vmin,22px);letter-spacing:.2em;text-transform:uppercase;
+       transition:all .2s;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+  .btn:hover,.btn:focus-visible{color:#fff3cf;border-color:var(--gold);
+       box-shadow:0 0 22px rgba(232,198,106,.4),inset 0 0 18px rgba(232,198,106,.08);outline:none}
+  .btn:active{transform:scale(.98)}
+  #banner{position:absolute;top:calc(1.6vh + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);
+          z-index:15;padding:7px 20px;border-radius:20px;background:rgba(10,16,30,.72);
+          border:1px solid rgba(150,200,240,.4);font-size:clamp(12px,2vmin,15px);letter-spacing:.1em;
+          white-space:nowrap;box-shadow:0 2px 14px rgba(0,0,0,.5);color:#d8e4f0;font-style:italic}
+  #hint{position:absolute;bottom:calc(2.4vh + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);
+        z-index:15;color:rgba(220,230,240,.6);font-style:italic;font-size:clamp(11px,1.8vmin,14px);letter-spacing:.12em;
+        text-shadow:0 1px 4px #000;animation:pulse 2.4s infinite}
+  @keyframes pulse{0%,100%{opacity:.4}50%{opacity:.95}}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+<canvas id="field"></canvas>
+<div id="banner" class="hidden"></div>
+<div id="hint" class="hidden">the waters are a wall on the right hand and on the left</div>
+
+<div id="titleOv" class="overlay">
+  <div class="ov-ref" id="t-ref">SHEMOTH 14</div>
+  <div class="ov-title">The Sea of Reeds</div>
+  <div class="ov-sub">Stand still, and see the deliverance of YAHUAH — lift up the staff, stretch out the hand, and divide the sea.</div>
+  <button class="btn" id="t-begin">✋ &nbsp;Stretch out the hand</button>
+</div>
+<div id="overOv" class="overlay">
+  <div class="ov-ref" id="o-ref">SHEMOTH 14:28–31</div>
+  <div class="ov-title" id="o-title">Delivered</div>
+  <div class="ov-sub" id="o-sub"></div>
+  <button class="btn" id="o-return">Return to the story &nbsp;▸</button>
+</div>
+
+<script>
+'use strict';
+/* ============================================================
+   THE SEA OF REEDS — a self-contained crossing set-piece.
+   The waters part into two walls, Yasharal crosses the dry
+   corridor, Pharaoh's chariots pursue, and the waters return.
+   Launched from a story page with ?return=<url>.
+   Everything on one consistent CELL scale.
+   ============================================================ */
+const $=id=>document.getElementById(id);
+const cv=$('field'), ctx=cv.getContext('2d');
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const lerp=(a,b,t)=>a+(b-a)*t;
+const easeInOut=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+const Q=new URLSearchParams(location.search);
+const RETURN=Q.get('return')||'index.html';
+const TIME=(Q.get('time')||'dawn').toLowerCase();
+
+/* natural, undyed garb for Yasharal — no faction colour, varied man to man */
+const HEB_GARB=[
+  {robe:'#cbb890',trim:'#7c5e34',skin:'#7a4e29',hair:'#2c1a0c'},
+  {robe:'#b49b6c',trim:'#6b5330',skin:'#6e4a28',hair:'#241407'},
+  {robe:'#a88a5e',trim:'#5c4527',skin:'#835531',hair:'#2c1a0c'},
+  {robe:'#c1ae83',trim:'#6f5836',skin:'#6b451f',hair:'#1d1208'},
+  {robe:'#9c8455',trim:'#54401f',skin:'#5f3e1f',hair:'#161009'},
+];
+const WOMAN_GARB=[
+  {robe:'#b98f7a',trim:'#7a4a3a',skin:'#7a4e29',hair:'#241407'},
+  {robe:'#a97f66',trim:'#6a3f30',skin:'#6e4a28',hair:'#1d1208'},
+  {robe:'#c29a86',trim:'#834f3c',skin:'#835531',hair:'#2c1a0c'},
+];
+/* Mitsrayim — the one host that IS colour-coded: white linen, gold, and a blue-black wig */
+const EGY={robe:'#e2ddce',trim:'#caa23c',sash:'#2f5aa0',skin:'#9a6a3e',hair:'#1b2130'};
+
+/* ---------- world / camera fit (whole crossing visible, one scale) ---------- */
+let CW=30, CH=27;               /* the corridor runs bottom→top */
+let CELL=24, ox=0, oy=0, DPR=1, VW=innerWidth, VH=innerHeight;
+function fit(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  const w=window.innerWidth, h=window.innerHeight;
+  cv.width=Math.round(w*DPR); cv.height=Math.round(h*DPR);
+  cv.style.width=w+'px'; cv.style.height=h+'px';
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  CELL=Math.max(w/(CW+0.001), h/(CH+0.001));   /* cover the screen — the sea bleeds off every edge */
+  ox=(w-CW*CELL)/2; oy=(h-CH*CELL)/2;
+  VW=w; VH=h;
+}
+addEventListener('resize',fit);
+const X=cx=>ox+cx*CELL, Y=cy=>oy+cy*CELL;
+
+/* the dry corridor down the middle; its half-width opens and then closes */
+const CORX=CW/2;
+let corridorHalf=0;             /* 0 = sea closed; grows to CHALF_MAX when parted */
+const CHALF_MAX=4.6;
+function corridorLeft(){ return CORX-corridorHalf; }
+function corridorRight(){ return CORX+corridorHalf; }
+function inCorridor(x){ return Math.abs(x-CORX) < corridorHalf-0.15; }
+
+/* ============================================================
+   PARTICLES — spray, foam, splash, mote (one scale)
+   ============================================================ */
+const P=[];
+function spawn(p){ if(P.length<1100) P.push(p); }
+function burst(cx,cy,kind,n,spd){ spd=spd||.05; for(let i=0;i<n;i++){ const a=Math.random()*Math.PI*2,s=spd*(.4+Math.random());
+  spawn({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-.03,life:500+Math.random()*500,max:1000,kind}); } }
+function updateParticles(dt){ for(let i=P.length-1;i>=0;i--){ const p=P[i];
+  p.x+=p.vx*dt/16; p.y+=p.vy*dt/16; if(p.grav)p.vy+=p.grav*dt; else p.vy+=0.00006*dt; p.life-=dt; if(p.life<=0)P.splice(i,1); } }
+function drawParticles(g){ const C=CELL;
+  for(const p of P){ const sx=X(p.x),sy=Y(p.y),a=clamp(p.life/p.max,0,1);
+    if(p.kind==='spray'){ g.fillStyle=`rgba(226,240,250,${a})`; g.beginPath(); g.arc(sx,sy,C*.09*(0.5+a),0,Math.PI*2); g.fill(); }
+    else if(p.kind==='foam'){ g.fillStyle=`rgba(240,248,252,${a*.9})`; g.beginPath(); g.arc(sx,sy,C*.16*(1.3-a*.6),0,Math.PI*2); g.fill(); }
+    else if(p.kind==='splash'){ g.fillStyle=`rgba(150,190,220,${a*.7})`; g.beginPath(); g.arc(sx,sy,C*.2+(1-a)*C*.5,0,Math.PI*2); g.fill(); }
+    else if(p.kind==='mote'){ g.fillStyle=`rgba(255,244,200,${a*.8})`; g.fillRect(sx-C*.04,sy-C*.04,C*.09,C*.09); }
+    else if(p.kind==='dust'){ g.fillStyle=`rgba(150,135,110,${a*.5})`; g.beginPath(); g.arc(sx,sy,C*.12*(1.4-a),0,Math.PI*2); g.fill(); }
+  }
+}
+
+/* ============================================================
+   RENDERERS — figures in CELL units (same family as the battle page)
+   ============================================================ */
+function shadow(g,sx,sy,rw){ g.fillStyle='rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(sx,sy,rw,rw*.4,0,0,Math.PI*2); g.fill(); }
+
+/* everyone marches NORTH (up the corridor) — figures are drawn from behind,
+   the head showing hair not a face, legs striding along the line of march */
+function drawPerson(g,sx,sy,u,t){
+  const C=CELL, c=u.col;
+  if(u.drown){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
+    g.fillStyle=c.robe; g.beginPath(); g.arc(sx,sy,C*.16,0,Math.PI*2); g.fill(); g.globalAlpha=1; return; }
+  const stride=u.moving?Math.sin(t/120+u.ph):0;
+  const y0=sy+(u.moving?Math.abs(Math.sin(t/120+u.ph))*C*.03:0);
+  shadow(g,sx,sy,C*.24);
+  /* legs striding fore-and-aft along the march */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.1;
+  g.beginPath(); g.moveTo(sx-C*.08,y0-C*.06); g.lineTo(sx-C*.08,y0+stride*C*.05);
+  g.moveTo(sx+C*.08,y0-C*.06); g.lineTo(sx+C*.08,y0-stride*C*.05); g.stroke();
+  /* robe from behind, arms at the sides */
+  g.fillStyle=c.robe; g.fillRect(sx-C*.17,y0-C*.56,C*.34,C*.52);
+  g.fillStyle=c.robe; g.fillRect(sx-C*.23,y0-C*.5,C*.07,C*.34); g.fillRect(sx+C*.16,y0-C*.5,C*.07,C*.34);
+  g.fillStyle=c.trim; g.fillRect(sx-C*.17,y0-C*.3,C*.34,C*.06);
+  if(u.bundle){ g.fillStyle='#8a6f45'; g.fillRect(sx-C*.15,y0-C*.66,C*.3,C*.2); }  /* a pack on the back */
+  if(u.staff){ g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.21,y0+C*.02); g.lineTo(sx+C*.23,y0-C*.9); g.stroke(); }
+  /* the back of the head — hair and a hint of neck; no face, they walk away northward */
+  g.fillStyle=c.skin; g.fillRect(sx-C*.05,y0-C*.63,C*.1,C*.09);
+  g.fillStyle=c.hair; g.beginPath(); g.arc(sx,y0-C*.72,C*.15,0,Math.PI*2); g.fill();
+  if(u.kind==='woman'){ /* a shawl hanging down the back */
+    g.fillStyle=c.trim; g.beginPath(); g.moveTo(sx-C*.15,y0-C*.72); g.lineTo(sx+C*.15,y0-C*.72); g.lineTo(sx+C*.1,y0-C*.3); g.lineTo(sx-C*.1,y0-C*.3); g.closePath(); g.fill();
+    g.fillStyle=c.hair; g.beginPath(); g.arc(sx,y0-C*.74,C*.12,0,Math.PI*2); g.fill();
+  }
+}
+function drawChild(g,sx,sy,u,t){
+  const C=CELL, c=u.col; const stride=u.moving?Math.sin(t/100+u.ph):0;
+  shadow(g,sx,sy,C*.14);
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.07;
+  g.beginPath(); g.moveTo(sx-C*.05,sy-C*.03); g.lineTo(sx-C*.05,sy+stride*C*.03);
+  g.moveTo(sx+C*.05,sy-C*.03); g.lineTo(sx+C*.05,sy-stride*C*.03); g.stroke();
+  g.fillStyle=c.robe; g.fillRect(sx-C*.1,sy-C*.34,C*.2,C*.32);
+  g.fillStyle=c.hair; g.beginPath(); g.arc(sx,sy-C*.42,C*.1,0,Math.PI*2); g.fill();
+}
+/* baggage beasts — sheep / goat / donkey / ox — walking north, seen from behind:
+   rump toward the viewer, head at the far (north) end, four legs, tail hanging */
+function drawBeast(g,sx,sy,kind,t,ph,moving){
+  const C=CELL; const sway=moving?Math.sin(t/150+ph)*C*.03:0;
+  const big=(kind==='ox'||kind==='donkey');
+  const col= kind==='ox'?'#7a6248':kind==='donkey'?'#8a8072':kind==='goat'?'#b8ac93':'#e6e2d6';
+  const bw=big?.28:.2, bl=big?.62:.44;   /* body half-width and half-length (along the march) */
+  shadow(g,sx,sy,C*bw*1.5);
+  /* four legs at the corners, striding */
+  g.strokeStyle='#4a3a28'; g.lineWidth=C*.06; let li=0;
+  for(const dy of [-bl*.5,bl*.45]) for(const dx of [-bw*.7,bw*.7]){
+    const st=Math.sin(t/150+ph+li)*C*.05*(moving?1:0); li++;
+    g.beginPath(); g.moveTo(sx+dx*C,sy+dy*C-C*.02); g.lineTo(sx+dx*C,sy+dy*C+C*.09+st); g.stroke(); }
+  /* tail at the rump (bottom, toward the viewer) */
+  g.strokeStyle=col; g.lineWidth=C*.05;
+  g.beginPath(); g.moveTo(sx,sy+bl*.48*C); g.lineTo(sx+sway,sy+bl*.48*C+C*.16); g.stroke();
+  /* back / body — a vertical oval */
+  g.fillStyle=col; g.beginPath(); g.ellipse(sx,sy-C*.04,C*bw,C*bl*.5,0,0,Math.PI*2); g.fill();
+  /* head at the north end, turned away */
+  g.fillStyle=col; g.beginPath(); g.ellipse(sx+sway,sy-C*(bl*.5+.02),C*bw*.62,C*.13,0,0,Math.PI*2); g.fill();
+  if(kind==='ox'){ g.strokeStyle='#e8e0d0'; g.lineWidth=C*.05; g.beginPath();
+    g.moveTo(sx-C*bw*.5,sy-C*(bl*.5+.06)); g.lineTo(sx-C*bw*.95,sy-C*(bl*.5+.2));
+    g.moveTo(sx+C*bw*.5,sy-C*(bl*.5+.06)); g.lineTo(sx+C*bw*.95,sy-C*(bl*.5+.2)); g.stroke(); }
+  else if(kind==='donkey'){ g.fillStyle=col; g.beginPath();
+    g.ellipse(sx-C*bw*.45+sway,sy-C*(bl*.5+.14),C*.04,C*.11,0,0,Math.PI*2);
+    g.ellipse(sx+C*bw*.45+sway,sy-C*(bl*.5+.14),C*.04,C*.11,0,0,Math.PI*2); g.fill(); }
+  else if(kind==='goat'){ g.strokeStyle='#6a5a44'; g.lineWidth=C*.04; g.beginPath();
+    g.moveTo(sx-C*bw*.3,sy-C*(bl*.5+.08)); g.lineTo(sx-C*bw*.5,sy-C*(bl*.5+.22));
+    g.moveTo(sx+C*bw*.3,sy-C*(bl*.5+.08)); g.lineTo(sx+C*bw*.5,sy-C*(bl*.5+.22)); g.stroke(); }
+}
+/* an ox-drawn cart of goods, going north: the ox pulls ahead, the cart follows behind */
+function drawCart(g,sx,sy,t,ph,moving){
+  const C=CELL;
+  drawBeast(g,sx,sy-C*.95,'ox',t,ph,moving);
+  shadow(g,sx,sy+C*.08,C*.55);
+  g.strokeStyle='#4a3a24'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx,sy-C*.5); g.lineTo(sx,sy-C*.05); g.stroke();  /* pole */
+  g.fillStyle='#2e2114';
+  for(const wx of [-.42,.42]){ g.beginPath(); g.arc(sx+wx*C,sy+C*.02,C*.2,0,Math.PI*2); g.fill(); }   /* wheels either side */
+  g.fillStyle='#6a4a2a'; g.fillRect(sx-C*.34,sy-C*.28,C*.68,C*.5);
+  g.fillStyle='#8a6f45'; g.fillRect(sx-C*.3,sy-C*.42,C*.6,C*.2);   /* piled goods */
+}
+/* Egyptian chariot going NORTH: two horses ahead (seen from behind, heads up),
+   the car and driver behind, a wheel to left and right */
+function drawChariot(g,sx,sy,u,t){
+  const C=CELL;
+  if(u.drown){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
+    g.fillStyle='#3a2c1c'; g.fillRect(sx-C*.4,sy-C*.2,C*.8,C*.26); g.globalAlpha=1; return; }
+  shadow(g,sx,sy,C*.7);
+  const hb='#5a4230', hb2='#4a351f';
+  for(const off of [-.26,.26]){
+    g.strokeStyle=hb2; g.lineWidth=C*.07;
+    for(const lx of [off-.09,off+.09]){ g.beginPath(); g.moveTo(sx+lx*C,sy-C*.55); g.lineTo(sx+lx*C,sy-C*.28); g.stroke(); }
+    g.fillStyle=hb; g.beginPath(); g.ellipse(sx+off*C,sy-C*.95,C*.16,C*.44,0,0,Math.PI*2); g.fill();   /* horse body, vertical */
+    g.fillStyle=hb2; g.beginPath(); g.ellipse(sx+off*C,sy-C*1.42,C*.1,C*.14,0,0,Math.PI*2); g.fill();  /* head up-corridor */
+    g.strokeStyle=hb2; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+off*C,sy-C*.55); g.lineTo(sx+off*C*.4,sy-C*.14); g.stroke();  /* trace to the car */
+  }
+  const wob=u.wheelOff?Math.sin(t/70+u.ph)*C*.05:0;  /* "He took off their chariot wheels" */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.08;
+  for(const wx of [-.44,.44]){ const ww=wx<0?-wob:wob;
+    g.beginPath(); g.arc(sx+wx*C+ww,sy+C*.04,C*.26,0,Math.PI*2); g.stroke();
+    for(let i=0;i<6;i++){ const a=t/460+i; g.beginPath(); g.moveTo(sx+wx*C+ww,sy+C*.04); g.lineTo(sx+wx*C+ww+Math.cos(a)*C*.24,sy+C*.04+Math.sin(a)*C*.24); g.stroke(); } }
+  /* the car and its driver, from behind, in Egyptian white and gold */
+  g.fillStyle=EGY.trim; g.fillRect(sx-C*.3,sy-C*.18,C*.6,C*.44);
+  g.fillStyle=EGY.robe; g.fillRect(sx-C*.14,sy-C*.6,C*.28,C*.42);
+  g.fillStyle=EGY.sash; g.fillRect(sx-C*.14,sy-C*.4,C*.28,C*.07);
+  g.fillStyle=EGY.hair; g.beginPath(); g.arc(sx,sy-C*.66,C*.14,0,Math.PI*2); g.fill();   /* back of the head */
+}
+/* Egyptian horseman going north: horse from behind (head up), rider on top */
+function drawHorseman(g,sx,sy,u,t){
+  const C=CELL;
+  if(u.drown){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
+    g.fillStyle='#5a4632'; g.fillRect(sx-C*.28,sy-C*.2,C*.56,C*.5); g.globalAlpha=1; return; }
+  shadow(g,sx,sy,C*.4); const hb='#5a4230', hb2='#4a351f';
+  g.strokeStyle=hb2; g.lineWidth=C*.07;
+  for(const lx of [-.15,.15]) for(const ly of [-.38,.26]){ const st=Math.sin(t/90+u.ph+lx+ly)*C*.04*(u.moving?1:0);
+    g.beginPath(); g.moveTo(sx+lx*C,sy+ly*C); g.lineTo(sx+lx*C,sy+ly*C+C*.14+st); g.stroke(); }
+  g.strokeStyle=hb2; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx,sy+C*.32); g.lineTo(sx,sy+C*.5); g.stroke();   /* tail */
+  g.fillStyle=hb; g.beginPath(); g.ellipse(sx,sy-C*.02,C*.19,C*.44,0,0,Math.PI*2); g.fill();   /* body vertical */
+  g.fillStyle=hb2; g.beginPath(); g.ellipse(sx,sy-C*.5,C*.11,C*.15,0,0,Math.PI*2); g.fill();   /* head up */
+  g.fillStyle=EGY.robe; g.fillRect(sx-C*.13,sy-C*.5,C*.26,C*.36);
+  g.fillStyle=EGY.sash; g.fillRect(sx-C*.13,sy-C*.34,C*.26,C*.07);
+  g.fillStyle=EGY.hair; g.beginPath(); g.arc(sx,sy-C*.56,C*.12,0,Math.PI*2); g.fill();
+  g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.12,sy-C*.4); g.lineTo(sx+C*.16,sy-C*1.02); g.stroke();  /* spear */
+}
+/* Egyptian foot going north, from behind */
+function drawFoot(g,sx,sy,u,t){
+  const C=CELL;
+  if(u.drown){ const a=clamp(u.fade,0,1); if(a<=0) return; g.globalAlpha=a*.7;
+    g.fillStyle=EGY.robe; g.beginPath(); g.arc(sx,sy,C*.15,0,Math.PI*2); g.fill(); g.globalAlpha=1; return; }
+  const stride=u.moving?Math.sin(t/110+u.ph):0, y0=sy+(u.moving?Math.abs(Math.sin(t/110+u.ph))*C*.03:0);
+  shadow(g,sx,sy,C*.24);
+  g.strokeStyle='#6a5330'; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+C*.19,y0+C*.02); g.lineTo(sx+C*.21,y0-C*.95); g.stroke();  /* spear */
+  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.1; g.beginPath();
+  g.moveTo(sx-C*.08,y0-C*.05); g.lineTo(sx-C*.08,y0+stride*C*.05);
+  g.moveTo(sx+C*.08,y0-C*.05); g.lineTo(sx+C*.08,y0-stride*C*.05); g.stroke();
+  g.fillStyle=EGY.robe; g.fillRect(sx-C*.15,y0-C*.52,C*.3,C*.48);
+  g.fillStyle=EGY.sash; g.fillRect(sx-C*.15,y0-C*.34,C*.3,C*.07);
+  g.fillStyle=EGY.skin; g.fillRect(sx-C*.05,y0-C*.6,C*.1,C*.08);   /* neck */
+  g.fillStyle=EGY.hair; g.beginPath(); g.arc(sx,y0-C*.68,C*.14,0,Math.PI*2); g.fill();   /* back of the head */
+}
+
+/* the pillar of cloud and fire, standing between the camps at the near shore */
+function drawPillar(g,t){
+  const C=CELL, sx=X(CORX), baseY=Y(CH-1.2);
+  const fire = (TIME==='night'||TIME==='dusk'||TIME==='evening'||TIME==='dawn');
+  const gl=g.createRadialGradient(sx,baseY-C*3,C*.5,sx,baseY-C*3,C*5);
+  gl.addColorStop(0, fire?'rgba(255,180,80,.42)':'rgba(240,244,250,.4)');
+  gl.addColorStop(1,'rgba(255,220,150,0)');
+  g.fillStyle=gl; g.beginPath(); g.arc(sx,baseY-C*3,C*5,0,Math.PI*2); g.fill();
+  for(let i=0;i<7;i++){ const yy=baseY-i*C*.95, wob=Math.sin(t/500+i)*C*.28, r=C*(1.15-i*.06);
+    g.fillStyle = fire
+      ? `rgba(${255},${150+i*10},${50+i*8},${.75-i*.05})`
+      : `rgba(${230-i*6},${234-i*4},${240},${.7-i*.04})`;
+    g.beginPath(); g.arc(sx+wob,yy,r,0,Math.PI*2); g.fill(); }
+  if(fire && Math.random()<.4) spawn({x:CORX+(Math.random()-.5)*1.4,y:CH-1.2-Math.random()*5,vx:0,vy:-.02,life:700,max:700,kind:'mote'});
+}
+
+/* ============================================================
+   THE SEA — two walls of water flanking the dry corridor
+   ============================================================ */
+function drawSea(g,t){
+  const C=CELL;
+  /* the dry sea-bed corridor (wet sand), and the shores top & bottom */
+  g.fillStyle='#b7a678'; g.fillRect(0,0,VW,VH);                     /* base: sea-bed / shore sand */
+  /* wet sheen down the corridor floor */
+  if(corridorHalf>0.05){
+    const cl=X(corridorLeft()), cr=X(corridorRight());
+    const grd=g.createLinearGradient(cl,0,cr,0);
+    grd.addColorStop(0,'#9c8c62'); grd.addColorStop(.5,'#b0a074'); grd.addColorStop(1,'#9c8c62');
+    g.fillStyle=grd; g.fillRect(cl,0,cr-cl,VH);
+    /* puddles / footprints */
+    g.fillStyle='rgba(150,180,190,.18)';
+    for(let i=0;i<14;i++){ const yy=(i*2.03%CH); g.beginPath(); g.ellipse(X(CORX+Math.sin(i*1.7)*corridorHalf*.6),Y(yy),C*.5,C*.2,0,0,Math.PI*2); g.fill(); }
+  }
+  /* the two walls of water */
+  drawWaterWall(g,'left',t);
+  drawWaterWall(g,'right',t);
+}
+function drawWaterWall(g,side,t){
+  const C=CELL;
+  const edge = side==='left' ? corridorLeft() : corridorRight();
+  const sxEdge = X(edge);
+  const outer = side==='left' ? 0 : VW;
+  const dir = side==='left' ? -1 : 1;   /* water lies to this side of the edge */
+  if((side==='left' && corridorLeft()<=0.05) || (side==='right' && corridorRight()>=CW-0.05)){
+    /* no corridor yet — sea is whole here; still drawn below via full fill */
+  }
+  const wallW = Math.abs(outer - sxEdge);
+  if(wallW<=0) return;
+  const x0 = Math.min(sxEdge, outer), w = Math.abs(wallW);
+  /* body of standing water: deep away from the corridor, bright & foaming at the wall face */
+  const grd=g.createLinearGradient(sxEdge,0, outer,0);
+  grd.addColorStop(0,'#cfe6f0');       /* foam crest at the corridor face */
+  grd.addColorStop(0.10,'#6fa9c8');
+  grd.addColorStop(0.45,'#3f7ba2');
+  grd.addColorStop(1,'#204f74');       /* deep, far from the corridor */
+  g.fillStyle=grd; g.fillRect(x0,0,w,VH);
+  /* rolling ripple bands scrolling down the wall */
+  g.save(); g.beginPath(); g.rect(x0,0,w,VH); g.clip();
+  g.strokeStyle='rgba(255,255,255,.10)'; g.lineWidth=C*.1;
+  for(let i=-2;i<CH+2;i++){ const yy=Y((i + (t/1400)%1)) ; g.beginPath();
+    for(let xx=x0; xx<=x0+w; xx+=C*.5){ const yo=Math.sin((xx*.02)+(t/500)+i)*C*.12; if(xx===x0) g.moveTo(xx,yy+yo); else g.lineTo(xx,yy+yo);} g.stroke(); }
+  g.restore();
+  /* the bright curling foam crest right at the corridor edge (the standing "wall") */
+  if(corridorHalf>0.05){
+    g.fillStyle='rgba(240,250,253,.9)';
+    for(let yy=-1; yy<CH+1; yy+=0.5){ const cy=Y(yy + (t/900)%0.5);
+      const bulge = C*(.5+Math.sin(yy*1.3+t/300)*.28);
+      g.beginPath(); g.ellipse(sxEdge+dir*C*.15, cy, C*.36, bulge, 0, 0, Math.PI*2); g.fill(); }
+    /* a soft shadow the wall casts onto the dry corridor */
+    const sg=g.createLinearGradient(sxEdge,0,sxEdge-dir*C*1.6,0);
+    sg.addColorStop(0,'rgba(20,40,60,.28)'); sg.addColorStop(1,'rgba(20,40,60,0)');
+    g.fillStyle=sg; g.fillRect(Math.min(sxEdge,sxEdge-dir*C*1.6),0,C*1.6,VH);
+    /* spray flying off the crest */
+    if(Math.random()<.5) spawn({x:edge+dir*0.1,y:Math.random()*CH,vx:dir*(.02+Math.random()*.03),vy:-.03-Math.random()*.03,life:700,max:700,kind:'spray'});
+  }
+}
+
+/* ============================================================
+   HOSTS
+   ============================================================ */
+const HEB=[], EGY_U=[];
+function rng(){ return Math.random(); }
+function makeHeb(o){ return Object.assign({team:'heb',moving:true,ph:Math.random()*6,fade:1},o); }
+function buildHosts(){
+  HEB.length=0; EGY_U.length=0;
+  const cols=8;
+  /* ~120 souls already strung down the corridor, all pressing toward the far shore */
+  let n=0;
+  for(let row=0; row<15; row++){
+    for(let c=0;c<cols;c++){
+      const kindR=Math.random();
+      let kind='man', col=HEB_GARB[(Math.random()*HEB_GARB.length)|0];
+      if(kindR<0.28){ kind='woman'; col=WOMAN_GARB[(Math.random()*WOMAN_GARB.length)|0]; }
+      else if(kindR<0.44){ kind='child'; col=HEB_GARB[(Math.random()*HEB_GARB.length)|0]; }
+      else if(kindR<0.5){ kind='elder'; col=HEB_GARB[(Math.random()*HEB_GARB.length)|0]; }
+      const x=CORX+(c-(cols-1)/2)*0.95 + (Math.random()-.5)*0.3;
+      const y=CH-4 - row*1.15 + (Math.random()-.5)*0.4;
+      HEB.push(makeHeb({kind,col,x,y,spd:(kind==='child'?.0016:.0020)*(.8+Math.random()*.5),
+        bundle:kind!=='child'&&Math.random()<.35, staff:kind==='elder'||Math.random()<.12,
+        tx:CORX+(Math.random()-.5)*7, ty:1.5+Math.random()*1.6}));
+      n++;
+    }
+  }
+  /* flocks and a couple of carts threaded through */
+  const beasts=['sheep','goat','donkey','sheep','goat','ox'];
+  for(let i=0;i<16;i++){ HEB.push(makeHeb({kind:'beast',beast:beasts[i%beasts.length],
+    x:CORX+(Math.random()-.5)*6, y:CH-5-Math.random()*10, spd:.0018*(.8+Math.random()*.4),
+    tx:CORX+(Math.random()-.5)*7, ty:1.6+Math.random()*1.8})); }
+  for(let i=0;i<3;i++){ HEB.push(makeHeb({kind:'cart',x:CORX+(i-1)*2.2, y:CH-5-i*3, spd:.0015,
+    tx:CORX+(i-1)*2.2, ty:2+Math.random()})); }
+
+  /* Pharaoh's host waits at the near shore, off the bottom edge, to pursue */
+  const push=(kind,cnt,y0)=>{ for(let i=0;i<cnt;i++){
+    EGY_U.push({team:'egy',kind,moving:false,ph:Math.random()*6,fade:1,wheelOff:false,
+      x:CORX+(Math.random()-.5)*7.4, y:CH+1.5+Math.random()*4 + y0,
+      spd:(kind==='chariot'?.0030:kind==='horse'?.0032:.0020)*(.85+Math.random()*.4),
+      tx:CORX+(Math.random()-.5)*7, ty:CH-6-Math.random()*4}); } };
+  push('chariot',18,0); push('horse',14,1.5); push('foot',20,2.5);
+}
+
+/* ============================================================
+   FLOW
+   ============================================================ */
+let state='title', tPrev=0, gt=0, phaseT=0, overShown=false;
+let crossedFrac=0;
+function setPhase(s){ state=s; phaseT=0; }
+function begin(){
+  $('titleOv').classList.remove('show');
+  $('banner').classList.remove('hidden'); $('hint').classList.remove('hidden');
+  $('banner').textContent='And the waters were split…';
+  setPhase('split');
+}
+function over(){
+  state='over'; overShown=true;
+  $('banner').classList.add('hidden'); $('hint').classList.add('hidden');
+  $('o-sub').textContent='And the waters returned and covered the chariots and the horsemen — all the army of Pharaoh. Not even one of them was left. And the people feared YAHUAH, and believed.';
+  $('overOv').classList.add('show');
+}
+
+function updateHost(dt,t){
+  /* Yasharal crosses upward to the far shore */
+  let across=0;
+  for(const u of HEB){
+    if(u.y<=3.0){ across++; if(u.state!=='safe'){ u.state='safe'; u.tx=2+Math.random()*(CW-4); u.ty=1.2+Math.random()*1.4; } }
+    const seekX=u.state==='safe'?u.tx:clamp(u.x + (CORX-u.x)*0.02, corridorLeft()+0.6, corridorRight()-0.6);
+    const dx=seekX-u.x, dy=(u.state==='safe'?u.ty:u.y-2)-u.y;
+    const d=Math.hypot(dx,dy)||1;
+    const go = (state==='split'&&u.y>CH-4) ? 0.25 : 1;   /* wait at the brink until the sea is open */
+    u.moving = d>0.1;
+    u.x += (dx/d)*u.spd*dt*go; u.y += (dy/d)*u.spd*dt*go*(u.state==='safe'?1:1.15);
+    u.ph += dt*.01;
+  }
+  crossedFrac = across/HEB.length;
+
+  /* Pharaoh pursues into the corridor */
+  if(state==='pursue'||state==='close'){
+    for(const u of EGY_U){
+      if(u.drown){ u.fade-=dt*.0006; u.y+=dt*.0004; continue; }
+      u.moving=true; u.ph+=dt*.01;
+      const dx=CORX-u.x, dy=u.ty-u.y, d=Math.hypot(dx,dy)||1;
+      u.x += clamp(dx,-1,1)*0.0006*dt + (dx/d)*u.spd*dt*0.2;
+      u.x = clamp(u.x, corridorLeft()+0.5, corridorRight()-0.5);
+      u.y -= u.spd*dt;
+      if(u.y<u.ty) u.ty=Math.max(4,u.ty-0.02*dt/16);
+      /* the closing walls take them */
+      if(state==='close' && !inCorridor(u.x)){ u.drown=true; burst(u.x,u.y,'foam',8); burst(u.x,u.y,'splash',3,.03); }
+    }
+  }
+}
+
+function frame(ts){
+  const dt=Math.min(50,ts-(tPrev||ts)); tPrev=ts; gt+=dt; phaseT+=dt;
+
+  if(state==='split'){
+    corridorHalf = easeInOut(clamp(phaseT/2400,0,1))*CHALF_MAX;
+    if(phaseT>200 && Math.random()<.5) spawn({x:CORX-corridorHalf,y:Math.random()*CH,vx:-.05,vy:-.02,life:800,max:800,kind:'spray'});
+    if(phaseT>200 && Math.random()<.5) spawn({x:CORX+corridorHalf,y:Math.random()*CH,vx:.05,vy:-.02,life:800,max:800,kind:'spray'});
+    updateHost(dt,gt);
+    if(phaseT>2400){ setPhase('cross'); $('banner').textContent='Yasharal goes over on dry ground…'; }
+  }
+  else if(state==='cross'){
+    corridorHalf=CHALF_MAX;
+    updateHost(dt,gt);
+    if(crossedFrac>0.62 || phaseT>9000){ setPhase('pursue'); $('banner').textContent='The Mitsrites pursue into the midst of the sea!'; }
+  }
+  else if(state==='pursue'){
+    corridorHalf=CHALF_MAX;
+    updateHost(dt,gt);
+    /* their wheels come off as they drive with difficulty */
+    if(phaseT>1500) for(const u of EGY_U){ if(u.kind==='chariot') u.wheelOff=true; }
+    const midway = EGY_U.filter(u=>!u.drown && u.y<CH-6).length;
+    if((midway>EGY_U.length*0.5 && crossedFrac>0.9) || phaseT>5200){
+      setPhase('close'); $('banner').textContent='Stretch out the hand — let the waters come back!';
+    }
+  }
+  else if(state==='close'){
+    corridorHalf = CHALF_MAX*(1-easeInOut(clamp(phaseT/2600,0,1)));
+    updateHost(dt,gt);
+    if(Math.random()<.9){ const yy=Math.random()*CH; burst(CORX-corridorHalf,yy,'foam',2); burst(CORX+corridorHalf,yy,'foam',2); }
+    if(phaseT>2600 && !overShown){ corridorHalf=0;
+      for(const u of EGY_U){ if(!u.drown){ u.drown=true; burst(u.x,u.y,'splash',4,.03); } }
+      burst(CORX,CH*0.5,'splash',30,.05); setTimeout(over,1100); overShown=true;
+    }
+  }
+  else { updateHost(dt*.3,gt); }
+
+  updateParticles(dt);
+  render();
+  requestAnimationFrame(frame);
+}
+
+function render(){
+  drawSea(ctx,gt);
+  /* depth-sorted: everything by y so overlaps read (people, beasts, chariots) */
+  const items=[];
+  for(const u of HEB){ if(u.drown&&u.fade<=0) continue; items.push({y:u.y,u,heb:true}); }
+  for(const u of EGY_U){ if(u.drown&&u.fade<=0) continue; items.push({y:u.y,u,heb:false}); }
+  items.sort((a,b)=>a.y-b.y);
+  for(const it of items){ const u=it.u, sx=X(u.x), sy=Y(u.y);
+    if(it.heb){
+      if(u.kind==='beast') drawBeast(ctx,sx,sy,u.beast,gt,u.ph,u.moving);
+      else if(u.kind==='cart') drawCart(ctx,sx,sy,gt,u.ph,u.moving);
+      else if(u.kind==='child') drawChild(ctx,sx,sy,u,gt);
+      else drawPerson(ctx,sx,sy,u,gt);
+    } else {
+      if(u.kind==='chariot') drawChariot(ctx,sx,sy,u,gt);
+      else if(u.kind==='horse') drawHorseman(ctx,sx,sy,u,gt);
+      else drawFoot(ctx,sx,sy,u,gt);
+    }
+  }
+  drawPillar(ctx,gt);
+  drawParticles(ctx);
+  /* a wash for the hour, then a vignette */
+  const tint = TIME==='night'?'rgba(18,28,66,0.4)':TIME==='dusk'||TIME==='evening'?'rgba(120,66,38,0.2)':TIME==='dawn'?'rgba(190,150,120,0.14)':null;
+  if(tint){ ctx.fillStyle=tint; ctx.fillRect(0,0,VW,VH); }
+  const vg=ctx.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.5,VW/2,VH/2,Math.max(VW,VH)*.75);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.4)');
+  ctx.fillStyle=vg; ctx.fillRect(0,0,VW,VH);
+}
+
+/* a tap hurries the crossing / the closing */
+cv.addEventListener('pointerdown',()=>{
+  if(state==='cross') for(const u of HEB){ u.spd=Math.min(.006,u.spd*1.08); }
+  else if(state==='pursue'||state==='split') phaseT+=500;
+});
+
+$('t-begin').onclick=begin;
+$('o-return').onclick=()=>{ location.href=RETURN; };
+fit(); buildHosts();
+$('titleOv').classList.add('show');
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
