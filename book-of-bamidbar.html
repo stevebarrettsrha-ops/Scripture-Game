@@ -730,11 +730,12 @@ function drawChar(g,px,py,charId,o){
     g._waterline=wl;
   }
   if(o.sink){
-    /* the earth swallows them whole: clip at the ground line and descend,
-       so the body vanishes feet-first as it goes down alive into the pit */
-    g.beginPath(); g.rect(-22*u,-72*u,44*u,72*u); g.clip();
-    g.translate(0,Math.round(o.sink*52*u));
-    g.rotate(Math.sin(o.sink*Math.PI)* (o.sinkTilt||0.12) * (dir==='left'?-1:1));
+    /* going down alive into the pit — the body is swallowed feet-first, in place,
+       so it never drifts off the mouth of the earth that opened beneath it */
+    const H=48*u, floorY=-H*clamp(o.sink,0,1);
+    g.beginPath(); g.rect(-24*u,-H-24*u,48*u,floorY+H+24*u); g.clip();
+    g.translate(0,Math.round(o.sink*6*u));
+    g.rotate(Math.sin(o.sink*Math.PI)*(o.sinkTilt||0.06)*(dir==='left'?-1:1));
   }
   const ops=[];
   const R=(x,y,w,h,col)=>ops.push([x,y,w,h,col]);
@@ -1598,7 +1599,7 @@ function drawProp(g,px,py,p,t){
       /* the mouth of the earth — opens from a thin crack to a gaping pit (p.open 0..1) */
       const op=clamp(p.open||0,0,1);
       if(op<=0.002) break;
-      const w2=9*op, h2=3.8*op;
+      const w2=11.5*op, h2=4.6*op;
       /* the dark throat */
       g.fillStyle='#0a0603';
       g.beginPath(); g.ellipse(0,0,w2*u,h2*u,0,0,Math.PI*2); g.fill();
@@ -3080,7 +3081,7 @@ const Game={
         rally:op.battle.rally||null,onDone:()=>{this.scriptBlocked=false}};
       return false;
     }
-    if(op.call){ op.call(this); return true; }
+    if(op.call){ return op.call(this)!==false; }  /* a call may return false to block the script (e.g. it drives its own timed cinematic and clears scriptBlocked when done) */
     if(op.end){ this.endScene(); return true; }
     return true;
   },
@@ -5468,36 +5469,39 @@ STORY.push(
        {call:G=>{ /* ===== THE EARTH OPENS, SWALLOWS THEM ALIVE, AND CLOSES OVER THEM ===== */
          const w=G.world; G.scriptBlocked=true;
          const CX=17.6, CY=20.3;
-         w.camFollow=null; w.camTarget=[CX,CY-1.5];
+         w.camFollow=null; w.camTarget=[CX,CY-1.2]; Camera.follow(CX,CY-1.2,w.map,true);
          const sunk=['datan','abiram','dwife','dchild'].map(id=>w.npcs.find(n=>n.id===id)).filter(Boolean);
-         sunk.forEach(n=>{ n.wander=false; n.target=null; n.moving=false; n.dir='down'; n.emote='quest'; });
-         const chasm={type:'chasm',x:CX,y:CY-0.35,open:0,id:'earth_mouth',solid:false};
+         /* each stands over the very mouth that opens beneath him — a tight cluster on the crack */
+         sunk.forEach((n,i)=>{ n.wander=false; n.target=null; n.moving=false; n.dir='down'; n.emote='quest';
+           n.tx=CX+(i-(sunk.length-1)/2)*0.26; n.ty=CY; });
+         const chasm={type:'chasm',x:CX,y:CY-0.1,open:0,id:'earth_mouth',solid:false};
          w.map.decor.push(chasm); w.map.decor.sort((a,b)=>a.y-b.y);
          Sound.sfx('thunder');
-         const T0=performance.now(), OPEN=700, GAPE=1650, SINK=3500, CLOSE=4800;
+         const T0=performance.now(), OPEN=750, GAPE=1750, SINK=3600, CLOSE=4900;
          let lastB=0, gaped=false, screamed=false;
          const step=(now)=>{
            const el=now-T0;
            Camera.shake=Math.max(Camera.shake, el<CLOSE?(el<SINK?2.6:1.3):0.4);
-           if(el<OPEN){                     /* the ground splits — the first fire and brimstone break out */
+           if(el<OPEN){                     /* the ground splits beneath them — first fire and brimstone break out */
              chasm.open=lerp(0,.3,el/OPEN);
-             if(now-lastB>55){ lastB=now;
+             sunk.forEach(n=>{ n.x=lerp(n.x,n.tx,0.10); n.y=lerp(n.y,n.ty,0.10); });   /* drawn toward the crack */
+             if(now-lastB>50){ lastB=now;
                Particles.spawn({x:(CX+(Math.random()-.5)*3.5)*TILE,y:CY*TILE,vx:(Math.random()-.5)*.03,vy:-.11-Math.random()*.06,life:900,max:900,type:'brimstone'});
                Particles.spawn({x:(CX+(Math.random()-.5)*4)*TILE,y:CY*TILE,vx:(Math.random()-.5)*.02,vy:-.05,life:1200,max:1200,type:'ash'}); }
-           } else if(el<GAPE){              /* the mouth gapes wide */
+           } else if(el<GAPE){              /* the mouth gapes wide, right under them */
              if(!gaped){ gaped=true; Sound.sfx('bad'); }
              chasm.open=lerp(.3,1,(el-OPEN)/(GAPE-OPEN));
-             if(now-lastB>42){ lastB=now;
+             sunk.forEach(n=>{ n.x=lerp(n.x,n.tx,0.16); n.y=lerp(n.y,n.ty,0.16); });   /* settle onto the mouth */
+             if(now-lastB>40){ lastB=now;
                for(let k=0;k<2;k++) Particles.spawn({x:(CX+(Math.random()-.5)*8)*TILE,y:(CY-Math.random())*TILE,vx:(Math.random()-.5)*.05,vy:-.15-Math.random()*.1,life:1000,max:1000,type:'brimstone'});
                Particles.spawn({x:(CX+(Math.random()-.5)*9)*TILE,y:(CY-1)*TILE,vx:(Math.random()-.5)*.02,vy:-.02,life:1600,max:1600,type:'smoke'});
                Particles.spawn({x:(CX+(Math.random()-.5)*6)*TILE,y:CY*TILE,vx:(Math.random()-.5)*.08,vy:-.1,life:650,max:650,type:'spark'}); }
-           } else if(el<SINK){              /* down alive into the pit */
+           } else if(el<SINK){              /* down alive into the pit, in place, feet-first */
              chasm.open=1; const f=(el-GAPE)/(SINK-GAPE);
              if(!screamed){ screamed=true; Sound.sfx('bad'); }
-             sunk.forEach((n,i)=>{ n.sink=clamp(f*1.15-i*0.05,0,1);
-               n.x=lerp(n.x,CX+(i-1.5)*0.45,0.05); n.y=lerp(n.y,CY,0.05);
-               if(n.sink>0.6) n.emote=null; });
-             if(now-lastB>70){ lastB=now;
+             sunk.forEach((n,i)=>{ n.x=lerp(n.x,n.tx,0.3); n.y=lerp(n.y,n.ty,0.3);
+               n.sink=clamp(f*1.2-i*0.05,0,1); if(n.sink>0.55) n.emote=null; });
+             if(now-lastB>60){ lastB=now;
                Particles.spawn({x:(CX+(Math.random()-.5)*8)*TILE,y:(CY-Math.random()*1.6)*TILE,vx:(Math.random()-.5)*.04,vy:-.09,life:1000,max:1000,type:'brimstone'});
                Particles.spawn({x:(CX+(Math.random()-.5)*9)*TILE,y:(CY-1)*TILE,vx:(Math.random()-.5)*.02,vy:-.025,life:1700,max:1700,type:'smoke'}); }
            } else if(el<CLOSE){             /* the earth closes over them */
@@ -5515,6 +5519,7 @@ STORY.push(
            requestAnimationFrame(step);
          };
          requestAnimationFrame(step);
+         return false;   /* block the script until the earth has opened, swallowed, and closed */
        }},
        {say:['narrator','And as he finished speaking, the ground SPLIT OPEN beneath them, and the earth opened its mouth and swallowed them, and their households, and all the men of Qoraḥ, and all their goods. They went DOWN ALIVE into the pit — and the earth closed over them, and they perished from the midst of the assembly.']},
        {call:G=>{ /* ===== FIRE FROM YAHUAH CONSUMES THE 250 WHO OFFERED INCENSE ===== */
@@ -5537,6 +5542,7 @@ STORY.push(
            Camera.shake=0; w.camFollow='player'; w.camTarget=null; G.scriptBlocked=false;
          };
          requestAnimationFrame(step);
+         return false;   /* block until the fire has fallen on the 250 */
        }},
        {say:['narrator','And FIRE came out from YAHUAH and consumed the two hundred and fifty men who offered the incense. And El‛azar the priest took up their bronze censers, and they were beaten into a covering for the altar — a sign to the children of Yasharal, that no stranger who is not of the seed of Aharon should come near to burn incense before YAHUAH.']},
        {music:'tense'},
