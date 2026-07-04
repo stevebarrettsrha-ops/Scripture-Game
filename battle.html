@@ -95,27 +95,38 @@ const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
 const lerp=(a,b,t)=>a+(b-a)*t;
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
-/* ---------- palettes (kept consistent with the story books) ---------- */
+/* ---------- palettes (kept consistent with the story books) ----------
+   Only the OTHER nations are colour-coded, each by a single identifying hue.
+   Yasharal is NOT colour-coded: the host wears natural, undyed wool and linen,
+   varied man to man, so they read as a people rather than a faction. */
 const PAL={
-  yasharal:{robe:'#a5402f', trim:'#e4c86a', skin:'#7a4e29', hair:'#2c1a0c'},   /* red & bronze */
-  kenaan:  {robe:'#3f5f96', trim:'#cfc7b4', skin:'#6e4a28', hair:'#1d1208'},   /* city blue */
-  amorite: {robe:'#6a4e86', trim:'#caa23c', skin:'#644323', hair:'#1d1208'},   /* coalition purple */
+  kenaan:  {robe:'#3f5f96', trim:'#cfc7b4', skin:'#6e4a28', hair:'#1d1208'},   /* Kena‘anite city blue */
+  amorite: {robe:'#6a4e86', trim:'#caa23c', skin:'#644323', hair:'#1d1208'},   /* Amorite coalition purple */
 };
+/* the natural garb of Yasharal — earth-toned homespun, no dye, chosen per man */
+const YASHARAL_GARB=[
+  {robe:'#cbb890', trim:'#7c5e34', skin:'#7a4e29', hair:'#2c1a0c'},
+  {robe:'#b49b6c', trim:'#6b5330', skin:'#6e4a28', hair:'#241407'},
+  {robe:'#a88a5e', trim:'#5c4527', skin:'#835531', hair:'#2c1a0c'},
+  {robe:'#c1ae83', trim:'#6f5836', skin:'#6b451f', hair:'#1d1208'},
+  {robe:'#9c8455', trim:'#54401f', skin:'#5f3e1f', hair:'#161009'},
+];
+const NEUTRAL='#efe3c8';  /* the parchment marker that stands for Yasharal in the UI (not a faction colour) */
 
 /* ---------- battle presets: the amount of the host per story ---------- */
 const BATTLES={
   yeriho:{ ref:'YAHUSHA 6', title:'The Walls of Yeriḥo',
     sub:'The seventh circuit, the great shout — and the wall falls flat before the host of Yasharal.',
-    field:[40,19], ground:'plain', siege:true,
+    field:[40,19], ground:'plain', siege:true, city:{y:3.0, span:9},
     atk:{pal:'yasharal', name:'Yasharal', foot:74, archer:26, horse:8},
     def:{pal:'kenaan',   name:'Yeriḥo',   foot:46, archer:20, horse:4},
-    win:'The wall fell down flat, and the people went up — every man straight before him. The city is taken.' },
+    win:'The wall fell down flat, and the people went up — every man straight before him. They took the city, and burned it with fire.' },
   ai:{ ref:'YAHUSHA 8', title:'The Ambush of Ai',
     sub:'The feigned flight draws the men of Ai from the gate — then the ambush rises, the city burns, and the host turns.',
-    field:[42,19], ground:'rocky', fire:true, pincer:true,
+    field:[42,19], ground:'rocky', fire:true, pincer:true, city:{y:3.2, span:7},
     atk:{pal:'yasharal', name:'Yasharal', foot:68, archer:22, horse:10},
     def:{pal:'amorite',  name:'Ai',       foot:44, archer:14, horse:6},
-    win:'Caught between the ambush and the returning host, not a man of Ai was left to flee.' },
+    win:'Caught between the ambush and the returning host, not a man of Ai was left to flee — and Yahusha made the city a heap forever.' },
   gibon:{ ref:'YAHUSHA 10', title:'Sun, Stand Still Over Giḇ‛on',
     sub:'The five sovereigns of the Amorites, met suddenly out of the all-night march — and great stones fall from the heavens.',
     field:[44,21], ground:'plain', hail:true,
@@ -336,11 +347,31 @@ function drawParticles(g){ const C=CELL;
    UNITS & ARMIES
    ============================================================ */
 const A=[];   /* all units */
-let scenery=[], walls=[], gate=null, camps=[];
+let scenery=[], walls=[], gate=null, camps=[], city=null;
 function rngScene(){ return mulberry32(97+CW*31+CH*17); }
 
+/* a cluster of flat-roofed mud-brick houses — the town itself, so its fall can be seen */
+function drawHouse(g,h,burning,t){
+  const C=CELL, sx=X(h.x), sy=Y(h.y);
+  shadow(g,sx,sy,C*h.w*.55);
+  /* body */
+  g.fillStyle = burning ? '#5c4834' : h.wall;
+  g.fillRect(sx-C*h.w/2, sy-C*h.h, C*h.w, C*h.h);
+  /* flat roof lip */
+  g.fillStyle = burning ? '#33251a' : h.roof;
+  g.fillRect(sx-C*h.w/2, sy-C*h.h, C*h.w, C*.15);
+  /* doorway */
+  g.fillStyle = burning ? 'rgba(255,150,45,.85)' : '#2a1c10';
+  g.fillRect(sx-C*.1, sy-C*.44, C*.2, C*.44);
+  /* a small window — glows when the fire is within */
+  g.fillStyle = burning ? 'rgba(255,170,55,.9)' : 'rgba(0,0,0,.22)';
+  g.fillRect(sx-C*h.w*.30, sy-C*h.h*.62, C*.14, C*.14);
+  if(burning){ g.fillStyle='rgba(30,20,14,.35)'; g.fillRect(sx-C*h.w/2, sy-C*h.h, C*h.w, C*h.h*.5); }
+}
+
 function makeUnit(o){ return {
-  team:o.team, kind:o.kind||'foot', col:PAL[o.pal]||PAL.yasharal,
+  team:o.team, kind:o.kind||'foot',
+  col: o.pal==='yasharal' ? YASHARAL_GARB[(Math.random()*YASHARAL_GARB.length)|0] : (PAL[o.pal]||PAL.kenaan),
   x:o.x, y:o.y, hp:o.kind==='chariot'?3:1, dead:false, fade:1,
   state:o.state||'form', tx:o.tx!==undefined?o.tx:o.x, ty:o.ty!==undefined?o.ty:o.y,
   spd:(o.kind==='horse'?.0030:o.kind==='chariot'?.0026:.0018)*(.8+Math.random()*.4),
@@ -429,6 +460,19 @@ function build(){
   camps=[];
   for(let i=0;i<4;i++) camps.push({x:CW*.5+(i-1.5)*1.6, y:CH-2.2, kind:i%2?'ox':'donkey', ph:rng()*6});
   for(let i=0;i<3;i++) camps.push({x:CW*.5+(i-1)*1.6, y:1.8, kind:'donkey', ph:rng()*6});
+  /* the defenders' town — drawn behind the wall, so it can be seen burning when it falls */
+  city=null;
+  if(CFG.city){
+    const span=CFG.city.span, cy=CFG.city.y, houses=[];
+    const tones=[['#c6b389','#a2895d'],['#bda87e','#98835a'],['#cbbb93','#a89065'],['#b6a374','#927c52']];
+    for(let i=0;i<span;i++){
+      const tn=tones[(i*3+1)%tones.length];
+      houses.push({ x:CW/2+(i-(span-1)/2)*1.15, y:cy+(i%2)*0.6,
+        w:0.9+rng()*0.35, h:0.8+rng()*(i%3===0?0.7:0.4), wall:tn[0], roof:tn[1] });
+    }
+    houses.sort((a,b)=>a.y-b.y);
+    city={ y:cy, span, houses, burning:false };
+  }
   /* walls & gate for a siege — the defenders' city along the top */
   walls=[]; gate=null;
   if(CFG.siege){ const wy=5;
@@ -450,13 +494,18 @@ function setupUI(){
   $('t-ref').textContent=CFG.ref; $('t-title').textContent=CFG.title; $('t-sub').textContent=CFG.sub;
   const tot=s=>((s.foot||0)+(s.archer||0)+(s.horse||0)+(s.chariot||0));
   forcesEl.innerHTML='';
-  const mk=(side)=>{ const p=PAL[side.pal]; const d=document.createElement('div'); d.className='force';
-    d.innerHTML=`<div class="swatch" style="background:${p.robe}"></div><div class="fname">${side.name}</div><div class="fnum">${tot(side)}</div>`; return d; };
+  /* Yasharal gets a neutral parchment marker (no faction colour); the nations get their hue */
+  const swatchOf=side=> side.pal==='yasharal'
+    ? `background:transparent;border:1px solid ${NEUTRAL};box-shadow:inset 0 0 0 2px rgba(239,227,200,.28)`
+    : `background:${PAL[side.pal].robe}`;
+  const mk=(side)=>{ const d=document.createElement('div'); d.className='force';
+    d.innerHTML=`<div class="swatch" style="${swatchOf(side)}"></div><div class="fname">${side.name}</div><div class="fnum">${tot(side)}</div>`; return d; };
   forcesEl.appendChild(mk(CFG.atk));
   const vs=document.createElement('div'); vs.className='vs'; vs.textContent='—  against  —'; forcesEl.appendChild(vs);
   forcesEl.appendChild(mk(CFG.def));
-  const pa=PAL[CFG.atk.pal], pd=PAL[CFG.def.pal];
-  $('b-atk-dot').style.background=pa.robe; $('b-def-dot').style.background=pd.robe;
+  const dot=(el,side)=>{ if(side.pal==='yasharal'){ el.style.background='transparent'; el.style.borderColor=NEUTRAL; }
+    else el.style.background=PAL[side.pal].robe; };
+  dot($('b-atk-dot'),CFG.atk); dot($('b-def-dot'),CFG.def);
   $('b-atk-nm').textContent=CFG.atk.name; $('b-def-nm').textContent=CFG.def.name;
   $('titleOv').classList.add('show');
 }
@@ -483,8 +532,18 @@ function siegeTick(){
   if(battleT>2600){ breachDone=true;
     for(const w of walls){ if(Math.abs(w.x-CW/2)<7) w.breached=true; }
     if(gate){ gate.breached=true; gate.open=true; }
+    if(city) city.burning=true;   /* and they burned the city with fire — Yahusha 6:24 */
     burst(CW/2,6,'smoke',30); burst(CW/2,6,'dust',24);
   }
+}
+/* the town ablaze — flame and smoke rise from the houses once the city has fallen */
+function cityFireTick(){
+  if(!city||!city.burning) return;
+  const span=CFG.city.span, cx=CW/2, cy=CFG.city.y;
+  if(Math.random()<.75) spawn({x:cx+(Math.random()-.5)*span*1.15, y:cy-Math.random()*.7,
+    vx:(Math.random()-.5)*.01, vy:-.03-Math.random()*.025, life:600+Math.random()*400, max:1000, kind:'fire'});
+  if(Math.random()<.55) spawn({x:cx+(Math.random()-.5)*span*1.25, y:cy-.7,
+    vx:.006, vy:-.03, life:1400, max:1400, kind:'smoke'});
 }
 /* heaven-sent hail / fire for the given battles, falling on the losing side */
 function skyTick(dt){
@@ -494,8 +553,7 @@ function skyTick(dt){
       const foes=A.filter(u=>u.team==='def'&&!u.dead); if(foes.length){ const f=foes[(Math.random()*foes.length)|0];
         f.dead=true; f.deadT=gt; burst(f.x,f.y,'spark',4); } }
   }
-  if(CFG.fire&&battleT>2600){ if(Math.random()<.5) spawn({x:CW/2+(Math.random()-.5)*10,y:5.6,vx:0,vy:-.02,life:700,max:700,kind:'fire'});
-    if(Math.random()<.4) spawn({x:CW/2+(Math.random()-.5)*12,y:5,vx:0,vy:-.03,life:1400,max:1400,kind:'smoke'}); }
+  if(CFG.fire&&battleT>2600&&city) city.burning=true;   /* the ambush sets the city ablaze — Yahusha 8:19 */
 }
 
 /* ============================================================
@@ -519,6 +577,7 @@ function render(){
   /* build a depth-sorted list of everything so all overlaps read correctly */
   const items=[];
   for(const s of scenery) items.push({y:s.y,z:0,s});
+  if(city) for(const h of city.houses) items.push({y:h.y,z:0.5,house:h});
   for(const w of walls) items.push({y:w.y,z:1,w});
   if(gate) items.push({y:gate.y,z:1,g:gate});
   for(const c of camps) items.push({y:c.y,z:0,camp:c});
@@ -526,6 +585,7 @@ function render(){
   items.sort((a,b)=>a.y-b.y || a.z-b.z);
   for(const it of items){
     if(it.s){ const sx=X(it.s.x),sy=Y(it.s.y); if(it.s.kind==='tree') drawTree(ctx,sx,sy,gt,it.s.ph); else drawRock(ctx,sx,sy); }
+    else if(it.house){ drawHouse(ctx,it.house,city.burning,gt); }
     else if(it.w){ drawWallSeg(ctx,X(it.w.x),Y(it.w.y),it.w.breached,gt); }
     else if(it.g){ drawGate(ctx,X(it.g.x),Y(it.g.y),it.g.open); }
     else if(it.camp){ drawBeast(ctx,X(it.camp.x),Y(it.camp.y),it.camp.kind,gt,it.camp.ph); }
@@ -546,7 +606,7 @@ function updateBanner(){ $('b-atk').textContent=count('atk'); $('b-def').textCon
 function frame(ts){
   const dt=Math.min(50,ts-(tPrev||ts)); tPrev=ts; gt+=dt;
   if(state==='charge'){ battleT+=dt;
-    updateUnits(dt,gt); siegeTick(); skyTick(dt); updateBanner();
+    updateUnits(dt,gt); siegeTick(); skyTick(dt); cityFireTick(); updateBanner();
     /* the battle is decided when one host is broken */
     if(!overShown && (count('def')<=2 || count('atk')<=2 || battleT>26000)){
       /* finish: the loser falls, the victor holds */
