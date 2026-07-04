@@ -3053,10 +3053,18 @@ const Game={
     Save.data.current=ch.id; Save.write();
     fadeOut(()=>{
       hideAllScreens();
-      if(ch.intro&&ch.intro.length){ this.startSlides(ch.intro,'intro'); }
+      /* returning from the battle page: skip the intro and drop straight into the scene, past the fight */
+      if(this._resumeObj==null && ch.intro&&ch.intro.length){ this.startSlides(ch.intro,'intro'); }
       else this.startScene();
       fadeIn();
     });
+  },
+  /* hand the fight off to the dedicated battle page, and resume this chapter at objective `resumeIdx` on return */
+  toBattle(key,resumeIdx){
+    const sc=this.chapter.scene||{}, biome=(sc.map&&sc.map.biome)||'', time=sc.time||'';
+    const ret='book-of-shemoth.html?resume='+encodeURIComponent(this.chapter.id+'.'+resumeIdx);
+    location.href='battle.html?b='+encodeURIComponent(key)+'&return='+encodeURIComponent(ret)
+      +(biome?'&biome='+encodeURIComponent(biome):'')+(time?'&time='+encodeURIComponent(time):'');
   },
   startSlides(slides,phase){
     this.state='slides'; this.slideList=slides; this.slideIdx=0; this.slidePhase=phase;
@@ -3147,6 +3155,11 @@ const Game={
     if(player) Camera.follow(player.x,player.y,map,true);
     else if(sc.camStart){ Camera.x=sc.camStart[0]*TILE; Camera.y=sc.camStart[1]*TILE; }
     if(sc.onStart) this.runScript(sc.onStart.slice());
+    /* resuming from the battle page — mark the objectives up to and including the fight as done */
+    if(this._resumeObj!=null){ const ri=this._resumeObj; this._resumeObj=null;
+      for(let i=0;i<ri && i<this.objectives.length;i++) this.objectives[i].done=true;
+      if(sc.onResume) this.runScript(sc.onResume.slice());
+      this.renderObjectives(); this.updateMarkers(); this.checkAllObjectives(); }
   },
   endScene(){
     const ch=this.chapter;
@@ -5370,26 +5383,13 @@ STORY.push(
      {type:'talk',npc:'captain',text:'The captains of Kush wait on your counsel'},
      {type:'goto',x:30,y:15,radius:2.4,text:'The serpent quarter is broken open — lead the assault',hiddenUntil:1,
       script:[
-       {spawn:{id:'sn1',char:'serpent_c',x:33,y:13,wander:false,noTalk:true,foeSpeed:.04}},
-       {spawn:{id:'sn2',char:'serpent_c',x:35,y:16,wander:false,noTalk:true,foeSpeed:.045}},
-       {spawn:{id:'sn3',char:'serpent_c',x:34,y:19,wander:false,noTalk:true,foeSpeed:.042}},
-       {spawn:{id:'gd1',char:'kushite2',x:37,y:12,wander:false,noTalk:true,foeSpeed:.05}},
-       {spawn:{id:'gd2',char:'kushite2',x:36,y:18,wander:false,noTalk:true,foeSpeed:.046}},
-       {spawn:{id:'gd5',char:'kushite2',x:38,y:15,wander:false,noTalk:true,foeSpeed:.048}},
-       {spawn:{id:'ka1',char:'kushite',x:27,y:13,wander:false,noTalk:true,spar:'ke1'}},
-       {spawn:{id:'ke1',char:'kushite2',x:28,y:13.6,wander:false,noTalk:true,spar:'ka1',sparFoe:true}},
-       {spawn:{id:'ka2',char:'kushite',x:29,y:17,wander:false,noTalk:true,spar:'ke2'}},
-       {spawn:{id:'ke2',char:'kushite2',x:30,y:17.6,wander:false,noTalk:true,spar:'ka2',sparFoe:true}},
-       {spawn:{id:'ka3',char:'kushite',x:26,y:19.5,wander:false,noTalk:true,spar:'ke3'}},
-       {spawn:{id:'ke3',char:'kushite2',x:27,y:20,wander:false,noTalk:true,spar:'ka3',sparFoe:true}},
-       {spawn:{id:'ka4',char:'kushite',x:31,y:11.5,wander:false,noTalk:true,spar:'ke4'}},
-       {spawn:{id:'ke4',char:'kushite2',x:32,y:12,wander:false,noTalk:true,spar:'ka4',sparFoe:true}},
-       {spawn:{id:'ka5',char:'kushite',x:24,y:15,wander:false,noTalk:true,spar:'ke5'}},
-       {spawn:{id:'ke5',char:'kushite2',x:25,y:15.6,wander:false,noTalk:true,spar:'ka5',sparFoe:true}},
-       {spawn:{id:'ka6',char:'kushite',x:28,y:21.5,wander:false,noTalk:true,spar:'ke6'}},
-       {spawn:{id:'ke6',char:'kushite2',x:29,y:22,wander:false,noTalk:true,spar:'ka6',sparFoe:true}},
        {sfx:'thunder'},{shake:2},{music:'storm'},
-       {battle:{foes:['sn1','sn2','sn3','gd1','gd2','gd5'],hits:2,rally:[15,18],text:'Take the city — the last serpents and the rebel guard stand before you!',won:'The city of Kush is taken'}},
+       {say:['narrator','The storks had cleared the serpents, and the open quarter lay bare — and the host of Kush, with the Hebrew at its head, fell upon the rebel guard and the city.']},
+       {say:['mosheh','The way is open — the throne of Kikianus, and the end of nine years’ siege, lie beyond that gate. Forward, men of the host — take the city!']},
+       {call:G=>Game.toBattle('kush',2)},
+      ]},
+     {type:'goto',x:33,y:13,radius:2.6,text:'Enter the city that is taken',hiddenUntil:2,
+      script:[
        {music:'royal'},
        {say:['narrator','And the city was taken, and the host made Mosheh sovereign over Kush — and he reigned in righteousness, and the land had rest. But he would not turn his heart to their mighty ones, nor take their ways; and after many years they gave him gifts and sent him away in honour.']},
        {say:['mosheh','A crown I never sought, in a land not mine. Somewhere north my people still bake bricks for Pharaoh. What is the meaning of all these years, O Aluahim of my fathers — a palace, a war, a throne — and not one chain in Goshen broken?']},
@@ -6526,11 +6526,6 @@ STORY.push(
    objectives:[
      {type:'goto',x:25,y:18,radius:2.4,text:'Lead the chosen men out against Amaleq',
       script:[
-       {spawn:{id:'am1',char:'amaleqi',x:36,y:16,wander:false,noTalk:true,foeSpeed:.05}},
-       {spawn:{id:'am2',char:'amaleqi',x:38,y:20,wander:false,noTalk:true,foeSpeed:.044}},
-       {spawn:{id:'am3',char:'raider2',x:35,y:23,wander:false,noTalk:true,foeSpeed:.048}},
-       {spawn:{id:'am6',char:'amaleqi',x:39,y:17.5,wander:false,noTalk:true,foeSpeed:.046}},
-       {spawn:{id:'am7',char:'raider2',x:37,y:25,wander:false,noTalk:true,foeSpeed:.043}},
        {spawn:{id:'wa1',char:'hebrew',x:27,y:16,wander:false,noTalk:true,spar:'we1'}},
        {spawn:{id:'we1',char:'amaleqi',x:28,y:16.6,wander:false,noTalk:true,spar:'wa1',sparFoe:true}},
        {spawn:{id:'wa2',char:'hebrew2',x:29,y:20,wander:false,noTalk:true,spar:'we2'}},
@@ -6545,18 +6540,16 @@ STORY.push(
        {spawn:{id:'we6',char:'amaleqi',x:29,y:25.6,wander:false,noTalk:true,spar:'wa6',sparFoe:true}},
        {sfx:'thunder'},{shake:2},
        {say:['yahoshua','For YAHUAH and for Yasharal! The staff is lifted on the hill — strike, men of Yasharal!']},
-       {battle:{foes:['am1','am2','am3','am6','am7'],hits:2,rally:[20,13],text:'Fight with Amaleq — while the staff of Aluahim is held high!',won:'The first rank of Amaleq breaks'}},
        {say:['narrator','And it came to be, when Mosheh held up his hand, that Yasharal prevailed — and when he let down his hand, Amaleq prevailed. But the hands of Mosheh grew heavy.']},
        {camera:['ent','mosheh']},
        {say:['aharon','His arms shake — the battle turns below! A stone — set him on the stone! Ḥur, take his left, I take his right. We stay up his hands until the sun goes down!']},
        {mash:{vs:'mosheh',duration:8000,gain:.15,decay:.00027,text:'Stay up the hands of Mosheh with Aharon and Ḥur!',barA:'THE LIFTED HANDS',barB:'UNTIL SUNSET',msg1:'His hands are steady — Yasharal prevails below!',msg2:'The sun leans west — hold, hold!'}},
        {camera:'player'},
-       {spawn:{id:'am4',char:'amaleqi',x:37,y:14,wander:false,noTalk:true,foeSpeed:.052}},
-       {spawn:{id:'am5',char:'raider2',x:39,y:19,wander:false,noTalk:true,foeSpeed:.046}},
-       {spawn:{id:'am8',char:'amaleqi',x:38,y:22,wander:false,noTalk:true,foeSpeed:.049}},
-       {spawn:{id:'am9',char:'raider2',x:40,y:16,wander:false,noTalk:true,foeSpeed:.045}},
-       {spawn:{id:'am10',char:'amaleqi',x:36,y:26,wander:false,noTalk:true,foeSpeed:.047}},
-       {battle:{foes:['am4','am5','am8','am9','am10'],hits:2,rally:[22,20],text:'His hands are steady as the going down of the sun — break Amaleq!',won:'Amaleq is defeated with the edge of the sword'}},
+       {say:['yahoshua','His hands are steady as the sun goes down — now, men of Yasharal, fall on them and break them!']},
+       {call:G=>Game.toBattle('amaleq',1)},
+      ]},
+     {type:'goto',x:24,y:18.5,radius:2.2,text:'The rout is finished — raise the altar: YAHUAH NISSI',hiddenUntil:1,
+      script:[
        {time:'dusk'},{music:'holy'},
        {say:['narrator','And his hands were steady until the going down of the sun. And Yahusha defeated Amaleq and his people with the edge of the sword.']},
        
@@ -7438,6 +7431,10 @@ Input.init();
 resize();
 /* M0: if deep-linked from the world hub (?play=ID&return=URL), boot into that chapter */
 (function(){ const q=new URLSearchParams(location.search), play=q.get('play'), ret=q.get('return');
+  const resume=q.get('resume');
+  if(resume){ const dot=resume.lastIndexOf('.'); const cid=resume.slice(0,dot), idx=parseInt(resume.slice(dot+1),10);
+    const rch=allChapters().find(c=>c.id===cid);
+    if(rch){ Game._resumeObj=isNaN(idx)?0:idx; Game.startChapter(rch); return; } }
   const ch=play&&allChapters().find(c=>c.id===play);
   if(ch){ Game._returnHub=ret||'world-travel-styled.html'; Game.startChapter(ch); }
   else openTitle();
