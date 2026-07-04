@@ -2791,9 +2791,107 @@ const Particles={
           g.beginPath(); g.arc(sx,sy,1.8,0,Math.PI*2); g.fill(); break;
         case 'feather': g.fillStyle=`rgba(240,236,224,${a*.9})`;
           g.beginPath(); g.ellipse(sx,sy,3,1.4,p.life/200,0,Math.PI*2); g.fill(); break;
+        case 'arrow': { const vl=Math.hypot(p.vx,p.vy)||1;   /* a loosed arrow, drawn along its flight */
+          g.strokeStyle=`rgba(58,44,26,${clamp(a*1.6,0,1)})`; g.lineWidth=1.4;
+          g.beginPath(); g.moveTo(sx,sy); g.lineTo(sx-p.vx/vl*9,sy-p.vy/vl*9); g.stroke();
+          g.fillStyle=`rgba(210,205,190,${clamp(a*1.6,0,1)})`; g.fillRect(sx-1,sy-1,2,2); break; }
       }
     }
   }
+};
+
+/* ================= MASS BATTLE — battalions of foot and archers ================= */
+/* a single lightweight soldier: shadow, spear, body, head — a few draw ops so hundreds render */
+function drawUnit(g,sx,sy,u,t){
+  const c=u.col;
+  if(u.dead){
+    const a=clamp(u.fade===undefined?1:u.fade,0,1); if(a<=0) return;
+    g.globalAlpha=a*.85;
+    g.fillStyle='rgba(0,0,0,.16)'; g.beginPath(); g.ellipse(sx,sy+1,4.6,1.6,0,0,Math.PI*2); g.fill();
+    g.fillStyle=c.robe; g.fillRect(sx-4,sy-2.4,8,2.6);
+    g.fillStyle=c.skin; g.beginPath(); g.arc(sx+(u.dir||1)*4.4,sy-1.2,1.7,0,Math.PI*2); g.fill();
+    g.globalAlpha=1; return;
+  }
+  const bob=u.moving?Math.sin(t/110+u.ph)*1.3:Math.sin(t/520+u.ph)*.5;
+  const y0=sy+bob;
+  g.fillStyle='rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(sx,sy+1,4,1.5,0,0,Math.PI*2); g.fill();
+  g.strokeStyle='#6a5330'; g.lineWidth=1;                     /* spear */
+  g.beginPath(); g.moveTo(sx+u.dir*1.6,y0-5); g.lineTo(sx+u.dir*2.6,y0-15); g.stroke();
+  g.fillStyle='#d2ccbf'; g.beginPath();
+  g.moveTo(sx+u.dir*2.6,y0-17); g.lineTo(sx+u.dir*1.7,y0-14); g.lineTo(sx+u.dir*3.5,y0-14); g.closePath(); g.fill();
+  g.fillStyle=c.robe; g.fillRect(sx-2.4,y0-8,4.8,7);          /* body */
+  g.fillStyle=c.trim; g.fillRect(sx-2.4,y0-8,4.8,1.3);        /* sash */
+  if(u.shield){ g.fillStyle=c.trim; g.beginPath(); g.ellipse(sx-u.dir*2.7,y0-4.4,1.5,2.7,0,0,Math.PI*2); g.fill(); }
+  g.fillStyle=c.skin; g.beginPath(); g.arc(sx,y0-9.4,2.1,0,Math.PI*2); g.fill();   /* head */
+}
+
+const Army={
+  MAX:260,
+  PAL:{
+    yasharal:{robe:'#a5402f', trim:'#e4c86a', skin:'#7a4e29'},   /* the host of Yasharal — red and bronze */
+    kenaan:  {robe:'#3f5f96', trim:'#cfc7b4', skin:'#6e4a28'},   /* the men of the city — blue */
+    amorite: {robe:'#6a4e86', trim:'#caa23c', skin:'#644323'},   /* the sovereigns' armies — purple */
+  },
+  clear(w){ if(w) w.army=null; },
+  /* spawn a block of ranks; front ranks carry shields, rear ranks may be archers */
+  spawn(w,o){
+    w.army=w.army||[];
+    const pal=this.PAL[o.pal]||this.PAL.yasharal, team=o.team||'atk';
+    const cols=o.cols||12, rows=o.rows||6, gap=o.gap||.8;
+    for(let r=0;r<rows;r++) for(let c=0;c<cols;c++){
+      if(w.army.length>=this.MAX) return;
+      w.army.push({
+        team, col:pal,
+        x:o.x+(c-(cols-1)/2)*gap+(Math.random()-.5)*.2,
+        y:o.y+(r-(rows-1)/2)*gap*.7+(Math.random()-.5)*.15,
+        hp:1, dead:false, state:o.state||'form',
+        tx:o.tx!==undefined?o.tx:o.x, ty:o.ty!==undefined?o.ty:o.y,
+        spd:(o.spd||.0016)*(.8+Math.random()*.4),
+        ph:Math.random()*6, foe:null, cd:Math.random()*400,
+        dir:o.dir!==undefined?o.dir:(team==='atk'?1:-1),
+        ranged:!!o.ranged&&Math.random()<.35, shield:Math.random()<.4, acd:Math.random()*1500,
+      });
+    }
+  },
+  order(w,team,o){ if(!w||!w.army) return; for(const u of w.army){ if(u.team!==team||u.dead) continue;
+    if(o.tx!==undefined)u.tx=o.tx; if(o.ty!==undefined)u.ty=o.ty; if(o.state)u.state=o.state; if(o.dir!==undefined)u.dir=o.dir; } },
+  count(w,team){ if(!w||!w.army) return 0; let n=0; for(const u of w.army) if(u.team===team&&!u.dead)n++; return n; },
+  update(w,dt,t){
+    const A=w&&w.army; if(!A||!A.length) return;
+    /* living centroid of each host — used to advance on the enemy and to aim the arrows */
+    let ax=0,ay=0,an=0, bx=0,by=0,bn=0;
+    for(let i=0;i<A.length;i++){ const u=A[i]; if(u.dead) continue;
+      if(u.team==='atk'){ax+=u.x;ay+=u.y;an++;} else {bx+=u.x;by+=u.y;bn++;} }
+    const cenA=an?{x:ax/an,y:ay/an}:null, cenD=bn?{x:bx/bn,y:by/bn}:null;
+    for(let i=0;i<A.length;i++){
+      const u=A[i];
+      if(u.dead){ u.fade=(u.fade===undefined?1:u.fade)-dt*.00035; continue; }
+      u.ph+=dt*.01; let mvx=0,mvy=0;
+      const foeCen=(u.team==='atk')?cenD:cenA;
+      if(u.state==='fight'){
+        if(!u.foe||u.foe.dead){ let bd=1e9,bf=null;
+          for(let j=0;j<A.length;j++){ const e=A[j]; if(e.dead||e.team===u.team) continue;
+            const dx=e.x-u.x,dy=e.y-u.y,d=dx*dx+dy*dy; if(d<bd){bd=d;bf=e;} }
+          u.foe=bf; }
+        if(u.foe){ const dx=u.foe.x-u.x,dy=u.foe.y-u.y,d=Math.hypot(dx,dy)||1;
+          if(d>.5){ mvx=dx/d; mvy=dy/d; u.moving=true; }
+          else { u.moving=false; u.cd-=dt;
+            if(u.cd<=0){ u.cd=300+Math.random()*400;
+              if(Math.random()<.5&&!u.foe.dead){ u.foe.hp-=1;
+                if(u.foe.hp<=0){ u.foe.dead=true; u.foe.deadT=t; Particles.burst(u.foe.x*TILE,u.foe.y*TILE,'spark',3); u.foe=null; } } }
+            mvx=(Math.random()-.5)*.4; mvy=(Math.random()-.5)*.4; }
+        } else if(foeCen){ const dx=foeCen.x-u.x,dy=foeCen.y-u.y,l=Math.hypot(dx,dy)||1; mvx=dx/l; mvy=dy/l; u.moving=true; }
+      } else { const dx=u.tx-u.x,dy=u.ty-u.y,d=Math.hypot(dx,dy);
+        if(d>.15){ mvx=dx/d; mvy=dy/d; u.moving=true; } else u.moving=false; }
+      if(mvx) u.dir=mvx<0?-1:1;
+      u.x=clamp(u.x+mvx*u.spd*dt,1,w.map.w-2);
+      u.y=clamp(u.y+mvy*u.spd*dt,1,w.map.h-2);
+      /* archers loose volleys toward the enemy host, arrows arcing down out of the sky */
+      if(u.ranged&&foeCen){ u.acd-=dt; if(u.acd<=0){ u.acd=1000+Math.random()*1000;
+        const dx=foeCen.x-u.x,dy=foeCen.y-u.y,l=Math.hypot(dx,dy)||1;
+        Particles.spawn({x:u.x*TILE,y:(u.y-1)*TILE,vx:dx/l*.2,vy:dy/l*.2-.07,grav:.0006,life:1600,max:1600,type:'arrow'}); } }
+    }
+  },
 };
 
 const TINTS={
@@ -2934,12 +3032,14 @@ function drawWorld(g,world,t){
   const lip9=world.overlook?world.overlook.cliffY:-1e9;   /* nothing stands on the painted sky above the cliff lip */
   for(const d of map.decor){ if(d.y<lip9) continue; ents.push({y:d.y,kind:'decor',d}); }
   for(const n of world.npcs) if(!n.hidden&&n.y>=lip9) ents.push({y:n.y,kind:'npc',d:n});
+  if(world.army) for(const u of world.army){ if(u.dead&&u.fade!==undefined&&u.fade<=0) continue; if(u.y>=lip9) ents.push({y:u.y,kind:'unit',d:u}); }
   if(world.player&&!world.player.hidden) ents.push({y:world.player.y,kind:'player',d:world.player});
   ents.sort((a,b)=>a.y-b.y);
   for(const e of ents){
     const d=e.d;
     const sx=d.x*TILE+offX, sy=d.y*TILE+offY;
     if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
+    if(e.kind==='unit'){ drawUnit(g,sx,sy,d,t); continue; }
     if(e.kind==='decor') drawProp(g,sx,sy,d,t);
     else if(d.propType) drawProp(g,sx,sy,Object.assign({},d,{type:d.propType}),t);
     else if(d.animal) drawAnimal(g,sx,sy,d.animal,{t,dir:d.dir,moving:d.moving,leaf:d.leaf,flying:d.flying,scale:d.scale,spotted:d.spotted});
@@ -3687,6 +3787,7 @@ const Game={
       this.chapter.scene.tick(this);
     const w=this.world;
     w.rays=lerp(w.rays,w.raysTarget||0,dt*.002);
+    Army.update(w,dt,this.t);   /* the march and clash of the battalions */
     /* heaven-sent phenomena — fire and brimstone, hail, manna, smoke — while their hour lasts */
     if(w.fx&&w.fx.length){
       let fxLive=false;
@@ -5584,6 +5685,7 @@ STORY.push(
    map:{biome:'plains', w:48, h:34, seed:2104,
      features:[
        {type:'pillar',x:14,y:14,solid:true,clear:1,id:'gilgalstones',examine:'The twelve stones out of the Yardĕn, standing at Gilgal.'},
+       {type:'stone',x:22,y:14,id:'gilgal_hill',clear:1,examine:'Giḇ‛ath ha-‛Araloth — the Hill of the Foreskins, where the reproach of Mitsrayim was rolled away, and the place was named Gilgal.'},
        {type:'firepit',x:17,y:17,lit:true,id:'pesach',clear:1},
        {type:'clearing',x:17,y:17,flat:2},
        {type:'tent',x:12,y:19,solid:true},{type:'tent',x:21,y:19,solid:true},{type:'tent',x:14,y:22,solid:true},
@@ -5604,14 +5706,24 @@ STORY.push(
          x:10+(i%7)*1.9+Math.random(),y:18+Math.floor(i/7)*2+Math.random(),wander:true,range:1,noTalk:true})); }},
    ],
    objectives:[
-     {type:'interact',prop:'pesach',text:'Keep the Pĕsaḥ at evening, in the plains of Yeriḥo',
+     {type:'interact',prop:'gilgal_hill',text:'At Giḇ‛ath ha-‛Araloth, renew the covenant sign on the generation born in the wilderness',
+      script:[
+       {say:['yahoshua','At this time YAHUAH said to me: “Make for yourself knives of flint, and circumcise the sons of Yasharal again, the second time.” For all the men of war who came out of Mitsrayim had died in the wilderness — but the generation born on the way had never received the sign of the covenant.']},
+       {sfx:'chime'},{burst:[22,14,'mote',12]},
+       {say:['narrator','So Yahusha made knives of flint, and circumcised the children of Yasharal at Giḇ‛ath ha-‛Araloth — the Hill of the Foreskins. And when the whole nation had been circumcised, they stayed in their places in the camp until they were healed.']},
+       {rays:.6,raysX:22},{sfx:'holy'},
+       {say:['voice','This day I have ROLLED AWAY the reproach of Mitsrayim from you.']},
+       {say:['narrator','So the name of that place is called GILGAL — the Rolling — to this day: for there the shame of bondage was rolled off the newborn nation, before ever it kept the Pĕsaḥ, or lifted a hand against Yeriḥo.']},
+       {rays:0},
+      ]},
+     {type:'interact',prop:'pesach',text:'Keep the Pĕsaḥ at evening, in the plains of Yeriḥo',hiddenUntil:1,
       script:[
        {say:['elazar','The fourteenth day of the month, at evening — the first Pĕsaḥ in the land itself. Unleavened bread, and roasted grain of the wheat of Kena‛an. The children born in the wilderness eat tonight what their fathers only dreamed.']},
        {say:['yahoshua','Forty years of manna, morning by morning — bread we did not sow, from a hand we did not see. And now the stored grain of the land is in our mouths. Taste it slowly, El‛azar. A vow is being kept tonight.']},
        {sfx:'chime'},{burst:[17,17,'mote',12]},
        {say:['narrator','And the manna CEASED the next day, after they had eaten of the stored grain of the land. And the children of Yasharal no longer had manna, but they ate of the yield of the land of Kena‛an that year.']},
       ]},
-     {type:'goto',x:35,y:16,radius:2.2,text:'Walk out alone toward Yeriḥo, as evening falls',hiddenUntil:1,
+     {type:'goto',x:35,y:16,radius:2.2,text:'Walk out alone toward Yeriḥo, as evening falls',hiddenUntil:2,
       script:[
        {time:'night'},{music:'tense'},
        {show:'captain'},{sfx:'holy'},{rays:.7,raysX:36},
@@ -5686,6 +5798,10 @@ STORY.push(
       script:[
        {sfx:'holy'},{sfx:'thunder'},
        {say:['yahoshua','SHOUT — for YAHUAH has given you the city! And the city shall be under the ban, it and all that is in it, to YAHUAH. ONLY Raḥaḇ the innkeeper shall live, she and all who are with her in the house, because she hid the messengers we sent. But keep yourselves from that which is under the ban — lest you make the camp of Yasharal a curse, and trouble it. All the silver and gold, the bronze and iron, are SET-APART to YAHUAH.']},
+       /* the whole host of Yasharal massed at the wall, and the men of Yeriḥo stood upon the parapets within */
+       {call:G=>{ const w=G.world; Army.clear(w);
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:25,y:33.5,cols:22,rows:5,gap:.78,ranged:true,state:'form',tx:25,ty:33.5});
+          Army.spawn(w,{team:'def',pal:'kenaan',x:25,y:15.5,cols:15,rows:5,gap:.8,ranged:true,state:'form',tx:25,ty:15.5}); }},
        {shake:2.2},{sfx:'thunder'},
        {call:G=>{ const ids=['w1','w2','w3','w4','w5','w6','w7','w8','w9','citygate'];
           for(const id of ids){ const i=G.world.map.decor.findIndex(d=>d.id===id);
@@ -5693,10 +5809,17 @@ STORY.push(
               G.world.map.decor.push({type:'rock',x:d.x,y:d.y,solid:false}); } }
           G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {burst:[25,17,'ash',26]},{burst:[20,20,'smoke',18]},{burst:[30,15,'smoke',18]},{shake:1.4},
-       {say:['narrator','And the people shouted, and the priests blew the shophars. And it came to be, when the people heard the sound of the shophar, that the people shouted with a GREAT SHOUT — and the WALL FELL DOWN FLAT. And the people went up into the city, every man straight before him, and they took the city.']},
+       {say:['narrator','And the people shouted with a GREAT SHOUT, and the priests blew the shophars — and when the people heard the sound of the shophar, the WALL FELL DOWN FLAT before them.']},
+       /* every man straight before him — the host pours through the breach and the melee is joined */
+       {call:G=>{ Army.order(G.world,'atk',{state:'fight'}); Army.order(G.world,'def',{state:'fight'}); Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
+       {say:['narrator','And the people went up into the city, EVERY MAN STRAIGHT BEFORE HIM — the host of Yasharal pouring over the rubble, and the men of Yeriḥo falling back into their own streets.']},
        {show:'def1'},{show:'def2'},
-       {battle:{foes:['def1','def2'],hits:2,text:'Take the city — every man straight before him!',
+       {battle:{foes:['def1','def2'],hits:2,text:'Into the breach — strike, every man straight before him!',
          won:'The city fell in an hour — all of it put under the ban, to YAHUAH.'}},
+       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
+          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
+          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},   /* the host stands victorious where it fought */
+       {say:['narrator','And they utterly destroyed all that was in the city, and took it — for the shout of a people that trusts is stronger than any wall of stone.']},
       ]},
      {type:'interact',prop:'rachav_house',text:'Bring out Raḥaḇ, and all who are hers — as it was sworn',hiddenUntil:3,
       script:[
@@ -5815,6 +5938,10 @@ STORY.push(
        {show:'foe1'},{show:'foe2'},{show:'foe3'},
        {say:['narrator','And the sovereign of Ai saw it, and the men of the city hurried and rose early, and went out against Yasharal to battle — for he did not know there was an ambush against him behind the city.']},
        {say:['yahoshua','FALL BACK! Flee before them, toward the wilderness — let every man of Ai be drawn from the gate!']},
+       /* the men of Ai pour out of the gate in pursuit; the host of Yasharal feigns flight toward the wilderness */
+       {call:G=>{ const w=G.world; Army.clear(w);
+          Army.spawn(w,{team:'def',pal:'kenaan',x:29,y:12.5,cols:16,rows:4,gap:.78,ranged:true,state:'form',tx:29,ty:23});
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:29,y:20,cols:14,rows:4,gap:.8,state:'form',tx:29,ty:31}); }},
        {move:['player',29,24,.09]},
        {say:['narrator','And all the people who were in Ai were called together to pursue them. And they pursued Yahusha, and were DRAWN AWAY from the city — not a man was left in Ai or Bĕyth Ăl who did not go out after Yasharal. And they left the city OPEN.']},
       ]},
@@ -5829,9 +5956,16 @@ STORY.push(
           G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {burst:[29,8,'smoke',24]},{burst:[27,9,'spark',16]},{burst:[31,9,'spark',16]},
        {move:['amb1',26,11,.08,'bg']},{move:['amb2',31,11,.08,'bg']},
-       {say:['narrator','And the men of Ai looked behind them — and the smoke of the city went up to the heavens, and they had no power to flee this way or that. And the people who had fled to the wilderness TURNED BACK on the pursuers.']},
+       /* the ambush host rises behind the city, and Yasharal turns — the men of Ai caught between two camps */
+       {call:G=>{ const w=G.world;
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:22,y:10,cols:12,rows:3,gap:.8,ranged:true,state:'fight'});
+          Army.order(w,'atk',{state:'fight'}); Army.order(w,'def',{state:'fight'}); Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
+       {say:['narrator','And the men of Ai looked behind them — and the smoke of the city went up to the heavens, and they had no power to flee this way or that. And the people who had fled to the wilderness TURNED BACK on the pursuers, and Yasharal cut them down, until there was neither survivor nor escapee.']},
        {battle:{foes:['foe1','foe2','foe3'],hits:2,text:'They are caught between the camps — strike!',
          won:'Not one of them was left to flee. And Yahusha did not draw back the hand that held the spear until the ban was completed.'}},
+       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
+          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
+          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},
       ]},
    ],
   },
@@ -5998,8 +6132,15 @@ STORY.push(
        {rays:.6,raysX:26},
        {say:['voice','Do not be afraid of them, for I have given them into your hand. NOT A MAN of them shall stand before you.']},
        {rays:0},
+       /* the all-night march falls suddenly on the five armies gathered before Giḇ‛on */
+       {call:G=>{ const w=G.world; Army.clear(w);
+          Army.spawn(w,{team:'def',pal:'amorite',x:26,y:13,cols:18,rows:5,gap:.78,ranged:true,state:'fight'});
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:26,y:27,cols:18,rows:5,gap:.78,ranged:true,state:'fight'});
+          Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
        {battle:{foes:['foe1','foe2','foe3','foe4'],hits:2,text:'YAHUAH has given them into your hand — strike!',
          won:'And YAHUAH confused them before Yasharal, and smote them with a great slaughter at Giḇ‛on.'}},
+       /* the coalition breaks and flees north, down toward the Bĕyth Ḥoron descent */
+       {call:G=>{ Army.order(G.world,'def',{state:'form',tx:30,ty:5}); Army.order(G.world,'atk',{state:'fight'}); }},
       ]},
      {type:'goto',x:30,y:18,radius:2.4,text:'Pursue by the road of the Bĕyth Ḥoron descent — the heavens fight',hiddenUntil:1,
       script:[
@@ -6007,6 +6148,9 @@ STORY.push(
        {call:G=>{ G.world.fx=(G.world.fx||[]); G.world.fx.push({kind:'hail',x:30,y:14,r:14,until:G.t+13000}); }},
        {sfx:'thunder'},{shake:1.2},
        {say:['narrator','And it came to be, as they fled before Yasharal on the descent of Bĕyth Ḥoron, that YAHUAH threw down GREAT STONES from the heavens on them as far as Azĕqah — and they died. More died from the hailstones than the children of Yasharal killed with the sword.']},
+       /* the great stones from heaven fall on the fleeing coalition — more slain than by the sword */
+       {call:G=>{ const w=G.world; if(w.army) for(const u of w.army){ if(u.team==='def'&&!u.dead){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); } }
+          Army.order(w,'atk',{state:'form'}); }},
        {hide:'k1'},
        {say:['narrator','And the five sovereigns fled, and hid themselves in the cave at Maqqĕdah.']},
       ]},
@@ -6064,8 +6208,16 @@ STORY.push(
        {say:['voice','Do not be afraid because of them — for tomorrow, about this time, I am giving all of them up slain before Yasharal. Their horses you shall hamstring, and their chariots you shall burn with fire.']},
        {rays:0},
        {say:['kaleb','As numerous as the sand on the seashore, with horses enough to shake the ground — and the word says they are already given. Fall on them, Yahusha. The sword of a man moves faster when YAHUAH has gone ahead of it.']},
+       /* the whole coalition of the north — as sand on the seashore — met suddenly by the waters of Merom */
+       {call:G=>{ const w=G.world; Army.clear(w);
+          Army.spawn(w,{team:'def',pal:'amorite',x:29,y:12,cols:22,rows:6,gap:.72,ranged:true,state:'fight'});
+          Army.spawn(w,{team:'atk',pal:'yasharal',x:29,y:27,cols:16,rows:4,gap:.78,ranged:true,state:'fight'});
+          Sound.sfx('holy'); Camera.shake=Math.max(Camera.shake,1); }},
        {battle:{foes:['foe1','foe2','foe3','foe4'],hits:2,text:'Suddenly — before their chariots can form!',
          won:'And YAHUAH gave them into the hand of Yasharal, who smote them and pursued them to Great Tsiḏon, until none of them remained.'}},
+       {call:G=>{ const w=G.world; for(const u of w.army){ if(u.dead) continue;
+          if(u.team==='def'){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); }
+          else { u.tx=u.x; u.ty=u.y; u.foe=null; u.state='form'; } } }},
       ]},
      {type:'interact',prop:'char1',text:'Burn the first rank of chariots, as YAHUAH commanded',hiddenUntil:1,
       script:[
@@ -6092,6 +6244,70 @@ STORY.push(
 STORY.push(
 /* ============ ACT IV — THE INHERITANCE ============ */
 { id:'yact4', roman:'IV', title:'The Inheritance', ref:'YAHUSHA 13–21', chapters:[
+{ id:'y11b', title:'The Land That Yet Remains', ref:'YAHUSHA 13',
+  intro:[
+   {art:'vista', music:'holy', text:'And Yahusha was old, advanced in years. And YAHUAH said to him: “You are old, advanced in years, and very much of the land still remains to be possessed.” This is the land that yet remained: all the districts of the Philistines, and all the Geshurites, and Leḇanon toward the rising of the sun.', ref:'YAHUSHA 13:1–5'},
+  ],
+  scene:{
+   map:{biome:'plains', w:52, h:36, seed:2117, river:{x:45,width:5,curve:1.1},
+     features:[
+       {type:'mishkan',stage:2,x:16,y:9,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Dwelling at Gilgal — the ark resting here still, before it goes up to Shiloh.'},
+       {type:'standard',x:16,y:14,id:'std',clear:1,examine:'The standard of Yahusha, planted in the camp at Gilgal.'},
+       {type:'clearing',x:16,y:17,flat:3},
+       {type:'pillar',x:34,y:25,solid:true,clear:1,id:'inh_reuven',examine:'A boundary stone for Re’uḇĕn — from Aro‛ĕr on the rim of the Arnon, and the tableland of Mĕyḏeḇa, east of the Yardĕn.'},
+       {type:'pillar',x:38,y:20,solid:true,clear:1,id:'inh_gad',examine:'A boundary stone for Gaḏ — Gil‛aḏ, and the cities of the plain to the edge of the Sea of Kinnereth, east of the Yardĕn.'},
+       {type:'pillar',x:40,y:14,solid:true,clear:1,id:'inh_menashsheh',examine:'A boundary stone for half Menashsheh — all Bashan, the reign of Og, east of the Yardĕn.'},
+     ]},
+   time:'day', music:'holy',
+   player:'yahoshua_o', playerPos:[16,18], playerHold:'staff',
+   npcs:[
+     {id:'elazar',char:'elazar',x:18,y:14,wander:false,noTalk:true},
+     {id:'levite1',char:'levite',x:14,y:16,wander:false,
+      script:[
+       {say:['levite','We are the sons of Lĕwi, Yahusha. As you mark out the land, tribe by tribe — what stone is set for us? Where does the border of our portion run?']},
+       {say:['yahoshua_o','There is none, son of Lĕwi — and that is your honour, not your lack. To the tribe of Lĕwi Mosheh gave NO inheritance of land: the offerings of YAHUAH Aluahim of Yasharal, made by fire, ARE your inheritance. YAHUAH Himself is your portion, as He said to you. No border can hold a portion so wide.']},
+       {emote:['levite1','heart']},{sfx:'chime'},
+      ]},
+   ],
+   onStart:[
+     {call:G=>campLife(G)},
+     {call:G=>{ const cs=['hebrew','hebreww','hebrew2','elder'];
+       for(let i=0;i<20;i++) G.world.npcs.push(makeNpc({id:'gil'+i,char:cs[i%4],child:i%8===7,
+         x:11+(i%8)*1.6+Math.random(),y:16+Math.floor(i/8)*1.8+Math.random(),wander:true,range:1,noTalk:true})); }},
+   ],
+   objectives:[
+     {type:'interact',prop:'std',text:'Stand by your standard at Gilgal, and hear the word: much land yet remains',
+      script:[
+       {rays:.7,raysX:16},{sfx:'holy'},
+       {say:['voice','You are old, advanced in years, and very much of the land still remains to be possessed — all the districts of the Philistines, and all the Geshurites, and the land of the Kena‛anites, and Leḇanon toward the rising of the sun.']},
+       {say:['voice','All the inhabitants of the mountains, from Leḇanon to Misrephoth Mayim, all the Tsiḏonians — I MYSELF shall drive them out from before the children of Yasharal. Only divide it by lot to Yasharal as an inheritance, as I have commanded you. Now apportion this land to the nine tribes and the half-tribe of Menashsheh.']},
+       {burst:[16,14,'holy',16]},{rays:0},
+       {say:['yahoshua_o','Old — and the work not finished. That is the way of every servant of YAHUAH. But the promise does not age. What my hand does not take, HIS hand will. Let the borders be marked — beginning with those already given, beyond the Yardĕn.']},
+      ]},
+     {type:'interact',prop:'inh_reuven',text:'Mark the inheritance of Re’uḇĕn, east of the Yardĕn',hiddenUntil:1,
+      script:[
+       {sfx:'chime'},{burst:[34,25,'mote',10]},
+       {say:['yahoshua_o','Re’uḇĕn — from Aro‛ĕr on the rim of the wadi Arnon, and all the tableland by Mĕyḏeḇa, to Ḥeshbon and its cities: the portion Mosheh gave you beyond the Yardĕn, before ever we crossed over.']},
+       {say:['narrator','And among the slain of Miḏyan, whom the children of Yasharal put to the sword, was BIL‛AM son of Be‛or, the DIVINER — he who sought to curse Yasharal for hire, and fell at the last by the very sword he thought to escape.']},
+      ]},
+     {type:'interact',prop:'inh_gad',text:'Mark the inheritance of Gaḏ, east of the Yardĕn',hiddenUntil:2,
+      script:[
+       {sfx:'chime'},{burst:[38,20,'mote',10]},
+       {say:['yahoshua_o','Gaḏ — Ya‛zĕr, and all the cities of Gil‛aḏ, and half the land of the children of Ammon, and the valley cities to the edge of the Sea of Kinnereth: the herdsmen’s portion, rich with pasture, beyond the Yardĕn.']},
+      ]},
+     {type:'interact',prop:'inh_menashsheh',text:'Mark the inheritance of half Menashsheh, east of the Yardĕn',hiddenUntil:3,
+      script:[
+       {sfx:'chime'},{burst:[40,14,'mote',10]},
+       {say:['yahoshua_o','And half Menashsheh — all Bashan, the whole reign of Og, and the towns of Yaʼir, sixty cities. These three — Re’uḇĕn, Gaḏ, and half Menashsheh — Mosheh settled beyond the Yardĕn eastward. Their armed men crossed over to fight for their brothers; now the borders are sealed behind them.']},
+      ]},
+     {type:'talk',npc:'levite1',text:'Answer the sons of Lĕwi: where is their portion?',hiddenUntil:4},
+   ],
+  },
+  outro:[
+   {art:'land', music:'holy', text:'So the tally began, tribe by tribe. Two tribes and a half had their portion east of the Yardĕn, from the hand of Mosheh; the tribe of Lĕwi received no land, for YAHUAH is their inheritance; and very much of the west still remained to be possessed. An old man marked out a country not yet fully won — trusting the Hand that had sworn to finish what his own no longer could.', ref:'YAHUSHA 13:8–33'},
+  ],
+  complete:'Very much of the land yet remains — only divide it by lot, and YAHUAH Himself shall drive them out.'
+},
 { id:'y12', title:'Give Me This Mountain', ref:'YAHUSHA 14',
   intro:[
    {art:'vista', music:'holy', text:'And Yahusha was old, advanced in years. And the children of Yahudah came to Yahusha in Gilgal — and Kalĕḇ son of Yephunneh the Qenizzite said to him: “You know the word which YAHUAH said to Mosheh the man of Aluahim, concerning you and me, in Qaḏĕsh Barnĕa.”', ref:'YAHUSHA 14:6'},
