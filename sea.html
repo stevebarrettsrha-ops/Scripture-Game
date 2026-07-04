@@ -238,10 +238,12 @@ function drawChariot(g,sx,sy,u,t){
     g.strokeStyle=hb2; g.lineWidth=C*.05; g.beginPath(); g.moveTo(sx+off*C,sy-C*.55); g.lineTo(sx+off*C*.4,sy-C*.14); g.stroke();  /* trace to the car */
   }
   const wob=u.wheelOff?Math.sin(t/70+u.ph)*C*.05:0;  /* "He took off their chariot wheels" */
-  g.strokeStyle='#3a2c1c'; g.lineWidth=C*.08;
-  for(const wx of [-.44,.44]){ const ww=wx<0?-wob:wob;
-    g.beginPath(); g.arc(sx+wx*C+ww,sy+C*.04,C*.26,0,Math.PI*2); g.stroke();
-    for(let i=0;i<6;i++){ const a=t/460+i; g.beginPath(); g.moveTo(sx+wx*C+ww,sy+C*.04); g.lineTo(sx+wx*C+ww+Math.cos(a)*C*.24,sy+C*.04+Math.sin(a)*C*.24); g.stroke(); } }
+  /* the wheels are seen edge-on (the chariot rolls north) — thin uprights, not flat discs */
+  for(const wx of [-.42,.42]){ const wxp=sx+wx*C+(wx<0?-wob:wob), wyp=sy+C*.02;
+    g.fillStyle='#2b1f12'; g.beginPath(); g.ellipse(wxp,wyp,C*.1,C*.32,0,0,Math.PI*2); g.fill();      /* rim, edge-on */
+    g.fillStyle='#5a4a34'; g.beginPath(); g.ellipse(wxp,wyp,C*.045,C*.13,0,0,Math.PI*2); g.fill();     /* hub */
+    const hy=wyp+((((t/110)+(wx<0?0:.5))%1)-0.5)*C*.56;                                                /* a rolling highlight */
+    g.fillStyle='rgba(230,235,240,.3)'; g.fillRect(wxp-C*.07,hy-C*.015,C*.14,C*.05); }
   /* the car and its driver, from behind, in Egyptian white and gold */
   g.fillStyle=EGY.trim; g.fillRect(sx-C*.3,sy-C*.18,C*.6,C*.44);
   g.fillStyle=EGY.robe; g.fillRect(sx-C*.14,sy-C*.6,C*.28,C*.42);
@@ -368,8 +370,7 @@ function makeHeb(o){ return Object.assign({team:'heb',moving:true,ph:Math.random
 function buildHosts(){
   HEB.length=0; EGY_U.length=0;
   const cols=8;
-  /* ~120 souls already strung down the corridor, all pressing toward the far shore */
-  let n=0;
+  /* the host, strung down the corridor in lanes, all pressing toward the far shore */
   for(let row=0; row<15; row++){
     for(let c=0;c<cols;c++){
       const kindR=Math.random();
@@ -377,29 +378,48 @@ function buildHosts(){
       if(kindR<0.28){ kind='woman'; col=WOMAN_GARB[(Math.random()*WOMAN_GARB.length)|0]; }
       else if(kindR<0.44){ kind='child'; col=HEB_GARB[(Math.random()*HEB_GARB.length)|0]; }
       else if(kindR<0.5){ kind='elder'; col=HEB_GARB[(Math.random()*HEB_GARB.length)|0]; }
-      const x=CORX+(c-(cols-1)/2)*0.95 + (Math.random()-.5)*0.3;
-      const y=CH-4 - row*1.15 + (Math.random()-.5)*0.4;
-      HEB.push(makeHeb({kind,col,x,y,spd:(kind==='child'?.0016:.0020)*(.8+Math.random()*.5),
+      const lane=CORX+(c-(cols-1)/2)*1.0;
+      HEB.push(makeHeb({kind,col,lane,x:lane+(Math.random()-.5)*0.25,y:CH-4 - row*1.25 + (Math.random()-.5)*0.3,
+        spd:(kind==='child'?.0024:.0030)*(.85+Math.random()*.3),
         bundle:kind!=='child'&&Math.random()<.35, staff:kind==='elder'||Math.random()<.12,
         tx:CORX+(Math.random()-.5)*7, ty:1.5+Math.random()*1.6}));
-      n++;
     }
   }
-  /* flocks and a couple of carts threaded through */
+  /* flocks and a couple of carts threaded through, each in its own lane */
   const beasts=['sheep','goat','donkey','sheep','goat','ox'];
-  for(let i=0;i<16;i++){ HEB.push(makeHeb({kind:'beast',beast:beasts[i%beasts.length],
-    x:CORX+(Math.random()-.5)*6, y:CH-5-Math.random()*10, spd:.0018*(.8+Math.random()*.4),
-    tx:CORX+(Math.random()-.5)*7, ty:1.6+Math.random()*1.8})); }
-  for(let i=0;i<3;i++){ HEB.push(makeHeb({kind:'cart',x:CORX+(i-1)*2.2, y:CH-5-i*3, spd:.0015,
-    tx:CORX+(i-1)*2.2, ty:2+Math.random()})); }
+  for(let i=0;i<16;i++){ const lane=CORX+((i%6)-2.5)*1.25; HEB.push(makeHeb({kind:'beast',beast:beasts[i%beasts.length],
+    lane,x:lane,y:CH-6-Math.random()*10, spd:.0026*(.85+Math.random()*.3), tx:CORX+(Math.random()-.5)*7, ty:1.6+Math.random()*1.8})); }
+  for(let i=0;i<3;i++){ const lane=CORX+(i-1)*2.6; HEB.push(makeHeb({kind:'cart',lane,x:lane,y:CH-7-i*3.2,spd:.0022,tx:lane,ty:2+Math.random()})); }
 
-  /* Pharaoh's host waits at the near shore, off the bottom edge, to pursue */
-  const push=(kind,cnt,y0)=>{ for(let i=0;i<cnt;i++){
-    EGY_U.push({team:'egy',kind,moving:false,ph:Math.random()*6,fade:1,wheelOff:false,
-      x:CORX+(Math.random()-.5)*7.4, y:CH+1.5+Math.random()*4 + y0,
-      spd:(kind==='chariot'?.0030:kind==='horse'?.0032:.0020)*(.85+Math.random()*.4),
-      tx:CORX+(Math.random()-.5)*7, ty:CH-6-Math.random()*4}); } };
-  push('chariot',18,0); push('horse',14,1.5); push('foot',20,2.5);
+  /* Pharaoh's host forms up in ordered ranks — chariots leading, three abreast with room
+     between them, then horsemen, then foot — and pursues in that order */
+  let rank=0;
+  const formRank=(kind,cnt,perRow,laneSpace,rankGap)=>{
+    for(let i=0;i<cnt;i++){ const row=Math.floor(i/perRow), c=i%perRow, rowN=Math.min(perRow,cnt-row*perRow);
+      const lane=CORX+(c-(rowN-1)/2)*laneSpace + (Math.random()-.5)*0.1;
+      EGY_U.push({team:'egy',kind,moving:false,ph:Math.random()*6,fade:1,wheelOff:false,
+        lane, x:lane, y:CH+1.4 + (rank+row*rankGap),
+        spd:(kind==='chariot'?.0026:kind==='horse'?.0030:.0021)*(.92+Math.random()*.16)}); }
+    rank += Math.ceil(cnt/perRow)*rankGap + 1;
+  };
+  formRank('chariot',12,3,2.7,1.7);   /* 3 chariots to a row, well spaced */
+  formRank('horse',12,4,1.9,1.3);
+  formRank('foot',24,5,1.5,1.1);
+}
+/* nobody overlaps: chariots keep their room, and none rolls over a man */
+function radiusOf(u){ return u.kind==='chariot'?1.15:u.kind==='cart'?1.0:u.kind==='horse'?0.72:u.kind==='beast'?0.6:0.5; }
+function separate(list){
+  for(let i=0;i<list.length;i++){ const a=list[i]; if(a.drown) continue; const ra=radiusOf(a);
+    for(let j=i+1;j<list.length;j++){ const b=list[j]; if(b.drown) continue; const rr=ra+radiusOf(b);
+      const dx=a.x-b.x, dy=a.y-b.y; if(dx>rr||dx<-rr||dy>rr||dy<-rr) continue;
+      const d2=dx*dx+dy*dy; if(d2<rr*rr&&d2>1e-4){ const d=Math.sqrt(d2), p=(rr-d)*0.5, nx=dx/d*p, ny=dy/d*p; a.x+=nx;a.y+=ny;b.x-=nx;b.y-=ny; } } }
+}
+/* push the pursuers out of any crossers still in the corridor (the people are not shoved) */
+function avoid(movers,blockers){
+  for(const a of movers){ if(a.drown) continue; const ra=radiusOf(a);
+    for(const b of blockers){ if(b.drown||b.state==='safe') continue; const rr=ra+radiusOf(b);
+      const dx=a.x-b.x, dy=a.y-b.y; if(dx>rr||dx<-rr||dy>rr||dy<-rr) continue;
+      const d2=dx*dx+dy*dy; if(d2<rr*rr&&d2>1e-4){ const d=Math.sqrt(d2), p=(rr-d); a.x+=dx/d*p; a.y+=dy/d*p; } } }
 }
 
 /* ============================================================
@@ -422,33 +442,35 @@ function over(){
 }
 
 function updateHost(dt,t){
-  /* Yasharal crosses upward to the far shore */
+  /* Yasharal crosses upward to the far shore, each holding its lane */
   let across=0;
   for(const u of HEB){
     if(u.y<=3.0){ across++; if(u.state!=='safe'){ u.state='safe'; u.tx=2+Math.random()*(CW-4); u.ty=1.2+Math.random()*1.4; } }
-    const seekX=u.state==='safe'?u.tx:clamp(u.x + (CORX-u.x)*0.02, corridorLeft()+0.6, corridorRight()-0.6);
-    const dx=seekX-u.x, dy=(u.state==='safe'?u.ty:u.y-2)-u.y;
-    const d=Math.hypot(dx,dy)||1;
-    const go = (state==='split'&&u.y>CH-4) ? 0.25 : 1;   /* wait at the brink until the sea is open */
-    u.moving = d>0.1;
-    u.x += (dx/d)*u.spd*dt*go; u.y += (dy/d)*u.spd*dt*go*(u.state==='safe'?1:1.15);
+    let tx,ty;
+    if(u.state==='safe'){ tx=u.tx; ty=u.ty; }
+    else { tx=clamp(u.lane, corridorLeft()+0.7, corridorRight()-0.7); ty=u.y-2; }
+    const dx=tx-u.x, dy=ty-u.y, d=Math.hypot(dx,dy)||1;
+    let go=1; if(corridorHalf<0.4) go=0; else if(state==='split'&&u.y>CH-4) go=0.3;   /* wait until the sea is open */
+    u.moving = go>0 && d>0.1;
+    u.x += (dx/d)*u.spd*dt*go; u.y += (dy/d)*u.spd*dt*go;
     u.ph += dt*.01;
   }
   crossedFrac = across/HEB.length;
+  separate(HEB);
 
-  /* Pharaoh pursues into the corridor */
+  /* Pharaoh pursues into the corridor, in ranks, holding lanes */
   if(state==='pursue'||state==='close'){
     for(const u of EGY_U){
       if(u.drown){ u.fade-=dt*.0006; u.y+=dt*.0004; continue; }
       u.moving=true; u.ph+=dt*.01;
-      const dx=CORX-u.x, dy=u.ty-u.y, d=Math.hypot(dx,dy)||1;
-      u.x += clamp(dx,-1,1)*0.0006*dt + (dx/d)*u.spd*dt*0.2;
-      u.x = clamp(u.x, corridorLeft()+0.5, corridorRight()-0.5);
-      u.y -= u.spd*dt;
-      if(u.y<u.ty) u.ty=Math.max(4,u.ty-0.02*dt/16);
-      /* the closing walls take them */
+      u.x += (u.lane-u.x)*0.004*dt;         /* keep the lane */
+      u.y -= u.spd*dt;                        /* advance north */
+      u.x = clamp(u.x, corridorLeft()+0.7, corridorRight()-0.7);
       if(state==='close' && !inCorridor(u.x)){ u.drown=true; burst(u.x,u.y,'foam',8); burst(u.x,u.y,'splash',3,.03); }
     }
+    separate(EGY_U);
+    avoid(EGY_U, HEB);
+    for(const u of EGY_U){ if(!u.drown) u.x=clamp(u.x, corridorLeft()+0.55, corridorRight()-0.55); }
   }
 }
 
@@ -472,8 +494,9 @@ function frame(ts){
     updateHost(dt,gt);
     /* their wheels come off as they drive with difficulty */
     if(phaseT>1500) for(const u of EGY_U){ if(u.kind==='chariot') u.wheelOff=true; }
-    const midway = EGY_U.filter(u=>!u.drown && u.y<CH-6).length;
-    if((midway>EGY_U.length*0.5 && crossedFrac>0.9) || phaseT>5200){
+    if(crossedFrac>0.9 || phaseT>13000){
+      /* the last of the host is up — snap any straggler to the far shore, none left between the walls */
+      for(const u of HEB){ if(u.state!=='safe'){ u.state='safe'; u.x=2+Math.random()*(CW-4); u.y=1.3+Math.random()*1.6; u.tx=u.x; u.ty=u.y; } }
       setPhase('close'); $('banner').textContent='Stretch out the hand — let the waters come back!';
     }
   }

@@ -541,7 +541,9 @@ function updateUnits(dt,t){
     /* gentle separation from crowded neighbours — keeps ranks from collapsing into knots */
     let sx=0,sy=0; const gx=u.x|0, gy=u.y|0;
     for(let oy=-1;oy<=1;oy++) for(let ox=-1;ox<=1;ox++){ const b=GRID[(gx+ox)+(gy+oy)*GW]; if(!b) continue;
-      for(const o of b){ if(o===u) continue; const dx=u.x-o.x,dy=u.y-o.y,d2=dx*dx+dy*dy; if(d2<.36&&d2>1e-4){ const d=Math.sqrt(d2); sx+=dx/d*(.6-d); sy+=dy/d*(.6-d); } } }
+      for(const o of b){ if(o===u) continue; const dx=u.x-o.x,dy=u.y-o.y,d2=dx*dx+dy*dy;
+        const sep=(u.kind==='chariot'||o.kind==='chariot')?1.05:(u.kind==='horse'||o.kind==='horse')?.72:.6;   /* chariots keep their room */
+        if(d2<sep*sep&&d2>1e-4){ const d=Math.sqrt(d2); sx+=dx/d*(sep-d); sy+=dy/d*(sep-d); } } }
     u.x=clamp(u.x+mvx*u.spd*spdMul*dt+sx*.06, .5, CW-.5);
     u.y=clamp(u.y+mvy*u.spd*spdMul*dt+sy*.06, .5, CH-.5);
     if(u.kind==='archer'&&foeCen){ u.acd-=dt; if(u.acd<=0){ u.acd=900+Math.random()*900;
