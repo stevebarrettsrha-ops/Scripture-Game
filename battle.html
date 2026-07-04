@@ -473,10 +473,12 @@ function build(){
     houses.sort((a,b)=>a.y-b.y);
     city={ y:cy, span, houses, burning:false };
   }
-  /* walls & gate for a siege — the defenders' city along the top */
+  /* walls & gate for a siege — the city rampart runs the whole horizon, off both screen edges */
   walls=[]; gate=null;
   if(CFG.siege){ const wy=5;
-    for(let x=6;x<=CW-6;x+=1.2){ if(Math.abs(x-CW/2)<1.6) continue; walls.push({x,y:wy,breached:false}); }
+    /* extend past the visible field so the wall bleeds off-screen left and right */
+    const cxL=Math.floor(-ox/CELL)-2, cxR=Math.ceil((VW-ox)/CELL)+2;
+    for(let x=cxL;x<=cxR;x+=1.2){ if(Math.abs(x-CW/2)<1.6) continue; walls.push({x,y:wy,breached:false}); }
     gate={x:CW/2,y:wy,open:false,breached:false};
   }
   /* muster the two hosts across a broad frontage: attackers below, defenders above */
@@ -567,9 +569,10 @@ function drawGround(g){
   for(let cy=0;cy<CH;cy++) for(let cx=0;cx<CW;cx++){ if((cx+cy)&1) continue;
     g.fillStyle= CFG.ground==='rocky'?'rgba(0,0,0,.03)':'rgba(255,255,255,.03)';
     g.fillRect(X(cx),Y(cy),CELL,CELL); }
-  /* waters along one edge for Merom */
-  if(CFG.waters){ g.fillStyle='#3f6f9c'; g.fillRect(X(0),Y(0),CELL*CW,CELL*3.2);
-    g.fillStyle='rgba(255,255,255,.08)'; for(let i=0;i<CW;i+=2) g.fillRect(X(i),Y(1.4),CELL*1.2,CELL*.12); }
+  /* waters along the top for Merom — stretch off the top and both side edges */
+  if(CFG.waters){ const wb=Y(3.2);
+    g.fillStyle='#3f6f9c'; g.fillRect(0,0,VW,wb);
+    g.fillStyle='rgba(255,255,255,.08)'; for(let x=0;x<VW;x+=CELL*2) g.fillRect(x,Y(1.4),CELL*1.2,CELL*.12); }
 }
 
 function render(){
