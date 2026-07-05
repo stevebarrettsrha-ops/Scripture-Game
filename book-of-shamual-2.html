@@ -7,7 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="theme-color" content="#0a0e1a">
-<title>1 SHEMU’ĔL — Neḇi’im · The Prophets</title>
+<title>2 SHEMU’ĔL — Neḇi’im · The Prophets</title>
 <style>
   :root{
     --gold:#e8c66a; --gold-dim:#a8893f; --ink:#0a0e1a; --parch:#efe3c8;
@@ -345,7 +345,7 @@ const pick=(rng,arr)=>arr[Math.floor(rng()*arr.length)];
 /* ================= SAVE ================= */
 /* blocky minifig experiment: LEGO/Minecraft-style 3D-shaded characters (this book only) */
 let BLOCKY3D=true;
-const SAVE_KEY='shamual_v1';
+const SAVE_KEY='shamual2_v1';
 const Save={
   data:{done:{}, current:null, sound:true},
   load(){ try{const d=JSON.parse(localStorage.getItem(SAVE_KEY)); if(d&&d.done)this.data=Object.assign(this.data,d);}catch(e){} },
@@ -3527,7 +3527,7 @@ const Game={
   /* hand the fight off to the dedicated battle page, and resume this chapter at objective `resumeIdx` on return */
   toBattle(key,resumeIdx){
     const sc=this.chapter.scene||{}, biome=(sc.map&&sc.map.biome)||'', time=sc.time||'';
-    const ret='book-of-shamual.html?resume='+encodeURIComponent(this.chapter.id+'.'+resumeIdx);
+    const ret='book-of-shamual-2.html?resume='+encodeURIComponent(this.chapter.id+'.'+resumeIdx);
     location.href='battle.html?b='+encodeURIComponent(key)+'&return='+encodeURIComponent(ret)
       +(biome?'&biome='+encodeURIComponent(biome):'')+(time?'&time='+encodeURIComponent(time):'');
   },
@@ -5413,1046 +5413,866 @@ function drawTitleBg(g,t){
 /* ================= STORY DATA — 1 SHEMU'ĔL ================= */
 /* new faces for the book of Shemu'ĕl (added to the shared CHARS) */
 Object.assign(CHARS,{
-  elqanah:{name:'Elqanah', skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7048', beard:'#3a2716'},
-  channah:{name:'Ḥannah', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#8c6a7d', headcover:'#caa881'},
-  peninnah:{name:'Peninnah', skin:'#7e5630', hair:'#2c1a0c', hairStyle:'long', robe:'#9c8a6a', headcover:'#b3a07f'},
-  eli:{name:'Ĕli the Priest', skin:'#6b4828', hair:'#e8e2d4', hairStyle:'short', robe:'#f0ead8', beard:'#e8e2d4', collar:'#caa23c', old:true},
-  hophni:{name:'Ḥophni', skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#e8e2ce', beard:'#1d1208', collar:'#8a6a1c'},
-  shamuel_c:{name:'Shemu’ĕl', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#efe8d6', child:true},
-  shamuel:{name:'Shemu’ĕl', skin:'#7a4e29', hair:'#33230f', hairStyle:'short', robe:'#efe8d6', collar:'#caa23c'},
-  shamuel_o:{name:'Shemu’ĕl', skin:'#6b4828', hair:'#d8d2c4', hairStyle:'short', robe:'#efe8d6', beard:'#d8d2c4', collar:'#caa23c', old:true},
-  shamuel_g:{name:'Shemu’ĕl', glow:true, skin:'#6b4828', hair:'#d8d2c4', hairStyle:'short', robe:'#efe8d6', beard:'#d8d2c4'},
-  shaul:{name:'Sha’ul', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#9c8a5a', beard:'#2c1a0c'},
-  shaul_k:{name:'Sha’ul the Sovereign', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#8a6a2c', beard:'#2c1a0c', collar:'#caa23c', headcover:'#caa23c'},
-  yonathan:{name:'Yonathan', skin:'#7a4e29', hair:'#46301a', hairStyle:'short', robe:'#7a8a6a'},
-  armorbearer:{name:'His Armour-Bearer', skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#6e6048'},
-  dawid_c:{name:'Dawiḏ', skin:'#c88a4a', hair:'#8a3318', hairStyle:'short', robe:'#b9a878', child:true},
-  dawid:{name:'Dawiḏ', skin:'#c88a4a', hair:'#8a3318', hairStyle:'short', robe:'#b9a878'},
-  dawid_k:{name:'Dawiḏ', skin:'#c88a4a', hair:'#8a3318', hairStyle:'short', robe:'#8a5436', collar:'#caa23c'},
-  yishai:{name:'Yishai', skin:'#704a27', hair:'#cfc8b8', hairStyle:'short', robe:'#7c6442', beard:'#cfc8b8', old:true},
-  eliav:{name:'Eliaḇ', skin:'#704a27', hair:'#2c1a0c', hairStyle:'short', robe:'#8a5436', beard:'#2c1a0c'},
-  golyath:{name:'Golyath of Gath', skin:'#c8a878', hair:'#3a2716', hairStyle:'short', robe:'#5a6a7a', beard:'#3a2716', collar:'#9a9a9a', headcover:'#9a9a9a', hairy:true},
-  pelishti:{name:'Fighter of the Pelishtim', skin:'#7a5636', hair:'#1d1208', hairStyle:'short', robe:'#3f6f9c', headcover:'#6a7a8a'},
-  achish:{name:'Aḵish of Gath', skin:'#7a5636', hair:'#1d1208', hairStyle:'short', robe:'#3f5f96', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
-  nachash:{name:'Naḥash the Ammonite', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a72', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
-  agag:{name:'Agag of Amalĕq', skin:'#644323', hair:'#221504', hairStyle:'short', robe:'#7a3b30', beard:'#221504', collar:'#caa23c', headcover:'#caa23c'},
-  avigail:{name:'Aḇigail', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#8a6a9c', headcover:'#d8c8a8'},
-  naval:{name:'Naḇal', skin:'#7a5636', hair:'#33230f', hairStyle:'short', robe:'#8a6a45', beard:'#33230f'},
+  dawid:{name:'Dawiḏ', skin:'#c88a4a', hair:'#8a3318', hairStyle:'short', robe:'#8a5436', beard:'#5a2a14'},
+  dawid_k:{name:'Dawiḏ the Sovereign', skin:'#c88a4a', hair:'#8a3318', hairStyle:'short', robe:'#7a3b52', beard:'#5a2a14', collar:'#caa23c', headcover:'#caa23c'},
+  dawid_o:{name:'Dawiḏ the Sovereign', skin:'#bd854a', hair:'#c9b6a0', hairStyle:'short', robe:'#7a3b52', beard:'#c9b6a0', collar:'#caa23c', headcover:'#caa23c', old:true},
+  yoav:{name:'Yo’aḇ son of Tseruyah', skin:'#7a4e29', hair:'#231409', hairStyle:'short', robe:'#6a5236', beard:'#231409'},
+  avishai:{name:'Aḇishai', skin:'#734827', hair:'#1d1208', hairStyle:'short', robe:'#5e5238', beard:'#1d1208'},
+  asael:{name:'Asah’ĕl the Swift', skin:'#7a4e29', hair:'#33230f', hairStyle:'short', robe:'#7c6a44'},
+  avner:{name:'Aḇnĕr son of Nĕr', skin:'#6e4a28', hair:'#2c1a0c', hairStyle:'short', robe:'#6a6a72', beard:'#2c1a0c', collar:'#9a9a9a'},
+  ishboshet:{name:'Ish-Boshet', skin:'#734827', hair:'#2c1a0c', hairStyle:'short', robe:'#5a5a66', beard:'#2c1a0c', collar:'#8a8a8a', headcover:'#8a8a8a'},
   michal:{name:'Miḵal', skin:'#815631', hair:'#2c1a0c', hairStyle:'long', robe:'#9c7d8c', headcover:'#caa881'},
-  doeg:{name:'Doĕg the Edomite', skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#7a3b30', beard:'#170e06'},
-  achimelech:{name:'Aḥimeleḵ the Priest', skin:'#6b4828', hair:'#b8b2a4', hairStyle:'short', robe:'#f0ead8', beard:'#b8b2a4', collar:'#caa23c'},
-  endorwoman:{name:'The Woman of Ĕn-Dor', skin:'#6e4a28', hair:'#3a3030', hairStyle:'long', robe:'#4a3a52', headcover:'#5a4a5a'},
+  natan:{name:'Natan the Naḇi', skin:'#6b4828', hair:'#d8d2c4', hairStyle:'short', robe:'#e6ddc9', beard:'#d8d2c4', collar:'#caa23c'},
+  batsheva:{name:'Bathsheḇa', skin:'#c1935a', hair:'#23150b', hairStyle:'long', robe:'#8a6a9c', headcover:'#d8c8a8'},
+  uriyah:{name:'Uriyah the Ḥittite', skin:'#7a5636', hair:'#1d1208', hairStyle:'short', robe:'#5a6a4a', beard:'#1d1208'},
+  amaleqi:{name:'The Amalĕqite', skin:'#644323', hair:'#1a1008', hairStyle:'short', robe:'#8a5236', beard:'#1a1008'},
+  mephiboshet:{name:'Mephiḇoshet', skin:'#7a4e29', hair:'#46301a', hairStyle:'short', robe:'#7a8a6a'},
+  tsiva:{name:'Tsiḇa', skin:'#6e4524', hair:'#2c1a0c', hairStyle:'short', robe:'#7c6442', beard:'#2c1a0c'},
+  uzzah:{name:'Uzzah', skin:'#734827', hair:'#231409', hairStyle:'short', robe:'#8a7048'},
+  ovededom:{name:'Oḇĕd-Eḏom', skin:'#5c3a1f', hair:'#170e06', hairStyle:'short', robe:'#6f8a34', beard:'#170e06'},
+  amnon:{name:'Amnon', skin:'#c48a52', hair:'#4a2a14', hairStyle:'short', robe:'#8a6a45', beard:'#4a2a14'},
+  tamar:{name:'Tamar', skin:'#c1935a', hair:'#23150b', hairStyle:'long', robe:'#b98aa8', headcover:'#e0cff0'},
+  avshalom:{name:'Aḇshalom', skin:'#c88a4a', hair:'#1d1208', hairStyle:'long', robe:'#7a3b52', beard:'#1d1208'},
+  ahitofel:{name:'Aḥithophel', skin:'#6b4828', hair:'#b8b2a4', hairStyle:'short', robe:'#5a4a5a', beard:'#b8b2a4', old:true},
+  hushai:{name:'Ḥushai the Arkite', skin:'#6e4a28', hair:'#7a6a58', hairStyle:'short', robe:'#6a5a44', beard:'#7a6a58'},
+  shimi:{name:'Shim‛i son of Gĕra', skin:'#6e4524', hair:'#2c1a0c', hairStyle:'short', robe:'#5a5a4a', beard:'#2c1a0c'},
+  tsadoq:{name:'Tsaḏoq the Priest', skin:'#6b4828', hair:'#e8e2d4', hairStyle:'short', robe:'#f0ead8', beard:'#e8e2d4', collar:'#caa23c'},
+  barzillai:{name:'Barzillai the Gil‛aḏite', skin:'#6e4a28', hair:'#cfc8b8', hairStyle:'short', robe:'#7c6442', beard:'#cfc8b8', old:true},
+  amasa:{name:'Amasa', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#6a5a3a', beard:'#2c1a0c'},
+  sheva:{name:'Sheḇa son of Biḵri', skin:'#6e4524', hair:'#231409', hairStyle:'short', robe:'#6a6a72', beard:'#231409'},
+  wisewoman:{name:'The Wise Woman of Aḇĕl', skin:'#6e4a28', hair:'#a89a84', hairStyle:'long', robe:'#7a6a5a', headcover:'#c8b89a', old:true},
+  aravnah:{name:'Araunah the Yeḇusite', skin:'#7a5636', hair:'#33230f', hairStyle:'short', robe:'#7a6a45', beard:'#33230f'},
+  giant:{name:'Yishbi of Noḇ', skin:'#c8a878', hair:'#3a2716', hairStyle:'short', robe:'#5a6a7a', beard:'#3a2716', collar:'#9a9a9a', headcover:'#9a9a9a', hairy:true},
 });
 
 const STORY=[];
 STORY.push(
-/* ============ ACT I — A CHILD ASKED OF YAHUAH ============ */
-{ id:'sact1', roman:'I', title:'A Child Asked of YAHUAH', ref:'1 SHEMU’ĔL 1–3', chapters:[
+/* ============ ACT I — THE TWO HOUSES ============ */
+{ id:'tact1', roman:'I', title:'The Two Houses', ref:'2 SHEMU’ĔL 1–4', chapters:[
 
-{ id:'s1', title:'Ḥannah’s Vow', ref:'1 SHEMU’ĔL 1',
+{ id:'t1', title:'The Song of the Bow', ref:'2 SHEMU’ĔL 1',
   intro:[
-   {art:'wilderness', music:'sorrow', text:'There was a man of Ramathayim, Elqanah, and he had two wives: the name of one was Ḥannah, and the name of the other Peninnah. Peninnah had children, but Ḥannah had none. And year by year he went up to worship and slaughter to YAHUAH of hosts at Shiloh — and Peninnah provoked her bitterly, because YAHUAH had shut her womb.', ref:'1 SHEMU’ĔL 1:1–7'},
+   {art:'wasteland', music:'sorrow', text:'And it came to be, after the death of Sha’ul, when Dawiḏ had returned from striking the Amalĕqites, that Dawiḏ stayed two days in Tsiqlag. And on the third day, see — a man came from the camp of Sha’ul, his garments torn and dust on his head. And he fell to the earth and bowed himself.', ref:'2 SHEMU’ĔL 1:1–2'},
   ],
   scene:{
-   map:{biome:'wild', w:44, h:30, seed:1201,
+   map:{biome:'wild', w:44, h:30, seed:2001,
      features:[
-       {type:'tent',x:14,y:18,solid:true,clear:1},{type:'tent',x:17,y:20,solid:true,clear:1},
-       {type:'altar',x:30,y:12,stage:2,solid:true,clear:2,id:'dwelling',examine:'The Dwelling of YAHUAH at Shiloh — the doorpost where Ĕli the priest sits.'},
-       {type:'firepit',x:28,y:14,lit:true},{type:'clearing',x:24,y:20,flat:3},
+       {type:'tent',x:12,y:16,solid:true,clear:1},{type:'tent',x:15,y:18,solid:true,clear:1},
+       {type:'firepit',x:18,y:20,lit:true},{type:'clearing',x:24,y:18,flat:3},
+       {type:'rock',x:33,y:12,solid:true,clear:1},
      ]},
    time:'day', music:'sorrow',
-   player:'channah', playerPos:[16,20],
+   player:'dawid', playerPos:[22,22], playerHold:'sword',
    npcs:[
-     {id:'elqanah',char:'elqanah',x:14,y:19,wander:false},
-     {id:'peninnah',char:'peninnah',x:18,y:18,wander:false,
-      script:[{say:['peninnah','Where are your sons, Ḥannah? See mine at the table — a place for each. YAHUAH has shut you up, and shut you up, and shut you up.']}]},
-     {id:'eli',char:'eli',x:29,y:13.5,wander:false,noTalk:true},
+     {id:'amaleqi',char:'amaleqi',x:26,y:18,wander:false,
+      script:[
+       {say:['amaleqi','I have escaped from the camp of Yasharal. The people fled from the battle, and many have fallen and are dead — and Sha’ul and Yonathan his son are dead also.']},
+       {say:['dawid','How do you KNOW that Sha’ul and Yonathan his son are dead?']},
+       {say:['amaleqi','I happened by chance on Mount Gilboa — and there was Sha’ul, leaning on his spear, the chariots and horsemen close upon him. He called to me, “Stand over me and kill me, for agony has seized me.” So I stood over him and killed him — and I took the crown from his head and the band from his arm, and here they are, my lord.']},
+       {emote:['dawid','heart']},
+      ]},
+     {id:'sold1',char:'hebrew',x:20,y:19,wander:true,range:1.4,noTalk:true},
    ],
    objectives:[
-     {type:'talk',npc:'elqanah',text:'Hear Elqanah, who loves you though you weep',
+     {type:'talk',npc:'amaleqi',text:'Hear the runner from the camp of Sha’ul'},
+     {type:'goto',x:26,y:19,radius:2,text:'Answer the man who boasts of a king’s blood',hiddenUntil:1,
       script:[
-       {say:['elqanah','Ḥannah, why do you weep? Why do you not eat? Why is your heart grieved? Am I not better to you than ten sons?']},
-       {say:['channah','You are good to me, my lord. But there is a door in me that only YAHUAH can open — and to Him I must go.']},
+       {say:['dawid','How were you not AFRAID to stretch out your hand to destroy the anointed of YAHUAH?']},
+       {say:['narrator','And Dawiḏ called one of the young men: “Go near, fall upon him.” And he struck him so that he died.']},
+       {say:['dawid','Your blood is on your own head, for your own mouth has testified against you, saying, “I have killed the anointed of YAHUAH.”']},
+       {sfx:'bad'},{shake:1.2},
       ]},
-     {type:'goto',x:29,y:15,radius:2.2,text:'Go up to the Dwelling — pour out your soul before YAHUAH',hiddenUntil:1,
+     {type:'goto',x:24,y:15,radius:2.2,text:'Take up the lament — the Song of the Bow, over Sha’ul and Yonathan',hiddenUntil:2,
       script:[
-       {say:['narrator','And Ḥannah rose, bitter of soul, and prayed to YAHUAH and wept greatly. Her lips moved, but her voice was not heard — so Ĕli thought her drunk.']},
-       {say:['channah','O YAHUAH of hosts — look on the affliction of Your maidservant, and remember me, and do not forget me. Give Your maidservant a son, and I shall give him to YAHUAH all the days of his life; no razor shall come upon his head.']},
-       {say:['eli','How long will you be drunk, woman? Put away your wine!']},
-       {say:['channah','No, my lord — I am a woman heavy of spirit. I have poured out my soul before YAHUAH. Do not think your maidservant a daughter of Beliyya‛al.']},
-       {say:['eli','Then go in peace — and the Aluahim of Yasharal grant your petition which you have asked of Him.']},
-       {emote:['channah','heart']},{sfx:'chime'},
-      ]},
-     {type:'goto',x:16,y:20,radius:2.4,text:'Return home to Ramah — and no longer sad of face',hiddenUntil:2,
-      script:[
-       {say:['narrator','And the woman went her way, and ate, and her face was no longer sad. In due time Ḥannah conceived and bore a son, and called his name SHEMU’ĔL — “because I have asked him of YAHUAH.”']},
-       {sfx:'holy'},{burst:[16,20,'spark',20]},
-       {say:['channah','When he is weaned I shall bring him, that he may appear before YAHUAH and remain there forever. For this child I prayed, and YAHUAH has given me my petition — so I have lent him to YAHUAH; as long as he lives he is lent to YAHUAH.']},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'camp', music:'holy', text:'And Ḥannah prayed and said: “My heart rejoices in YAHUAH… there is none set-apart like YAHUAH, for there is none besides You… He raises the poor from the dust, He lifts the needy from the ash heap. He guards the feet of His kind ones — for by strength no man prevails.” And they left the boy there, and he worshipped YAHUAH.', ref:'1 SHEMU’ĔL 2:1–11'},
-  ],
-  complete:'For this child I prayed — and as long as he lives, he is lent to YAHUAH.'
-},
-
-{ id:'s2', title:'Speak, Your Servant Hears', ref:'1 SHEMU’ĔL 2–3',
-  intro:[
-   {art:'firepit', music:'sorrow', text:'Now the sons of Ĕli were sons of Beliyya‛al — they did not know YAHUAH. They took the flesh of the offerings by force, and despised the offering of YAHUAH; and they lay with the women who served at the door of the Tent. And Ĕli only rebuked them mildly, and did not restrain them — and the sin of the young men was very great before YAHUAH.', ref:'1 SHEMU’ĔL 2:12–25'},
-   {art:'stars', music:'sorrow', text:'And a man of Aluahim came to Ĕli: “Why do you honour your sons above Me, to make yourselves fat on the best of every offering of Yasharal? Both Ḥophni and Pineḥas shall die on one day. And I shall raise up for Myself a trustworthy priest, who does according to what is in My heart.” But the boy Shemu’ĕl grew, and was in favour both with YAHUAH and with men.', ref:'1 SHEMU’ĔL 2:27–36'},
-   {art:'stars', music:'night', text:'And the boy Shemu’ĕl was serving YAHUAH before Ĕli. And the word of YAHUAH was rare in those days — there was no vision breaking through. And Ĕli, whose eyes had begun to grow dim, was lying in his place, and the lamp of Aluahim had not yet gone out in the Dwelling of YAHUAH, where the ark of Aluahim was — and Shemu’ĕl was lying down.', ref:'1 SHEMU’ĔL 3:1–3'},
-  ],
-  scene:{
-   map:{biome:'interior', w:30, h:20, seed:1202, floorCol:'#2a2216', wallCol:'#1a150c',
-     features:[
-       {type:'arkcov',x:15,y:5,id:'ark',solid:false,examine:'The ark of the covenant, and above it the lamp of Aluahim, not yet gone out.'},
-       {type:'firepit',x:15,y:6,lit:true},
-     ]},
-   time:'night', music:'night',
-   player:'shamuel_c', playerPos:[12,14],
-   npcs:[ {id:'eli',char:'eli',x:20,y:14,wander:false,lying:true} ],
-   objectives:[
-     {type:'goto',x:19,y:14,radius:2,text:'A voice called your name — run to Ĕli',
-      script:[
-       {say:['voice','Shemu’ĕl! Shemu’ĕl!']},
-       {say:['shamuel_c','Here I am — you called me.']},
-       {say:['eli','I did not call, my son. Lie down again.']},
-       {say:['narrator','Now Shemu’ĕl did not yet know YAHUAH, and the word of YAHUAH was not yet revealed to him. And YAHUAH called again: “Shemu’ĕl!” And he rose and went to Ĕli a second time — and a third.']},
-      ]},
-     {type:'goto',x:19,y:14,radius:2,text:'It came a third time — go again to Ĕli',hiddenUntil:1,
-      script:[
-       {say:['eli','I did not call, my son. — Go, lie down. And if He calls you, you shall say, “Speak, YAHUAH, for Your servant hears.” For it is YAHUAH.']},
-       {say:['narrator','And Ĕli perceived that YAHUAH was calling the boy.']},
-      ]},
-     {type:'goto',x:14,y:9,radius:2,text:'Lie down before the ark — and answer the One who calls',hiddenUntil:2,
-      script:[
-       {rays:.7,raysX:15},{sfx:'holy'},
-       {say:['voice','Shemu’ĕl! Shemu’ĕl!']},
-       {say:['shamuel_c','Speak — for Your servant hears.']},
-       {say:['voice','See, I am doing a thing in Yasharal at which both ears of everyone who hears it shall tingle. I raise up against Ĕli all that I spoke concerning his house — because his sons made themselves vile, and he did not restrain them. The crookedness of Ĕli’s house shall not be atoned by slaughtering or offering, forever.']},
-       {say:['narrator','And Shemu’ĕl lay until morning, and feared to tell Ĕli the vision. But Ĕli called him: “What is the word He spoke to you? Do not hide it from me.” And Shemu’ĕl told him everything.']},
-       {say:['eli','It is YAHUAH. Let Him do what is good in His eyes.']},
-       {rays:0},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'wilderness', music:'holy', text:'And Shemu’ĕl grew, and YAHUAH was with him, and let none of his words fall to the ground. And all Yasharal from Dan to Be’ĕrsheḇa knew that Shemu’ĕl was established as a prophet of YAHUAH. And YAHUAH appeared again at Shiloh, for YAHUAH revealed Himself to Shemu’ĕl by the word of YAHUAH.', ref:'1 SHEMU’ĔL 3:19–21'},
-  ],
-  complete:'Speak, YAHUAH, for Your servant hears.'
-},
-]},
-
-/* ============ ACT II — THE ARK AND THE GLORY ============ */
-{ id:'sact2', roman:'II', title:'The Ark and the Glory', ref:'1 SHEMU’ĔL 4–7', chapters:[
-
-{ id:'s3', title:'Iḵaḇoḏ — The Glory Departed', ref:'1 SHEMU’ĔL 4',
-  intro:[
-   {art:'wasteland', music:'tense', text:'And Yasharal went out against the Pelishtim to battle, and camped by Ĕḇen-Ĕzer, and the Pelishtim at Aphĕq. And the Pelishtim struck Yasharal, and about four thousand men fell. And the elders said, “Let us bring the ark of the covenant of YAHUAH from Shiloh, that it may come and save us from the hand of our enemies.”', ref:'1 SHEMU’ĔL 4:1–4'},
-  ],
-  scene:{
-   map:{biome:'plains', w:48, h:32, seed:1203,
-     features:[
-       {type:'rock',x:12,y:11,solid:true,clear:1},{type:'rock',x:34,y:13,solid:true,clear:1},
-       {type:'clearing',x:24,y:20,flat:3},
-     ]},
-   time:'day', music:'tense',
-   player:'hophni', playerPos:[20,22], playerHold:'staff',
-   npcs:[
-     {id:'ark',char:null},
-     {id:'sold1',char:'hebrew',x:22,y:21,wander:false,noTalk:true,hold:'spear'},
-     {id:'sold2',char:'hebrew2',x:18,y:23,wander:false,noTalk:true,hold:'spear'},
-   ],
-   onStart:[
-     {call:G=>{ G.world.map.decor.push({type:'arkcov',x:24,y:19,id:'arkprop',solid:false}); G.world.map.decor.sort((a,b)=>a.y-b.y); }},
-   ],
-   onResume:[
-     {sfx:'thunder'},
-     {say:['narrator','It was a very great slaughter — thirty thousand foot of Yasharal fell. The ark of Aluahim was taken, and the two sons of Ĕli, Ḥophni and Pineḥas, died.']},
-   ],
-   objectives:[
-     {type:'goto',x:24,y:21,radius:2.2,text:'Carry the ark into the camp — and hear the shout',
-      script:[
-       {sfx:'holy'},{shake:1.4},
-       {say:['narrator','And when the ark of the covenant of YAHUAH came into the camp, all Yasharal shouted with a great shout, and the earth shook. And the Pelishtim heard it and were afraid — “Aluahim has come into the camp! Woe to us!”']},
-       {say:['hophni','Do you hear them tremble? Let the ark go before us — no man of Gath can stand against the box of YAHUAH!']},
-       {say:['narrator','But the ark was not a charm to be wielded, and the sons of Ĕli were vile. The Pelishtim strengthened themselves — “Be men, and fight!” — and Yasharal was struck, and fled, every man to his tent.']},
-       {say:['sold1','They are upon us — stand! For the ark, for Yasharal — STAND!']},
-       {call:G=>Game.toBattle('aphek',1)},
-      ]},
-     {type:'goto',x:14,y:24,radius:2.4,text:'Back to Shiloh — bring the tidings to Ĕli at the gate',hiddenUntil:1,
-      script:[
-       {time:'dusk'},
-       {say:['narrator','A man of Binyamin ran from the line, his clothes torn and earth on his head. Ĕli, ninety-eight years old and blind, sat by the road watching, for his heart trembled for the ark of Aluahim.']},
-       {say:['sold2','Yasharal has fled before the Pelishtim, and there has been a great slaughter among the people. Your two sons are dead — and the ark of Aluahim is taken.']},
-       {say:['narrator','And when he mentioned the ark of Aluahim, Ĕli fell backward off the seat by the gate, and his neck broke, and he died — for he was old and heavy. He had judged Yasharal forty years.']},
-       {shake:2},{sfx:'thunder'},
-       {say:['narrator','And the wife of Pineḥas, near to giving birth, heard the ark was taken and her husband and father dead — and she bowed and gave birth, and named the child IḴAḆOḎ, saying: “The esteem has departed from Yasharal, for the ark of Aluahim is taken.”']},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'wasteland', music:'sorrow', text:'The esteem has departed from Yasharal — for the ark of Aluahim was taken. Not because YAHUAH was weak, but because a people made His presence a talisman and would not turn their hearts. The glory does not dwell where it is used; it dwells where it is feared.', ref:'1 SHEMU’ĔL 4:21–22'},
-  ],
-  complete:'Iḵaḇoḏ — the glory has departed, for the ark of Aluahim is taken.'
-},
-
-{ id:'s4', title:'Dagon Falls', ref:'1 SHEMU’ĔL 5–6',
-  intro:[
-   {art:'throne', music:'tense', text:'And the Pelishtim took the ark of Aluahim and brought it into the house of Dagon at Ashdod, and set it beside Dagon. And they rose early in the morning — and see, Dagon had fallen on his face to the earth before the ark of YAHUAH.', ref:'1 SHEMU’ĔL 5:1–3'},
-  ],
-  scene:{
-   map:{biome:'interior', w:30, h:20, seed:1204, floorCol:'#241c14', wallCol:'#181008',
-     features:[
-       {type:'tower',x:15,y:6,stage:1,solid:true,clear:1,id:'dagon',examine:'Dagon of the Pelishtim — head and hands broken off upon the threshold; only the trunk remains.'},
-       {type:'arkcov',x:15,y:12,id:'ark',solid:false},
-     ]},
-   time:'day', music:'tense',
-   player:'achish', playerPos:[10,14],
-   npcs:[ {id:'lord1',char:'pelishti',x:20,y:13,wander:false} ],
-   objectives:[
-     {type:'interact',prop:'dagon',text:'See what has become of Dagon before the ark',
-      script:[
-       {say:['achish','Set him up again — he only slipped in the night.']},
-       {say:['narrator','And they set Dagon in his place. But the next morning Dagon had fallen again on his face before the ark — and his head and both palms were cut off upon the threshold. Only the trunk of Dagon was left to him.']},
-       {shake:1.4},{sfx:'thunder'},{burst:[15,6,'ash',16]},
-       {say:['narrator','And the hand of YAHUAH was heavy on the Ashdodites, and He ravaged them and struck them with tumours. And they cried, “The ark of the Aluahim of Yasharal must not stay with us, for His hand is hard on us and on Dagon our mighty one.”']},
-      ]},
-     {type:'talk',npc:'lord1',text:'Hear the lords of the Pelishtim — where shall the ark go?',hiddenUntil:1,
-      script:[
-       {say:['lord1','To Gath, then — send it to Gath!']},
-       {say:['narrator','But when they carried it to Gath, the hand of YAHUAH struck the city, small and great, with tumours. And on to Ĕqron — and Ĕqron cried out: “They have brought the ark to kill us!” Seven months the ark was in the country of the Pelishtim, and the cry of the city went up to the heavens.']},
-       {say:['achish','Enough. Call the priests and the diviners — how shall we send it back? We shall not keep it, nor send it away empty. Make a guilt offering: five golden tumours and five golden mice, for the five lords.']},
-      ]},
-     {type:'goto',x:24,y:16,radius:2.4,text:'Set the ark on a new cart — and let the cows choose the way',hiddenUntil:2,
-      script:[
-       {say:['narrator','And they took two milk cows that had never borne a yoke, and shut up their calves at home, and set the ark on a new cart, with the coffer of gold beside it. “If it goes up the road to Bĕyth Shemesh, it is YAHUAH who did us this harm; if not, it was chance.”']},
-       {sfx:'holy'},{rays:.6,raysX:24},
-       {say:['narrator','And the cows went straight for Bĕyth Shemesh — lowing as they went, not turning right or left, though their calves cried behind them. And the lords of the Pelishtim followed as far as the border. So the ark came home to Yasharal — and there was great joy, and a great slaughter of them who looked into it irreverently. And they set the ark at Qiryath-Ye‛arim, twenty years.']},
-       {rays:0},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'journey', music:'holy', text:'No idol stands where YAHUAH sets His hand — Dagon broke upon his own threshold, and the plague drove the ark home by the road no herdsman drove it. He needs no army to defend His honour: a milk cow, lowing for the calf it left behind, will carry His testimony straight through the enemy’s land.', ref:'1 SHEMU’ĔL 6:12–14'},
-  ],
-  complete:'Dagon fell on his face before the ark — and the cows went straight to Bĕyth Shemesh.'
-},
-
-{ id:'s5', title:'The Stone of Help', ref:'1 SHEMU’ĔL 7',
-  intro:[
-   {art:'mountain', music:'sorrow', text:'And the whole house of Yasharal lamented after YAHUAH. And Shemu’ĕl spoke: “If you return to YAHUAH with all your heart, put away the foreign mighty ones and the Ashtoreth from among you, and prepare your hearts for YAHUAH, and serve Him only — then He delivers you from the hand of the Pelishtim.” So they gathered to Mitspah.', ref:'1 SHEMU’ĔL 7:2–6'},
-  ],
-  scene:{
-   map:{biome:'rocky', w:46, h:30, seed:1205,
-     features:[
-       {type:'altar',x:24,y:12,stage:1,solid:true,clear:2,id:'mizbeah',examine:'A place of turning at Mitspah — where they drew water and poured it out before YAHUAH.'},
-       {type:'rock',x:12,y:14,solid:true,clear:1},{type:'rock',x:34,y:15,solid:true,clear:1},
-       {type:'clearing',x:24,y:20,flat:3},
-     ]},
-   time:'day', music:'sorrow',
-   player:'shamuel', playerPos:[22,20], playerHold:'staff',
-   npcs:[
-     {id:'elder1',char:'elder',x:20,y:19,wander:false},
-     {id:'man1',char:'hebrew',x:26,y:21,wander:false,noTalk:true},
-   ],
-   onResume:[
-     {sfx:'holy'},
-     {say:['narrator','The Pelishtim were subdued, and did not come again into the border of Yasharal all the days of Shemu’ĕl. And the hand of YAHUAH was against them all his days.']},
-   ],
-   objectives:[
-     {type:'interact',prop:'mizbeah',text:'Draw water and pour it out — confess before YAHUAH',
-      script:[
-       {say:['narrator','And they gathered at Mitspah, and drew water, and poured it out before YAHUAH, and fasted, and said: “We have sinned against YAHUAH.” And Shemu’ĕl judged the children of Yasharal at Mitspah.']},
-       {say:['shamuel','We have turned. Now let YAHUAH be judge — put away the strange mighty ones, and let your hearts be His alone.']},
-      ]},
-     {type:'talk',npc:'elder1',text:'The Pelishtim march up while you gather — hear the elders’ fear',hiddenUntil:1,
-      script:[
-       {say:['elder1','The lords of the Pelishtim have heard we are gathered, and they come up against us! We are unarmed, at prayer — do not cease to cry to YAHUAH for us, that He save us from their hand!']},
-       {say:['shamuel','Bring me a suckling lamb. I shall offer it whole to YAHUAH, and cry to Him for Yasharal — and He shall answer.']},
-      ]},
-     {type:'interact',prop:'mizbeah',text:'Offer the lamb, and cry to YAHUAH — as the enemy draws near',hiddenUntil:2,
-      script:[
-       {say:['shamuel','O YAHUAH — the people have turned! Do not let the ark’s lesson be undone; be not a charm but a Saviour to a broken and returning people!']},
-       {burst:[24,12,'spark',22]},{sfx:'holy'},
-       {rays:.8,raysX:24},{sfx:'thunder'},{shake:2},
-       {say:['narrator','As Shemu’ĕl was offering, the Pelishtim drew near for battle — but YAHUAH thundered with a great noise on the Pelishtim that day, and threw them into confusion, and they were struck down before Yasharal.']},
-       {rays:0},
-       {say:['shamuel','Now — men of Yasharal! The hand of YAHUAH is upon them: pursue!']},
-       {call:G=>Game.toBattle('mitspah',3)},
-      ]},
-     {type:'interact',prop:'mizbeah',text:'Set up the stone — and name it',hiddenUntil:3,
-      script:[
-       {say:['narrator','And the men of Yasharal pursued the Pelishtim from Mitspah to below Bĕyth Kar, and struck them.']},
-       {addProp:{type:'stone',x:28,y:16,id:'ebenezer',solid:true}},
-       {say:['shamuel','Set the stone here, between Mitspah and Shĕn. Call its name ĔḆEN-ĔZER — “the Stone of Help” — for THUS FAR YAHUAH has helped us.']},
-       {emote:['shamuel','heart']},{sfx:'chime'},{burst:[28,16,'spark',18]},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'rest', music:'holy', text:'Ĕḇen-Ĕzer — thus far YAHUAH has helped us. And Shemu’ĕl judged Yasharal all the days of his life, and went year by year on circuit to Bĕyth-Ĕl and Gilgal and Mitspah, and back to Ramah, where his house was — and there he built an altar to YAHUAH.', ref:'1 SHEMU’ĔL 7:12–17'},
-  ],
-  complete:'Ĕḇen-Ĕzer — thus far YAHUAH has helped us.'
-},
-]},
-
-/* ============ ACT III — GIVE US A KING ============ */
-{ id:'sact3', roman:'III', title:'Give Us a King', ref:'1 SHEMU’ĔL 8–15', chapters:[
-
-{ id:'s6', title:'The Sons and the Donkeys', ref:'1 SHEMU’ĔL 8–10',
-  intro:[
-   {art:'camp', music:'tense', text:'And when Shemu’ĕl was old, he made his sons judges — but they turned aside after gain, took bribes, and perverted right-ruling. So all the elders gathered to Ramah: “See, you are old, and your sons do not walk in your ways. Now appoint for us a sovereign to rule us, like all the nations.”', ref:'1 SHEMU’ĔL 8:1–5'},
-  ],
-  scene:{
-   map:{biome:'wild', w:46, h:30, seed:1206,
-     features:[
-       {type:'tent',x:14,y:16,solid:true,clear:1},{type:'rock',x:32,y:14,solid:true,clear:1},
-       {type:'clearing',x:24,y:20,flat:3},
-     ]},
-   time:'day', music:'tense',
-   player:'shamuel_o', playerPos:[16,20], playerHold:'staff',
-   npcs:[
-     {id:'elder1',char:'elder',x:20,y:19,wander:false},
-     {id:'shaul',char:'shaul',x:34,y:16,wander:false,hidden:true},
-   ],
-   objectives:[
-     {type:'talk',npc:'elder1',text:'Hear the demand of the elders — a king like the nations',
-      script:[
-       {say:['elder1','Appoint us a sovereign to rule us, like all the nations!']},
-       {rays:.5,raysX:16},
-       {say:['voice','Listen to the voice of the people — for they have not rejected you, but they have rejected ME, that I should not reign over them. Yet warn them solemnly of the right-ruling of the sovereign who shall reign over them.']},
-       {rays:0},
-       {say:['shamuel_o','This shall be the right of the king: your sons he will take for his chariots, your daughters for cooks and bakers, your fields and vineyards the best of them he will take, and a tenth of your flocks — and you shall be his servants. And you shall cry out in that day because of your king — but YAHUAH shall not answer you then.']},
-       {say:['elder1','No — let a king be over us! That we too may be like all the nations, and our king judge us and go out before us and fight our battles.']},
-      ]},
-     {type:'goto',x:32,y:16,radius:2.4,text:'A tall young man seeks his father’s lost donkeys — meet Sha’ul',hiddenUntil:1,
-      script:[
-       {show:'shaul'},
-       {say:['narrator','Now there was a man of Binyamin, Qish, who had a son named Sha’ul — a choice young man, and handsome; from his shoulders upward taller than any of the people. And the donkeys of Qish were lost, and Sha’ul went to seek them, and could not find them — and came at last to the city where the seer was.']},
-       {say:['shaul','Tell me, please — where is the house of the seer?']},
-       {say:['shamuel_o','I am the seer. Go up before me to the high place, and eat with me today. As for the donkeys lost three days ago, do not set your heart on them — they are found. And for whom is all that is desirable in Yasharal? Is it not for you, and all your father’s house?']},
-       {say:['shaul','But I am a Binyamite, of the smallest tribe — and my clan the least of Binyamin. Why do you speak so to me?']},
-      ]},
-     {type:'goto',x:24,y:12,radius:2.2,text:'At the edge of the city, be anointed with the oil',hiddenUntil:2,
-      script:[
-       {say:['narrator','And Shemu’ĕl took the flask of oil and poured it on Sha’ul’s head, and kissed him, and said: “Has not YAHUAH anointed you ruler over His inheritance?”']},
-       {burst:[24,12,'spark',20]},{sfx:'holy'},{rays:.7,raysX:24},
-       {say:['shamuel_o','The Spirit of YAHUAH shall come upon you, and you shall be turned into another man. Do what your hand finds, for Aluahim is with you.']},
-       {rays:0},
-      ]},
-     {type:'goto',x:30,y:13,radius:2.6,text:'Follow after Sha’ul to the hill of Aluahim — and see the sign of the naḇi’im',hiddenUntil:3,
-      script:[
-       {spawn:{id:'nvi1',char:'elder',x:32,y:11,noTalk:true,wander:true,range:1}},
-       {spawn:{id:'nvi2',char:'hebrew',x:33,y:12,noTalk:true,wander:true,range:1}},
-       {spawn:{id:'nvi3',char:'hebrew2',x:32.6,y:13,noTalk:true,wander:true,range:1}},
-       {move:['shaul',32,12,.06]},
-       {say:['narrator','And as Sha’ul turned from Shemu’ĕl to go, Aluahim gave him another heart. And see — a band of naḇi’im came down from the high place, with lyre and tambourine and flute before them, prophesying.']},
-       {rays:.85,raysX:32},{sfx:'holy'},{burst:[32,12,'spark',24]},{shake:1.2},
-       {say:['narrator','And the Spirit of Aluahim RUSHED upon Sha’ul, and he prophesied in their midst.']},
-       {say:['narrator','And all who had known him before saw him prophesy among the naḇi’im, and said to one another: “What has happened to the son of Qish? IS SHA’UL ALSO AMONG THE NEḆI’IM?” — and it became a proverb in Yasharal.']},
-       {rays:0},
-      ]},
-     {type:'goto',x:22,y:18,radius:2.4,text:'At Mitspah the lot is cast — but where is the one it falls upon?',hiddenUntil:4,
-      script:[
-       {despawn:'nvi1'},{despawn:'nvi2'},{despawn:'nvi3'},
-       {addProp:{type:'basket',x:34,y:22,id:'bag1'}},{addProp:{type:'basket',x:35,y:22.7,id:'bag2'}},{addProp:{type:'tent',x:35.6,y:21,id:'bagtent',solid:false}},
-       {teleport:['shaul',35,22.2]},{hide:'shaul'},
-       {say:['narrator','And Shemu’ĕl gathered the people to Mitspah before YAHUAH. And the lot fell to the tribe of Binyamin, and to the clan of Matri, and it was taken — SHA’UL son of Qish! But when they sought him, he could not be found.']},
-       {say:['voice','See — he has hidden himself among the baggage.']},
-       {show:'shaul'},{move:['shaul',24,18,.06]},
-       {say:['narrator','And they ran and took him from there; and he stood in the midst of the people, taller than any of them from the shoulders upward.']},
-       {rays:.6,raysX:24},{sfx:'holy'},{burst:[24,18,'spark',22]},
-       {say:['shamuel_o','SEE the one whom YAHUAH has chosen! There is none like him among all the people.']},
-       {say:['narrator','And all the people shouted and said: “LET THE SOVEREIGN LIVE!”']},
-       {sfx:'chime'},{rays:0},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'camp', music:'holy', text:'And Shemu’ĕl declared to the people the right-ruling of the reign, and wrote it in a book, and laid it up before YAHUAH. And Sha’ul went home to Giḇ‛ah, and a band of brave men whose hearts YAHUAH had touched went with him. But the sons of Beliyya‛al said, “How shall this one save us?” — and despised him, and brought him no gift. But he kept silent.', ref:'1 SHEMU’ĔL 10:25–27'},
-  ],
-  complete:'See whom YAHUAH has chosen — and the people shouted, “Let the sovereign live!”'
-},
-
-{ id:'s7', title:'Naḥash at Yaḇĕsh', ref:'1 SHEMU’ĔL 11',
-  intro:[
-   {art:'wasteland', music:'tense', text:'And Naḥash the Ammonite came up and camped against Yaḇĕsh-Gil‛aḏ. And the men of Yaḇĕsh said, “Make a covenant with us, and we shall serve you.” But Naḥash answered: “On this condition — that I gouge out every right eye of you, and lay it as a reproach on all Yasharal.” And they sent messengers through all the border of Yasharal.', ref:'1 SHEMU’ĔL 11:1–3'},
-  ],
-  scene:{
-   map:{biome:'plains', w:46, h:30, seed:1207,
-     features:[ {type:'rock',x:14,y:13,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3} ]},
-   time:'day', music:'tense',
-   player:'shaul', playerPos:[16,22], playerHold:'staff',
-   npcs:[
-     {id:'runner',char:'hebrew',x:20,y:21,wander:false},
-     {id:'ox1',animal:'cow',x:14,y:20},
-   ],
-   onResume:[
-     {sfx:'holy'},
-     {say:['narrator','And it came to be in the morning watch that Sha’ul put the people in three companies, and they came into the midst of the camp and struck Ammon until the heat of the day; and the survivors were scattered, so that no two of them were left together.']},
-   ],
-   objectives:[
-     {type:'talk',npc:'runner',text:'Hear the messenger from Yaḇĕsh — as you come in from the field',
-      script:[
-       {say:['runner','Sha’ul! Naḥash the Ammonite is camped against Yaḇĕsh-Gil‛aḏ — seven days’ respite only, and then every right eye plucked out! All the people are weeping in the gates.']},
-       {say:['narrator','And the Spirit of Aluahim came mightily upon Sha’ul when he heard, and his anger burned greatly. And he took a yoke of oxen and cut them in pieces, and sent them through all the border of Yasharal, saying: “Whoever does not come out after Sha’ul and after Shemu’ĕl — so shall it be done to his oxen!”']},
-       {shake:1.6},{sfx:'thunder'},
-      ]},
-     {type:'interact',prop:'ox1',text:'Take the yoke of oxen — and rouse all Yasharal',hiddenUntil:1,
-      script:[
-       {say:['narrator','And the dread of YAHUAH fell on the people, and they came out as one man — three hundred thousand of Yasharal and thirty thousand of Yahuḏah, mustered at Bezeq.']},
-       {say:['shaul','Say to the men of Yaḇĕsh: “Tomorrow, by the time the sun is hot, you shall have deliverance.” Let Naḥash think we sleep. In the morning watch we fall on his camp — for the battle is YAHUAH’s.']},
-       {burst:[16,22,'dust',18]},
-      ]},
-     {type:'goto',x:30,y:14,radius:2.4,text:'By the morning watch, fall on the camp of Ammon',hiddenUntil:2,
-      script:[
-       {sfx:'holy'},{shake:1.4},
-       {say:['narrator','And Sha’ul came into the midst of the camp of Ammon at the morning watch, before they knew it.']},
-       {say:['shaul','For YAHUAH and for Yasharal — for the eyes of Yaḇĕsh! Fall on them!']},
-       {call:G=>Game.toBattle('yavesh',3)},
-      ]},
-     {type:'talk',npc:'runner',text:'The people would kill his despisers — go to Gilgal and renew the reign',hiddenUntil:3,
-      script:[
-       {say:['runner','Now, Sha’ul — those who said “How shall this one save us?” Give them to us, that we may put them to death!']},
-       {say:['shaul','No man shall be put to death this day — for today YAHUAH has worked deliverance in Yasharal.']},
-       {say:['narrator','And Shemu’ĕl said, “Come, let us go to Gilgal and renew the reign there.” And all the people went to Gilgal, and made Sha’ul sovereign before YAHUAH, and slaughtered peace offerings, and rejoiced greatly.']},
-       {sfx:'chime'},{burst:[20,21,'spark',16]},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'camp', music:'holy', text:'The king who hid among the baggage went out before Yasharal and saved a city he had never seen — not with a standing army, but with a heart the Spirit had seized, and a mercy that spared his own mockers on the day of victory. So far, the shepherd-king walked well.', ref:'1 SHEMU’ĔL 11:12–15'},
-  ],
-  complete:'Today YAHUAH has worked deliverance in Yasharal.'
-},
-
-{ id:'s7b', title:'I Am Old and Gray', ref:'1 SHEMU’ĔL 12',
-  intro:[
-   {art:'camp', music:'holy', text:'And at Gilgal, when they had made Sha’ul sovereign, Shemu’ĕl said to all Yasharal: “See, I have obeyed your voice and set a sovereign over you. And now, here I am — old and gray — and my sons are with you, and I have walked before you from my youth to this day. Witness against me before YAHUAH and before His anointed.”', ref:'1 SHEMU’ĔL 12:1–3'},
-  ],
-  scene:{
-   map:{biome:'wild', w:44, h:28, seed:1218,
-     features:[ {type:'altar',x:24,y:12,stage:1,solid:true,clear:2,id:'mizbeah'},{type:'clearing',x:24,y:19,flat:3},{type:'rock',x:34,y:15,solid:true,clear:1} ]},
-   time:'day', music:'holy',
-   player:'shamuel_o', playerPos:[22,19], playerHold:'staff',
-   npcs:[ {id:'elder1',char:'elder',x:20,y:18,wander:false},{id:'man1',char:'hebrew',x:27,y:20,wander:false,noTalk:true} ],
-   objectives:[
-     {type:'talk',npc:'elder1',text:'Call the people to witness — whose ox have you taken?',
-      script:[
-       {say:['shamuel_o','Here I am. Witness against me before YAHUAH: Whose ox have I taken? Whose donkey? Whom have I cheated or oppressed? From whose hand have I taken a bribe to blind my eyes with it? I shall restore it to you.']},
-       {say:['elder1','You have not cheated us, nor oppressed us, nor taken anything from any man’s hand.']},
-       {say:['shamuel_o','YAHUAH is witness, and His anointed is witness this day, that you have found nothing in my hand.']},
-       {say:['elder1','He is witness.']},
-      ]},
-     {type:'goto',x:24,y:13,radius:2.2,text:'Set before them all the deliverances of YAHUAH — then ask for the sign',hiddenUntil:1,
-      script:[
-       {say:['shamuel_o','Stand still, that I may reason with you before YAHUAH of all the righteous acts He did for you and your fathers — when they cried out, He sent Mosheh and Aharon, and delivered them; and time upon time, when they forgot Him and were sold into the hand of their enemies, and cried out and confessed, He raised up deliverers. And now you have said, “No — but a sovereign shall reign over us,” though YAHUAH your Aluahim was your Sovereign.']},
-       {say:['shamuel_o','If you fear YAHUAH and serve Him and obey His voice, then both you and the king who reigns over you shall follow YAHUAH your Aluahim — well. But if you rebel, His hand shall be against you, as against your fathers.']},
-       {say:['shamuel_o','Is it not wheat harvest today? I shall call to YAHUAH, and He shall send thunder and rain — that you may see that your evil is great, which you did in asking a king for yourselves.']},
-      ]},
-     {type:'interact',prop:'mizbeah',text:'Call to YAHUAH — and let the harvest-sky answer',hiddenUntil:2,
-      script:[
-       {say:['shamuel_o','O YAHUAH — send the sign upon the harvest, that a whole people may fear.']},
-       {rays:.7,raysX:24},{sfx:'holy'},{sfx:'thunder'},{shake:2},{burst:[24,12,'spark',20]},
-       {call:G=>{ G.world.rain=true; if(typeof Sound!=='undefined'&&Sound.rain) Sound.rain(true); }},
-       {say:['narrator','And Shemu’ĕl called, and YAHUAH sent thunder and rain that day — and all the people greatly feared YAHUAH and Shemu’ĕl.']},
-       {say:['elder1','Pray for your servants to YAHUAH your Aluahim, that we die not — for we have added to all our sins this evil, to ask a king for ourselves!']},
-       {say:['shamuel_o','Do not fear. You have done all this evil — yet do not turn aside from following YAHUAH, but serve Him with all your heart. And do not turn aside after emptiness which cannot profit nor deliver, for they are empty. For YAHUAH shall not forsake His people, for His great Name’s sake. Only fear YAHUAH, and serve Him in truth with all your heart — for consider what great things He has done for you. But if you do evil, both you and your king shall be swept away.']},
-       {rays:0},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'rest', music:'holy', text:'And as for me — far be it from me that I should sin against YAHUAH by ceasing to pray for you; but I shall teach you the good and straight way. The old judge would lay down the office he had never abused, and step aside for a king he had warned them against — yet never stop interceding for the people who had rejected both YAHUAH and him.', ref:'1 SHEMU’ĔL 12:23–25'},
-  ],
-  complete:'Only fear YAHUAH, and serve Him in truth — for consider what great things He has done for you.'
-},
-
-{ id:'s8', title:'Yonathan at Miḵmash', ref:'1 SHEMU’ĔL 13–14',
-  intro:[
-   {art:'wasteland', music:'tense', text:'And the Pelishtim gathered to fight Yasharal — thirty thousand chariots, and horsemen, and people as the sand on the seashore. And the men of Yasharal hid themselves in caves and thickets and pits, and trembled — and Sha’ul’s people scattered from him. And there was no smith found in all Yasharal, so that only Sha’ul and Yonathan had sword or spear.', ref:'1 SHEMU’ĔL 13:5–22'},
-  ],
-  scene:{
-   map:{biome:'rocky', w:48, h:32, seed:1208, overlook:{cliffY:8,drop:.6},
-     features:[
-       {type:'rock',x:12,y:12,solid:true,clear:1},{type:'rock',x:36,y:11,solid:true,clear:1},
-       {type:'rock',x:24,y:9,solid:true,clear:1},{type:'clearing',x:24,y:22,flat:3},
-     ]},
-   time:'day', music:'tense',
-   player:'yonathan', playerPos:[22,24], playerHold:'sword',
-   npcs:[
-     {id:'armorbearer',char:'armorbearer',x:24,y:24,wander:false,hold:'sword'},
-     {id:'foe1',char:'pelishti',x:24,y:10,wander:false,hidden:true,noTalk:true},
-   ],
-   onResume:[
-     {sfx:'thunder'},{shake:1.6},
-     {say:['narrator','And there was trembling in the camp, in the field, and among all the people; the garrison and the raiders also trembled, and the earth quaked — a trembling from Aluahim. And the Pelishtim melted away, and every man’s sword was against his fellow, a very great confusion. So YAHUAH saved Yasharal that day.']},
-   ],
-   objectives:[
-     {type:'talk',npc:'armorbearer',text:'Whisper your daring to your armour-bearer',
-      script:[
-       {say:['yonathan','Come, let us cross over to the garrison of these uncircumcised. It may be YAHUAH works for us — for nothing keeps YAHUAH from saving, by many or by few.']},
-       {say:['armorbearer','Do all that is in your heart. Turn — see, I am with you, according to your heart.']},
-       {say:['yonathan','Then this is the sign: if they say “Wait until we come to you,” we stand still. But if they say “Come up to us,” we go up — for YAHUAH has given them into our hand.']},
-      ]},
-     {type:'goto',x:24,y:12,radius:2.4,text:'Climb the crag on hands and feet, to the garrison above',hiddenUntil:1,
-      script:[
-       {show:'foe1'},
-       {say:['foe1','Look — Hebrews crawling out of their holes! Come up to us, and we will show you a thing!']},
-       {say:['yonathan','Come up after me — YAHUAH has given them into the hand of Yasharal!']},
-       {say:['narrator','And Yonathan climbed up on his hands and feet, his armour-bearer after him. And they fell before Yonathan, and his armour-bearer killed after him — about twenty men within half a furrow of an acre of land.']},
-       {burst:[24,12,'spark',18]},{shake:1.4},
-       {call:G=>Game.toBattle('michmash',2)},
-      ]},
-     {type:'goto',x:24,y:22,radius:2.4,text:'The panic spreads — but Sha’ul’s oath has bound the people',hiddenUntil:2,
-      script:[
-       {say:['narrator','Now Sha’ul had laid an oath on the people: “Cursed is the man who eats food until evening, till I am avenged of my enemies.” So none tasted food, and the people were faint. But Yonathan had not heard the oath, and dipped his staff in a honeycomb, and his eyes brightened.']},
-       {say:['yonathan','My father has troubled the land. See how my eyes have brightened because I tasted a little of this honey. How much more if the people had eaten freely of the spoil? The slaughter of the Pelishtim would have been greater.']},
-       {say:['narrator','And the lot fell on Yonathan, and Sha’ul said he must die — but the people ransomed him: “Shall Yonathan die, who worked this great deliverance in Yasharal? As YAHUAH lives, not one hair of his head shall fall — for he worked with Aluahim this day.” So the people rescued Yonathan, and he did not die.']},
-       {sfx:'chime'},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'rest', music:'holy', text:'Nothing keeps YAHUAH from saving, by many or by few. Two men and a crag broke an army of thirty thousand chariots — while a king’s rash oath nearly cost him the very son who won the day. The strength was never in the sword; there was hardly a sword in Yasharal.', ref:'1 SHEMU’ĔL 14:6,45'},
-  ],
-  complete:'Nothing keeps YAHUAH from saving, by many or by few.'
-},
-
-{ id:'s9', title:'Obedience Better Than Sacrifice', ref:'1 SHEMU’ĔL 15',
-  intro:[
-   {art:'wasteland', music:'sorrow', text:'And Shemu’ĕl said to Sha’ul: “YAHUAH sent me to anoint you sovereign. Now listen to the voice of the words of YAHUAH: I shall punish Amalĕq for what he did to Yasharal, ambushing the weak at the rear when they came out of Mitsrayim. Go and strike Amalĕq, and put under the ban all that they have — spare them not.”', ref:'1 SHEMU’ĔL 15:1–3'},
-  ],
-  scene:{
-   map:{biome:'desert', w:48, h:32, seed:1209,
-     features:[ {type:'rock',x:14,y:13,solid:true,clear:1},{type:'rock',x:34,y:14,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3} ]},
-   time:'day', music:'sorrow',
-   player:'shaul_k', playerPos:[20,22], playerHold:'sword',
-   npcs:[
-     {id:'shamuel',char:'shamuel_o',x:22,y:21,wander:false,hidden:true},
-     {id:'agag',char:'agag',x:30,y:16,wander:false,hidden:true,noTalk:true},
-     {id:'sheep1',animal:'sheep',x:16,y:24},{id:'ox2',animal:'cow',x:18,y:24},
-   ],
-   onResume:[
-     {sfx:'holy'},
-     {say:['narrator','And Sha’ul struck Amalĕq from Ḥawilah to Shur. But he spared Agag their king, and the best of the sheep and oxen and fatlings and lambs — all that was good he would not put under the ban; only what was despised and worthless he destroyed.']},
-     {show:'agag'},
-   ],
-   objectives:[
-     {type:'goto',x:28,y:16,radius:2.6,text:'Strike Amalĕq in the field, as YAHUAH commanded',hiddenUntil:0,
-      script:[
-       {show:'agag'},
-       {sfx:'thunder'},{shake:1.4},
-       {say:['shaul_k','For the ambush at the rear, for the weak of Yasharal — fall on Amalĕq! Let none be spared… save the king; and the best of the flock, keep that back.']},
-       {call:G=>Game.toBattle('amaleq_s',1)},
-      ]},
-     {type:'goto',x:22,y:21,radius:2.4,text:'Shemu’ĕl comes at dawn — go out to meet him',hiddenUntil:1,
-      script:[
-       {show:'shamuel'},
-       {say:['shaul_k','Baruk are you to YAHUAH! I have carried out the word of YAHUAH.']},
-       {say:['shamuel','Then what is this bleating of sheep in my ears, and the lowing of oxen that I hear?']},
-       {say:['shaul_k','They brought them from Amalĕq — the people spared the best of the flock, to slaughter to YAHUAH your Aluahim. The rest we put under the ban.']},
-       {say:['shamuel','Stop! Let me tell you what YAHUAH said to me this night. When you were small in your own eyes, YAHUAH anointed you sovereign. And He sent you on a way and said, “Devote them to destruction.” Why then did you not obey the voice of YAHUAH, but flew on the spoil?']},
-       {say:['shaul_k','But I DID obey! I went the way YAHUAH sent me — and the people took the spoil, the best, to slaughter to YAHUAH at Gilgal.']},
-      ]},
-     {type:'talk',npc:'shamuel',text:'Hear the word that cannot be unsaid',hiddenUntil:2,
-      script:[
-       {say:['shamuel','Does YAHUAH delight in burnt offerings and slaughters as in obeying the voice of YAHUAH? See — TO OBEY is better than an offering, to heed than the fat of rams. For rebellion is as the sin of divination, and stubbornness as wickedness and idolatry. Because you have rejected the word of YAHUAH, He has rejected you from being sovereign.']},
-       {say:['shaul_k','I have sinned — I transgressed the command of YAHUAH and your words, because I feared the people and obeyed their voice. Now, please, pardon my sin, and return with me, that I may worship YAHUAH.']},
-       {say:['shamuel','I shall not return with you. For you have rejected the word of YAHUAH, and YAHUAH has rejected you from being sovereign over Yasharal.']},
-       {face:['shamuel','left']},{move:['shamuel',15,23,.06]},
-       {say:['shaul_k','No — do not leave me!']},
-       {move:['player',16.2,23,.08]},
-       {sfx:'thunder'},{shake:2.2},{burst:[15.6,23,'ash',18]},
-       {say:['narrator','And as Shemu’ĕl turned to go, Sha’ul seized the skirt of his robe — and it TORE in his hand.']},
-       {say:['shamuel','YAHUAH has TORN the reign of Yasharal from you this day, and given it to a neighbour of yours, who is better than you. And the Eminence of Yasharal does not lie, nor relent — for He is not a man, that He should relent.']},
-      ]},
-     {type:'talk',npc:'agag',text:'Bring out Agag — the ban that was left undone',hiddenUntil:3,
-      script:[
-       {say:['agag','Surely the bitterness of death is past.']},
-       {say:['shamuel','As your sword has bereaved women, so shall your mother be bereaved among women — here, before YAHUAH at Gilgal.']},
-       {teleport:['shamuel',29,16]},{face:['shamuel','right']},
-       {sfx:'thunder'},{shake:2.6},{burst:[30,16,'ash',24]},{despawn:'agag'},
-       {say:['narrator','And Shemu’ĕl hewed Agag in pieces before YAHUAH at Gilgal.']},
-       {wait:700},
-       {say:['narrator','And Shemu’ĕl went to Ramah, and Sha’ul to Giḇ‛ah — and Shemu’ĕl did not see Sha’ul again until the day of his death, though he mourned for Sha’ul. And YAHUAH regretted that He had made Sha’ul sovereign over Yasharal.']},
-       {emote:['shamuel','heart']},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'stars', music:'sorrow', text:'To obey is better than sacrifice. A crown was not lost over a great crime, but over a small disobedience defended and dressed as worship — the fat of the best rams offered to cover a heart that would not simply do what it was told. And Shemu’ĕl mourned for Sha’ul, whom YAHUAH had rejected.', ref:'1 SHEMU’ĔL 15:22–35'},
-  ],
-  complete:'To obey is better than sacrifice, and to heed than the fat of rams.'
-},
-]},
-
-/* ============ ACT IV — THE ANOINTED SHEPHERD ============ */
-{ id:'sact4', roman:'IV', title:'The Anointed Shepherd', ref:'1 SHEMU’ĔL 16–20', chapters:[
-
-{ id:'s10', title:'The Least of the Sons', ref:'1 SHEMU’ĔL 16',
-  intro:[
-   {art:'journey', music:'holy', text:'And YAHUAH said to Shemu’ĕl: “How long will you mourn for Sha’ul, seeing I have rejected him? Fill your horn with oil and go — I am sending you to Yishai the Bĕyth-Leḥemite, for I have provided Myself a sovereign among his sons.” And Shemu’ĕl came to Bĕyth Leḥem, and set the elders trembling, and called Yishai and his sons to the offering.', ref:'1 SHEMU’ĔL 16:1–5'},
-  ],
-  scene:{
-   map:{biome:'wild', w:46, h:30, seed:1210,
-     features:[ {type:'altar',x:24,y:12,stage:1,solid:true,clear:2,id:'mizbeah'},{type:'clearing',x:24,y:20,flat:3},{type:'tent',x:14,y:17,solid:true,clear:1} ]},
-   time:'day', music:'holy',
-   player:'shamuel_o', playerPos:[22,20], playerHold:'staff',
-   npcs:[
-     {id:'yishai',char:'yishai',x:20,y:19,wander:false},
-     {id:'eliav',char:'eliav',x:26,y:18,wander:false,noTalk:true},
-     {id:'dawid',char:'dawid_c',x:34,y:22,wander:false,hidden:true},
-     {id:'sheep1',animal:'sheep',x:36,y:23},{id:'sheep2',animal:'sheep',x:35,y:24},
-   ],
-   objectives:[
-     {type:'talk',npc:'eliav',text:'Eliaḇ stands first — tall and fair. Look on him',
-      script:[
-       {say:['shamuel_o','Surely YAHUAH’s anointed stands before Him — this one, tall and fair.']},
-       {rays:.5,raysX:26},
-       {say:['voice','Do not look on his appearance or the height of his stature, for I have refused him. For it is not as man sees: man looks on the outward appearance, but YAHUAH looks on the heart.']},
-       {rays:0},
-       {say:['narrator','So Yishai passed seven of his sons before Shemu’ĕl — Aḇinaḏaḇ, Shammah, and the rest — and Shemu’ĕl said, “YAHUAH has not chosen these.”']},
-      ]},
-     {type:'talk',npc:'yishai',text:'Ask Yishai — are all your sons here?',hiddenUntil:1,
-      script:[
-       {say:['shamuel_o','Are all the young men here?']},
-       {say:['yishai','There remains yet the youngest — but see, he is tending the sheep.']},
-       {say:['shamuel_o','Send and bring him; we shall not sit down till he comes here.']},
-      ]},
-     {type:'goto',x:32,y:22,radius:2.6,text:'Go out to the pasture — and anoint the shepherd boy',hiddenUntil:2,
-      script:[
-       {show:'dawid'},{move:['dawid',26,20,.06]},
-       {say:['narrator','And he sent and brought him in. He was ruddy, with beautiful eyes, and handsome. And YAHUAH said, “Rise, anoint him — for this is the one.”']},
-       {rays:.8,raysX:26},{sfx:'holy'},{burst:[26,20,'spark',22]},
-       {say:['shamuel_o','Dawiḏ, son of Yishai — YAHUAH has looked upon your heart.']},
-       {say:['narrator','And Shemu’ĕl anointed him in the midst of his brothers, and the Spirit of YAHUAH came upon Dawiḏ from that day forward. But the Spirit of YAHUAH departed from Sha’ul, and a distressing spirit troubled him — and they sought a skilled harpist to soothe him.']},
+       {music:'sorrow'},{rays:.4,raysX:24},
+       {say:['dawid','The splendour of Yasharal is slain on your high places! HOW THE MIGHTY HAVE FALLEN! Tell it not in Gath, proclaim it not in the streets of Ashqelon — lest the daughters of the Pelishtim rejoice.']},
+       {say:['dawid','Sha’ul and Yonathan, beloved and pleasant in their lives, and in their death not divided — swifter than eagles, stronger than lions. O daughters of Yasharal, weep over Sha’ul, who clothed you in scarlet with finery.']},
+       {say:['dawid','I am distressed for you, my brother Yonathan — very pleasant you have been to me. Your love to me was wonderful, surpassing the love of women. HOW THE MIGHTY HAVE FALLEN, and the weapons of battle perished!']},
        {rays:0},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'YAHUAH looks on the heart. The one who was left with the sheep, not even counted worth calling to the feast, was the one the heavens had chosen. And it came to be that Dawiḏ came to Sha’ul and stood before him, and played with his hand — and Sha’ul was refreshed, and the distressing spirit departed from him.', ref:'1 SHEMU’ĔL 16:7,23'},
+   {art:'stars', music:'sorrow', text:'He would not lift his own hand against the anointed while he lived; and he would not let another’s hand boast of it in death. The man who might have gloated over a fallen rival tore his clothes, fasted till evening, and taught the sons of Yahuḏah to sing a dirge for the house that had hunted him.', ref:'2 SHEMU’ĔL 1:17–27'},
   ],
-  complete:'Man looks on the outward appearance — but YAHUAH looks on the heart.'
+  complete:'How the mighty have fallen — and the weapons of battle perished.'
 },
 
-{ id:'s11', title:'The Valley of Ĕlah', ref:'1 SHEMU’ĔL 17',
+{ id:'t2', title:'Two Kings and the Pool of Giḇ‛on', ref:'2 SHEMU’ĔL 2–3',
   intro:[
-   {art:'wasteland', music:'tense', text:'And the Pelishtim gathered at Soḵoh, and Yasharal camped in the Valley of Ĕlah, a ravine between them. And a champion came out of the camp of the Pelishtim, Golyath of Gath, six cubits and a span, with a bronze helmet, a coat of mail, and a spear like a weaver’s beam. Forty days, morning and evening, he taunted the ranks of Yasharal — and they were greatly afraid.', ref:'1 SHEMU’ĔL 17:4–11'},
+   {art:'journey', music:'holy', text:'And it came to be afterward that Dawiḏ inquired of YAHUAH: “Shall I go up into any of the cities of Yahuḏah?” And YAHUAH said, “Go up — to Ḥeḇron.” So Dawiḏ went up, and the men of Yahuḏah came and anointed him sovereign over the house of Yahuḏah. But Aḇnĕr son of Nĕr had taken Ish-Boshet, Sha’ul’s son, and made him king over all Yasharal.', ref:'2 SHEMU’ĔL 2:1–10'},
   ],
   scene:{
-   map:{biome:'rocky', w:48, h:32, seed:1211,
-     features:[ {type:'rock',x:14,y:14,solid:true,clear:1},{type:'rock',x:34,y:15,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3} ]},
+   map:{biome:'plains', w:50, h:32, seed:2002,
+     features:[
+       {type:'stone',x:24,y:16,id:'pool',clear:2,examine:'The pool of Giḇ‛on — the men of Aḇnĕr sat on one side, the men of Yo’aḇ on the other.'},
+       {type:'clearing',x:24,y:20,flat:3},{type:'rock',x:12,y:10,solid:true,clear:1},{type:'rock',x:37,y:12,solid:true,clear:1},
+     ]},
    time:'day', music:'tense',
-   player:'dawid', playerPos:[18,24],
+   player:'yoav', playerPos:[16,22], playerHold:'sword',
    npcs:[
-     {id:'eliav',char:'eliav',x:20,y:23,wander:false},
-     {id:'shaul_k',char:'shaul_k',x:16,y:22,wander:false},
-     {id:'golyath',char:'golyath',x:30,y:14,wander:false,noTalk:true,scale:1.7},
-   ],
-   onResume:[
-     {sfx:'holy'},
-     {say:['narrator','And when the Pelishtim saw their champion was dead, they fled. And the men of Yasharal and Yahuḏah rose with a shout and pursued them to the gates of Gath and Ĕqron, and the wounded of the Pelishtim fell all along the way.']},
+     {id:'avner',char:'avner',x:33,y:16,wander:false,hold:'sword',
+      script:[
+       {say:['avner','Yo’aḇ — let the young men rise and play before us.']},
+       {say:['yoav','Let them rise.']},
+       {say:['narrator','So twelve of Binyamin for Ish-Boshet, and twelve of the servants of Dawiḏ, rose and passed over. And each caught his opponent by the head and thrust his sword in his side, and they fell down together — so that place was called the Field of the Sharp Blades.']},
+      ]},
+     {id:'asael',char:'asael',x:19,y:20,wander:false,
+      script:[{say:['asael','Aḇnĕr flees toward the wilderness — and I am the swiftest of us, light of foot as a gazelle of the field. I will not turn aside until I overtake him!']}]},
+     {id:'avishai',char:'avishai',x:15,y:21,wander:true,range:1.4,noTalk:true,hold:'spear'},
    ],
    objectives:[
-     {type:'talk',npc:'eliav',text:'Your brother scorns you — but the giant’s taunt still rings',
+     {type:'talk',npc:'avner',text:'Face Aḇnĕr across the pool of Giḇ‛on'},
+     {type:'talk',npc:'asael',text:'Asah’ĕl your brother is set to chase Aḇnĕr',hiddenUntil:1},
+     {type:'goto',x:24,y:12,radius:2.4,text:'Follow the pursuit toward the hill of Ammah',hiddenUntil:2,
       script:[
-       {say:['golyath','Why have you come out to line up for battle? Am I not a Pelishti, and you servants of Sha’ul? Choose a man, and let him come down to me! I defy the ranks of Yasharal this day — give me a man, that we may fight together!']},
-       {say:['eliav','Why did you come down here? With whom did you leave those few sheep? I know your insolence — you came down to see the battle!']},
-       {say:['dawid','What have I done now? Is there not a cause? Who is this uncircumcised Pelishti, that he should defy the ranks of the living Aluahim?']},
+       {say:['narrator','And Asah’ĕl pursued Aḇnĕr, turning neither right nor left. Aḇnĕr looked back: “Are you Asah’ĕl? Turn aside — why should I strike you to the ground? How then could I lift my face to Yo’aḇ your brother?” But he refused to turn.']},
+       {sfx:'bad'},{shake:1.6},
+       {say:['narrator','So Aḇnĕr struck him with the butt of his spear, in the belly, and it came out behind him — and he fell there and died. And as many as came to the place where Asah’ĕl fell stood still.']},
+       {say:['yoav','Asah’ĕl… my brother. Aḇnĕr — this blood is between us now, and it will not wash out with a treaty.']},
       ]},
-     {type:'talk',npc:'shaul_k',text:'Stand before Sha’ul — and offer to go',hiddenUntil:1,
+     {type:'goto',x:16,y:20,radius:2.4,text:'Later — at the gate of Ḥeḇron, when Aḇnĕr comes in peace to Dawiḏ',hiddenUntil:3,
       script:[
-       {say:['dawid','Let no man’s heart fail because of him. Your servant will go and fight this Pelishti.']},
-       {say:['shaul_k','You are not able to go against this Pelishti to fight him — you are but a youth, and he a man of war from his youth.']},
-       {say:['dawid','Your servant was tending the sheep, and a lion came, and a bear, and took a lamb from the flock. And I went out after it and struck it, and delivered the lamb from its mouth. Your servant has struck both lion and bear — and this uncircumcised Pelishti shall be as one of them, for he has defied the ranks of the living Aluahim. YAHUAH, who delivered me from the paw of the lion and the bear, He delivers me from the hand of this Pelishti.']},
-       {say:['shaul_k','Go, and YAHUAH be with you.']},
-       {say:['narrator','And Sha’ul clad him in his own armour, but Dawiḏ could not walk in it, for he had not tested it — and he put it off. And he took his staff, and chose five smooth stones from the wadi, and his sling was in his hand.']},
-      ]},
-     {type:'goto',x:26,y:16,radius:2.6,text:'Go down into the valley — and answer the giant',hiddenUntil:2,
-      script:[
-       {say:['golyath','Am I a dog, that you come to me with sticks? Come to me, and I shall give your flesh to the birds and the beasts!']},
-       {say:['dawid','You come to me with a sword and a spear and a javelin, but I come to you in the Name of YAHUAH of hosts, the Aluahim of the ranks of Yasharal, whom you have defied. This day YAHUAH shall deliver you into my hand — that all the earth may know that Yasharal has an Aluahim, and that all this assembly may know that YAHUAH does not save with sword and spear. For the battle belongs to YAHUAH — and He gives you into our hands.']},
-       {sfx:'holy'},{shake:1},
-       {say:['narrator','And Dawiḏ ran quickly toward the line to meet the Pelishti, and put his hand in his bag, and took a stone, and slung it — and struck the Pelishti in his forehead, so that the stone sank in, and he fell on his face to the earth.']},
-       {burst:[30,14,'spark',20]},{shake:1.8},{sfx:'thunder'},
-       {say:['dawid','So perishes the defiance of the uncircumcised before the living Aluahim.']},
-       {say:['narrator','And Dawiḏ ran and stood over him, and took his sword, and finished him, and cut off his head. And the Pelishtim saw that their champion was dead — and they fled.']},
-       {call:G=>Game.toBattle('elah',3)},
+       {time:'dusk'},{music:'tense'},
+       {say:['narrator','Now Aḇnĕr had quarreled with Ish-Boshet and turned to make all Yasharal king to Dawiḏ; and Dawiḏ sent him away in peace. But Yo’aḇ heard, and sent messengers after Aḇnĕr, and brought him back — Dawiḏ knowing nothing of it.']},
+       {say:['yoav','You came to deceive us, Aḇnĕr — to know your going out and your coming in. But you know what you did to Asah’ĕl.']},
+       {sfx:'bad'},{shake:2},{burst:[16,20,'ash',14]},
+       {say:['narrator','And Yo’aḇ struck him there in the belly, at the gate, for the blood of Asah’ĕl his brother — and Aḇnĕr died.']},
+       {say:['dawid_k','I and my reign are guiltless before YAHUAH forever of the blood of Aḇnĕr. Let it rest on the head of Yo’aḇ and all his father’s house! Do you not know that a prince and a great man has fallen this day in Yasharal?']},
       ]},
    ],
   },
   outro:[
-   {art:'rest', music:'holy', text:'The battle belongs to YAHUAH, and He does not save with sword and spear. A boy with a sling and the Name of the living Aluahim toppled what a whole army had feared for forty days. And the women came out singing: “Sha’ul has struck his thousands, and Dawiḏ his ten thousands” — and from that day Sha’ul eyed Dawiḏ.', ref:'1 SHEMU’ĔL 17:47 · 18:7'},
+   {art:'stars', music:'sorrow', text:'Two crowns, two houses, and a war that grew long — the house of Dawiḏ growing stronger, the house of Sha’ul weaker. And a captain’s private vengeance robbed the king of the very peace that was being handed to him. Dawiḏ walked behind the bier and wept at the grave of the man who had hunted him — and all the people knew it was not from the king.', ref:'2 SHEMU’ĔL 3:1 · 3:31–37'},
   ],
-  complete:'The battle belongs to YAHUAH — and He does not save with sword and spear.'
+  complete:'A prince and a great man has fallen this day in Yasharal.'
 },
 
-{ id:'s12', title:'The Spear and the Covenant', ref:'1 SHEMU’ĔL 18–20',
+{ id:'t3', title:'Blood at Noon', ref:'2 SHEMU’ĔL 4',
   intro:[
-   {art:'throne', music:'tense', text:'And the soul of Yonathan was knit to the soul of Dawiḏ, and Yonathan loved him as his own soul — and made a covenant with him, and gave him his robe and his sword and his bow. But when the women sang “Dawiḏ his ten thousands,” Sha’ul was very angry, and eyed Dawiḏ from that day. And a distressing spirit came upon Sha’ul, and he prophesied wildly in the house, with his spear in his hand.', ref:'1 SHEMU’ĔL 18:1–10'},
+   {art:'wasteland', music:'tense', text:'When Ish-Boshet, Sha’ul’s son, heard that Aḇnĕr had died in Ḥeḇron, his hands went limp, and all Yasharal was troubled. Now Sha’ul’s son had two captains of raiding bands: Ba‛anah and Rĕḵaḇ, sons of Rimmon the Be’ĕrothite — and they came in the heat of the day, when the king lay on his bed at noon.', ref:'2 SHEMU’ĔL 4:1–5'},
   ],
   scene:{
-   map:{biome:'interior', w:30, h:20, seed:1212, floorCol:'#2a2216', wallCol:'#1a150c',
-     features:[ {type:'throne',x:8,y:8,solid:true,clear:1,id:'throne'},{type:'firepit',x:22,y:8,lit:true} ]},
-   time:'night', music:'tense',
-   player:'dawid', playerPos:[16,14],
+   map:{biome:'interior', w:28, h:18, seed:2003, floorCol:'#2a2216', wallCol:'#1a150c',
+     features:[
+       {type:'throne',x:14,y:5,solid:true,id:'bed',examine:'The low couch where Ish-Boshet sleeps out the heat of the day.'},
+       {type:'firepit',x:8,y:6,lit:true},
+     ]},
+   time:'day', music:'tense',
+   player:'dawid_k', playerPos:[14,13], playerHold:'sword',
    npcs:[
-     {id:'shaul_k',char:'shaul_k',x:9,y:9,wander:false,hold:'spear'},
-     {id:'yonathan',char:'yonathan',x:14,y:12,wander:false},
-     {id:'michal',char:'michal',x:22,y:13,wander:false,hidden:true},
+     {id:'rechav',char:'hebrew',x:11,y:9,wander:true,range:1.4,noTalk:true,hold:'sword'},
+     {id:'baanah',char:'hebrew2',x:17,y:9,wander:true,range:1.4,noTalk:true,hold:'sword'},
+   ],
+   onStart:[
+     {say:['narrator','Two men came into the house as though to fetch wheat, and struck Ish-Boshet in the belly as he slept, and beheaded him, and fled all night with the head to Ḥeḇron — to Dawiḏ.']},
    ],
    objectives:[
-     {type:'goto',x:12,y:11,radius:2,text:'Play the lyre for the troubled king — but keep your eye on the spear in his hand',
+     {type:'goto',x:14,y:8,radius:2.4,text:'The assassins present the head — hear their boast, and judge',
       script:[
-       {say:['narrator','And Dawiḏ took up the lyre and played with his hand, as he did day by day, to soothe the black mood that fell on the king. And the spear was in Sha’ul’s hand.']},
-       {face:['shaul_k','down']},{music:'tense'},
-       {say:['shaul_k','“Dawiḏ his ten thousands…” — and to me, the king, only thousands. What more can he have now, but the reign itself?']},
-       {sfx:'bad'},{shake:1.4},
-       {say:['shaul_k','I SHALL PIN DAWIḎ TO THE WALL WITH IT!']},
-       {sfx:'thunder'},{shake:2.6},{burst:[14,11,'spark',16]},
-       {teleport:['player',16,14]},{face:['player','left']},
-       {addProp:{type:'sword',x:12.6,y:10.4,id:'spear1',examine:'The king’s spear, driven into the wall where Dawiḏ’s head had been a breath before.'}},
-       {say:['narrator','And Sha’ul HURLED the spear — but Dawiḏ slipped aside, and it drove into the wall where his head had been.']},
-       {wait:700},
-       {say:['narrator','Another day the black spirit returned; and again Dawiḏ played, and again the spear was in the king’s hand.']},
-       {sfx:'bad'},{shake:1.6},
-       {say:['shaul_k','This time you will not slip away—']},
-       {sfx:'thunder'},{shake:2.8},{burst:[16,14,'spark',16]},
-       {teleport:['player',19,16]},{face:['player','up']},
-       {addProp:{type:'sword',x:16.4,y:13.4,id:'spear2'}},
-       {say:['narrator','A second time he hurled it; a second time Dawiḏ evaded him, and the spear stood quivering in the wall. Twice Dawiḏ escaped from his presence — for YAHUAH was with Dawiḏ, and had turned away from Sha’ul.']},
-       {say:['dawid','I meant only to soothe you, my lord — I have raised no hand against the anointed of YAHUAH.']},
-      ]},
-     {type:'talk',npc:'yonathan',text:'Yonathan swears the covenant of the bow',hiddenUntil:1,
-      script:[
-       {say:['yonathan','My father seeks to kill you. Be on your guard. I shall sound out my father — and whatever I learn, I shall tell you. YAHUAH be between me and you, and between my seed and your seed, forever.']},
-       {say:['dawid','If there is guilt in me, kill me yourself — but do not bring me to your father.']},
-       {say:['yonathan','Far be it! Tomorrow is the New Moon. I shall shoot three arrows to the side of that stone. If I say to the lad, “The arrows are on this side of you,” come — it is peace. But if I say, “Beyond you,” go — for YAHUAH has sent you away. And the covenant of YAHUAH is between us.']},
-       {emote:['yonathan','heart']},{sfx:'chime'},
-      ]},
-     {type:'talk',npc:'michal',text:'Miḵal lowers you from the window — flee into the night',hiddenUntil:2,
-      script:[
-       {show:'michal'},
-       {say:['michal','Sha’ul has sent men to watch the house, to kill you in the morning. If you do not escape tonight, tomorrow you are dead. Down through the window — go!']},
-       {say:['narrator','And Miḵal let Dawiḏ down through the window, and he fled and escaped. And she put an idol in the bed with goats’ hair at its head, and covered it — and when the messengers came, she said, “He is sick.” So Dawiḏ fled to Shemu’ĕl at Ramah, and told him all that Sha’ul had done.']},
-       {fade:'out'},{toast:'And Dawiḏ fled, and escaped — and came to Shemu’ĕl at Ramah.'},{wait:1600},{fade:'in'},
+       {show:'rechav'},{show:'baanah'},
+       {say:['rechav','Here is the head of Ish-Boshet, son of Sha’ul your enemy, who sought your life! YAHUAH has avenged my lord the king this day on Sha’ul and on his seed.']},
+       {say:['dawid_k','As YAHUAH lives, who has redeemed my life out of all distress — when one told me, “See, Sha’ul is dead,” thinking he brought good news, I seized him and killed him in Tsiqlag, the reward I gave for his tidings.']},
+       {say:['dawid_k','HOW MUCH MORE, when wicked men have killed a righteous man in his own house, on his bed! Shall I not now require his blood from your hand, and remove you from the earth?']},
+       {sfx:'bad'},{shake:1.8},
+       {say:['narrator','And Dawiḏ commanded, and they killed them, and hanged them by the pool in Ḥeḇron. But the head of Ish-Boshet they buried in the grave of Aḇnĕr, in Ḥeḇron.']},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'sorrow', text:'The arrows fell beyond the lad — and Dawiḏ and Yonathan wept together, until Dawiḏ wept the more. “Go in peace,” said Yonathan, “for we have both sworn in the Name of YAHUAH: He shall be between me and you, and between my seed and yours, forever.” And Dawiḏ rose and left — and Yonathan went into the city.', ref:'1 SHEMU’ĔL 20:41–42'},
+   {art:'stars', music:'sorrow', text:'Twice now men had come to Dawiḏ expecting a reward for a rival’s death — the Amalĕqite over Sha’ul, and these two over his son. Twice the throne answered the same way: the blood of the helpless is not currency in the reign of YAHUAH. The house of Sha’ul was ended not by Dawiḏ’s ambition but by other men’s crimes — and Dawiḏ would not touch the wage of blood.', ref:'2 SHEMU’ĔL 4:9–12'},
   ],
-  complete:'YAHUAH be between me and you, and between my seed and your seed, forever.'
+  complete:'Wicked men have killed a righteous man in his own house — shall I not require his blood?'
 },
 ]},
 
-/* ============ ACT V — THE FUGITIVE AND THE KING ============ */
-{ id:'sact5', roman:'V', title:'The Fugitive and the King', ref:'1 SHEMU’ĔL 21–31', chapters:[
+/* ============ ACT II — THE CITY OF DAWIḎ ============ */
+{ id:'tact2', roman:'II', title:'The City of Dawiḏ', ref:'2 SHEMU’ĔL 5–8', chapters:[
 
-{ id:'s13', title:'The Sword of Golyath at Noḇ', ref:'1 SHEMU’ĔL 21–22',
+{ id:'t4', title:'The Stronghold of Tsiyon', ref:'2 SHEMU’ĔL 5',
   intro:[
-   {art:'wilderness', music:'tense', text:'And Dawiḏ came to Noḇ, to Aḥimeleḵ the priest — hungry, and without a weapon, for the king’s matter was urgent. And there was no bread but the showbread; and Aḥimeleḵ gave it him, and the sword of Golyath the Pelishti, which was wrapped behind the ephod. But Doĕg the Edomite, chief of Sha’ul’s herdsmen, was there that day, detained before YAHUAH — and he saw.', ref:'1 SHEMU’ĔL 21:1–9'},
+   {art:'journey', music:'holy', text:'Then all the tribes of Yasharal came to Dawiḏ at Ḥeḇron: “See, we are your bone and your flesh. Even when Sha’ul was king, you led Yasharal out and in. YAHUAH said to you: You shall shepherd My people Yasharal, and be ruler over Yasharal.” So they anointed Dawiḏ sovereign over all Yasharal — thirty years old, to reign forty years.', ref:'2 SHEMU’ĔL 5:1–5'},
+   {art:'wasteland', music:'tense', text:'And the king and his men went to Yerushalayim, against the Yeḇusite. And they taunted him: “You shall not come in here — even the blind and the lame will turn you back.” But Dawiḏ took the stronghold of Tsiyon — “whoever climbs up by the water-shaft…” — and it became the City of Dawiḏ.', ref:'2 SHEMU’ĔL 5:6–9'},
   ],
   scene:{
-   map:{biome:'wild', w:46, h:30, seed:1213,
-     features:[ {type:'altar',x:24,y:12,stage:2,solid:true,clear:2,id:'shrine',examine:'The Dwelling at Noḇ, and the ephod, and the showbread on the table.'},{type:'clearing',x:24,y:20,flat:3},{type:'rock',x:34,y:16,solid:true,clear:1} ]},
+   map:{biome:'city', w:50, h:34, seed:2004,
+     features:[
+       {type:'tower',stage:2,x:34,y:9,solid:true,clear:4,flat:4,id:'shaft',examine:'The water-shaft of the Yeḇusite stronghold — “whoever climbs up by it…”'},
+       {type:'gate',x:24,y:12,id:'gate'},
+       {type:'house',solid:true,x:12,y:16,clear:3,col:'#a87f48'},{type:'house',solid:true,x:16,y:14,clear:3,col:'#b58a50'},
+       {type:'clearing',x:24,y:22,flat:3},
+     ]},
    time:'day', music:'tense',
-   player:'dawid', playerPos:[20,22],
+   player:'dawid_k', playerPos:[20,26], playerHold:'sword',
    npcs:[
-     {id:'achimelech',char:'achimelech',x:23,y:13,wander:false},
-     {id:'doeg',char:'doeg',x:34,y:17,wander:false,noTalk:true},
-   ],
-   objectives:[
-     {type:'talk',npc:'achimelech',text:'Ask the priest for bread, and a weapon',
-      script:[
-       {say:['achimelech','Why are you alone, and no one with you?']},
-       {say:['dawid','The king charged me with a matter, and said, “Let no one know.” My young men I have sent to a place. Now — what is under your hand? Give me five loaves, or whatever there is.']},
-       {say:['achimelech','There is no ordinary bread, only the set-apart showbread — if the young men have kept themselves from women.']},
-       {say:['narrator','And the priest gave him the set-apart bread, for there was no bread there but the Bread of the Presence. And Dawiḏ asked, “Is there here a spear or a sword?” And the priest said, “The sword of Golyath the Pelishti, whom you struck in the Valley of Ĕlah — it is here, wrapped behind the ephod. There is no other.” And Dawiḏ said, “There is none like it; give it to me.”']},
-      ]},
-     {type:'interact',prop:'shrine',text:'Take the sword of Golyath from behind the ephod',hiddenUntil:1,
-      script:[
-       {say:['dawid','His own sword, in my hand again. Strange are the mercies of YAHUAH — the weapon of the giant becomes the staff of the fugitive.']},
-       {say:['narrator','But Doĕg the Edomite had seen. And Dawiḏ went on to Gath, and feigned madness before Aḵish; then escaped to the cave of Aḏullam. And all who were in distress, in debt, and bitter of soul gathered to him — about four hundred men — and he became a captain over them.']},
-       {sfx:'chime'},
-      ]},
-     {type:'talk',npc:'doeg',text:'At Giḇ‛ah, Doĕg tells the king what he saw',hiddenUntil:2,
-      script:[
-       {time:'dusk'},
-       {say:['doeg','I saw the son of Yishai come to Noḇ, to Aḥimeleḵ. And he inquired of YAHUAH for him, and gave him provisions, and the sword of Golyath the Pelishti.']},
-       {say:['narrator','And Sha’ul summoned Aḥimeleḵ and all the priests of Noḇ, and accused them of conspiracy. And the priest answered, “Who among all your servants is as trusted as Dawiḏ, the king’s son-in-law? I knew nothing of this matter.” But Sha’ul said, “You shall surely die, Aḥimeleḵ — you and all your father’s house.”']},
-       {say:['narrator','And the king’s guards would not stretch out their hands against the priests of YAHUAH. So the king said to Doĕg, “You turn and strike them.” And Doĕg the Edomite turned and struck down eighty-five men who wore the linen ephod, and put Noḇ, the city of the priests, to the sword — men and women, children and infants. Only Eḇyathar, a son of Aḥimeleḵ, escaped, and fled to Dawiḏ.']},
-       {shake:2},{sfx:'thunder'},{burst:[24,12,'ash',22]},
-       {say:['dawid','I knew that day, when Doĕg was there, that he would surely tell Sha’ul. I have brought about the death of every soul of your father’s house. Stay with me; do not fear — for he who seeks my life seeks yours. With me you are safe.']},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'wasteland', music:'sorrow', text:'A king who would not obey YAHUAH to spare Amalĕq now slaughtered the priests of YAHUAH to spite a shepherd — and the guards who feared YAHUAH more than the king would not raise a hand, so a foreigner did it. The crown had become a sword against the very house of prayer.', ref:'1 SHEMU’ĔL 22:17–23'},
-  ],
-  complete:'Only Eḇyathar escaped — and fled to Dawiḏ, and with him he was safe.'
-},
-
-{ id:'s13b', title:'Qe‛ilah, and the Wilderness of Ziph', ref:'1 SHEMU’ĔL 23',
-  intro:[
-   {art:'wilderness', music:'tense', text:'And they told Dawiḏ, “See, the Pelishtim are fighting against Qe‛ilah, and they are robbing the threshing floors.” So Dawiḏ inquired of YAHUAH: “Shall I go and strike these Pelishtim?” And YAHUAH said, “Go, strike them, and save Qe‛ilah.” But his men were afraid — so he inquired again, and YAHUAH answered him again, “Arise, go down to Qe‛ilah, for I am giving the Pelishtim into your hand.”', ref:'1 SHEMU’ĔL 23:1–4'},
-  ],
-  scene:{
-   map:{biome:'rocky', w:46, h:30, seed:1219,
-     features:[ {type:'rock',x:14,y:14,solid:true,clear:1},{type:'rock',x:34,y:13,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3} ]},
-   time:'day', music:'tense',
-   player:'dawid', playerPos:[18,22], playerHold:'sword',
-   npcs:[
-     {id:'eviatar',char:'achimelech',x:20,y:21,wander:false},
-     {id:'yonathan',char:'yonathan',x:32,y:16,wander:false,hidden:true},
-     {id:'foe1',char:'pelishti',x:30,y:14,wander:false,hidden:true,noTalk:true},
+     {id:'yoav',char:'yoav',x:22,y:24,wander:false,hold:'sword',
+      script:[{say:['yoav','My king — whoever strikes the Yeḇusite first, up through the water-shaft, shall be chief and captain. I will go up first.']}]},
+     {id:'avishai',char:'avishai',x:18,y:24,wander:true,range:1.4,noTalk:true,hold:'spear'},
    ],
    onResume:[
-     {sfx:'holy'},
-     {say:['narrator','So Dawiḏ saved the people of Qe‛ilah, and struck the Pelishtim with a great blow, and took away their livestock. But Sha’ul heard, and said, “Aluahim has delivered him into my hand, for he is shut in, in a town with gates and bars.” And Sha’ul called all the people to war, to go down to Qe‛ilah, to besiege Dawiḏ and his men.']},
+     {sfx:'thunder'},
+     {say:['narrator','And the Pelishtim were struck at Ba‛al-Peratsim: “YAHUAH has broken through my enemies before me like a breach of waters.” They came up once more, and were struck from Geḇa to Gezer — for Dawiḏ did only as YAHUAH commanded him.']},
    ],
    objectives:[
-     {type:'talk',npc:'eviatar',text:'Inquire of YAHUAH by the ephod — shall you save Qe‛ilah?',
+     {type:'interact',prop:'shaft',text:'Go up by the water-shaft, and take the stronghold of Tsiyon',
       script:[
-       {say:['eviatar','The ephod is in my hand, my lord — Eḇyathar, of the house of Noḇ, is with you. Inquire, and YAHUAH will answer.']},
-       {say:['dawid','Shall I go and strike these Pelishtim? …He has answered: go. Even my fearful men He has answered twice. Then to Qe‛ilah — for YAHUAH gives the Pelishtim into our hand.']},
+       {sfx:'chime'},{burst:[34,9,'spark',16]},
+       {say:['narrator','And Dawiḏ took the stronghold of Tsiyon, and dwelt in it, and called it the City of Dawiḏ. And he built all around, from the Millo inward — and grew greater and greater, for YAHUAH of hosts was with him.']},
+       {say:['dawid_k','From this hill the Name shall be praised. Bring cedar from Tsor, and masons — but let it be known: YAHUAH has established me sovereign over Yasharal for the sake of His people.']},
       ]},
-     {type:'goto',x:28,y:16,radius:2.6,text:'Go down to Qe‛ilah — strike the Pelishtim and save the town',hiddenUntil:1,
+     {type:'goto',x:24,y:22,radius:2.4,text:'Now the Pelishtim spread out in the Valley of Repha’im — inquire of YAHUAH, and charge',hiddenUntil:1,
       script:[
-       {show:'foe1'},
-       {sfx:'thunder'},{shake:1.2},
-       {say:['dawid','For the threshing floors of Qe‛ilah, for the bread of the poor — fall on them! YAHUAH has given them into our hand!']},
-       {call:G=>Game.toBattle('qeilah',2)},
+       {say:['narrator','When the Pelishtim heard that Dawiḏ was anointed over all Yasharal, they came up in full to seek him, and spread out in the Valley of Repha’im.']},
+       {say:['dawid_k','Shall I go up against the Pelishtim? Will You give them into my hand?']},
+       {rays:.6,raysX:24},{sfx:'holy'},
+       {say:['voice','Go up — for I shall certainly give the Pelishtim into your hand. And when you hear the sound of marching in the tops of the baka-trees, then act quickly, for then YAHUAH has gone out before you to strike the camp.']},
+       {rays:0},
+       {say:['dawid_k','For YAHUAH, who goes before us in the treetops — Yasharal, CHARGE!']},
+       {call:G=>Game.toBattle('rephaim',2)},
       ]},
-     {type:'talk',npc:'yonathan',text:'In the wood of Ziph, Yonathan comes to strengthen your hand in Aluahim',hiddenUntil:2,
+     {type:'goto',x:20,y:26,radius:2.4,text:'The valley is won — give thanks before YAHUAH',hiddenUntil:2,
       script:[
-       {show:'yonathan'},
-       {say:['narrator','And Dawiḏ fled to the wilderness strongholds, in the hill country of Ziph. And Sha’ul sought him every day, but Aluahim did not give him into his hand. And Yonathan, Sha’ul’s son, rose and went to Dawiḏ in the wood, and strengthened his hand in Aluahim.']},
-       {say:['yonathan','Do not fear — the hand of Sha’ul my father shall not find you. You shall reign over Yasharal, and I shall be next to you; and even my father knows it.']},
-       {say:['dawid','That you would come to me here, hunted in the wood, and call me king — this is a friend nearer than a brother. YAHUAH between me and you, forever.']},
-       {emote:['dawid','heart']},{sfx:'chime'},
-       {say:['narrator','And the two made a covenant before YAHUAH — and Yonathan went to his house, and Dawiḏ remained in the wood. But the Ziphites went up to Sha’ul: “Is not Dawiḏ hiding among us?” And Sha’ul pursued, and had almost surrounded Dawiḏ — when a messenger came: “The Pelishtim have raided the land!” So Sha’ul turned back, and Dawiḏ escaped to the strongholds of Ĕn-Geḏi. That place they called the Rock of Divisions.']},
+       {sfx:'holy'},{burst:[20,26,'spark',18]},
+       {say:['dawid_k','Ba‛al-Peratsim — the Master of Breakthroughs. He broke through my enemies before me like bursting waters. Not my sword, but His hand.']},
       ]},
    ],
   },
   outro:[
-   {art:'mountain', music:'holy', text:'Twice hunted, twice delivered — once by the ephod that told him where to go, and once by a raid that pulled the hunter away at the last moment. And in the middle of it, the crown prince climbed down into a fugitive’s hiding place, not to arrest him but to strengthen his hand in Aluahim, and to call him king.', ref:'1 SHEMU’ĔL 23:16–18'},
+   {art:'stars', music:'holy', text:'A shepherd of Bĕyth-leḥem now sat on the hill that would carry the Name for a thousand years. Ḥiram of Tsor sent cedar and builders; Dawiḏ took more wives and more sons; and twice the old enemy of the coast came up, and twice was broken. And Dawiḏ perceived that YAHUAH had established him king, and had lifted his reign high for the sake of Yasharal His people.', ref:'2 SHEMU’ĔL 5:11–25'},
   ],
-  complete:'And Yonathan strengthened Dawiḏ’s hand in Aluahim — “you shall reign, and I shall be next to you.”'
+  complete:'YAHUAH has broken through my enemies before me like a breach of waters.'
 },
 
-{ id:'s14', title:'I Will Not Stretch Out My Hand', ref:'1 SHEMU’ĔL 24–26',
+{ id:'t5', title:'The Ark Comes Home', ref:'2 SHEMU’ĔL 6',
   intro:[
-   {art:'mountain', music:'tense', text:'And Sha’ul took three thousand chosen men, and went to seek Dawiḏ among the Rocks of the Wild Goats. And he came to the sheepfolds by the way, where there was a cave — and Sha’ul went in to relieve himself. And Dawiḏ and his men were sitting in the innermost parts of that very cave.', ref:'1 SHEMU’ĔL 24:1–3'},
+   {art:'journey', music:'holy', text:'Again Dawiḏ gathered all the chosen men of Yasharal, thirty thousand, to bring up the ark of Aluahim — called by the Name, YAHUAH of hosts, who dwells between the keruḇim. And they set the ark on a new cart, and brought it out of the house of Aḇinaḏaḇ; and Uzzah and Aḥyo drove the cart. And Dawiḏ and all the house of Yasharal played before YAHUAH with all their might.', ref:'2 SHEMU’ĔL 6:1–5'},
   ],
   scene:{
-   map:{biome:'rocky', w:46, h:30, seed:1214,
-     features:[ {type:'rock',x:20,y:10,solid:true,clear:1},{type:'rock',x:14,y:15,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3} ]},
-   time:'day', music:'tense',
-   player:'dawid', playerPos:[24,22], playerHold:'sword',
+   map:{biome:'plains', w:50, h:32, seed:2005,
+     features:[
+       {type:'altar',stage:1,x:36,y:12,solid:true,clear:2,id:'perets',examine:'The threshing-floor of Naḵon — where the oxen stumbled.'},
+       {type:'clearing',x:22,y:18,flat:3},{type:'firepit',x:14,y:20,lit:true},
+     ]},
+   time:'day', music:'holy',
+   player:'dawid_k', playerPos:[16,20],
    npcs:[
-     {id:'shaul_k',char:'shaul_k',x:24,y:12,wander:false,hidden:true},
-     {id:'avigail',char:'avigail',x:14,y:22,wander:false,hidden:true},
+     {id:'uzzah',char:'uzzah',x:30,y:14,wander:false,
+      script:[{say:['uzzah','The oxen have stumbled at the threshing-floor — the ark tilts! I will steady it with my hand—']}]},
+     {id:'ovededom',char:'ovededom',x:20,y:17,wander:true,range:1.5,noTalk:true},
+   ],
+   onStart:[
+     {call:G=>{ G.world.map.decor.push({type:'arkcov',x:33,y:13,id:'arkprop',solid:false}); G.world.map.decor.sort((a,b)=>a.y-b.y); }},
    ],
    objectives:[
-     {type:'goto',x:24,y:14,radius:2.2,text:'Creep up in the dark — and cut only the corner of his robe',
+     {type:'talk',npc:'uzzah',text:'Follow the cart to the threshing-floor of Naḵon'},
+     {type:'goto',x:31,y:14,radius:2.2,text:'Uzzah reaches out to the ark — see what YAHUAH does',hiddenUntil:1,
       script:[
-       {show:'shaul_k'},
-       {say:['narrator','And Dawiḏ’s men whispered: “This is the day YAHUAH said: I give your enemy into your hand; do to him as seems good.” And Dawiḏ rose and quietly cut off the corner of Sha’ul’s robe — and his heart smote him for it.']},
-       {sfx:'blip'},{burst:[24,12,'spark',8]},
-       {say:['dawid','Far be it from me, before YAHUAH, that I should stretch out my hand against the anointed of YAHUAH. He is YAHUAH’s anointed.']},
+       {sfx:'thunder'},{shake:2.4},{burst:[33,13,'spark',22]},
+       {say:['narrator','And the displeasure of YAHUAH burned against Uzzah, and Aluahim struck him there for the irreverence — and he died there beside the ark of Aluahim. And Dawiḏ was angry, and afraid of YAHUAH that day: “How shall the ark of YAHUAH come to me?”']},
+       {say:['dawid_k','It is set-apart — it may not be handled as common freight, nor steadied by a mortal hand as though YAHUAH could fall. I did not carry it as the Torah of Mosheh said. Turn it aside — to the house of Oḇĕd-Eḏom.']},
       ]},
-     {type:'talk',npc:'shaul_k',text:'Call out to the king from the mouth of the cave',hiddenUntil:1,
+     {type:'talk',npc:'ovededom',text:'Three months later — the house of Oḇĕd-Eḏom is blessed; go bring the ark up rightly',hiddenUntil:2,
       script:[
-       {say:['dawid','My lord the king! See — the corner of your robe in my hand. I cut it, and did not kill you. Know that there is no evil or rebellion in my hand. YAHUAH judge between me and you — but my hand shall not be against you.']},
-       {say:['shaul_k','Is this your voice, my son Dawiḏ? You are more righteous than I — you repaid me good, and I evil. When a man finds his enemy, does he let him go safely? May YAHUAH reward you with good for what you have done to me this day. And now I know that you shall surely reign, and the reign of Yasharal shall be established in your hand. Swear you will not cut off my seed after me.']},
-       {say:['dawid','I swear it.']},
-       {say:['narrator','And Sha’ul went home; but Dawiḏ went up to the stronghold, for he did not trust the peace.']},
+       {say:['ovededom','My king — since the ark came under my roof, YAHUAH has blessed my house and all that is mine. There is no dread in it for those who honour it; only for those who make light of it.']},
+       {say:['dawid_k','Then the Lĕwites shall bear it on their shoulders, with the poles, as it was commanded. And I will not come before YAHUAH empty — at every six paces, an offering.']},
       ]},
-     {type:'talk',npc:'avigail',text:'Aḇigail rides to meet you — as your anger burns against Naḇal',hiddenUntil:2,
+     {type:'goto',x:16,y:22,radius:2.4,text:'Bring the ark into the City with dancing — with all your might',hiddenUntil:3,
       script:[
-       {show:'avigail'},
-       {say:['narrator','Now Naḇal, a harsh man of Ma‛on, returned evil to Dawiḏ for the good his men had done to Naḇal’s shepherds. And Dawiḏ girded his sword — “Not one male of his shall be left by morning.” But Aḇigail, his wife, wise and beautiful, hurried out with bread and wine and dressed sheep, and fell at Dawiḏ’s feet.']},
-       {say:['avigail','On me alone, my lord, be the guilt. Do not let my lord take vengeance with his own hand, nor have on his conscience the shedding of blood without cause. YAHUAH shall surely make my lord a sure house, for he fights the battles of YAHUAH — and when YAHUAH has done you good, let this be no stumbling of heart to you.']},
-       {say:['dawid','Baruk is YAHUAH, who sent you this day to meet me! And baruk is your discernment — you have kept me this day from coming to bloodshed and avenging myself with my own hand. Go up in peace to your house.']},
-       {say:['narrator','And about ten days later YAHUAH struck Naḇal, and he died. And Dawiḏ blessed YAHUAH, who had kept His servant back from evil — and he took Aḇigail to be his wife.']},
-       {say:['narrator','But the Ziphites went up to Sha’ul again: “Is not Dawiḏ hiding on the hill of Ḥaḵilah?” And Sha’ul came down with three thousand chosen men, and camped on the hill by the way — and by night Dawiḏ went down into the camp.']},
-       {fade:'out'},{wait:900},
-       {time:'night'},{music:'tense'},
-       {hide:'shaul_k'},{hide:'avigail'},
-       {spawn:{id:'shaul_sleep',char:'shaul_k',x:24,y:12,lying:true,noTalk:true,wander:false}},
-       {spawn:{id:'guard_s',char:'hebrew',x:26,y:12.6,lying:true,noTalk:true,wander:false}},
-       {addProp:{type:'sword',x:24,y:11,id:'spear_s',examine:'Sha’ul’s own spear, stuck in the ground at his head as he sleeps.'}},
-       {addProp:{type:'pot',x:23,y:12.7,id:'jug',examine:'The jar of water at the sleeping king’s head.'}},
-       {teleport:['player',20,20]},{face:['player','up']},
-       {fade:'in'},
-      ]},
-     {type:'interact',prop:'jug',text:'Ḥaḵilah, by night — creep to the sleeping king, and take only his spear and his water-jar',hiddenUntil:3,
-      script:[
-       {say:['narrator','There lay Sha’ul asleep within the barricade, his spear stuck in the ground at his head, and Aḇnĕr and the people around him — for a deep sleep from YAHUAH had fallen upon them.']},
-       {say:['narrator','And Aḇishai whispered: “Aluahim has shut up your enemy in your hand this day. Now let me pin him to the ground with his own spear — one stroke; I will not need a second.”']},
-       {say:['dawid','Do NOT destroy him! For who can stretch out his hand against the anointed of YAHUAH, and be guiltless? As YAHUAH lives, YAHUAH Himself shall strike him — or his day shall come to die, or he shall go down into battle and perish. Far be it from me to stretch out my hand against YAHUAH’s anointed. But take the spear at his head, and the jar of water — and let us go.']},
-       {sfx:'blip'},{removeProp:'spear_s'},{removeProp:'jug'},
-       {say:['narrator','So Dawiḏ took the spear and the water-jar from beside Sha’ul’s head, and they crossed to the far side of the valley, and stood on the top of the hill afar off, a great space between them — and no man saw, nor knew, nor awoke.']},
-       {teleport:['player',38,8]},{face:['player','left']},
-       {despawn:'shaul_sleep'},{despawn:'guard_s'},
-       {show:'shaul_k'},{teleport:['shaul_k',24,10]},{face:['shaul_k','right']},
-       {sfx:'holy'},
-       {say:['dawid','AḆNĔR! Will you not answer? Who is like you in Yasharal? Then why have you not guarded your lord the king? You are sons of death, for you did not guard YAHUAH’s anointed. LOOK — where is the king’s spear, and the jar of water that was at his head?']},
-       {say:['shaul_k','Is this your voice, my son Dawiḏ?']},
-       {say:['dawid','It is my voice, my lord the king. Why does my lord pursue his servant? See — this day your life was precious in my eyes; so let my life be precious in the eyes of YAHUAH, and let Him deliver me out of all distress.']},
-       {say:['shaul_k','I have sinned. Return, my son Dawiḏ — I shall harm you no more, because my life was precious in your eyes this day. See, I have acted foolishly, and have greatly erred. Blessed are you, my son Dawiḏ — you shall do great things, and shall surely prevail.']},
-       {sfx:'chime'},{emote:['dawid','heart']},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'stars', music:'holy', text:'Twice the anointed shepherd held the life of the anointed king in his hand — and twice he would not close it, though his men urged and the cave gave him leave. He would take the crown only from the hand that gave it, and never from the throat of the man who wore it. Vengeance he left to YAHUAH; and even Aḇigail he was kept from harming.', ref:'1 SHEMU’ĔL 26:23–25'},
-  ],
-  complete:'I will not stretch out my hand against the anointed of YAHUAH.'
-},
-
-{ id:'s14b', title:'Among the Pelishtim', ref:'1 SHEMU’ĔL 27 · 29',
-  intro:[
-   {art:'journey', music:'sorrow', text:'And Dawiḏ said in his heart, “Now I shall perish one day by the hand of Sha’ul. There is nothing better for me than to escape to the land of the Pelishtim.” So Dawiḏ crossed over to Aḵish, sovereign of Gath, with his six hundred men. And Sha’ul, hearing Dawiḏ had fled to Gath, sought him no more.', ref:'1 SHEMU’ĔL 27:1–4'},
-  ],
-  scene:{
-   map:{biome:'city', w:44, h:28, seed:1220,
-     features:[ {type:'tower',x:24,y:9,stage:2,solid:true,clear:3,id:'gate',examine:'The gate of Gath — and beyond it, Tsiqlag, given into Dawiḏ’s hand.'},{type:'clearing',x:24,y:19,flat:3},{type:'tent',x:14,y:17,solid:true,clear:1} ]},
-   time:'day', music:'sorrow',
-   player:'dawid_k', playerPos:[18,20],
-   npcs:[
-     {id:'achish',char:'achish',x:22,y:12,wander:false},
-     {id:'lord1',char:'pelishti',x:30,y:16,wander:false,hidden:true},
-   ],
-   objectives:[
-     {type:'talk',npc:'achish',text:'Ask Aḵish for a town of your own — Tsiqlag',
-      script:[
-       {say:['dawid_k','If I have found favour in your eyes, let them give me a place in one of the country towns, that I may dwell there. Why should your servant dwell in the royal city with you?']},
-       {say:['achish','Then take Tsiqlag — it shall be yours.']},
-       {say:['narrator','So Aḵish gave him Tsiqlag that day; and it has belonged to the sovereigns of Yahuḏah to this day. And Dawiḏ dwelt in the field of the Pelishtim a year and four months — and raided the Geshurites and the Amalĕqites of the old wilderness ways, and left none alive to tell, so Aḵish thought Dawiḏ had made himself utterly hated by his own people, and would be his servant forever.']},
-      ]},
-     {type:'goto',x:24,y:12,radius:2.4,text:'When the Pelishtim muster for Gilboa, march out with Aḵish',hiddenUntil:1,
-      script:[
-       {show:'lord1'},
-       {say:['narrator','And the Pelishtim gathered their armies at Aphĕq to fight Yasharal — and Dawiḏ and his men marched in the rear with Aḵish. But the lords of the Pelishtim saw them.']},
-       {say:['lord1','What are these Hebrews doing here? Is this not Dawiḏ, of whom they sing in the dances, “Sha’ul struck his thousands, and Dawiḏ his ten thousands”? Send him back! He shall not go down with us to battle, lest in the battle he become an adversary to us. With what could he reconcile himself to his master — if not with the heads of these men?']},
-       {say:['achish','As YAHUAH lives, you have been upright, and your going out and coming in with me is good in my eyes… but the lords do not favour you. Return now, and go in peace, that you do no evil in the eyes of the lords of the Pelishtim.']},
-       {say:['dawid_k','But what have I done? Let me not go and fight against the enemies of my lord the king.']},
-       {say:['narrator','Yet in mercy Dawiḏ was turned away — for YAHUAH would not let His anointed lift a sword against Yasharal at Gilboa, nor stand in the ranks that would kill Sha’ul and Yonathan. So Dawiḏ rose early to return to the land of the Pelishtim — to Tsiqlag.']},
-       {sfx:'chime'},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'wasteland', music:'sorrow', text:'The fugitive had run so far he was marching in an enemy army against his own people — and only the suspicion of pagan lords kept his hands clean of the blood of Yasharal on the day of Gilboa. Even in the tangle of a man’s worst compromises, YAHUAH guards His anointed from the one sin that could never be undone.', ref:'1 SHEMU’ĔL 29:6–11'},
-  ],
-  complete:'Return, and go in peace — and Dawiḏ was turned back before he could raise a hand against Yasharal.'
-},
-
-{ id:'s15', title:'The Shade at Ĕn-Dor', ref:'1 SHEMU’ĔL 28',
-  intro:[
-   {art:'stars', music:'sorrow', text:'Now Shemu’ĕl had died, and all Yasharal mourned him. And the Pelishtim gathered at Shunĕm, and Sha’ul saw their camp and was afraid, and his heart trembled greatly. And he inquired of YAHUAH — but YAHUAH did not answer him, neither by dreams, nor by the Urim, nor by prophets. So he said to his servants, “Seek me a woman who is a medium, that I may go to her and inquire.”', ref:'1 SHEMU’ĔL 28:3–7'},
-  ],
-  scene:{
-   map:{biome:'interior', w:28, h:18, seed:1215, floorCol:'#20180f', wallCol:'#140c06',
-     features:[ {type:'firepit',x:14,y:9,lit:true} ]},
-   time:'night', music:'sorrow',
-   player:'shaul_k', playerPos:[10,12],
-   npcs:[ {id:'endorwoman',char:'endorwoman',x:16,y:10,wander:false},
-          {id:'shade',char:'shamuel_g',x:14,y:6,wander:false,hidden:true,noTalk:true} ],
-   objectives:[
-     {type:'talk',npc:'endorwoman',text:'In disguise, ask the medium to bring up Shemu’ĕl',
-      script:[
-       {say:['endorwoman','You know what Sha’ul has done — he has cut off the mediums from the land. Why do you lay a snare for my life?']},
-       {say:['shaul_k','As YAHUAH lives, no punishment shall come upon you for this. Bring up Shemu’ĕl for me.']},
-       {say:['narrator','And when the woman saw Shemu’ĕl, she cried out with a loud voice: “Why have you deceived me? You are Sha’ul!”']},
-      ]},
-     {type:'goto',x:14,y:8,radius:2,text:'Bow to the shade that rises — and hear the doom',hiddenUntil:1,
-      script:[
-       {show:'shade'},
-       {rays:.5,raysX:14},{sfx:'holy'},
-       {say:['shamuel_g','Why have you disturbed me, to bring me up?']},
-       {say:['shaul_k','I am deeply distressed — the Pelishtim make war on me, and Aluahim has turned from me, and answers no more, by prophets or by dreams. So I called you, to tell me what I should do.']},
-       {say:['shamuel_g','Why then do you ask me, seeing YAHUAH has turned from you and become your enemy? YAHUAH has done as He spoke by me: He has torn the reign from your hand and given it to Dawiḏ — because you did not obey the voice of YAHUAH, nor carry out His burning wrath against Amalĕq. Tomorrow you and your sons shall be with me; and YAHUAH shall give Yasharal also into the hand of the Pelishtim.']},
-       {rays:0},{shake:1.6},
-       {say:['narrator','And immediately Sha’ul fell full-length on the ground, in great fear because of the words of Shemu’ĕl; and there was no strength in him, for he had eaten nothing all day and night. And the woman set bread before him, and he ate, and rose, and went into that night.']},
-      ]},
-   ],
-  },
-  outro:[
-   {art:'stars', music:'sorrow', text:'The king who would not hear YAHUAH while the prophet lived went seeking him among the dead when the prophet was gone — and heard only the sentence he had earned, echoing out of the grave. There is a silence of the heavens that is itself the answer; and the man who fills it with mediums fills it only with his own doom.', ref:'1 SHEMU’ĔL 28:16–19'},
-  ],
-  complete:'Tomorrow you and your sons shall be with me — the doom is sealed.'
-},
-
-{ id:'s16', title:'Gilboa', ref:'1 SHEMU’ĔL 30–31',
-  intro:[
-   {art:'wasteland', music:'sorrow', text:'And while Sha’ul faced the Pelishtim at Gilboa, the Amalĕqites raided the Negeḇ and burned Tsiqlag, and carried off the wives and children of Dawiḏ and his men. And the people spoke of stoning Dawiḏ, for their souls were bitter — but Dawiḏ strengthened himself in YAHUAH his Aluahim, and inquired: “Shall I pursue? Shall I overtake?” And YAHUAH said, “Pursue, for you shall surely overtake, and rescue all.”', ref:'1 SHEMU’ĔL 30:1–8'},
-  ],
-  scene:{
-   map:{biome:'desert', w:48, h:32, seed:1216,
-     features:[ {type:'rock',x:14,y:13,solid:true,clear:1},{type:'rock',x:34,y:14,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3} ]},
-   time:'day', music:'sorrow',
-   player:'dawid_k', playerPos:[18,22], playerHold:'sword',
-   npcs:[ {id:'raider1',char:'amaleqi',x:32,y:14,wander:false,hidden:true,noTalk:true} ],
-   onResume:[
-     {sfx:'holy'},
-     {say:['narrator','And Dawiḏ recovered all that Amalĕq had taken — nothing was missing, small or great, sons or daughters, spoil or anything; Dawiḏ brought back all. And he sent of the spoil to the elders of Yahuḏah, to his friends — “a present from the spoil of the enemies of YAHUAH.”']},
-   ],
-   objectives:[
-     {type:'goto',x:30,y:16,radius:2.6,text:'Overtake the Amalĕqites feasting on the spoil — and rescue all',hiddenUntil:0,
-      script:[
-       {show:'raider1'},
-       {say:['narrator','And they found an Egyptian in the field, a slave left by the Amalĕqites, and revived him with bread and water — and he led them down to the raiders, spread over all the ground, eating and drinking and dancing over their great spoil.']},
-       {sfx:'thunder'},{shake:1.4},
-       {say:['dawid_k','For our wives, for our little ones, for Tsiqlag burned behind us — YAHUAH has said we shall surely overtake and rescue all. Fall on them!']},
-       {call:G=>Game.toBattle('ziklag',1)},
-      ]},
-     {type:'goto',x:24,y:12,radius:2.6,text:'Far to the north, on Mount Gilboa — Yasharal is pressed to the mountain',hiddenUntil:1,
-      script:[
-       {time:'dusk'},{music:'sorrow'},
-       {say:['narrator','But on Mount Gilboa the Pelishtim fought against Yasharal; and the men of Yasharal fled before them, and fell slain on the mountain. The battle went heavy against Sha’ul, and the archers found him.']},
-       {shake:2},{sfx:'thunder'},
-       {call:G=>Game.toBattle('gilboa',2)},
-      ]},
-     {type:'goto',x:24,y:20,radius:2.8,text:'The day of Sha’ul and Yonathan — behold the fall on the mountain',hiddenUntil:2,
-      script:[
-       {fade:'out'},{wait:800},
-       {time:'dusk'},{music:'sorrow'},
-       {hide:'player'},{hide:'raider1'},
-       {spawn:{id:'yon_fallen',char:'yonathan',x:20,y:13,lying:true,noTalk:true,wander:false}},
-       {spawn:{id:'son1',char:'hebrew',x:18,y:14,lying:true,noTalk:true,wander:false}},
-       {spawn:{id:'son2',char:'hebrew2',x:22,y:14.5,lying:true,noTalk:true,wander:false}},
-       {spawn:{id:'sha_g',char:'shaul_k',x:24,y:13,noTalk:true,wander:false,hold:'sword'}},
-       {spawn:{id:'armor_g',char:'armorbearer',x:26,y:13.6,noTalk:true,wander:false,hold:'sword'}},
-       {teleport:['player',24,17]},
-       {fade:'in'},
-       {say:['narrator','On Mount Gilboa the Pelishtim pressed hard after Sha’ul and his sons; and they struck down YONATHAN, and Aḇinaḏaḇ, and Malki-Shua — the three sons of Sha’ul fell there on the mountain.']},
-       {face:['sha_g','left']},{emote:['sha_g','heart']},
-       {say:['shaul_k','Yonathan… my son. You who loved the shepherd more than the crown — you fell before your father’s eyes, and I could not shield you.']},
-       {say:['shaul_k','The battle is heavy against me, and the archers have found me; I am sorely wounded. Draw your sword — thrust me through, lest these uncircumcised come and pierce me, and make sport of me.']},
-       {say:['armorbearer','I cannot, my king. I will not stretch out my hand against the anointed of YAHUAH.']},
-       {say:['narrator','But his armour-bearer would not, for he was greatly afraid. So Sha’ul took his OWN sword, and fell upon it.']},
-       {sfx:'thunder'},{shake:2.6},{burst:[24,13,'ash',24]},
-       {call:G=>{ const n=G.world.npcs.find(x=>x.id==='sha_g'); if(n){ n.lying=true; n.hold=null; } }},
-       {say:['narrator','And when the armour-bearer saw that Sha’ul was dead, he too fell on his sword, and died with him. So Sha’ul died, and his three sons, and his armour-bearer — that same day, together.']},
-       {call:G=>{ const n=G.world.npcs.find(x=>x.id==='armor_g'); if(n){ n.lying=true; n.hold=null; } }},
-       {wait:900},
-       {say:['narrator','And the brave men of Yaḇĕsh-Gil‛aḏ heard what the Pelishtim had done — how they fastened the bodies of Sha’ul and his sons to the wall of Bĕyth-Shan. And all their valiant men rose and went ALL NIGHT, and took the bodies down from the wall, and came to Yaḇĕsh, and buried their bones under the tamarisk, and fasted seven days.']},
-       {say:['narrator','For long ago Sha’ul had saved Yaḇĕsh from Naḥash the Ammonite — the first deliverance of his reign. And Yaḇĕsh did not forget: the last kindness done to the king repaid the very first mercy he ever gave.']},
+       {music:'holy'},{rays:.7,raysX:16},{sfx:'holy'},
+       {say:['narrator','So Dawiḏ brought up the ark with gladness. And Dawiḏ danced before YAHUAH with all his might, girded in a linen ĕphoḏ — and all Yasharal brought up the ark with shouting and the sound of the shophar.']},
+       {burst:[16,22,'spark',24]},
+       {say:['narrator','But Miḵal, Sha’ul’s daughter, looked through a window and saw the king leaping and dancing — and she despised him in her heart.']},
+       {say:['michal','How the sovereign of Yasharal esteemed himself today — uncovering himself before the eyes of the servants’ maids, as one of the worthless openly uncovers himself!']},
+       {say:['dawid_k','It was before YAHUAH, who chose me above your father to appoint me ruler over the people of YAHUAH — and I will be still more lightly esteemed than this, and lowly in my own eyes. But by the maidservants you speak of — by them I will be esteemed.']},
        {rays:0},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'sorrow', text:'And Dawiḏ lamented over Sha’ul and Yonathan: “The splendour of Yasharal is slain on your high places — how the mighty have fallen! Sha’ul and Yonathan, beloved and pleasant in life, and in death not divided… I grieve for you, my brother Yonathan; your love to me was wonderful, surpassing the love of women. How the mighty have fallen, and the weapons of battle perished!”', ref:'2 SHEMU’ĔL 1:19–27'},
+   {art:'stars', music:'holy', text:'The set-apart is not a lucky charm to be gripped, nor a spectacle to be sneered at from a high window. Uzzah learned that reverence is not sincerity but obedience; Miḵal learned that a king unashamed before YAHUAH is greater than a king guarding his dignity before men. And the ark rested in the tent Dawiḏ pitched for it, in the City of Dawiḏ.', ref:'2 SHEMU’ĔL 6:16–23'},
   ],
-  complete:'How the mighty have fallen — and the weapons of battle perished.'
+  complete:'I will be still more lightly esteemed than this — for it was before YAHUAH.'
+},
+
+{ id:'t6', title:'The Sure House', ref:'2 SHEMU’ĔL 7',
+  intro:[
+   {art:'throne', music:'holy', text:'And it came to be, when the king dwelt in his house, and YAHUAH had given him rest from all his enemies, that the king said to Natan the naḇi: “See now — I dwell in a house of cedar, but the ark of Aluahim dwells within curtains.” And Natan said, “Go, do all that is in your heart, for YAHUAH is with you.”', ref:'2 SHEMU’ĔL 7:1–3'},
+  ],
+  scene:{
+   map:{biome:'interior', w:30, h:20, seed:2006, floorCol:'#2a2216', wallCol:'#1a150c',
+     features:[
+       {type:'throne',x:15,y:5,solid:true,id:'throne'},
+       {type:'menorah',x:9,y:6},{type:'menorah',x:21,y:6},
+     ]},
+   time:'night', music:'holy',
+   player:'dawid_k', playerPos:[15,14],
+   npcs:[
+     {id:'natan',char:'natan',x:15,y:9,wander:false,hold:'scroll',
+      script:[
+       {say:['natan','My king — I spoke too quickly. The word of YAHUAH came to me this night, and I must speak it, not my own heart.']},
+      ]},
+   ],
+   objectives:[
+     {type:'talk',npc:'natan',text:'Hear the word of YAHUAH that came to Natan in the night'},
+     {type:'goto',x:15,y:7,radius:2,text:'Kneel before the throne, and receive the covenant',hiddenUntil:1,
+      script:[
+       {rays:.8,raysX:15},{sfx:'holy'},
+       {say:['voice','Would YOU build Me a house to dwell in? I have not dwelt in a house since I brought Yasharal out of Mitsrayim, but have moved about in a tent. Did I ever ask, “Why have you not built Me a house of cedar?”']},
+       {say:['voice','I took you from the pasture, from following the sheep, to be ruler over My people. I have been with you wherever you went, and cut off all your enemies. And I shall make you a great name.']},
+       {say:['voice','YAHUAH declares to you that YAHUAH shall make YOU a house. When your days are filled, I shall raise up your seed after you, and establish his reign. HE shall build a house for My Name, and I shall establish the throne of his reign FOREVER. I shall be his Father, and he shall be My son.']},
+       {say:['voice','My kindness shall not turn away from him, as I turned it from Sha’ul. And your house and your reign shall be steadfast forever before you — your throne established forever.']},
+       {rays:0},{sfx:'chime'},{burst:[15,7,'spark',20]},
+      ]},
+     {type:'goto',x:15,y:14,radius:2,text:'Sit before YAHUAH, and pray',hiddenUntil:2,
+      script:[
+       {say:['dawid_k','Who am I, O Master YAHUAH, and what is my house, that You have brought me this far? And this was still a small thing in Your eyes — You have spoken of Your servant’s house for a great while to come.']},
+       {say:['dawid_k','There is none like You, and no Aluahim besides You. And who is like Your people Yasharal, the one nation on earth whom Aluahim went to redeem for Himself? Now, O YAHUAH, confirm the word forever — and let Your Name be great forever. For You, O YAHUAH, have spoken it, and with Your blessing let the house of Your servant be blessed forever.']},
+       {emote:['dawid_k','heart']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'holy', text:'The king who wished to build a house was told he would BE one. From this night the promise ran forward like a river — a throne, a seed, a Son of Aluahim, a reign without end — past Shelomoh who would build the stone house, past the exile, toward the Anointed of whom the naḇi’im would sing. Dawiḏ asked to give YAHUAH a dwelling; YAHUAH gave Dawiḏ a dynasty forever.', ref:'2 SHEMU’ĔL 7:18–29'},
+  ],
+  complete:'Your house and your reign shall be steadfast forever — your throne established forever.'
+},
+
+{ id:'t7', title:'From the Sea to the River', ref:'2 SHEMU’ĔL 8 · 10',
+  intro:[
+   {art:'wasteland', music:'tense', text:'After this, Dawiḏ struck the Pelishtim and subdued them; he struck Mo’aḇ and measured them with a line; and he struck Haḏaḏ‛ezer of Tsoḇah as he went to restore his power at the River. And when the Arameans of Dammeseq came to help Tsoḇah, Dawiḏ struck them too — and YAHUAH saved Dawiḏ wherever he went.', ref:'2 SHEMU’ĔL 8:1–6'},
+   {art:'wasteland', music:'tense', text:'Now the sons of Ammon had shamed Dawiḏ’s envoys of peace — shaving off half their beards and cutting away their garments. And they hired the Arameans, thirty-three thousand, and came out for war. So Yo’aḇ divided the host: himself against Aram, and Aḇishai his brother against Ammon.', ref:'2 SHEMU’ĔL 10:1–10'},
+  ],
+  scene:{
+   map:{biome:'rocky', w:48, h:28, seed:2007,
+     features:[
+       {type:'rock',x:12,y:10,solid:true,clear:1},{type:'rock',x:34,y:11,solid:true,clear:1},
+       {type:'clearing',x:22,y:16,flat:3},
+     ]},
+   time:'day', music:'tense',
+   player:'yoav', playerPos:[16,18], playerHold:'sword',
+   npcs:[
+     {id:'avishai',char:'avishai',x:19,y:17,wander:false,hold:'spear',
+      script:[
+       {say:['yoav','Aḇishai — the battle is set against us before and behind: Aram in the field, Ammon at the gate. If Aram is too strong for me, you shall help me; if Ammon is too strong for you, I shall come and help you.']},
+       {say:['avishai','Be strong, and let us be strong for our people and for the cities of our Aluahim — and YAHUAH do what is good in His eyes.']},
+      ]},
+   ],
+   onResume:[
+     {sfx:'thunder'},
+     {say:['narrator','And when Yo’aḇ drew near, the Arameans fled before him; and when the sons of Ammon saw that Aram had fled, they too fled before Aḇishai, and went into the city. Later Haḏaḏ‛ezer gathered all Aram beyond the River and came to Ḥĕlam — and Dawiḏ himself crossed over and struck them, so that Aram feared to help Ammon anymore.']},
+   ],
+   objectives:[
+     {type:'talk',npc:'avishai',text:'Set the battle in two — Aram before, Ammon behind'},
+     {type:'goto',x:24,y:12,radius:2.4,text:'Charge the Arameans at Ḥĕlam — for our people and the cities of our Aluahim',hiddenUntil:1,
+      script:[
+       {say:['yoav','For Yasharal, and for the Name — forward!']},
+       {call:G=>Game.toBattle('helam',2)},
+      ]},
+     {type:'goto',x:16,y:18,radius:2.4,text:'The field is won — the spoils are devoted to YAHUAH',hiddenUntil:2,
+      script:[
+       {say:['narrator','And Dawiḏ took the shields of gold from the servants of Haḏaḏ‛ezer, and much bronze from Bĕtaḥ and Bĕrothai; and he dedicated them to YAHUAH, along with the silver and gold he had devoted from all the nations he subdued — Aram, Mo’aḇ, Ammon, the Pelishtim, Amalĕq, and Edom.']},
+       {say:['yoav','Dawiḏ reigns from the wilderness to the River, and does right-ruling and righteousness to all his people. Aram are his servants; Edom garrisoned; the Name feared from the sea to the River.']},
+       {sfx:'holy'},{burst:[16,18,'spark',16]},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'holy', text:'From the river of Mitsrayim to the great River, the promise to Aḇrahim stood fulfilled in Dawiḏ’s hand — Mo’aḇ and Ammon, Aram and Edom, Amalĕq and the Pelishtim brought under tribute. And Dawiḏ reigned over all Yasharal, doing right-ruling and righteousness to all his people — the high point of the reign, before the shadow.', ref:'2 SHEMU’ĔL 8:14–15'},
+  ],
+  complete:'YAHUAH saved Dawiḏ wherever he went.'
+},
+]},
+
+/* ============ ACT III — KINDNESS AND THE SWORD ============ */
+{ id:'tact3', roman:'III', title:'Kindness and the Sword', ref:'2 SHEMU’ĔL 9–12', chapters:[
+
+{ id:'t8', title:'The King’s Table', ref:'2 SHEMU’ĔL 9',
+  intro:[
+   {art:'throne', music:'holy', text:'And Dawiḏ said: “Is there yet anyone left of the house of Sha’ul, that I may show him kindness for Yonathan’s sake?” And there was a servant of Sha’ul’s house named Tsiḇa, and he said: “There is still a son of Yonathan — lame in his feet.” His name was Mephiḇoshet; he had been dropped by his nurse in the flight, at five years old, when the news came from Yizre‛el.', ref:'2 SHEMU’ĔL 9:1–4'},
+  ],
+  scene:{
+   map:{biome:'interior', w:30, h:20, seed:2008, floorCol:'#2a2216', wallCol:'#1a150c',
+     features:[
+       {type:'throne',x:15,y:5,solid:true,id:'throne'},
+       {type:'menorah',x:9,y:6},{type:'menorah',x:21,y:6},{type:'firepit',x:15,y:11,lit:true},
+     ]},
+   time:'day', music:'holy',
+   player:'dawid_k', playerPos:[15,15],
+   npcs:[
+     {id:'tsiva',char:'tsiva',x:11,y:12,wander:false,
+      script:[{say:['tsiva','Mephiḇoshet, son of Yonathan, dwells in Lo-Deḇar, in the house of Maḵir — beyond the Yardĕn, hidden, and afraid.']}]},
+     {id:'mephiboshet',char:'mephiboshet',x:19,y:13,wander:false,
+      script:[
+       {say:['narrator','And Mephiḇoshet came, and fell on his face, and bowed low.']},
+       {say:['mephiboshet','Here is your servant. What is your servant, that you should look upon a dead dog such as I am?']},
+      ]},
+   ],
+   objectives:[
+     {type:'talk',npc:'tsiva',text:'Ask Tsiḇa where the son of Yonathan is found'},
+     {type:'talk',npc:'mephiboshet',text:'Send for Mephiḇoshet — and speak kindness, not judgment',hiddenUntil:1,
+      script:[
+       {say:['dawid_k','Do not fear, for I will certainly show you kindness for the sake of Yonathan your father. I will restore to you all the land of Sha’ul your grandfather — and YOU shall eat bread at my table continually.']},
+       {emote:['mephiboshet','heart']},{sfx:'chime'},
+       {say:['dawid_k','Tsiḇa — you and your sons and servants shall work the land for him and bring in its yield. But Mephiḇoshet shall eat at MY table, as one of the king’s sons.']},
+      ]},
+     {type:'goto',x:15,y:11,radius:2,text:'Seat the lame prince at the king’s own table',hiddenUntil:2,
+      script:[
+       {say:['narrator','So Mephiḇoshet ate at Dawiḏ’s table like one of the king’s sons. And he was lame in both his feet — but at the table where the covering of the cloth hid every foot, no man could tell the lame from the whole.']},
+       {say:['dawid_k','A covenant with a dead friend is not cancelled by his death. Sit, son of Yonathan. This seat is yours as long as I have a throne.']},
+       {burst:[15,11,'spark',14]},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'holy', text:'A crippled heir of a fallen dynasty, hiding in a place whose name means “no pasture,” was sought out not for vengeance but for love — and given a permanent seat among the king’s sons. It is the whole covenant in one picture: kindness (ḥeseḏ) shown for another’s sake, to one who called himself a dead dog, and could bring nothing to the table but his lameness.', ref:'2 SHEMU’ĔL 9:11–13'},
+  ],
+  complete:'You shall eat bread at my table continually — for Yonathan’s sake.'
+},
+
+{ id:'t9', title:'The Roof and the Siege', ref:'2 SHEMU’ĔL 11',
+  intro:[
+   {art:'wasteland', music:'tense', text:'And it came to be, at the turn of the year, the time when kings go out to battle, that Dawiḏ sent Yo’aḇ and all Yasharal, and they besieged Rabbah of the sons of Ammon. But DAWIḎ REMAINED in Yerushalayim. And it happened one evening that Dawiḏ rose from his couch and walked on the roof of the king’s house…', ref:'2 SHEMU’ĔL 11:1–2'},
+  ],
+  scene:{
+   map:{biome:'city', w:48, h:32, seed:2009,
+     features:[
+       {type:'house',solid:true,x:22,y:14,clear:3,col:'#b58a50',id:'roof',examine:'From the high roof of the palace, all the city lies open below — courtyards, cisterns, and the rooftops of Yerushalayim.'},
+       {type:'tower',stage:2,x:36,y:10,solid:true,clear:3,flat:3,id:'rabbah',examine:'Far off in the east, the towers of Rabbah, where Yo’aḇ lays siege while the king walks his roof.'},
+       {type:'clearing',x:20,y:22,flat:3},
+     ]},
+   time:'dusk', music:'tense',
+   player:'dawid_k', playerPos:[18,24],
+   npcs:[
+     {id:'batsheva',char:'batsheva',x:24,y:18,wander:false,noTalk:true},
+     {id:'yoav',char:'yoav',x:34,y:12,wander:false,hold:'sword',hidden:true,noTalk:true},
+   ],
+   onResume:[
+     {say:['narrator','And Yo’aḇ, besieging the city, assigned Uriyah to the place where he knew the valiant men were — and the men of the city came out, and some of the servants of Dawiḏ fell, and Uriyah the Ḥittite died also.']},
+   ],
+   objectives:[
+     {type:'goto',x:20,y:17,radius:2.4,text:'Walk the roof at evening — and see what you should have turned away from',
+      script:[
+       {say:['narrator','From the roof he saw a woman bathing, and the woman was very beautiful. And Dawiḏ sent and inquired: “Is this not Bathsheḇa, daughter of Eli‛am, the wife of Uriyah the Ḥittite?” — a wife, and the wife of one of his own mighty men.']},
+       {say:['dawid_k','I know whose daughter she is. I know whose wife she is. And I send for her anyway — a king who stayed home from the war he was made for, now hunting on his own roof.']},
+       {fade:'out'},{toast:'…and he sent messengers, and took her; and she returned to her house.'},{wait:1600},{fade:'in'},
+       {say:['narrator','And afterward the woman sent to Dawiḏ, saying only: “I am with child.”']},
+      ]},
+     {type:'goto',x:30,y:16,radius:2.4,text:'Summon Uriyah from the siege — and try to cover the matter',hiddenUntil:1,
+      script:[
+       {show:'yoav'},
+       {say:['narrator','So Dawiḏ sent to Yo’aḇ: “Send me Uriyah.” And he asked how the war fared, and said, “Go down to your house, and wash your feet.” But Uriyah slept at the door of the king’s house with all the servants of his lord, and did not go down.']},
+       {say:['uriyah','The ark, and Yasharal, and Yahuḏah dwell in booths; and my lord Yo’aḇ and the servants of my lord are camped in the open field — shall I then go to my house to eat and drink and lie with my wife? As you live, I will not do this thing!']},
+       {say:['dawid_k','The loyalty of this Ḥittite is a fire on my face. Even drunk he would not go down — his honour will not let me hide my dishonour.']},
+      ]},
+     {type:'interact',prop:'rabbah',text:'Send the sealed letter back to Yo’aḇ by Uriyah’s own hand',hiddenUntil:2,
+      script:[
+       {say:['narrator','And in the morning Dawiḏ wrote a letter to Yo’aḇ, and sent it by the hand of Uriyah himself: “Set Uriyah in the front of the hardest fighting, and draw back from him, so that he is struck down and dies.”']},
+       {sfx:'bad'},{shake:1.4},
+       {say:['dawid_k','I could not make him lie down at home, so I will make him lie down in the field. The sword that I would not lift against Sha’ul, I now aim at a man who trusted me — and I hand him his own death warrant to carry.']},
+       {call:G=>Game.toBattle('rabbah',3)},
+      ]},
+     {type:'goto',x:18,y:24,radius:2.4,text:'The word comes back from the siege — and you tell yourself it is only war',hiddenUntil:3,
+      script:[
+       {say:['narrator','And the messenger reported the losses; and when he named Uriyah the Ḥittite among the dead, Dawiḏ said to the messenger: “Do not let this matter be evil in your eyes — the sword devours one as well as another.”']},
+       {say:['narrator','And when the mourning was past, Dawiḏ sent and gathered Bathsheḇa to his house, and she became his wife, and bore him a son. But the thing that Dawiḏ had done was EVIL in the eyes of YAHUAH.']},
+       {music:'sorrow'},{sfx:'bad'},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'sorrow', text:'It began with a step onto a roof instead of a march to the field, and it ended with a letter of murder carried by the victim’s own faithful hand. Adultery he covered with deceit; deceit he covered with blood; blood he covered with a wedding — and told himself the sword “devours one as well as another.” But no covering is thick enough to hide a thing from the eyes of YAHUAH.', ref:'2 SHEMU’ĔL 11:26–27'},
+  ],
+  complete:'The thing that Dawiḏ had done was evil in the eyes of YAHUAH.'
+},
+
+{ id:'t10', title:'You Are the Man', ref:'2 SHEMU’ĔL 12',
+  intro:[
+   {art:'throne', music:'sorrow', text:'And YAHUAH sent Natan to Dawiḏ. And he came to him, and said: “There were two men in one city — one rich, one poor. The rich man had very many flocks and herds; the poor man had nothing but one little ewe lamb, which he had bought and raised. It grew up with him and his children, ate of his own morsel, drank from his own cup, and lay in his arms — it was like a daughter to him.”', ref:'2 SHEMU’ĔL 12:1–3'},
+  ],
+  scene:{
+   map:{biome:'interior', w:30, h:20, seed:2010, floorCol:'#2a2216', wallCol:'#1a150c',
+     features:[
+       {type:'throne',x:15,y:5,solid:true,id:'throne'},
+       {type:'menorah',x:9,y:6},{type:'menorah',x:21,y:6},
+     ]},
+   time:'day', music:'sorrow',
+   player:'dawid_k', playerPos:[15,14],
+   npcs:[
+     {id:'natan',char:'natan',x:15,y:9,wander:false,hold:'scroll',
+      script:[
+       {say:['natan','“And a traveler came to the rich man, and he spared to take of his own flock to prepare for the wayfarer — but he took the poor man’s ewe lamb, and prepared it for the man who had come to him.”']},
+      ]},
+   ],
+   objectives:[
+     {type:'talk',npc:'natan',text:'Hear the naḇi’s parable to its end — and pronounce judgment'},
+     {type:'goto',x:15,y:10,radius:2,text:'Deliver your verdict on the rich man',hiddenUntil:1,
+      script:[
+       {say:['dawid_k','As YAHUAH lives, the man who has done this deserves to DIE! And he shall repay the lamb fourfold, because he did this thing and had no compassion!']},
+       {say:['natan','YOU ARE THE MAN.']},
+       {sfx:'thunder'},{shake:2},{rays:.7,raysX:15},
+       {say:['natan','Thus said YAHUAH, Aluahim of Yasharal: I anointed you king, I delivered you from Sha’ul, I gave you your master’s house, and the house of Yasharal and Yahuḏah — and if that were little, I would have added much more. Why have you despised the word of YAHUAH, to do evil in His eyes? You struck down Uriyah the Ḥittite with the sword of the sons of Ammon, and took his wife.']},
+       {say:['natan','Now therefore, the SWORD shall not turn aside from your house forever — because you have despised Me. Evil shall rise against you out of your own house.']},
+       {rays:0},
+      ]},
+     {type:'goto',x:15,y:14,radius:2,text:'Fall before YAHUAH — and confess',hiddenUntil:2,
+      script:[
+       {say:['dawid_k','I HAVE SINNED against YAHUAH.']},
+       {say:['natan','YAHUAH also has put away your sin — you shall not die. But because by this deed you have given great occasion to the enemies of YAHUAH to blaspheme, the child born to you shall surely die.']},
+       {say:['narrator','And the child of Bathsheḇa fell sick. Dawiḏ pleaded with Aluahim, and fasted, and lay all night on the ground. On the seventh day the child died — and his servants feared to tell him. But Dawiḏ perceived it, and rose, and washed, and worshipped.']},
+       {say:['dawid_k','While the child lived I fasted and wept, for I said, “Who knows — YAHUAH may be gracious.” But now he is dead — why should I fast? Can I bring him back again? I shall go to him, but he shall not return to me.']},
+       {emote:['dawid_k','heart']},
+      ]},
+     {type:'goto',x:11,y:12,radius:2,text:'Comfort Bathsheḇa — and a second son is given',hiddenUntil:3,
+      script:[
+       {music:'holy'},{sfx:'chime'},
+       {say:['narrator','And Dawiḏ comforted Bathsheḇa his wife, and she bore a son, and he called his name SHELOMOH. And YAHUAH loved him, and sent word by Natan the naḇi to name him also Yeḏiḏyah — “beloved of YAH.”']},
+       {burst:[11,12,'spark',16]},
+       {say:['narrator','Meanwhile Yo’aḇ fought against Rabbah and took the royal city; and he sent for Dawiḏ, that the king’s name, not his own, should be on the victory. And Dawiḏ took the crown of their king from his head — a talent of gold — and set it on his own.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'sorrow', text:'A single sentence turned the sword from the parable to the throne: “You are the man.” Forgiveness came at once — “YAHUAH has put away your sin” — yet the consequences ran on like a river through the house of Dawiḏ. He was pardoned and pruned in the same hour. And out of the same marriage, judged and forgiven, came Shelomoh, the beloved of YAH.', ref:'2 SHEMU’ĔL 12:24–25'},
+  ],
+  complete:'You are the man. — I have sinned against YAHUAH.'
+},
+]},
+
+/* ============ ACT IV — THE SWORD SHALL NOT DEPART ============ */
+{ id:'tact4', roman:'IV', title:'The Sword Shall Not Depart', ref:'2 SHEMU’ĔL 13–19', chapters:[
+
+{ id:'t11', title:'Amnon and Tamar', ref:'2 SHEMU’ĔL 13',
+  intro:[
+   {art:'throne', music:'sorrow', text:'And it came to be afterward that Amnon son of Dawiḏ loved Tamar, the beautiful sister of Aḇshalom his brother — and he was so troubled over her that he made himself sick, for she was a maiden, and it seemed impossible to him to do anything to her. But he had a crafty friend, Yonaḏaḇ, who taught him to feign illness and ask that Tamar come and prepare food by his hand.', ref:'2 SHEMU’ĔL 13:1–6'},
+  ],
+  scene:{
+   map:{biome:'interior', w:30, h:20, seed:2011, floorCol:'#2a2216', wallCol:'#1a150c',
+     features:[
+       {type:'throne',x:8,y:5,solid:true,id:'couch',examine:'The couch where Amnon lies, feigning sickness.'},
+       {type:'firepit',x:20,y:6,lit:true},{type:'clearing',x:15,y:12,flat:2},
+     ]},
+   time:'day', music:'sorrow',
+   player:'tamar', playerPos:[22,14],
+   npcs:[
+     {id:'amnon',char:'amnon',x:10,y:8,wander:false,
+      script:[
+       {say:['amnon','Send everyone out from me. Come, my sister — bring the food into the chamber, that I may eat from your hand.']},
+      ]},
+   ],
+   objectives:[
+     {type:'goto',x:18,y:9,radius:2.2,text:'Bring the cakes to your brother, as the king commanded',
+      script:[
+       {say:['narrator','So Tamar took the dough, kneaded it, made cakes before his eyes, and baked them. But when she brought them near, he would not eat — and he sent every man out.']},
+      ]},
+     {type:'talk',npc:'amnon',text:'Answer Amnon — plead with him to do no folly',hiddenUntil:1,
+      script:[
+       {say:['tamar','No, my brother! Do not humble me — for such a thing is not done in Yasharal. Do not do this disgraceful folly. Where would I carry my shame? And you would be as one of the worthless in Yasharal. Speak to the king; he will not withhold me from you.']},
+       {say:['narrator','But he would not heed her voice, and being stronger, he forced her and humbled her.']},
+       {fade:'out'},{toast:'…and afterward Amnon hated her with a very great hatred — greater than the love with which he had loved her.'},{wait:1800},{fade:'in'},
+       {say:['amnon','Get up — go!']},
+       {say:['tamar','No! This wrong of sending me away is greater than the other you did to me. — But he would not listen; he called his young man and bolted the door behind her.']},
+      ]},
+     {type:'goto',x:22,y:16,radius:2.4,text:'Go out weeping — to the house of Aḇshalom your brother',hiddenUntil:2,
+      script:[
+       {say:['narrator','And Tamar put ashes on her head, and tore her long robe of many colours, and laid her hand on her head, and went away crying bitterly. And Aḇshalom her brother took her in: “Has Amnon your brother been with you? Be silent now, my sister; he is your brother. Do not take this thing to heart.”']},
+       {say:['narrator','So Tamar dwelt desolate in her brother Aḇshalom’s house. And when the king heard, he was very angry — but he did not punish Amnon, for he loved him, his firstborn. And Aḇshalom said nothing to Amnon, good or evil — but he HATED him.']},
+       {music:'sorrow'},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'sorrow', text:'The sword promised to the house of Dawiḏ began its work — not from outside, but from within, bone against bone. A father who had taken another man’s wife could not bring himself to judge a son who took his own sister; and a silence that looked like peace was only hatred learning to wait. Two full years Aḇshalom said nothing — and set a table for revenge.', ref:'2 SHEMU’ĔL 13:22–23'},
+  ],
+  complete:'Do not do this folly — for such a thing is not done in Yasharal.'
+},
+
+{ id:'t12', title:'The Wise Woman of Teqoa', ref:'2 SHEMU’ĔL 13–14',
+  intro:[
+   {art:'wasteland', music:'tense', text:'Two years on, Aḇshalom made a sheep-shearing feast at Ba‛al-Ḥatsor, and invited all the king’s sons. And when Amnon’s heart was merry with wine, Aḇshalom commanded his servants: “Strike Amnon — do not fear; have I not commanded you?” So they killed Amnon, and the king’s sons fled. And Aḇshalom fled to Geshur, to his mother’s father, and was there three years.', ref:'2 SHEMU’ĔL 13:28–38'},
+  ],
+  scene:{
+   map:{biome:'interior', w:30, h:20, seed:2012, floorCol:'#2a2216', wallCol:'#1a150c',
+     features:[
+       {type:'throne',x:15,y:5,solid:true,id:'throne'},
+       {type:'menorah',x:9,y:6},{type:'menorah',x:21,y:6},
+     ]},
+   time:'day', music:'tense',
+   player:'dawid_k', playerPos:[15,14],
+   npcs:[
+     {id:'wisewoman',char:'wisewoman',x:15,y:10,wander:false,
+      script:[
+       {say:['narrator','Now Yo’aḇ saw that the king’s heart yearned for Aḇshalom; so he sent to Teqoa for a wise woman, and put words in her mouth. She came in mourning garments and fell on her face.']},
+       {say:['wisewoman','Help, O king! I am a widow. I had two sons; they quarreled in the field, and one struck the other and killed him. Now the whole clan demands the slayer, to put him to death for his brother — and so they would quench my one coal that is left, and leave my husband neither name nor remnant on the earth.']},
+      ]},
+     {id:'yoav',char:'yoav',x:20,y:13,wander:true,range:1.4,noTalk:true},
+   ],
+   objectives:[
+     {type:'talk',npc:'wisewoman',text:'Hear the widow of Teqoa, and give judgment for her son'},
+     {type:'goto',x:15,y:11,radius:2,text:'Grant her plea — and hear the trap in it close',hiddenUntil:1,
+      script:[
+       {say:['dawid_k','As YAHUAH lives, not one hair of your son shall fall to the ground.']},
+       {say:['wisewoman','Then why have you devised such a thing against the people of Aluahim? For in giving this word, the king is as one who is guilty — in that he does not bring back his own banished one. We must die, and are like water spilled on the ground, which cannot be gathered again. Yet Aluahim does not take away a life, but devises means so that His banished one is not cast out from Him.']},
+       {say:['dawid_k','Is the hand of Yo’aḇ with you in all this?']},
+       {say:['wisewoman','As your soul lives, my lord — it is Yo’aḇ your servant who commanded me, and put all these words in the mouth of your servant.']},
+      ]},
+     {type:'talk',npc:'yoav',text:'Send Yo’aḇ to bring the banished prince home',hiddenUntil:2,
+      script:[
+       {say:['dawid_k','Very well — go, bring back the young man Aḇshalom. But let him turn to his own house; he shall not see my face.']},
+       {say:['narrator','So Aḇshalom returned to Yerushalayim, but for two years did not see the king’s face. And in all Yasharal there was none so praised for beauty as Aḇshalom — from the sole of his foot to the crown of his head there was no blemish; and the hair of his head he cut only once a year, for it was heavy on him.']},
+       {say:['narrator','At last he forced the matter — burning Yo’aḇ’s field to make him come — and Yo’aḇ brought him to the king; and Aḇshalom bowed to the ground, and the king kissed him. But a kiss is not a healing, and a homecoming is not a reconciled heart.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'sorrow', text:'The king who devised no means to restore his son was shown, by a stranger’s parable, the heart of the Aluahim he served — who devises means that His banished ones be not cast out. Yet Dawiḏ brought Aḇshalom only halfway home: back to the city, but not to the face; pardoned in body, but not embraced in heart. And a son left in the cold outer courts of forgiveness began to gather a following of his own.', ref:'2 SHEMU’ĔL 14:24–28'},
+  ],
+  complete:'Aluahim devises means, that His banished one be not cast out from Him.'
+},
+
+{ id:'t13', title:'The Conspiracy at the Gate', ref:'2 SHEMU’ĔL 15',
+  intro:[
+   {art:'throne', music:'tense', text:'After this, Aḇshalom got himself a chariot and horses, and fifty men to run before him. And he would rise early and stand beside the way of the gate — and to every man coming for judgment he would say, “See, your claims are good and right, but there is no man deputed by the king to hear you. Oh, that I were made judge in the land!” And he stole the hearts of the men of Yasharal.', ref:'2 SHEMU’ĔL 15:1–6'},
+  ],
+  scene:{
+   map:{biome:'city', w:48, h:32, seed:2013,
+     features:[
+       {type:'gate',x:24,y:10,id:'gate',examine:'The gate of the city — where judgments are heard, and where Aḇshalom stands to steal the hearts of Yasharal.'},
+       {type:'clearing',x:24,y:18,flat:3},{type:'house',solid:true,x:12,y:16,clear:3,col:'#a87f48'},
+     ]},
+   time:'day', music:'tense',
+   player:'avshalom', playerPos:[24,16],
+   npcs:[
+     {id:'suitor',char:'hebrew',x:24,y:13,wander:false,
+      script:[{say:['suitor','I have come from Ḥeḇron with a matter for the king’s judgment — but there is no one to hear me. My lord Aḇshalom, would that YOU were judge; you at least would give me justice.']}]},
+     {id:'dawid',char:'dawid_o',x:16,y:22,wander:false,hidden:true,noTalk:true},
+   ],
+   objectives:[
+     {type:'talk',npc:'suitor',text:'Stand at the gate — win the man with a kiss and a promise',
+      script:[
+       {say:['avshalom','Come near — let me embrace you as a brother, not bow to you as a subject. Your cause is just; had I the seat of judgment, no honest man would go home empty. Four years I have waited; four years I have counted the discontented at this gate.']},
+       {emote:['avshalom','heart']},
+      ]},
+     {type:'interact',prop:'gate',text:'Ask leave for Ḥeḇron — and there blow the shophar of revolt',hiddenUntil:1,
+      script:[
+       {say:['narrator','And Aḇshalom said to the king, “Let me go and pay my vow to YAHUAH in Ḥeḇron.” And the king said, “Go in peace.” But he sent spies through all the tribes: “When you hear the shophar, say — Aḇshalom reigns in Ḥeḇron!”']},
+       {sfx:'thunder'},{shake:1.4},
+       {say:['narrator','And the conspiracy grew strong, and the people with Aḇshalom kept increasing. And Aḥithophel the Gilonite, Dawiḏ’s own counselor, was with him. And a messenger came to Dawiḏ: “The hearts of the men of Yasharal are after Aḇshalom.”']},
+      ]},
+     {type:'goto',x:16,y:22,radius:2.4,text:'Follow the king in his flight — barefoot up the Mount of Olives',hiddenUntil:2,
+      script:[
+       {show:'dawid'},{time:'dusk'},{music:'sorrow'},
+       {say:['dawid_o','Arise, and let us flee — or none of us will escape Aḇshalom. Hurry, lest he overtake us and bring evil on the city and strike it with the edge of the sword.']},
+       {say:['narrator','So the king went out, and all his household after him, and all the people wept aloud as they crossed the Qiḏron. And Dawiḏ went up the Ascent of the Olives, weeping, his head covered, and barefoot; and all the people with him covered their heads and went up weeping.']},
+       {say:['dawid_o','Tsaḏoq — carry the ark of Aluahim BACK to the city. If I find favour in the eyes of YAHUAH, He will bring me back and let me see it and His dwelling. But if He says, “I have no delight in you” — here I am; let Him do to me as seems good in His eyes.']},
+       {say:['narrator','And when Dawiḏ heard that Aḥithophel was among the conspirators, he prayed: “O YAHUAH, turn the counsel of Aḥithophel into foolishness.”']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'sorrow', text:'The sword out of his own house was now a son at the gate, a chariot on the road, and a trusted counselor turned traitor. The king who once ran from Sha’ul ran again — but this time from his own child, up the same mountain a greater Son would one day climb in sorrow. He sent the ark back, refusing to make YAHUAH his talisman, and laid his whole reign open before heaven: “Let Him do as seems good in His eyes.”', ref:'2 SHEMU’ĔL 15:23–31'},
+  ],
+  complete:'If I find favour in His eyes, He will bring me back — but let Him do as seems good.'
+},
+
+{ id:'t14', title:'The Two Counsels', ref:'2 SHEMU’ĔL 16–17',
+  intro:[
+   {art:'wasteland', music:'tense', text:'As Dawiḏ passed Baḥurim, out came Shim‛i of the house of Sha’ul, cursing and throwing stones: “Get out, get out, you man of blood, you worthless man! YAHUAH has repaid you for the blood of the house of Sha’ul!” And Aḇishai said, “Why should this dead dog curse my lord the king? Let me take off his head.”', ref:'2 SHEMU’ĔL 16:5–9'},
+  ],
+  scene:{
+   map:{biome:'wild', w:46, h:30, seed:2014,
+     features:[
+       {type:'rock',x:30,y:10,solid:true,clear:1},{type:'rock',x:33,y:13,solid:true,clear:1},
+       {type:'clearing',x:20,y:18,flat:3},{type:'firepit',x:14,y:20,lit:true},
+     ]},
+   time:'dusk', music:'tense',
+   player:'dawid_o', playerPos:[18,20],
+   npcs:[
+     {id:'shimi',char:'shimi',x:30,y:12,wander:false,
+      script:[{say:['shimi','Blood! Blood! The reign is torn from your hand, Dawiḏ, and given to Aḇshalom — YAHUAH has delivered you into the evil you made!']}]},
+     {id:'avishai',char:'avishai',x:20,y:19,wander:false,hold:'sword'},
+     {id:'hushai',char:'hushai',x:15,y:21,wander:false,hold:'scroll',hidden:true},
+   ],
+   objectives:[
+     {type:'talk',npc:'avishai',text:'Restrain Aḇishai — and let Shim‛i curse',
+      script:[
+       {say:['dawid_o','What have I to do with you, sons of Tseruyah? If he curses because YAHUAH said to him, “Curse Dawiḏ” — who then shall say, “Why have you done so?” See, my own son seeks my life; how much more this Binyamite. Let him curse, for YAHUAH has told him to. Perhaps YAHUAH will look on my affliction and return good for his cursing this day.']},
+       {say:['narrator','So Dawiḏ and his men went on the road, while Shim‛i went along the hillside opposite, cursing and throwing stones and dust. And they came weary to the Yardĕn, and refreshed themselves.']},
+      ]},
+     {type:'goto',x:15,y:21,radius:2,text:'Send Ḥushai back to Yerushalayim — to defeat the counsel of Aḥithophel',hiddenUntil:1,
+      script:[
+       {show:'hushai'},
+       {say:['dawid_o','Ḥushai my friend — if you go on with me you will be a burden. But if you RETURN to the city and say to Aḇshalom, “I am your servant, O king,” then you may defeat the counsel of Aḥithophel for me. And Tsaḏoq and Eḇyathar the priests will be there — whatever you hear, send word to me by their sons.']},
+       {say:['hushai','I will go, my king — and match the wisest head in Yasharal with words, and buy you the one thing you need: time to cross the river.']},
+      ]},
+     {type:'goto',x:24,y:14,radius:2.4,text:'In Aḇshalom’s council — weigh the two counsels',hiddenUntil:2,
+      script:[
+       {time:'night'},{music:'tense'},
+       {say:['ahitofel','Let me choose twelve thousand men and pursue Dawiḏ TONIGHT, while he is weary and weak-handed. I will strike the king alone, and bring all the people back to you. The death of one man, and the whole nation is yours.']},
+       {say:['hushai','The counsel of Aḥithophel is not good THIS time. You know your father and his men — they are mighty, and enraged like a bear robbed of her cubs; he is a man of war, and will not lodge with the people. If some fall at the first, whoever hears will say, “Aḇshalom’s men are slaughtered!” Rather, gather ALL Yasharal, from Dan to Be’ĕrsheḇa, as the sand by the sea — and go to battle in your own person.']},
+       {say:['narrator','And Aḇshalom and all Yasharal said, “The counsel of Ḥushai is better than the counsel of Aḥithophel” — for YAHUAH had purposed to defeat the good counsel of Aḥithophel, to bring evil on Aḇshalom.']},
+       {sfx:'chime'},
+       {say:['narrator','And when Aḥithophel saw that his counsel was not followed, he saddled his donkey, went home to his city, set his house in order, and hanged himself, and died. And Dawiḏ, warned in the night, crossed the Yardĕn — by morning not one was left who had not gone over.']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'holy', text:'A cursing man on a hillside, and a wise man in a council chamber — and the king trusted YAHUAH with both. He would not silence the curse, in case it was deserved; he would not trust the flight, so he planted a friend. And the prayer on the mountain — “turn Aḥithophel’s counsel to foolishness” — was answered in a council room the king never entered, by a delay that cost only a single night, and bought a whole kingdom back.', ref:'2 SHEMU’ĔL 17:14 · 17:23'},
+  ],
+  complete:'YAHUAH purposed to defeat the good counsel of Aḥithophel.'
+},
+
+{ id:'t15', title:'The Wood of Ephrayim', ref:'2 SHEMU’ĔL 18–19',
+  intro:[
+   {art:'wasteland', music:'tense', text:'And Dawiḏ mustered the people at Maḥanayim, and set captains over them — Yo’aḇ, Aḇishai, and Ittai — and sent them out in three parts. But the king they would not let go: “You are worth ten thousand of us; stay in the city to help.” And Dawiḏ charged them all, in the hearing of the whole army: “Deal gently, for MY SAKE, with the young man Aḇshalom.”', ref:'2 SHEMU’ĔL 18:1–5'},
+  ],
+  scene:{
+   map:{biome:'wild', w:48, h:32, seed:2015,
+     features:[
+       {type:'tree',x:26,y:11,solid:true,clear:2,col:'#3f7032',id:'oak',examine:'A great terebinth of the forest of Ephrayim — its low thick boughs reach down like hands.'},
+       {type:'tree',x:16,y:14,solid:true,clear:2,col:'#3a6a30'},{type:'tree',x:34,y:15,solid:true,clear:2,col:'#3a6a30'},
+       {type:'clearing',x:22,y:22,flat:3},
+     ]},
+   time:'day', music:'tense',
+   player:'yoav', playerPos:[20,24], playerHold:'spear',
+   npcs:[
+     {id:'avshalom',char:'avshalom',x:26,y:14,wander:false,hidden:true,noTalk:true},
+   ],
+   onResume:[
+     {sfx:'thunder'},
+     {say:['narrator','And the battle spread over the face of all the land, and the FOREST devoured more people that day than the sword devoured. Twenty thousand fell, and the men of Aḇshalom were struck before the servants of Dawiḏ.']},
+   ],
+   objectives:[
+     {type:'goto',x:24,y:18,radius:2.4,text:'Lead the men of Dawiḏ into the forest of Ephrayim',
+      script:[
+       {say:['yoav','Spread out — use the trees; the wood itself fights for us today. For Dawiḏ, and for Yasharal!']},
+       {call:G=>Game.toBattle('efrayim',1)},
+      ]},
+     {type:'goto',x:26,y:16,radius:2.4,text:'Aḇshalom is caught in the great oak — go to him',hiddenUntil:1,
+      script:[
+       {show:'avshalom'},
+       {say:['narrator','And Aḇshalom met the servants of Dawiḏ, riding his mule; and the mule went under the thick boughs of a great terebinth, and his HEAD caught fast in the oak — and he was left hanging between the shamayim and the earth, while the mule went on from under him.']},
+       {say:['narrator','A man told Yo’aḇ: “I saw Aḇshalom hanging in an oak.” “You saw him — and did not strike him to the ground? I would have given you ten pieces of silver and a belt!” “Though I felt a thousand pieces in my hand, I would not lift it against the king’s son — for we all heard the king charge you to spare him.”']},
+       {say:['yoav','I will not waste time with you. The king’s tenderness will cost us another rebellion. It is done in the wood, where no father’s eyes can see.']},
+       {sfx:'bad'},{shake:1.6},
+       {say:['narrator','And Yo’aḇ took three spears and thrust them through the heart of Aḇshalom while he yet lived in the oak. And ten young men surrounded him and struck him. And they threw him into a great pit in the forest, and raised over him a very great heap of stones.']},
+      ]},
+     {type:'goto',x:20,y:26,radius:2.4,text:'Carry the tidings back to the king at the gate of Maḥanayim',hiddenUntil:2,
+      script:[
+       {time:'dusk'},{music:'sorrow'},
+       {say:['narrator','And the watchman saw runners; and the news came to the king: “YAHUAH has delivered you this day from the hand of all who rose against you.” And the king said only: “Is it well with the young man Aḇshalom?”']},
+       {say:['dawid_o','Is it well with the young man Aḇshalom?']},
+       {say:['narrator','And the Kushite answered: “May the enemies of my lord the king, and all who rise against you for evil, be as that young man is.”']},
+       {rays:.3,raysX:20},
+       {say:['dawid_o','O my son Aḇshalom — my son, my son Aḇshalom! If only I had died instead of you — O Aḇshalom, my son, my son!']},
+       {say:['narrator','And the victory that day was turned into mourning for all the people, for they heard how the king grieved. Until Yo’aḇ came in hard: “You have shamed the faces of all your servants who saved your life. You love those who hate you. Now GO OUT and speak to the hearts of your servants — or not a man will remain with you this night.”']},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'sorrow', text:'The proud crown of Yasharal — the glory of that unblemished head, the heavy hair cut but once a year — became the snare that hanged him in an oak between heaven and earth. A captain’s cold spear ended the rebellion the king’s tender heart could not. And Dawiḏ, brought home over the Yardĕn amid the strife of Yasharal and Yahuḏah, sparing Shim‛i and restoring Mephiḇoshet, learned that a throne is carried on the shoulders of the living, even as it weeps for the dead.', ref:'2 SHEMU’ĔL 18:33 · 19:1–8'},
+  ],
+  complete:'O my son Aḇshalom — would I had died instead of you.'
+},
+]},
+
+/* ============ ACT V — LAST WORDS ============ */
+{ id:'tact5', roman:'V', title:'Last Words', ref:'2 SHEMU’ĔL 20–24', chapters:[
+
+{ id:'t16', title:'Sheḇa, and the Giants of Gath', ref:'2 SHEMU’ĔL 20–21',
+  intro:[
+   {art:'wasteland', music:'tense', text:'Now a worthless man named Sheḇa son of Biḵri of Binyamin blew the shophar: “We have no portion in Dawiḏ, nor inheritance in the son of Yishai — every man to his tents, O Yasharal!” And all the men of Yasharal deserted Dawiḏ to follow Sheḇa; only Yahuḏah stayed with the king. And Dawiḏ sent Amasa to muster Yahuḏah — but Yo’aḇ met Amasa, and killed him as he had killed Aḇnĕr.', ref:'2 SHEMU’ĔL 20:1–10'},
+  ],
+  scene:{
+   map:{biome:'city', w:48, h:32, seed:2016,
+     features:[
+       {type:'tower',stage:2,x:34,y:9,solid:true,clear:4,flat:4,id:'wall',examine:'The wall of Aḇĕl of Bĕyth-Ma‛aḵah — a mother-city in Yasharal, wise from of old.'},
+       {type:'gate',x:24,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
+     ]},
+   time:'day', music:'tense',
+   player:'yoav', playerPos:[18,22], playerHold:'sword',
+   npcs:[
+     {id:'wisewoman',char:'wisewoman',x:32,y:11,wander:false,
+      script:[
+       {say:['wisewoman','Hear, hear! Say to Yo’aḇ, “Come near, that I may speak with you.” They used to say of old, “Let them ask counsel at Aḇĕl,” and so they settled a matter. I am one of the peaceable and faithful in Yasharal — why would you swallow up a mother-city in Yasharal, and destroy the inheritance of YAHUAH?']},
+      ]},
+   ],
+   objectives:[
+     {type:'goto',x:30,y:12,radius:2.4,text:'Pursue Sheḇa to Aḇĕl — and hear the wise woman on the wall',
+      script:[
+       {say:['yoav','Far be it, far be it from me to swallow up or destroy! That is not the matter. A man of the hill-country of Ephrayim, Sheḇa son of Biḵri, has lifted his hand against the king, against Dawiḏ. Give up him alone, and I will withdraw from the city.']},
+       {say:['wisewoman','See — his head shall be thrown to you over the wall.']},
+      ]},
+     {type:'goto',x:30,y:15,radius:2.2,text:'The city acts in wisdom — the revolt ends at the wall',hiddenUntil:1,
+      script:[
+       {say:['narrator','And the woman went to all the people in her wisdom; and they cut off the head of Sheḇa son of Biḵri and threw it out to Yo’aḇ. And he blew the shophar, and they dispersed from the city, every man to his tent — and Yo’aḇ returned to Yerushalayim, to the king. One wise woman saved a city that an army was about to level.']},
+       {sfx:'chime'},
+      ]},
+     {type:'goto',x:18,y:24,radius:2.4,text:'Years later — when the giants of Gath rise again, stand by the weary king',hiddenUntil:2,
+      script:[
+       {time:'dusk'},{music:'tense'},
+       {say:['narrator','And the Pelishtim had war again with Yasharal; and Dawiḏ went down, and grew weary. And Yishbi of Noḇ, of the sons of the Rapha — his spear-bronze weighing three hundred sheqels — thought to kill Dawiḏ.']},
+       {say:['narrator','But Aḇishai son of Tseruyah came to his help, and struck the Pelishtite, and killed him. Then the men of Dawiḏ swore to him: “You shall NOT go out with us to battle again — that you do not quench the LAMP of Yasharal.”']},
+       {say:['dawid_o','The days when I stood alone over Golyath are gone; now younger hands guard the lamp. Let the sons of Yasharal strike the giants — Saph, and the brother of Golyath whose spear was like a weaver’s beam, and the man of Gath with six fingers on each hand and six toes on each foot. Four giants of the Rapha fell by the hand of Dawiḏ and his servants.']},
+       {sfx:'holy'},{burst:[18,24,'spark',14]},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'stars', music:'holy', text:'One last flare of the old rebellion, quenched not by slaughter but by the wisdom of a woman on a wall; and one last flare of the old giants of Gath, quenched by younger men while the aging king was carried out of danger. The lamp of Yasharal — the covenant with the house of Dawiḏ — would not be let to go out. The days of the sling were over; the days of the sure house had come.', ref:'2 SHEMU’ĔL 21:15–22'},
+  ],
+  complete:'You shall not quench the lamp of Yasharal.'
+},
+
+{ id:'t17', title:'The Song, the Mighty Men, and the Altar', ref:'2 SHEMU’ĔL 22–24',
+  intro:[
+   {art:'mountain', music:'holy', text:'And Dawiḏ spoke to YAHUAH the words of this song, in the day YAHUAH delivered him from all his enemies and from the hand of Sha’ul: “YAHUAH is my rock, my stronghold, and my deliverer. The Aluahim of my rock — in Him I take refuge. He drew me out of many waters; He delivered me, because He delighted in me.”', ref:'2 SHEMU’ĔL 22:1–20'},
+   {art:'stars', music:'holy', text:'These are the last words of Dawiḏ: “The Ruaḥ of YAHUAH spoke by me, and His word was on my tongue. One who rules over men righteously, who rules in the fear of Aluahim, is like the light of morning at sunrise — a morning without clouds.” And these are the names of the mighty men who were with him.', ref:'2 SHEMU’ĔL 23:1–8'},
+  ],
+  scene:{
+   map:{biome:'rocky', w:48, h:32, seed:2017,
+     features:[
+       {type:'altar',stage:1,x:26,y:12,solid:true,clear:2,id:'floor',examine:'The threshing-floor of Araunah the Yeḇusite, on Mount Moriyah — where the destroying messenger stayed his hand.'},
+       {type:'stone',x:20,y:16,id:'well',examine:'Bĕyth-leḥem is far off, and its well by the gate is held by a Pelishtim garrison — yet three men once broke through it, for the love of their king.'},
+       {type:'clearing',x:22,y:22,flat:3},
+     ]},
+   time:'day', music:'holy',
+   player:'dawid_o', playerPos:[18,24],
+   npcs:[
+     {id:'aravnah',char:'aravnah',x:26,y:15,wander:false,
+      script:[
+       {say:['aravnah','Let my lord the king take and offer what is good in his eyes. See — here are the oxen for the ascending offering, and the threshing-sledges and the ox-yokes for the wood. All of it, O king, Araunah gives to the king.']},
+      ]},
+     {id:'natan',char:'natan',x:16,y:22,wander:true,range:1.4,noTalk:true,hold:'scroll'},
+   ],
+   objectives:[
+     {type:'interact',prop:'well',text:'Remember the mighty men — and the water of Bĕyth-leḥem',
+      script:[
+       {say:['narrator','Once, in the cave of Aḏullam, Dawiḏ longed and said, “Oh, that someone would give me water from the well of Bĕyth-leḥem, by the gate!” And three of the mighty men broke THROUGH the camp of the Pelishtim, drew the water, and brought it to him.']},
+       {say:['dawid_o','Far be it from me, O YAHUAH, that I should do this — is it not the BLOOD of the men who went at the risk of their lives? I will not drink it.']},
+       {say:['narrator','And he poured it out to YAHUAH — for water bought with such love was too costly to swallow, and fit only to be given back to Aluahim. Such were the Three, and the Thirty: Yashoḇ‛am who lifted his spear over eight hundred; El‛azar whose hand clung to his sword; Shammah who stood in a field of lentils and would not flee; and Benayah who struck a lion in a pit on a snowy day.']},
+      ]},
+     {type:'goto',x:22,y:18,radius:2.4,text:'Confess the sin of the census — and choose the hand of YAHUAH',hiddenUntil:1,
+      script:[
+       {music:'sorrow'},
+       {say:['narrator','Now the anger of YAHUAH burned against Yasharal, and Dawiḏ was moved to NUMBER the people — to count his strength as though it were his own. And Yo’aḇ objected; but the king’s word prevailed, and the counting was a sin. And Dawiḏ’s heart struck him.']},
+       {say:['dawid_o','I have sinned greatly in what I have done. But now, O YAHUAH, take away the crookedness of Your servant, for I have acted very foolishly.']},
+       {say:['narrator','And YAHUAH offered three: seven years of famine, three months of fleeing before his foes, or three days of pestilence. And Dawiḏ said, “I am in deep distress — let us fall into the hand of YAHUAH, for His compassions are great; but do not let me fall into the hand of man.”']},
+      ]},
+     {type:'interact',prop:'floor',text:'Buy the threshing-floor, and build an altar — the plague is stayed',hiddenUntil:2,
+      script:[
+       {say:['narrator','So a pestilence came, and seventy thousand fell; and the destroying messenger stretched out his hand toward Yerushalayim — but YAHUAH relented: “Enough! Stay your hand.” And the messenger was by the threshing-floor of Araunah.']},
+       {rays:.7,raysX:26},{sfx:'holy'},
+       {say:['dawid_o','See, I have sinned, I have done wrong — but these sheep, what have they done? Let Your hand be against ME and my father’s house.']},
+       {say:['dawid_o','No, Araunah — I will not take it for nothing. I will surely BUY it for a price, for I will not offer to YAHUAH my Aluahim ascending offerings that cost me nothing. Fifty sheqels of silver for the floor and the oxen.']},
+       {say:['narrator','And Dawiḏ built there an altar to YAHUAH, and offered ascending offerings and peace offerings; and YAHUAH heeded the prayer for the land, and the plague was stayed. And this threshing-floor on Mount Moriyah would be the place of the House that Shelomoh would build.']},
+       {burst:[26,12,'spark',22]},{sfx:'chime'},
+      ]},
+   ],
+  },
+  outro:[
+   {art:'mountain', music:'holy', text:'The shepherd who was taken from the sheepfold laid down his song, his last words, and his sword upon an altar bought at full price — on the very mountain where Aḇrahim once raised his knife, and where the House of the Name would rise. From a boy with a sling to a king with an altar, one thread held: “YAHUAH is my rock.” The reign of Dawiḏ closes; the throne promised forever waits for the Son who will not fail. — THE END OF 2 SHEMU’ĔL.', ref:'2 SHEMU’ĔL 24:24–25'},
+  ],
+  complete:'I will not offer to YAHUAH that which costs me nothing.'
 },
 ]}
 );
@@ -6551,7 +6371,7 @@ $('btn-continue').onclick=()=>{ Sound.init(); Game.startChapter(firstUnfinished(
 $('btn-chapters').onclick=()=>{ Sound.init(); openChapters(); };
 function blockyLabel(){ const b=$('btn-blocky'); if(b) b.textContent='⬛ Blocky Figures: '+(BLOCKY3D?'ON':'OFF'); }
 $('btn-blocky').onclick=()=>{ Sound.init(); Sound.sfx('blip'); BLOCKY3D=!BLOCKY3D; Save.data.blocky=BLOCKY3D; Save.write(); blockyLabel(); };
-$('btn-book').onclick=()=>{ window.location.href='book-of-shophetim.html'; };
+$('btn-book').onclick=()=>{ window.location.href='book-of-shamual.html'; };
 $('btn-dlc').onclick=()=>{ window.location.href='index.html'; };
 $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
