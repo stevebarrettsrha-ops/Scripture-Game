@@ -2201,6 +2201,65 @@ function drawProp(g,px,py,p,t){
       g.fillStyle='rgba(140,190,220,.75)';
       g.beginPath(); g.ellipse(Math.sin(t/700)*.3*u,-3.7*u,2.4*u,.8*u,0,0,Math.PI*2); g.fill();
       break; }
+    case 'bronzesea': {
+      /* the Molten Sea — a great round bronze basin resting on twelve oxen, three facing each wind */
+      const T2=TILE, br='#b87333', brL='#d89a5a', brD='#8a5522', water='rgba(150,196,224,.82)';
+      g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(0,T2*.35,T2*2.5,T2*.85,0,0,Math.PI*2); g.fill();
+      const ox=(ox_x,s)=>{ g.save(); g.translate(ox_x,0);
+        g.fillStyle=brD; g.fillRect(-T2*.28*s,-T2*.52*s,T2*.56*s,T2*.5*s);
+        g.fillStyle=brD; g.fillRect(-T2*.24*s,-T2*.1*s,T2*.11*s,T2*.16*s); g.fillRect(T2*.13*s,-T2*.1*s,T2*.11*s,T2*.16*s);
+        g.fillStyle=br;  g.fillRect(-T2*.22*s,-T2*.74*s,T2*.44*s,T2*.26*s);
+        g.fillStyle=brL; g.fillRect(-T2*.27*s,-T2*.84*s,T2*.1*s,T2*.16*s); g.fillRect(T2*.17*s,-T2*.84*s,T2*.1*s,T2*.16*s);
+        g.restore(); };
+      ox(-T2*1.9,.8); ox(T2*1.9,.8);                 /* side pairs */
+      ox(-T2*1.0,1); ox(0,1.06); ox(T2*1.0,1);       /* front three */
+      /* the sea */
+      g.fillStyle=brD; g.beginPath(); g.ellipse(0,-T2*1.0,T2*2.0,T2*.8,0,0,Math.PI*2); g.fill();
+      g.fillStyle=br;  g.fillRect(-T2*2.0,-T2*1.7,T2*4.0,T2*.75);
+      g.beginPath(); g.ellipse(0,-T2*1.7,T2*2.0,T2*.78,0,0,Math.PI*2); g.fill();
+      g.fillStyle=brD; for(let i=0;i<18;i++){ const a=i/18*Math.PI*2; g.beginPath(); g.arc(Math.cos(a)*T2*1.9,-T2*1.34+Math.sin(a)*T2*.16,T2*.08,0,Math.PI*2); g.fill(); }
+      g.fillStyle=brL; g.beginPath(); g.ellipse(0,-T2*1.78,T2*1.86,T2*.68,0,0,Math.PI*2); g.fill();
+      g.fillStyle=water; g.beginPath(); g.ellipse(Math.sin(t/700)*T2*.08,-T2*1.8,T2*1.56,T2*.54,0,0,Math.PI*2); g.fill();
+      g.fillStyle='rgba(255,255,255,.32)'; g.beginPath(); g.ellipse(-T2*.5,-T2*1.92,T2*.5,T2*.16,0,0,Math.PI*2); g.fill();
+      break; }
+    case 'templealtar': {
+      /* the great altar of burnt offering — stepped bronze/stone, a ramp the priests ascend, fire on top */
+      const T2=TILE, s1='#c0b193', s2='#a2937a', s3='#8f8168', RB=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+      g.fillStyle='rgba(0,0,0,.3)'; g.beginPath(); g.ellipse(0,T2*.3,T2*2.7,T2*.8,0,0,Math.PI*2); g.fill();
+      /* ramp (near-right) */
+      g.fillStyle=s2; g.beginPath(); g.moveTo(T2*1.2,0); g.lineTo(T2*3.5,0); g.lineTo(T2*1.2,-T2*3.3); g.closePath(); g.fill();
+      g.strokeStyle=s3; g.lineWidth=Math.max(1,T2*.05);
+      for(let i=1;i<5;i++){ const yy=-i*T2*.62, xr=T2*1.2+(T2*3.5-T2*1.2)*(1+yy/(T2*3.3));
+        g.beginPath(); g.moveTo(T2*1.2,yy); g.lineTo(xr,yy); g.stroke(); }
+      /* three tiers */
+      RB(-T2*2.0,-T2*1.2,T2*4.0,T2*1.2,s3);
+      RB(-T2*1.62,-T2*2.28,T2*3.24,T2*1.1,s2);
+      RB(-T2*1.24,-T2*3.35,T2*2.48,T2*1.1,s1);
+      RB(-T2*2.0,-T2*1.2,T2*4.0,T2*.18,s1); RB(-T2*1.62,-T2*2.28,T2*3.24,T2*.16,s1);
+      /* four horns */
+      for(const hx of [-T2*1.2,T2*1.0]){ RB(hx,-T2*3.85,T2*.22,T2*.55,s1); RB(hx,-T2*3.85,T2*.22,T2*.14,s2); }
+      /* fire */
+      const f=t/80;
+      for(let i=0;i<5;i++){ const fx=Math.sin(f+i*2.2)*T2*.35+(i-2)*T2*.34, fh=T2*(1.0+Math.sin(f*1.3+i)*.4);
+        g.fillStyle=['#e8762a','#f5a623','#ffd54a'][i%3];
+        g.beginPath(); g.moveTo(fx-T2*.34,-T2*3.35); g.quadraticCurveTo(fx,-T2*3.35-fh,fx+T2*.34,-T2*3.35); g.fill(); }
+      for(let i=0;i<4;i++){ const ph=t/1300+i*1.05; g.fillStyle=`rgba(196,186,184,${.2-i*.035})`;
+        g.beginPath(); g.arc(Math.sin(ph)*T2*.5,-T2*4.1-i*T2*.75,T2*.4+i*T2*.2,0,Math.PI*2); g.fill(); }
+      const gl=g.createRadialGradient(0,-T2*3.7,T2*.5,0,-T2*3.7,T2*4);
+      gl.addColorStop(0,'rgba(255,180,80,.32)'); gl.addColorStop(1,'rgba(255,180,80,0)');
+      g.fillStyle=gl; g.beginPath(); g.arc(0,-T2*3.7,T2*4,0,Math.PI*2); g.fill();
+      break; }
+    case 'laverstand': {
+      /* one of the ten wheeled lavers of the court */
+      const T2=TILE, br='#b87333', brL='#d89a5a', brD='#8a5522';
+      g.fillStyle='rgba(0,0,0,.26)'; g.beginPath(); g.ellipse(0,T2*.1,T2*.62,T2*.22,0,0,Math.PI*2); g.fill();
+      g.fillStyle=brD; g.beginPath(); g.arc(-T2*.4,-T2*.16,T2*.22,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(T2*.4,-T2*.16,T2*.22,0,Math.PI*2); g.fill();
+      g.fillStyle=brL; g.beginPath(); g.arc(-T2*.4,-T2*.16,T2*.09,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(T2*.4,-T2*.16,T2*.09,0,Math.PI*2); g.fill();
+      g.fillStyle=br;  g.fillRect(-T2*.42,-T2*.72,T2*.84,T2*.56);
+      g.fillStyle=brD; g.fillRect(-T2*.42,-T2*.72,T2*.84,T2*.12);
+      g.fillStyle=brL; g.beginPath(); g.ellipse(0,-T2*.8,T2*.5,T2*.2,0,0,Math.PI*2); g.fill();
+      g.fillStyle='rgba(150,196,224,.82)'; g.beginPath(); g.ellipse(0,-T2*.82,T2*.38,T2*.14,0,0,Math.PI*2); g.fill();
+      break; }
     case 'sukkah': {
       shadow(6);
       g.fillStyle='#8a6a38';
@@ -5725,8 +5784,10 @@ STORY.push(
        {type:'temple',x:24,y:8,solid:true,clear:5,flat:5,id:'house',examine:'The House of YAHUAH rising on Mount Moriyah — cedar within, overlaid with gold; the Most Set-apart Place a perfect cube, twenty cubits every way.'},
        {type:'pillar',gold:true,x:20,y:15,id:'yakin',examine:'The right pillar, cast in bronze by Ḥiram the craftsman — its name YAḴIN, “He shall establish.”'},
        {type:'pillar',gold:true,x:28,y:15,id:'boaz',examine:'The left pillar — BO‛AZ, “In Him is strength.”'},
-       {type:'laver',x:16,y:18,id:'sea',examine:'The Bronze Sea — cast round, ten cubits across, resting on twelve oxen, three facing each wind. It holds the water for the priests to wash.'},
-       {type:'clearing',x:24,y:22,flat:3},
+       {type:'bronzesea',x:14,y:19,id:'sea',examine:'The Bronze Sea — cast round, ten cubits across, resting on twelve oxen, three facing each wind; a molten sea for the priests to wash.'},
+       {type:'templealtar',x:34,y:19,id:'altar',examine:'The great bronze altar of ascending offerings — a ramp the priests go up, and the fire that is never let go out before YAHUAH.'},
+       {type:'laverstand',x:12,y:15},{type:'laverstand',x:12,y:23},{type:'laverstand',x:37,y:14},{type:'laverstand',x:37,y:24},
+       {type:'clearing',x:24,y:24,flat:3},
      ]},
    time:'day', music:'holy',
    player:'shelomoh', playerPos:[24,24],
