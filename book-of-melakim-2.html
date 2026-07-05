@@ -1932,6 +1932,77 @@ function drawProp(g,px,py,p,t){
       if(p.glow){ const gl=g.createRadialGradient(0,-T2*4,T2,0,-T2*4,T2*7);
         gl.addColorStop(0,'rgba(255,236,170,.5)'); gl.addColorStop(1,'rgba(255,236,170,0)');
         g.fillStyle=gl; g.beginPath(); g.arc(0,-T2*4,T2*7,0,Math.PI*2); g.fill(); }
+      if(p.fire){
+        /* the House ablaze and broken — Baḇel burns it to a ruin */
+        const f=t/60, char='#2a2018', black='#12100c', rub='#6b6355';
+        /* uneven charring over the stone */
+        g.fillStyle='rgba(18,11,7,.28)'; g.fillRect(-W-T2*1.6,-T2*8.3,W*2+T2*3.2,T2*8.3);
+        g.fillStyle='rgba(10,7,5,.5)';
+        g.fillRect(-T2*1.6,-T2*6.4,T2*1.4,T2*5.2); g.fillRect(T2*.7,-T2*7.0,T2*1.5,T2*3.0); g.fillRect(-W-T2*1.4,-T2*3.6,T2*1.3,T2*3.4);
+        /* jagged broken roofline (blacked-out, ragged) */
+        g.fillStyle=black; g.beginPath(); g.moveTo(-W-T2*.35,-T2*6.9);
+        for(let i=0;i*T2*.62<=W*2+T2*.7;i++){ const x=-W-T2*.35+i*T2*.62;
+          g.lineTo(x,-T2*7.6-(0.5+Math.abs(Math.sin(i*2.7))*1.4)*T2); g.lineTo(x+T2*.31,-T2*7.6-(0.3+Math.abs(Math.sin(i*1.9+1))*0.7)*T2); }
+        g.lineTo(W+T2*.35,-T2*6.9); g.closePath(); g.fill();
+        /* a breach where the wall has collapsed */
+        g.fillStyle=black; g.beginPath();
+        g.moveTo(T2*.9,-T2*5.6); g.lineTo(T2*2.5,-T2*4.9); g.lineTo(T2*2.3,-T2*2.0); g.lineTo(T2*.8,-T2*1.5); g.lineTo(T2*.5,-T2*3.5); g.closePath(); g.fill();
+        /* cracks */
+        g.strokeStyle=char; g.lineWidth=Math.max(1,T2*.07); g.lineCap='round';
+        g.beginPath(); g.moveTo(-T2*1.9,-T2*6.8); g.lineTo(-T2*1.4,-T2*4.7); g.lineTo(-T2*2.1,-T2*2.8); g.lineTo(-T2*1.6,-T2*.8); g.stroke();
+        g.beginPath(); g.moveTo(-T2*.2,-T2*6.4); g.lineTo(T2*.2,-T2*3.8); g.lineTo(-T2*.1,-T2*1.4); g.stroke();
+        /* rubble at the base */
+        for(let i=0;i<10;i++){ const rx=(-2.6+i*.58)*T2+Math.sin(i*5.3)*T2*.22, rs=T2*(.26+((i*7)%3)*.09);
+          g.fillStyle=i%3?rub:char; g.fillRect(rx,-T2*.06-rs*.6,rs,rs*.62); }
+        /* chaotic flames */
+        const flame=(fx,fy,fs)=>{ for(let i=0;i<3;i++){
+            const dx=Math.sin(f*1.8+fx*4+i*2.1)*fs*.42, sway=Math.sin(f*2.4+i*1.3+fx)*fs*.3,
+                  fh=fs*(1.0+Math.abs(Math.sin(f*2.1+i*1.7+fx*2))*1.3);
+            g.fillStyle=['#b8330f','#e8762a','#f5a623','#ffe066'][(i+((fx*9)|0))&3];
+            g.beginPath(); g.moveTo(fx+dx-fs*.5,fy); g.quadraticCurveTo(fx+dx+sway,fy-fh,fx+dx+fs*.5,fy); g.fill(); } };
+        const src=[[-W*.85,-T2*7.4,1.7],[-W*.3,-T2*7.7,2.1],[W*.25,-T2*7.5,1.8],[W*.8,-T2*7.5,1.5],
+                   [-T2*2.1,-T2*4.4,1.3],[0,-T2*3.2,2.1],[T2*1.7,-T2*3.4,1.7],
+                   [-W*.6,-T2*.8,1.5],[W*.55,-T2*.8,1.6],[0,-T2*.7,1.3],
+                   [-W-T2*.8,-T2*3.4,1.1],[W+T2*.8,-T2*3.4,1.1]];
+        for(const s of src) flame(s[0],s[1],s[2]*T2);
+        /* embers */
+        for(let i=0;i<16;i++){ const life=(t/850+i*.31)%1, ey=-T2*.8-life*T2*11,
+            ex=-W+(i/16)*W*2+Math.sin(t/260+i*1.7)*T2*.9, es=T2*.13*(1-life*.55);
+          g.fillStyle=`rgba(255,${150+((i*37)%90)},50,${(1-life)*.95})`; g.fillRect(ex,ey,es,es); }
+        /* turbulent smoke */
+        for(let i=0;i<10;i++){ const ph=t/850+i*.66; g.fillStyle=`rgba(${38+i*3},${34+i*3},${32+i*3},${.42-i*.04})`;
+          g.beginPath(); g.arc(Math.sin(ph*1.4)*T2*1.7+(i-4.5)*T2*.34,-T2*8.3-i*T2*1.12,T2*.92+i*T2*.35,0,Math.PI*2); g.fill(); }
+        /* fierce glow */
+        const gf=g.createRadialGradient(0,-T2*3.8,T2,0,-T2*3.8,T2*13);
+        gf.addColorStop(0,'rgba(255,120,40,.52)'); gf.addColorStop(.55,'rgba(255,90,30,.2)'); gf.addColorStop(1,'rgba(255,90,30,0)');
+        g.fillStyle=gf; g.beginPath(); g.arc(0,-T2*3.8,T2*13,0,Math.PI*2); g.fill();
+      }
+      if(p.ruin){
+        /* the smoldering shell — blackened, broken walls, thin smoke, after the fire dies */
+        const black='#141210', char='#2a241e', rub='#5a544a';
+        g.fillStyle='rgba(14,11,9,.55)'; g.fillRect(-W-T2*1.7,-T2*8.3,W*2+T2*3.4,T2*8.3);
+        g.fillStyle='rgba(6,5,4,.55)';
+        g.fillRect(-T2*1.7,-T2*6.6,T2*1.6,T2*5.6); g.fillRect(T2*.6,-T2*7.2,T2*1.7,T2*4.2); g.fillRect(-W-T2*1.5,-T2*4,T2*1.4,T2*3.8); g.fillRect(W+T2*.1,-T2*4,T2*1.4,T2*3.8);
+        g.fillStyle=black; g.beginPath(); g.moveTo(-W-T2*.4,-T2*6.4);
+        for(let i=0;i*T2*.55<=W*2+T2*.8;i++){ const x=-W-T2*.4+i*T2*.55;
+          g.lineTo(x,-T2*7.2-(0.2+Math.abs(Math.sin(i*3.1))*1.1)*T2); g.lineTo(x+T2*.27,-T2*7.2-(0.1+Math.abs(Math.sin(i*2.3+2))*0.5)*T2); }
+        g.lineTo(W+T2*.4,-T2*6.4); g.closePath(); g.fill();
+        g.fillStyle=black; g.beginPath();
+        g.moveTo(T2*.8,-T2*5.9); g.lineTo(T2*2.6,-T2*5.0); g.lineTo(T2*2.4,-T2*1.6); g.lineTo(T2*.7,-T2*1.2); g.lineTo(T2*.4,-T2*3.7); g.closePath(); g.fill();
+        g.fillStyle=black; g.beginPath(); g.moveTo(-W-T2*.2,-T2*5.5); g.lineTo(-W+T2*1.0,-T2*4.2); g.lineTo(-W+T2*.7,-T2*.2); g.lineTo(-W-T2*1.6,-T2*.2); g.lineTo(-W-T2*1.6,-T2*4); g.closePath(); g.fill();
+        g.strokeStyle='#1c1814'; g.lineWidth=Math.max(1,T2*.08); g.lineCap='round';
+        g.beginPath(); g.moveTo(-T2*1.6,-T2*6.4); g.lineTo(-T2*1.1,-T2*4.2); g.lineTo(-T2*1.8,-T2*2); g.lineTo(-T2*1.3,-T2*.4); g.stroke();
+        g.beginPath(); g.moveTo(-T2*.1,-T2*6); g.lineTo(T2*.3,-T2*3.4); g.lineTo(0,-T2*1); g.stroke();
+        for(let i=0;i<12;i++){ const rx=(-2.9+i*.52)*T2+Math.sin(i*5.3)*T2*.24, rs=T2*(.26+((i*7)%3)*.1);
+          g.fillStyle=i%3?rub:char; g.save(); g.translate(rx,-T2*.05-rs*.55); g.rotate(Math.sin(i*2.1)*.5); g.fillRect(-rs/2,-rs*.5,rs,rs*.6); g.restore(); }
+        for(let i=0;i<5;i++){ const gl=(0.4+Math.abs(Math.sin(t/700+i*1.7))*0.6);
+          g.fillStyle=`rgba(200,70,20,${.1+gl*.1})`; g.beginPath(); g.arc((-2+i)*T2*1.0,-T2*1.4,T2*.5,0,Math.PI*2); g.fill(); }
+        for(let i=0;i<5;i++){ const ph=t/1500+i*1.1; g.fillStyle=`rgba(90,86,82,${.16-i*.025})`;
+          g.beginPath(); g.arc(Math.sin(ph)*T2*1.0+(i-2)*T2*.7,-T2*7.5-i*T2*1.3, T2*.4+i*T2*.24,0,Math.PI*2); g.fill(); }
+        const gr=g.createRadialGradient(0,-T2*1.2,T2*.5,0,-T2*1.2,T2*6);
+        gr.addColorStop(0,'rgba(200,80,25,.16)'); gr.addColorStop(1,'rgba(200,80,25,0)');
+        g.fillStyle=gr; g.beginPath(); g.arc(0,-T2*1.2,T2*6,0,Math.PI*2); g.fill();
+      }
       break; }
     case 'pillar': {
       shadow(2.6);
@@ -1980,10 +2051,26 @@ function drawProp(g,px,py,p,t){
         g.fillStyle='#9d4a2e'; g.beginPath(); g.ellipse(0,-5.4*u,1.8*u,0.6*u,0,0,Math.PI*2); g.fill(); }
       break; }
     case 'throne': {
-      shadow(5);
-      R(-4.6,-12,9.2,2,'#caa23c'); R(-4.6,-12,2,12,'#caa23c'); R(2.6,-12,2,12,'#caa23c');
-      R(-3.4,-8,6.8,6,'#2e5f8a'); R(-3.4,-2.6,6.8,2.6,'#b58a2c');
-      R(-4.6,-13.4,2,1.6,'#e8c66a'); R(2.6,-13.4,2,1.6,'#e8c66a');
+      shadow(5.4);
+      const fr=p.frame||'#caa23c', seat=p.seat||'#2e5f8a', trm=p.trim||'#b58a2c', cr=p.crown||'#e8c66a';
+      if(p.dais){ R(-6.4,-1.6,12.8,1.8,p.dais); R(-6.4,-1.6,12.8,.4,cr); }
+      R(-4.6,-12,9.2,2,fr); R(-4.6,-12,2,12,fr); R(2.6,-12,2,12,fr);
+      R(-3.4,-8,6.8,6,seat); R(-3.4,-2.6,6.8,2.6,trm);
+      R(-4.6,-13.4,2,1.6,cr); R(2.6,-13.4,2,1.6,cr);
+      if(p.tall){ R(-3.6,-15.8,7.2,4,fr); R(-2.5,-15.4,5,2.6,seat); R(-1,-17.2,2,1.8,cr); }
+      if(p.emblem==='sun'){ g.fillStyle=cr; g.beginPath(); g.arc(0,-13.2,1.7*u,0,Math.PI*2); g.fill(); g.fillStyle=seat; g.beginPath(); g.arc(0,-13.2,.75*u,0,Math.PI*2); g.fill(); }
+      else if(p.emblem==='lions'){ R(-4.7,-9.8,1.7,1.7,cr); R(3,-9.8,1.7,1.7,cr); }
+      else if(p.emblem==='star'){ g.fillStyle=cr; g.save(); g.translate(0,-13.2); for(let a=0;a<6;a++){ g.rotate(Math.PI/3); g.fillRect(-.4*u,-1.8*u,.8*u,1.8*u);} g.restore(); }
+      break; }
+    case 'banner': {
+      const T2=TILE, col=p.col||'#5a3a72', trm=p.trim||'#caa23c', em=p.emblem||'#caa23c';
+      g.fillStyle=trm; g.fillRect(-T2*.62,-T2*4.3,T2*1.24,T2*.2);
+      g.fillStyle=col; g.beginPath();
+      g.moveTo(-T2*.5,-T2*4.12); g.lineTo(T2*.5,-T2*4.12); g.lineTo(T2*.5,-T2*.35); g.lineTo(0,-T2*.05); g.lineTo(-T2*.5,-T2*.35); g.closePath(); g.fill();
+      g.fillStyle='rgba(255,255,255,.07)'; g.fillRect(-T2*.5,-T2*4.12,T2*.16,T2*3.9);
+      g.fillStyle=trm; g.fillRect(-T2*.5,-T2*4.12,T2*.08,T2*3.85); g.fillRect(T2*.42,-T2*4.12,T2*.08,T2*3.85);
+      g.fillStyle=em; g.beginPath(); g.arc(0,-T2*2.5,T2*.3,0,Math.PI*2); g.fill();
+      g.fillStyle=col; g.beginPath(); g.arc(0,-T2*2.5,T2*.15,0,Math.PI*2); g.fill();
       break; }
     case 'sheaf': {
       shadow(2.4);
@@ -2012,6 +2099,25 @@ function drawProp(g,px,py,p,t){
       const gl=g.createRadialGradient(0,-TILE*1.6,TILE*.3,0,-TILE*1.6,TILE*2.6);
       gl.addColorStop(0,`rgba(255,230,140,${.22+Math.sin(t/500)*.08})`); gl.addColorStop(1,'rgba(255,230,140,0)');
       g.fillStyle=gl; g.beginPath(); g.arc(0,-TILE*1.6,TILE*2.6,0,Math.PI*2); g.fill();
+      break; }
+    case 'citygate': {
+      /* a fortified city gate — two stone towers with battlements, a dark arch and wooden doors (no gold) */
+      const T2=TILE, st='#b3a98f', stD='#8f8672', stL='#cabfa6', wood='#5d4426', dark='#1a140c';
+      g.fillStyle='rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(0,T2*.25,T2*2.5,T2*.5,0,0,Math.PI*2); g.fill();
+      for(const sx of [-1,1]){ const bx=sx*T2*1.5;
+        g.fillStyle=st; g.fillRect(bx-T2*.72,-T2*3.5,T2*1.44,T2*3.5);
+        g.fillStyle=(sx<0?stL:stD); g.fillRect(bx-T2*.72,-T2*3.5,T2*.22,T2*3.5);
+        for(let r=1;r<4;r++){ g.fillStyle=stD; g.fillRect(bx-T2*.72,-T2*3.5+r*T2*.85,T2*1.44,T2*.1); }
+        g.fillStyle=dark; g.fillRect(bx-T2*.16,-T2*2.5,T2*.32,T2*.7);
+        g.fillStyle=st; for(let c=0;c<3;c++) g.fillRect(bx-T2*.72+c*T2*.52,-T2*4.0,T2*.34,T2*.5); }
+      g.fillStyle=st; g.fillRect(-T2*.95,-T2*3.5,T2*1.9,T2*1.0);
+      g.fillStyle=stD; g.fillRect(-T2*.95,-T2*3.5,T2*1.9,T2*.14);
+      g.fillStyle=st; for(let c=0;c<3;c++) g.fillRect(-T2*.9+c*T2*.64,-T2*4.0,T2*.42,T2*.5);
+      g.fillStyle=dark; g.beginPath();
+      g.moveTo(-T2*.78,0); g.lineTo(-T2*.78,-T2*2.1); g.quadraticCurveTo(0,-T2*2.95,T2*.78,-T2*2.1); g.lineTo(T2*.78,0); g.closePath(); g.fill();
+      g.fillStyle=wood; g.fillRect(-T2*.7,-T2*2.0,T2*.66,T2*2.0); g.fillRect(T2*.04,-T2*2.0,T2*.66,T2*2.0);
+      g.fillStyle='#3a2a18'; g.fillRect(-T2*.03,-T2*2.0,T2*.06,T2*2.0);
+      g.fillStyle='#33291f'; for(let r=0;r<3;r++){ g.beginPath(); g.arc(-T2*.37,-T2*.55-r*T2*.6,T2*.06,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(T2*.37,-T2*.55-r*T2*.6,T2*.06,0,Math.PI*2); g.fill(); }
       break; }
     case 'sword': {
       // flaming sword turning every way
@@ -5868,7 +5974,7 @@ STORY.push(
   scene:{
    map:{biome:'city', w:48, h:32, seed:3207,
      features:[
-       {type:'gate',x:24,y:10,id:'gate',examine:'The gate of Shomron — where four lepers sit, too starved to enter, too doomed to stay.'},
+       {type:'citygate',x:24,y:10,id:'gate',examine:'The gate of Shomron — where four lepers sit, too starved to enter, too doomed to stay.'},
        {type:'tower',stage:2,x:36,y:9,solid:true,clear:3,flat:3,id:'aramcamp',examine:'The camp of Aram — its tents standing, its fires cold, and not a living man in it.'},
        {type:'clearing',x:22,y:20,flat:3},
      ]},
@@ -6002,7 +6108,7 @@ STORY.push(
    map:{biome:'city', w:48, h:32, seed:3210,
      features:[
        {type:'idol',x:30,y:12,col:'#7a3b30',solid:true,id:'baaltemple',examine:'The house of Ba‛al in Shomron, filled from end to end with the worshippers of Ba‛al — and ringed now by eighty of Yĕhu’s men.'},
-       {type:'gate',x:16,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
+       {type:'citygate',x:16,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
      ]},
    time:'day', music:'tense',
    player:'yehu_k', playerPos:[18,20], playerHold:'sword',
@@ -6175,7 +6281,7 @@ STORY.push(
    map:{biome:'city', w:48, h:32, seed:3214,
      features:[
        {type:'tower',stage:2,x:24,y:8,solid:true,clear:4,flat:4,id:'wall',examine:'The wall of Shomron, Omri’s proud city, in the third year of the siege — starved, and about to fall.'},
-       {type:'gate',x:24,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
+       {type:'citygate',x:24,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
      ]},
    time:'dusk', music:'sorrow',
    player:'yeshayahu', playerPos:[18,22], playerHold:'scroll',
@@ -6400,7 +6506,7 @@ STORY.push(
      features:[
        {type:'temple',x:24,y:8,solid:true,clear:5,flat:5,id:'temple',examine:'The House of YAHUAH that Shelomoh built — its porch pillars Yaḵin and Bo‛az, which the Kasdim will break up for their bronze; the cloud once filled it, and now the fire of Baḇel will.'},
        {type:'bronzesea',x:16,y:17,examine:'The bronze Sea on its twelve oxen — its bronze, too, they will break, and carry away.'},
-       {type:'gate',x:24,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
+       {type:'citygate',x:24,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
      ]},
    time:'dusk', music:'sorrow',
    player:'tsidqiyahu', playerPos:[18,22], playerHold:'sword',
@@ -6425,9 +6531,9 @@ STORY.push(
        {say:['narrator','And the army of the Kasdim pursued the king, and overtook him. And they killed the SONS of Tsiḏqiyahu before his eyes; then they put out the EYES of Tsiḏqiyahu, and bound him in bronze, and carried him to Baḇel — the last thing he ever saw was the death of his sons.']},
        {sfx:'bad'},{shake:2.2},{burst:[18,22,'ash',16]},
        {say:['narrator','And Neḇuzaraḏan, captain of the guard, came to Yerushalayim, and BURNED the House of YAHUAH, and the king’s house, and every great house; and the whole army broke down the WALLS all around. And they broke up the two bronze pillars, Yaḵin and Bo‛az, and the bronze Sea, and carried the bronze to Baḇel; and the gold and silver vessels of the House of the Name they carried away.']},
-       {rays:.85,raysX:24},{sfx:'thunder'},{shake:2.6},{burst:[24,8,'ash',30]},
+       {prop:['temple',{fire:true}]},{rays:.85,raysX:24},{sfx:'thunder'},{shake:2.6},{burst:[24,8,'ash',30]},
        {say:['narrator','So Yahuḏah was carried away captive out of its land. And YAHUAH removed them from His sight, for the sins of Menashsheh, and all that had been done. The House that took Shelomoh seven years to build, that the cloud had filled and the fire had crowned, was a smoking ruin; and the people of the covenant went into Baḇel.']},
-       {rays:0},{music:'sorrow'},
+       {prop:['temple',{fire:false,ruin:true}]},{rays:0},{music:'sorrow'},
       ]},
      {type:'goto',x:18,y:22,radius:2.4,text:'In the long exile — one last flicker of hope for the house of Dawiḏ',hiddenUntil:2,
       script:[

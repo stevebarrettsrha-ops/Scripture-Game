@@ -1914,10 +1914,26 @@ function drawProp(g,px,py,p,t){
         g.fillStyle='#9d4a2e'; g.beginPath(); g.ellipse(0,-5.4*u,1.8*u,0.6*u,0,0,Math.PI*2); g.fill(); }
       break; }
     case 'throne': {
-      shadow(5);
-      R(-4.6,-12,9.2,2,'#caa23c'); R(-4.6,-12,2,12,'#caa23c'); R(2.6,-12,2,12,'#caa23c');
-      R(-3.4,-8,6.8,6,'#2e5f8a'); R(-3.4,-2.6,6.8,2.6,'#b58a2c');
-      R(-4.6,-13.4,2,1.6,'#e8c66a'); R(2.6,-13.4,2,1.6,'#e8c66a');
+      shadow(5.4);
+      const fr=p.frame||'#caa23c', seat=p.seat||'#2e5f8a', trm=p.trim||'#b58a2c', cr=p.crown||'#e8c66a';
+      if(p.dais){ R(-6.4,-1.6,12.8,1.8,p.dais); R(-6.4,-1.6,12.8,.4,cr); }
+      R(-4.6,-12,9.2,2,fr); R(-4.6,-12,2,12,fr); R(2.6,-12,2,12,fr);
+      R(-3.4,-8,6.8,6,seat); R(-3.4,-2.6,6.8,2.6,trm);
+      R(-4.6,-13.4,2,1.6,cr); R(2.6,-13.4,2,1.6,cr);
+      if(p.tall){ R(-3.6,-15.8,7.2,4,fr); R(-2.5,-15.4,5,2.6,seat); R(-1,-17.2,2,1.8,cr); }
+      if(p.emblem==='sun'){ g.fillStyle=cr; g.beginPath(); g.arc(0,-13.2,1.7*u,0,Math.PI*2); g.fill(); g.fillStyle=seat; g.beginPath(); g.arc(0,-13.2,.75*u,0,Math.PI*2); g.fill(); }
+      else if(p.emblem==='lions'){ R(-4.7,-9.8,1.7,1.7,cr); R(3,-9.8,1.7,1.7,cr); }
+      else if(p.emblem==='star'){ g.fillStyle=cr; g.save(); g.translate(0,-13.2); for(let a=0;a<6;a++){ g.rotate(Math.PI/3); g.fillRect(-.4*u,-1.8*u,.8*u,1.8*u);} g.restore(); }
+      break; }
+    case 'banner': {
+      const T2=TILE, col=p.col||'#5a3a72', trm=p.trim||'#caa23c', em=p.emblem||'#caa23c';
+      g.fillStyle=trm; g.fillRect(-T2*.62,-T2*4.3,T2*1.24,T2*.2);
+      g.fillStyle=col; g.beginPath();
+      g.moveTo(-T2*.5,-T2*4.12); g.lineTo(T2*.5,-T2*4.12); g.lineTo(T2*.5,-T2*.35); g.lineTo(0,-T2*.05); g.lineTo(-T2*.5,-T2*.35); g.closePath(); g.fill();
+      g.fillStyle='rgba(255,255,255,.07)'; g.fillRect(-T2*.5,-T2*4.12,T2*.16,T2*3.9);
+      g.fillStyle=trm; g.fillRect(-T2*.5,-T2*4.12,T2*.08,T2*3.85); g.fillRect(T2*.42,-T2*4.12,T2*.08,T2*3.85);
+      g.fillStyle=em; g.beginPath(); g.arc(0,-T2*2.5,T2*.3,0,Math.PI*2); g.fill();
+      g.fillStyle=col; g.beginPath(); g.arc(0,-T2*2.5,T2*.15,0,Math.PI*2); g.fill();
       break; }
     case 'sheaf': {
       shadow(2.4);
@@ -1946,6 +1962,25 @@ function drawProp(g,px,py,p,t){
       const gl=g.createRadialGradient(0,-TILE*1.6,TILE*.3,0,-TILE*1.6,TILE*2.6);
       gl.addColorStop(0,`rgba(255,230,140,${.22+Math.sin(t/500)*.08})`); gl.addColorStop(1,'rgba(255,230,140,0)');
       g.fillStyle=gl; g.beginPath(); g.arc(0,-TILE*1.6,TILE*2.6,0,Math.PI*2); g.fill();
+      break; }
+    case 'citygate': {
+      /* a fortified city gate — two stone towers with battlements, a dark arch and wooden doors (no gold) */
+      const T2=TILE, st='#b3a98f', stD='#8f8672', stL='#cabfa6', wood='#5d4426', dark='#1a140c';
+      g.fillStyle='rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(0,T2*.25,T2*2.5,T2*.5,0,0,Math.PI*2); g.fill();
+      for(const sx of [-1,1]){ const bx=sx*T2*1.5;
+        g.fillStyle=st; g.fillRect(bx-T2*.72,-T2*3.5,T2*1.44,T2*3.5);
+        g.fillStyle=(sx<0?stL:stD); g.fillRect(bx-T2*.72,-T2*3.5,T2*.22,T2*3.5);
+        for(let r=1;r<4;r++){ g.fillStyle=stD; g.fillRect(bx-T2*.72,-T2*3.5+r*T2*.85,T2*1.44,T2*.1); }
+        g.fillStyle=dark; g.fillRect(bx-T2*.16,-T2*2.5,T2*.32,T2*.7);
+        g.fillStyle=st; for(let c=0;c<3;c++) g.fillRect(bx-T2*.72+c*T2*.52,-T2*4.0,T2*.34,T2*.5); }
+      g.fillStyle=st; g.fillRect(-T2*.95,-T2*3.5,T2*1.9,T2*1.0);
+      g.fillStyle=stD; g.fillRect(-T2*.95,-T2*3.5,T2*1.9,T2*.14);
+      g.fillStyle=st; for(let c=0;c<3;c++) g.fillRect(-T2*.9+c*T2*.64,-T2*4.0,T2*.42,T2*.5);
+      g.fillStyle=dark; g.beginPath();
+      g.moveTo(-T2*.78,0); g.lineTo(-T2*.78,-T2*2.1); g.quadraticCurveTo(0,-T2*2.95,T2*.78,-T2*2.1); g.lineTo(T2*.78,0); g.closePath(); g.fill();
+      g.fillStyle=wood; g.fillRect(-T2*.7,-T2*2.0,T2*.66,T2*2.0); g.fillRect(T2*.04,-T2*2.0,T2*.66,T2*2.0);
+      g.fillStyle='#3a2a18'; g.fillRect(-T2*.03,-T2*2.0,T2*.06,T2*2.0);
+      g.fillStyle='#33291f'; for(let r=0;r<3;r++){ g.beginPath(); g.arc(-T2*.37,-T2*.55-r*T2*.6,T2*.06,0,Math.PI*2); g.fill(); g.beginPath(); g.arc(T2*.37,-T2*.55-r*T2*.6,T2*.06,0,Math.PI*2); g.fill(); }
       break; }
     case 'sword': {
       // flaming sword turning every way
@@ -5598,7 +5633,7 @@ STORY.push(
    map:{biome:'city', w:50, h:34, seed:2004,
      features:[
        {type:'tower',stage:2,x:34,y:9,solid:true,clear:4,flat:4,id:'shaft',examine:'The water-shaft of the Yeḇusite stronghold — “whoever climbs up by it…”'},
-       {type:'gate',x:24,y:12,id:'gate'},
+       {type:'citygate',x:24,y:12,id:'gate'},
        {type:'house',solid:true,x:12,y:16,clear:3,col:'#a87f48'},{type:'house',solid:true,x:16,y:14,clear:3,col:'#b58a50'},
        {type:'clearing',x:24,y:22,flat:3},
      ]},
@@ -5699,10 +5734,13 @@ STORY.push(
    {art:'throne', music:'holy', text:'And it came to be, when the king dwelt in his house, and YAHUAH had given him rest from all his enemies, that the king said to Natan the naḇi: “See now — I dwell in a house of cedar, but the ark of Aluahim dwells within curtains.” And Natan said, “Go, do all that is in your heart, for YAHUAH is with you.”', ref:'2 SHEMU’ĔL 7:1–3'},
   ],
   scene:{
-   map:{biome:'interior', w:30, h:20, seed:2006, floorCol:'#2a2216', wallCol:'#1a150c',
+   map:{biome:'interior', w:30, h:20, seed:2006, floorCol:'#2e2018', wallCol:'#1a130c',
      features:[
-       {type:'throne',x:15,y:5,solid:true,id:'throne'},
-       {type:'menorah',x:9,y:6},{type:'menorah',x:21,y:6},
+       {type:'throne',x:15,y:5,solid:true,id:'throne',frame:'#caa23c',seat:'#6a2f7a',trim:'#8a5a2c',crown:'#e8c66a',tall:true,dais:'#7a2f2f'},
+       {type:'banner',col:'#6a2f7a',trim:'#caa23c',emblem:'#e8c66a',x:10,y:4},
+       {type:'banner',col:'#6a2f7a',trim:'#caa23c',emblem:'#e8c66a',x:20,y:4},
+       {type:'pillar',x:6,y:8},{type:'pillar',x:24,y:8},
+       {type:'menorah',x:9,y:7},{type:'menorah',x:21,y:7},
      ]},
    time:'night', music:'holy',
    player:'dawid_k', playerPos:[15,14],
@@ -6036,7 +6074,7 @@ STORY.push(
   scene:{
    map:{biome:'city', w:48, h:32, seed:2013,
      features:[
-       {type:'gate',x:24,y:10,id:'gate',examine:'The gate of the city — where judgments are heard, and where Aḇshalom stands to steal the hearts of Yasharal.'},
+       {type:'citygate',x:24,y:10,id:'gate',examine:'The gate of the city — where judgments are heard, and where Aḇshalom stands to steal the hearts of Yasharal.'},
        {type:'clearing',x:24,y:18,flat:3},{type:'house',solid:true,x:12,y:16,clear:3,col:'#a87f48'},
      ]},
    time:'day', music:'tense',
@@ -6186,7 +6224,7 @@ STORY.push(
    map:{biome:'city', w:48, h:32, seed:2016,
      features:[
        {type:'tower',stage:2,x:34,y:9,solid:true,clear:4,flat:4,id:'wall',examine:'The wall of Aḇĕl of Bĕyth-Ma‛aḵah — a mother-city in Yasharal, wise from of old.'},
-       {type:'gate',x:24,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
+       {type:'citygate',x:24,y:12,id:'gate'},{type:'clearing',x:22,y:20,flat:3},
      ]},
    time:'day', music:'tense',
    player:'yoav', playerPos:[18,22], playerHold:'sword',
