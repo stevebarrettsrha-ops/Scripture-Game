@@ -1882,8 +1882,74 @@ function drawProp(g,px,py,p,t){
       if(p.scaffold){ g.strokeStyle='#6e552f'; g.lineWidth=3;
         g.beginPath(); g.moveTo(W2*.55,0); g.lineTo(W2*.62,-st*TILE*1.7); g.moveTo(-W2*.55,0); g.lineTo(-W2*.62,-st*TILE*1.7); g.stroke(); }
       break; }
+    case 'temple': {
+      /* The House of YAHUAH — stone hall, gold pillars Yaḵin & Bo‛az flanking a dark doorway, steps, crenellated roof */
+      const T2=TILE, W=T2*3.2;
+      g.fillStyle='rgba(0,0,0,.32)';
+      g.beginPath(); g.ellipse(0,T2*.4,W*1.55,T2*.7,0,0,Math.PI*2); g.fill();
+      const stone='#dcd6c8', stoneD='#bdb5a1', stoneL='#efeade', gold='#d8a836', goldL='#f2d074', goldD='#a2761c', dark='#221910', door='#3a2a18';
+      const RB=(x,y,w,h,c)=>{ g.fillStyle=c; g.fillRect(x,y,w,h); };
+      /* steps */
+      for(let s=0;s<3;s++){ RB(-W*1.25+s*T2*.45, -s*T2*.42 - T2*.42, W*2.5 - s*T2*.9, T2*.42, s%2?stoneD:stoneL); }
+      /* side chambers */
+      RB(-W-T2*1.6, -T2*4.2, T2*1.6, T2*4.2, stoneD);
+      RB( W,        -T2*4.2, T2*1.6, T2*4.2, stoneD);
+      for(let r=0;r<3;r++){ RB(-W-T2*1.6,-T2*4.2+r*T2*1.35,T2*1.6,T2*.16,stone); RB(W,-T2*4.2+r*T2*1.35,T2*1.6,T2*.16,stone);
+        RB(-W-T2*1.15,-T2*3.7+r*T2*1.3,T2*.66,T2*.42,dark); RB(W+T2*.5,-T2*3.7+r*T2*1.3,T2*.66,T2*.42,dark); }
+      /* main hall */
+      RB(-W,-T2*7.6,W*2,T2*7.6,stone);
+      RB(-W,-T2*7.6,T2*.45,T2*7.6,stoneL);
+      RB(W-T2*.45,-T2*7.6,T2*.45,T2*7.6,stoneD);
+      for(let r=1;r<7;r++) RB(-W,-T2*7.6+r*T2*1.08,W*2,T2*.13,stoneD);
+      for(let c=-2;c<=2;c++) RB(c*T2*1.18,-T2*7.6,T2*.1,T2*7.6,stoneD);
+      /* gold entablature above the porch */
+      RB(-W-T2*.2,-T2*6.3,W*2+T2*.4,T2*.85,gold);
+      RB(-W-T2*.2,-T2*6.3,W*2+T2*.4,T2*.2,goldL);
+      RB(-W-T2*.2,-T2*5.65,W*2+T2*.4,T2*.2,goldD);
+      /* the two pillars — Bo‛az (left) & Yaḵin (right) */
+      for(const px2 of [-T2*1.65, T2*1.05]){
+        RB(px2,-T2*5.7,T2*.6,T2*5.7,gold);
+        RB(px2,-T2*5.7,T2*.2,T2*5.7,goldL);
+        RB(px2+T2*.4,-T2*5.7,T2*.2,T2*5.7,goldD);
+        RB(px2-T2*.3,-T2*6.55,T2*1.2,T2*.85,goldL);
+        RB(px2-T2*.3,-T2*5.8,T2*1.2,T2*.2,goldD);
+        RB(px2-T2*.05,-T2*7.1,T2*.7,T2*.6,gold);
+        RB(px2-T2*.2,-T2*.5,T2*1,T2*.5,goldD);
+      }
+      /* doorway (dark) between the pillars */
+      RB(-T2*.8,-T2*5.7,T2*1.6,T2*5.7,dark);
+      RB(-T2*.8,-T2*5.7,T2*1.6,T2*.32,goldD);
+      RB(-T2*.66,-T2*5.25,T2*.58,T2*5.05,door);
+      RB(T2*.08,-T2*5.25,T2*.58,T2*5.05,door);
+      /* crenellated roof (pointed spikes) + gold ridge */
+      const topY=-T2*7.6;
+      RB(-W-T2*.25,topY-T2*.55,W*2+T2*.5,T2*.55,stoneD);
+      RB(-W-T2*.25,topY-T2*.7,W*2+T2*.5,T2*.16,gold);
+      g.fillStyle=stone;
+      { const n=9, span=(W*2)/n;
+        for(let i=0;i<n;i++){ const cx=-W+i*span+span*.5;
+          g.beginPath(); g.moveTo(cx-span*.3,topY-T2*.55); g.lineTo(cx,topY-T2*1.4); g.lineTo(cx+span*.3,topY-T2*.55); g.closePath(); g.fill(); } }
+      if(p.glow){ const gl=g.createRadialGradient(0,-T2*4,T2,0,-T2*4,T2*7);
+        gl.addColorStop(0,'rgba(255,236,170,.5)'); gl.addColorStop(1,'rgba(255,236,170,0)');
+        g.fillStyle=gl; g.beginPath(); g.arc(0,-T2*4,T2*7,0,Math.PI*2); g.fill(); }
+      break; }
     case 'pillar': {
       shadow(2.6);
+      if(p.gold){
+        /* a monumental bronze/gold pillar of the porch — Yaḵin or Bo‛az — drawn at TILE scale, towering over the figures */
+        const T2=TILE, gd='#a2761c', gm='#d8a836', gl='#f2d074', RB=(x,y,w,h,c)=>{g.fillStyle=c;g.fillRect(x,y,w,h);};
+        g.fillStyle='rgba(0,0,0,.28)'; g.beginPath(); g.ellipse(0,T2*.12,T2*.74,T2*.27,0,0,Math.PI*2); g.fill();
+        RB(-T2*.44,-T2*.42,T2*.88,T2*.42,gd);            /* base */
+        RB(-T2*.28,-T2*2.42,T2*.56,T2*2.08,gm);          /* shaft */
+        RB(-T2*.28,-T2*2.42,T2*.2,T2*2.08,gl);           /* highlight */
+        RB(T2*.12,-T2*2.42,T2*.16,T2*2.08,gd);           /* shade */
+        RB(-T2*.52,-T2*2.94,T2*1.04,T2*.56,gl);          /* bowl capital */
+        RB(-T2*.52,-T2*2.46,T2*1.04,T2*.16,gd);
+        RB(-T2*.34,-T2*3.34,T2*.68,T2*.5,gm);            /* lily crown */
+        RB(-T2*.34,-T2*3.34,T2*.68,T2*.14,gl);
+        g.fillStyle=gd; for(let i=-1;i<=1;i++){ g.beginPath(); g.arc(i*T2*.3,-T2*2.64,T2*.11,0,Math.PI*2); g.fill(); }  /* pomegranates */
+        break;
+      }
       if(p.salt){
         R(-1.8,-8.6,3.6,8.6,'#e8e6df'); R(-2.4,-9.4,4.8,1.4,'#f2f0ea'); R(-1.8,-8.6,1,8.6,'#f7f5f0');
         R(-1.2,-9.8,2.4,1.6,'#e8e6df');
@@ -5656,9 +5722,9 @@ STORY.push(
   scene:{
    map:{biome:'city', w:50, h:34, seed:3105,
      features:[
-       {type:'tower',stage:3,x:24,y:8,solid:true,clear:5,flat:5,id:'house',examine:'The House of YAHUAH rising on Mount Moriyah — cedar within, overlaid with gold; the Most Set-apart Place a perfect cube, twenty cubits every way.'},
-       {type:'pillar',x:20,y:14,id:'yakin',examine:'The right pillar, cast in bronze by Ḥiram the craftsman — its name YAḴIN, “He shall establish.”'},
-       {type:'pillar',x:28,y:14,id:'boaz',examine:'The left pillar — BO‛AZ, “In Him is strength.”'},
+       {type:'temple',x:24,y:8,solid:true,clear:5,flat:5,id:'house',examine:'The House of YAHUAH rising on Mount Moriyah — cedar within, overlaid with gold; the Most Set-apart Place a perfect cube, twenty cubits every way.'},
+       {type:'pillar',gold:true,x:20,y:15,id:'yakin',examine:'The right pillar, cast in bronze by Ḥiram the craftsman — its name YAḴIN, “He shall establish.”'},
+       {type:'pillar',gold:true,x:28,y:15,id:'boaz',examine:'The left pillar — BO‛AZ, “In Him is strength.”'},
        {type:'laver',x:16,y:18,id:'sea',examine:'The Bronze Sea — cast round, ten cubits across, resting on twelve oxen, three facing each wind. It holds the water for the priests to wash.'},
        {type:'clearing',x:24,y:22,flat:3},
      ]},
