@@ -5552,7 +5552,7 @@ STORY.push(
   ],
   scene:{
    map:{biome:'rocky', w:46, h:30, seed:2203, overlook:{cliffY:7,drop:.6},
-     features:[ {type:'rock',x:14,y:12,solid:true,clear:1},{type:'rock',x:34,y:11,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3} ]},
+     features:[ {type:'rock',x:14,y:12,solid:true,clear:1},{type:'rock',x:34,y:11,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3},{type:'tent',x:34.4,y:15,id:'yaeltent'} ]},
    time:'day', music:'tense',
    player:'baraq', playerPos:[22,22], playerHold:'sword',
    npcs:[
@@ -5579,13 +5579,23 @@ STORY.push(
        {say:['baraq','Down from Taḇor — ten thousand after me! YAHUAH has gone out before us!']},
        {call:G=>Game.toBattle('sisera',2)},
       ]},
-     {type:'talk',npc:'yael',text:'Sisera flees to the tent of Ya‛ĕl — hear how the flight ends',hiddenUntil:2,
+     {type:'goto',x:33,y:18,radius:2.4,text:'Sisera has fled to the tent of Ya‛ĕl — pursue him there',hiddenUntil:2,
       script:[
        {show:'yael'},
-       {say:['narrator','But Sisera fled on foot to the tent of Ya‛ĕl, wife of Ḥeḇer — for there was peace between Yaḇin and the house of Ḥeḇer. And she said, “Turn aside, my lord, turn aside; do not fear.” And she covered him with a rug. He asked for water; she opened a skin of milk and gave him drink, and covered him again.']},
-       {say:['yael','Rest now. Stand at the door of the tent, and if any man comes and asks, “Is there a man here?” say, “No.”']},
-       {say:['narrator','But when he slept, weary to death, Ya‛ĕl took a tent-peg and a hammer, and went softly, and drove the peg through his temple into the ground — and he died. And see, as Baraq pursued Sisera, Ya‛ĕl came out to meet him: “Come, I shall show you the man you seek.” And there lay Sisera, dead, the peg in his temple.']},
-       {sfx:'blip'},{burst:[34,16,'spark',10]},
+       {spawn:{id:'sisera_f',char:'sisera',x:34.6,y:16.4,wander:false,noTalk:true}},
+       {say:['narrator','Sisera fled on foot to the tent of Ya‛ĕl, wife of Ḥeḇer — for there was peace between Yaḇin and the house of Ḥeḇer.']},
+       {say:['yael','Turn aside, my lord — turn aside to me; do not fear.']},
+       {say:['narrator','She covered him with a rug; he asked for water, and she opened a skin of milk and gave him drink, and covered him again.']},
+       {say:['sisera','Stand at the door of the tent; and if any comes and asks, “Is there a man here?” — say, “No.”']},
+       {call:G=>{ const s=G.world.npcs.find(n=>n.id==='sisera_f'); if(s) s.lying=true; }},
+       {say:['narrator','And weary to death, Sisera fell fast asleep.']},
+       {say:['yael','The peg, and the hammer. Softly now, Ya‛ĕl — for Yasharal, and for the Name.']},
+       {mash:{duration:4800,gain:.14,decay:.0002,text:'Drive the tent-peg home — softly, that he not wake',barA:'THE PEG',barB:'HIS SLEEP',msg1:'The hammer falls without a sound…',msg2:'The peg bites into the earth beneath his temple…'}},
+       {sfx:'blip'},{shake:1.4},{burst:[34.6,16.4,'spark',12]},
+       {say:['narrator','She drove the peg through his temple into the ground, and he died — the commander who escaped the battle, perished in his sleep by the hand of a woman.']},
+       {move:['player',33,16.8,.06]},
+       {say:['yael','Come — I shall show you the man you seek.']},
+       {say:['baraq','…Sisera. The peg in his temple. The esteem of this day is a woman’s, just as Deḇorah spoke.']},
        {say:['devorah','So let all Your enemies perish, O YAHUAH! But let those who love Him be like the sun when it rises in its might. And the land had rest forty years.']},
        {emote:['devorah','heart']},{sfx:'chime'},
       ]},
@@ -5896,6 +5906,14 @@ STORY.push(
      {id:'lion',char:'giant',x:20,y:12,wander:false,hidden:true,noTalk:true,scale:1.2},
      {id:'pelishti1',char:'pelishti',x:32,y:16,wander:false,hidden:true,noTalk:true},
    ],
+   onStart:[
+     {call:G=>{ const m=G.world.map;
+       for(let y=19;y<=25;y++) for(let x=28;x<=42;x++){ if(!SOLID.has(tileAt(m,x,y))) m.tiles[y*m.w+x]=T.TILLED; }
+       for(let i=0;i<60;i++){ const x=28+(i%15)*1.0+0.3+hash2(i,3)*0.3, y=19+Math.floor(i/15)*1.5+0.4;
+         if(x<42.5&&y<25.5&&!SOLID.has(tileAt(m,x,y))) m.decor.push({type:'wheat',x,y}); }
+       m.decor.sort((a,b)=>a.y-b.y);
+     }},
+   ],
    objectives:[
      {type:'goto',x:20,y:13,radius:2,text:'A lion roars against you on the road — tear it with bare hands',
       script:[
@@ -5915,7 +5933,15 @@ STORY.push(
      {type:'goto',x:30,y:16,radius:2.6,text:'The foxes, the firebrands, and the jawbone of a donkey',hiddenUntil:2,
       script:[
        {show:'pelishti1'},
-       {say:['narrator','When his wife was given to another, Shimshon caught three hundred foxes, and tied them tail to tail with a torch between each pair, and set fire to the standing grain and the vineyards and olives of the Pelishtim. And they burned his wife and her father; and he struck them hip and thigh, a great blow.']},
+       {say:['narrator','When his wife was given to another, Shimshon caught three hundred foxes, and turned them tail to tail, and set a torch between each pair of tails.']},
+       {say:['shimshon','This time I am blameless before the Pelishtim, though I do them harm. Loose them — into the standing grain!']},
+       {call:G=>{ const m=G.world.map;
+         for(let i=0;i<9;i++){ const x=29+(i%3)*4.4, y=20+Math.floor(i/3)*2.2;
+           m.decor.push({type:'firepit',x,y,lit:true}); }
+         m.decor.sort((a,b)=>a.y-b.y); }},
+       {sfx:'thunder'},{shake:1.4},
+       {burst:[32,21,'spark',16]},{burst:[36,22,'spark',16]},{burst:[34,20,'smoke',8]},{burst:[38,23,'smoke',8]},
+       {say:['narrator','And he set fire to the shocks and the standing grain, and the vineyards and the olives of the Pelishtim — and the whole harvest went up in flame and smoke. And they burned his wife and her father; and he struck them hip and thigh, a great blow.']},
        {say:['narrator','And the Pelishtim came up against Yahuḏah, and three thousand men of Yahuḏah bound Shimshon and handed him over. But as they shouted, the Spirit of YAHUAH came mightily upon him — the ropes on his arms became as flax burned with fire, and they dropped off his hands.']},
        {shake:1.6},{sfx:'thunder'},{burst:[30,16,'spark',20]},
        {say:['shimshon','With the jawbone of a donkey — heaps upon heaps! With the jaw of a donkey I have struck a thousand men!']},
