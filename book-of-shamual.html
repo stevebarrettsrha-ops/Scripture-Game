@@ -702,8 +702,11 @@ function drawChar(g,px,py,charId,o){
   g.save();
   g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined) g.globalAlpha=o.alpha;
+  /* rising from the earth: clip at the ground line and slide the figure up through it */
+  const rising=(o.rise!==undefined&&o.rise<1);
+  if(rising){ g.beginPath(); g.rect(-22*u,-72*u,44*u,72*u); g.clip(); g.translate(0,(1-o.rise)*32*u); }
   /* shadow */
-  if(!o.submerged&&!o.riding){
+  if(!o.submerged&&!o.riding&&!rising){
     g.fillStyle='rgba(0,0,0,.25)';
     g.beginPath(); g.ellipse(0,1,6.4*u,2.3*u,0,0,Math.PI*2); g.fill();
   }
@@ -1025,7 +1028,10 @@ function drawCharBlock(g,px,py,charId,o){
   g.save();
   g.translate(Math.round(px),Math.round(py));
   if(o.alpha!==undefined) g.globalAlpha=o.alpha;
-  if(!o.submerged&&!o.riding){
+  /* rising from the earth: clip at the ground line and slide the figure up through it */
+  const rising=(o.rise!==undefined&&o.rise<1);
+  if(rising){ g.beginPath(); g.rect(-22*u,-72*u,44*u,72*u); g.clip(); g.translate(0,(1-o.rise)*32*u); }
+  if(!o.submerged&&!o.riding&&!rising){
     g.fillStyle='rgba(0,0,0,.25)';
     g.beginPath(); g.ellipse(0,1,6.8*u,2.4*u,0,0,Math.PI*2); g.fill();
   }
@@ -3072,7 +3078,8 @@ function drawWorld(g,world,t){
       if(d.emote){ drawEmote(g,sx,sy-TILE*2.6,d.emote,t); }
     }
     else {
-      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand});
+      const riseP=(d.riseStart!==undefined)?Math.min(1,Math.max(0,(t-d.riseStart)/1500)):undefined;
+      drawChar(g,sx,sy,d.char,{t,dir:d.dir,moving:d.moving,alpha:d.alpha,child:d.child,scale:d.scale,lying:d.lying,submerged:d.submerged,hold:d.hold,whiteHand:d.whiteHand,rise:riseP});
       if(d.emote){ drawEmote(g,sx,sy-TILE*1.9,d.emote,t); }
       if(d.marker){ // objective marker
         const mb=Math.sin(t/250)*4;
@@ -3435,6 +3442,7 @@ const Game={
     if(op.face){ const ent=findEnt(op.face[0]); if(ent) ent.dir=op.face[1]; return true; }
     if(op.hide){ const ent=findEnt(op.hide); if(ent) ent.hidden=true; return true; }
     if(op.show){ const ent=findEnt(op.show); if(ent) ent.hidden=false; return true; }
+    if(op.rise){ const ent=findEnt(op.rise); if(ent){ ent.hidden=false; ent.riseStart=this.t; } return true; }
     if(op.emote){ const ent=findEnt(op.emote[0]); if(ent) ent.emote=op.emote[1]; return true; }
     if(op.charSwap){ const ent=findEnt(op.charSwap[0]); if(ent) ent.char=op.charSwap[1]; return true; }
     if(op.hold){ const ent=findEnt(op.hold[0]); if(ent) ent.hold=op.hold[1]||null; return true; }
@@ -6400,8 +6408,12 @@ STORY.push(
       ]},
      {type:'goto',x:14,y:8,radius:2,text:'Bow to the shade that rises — and hear the doom',hiddenUntil:1,
       script:[
-       {show:'shade'},
-       {rays:.5,raysX:14},{sfx:'holy'},
+       {sfx:'holy'},{rays:.55,raysX:14},{shake:.6},
+       {burst:[14,6,'ash',16]},
+       {rise:'shade'},
+       {burst:[14,6,'holy',18]},
+       {wait:1500},
+       {say:['endorwoman','I see a mighty one coming up out of the earth — an old man, wrapped in a robe!']},
        {say:['shamuel_g','Why have you disturbed me, to bring me up?']},
        {say:['shaul_k','I am deeply distressed — the Pelishtim make war on me, and Aluahim has turned from me, and answers no more, by prophets or by dreams. So I called you, to tell me what I should do.']},
        {say:['shamuel_g','Why then do you ask me, seeing YAHUAH has turned from you and become your enemy? YAHUAH has done as He spoke by me: He has torn the reign from your hand and given it to Dawiḏ — because you did not obey the voice of YAHUAH, nor carry out His burning wrath against Amalĕq. Tomorrow you and your sons shall be with me; and YAHUAH shall give Yasharal also into the hand of the Pelishtim.']},
