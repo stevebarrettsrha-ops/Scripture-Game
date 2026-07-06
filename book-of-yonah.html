@@ -5825,17 +5825,21 @@ function drawSlideArt(g,key,st,t,slide){
        g.fillStyle='#a98a52'; g.fillRect(0,gy,VW,VH*.012);
        g.fillStyle='rgba(120,95,50,.35)';
        for(let i=0;i<44;i++){ const gx=hash2(i,2)*VW, gyy=gy+hash2(i,7)*(VH-gy); g.fillRect(gx,gyy,3+hash2(i,9)*5,2); }
-       // booth (lean-to) at left
-       { const bx=VW*.18, by=gy;
-         g.fillStyle='#6a4d2c'; g.fillRect(bx,by-VH*.17,VW*.012,VH*.17); g.fillRect(bx+VW*.15,by-VH*.21,VW*.012,VH*.21);
-         g.save(); g.translate(bx-VW*.02,by-VH*.215); g.rotate(-0.13);
-         g.fillStyle='#7a6a2e'; g.fillRect(0,0,VW*.21,VH*.028);
-         g.fillStyle='#5f7a34'; for(let i=0;i<8;i++){ g.beginPath(); g.ellipse(i*VW*.028,VH*.004,VW*.02,VH*.011,0.2,0,Math.PI*2); g.fill(); }
-         g.restore(); }
+       // booth (sukkah): two posts, a reed back wall, and a leafy branch roof
+       { const lx=VW*.34, rx=VW*.54, ry=gy-VH*.25;
+         g.fillStyle='#6a4d2c'; g.fillRect(lx,ry,VW*.015,gy-ry); g.fillRect(rx,ry,VW*.015,gy-ry);
+         g.fillStyle='#5a4024'; g.fillRect(lx,ry,VW*.015,VH*.012); g.fillRect(rx,ry,VW*.015,VH*.012);
+         g.fillStyle='rgba(150,122,72,.55)'; for(let i=0;i<7;i++){ g.fillRect(lx+VW*.016+i*VW*.008, gy-VH*.11, VW*.0035, VH*.11); }
+         g.fillStyle='#5a4028'; g.fillRect(lx-VW*.02, ry-VH*.012, (rx-lx)+VW*.055, VH*.02);
+         const nf=11; for(let i=0;i<=nf;i++){ const f=i/nf, bx=lx-VW*.015+((rx-lx)+VW*.045)*f;
+           g.save(); g.translate(bx, ry-VH*.006); g.rotate((f-0.5)*0.55);
+           g.fillStyle= i%2?'#54702e':'#638138'; g.beginPath(); g.ellipse(0, VH*.022, VW*.011, VH*.032, 0,0,Math.PI*2); g.fill();
+           g.strokeStyle='rgba(30,48,18,.35)'; g.lineWidth=1.5; g.beginPath(); g.moveTo(0,0); g.lineTo(0,VH*.04); g.stroke();
+           g.restore(); } }
        // Yonah standing beneath the plant
-       drawChar(g, VW*.35, gy, 'yonah', {t,scale:1.35,dir:'down'});
+       drawChar(g, VW*.44, gy, 'yonah', {t,scale:1.35,dir:'down'});
        // --- the plant: grows, then a worm, then withers ---
-       { const baseX=VW*.44, baseY=gy, topX=baseX-VW*.06*(1-grow*0+wither), topY=baseY-VH*.44*grow;
+       { const baseX=VW*.58, baseY=gy, topX=baseX-VW*.12-VW*.03*wither, topY=baseY-VH*.44*grow;
          g.strokeStyle= wither>.55?'#7a6030':'#3f7a2f'; g.lineWidth=Math.max(2,VW*.009*grow); g.lineCap='round';
          g.beginPath(); g.moveTo(baseX,baseY); g.quadraticCurveTo(baseX-VW*.03, (baseY+topY)/2, topX, topY); g.stroke();
          const leaves=[[-1.6,VW*.11],[-0.85,VW*.13],[0.0,VW*.12],[0.85,VW*.115],[1.6,VW*.10]];
@@ -5845,9 +5849,21 @@ function drawSlideArt(g,key,st,t,slide){
            g.strokeStyle='rgba(30,70,25,.4)'; g.lineWidth=1.5; g.beginPath(); g.moveTo(0,0); g.lineTo(0,ln*grow); g.stroke();
            if(wither>0){ g.globalAlpha=wither; g.fillStyle='#8a6a34'; g.beginPath(); g.ellipse(0,ln*grow*.5,ln*grow*.30,ln*grow*.5,0,0,Math.PI*2); g.fill(); g.globalAlpha=1; }
            g.restore(); }
-         if(wormT>0 && wither<0.6){ const wy=baseY-VH*.44*grow*(0.28+0.55*wormT);
-           g.fillStyle='#b3b06a'; for(let sIdx=0;sIdx<5;sIdx++){ g.beginPath(); g.arc(baseX-VW*.01+Math.sin(sIdx+t/200)*2, wy+sIdx*4.4, 3.4-sIdx*0.25,0,Math.PI*2); g.fill(); }
-           g.fillStyle='#3a2a12'; g.beginPath(); g.arc(baseX-VW*.01, wy-4,1.3,0,Math.PI*2); g.fill(); }
+         if(wormT>0){
+           // a big caterpillar climbs to the crown and gnaws the plant to death
+           const climb=Math.max(wormT, wither>0?1:0);
+           const wx=baseX+(topX-baseX)*(0.45+0.5*climb), wy=baseY+(topY-baseY)*(0.45+0.5*climb)+VH*.02;
+           const R=VH*.034, seg=VW*.006;
+           g.save(); g.translate(wx,wy);
+           for(let sIdx=0;sIdx<8;sIdx++){ const a=-1.2+sIdx*0.32;
+             const sxo=Math.cos(a)*R+sIdx*seg, syo=Math.sin(a)*R*0.62+Math.sin(t/170+sIdx)*VH*.004;
+             g.fillStyle=sIdx%2?'#7d8d38':'#93a350'; g.beginPath(); g.arc(sxo,syo,VH*.018-sIdx*VH*.0011,0,Math.PI*2); g.fill();
+             g.fillStyle='rgba(40,50,18,.25)'; g.beginPath(); g.arc(sxo,syo+VH*.007,VH*.013-sIdx*VH*.0011,0,Math.PI*2); g.fill(); }
+           const ha=-1.2+8*0.32, hx=Math.cos(ha)*R+8*seg, hy=Math.sin(ha)*R*0.62;
+           g.fillStyle='#6b7c2d'; g.beginPath(); g.arc(hx,hy,VH*.021,0,Math.PI*2); g.fill();
+           g.fillStyle='#241c0e'; g.beginPath(); g.arc(hx-VH*.006,hy-VH*.007,VH*.0045,0,Math.PI*2); g.arc(hx+VH*.008,hy-VH*.007,VH*.0045,0,Math.PI*2); g.fill();
+           g.strokeStyle='#4a5620'; g.lineWidth=2; g.beginPath(); g.moveTo(hx-VH*.004,hy-VH*.02); g.lineTo(hx-VH*.008,hy-VH*.03); g.moveTo(hx+VH*.006,hy-VH*.02); g.lineTo(hx+VH*.01,hy-VH*.03); g.stroke();
+           g.restore(); }
        }
        break; }
      case 'nineveh': {
@@ -6173,7 +6189,7 @@ STORY.push(
   },
   outro:[
    {art:'gourd', music:'sorrow', text:'And Yonah went out of the city and sat on the east side of the city. There he made himself a booth and sat under it in the shade, till he should see what would become of the city. And YAHUAH Elohim appointed a plant and made it come up over Yonah, to be a shade over his head, to deliver him from his misery. And Yonah was exceedingly glad of the plant.', ref:'YONAH 4:5–6'},
-   {art:'wasteland', music:'sorrow', text:'But at dawn the next day Elohim appointed a worm, and it struck the plant so that it withered. And when the sun rose, Elohim appointed a scorching east wind, and the sun beat down on Yonah’s head so that he grew faint and wished within himself to die, and said, “It is better for me to die than to live.” And Elohim said to Yonah, “Is it right for you to be angry about the plant?” And he said, “It is right for me to be angry, even to death.”', ref:'YONAH 4:7–9'},
+   {art:'gourd', music:'sorrow', text:'But at dawn the next day Elohim appointed a worm, and it struck the plant so that it withered. And when the sun rose, Elohim appointed a scorching east wind, and the sun beat down on Yonah’s head so that he grew faint and wished within himself to die, and said, “It is better for me to die than to live.” And Elohim said to Yonah, “Is it right for you to be angry about the plant?” And he said, “It is right for me to be angry, even to death.”', ref:'YONAH 4:7–9'},
    {art:'light', music:'holy', text:'And YAHUAH said, “You had pity on the plant, for which you did not labour, nor make it grow, which came up in a night and perished in a night. And should I not have pity on Ninewĕh, that great city, in which are more than a hundred and twenty thousand people who cannot discern between their right hand and their left — and also much livestock?”', ref:'YONAH 4:10–11'},
   ],
   complete:'Should I not have pity on Ninewĕh, that great city? — the book that ends on the mercy of YAHUAH.'
