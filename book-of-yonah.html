@@ -4740,7 +4740,7 @@ function slideSeed(slide,key){
   return (h>>>0)%100000;
 }
 function slideVariation(g,sd,t,key){
-  var NOSKY={furnace:1,throne:1,mishkanin:1,menorahart:1,mishkanart:1,void:1,coffin:1,dreams:1,fish:1};
+  var NOSKY={furnace:1,throne:1,mishkanin:1,menorahart:1,mishkanart:1,void:1,coffin:1,dreams:1,fish:1,boat:1};
   var R=function(n){ var x=Math.sin((sd+1)*12.9898+n*78.233)*43758.5453; return x-Math.floor(x); };
   var moods=[[255,150,70],[120,150,255],[180,120,220],[255,205,120],[110,200,180],[225,120,110],[150,170,205],[255,180,95]];
   var m=moods[Math.floor(R(1)*moods.length)%moods.length];
@@ -5738,6 +5738,77 @@ function drawSlideArt(g,key,st,t,slide){
          g.restore();
        })();
        break; }
+     case 'boat': {
+       Sky.paint(g,[[0,'#1a2436'],[.5,'#243349'],[1,'#0e1622']]);
+       for(let i=0;i<70;i++){ const h4=hash2(i*7,Math.floor(t/16)+i);
+         g.strokeStyle=`rgba(160,185,215,${.25+h4*.3})`; g.lineWidth=1;
+         const rx2=h4*VW, ry=((t*.7+i*97)%VH);
+         g.beginPath(); g.moveTo(rx2,ry); g.lineTo(rx2-5,ry+16); g.stroke(); }
+       if(Math.sin(t/1700)>.94){ g.fillStyle='rgba(210,225,255,.20)'; g.fillRect(0,0,VW,VH); }
+       // heaving sea
+       const seaY=VH*.60;
+       g.fillStyle='#16293a'; g.fillRect(0,seaY,VW,VH-seaY);
+       for(let i=0;i<7;i++){ const wy=seaY+i*(VH-seaY)/7;
+         g.fillStyle=`rgba(90,140,180,${.08+.03*Math.sin(t/500+i)})`;
+         g.beginPath(); g.moveTo(0,wy);
+         for(let x=0;x<=VW;x+=24) g.lineTo(x,wy+Math.sin(x*.02+t/600+i)*6);
+         g.lineTo(VW,VH); g.lineTo(0,VH); g.closePath(); g.fill(); }
+       // --- the boat ---
+       const bob=Math.sin(t/700)*7, tilt=Math.sin(t/820)*0.07;
+       g.save(); g.translate(VW*.43,VH*.585+bob); g.rotate(tilt);
+       const W=VW*.185, D=VH*.10;
+       g.fillStyle='#6b4a2e';
+       g.beginPath(); g.moveTo(-W,-D*.18); g.quadraticCurveTo(-W*1.12,D*.2,-W*.7,D*.72);
+       g.quadraticCurveTo(0,D*1.15,W*.7,D*.72); g.quadraticCurveTo(W*1.12,D*.2,W,-D*.18); g.closePath(); g.fill();
+       g.fillStyle='#4e3620'; g.beginPath(); g.moveTo(-W*.86,D*.34); g.quadraticCurveTo(0,D*1.05,W*.86,D*.34); g.quadraticCurveTo(0,D*.72,-W*.86,D*.34); g.closePath(); g.fill();
+       g.strokeStyle='rgba(30,20,10,.35)'; g.lineWidth=2;
+       for(let i=1;i<=3;i++){ const yy=-D*.05+i*D*.2; g.beginPath(); g.moveTo(-W*(1-i*.04),yy); g.quadraticCurveTo(0,yy+D*.5,W*(1-i*.04),yy); g.stroke(); }
+       g.fillStyle='#7a5738'; g.fillRect(-W,-D*.30,2*W,D*.16);
+       g.fillStyle='#8a6642'; g.fillRect(-W,-D*.30,2*W,D*.05);
+       g.fillStyle='#7a5738';
+       g.beginPath(); g.moveTo(W*.9,-D*.2); g.quadraticCurveTo(W*1.18,-D*1.0,W*1.0,-D*1.25); g.lineTo(W*.82,-D*.95); g.closePath(); g.fill();
+       g.beginPath(); g.moveTo(-W*.9,-D*.2); g.quadraticCurveTo(-W*1.12,-D*.75,-W*.98,-D*.95); g.lineTo(-W*.8,-D*.62); g.closePath(); g.fill();
+       g.fillStyle='#5a4028'; g.fillRect(-D*.05,-D*.30-VH*.19,D*.10,VH*.19);
+       g.fillStyle='#5a4028'; g.fillRect(-W*.46,-D*.30-VH*.175,W*.92,D*.07);
+       g.fillStyle='#cabfa4';
+       g.beginPath(); g.moveTo(-W*.4,-D*.30-VH*.165); g.lineTo(W*.4,-D*.30-VH*.165);
+       g.lineTo(W*.30,-D*.30-VH*.02); g.quadraticCurveTo(0,-D*.30-VH*.06,-W*.30,-D*.30-VH*.02); g.closePath(); g.fill();
+       g.fillStyle='rgba(120,110,90,.45)';
+       for(let i=-2;i<=2;i++){ g.fillRect(i*W*.145,-D*.30-VH*.16,W*.016,VH*.13); }
+       // sailors at the rail, heaving toward the sea
+       drawChar(g,-W*.34,-D*.22,'sailor',{t,scale:.72,dir:'right'});
+       drawChar(g, W*.18,-D*.22,'captain',{t,scale:.72,dir:'right'});
+       g.restore();
+       // --- Yonah flung off the side, mid-air, flailing (blocky game style) ---
+       (function(){
+         const yx=VW*.73, yy=VH*.46+Math.sin(t/300)*6, u=Math.min(VW,VH)*0.006;
+         const skin='#7a4e29', hairC='#2c1a0c', robe='#4f6072', beard='#2c1a0c';
+         const armC=shade(robe,-12), shoe=shade(skin,-32), studC=hairC;
+         const blk=(x,y,w,h,col,lip)=>{ lip=(lip===undefined)?1:lip; g.fillStyle=col; g.fillRect(x,y,w,h);
+           if(lip){ g.fillStyle=shade(col,20); g.fillRect(x,y,w,.9*lip); g.fillStyle=shade(col,-18); g.fillRect(x+w-.9*lip,y+.9*lip,.9*lip,h-.9*lip); } };
+         g.save(); g.translate(yx,yy); g.rotate(0.7+Math.sin(t/380)*0.35); g.scale(u,u); g.translate(0,13);
+         const legA=Math.sin(t/95)*0.85+0.5, legB=Math.sin(t/95+2.4)*0.85-0.5;
+         g.save(); g.translate(-2.6,-8.2); g.rotate(legA); blk(-1.7,0,3.4,6.4,skin,.7); blk(-1.7,6.0,3.6,1.9,shoe,.6); g.restore();
+         g.save(); g.translate(2.6,-8.2); g.rotate(legB); blk(-1.7,0,3.4,6.4,skin,.7); blk(-1.9,6.0,3.6,1.9,shoe,.6); g.restore();
+         blk(-6,-15,12,7,robe); g.fillStyle=shade(robe,10); g.fillRect(-1,-14.1,2,6.1);
+         const armA=Math.sin(t/80)*1.05-1.7, armB=Math.sin(t/80+2.7)*1.05-1.7;
+         g.save(); g.translate(-5.7,-14.6); g.rotate(armA); blk(-2.3,0,2.3,5.2,armC,.6); blk(-2.2,4.8,2.1,1.9,skin,.5); g.restore();
+         g.save(); g.translate(5.7,-14.6); g.rotate(-armB); blk(0,0,2.3,5.2,armC,.6); blk(0.1,4.8,2.1,1.9,skin,.5); g.restore();
+         g.fillStyle=studC; g.fillRect(-1.7,-27.5,3.4,1.6); g.fillStyle=shade(studC,18); g.fillRect(-1.7,-27.5,3.4,.6);
+         blk(-5.8,-26,11.6,10.6,skin,1.1);
+         g.fillStyle=hairC; g.fillRect(-6.3,-26.8,12.6,3.2); g.fillStyle=shade(hairC,18); g.fillRect(-6.3,-26.8,12.6,.9);
+         g.fillStyle=hairC; g.fillRect(-6.3,-24.8,1.7,3.2); g.fillRect(4.6,-24.8,1.7,3.2);
+         g.fillStyle='#160e08'; g.fillRect(-3.4,-22.6,2.2,2.8); g.fillRect(1.2,-22.6,2.2,2.8);
+         g.fillStyle='#fff6ee'; g.fillRect(-2.9,-22.1,1.1,1.1); g.fillRect(1.7,-22.1,1.1,1.1);
+         g.fillStyle='#2a1414'; g.fillRect(-1.5,-19.5,3,1.6);
+         g.fillStyle=beard; g.fillRect(-4.2,-17.8,8.4,3.2); g.fillRect(-2.8,-14.8,5.6,1.8);
+         g.restore();
+       })();
+       // spray where he meets the water
+       for(let i=0;i<20;i++){ const h5=hash2(i*13,Math.floor(t/70)+i);
+         const sx=VW*.72+(h5-.5)*VW*.14, sy=VH*.60-(hash2(i,5))*VH*.05;
+         g.fillStyle=`rgba(220,235,245,${.4*h5})`; g.beginPath(); g.arc(sx,sy,1+h5*2.2,0,Math.PI*2); g.fill(); }
+       break; }
     default: {
       Sky.paint(g,[[0,'#0a0e1a'],[1,'#141a2c']]);
       Sky.stars(g,t,80,.7);
@@ -5865,7 +5936,7 @@ STORY.push(
   },
   outro:[
    {art:'flood', music:'tense', text:'Nevertheless the men rowed hard to bring the ship back to land, but they could not, for the sea grew more and more tempestuous against them. So they cried out to YAHUAH, and said, “We beg You, O YAHUAH, please do not let us perish for this man’s life, and do not lay innocent blood on us — for You, O YAHUAH, have done as it pleased You.”', ref:'YONAH 1:10–13'},
-   {art:'flood', music:'sorrow', text:'Then they took up Yonah and threw him into the sea, and the sea ceased from its raging. And the men feared YAHUAH exceedingly, and offered a slaughtering to YAHUAH, and made vows.', ref:'YONAH 1:14–16'},
+   {art:'boat', music:'sorrow', text:'Then they took up Yonah and threw him into the sea, and the sea ceased from its raging. And the men feared YAHUAH exceedingly, and offered a slaughtering to YAHUAH, and made vows.', ref:'YONAH 1:14–16'},
    {art:'fish', music:'sorrow', text:'And YAHUAH appointed a great fish to swallow Yonah. And Yonah was in the belly of the fish three days and three nights.', ref:'YONAH 1:17'},
   ],
   complete:'They threw Yonah into the sea, and it was stilled — and a great fish swallowed him, three days and nights.'
