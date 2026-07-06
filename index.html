@@ -430,13 +430,17 @@ const Save={
 
 /* ================= AUDIO (procedural, WebAudio) ================= */
 const Sound={
-  ctx:null, master:null, padNodes:[], rainNode:null, enabled:true, mood:null,
+  ctx:null, master:null, musicGain:null, padNodes:[], rainNode:null, enabled:true, mood:null,
+  _mus:null, _musTimer:null, _step:0, _bar:0, _nextT:0, _noise:null,
   init(){
-    if(this.ctx) return;
+    if(this.ctx){ if(this.ctx.state==='suspended'){ try{this.ctx.resume();}catch(e){} } return; }
     try{
       this.ctx=new (window.AudioContext||window.webkitAudioContext)();
       this.master=this.ctx.createGain(); this.master.gain.value=.55;
       this.master.connect(this.ctx.destination);
+      /* a separate bus for the generative music, so it can fade independently of sfx */
+      this.musicGain=this.ctx.createGain(); this.musicGain.gain.value=0;
+      this.musicGain.connect(this.master);
     }catch(e){}
   },
   setEnabled(on){
@@ -458,6 +462,7 @@ const Sound={
   ambient(mood){
     if(!this.ctx||mood===this.mood) return;
     this.mood=mood;
+    this.startMusic(mood);   /* the melodic layer follows the same mood as the pad */
     const t=this.ctx.currentTime;
     this.padNodes.forEach(n=>{ try{n.g.gain.linearRampToValueAtTime(0,t+1.8); n.o.stop(t+2); n.lfo.stop(t+2);
       setTimeout(()=>{try{n.o.disconnect();n.g.disconnect();n.lfo.disconnect();}catch(e){}},2200);}catch(e){} });
@@ -476,6 +481,120 @@ const Sound={
       o.start();
       this.padNodes.push({o,g,lfo});
     });
+  },
+  /* ============ GENERATIVE MUSIC ============
+     A small in-key sequencer layered over the ambient pad: bass on the chord
+     roots, an optional arpeggio, a sparse lead melody, and subtle percussion.
+     Every mood picks a scale + chord progression so what plays is always
+     consonant. No audio files — it is all synthesised, so the game stays offline. */
+  MUSIC:{
+    //         root (Hz)  scale (semitone degrees)      bpm  progression      pad wave  lead wave   perc vol   arp  density  extras
+    eden:   {root:130.81, scale:[0,2,4,7,9],            bpm:66, prog:[0,3,4,3], wave:'triangle', lead:'sine',     perc:0, vol:.50, arp:1, density:.55},
+    holy:   {root:98.00,  scale:[0,2,4,5,7,9,11],       bpm:60, prog:[0,4,5,3], wave:'sine',     lead:'triangle', perc:0, vol:.55, arp:1, density:.50, bell:1},
+    night:  {root:110.00, scale:[0,3,5,7,10],           bpm:54, prog:[0,5,3,4], wave:'sine',     lead:'sine',     perc:0, vol:.42, arp:0, density:.32},
+    sorrow: {root:146.83, scale:[0,2,3,5,7,8,10],       bpm:56, prog:[0,5,3,4], wave:'triangle', lead:'triangle', perc:0, vol:.46, arp:0, density:.34},
+    storm:  {root:98.00,  scale:[0,2,3,5,7,8,10],       bpm:92, prog:[0,0,5,5], wave:'sawtooth', lead:'square',   perc:2, vol:.42, arp:1, density:.60},
+    desert: {root:130.81, scale:[0,1,4,5,7,8,10],       bpm:70, prog:[0,3,0,4], wave:'triangle', lead:'triangle', perc:1, vol:.42, arp:0, density:.40},
+    royal:  {root:164.81, scale:[0,2,3,5,7,8,11],       bpm:80, prog:[0,3,4,5], wave:'triangle', lead:'triangle', perc:1, vol:.48, arp:1, density:.55},
+    tense:  {root:103.83, scale:[0,2,3,5,6,8,10],       bpm:96, prog:[0,0,1,5], wave:'sawtooth', lead:'square',   perc:2, vol:.40, arp:0, density:.50, ostinato:1}
+  },
+  /* map a scale-degree (may exceed the scale length / go negative) + octave to a frequency */
+  _deg(cfg,degree,oct){
+    const sc=cfg.scale, n=sc.length;
+    const semi=sc[((degree%n)+n)%n] + 12*(oct+Math.floor(degree/n));
+    return cfg.root*Math.pow(2,semi/12);
+  },
+  /* a sustained, filtered tone (bass, lead) */
+  _tone(freq,time,dur,wave,peak,cut){
+    const c=this.ctx, o=c.createOscillator(), g=c.createGain(), f=c.createBiquadFilter();
+    o.type=wave; o.frequency.value=freq;
+    f.type='lowpass'; f.frequency.value=cut||2400; f.Q.value=.5;
+    g.gain.setValueAtTime(0,time);
+    g.gain.linearRampToValueAtTime(peak,time+Math.min(.04,dur*.3));
+    g.gain.exponentialRampToValueAtTime(.0001,time+dur);
+    o.connect(f); f.connect(g); g.connect(this.musicGain);
+    o.start(time); o.stop(time+dur+.05);
+  },
+  /* a short plucked note (arpeggio, ostinato) */
+  _pluck(freq,time,dur,wave,peak){
+    const c=this.ctx, o=c.createOscillator(), g=c.createGain();
+    o.type=wave; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,time);
+    g.gain.linearRampToValueAtTime(peak,time+.008);
+    g.gain.exponentialRampToValueAtTime(.0001,time+dur);
+    o.connect(g); g.connect(this.musicGain);
+    o.start(time); o.stop(time+dur+.03);
+  },
+  _perc(time,kind){
+    const c=this.ctx;
+    if(kind==='kick'){
+      const o=c.createOscillator(), g=c.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(120,time); o.frequency.exponentialRampToValueAtTime(45,time+.12);
+      g.gain.setValueAtTime(.0001,time); g.gain.linearRampToValueAtTime(.45,time+.005); g.gain.exponentialRampToValueAtTime(.0001,time+.18);
+      o.connect(g); g.connect(this.musicGain); o.start(time); o.stop(time+.2);
+    }else if(kind==='hat'){
+      const buf=this._noise||(this._noise=(()=>{const b=c.createBuffer(1,(c.sampleRate*.2)|0,c.sampleRate);const d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;return b})());
+      const s=c.createBufferSource(); s.buffer=buf;
+      const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=7000;
+      const g=c.createGain(); g.gain.setValueAtTime(.11,time); g.gain.exponentialRampToValueAtTime(.0001,time+.05);
+      s.connect(f); f.connect(g); g.connect(this.musicGain); s.start(time); s.stop(time+.06);
+    }
+  },
+  startMusic(mood){
+    if(!this.ctx) return;
+    const cfg=this.MUSIC[mood];
+    if(!cfg){ this.stopMusic(); return; }
+    this._mus=cfg; this._step=0; this._bar=0;
+    this._nextT=this.ctx.currentTime+.08;
+    const t=this.ctx.currentTime;
+    this.musicGain.gain.cancelScheduledValues(t);
+    this.musicGain.gain.setValueAtTime(this.musicGain.gain.value,t);
+    this.musicGain.gain.linearRampToValueAtTime(cfg.vol,t+2.5);
+    if(!this._musTimer) this._musTimer=setInterval(()=>this._sched(),25);
+  },
+  stopMusic(){
+    if(this.ctx&&this.musicGain){
+      const t=this.ctx.currentTime;
+      this.musicGain.gain.cancelScheduledValues(t);
+      this.musicGain.gain.setValueAtTime(this.musicGain.gain.value,t);
+      this.musicGain.gain.linearRampToValueAtTime(0,t+1.5);
+    }
+    this._mus=null;
+    if(this._musTimer){ clearInterval(this._musTimer); this._musTimer=null; }
+  },
+  /* look-ahead scheduler: queue every sixteenth note ~120ms before it sounds */
+  _sched(){
+    const cfg=this._mus; if(!cfg||!this.ctx) return;
+    if(this._nextT<this.ctx.currentTime) this._nextT=this.ctx.currentTime+.05; /* recover after tab throttling */
+    const six=(60/cfg.bpm)/4;
+    const ahead=this.ctx.currentTime+.12;
+    while(this._nextT<ahead){
+      if(this.enabled) this._playStep(cfg,this._step,this._bar,this._nextT,six);
+      this._nextT+=six; this._step++;
+      if(this._step>=16){ this._step=0; this._bar++; }
+    }
+  },
+  _playStep(cfg,step,bar,t,six){
+    const chordRoot=cfg.prog[bar%cfg.prog.length];  /* scale-degree of this bar's chord */
+    /* bass: chord root on beat 1, the fifth on beat 3, an octave down */
+    if(step===0)      this._tone(this._deg(cfg,chordRoot,-1),   t, six*7, cfg.wave, .16, 700);
+    else if(step===8) this._tone(this._deg(cfg,chordRoot+2,-1), t, six*6, cfg.wave, .13, 700);
+    /* ostinato: a steady low eighth-note pulse (suspense) */
+    if(cfg.ostinato && step%2===0) this._pluck(this._deg(cfg,chordRoot,0), t, six*1.4, cfg.wave, .09);
+    /* arpeggio: 1-3-5-3 of the chord, cycling on the eighths */
+    if(cfg.arp && step%2===0){
+      const tone=chordRoot+[0,2,4,2][(step/2)%4];
+      this._pluck(this._deg(cfg,tone,1), t, six*1.8, cfg.lead, cfg.bell?.10:.075);
+    }
+    /* lead: a sparse in-key melody note on the strong beats */
+    if(step%4===0 && Math.random()<cfg.density){
+      const around=[0,2,4,1,3,5,-1];
+      const pick=chordRoot+around[(Math.random()*around.length)|0];
+      this._tone(this._deg(cfg,pick,cfg.bell?2:1), t, six*3.5, cfg.lead, .07, 3000);
+    }
+    /* percussion: a soft kick on the half-notes, closed hat on the offbeats */
+    if(cfg.perc>=1 && (step===0||step===8)) this._perc(t,'kick');
+    if(cfg.perc>=2 && step%2===1)           this._perc(t,'hat');
   },
   rain(on){
     if(!this.ctx) return;

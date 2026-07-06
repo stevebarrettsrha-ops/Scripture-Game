@@ -88,5 +88,9 @@ Second Books of Aḏam & Ḥawwah. Reference PDFs are kept in the repository roo
 ## Assets
 
 All art, music and sound are generated procedurally in code — there are no
-binary game assets. Custom art can be added under `assets/` and wired into the
+binary game assets. The soundtrack is a small generative sequencer (`Sound.MUSIC`
+in `index.html`): each scene mood picks a scale and chord progression and plays
+an in-key bass line, arpeggio, sparse lead melody and subtle percussion over the
+ambient pad, so every scene has its own evolving music while the game stays fully
+offline. Custom art can be added under `assets/` and wired into the
 prop/character renderers.
