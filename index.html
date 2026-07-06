@@ -1936,7 +1936,7 @@ function drawProp(g,px,py,p,t){
            wilderness and shuts again once one has passed through. */
         const TP=TILE, half=1.5*TP;                 /* the opening spans two posts, ~3 tiles */
         const Ny=-half, Sy=half;                    /* north post (behind) and south post (in front) */
-        const postH=TP*1.5, pw=TP*.3;
+        const postH=TP*1.35, pw=TP*.3;
         const doorT=Math.max(0,Math.min(1,p.doorT||0));
         /* base shadows of the two columns */
         g.fillStyle='rgba(0,0,0,.28)';
@@ -1977,14 +1977,14 @@ function drawProp(g,px,py,p,t){
         };
         post(Ny); post(Sy);
         if(p.guard!==false){
-          /* the keruv stands in the gateway, turned toward the way out, a sword in his
-             hand — a great and terrible guardian, larger than a man */
+          /* the keruv stands in the gateway, turned to face the wilderness where the man
+             is driven out — a great and terrible guardian, larger than a man, sword in hand */
           const bob=Math.sin(t/460)*4;
-          const kx=TP*.25, ky=-TP*.15+bob;
+          const kx=TP*.35, ky=-TP*.15+bob;
           const gl2=g.createRadialGradient(kx,ky-TP*1.5,6,kx,ky-TP*1.5,TP*2.6);
           gl2.addColorStop(0,`rgba(255,246,205,${.5+Math.sin(t/430)*.12})`); gl2.addColorStop(1,'rgba(255,244,200,0)');
           g.fillStyle=gl2; g.beginPath(); g.arc(kx,ky-TP*1.5,TP*2.6,0,Math.PI*2); g.fill();
-          drawChar(g,kx,ky,'cherub',{t,dir:'left',hold:'sword',scale:1.25});
+          drawChar(g,kx,ky,'cherub',{t,dir:'right',hold:'sword',scale:1.25});
         }
         break;
       }
@@ -2376,19 +2376,23 @@ function generateMap(cfg){
       return;
     }
     if(f.type==='wildzone'){
-      /* the wilderness beyond the wall: dry ground, dead trees, rocks and bones of
-         shrubs — the barren land east of the garden the man is driven out into. */
-      const x0=f.x0, y0=f.y0, x1=Math.min(w-2,f.x1), y1=Math.min(h-2,f.y1);
-      for(let yy=y0; yy<=y1; yy++) for(let xx=x0; xx<=x1; xx++){
-        if(xx<1||xx>=w-1||yy<1||yy>=h-1) continue;
+      /* the wilderness: dry ground, dead trees, rocks and withered shrubs. With
+         keepGreen, only the garden rectangle stays lush and everything else — on
+         every side — becomes barren land. Otherwise a single rectangle is painted. */
+      const keep=f.keepGreen;
+      const inRect=(x,y,r)=> x>=r[0]&&x<=r[2]&&y>=r[1]&&y<=r[3];
+      const wild=(x,y)=> keep ? !inRect(x,y,keep) : inRect(x,y,[f.x0,f.y0,f.x1,f.y1]);
+      for(let yy=1; yy<h-1; yy++) for(let xx=1; xx<w-1; xx++){
+        if(!wild(xx,yy)) continue;
         const tl=tiles[yy*w+xx];
         if(SOLID.has(tl)||tl===T.PATH) continue;              /* keep the border heights and the way through */
         const r=rng();
         tiles[yy*w+xx]= r<.66?T.DIRT : (r<.82?T.SAND : T.DIRT);
       }
       for(let i=decor.length-1;i>=0;i--){ const d=decor[i];
-        if(!d.id&&d.x>=x0-.5&&d.x<=x1+.5&&d.y>=y0-.5&&d.y<=y1+.5) decor.splice(i,1); }
-      for(let yy=y0+1; yy<y1; yy++) for(let xx=x0+1; xx<x1; xx++){
+        if(!d.id&&wild(Math.round(d.x),Math.round(d.y))) decor.splice(i,1); }
+      for(let yy=1; yy<h-1; yy++) for(let xx=1; xx<w-1; xx++){
+        if(!wild(xx,yy)) continue;
         if(SOLID.has(tiles[yy*w+xx])||tiles[yy*w+xx]===T.PATH) continue;
         if(Math.abs(yy-16)<1.1) continue;                     /* leave the exit lane clear */
         const r=rng();
@@ -4349,10 +4353,16 @@ const Game={
         /* open for whoever is drawing near the way or still passing through — the man and his wife both */
         const walkers=[w9.player]; if(w9.npcs) for(const n of w9.npcs) walkers.push(n);
         for(const e of walkers){ if(!e||e.hidden) continue;
-          const near=e.x>37&&e.x<gp.x+.5&&Math.abs(e.y-gp.y)<3.6;
-          const passing=e.x>=gp.x+.5&&e.x<=gp.x+3.2;
+          const near=e.x>gp.x-6&&e.x<gp.x+.5&&Math.abs(e.y-gp.y)<3.6;
+          const passing=e.x>=gp.x+.5&&e.x<=gp.x+2.4;
           if(near||passing){ tgt=1; break; } }
         gp.doorT=(gp.doorT||0)+(tgt-(gp.doorT||0))*Math.min(1,dt*.006);
+        /* the keruv appears as the man passes out through the gate, and stands facing the wilderness */
+        if(w9.player&&!gp._appeared&&w9.player.x>gp.x+.35){
+          gp._appeared=true; gp.guard=true;
+          try{ Sound.sfx('holy'); }catch(_){}
+          try{ Particles.burst(gp.x*TILE,(gp.y-1)*TILE,'holy',24); }catch(_){}
+        }
       }
     }
     if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkStoryArrival(); this.updateMount(); this.checkDoorways(); this.markVisited(); }
@@ -6200,26 +6210,27 @@ const STORY=[
    {art:'expulsion', music:'sorrow', text:'And YAHUAH Aluahim said, “See, the man has become like one of Us, to know good and evil. And now, lest he stretch out his hand and take also of the tree of life and eat and live forever…”', ref:'BERĔSHITH 3:22'},
   ],
   scene:{
-   map:{biome:'eden', w:58, h:30, seed:11,
+   map:{biome:'eden', w:64, h:32, seed:11,
      features:[
-       /* the garden walled about on every side, with one gate on the east */
-       {type:'hedgewall',x:43,y0:9,y1:22,gap:[14,16],thick:1},   /* east wall — holds the gate */
-       {type:'hedgewall',x:6, y0:9,y1:22,thick:1},               /* west wall */
-       {type:'hedgewall',y:9, x0:6,x1:43,thick:1},               /* north wall */
-       {type:'hedgewall',y:22,x0:6,x1:43,thick:1},               /* south wall */
-       {type:'wildzone',x0:44,y0:3,x1:55,y1:27},                 /* the wilderness beyond the gate */
-       {type:'gate',side:true,guard:false,x:43,y:15,solid:true,clear:3,flat:2,id:'gate'},
+       /* the garden is large — its wall runs off to the edges of the sight, for the
+          garden is greater than what is shown; one gate stands on the east */
+       {type:'hedgewall',x:48,y0:6,y1:26,gap:[14,16],thick:1},   /* east wall — holds the gate */
+       {type:'hedgewall',x:5, y0:6,y1:26,thick:1},               /* west wall */
+       {type:'hedgewall',y:6, x0:5,x1:48,thick:1},               /* north wall */
+       {type:'hedgewall',y:26,x0:5,x1:48,thick:1},               /* south wall */
+       {type:'wildzone',keepGreen:[5,6,48,26]},                  /* only the garden is lush — wilderness on every side without */
+       {type:'gate',side:true,guard:false,x:48,y:15,solid:true,clear:3,flat:2,id:'gate'},
        {type:'treeLife',x:10,y:14,solid:true,clear:3,id:'treelife'},
-       {type:'clearing',x:43,y:18,flat:3},
+       {type:'clearing',x:48,y:18,flat:3},
      ],
-     path:[[12,16,54,16]]},
+     path:[[10,16,62,16]]},
    time:'dusk', music:'sorrow',
-   player:'adam_c', playerPos:[12,17],
+   player:'adam_c', playerPos:[10,16],
    npcs:[
-     {id:'chavvah',char:'chavvah_c',x:11,y:18,wander:false,follow:true,noTalk:true},
+     {id:'chavvah',char:'chavvah_c',x:9,y:17,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
-     {type:'goto',x:42,y:16,radius:2.4,text:'Walk the long path east, to the gate of the garden'},
+     {type:'goto',x:47,y:16,radius:2.4,text:'Walk the long path east, to the gate of the garden'},
    ],
    onStart:[
      {say:['voice','See, the man has become like one of Us, to know good and evil. And now, lest he stretch out his hand and take also of the tree of life, and eat, and live forever…']},
@@ -6228,13 +6239,15 @@ const STORY=[
    onComplete:[
      {say:['adam','Come, Ḥawwah. By the sweat of my face we shall eat bread, until we return to the ground.']},
      {say:['chavvah','And yet He clothed us with His own hand — and He has said it: my Seed shall crush the serpent’s head.']},
-     /* they go out through the gate into the wilderness, and it swings shut behind them */
-     {move:['chavvah',49,16,.04,'bg']},
-     {move:['player',52,16,.04]},
-     {wait:800},
-     {prop:['gate',{guard:true}]},
-     {addProp:{type:'sword',x:43,y:12.5,id:'sword'}},
-     {sfx:'holy'},{burst:[43,13,'holy',22]},{wait:500},
+     /* frame the gate, then they go out through it into the wilderness — the keruv
+        appears as they pass through (see the door logic in update), and the golden
+        gate is seen swinging shut behind them */
+     {call:g=>{ g.world.camFollow=null; g.world.camTarget=[48,15]; }},
+     {move:['chavvah',53,16,.04,'bg']},
+     {move:['player',55,16,.04]},
+     {wait:1200},                                                        /* the golden gate swings shut behind them */
+     {addProp:{type:'sword',x:48,y:12,id:'sword'}},
+     {sfx:'holy'},{burst:[48,13,'holy',22]},{wait:500},
      {say:['narrator','And He placed keruḇim at the east of the garden of Ĕḏen, and a flaming sword which turned every way, to guard the way to the tree of life.']},
      {fade:'out'},
    ],
