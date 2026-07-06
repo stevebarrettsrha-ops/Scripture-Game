@@ -4740,7 +4740,7 @@ function slideSeed(slide,key){
   return (h>>>0)%100000;
 }
 function slideVariation(g,sd,t,key){
-  var NOSKY={furnace:1,throne:1,mishkanin:1,menorahart:1,mishkanart:1,void:1,coffin:1,dreams:1,fish:1,boat:1,gourd:1};
+  var NOSKY={furnace:1,throne:1,mishkanin:1,menorahart:1,mishkanart:1,void:1,coffin:1,dreams:1,fish:1,boat:1,gourd:1,nineveh:1,repent:1};
   var R=function(n){ var x=Math.sin((sd+1)*12.9898+n*78.233)*43758.5453; return x-Math.floor(x); };
   var moods=[[255,150,70],[120,150,255],[180,120,220],[255,205,120],[110,200,180],[225,120,110],[150,170,205],[255,180,95]];
   var m=moods[Math.floor(R(1)*moods.length)%moods.length];
@@ -5850,6 +5850,83 @@ function drawSlideArt(g,key,st,t,slide){
            g.fillStyle='#3a2a12'; g.beginPath(); g.arc(baseX-VW*.01, wy-4,1.3,0,Math.PI*2); g.fill(); }
        }
        break; }
+     case 'nineveh': {
+       Sky.paint(g,[[0,'#241f33'],[.5,'#3a2c38'],[1,'#5a2d28']]);
+       for(let i=0;i<3;i++){ g.fillStyle=`rgba(30,24,34,${.4-i*.1})`; const cy2=VH*(.10+i*.10);
+         g.beginPath(); g.moveTo(0,cy2); for(let x=0;x<=VW;x+=40) g.lineTo(x,cy2+Math.sin(x*.01+i+t/2000)*10); g.lineTo(VW,0); g.lineTo(0,0); g.closePath(); g.fill(); }
+       const gy=VH*.72;
+       // stepped ziggurat behind the wall
+       for(let i=0;i<4;i++){ const w=VW*(.24-i*.05), x=VW*.66-w/2, hh=VH*.045, y=gy-VH*.13-i*hh; g.fillStyle=i%2?'#4a3d46':'#443842'; g.fillRect(x,y,w,hh+1); }
+       g.fillStyle='#6a4a38'; g.fillRect(VW*.66-VW*.028,gy-VH*.13-4*VH*.045-VH*.035,VW*.056,VH*.036);
+       g.fillStyle='#c86a2a'; g.beginPath(); g.moveTo(VW*.66,gy-VH*.13-4*VH*.045-VH*.05); g.lineTo(VW*.66-7,gy-VH*.13-4*VH*.045-VH*.035); g.lineTo(VW*.66+7,gy-VH*.13-4*VH*.045-VH*.035); g.closePath(); g.fill();
+       // city wall
+       g.fillStyle='#3a3038'; g.fillRect(VW*.42,gy-VH*.12,VW*.58,VH*.12);
+       g.fillStyle='#463a44'; for(let x=VW*.42;x<VW;x+=VW*.032){ g.fillRect(x,gy-VH*.145,VW*.02,VH*.028); }
+       // towers
+       for(const tx of [VW*.48,VW*.68,VW*.88]){ g.fillStyle='#443843'; g.fillRect(tx,gy-VH*.19,VW*.052,VH*.19);
+         for(let x=tx;x<tx+VW*.052;x+=VW*.022){ g.fillStyle='#4e4150'; g.fillRect(x,gy-VH*.215,VW*.013,VH*.027); } }
+       // fires + smoke (violence within)
+       for(const fx of [VW*.56,VW*.80]){ g.fillStyle='#e89030';
+         g.beginPath(); g.moveTo(fx,gy-VH*.12); g.quadraticCurveTo(fx-7,gy-VH*.15,fx,gy-VH*.175); g.quadraticCurveTo(fx+7,gy-VH*.15,fx,gy-VH*.12); g.fill();
+         g.fillStyle='rgba(50,45,52,.5)'; for(let sm=0;sm<4;sm++){ g.beginPath(); g.arc(fx+Math.sin(t/500+sm)*7, gy-VH*.19-sm*VH*.035, 7+sm*4,0,Math.PI*2); g.fill(); } }
+       // ground
+       g.fillStyle='#3a3026'; g.fillRect(0,gy,VW,VH-gy); g.fillStyle='#312820'; g.fillRect(0,gy,VW,VH*.01);
+       // --- Yonah proclaiming doom (foreground left, arm raised) ---
+       (function(){ const yx=VW*.17, yy=gy, u=2.7;
+         const skin='#7a4e29', hairC='#2c1a0c', robe='#4f6072', beard='#2c1a0c', armC=shade('#4f6072',-12), shoe=shade(skin,-32);
+         const blk=(x,y,w,h,col,lip)=>{ lip=(lip===undefined)?1:lip; g.fillStyle=col; g.fillRect(x,y,w,h); if(lip){ g.fillStyle=shade(col,20); g.fillRect(x,y,w,.9*lip); g.fillStyle=shade(col,-18); g.fillRect(x+w-.9*lip,y+.9*lip,.9*lip,h-.9*lip);} };
+         g.save(); g.translate(yx,yy); g.scale(u,u);
+         g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(0,1,6.8,2.4,0,0,Math.PI*2); g.fill();
+         blk(-5.4,-9,10.8,7.4,robe); blk(-3.6,-1.8,3.2,1.9,shoe,.6); blk(0.4,-1.8,3.2,1.9,shoe,.6);
+         blk(-6,-15,12,7,robe); g.fillStyle=shade(robe,10); g.fillRect(-1,-14.1,2,6.1);
+         // left arm down
+         g.save(); g.translate(-5.7,-14.6); g.rotate(0.2); blk(-2.3,0,2.3,5.2,armC,.6); blk(-2.2,4.8,2.1,1.8,skin,.5); g.restore();
+         // right arm raised, proclaiming (sways)
+         g.save(); g.translate(5.7,-14.6); g.rotate(-2.5+Math.sin(t/300)*0.12); blk(0,0,2.3,5.6,armC,.6); blk(0.1,5.2,2.1,1.9,skin,.5); g.restore();
+         blk(-5.8,-26,11.6,10.6,skin,1.1);
+         g.fillStyle=hairC; g.fillRect(-6.3,-26.8,12.6,3.2); g.fillStyle=shade(hairC,18); g.fillRect(-6.3,-26.8,12.6,.9);
+         g.fillStyle=hairC; g.fillRect(-6.3,-24.8,1.7,3.2); g.fillRect(4.6,-24.8,1.7,3.2);
+         g.fillStyle='#160e08'; g.fillRect(-3.4,-22.6,2.2,2.4); g.fillRect(1.2,-22.6,2.2,2.4);
+         g.fillStyle='#fff6ee'; g.fillRect(-2.8,-22.1,1,1); g.fillRect(1.8,-22.1,1,1);
+         g.fillStyle='#2a1414'; g.fillRect(-1.6,-19.4,3.2,1.8);
+         g.fillStyle=beard; g.fillRect(-4.2,-17.6,8.4,3.0); g.fillRect(-2.8,-14.8,5.6,1.6);
+         g.restore();
+       })();
+       break; }
+     case 'repent': {
+       Sky.paint(g,[[0,'#33334e'],[.5,'#6b6480'],[1,'#d8c398']]);
+       { const lx=VW*.5, ly=VH*.02; const gl=g.createRadialGradient(lx,ly,10,lx,ly,VH*.8);
+         gl.addColorStop(0,'rgba(255,244,210,.28)'); gl.addColorStop(1,'rgba(255,244,210,0)'); g.fillStyle=gl; g.fillRect(0,0,VW,VH); }
+       const gy=VH*.74;
+       // faint city wall behind
+       g.fillStyle='rgba(60,52,60,.55)'; g.fillRect(VW*.0,gy-VH*.10,VW,VH*.10);
+       g.fillStyle='rgba(70,60,70,.55)'; for(let x=0;x<VW;x+=VW*.035){ g.fillRect(x,gy-VH*.12,VW*.02,VH*.022); }
+       for(const tx of [VW*.16,VW*.5,VW*.84]){ g.fillStyle='rgba(66,56,66,.6)'; g.fillRect(tx,gy-VH*.16,VW*.05,VH*.16); }
+       // ashes ground
+       g.fillStyle='#6a6156'; g.fillRect(0,gy,VW,VH-gy);
+       g.fillStyle='rgba(40,36,30,.35)'; for(let i=0;i<50;i++){ g.fillRect(hash2(i,4)*VW,gy+hash2(i,8)*(VH-gy),3,2); }
+       // kneeling penitents in sackcloth
+       const kneel=(x,sc,tone)=>{ g.save(); g.translate(x,gy); g.scale(sc,sc);
+         g.fillStyle='rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(0,1,7,2.4,0,0,Math.PI*2); g.fill();
+         g.fillStyle=tone; g.beginPath(); g.moveTo(-6,0); g.quadraticCurveTo(-7,-9,-2,-12); g.quadraticCurveTo(4,-14,6,-6); g.lineTo(6,0); g.closePath(); g.fill();
+         g.fillStyle=shade(tone,-16); g.fillRect(-6,-1.5,12,1.5);
+         g.fillStyle='#7a4e29'; g.beginPath(); g.arc(-1,-12.5,3.1,0,Math.PI*2); g.fill();  // bowed head
+         g.fillStyle=shade(tone,10); g.fillRect(-4.6,-13.6,7,2.2);                          // sackcloth hood
+         g.restore(); };
+       kneel(VW*.30,3.0,'#8a7d66'); kneel(VW*.66,3.0,'#7d7360'); kneel(VW*.82,2.6,'#8a7d66');
+       // the king in sackcloth, sitting in ashes, crown set aside
+       (function(){ const x=VW*.47, sc=3.6; g.save(); g.translate(x,gy); g.scale(sc,sc);
+         g.fillStyle='rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(0,1,8,2.6,0,0,Math.PI*2); g.fill();
+         g.fillStyle='#6a2a4a'; g.beginPath(); g.moveTo(-7,0); g.quadraticCurveTo(-8,-10,-2,-13); g.quadraticCurveTo(6,-15,7,-5); g.lineTo(7,0); g.closePath(); g.fill();
+         g.fillStyle='#8a7d66'; g.fillRect(-7,-6,14,6);              // sackcloth over the royal robe
+         g.fillStyle='#7a4e29'; g.beginPath(); g.arc(-1,-13.5,3.4,0,Math.PI*2); g.fill();
+         g.fillStyle='#8a7d66'; g.fillRect(-4.8,-14.8,7.4,2.4);
+         g.restore();
+         // the crown, laid aside in the ashes
+         g.fillStyle='#caa23c'; g.save(); g.translate(x+VW*.055,gy-2); g.scale(sc*.6,sc*.6);
+         g.beginPath(); g.moveTo(-6,2); g.lineTo(-6,-2); g.lineTo(-3,1); g.lineTo(0,-3); g.lineTo(3,1); g.lineTo(6,-2); g.lineTo(6,2); g.closePath(); g.fill(); g.restore();
+       })();
+       break; }
     default: {
       Sky.paint(g,[[0,'#0a0e1a'],[1,'#141a2c']]);
       Sky.stars(g,t,80,.7);
@@ -6025,7 +6102,7 @@ STORY.push(
 
 { id:'j4', title:'Yet Forty Days', ref:'YONAH 3:1–10',
   intro:[
-   {art:'babel', music:'tense', text:'And the word of YAHUAH came to Yonah the second time, saying, “Arise, go to Ninewĕh, that great city, and proclaim to it the proclamation that I am telling you.” So Yonah arose and went to Ninewĕh, according to the word of YAHUAH. Now Ninewĕh was an exceedingly great city, a three days’ journey across. And Yonah began to go into the city, on the first day’s walk, and he cried out and said, “Yet forty days, and Ninewĕh shall be overthrown!”', ref:'YONAH 3:1–4'},
+   {art:'nineveh', music:'tense', text:'And the word of YAHUAH came to Yonah the second time, saying, “Arise, go to Ninewĕh, that great city, and proclaim to it the proclamation that I am telling you.” So Yonah arose and went to Ninewĕh, according to the word of YAHUAH. Now Ninewĕh was an exceedingly great city, a three days’ journey across. And Yonah began to go into the city, on the first day’s walk, and he cried out and said, “Yet forty days, and Ninewĕh shall be overthrown!”', ref:'YONAH 3:1–4'},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:9404,
@@ -6052,7 +6129,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'And the people of Ninewĕh believed Elohim, and proclaimed a fast, and put on sackcloth, from the greatest of them to the least of them. And the word reached the sovereign of Ninewĕh, and he rose from his throne and laid aside his robe, covered himself with sackcloth, and sat in ashes.', ref:'YONAH 3:5–6'},
+   {art:'repent', music:'holy', text:'And the people of Ninewĕh believed Elohim, and proclaimed a fast, and put on sackcloth, from the greatest of them to the least of them. And the word reached the sovereign of Ninewĕh, and he rose from his throne and laid aside his robe, covered himself with sackcloth, and sat in ashes.', ref:'YONAH 3:5–6'},
    {art:'altarfire', music:'sorrow', text:'And he cried out and said throughout Ninewĕh, by the decree of the sovereign and his great ones: “Let neither man nor beast, herd nor flock, taste anything; let them not eat, nor drink water. But let man and beast be covered with sackcloth, and let them cry mightily to Elohim; and let each turn from his evil way and from the violence in his hands. Who knows — Elohim might turn and relent, and turn from His burning wrath, so that we do not perish.”', ref:'YONAH 3:7–9'},
    {art:'light', music:'holy', text:'And Elohim saw their works, that they turned from their evil way; and Elohim relented from the disaster that He had said He would do to them, and He did not do it.', ref:'YONAH 3:10'},
   ],
