@@ -5771,16 +5771,20 @@ function drawSlideArt(g,key,st,t,slide){
        // --- the two mariners casting lots on the deck ---
        drawChar(g, cx-Wd*.42, cy+L*.06, 'sailor', {t,scale:1.05,dir:'right'});
        drawChar(g, cx+Wd*.42, cy+L*.06, 'captain',{t,scale:1.05,dir:'left'});
-       // the lots between them
-       { const dy=cy+L*.26, s2=Math.min(VW,VH)*.02;
-         for(let d=0;d<2;d++){ const ddx=cx+(d?10:-10), ddy=dy+(d?5:-3);
-           g.fillStyle='#efe8d6'; g.fillRect(ddx-s2/2,ddy-s2/2,s2,s2);
-           g.fillStyle='#c9bfa6'; g.fillRect(ddx-s2/2,ddy+s2*.34,s2,s2*.16);
-           g.fillStyle='#3a2414'; const pip=(px,py)=>{ g.beginPath(); g.arc(ddx-s2/2+px*s2,ddy-s2/2+py*s2,s2*.1,0,Math.PI*2); g.fill(); };
-           if(d){ pip(.3,.3); pip(.7,.7); } else { pip(.28,.28); pip(.72,.28); pip(.5,.72); } } }
+       // the lots — cast bones (knucklebones) on the deck
+       { const dy=cy+L*.15;
+         const bone=(bx,by,ang)=>{ const q=5.2; g.save(); g.translate(bx,by); g.rotate(ang);
+           g.fillStyle='rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(0,q*.7,q*1.9,q*.7,0,0,Math.PI*2); g.fill();
+           g.fillStyle='#e9e1cc';
+           g.beginPath(); g.arc(-q*1.5,-q*.52,q*.55,0,Math.PI*2); g.arc(-q*1.5,q*.52,q*.55,0,Math.PI*2);
+           g.arc(q*1.5,-q*.52,q*.55,0,Math.PI*2); g.arc(q*1.5,q*.52,q*.55,0,Math.PI*2); g.fill();
+           g.fillRect(-q*1.5,-q*.4,q*3,q*.8);
+           g.fillStyle='#cfc6ac'; g.fillRect(-q*1.5,q*.12,q*3,q*.28);
+           g.restore(); };
+         bone(cx-14,dy-3,0.5); bone(cx+11,dy+2,-0.7); bone(cx-1,dy+13,0.12); }
        // --- Yonah cast over the side into the water (blocky, flailing) ---
        (function(){
-         const yx=cx+Wd*1.7, yy=cy-L*.12+Math.sin(t/300)*5, u=Math.min(VW,VH)*0.0058;
+         const yx=cx+Wd*1.55, yy=cy-L*.06+Math.sin(t/300)*4, u=2.5;
          const skin='#7a4e29', hairC='#2c1a0c', robe='#4f6072', beard='#2c1a0c';
          const armC=shade(robe,-12), shoe=shade(skin,-32), studC=hairC;
          const blk=(x,y,w,h,col,lip)=>{ lip=(lip===undefined)?1:lip; g.fillStyle=col; g.fillRect(x,y,w,h);
