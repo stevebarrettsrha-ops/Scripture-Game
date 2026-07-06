@@ -906,16 +906,31 @@ function frame(ts){
     }
   } else { updateUnits(dt*.25,gt); }   /* gentle idle drift on title/over */
   updateParticles(dt);
+  pollGamepad();
   render();
   requestAnimationFrame(frame);
 }
 
 /* ---------- interaction: a tap spurs the host a step forward ---------- */
-cv.addEventListener('pointerdown',e=>{
+function spur(){
   if(state!=='charge') return;
   for(const u of A){ if(u.team==='atk'&&!u.dead){ u.x+=(Math.random()-.3)*.2; u.spd=Math.min(.05,u.spd*1.02); } }
   burst(CW/2,CH-6,'dust',6);
-});
+}
+cv.addEventListener('pointerdown',spur);
+
+/* ---------- gamepad: a face button begins the battle, spurs the host, or returns ---------- */
+const _padBtn={};
+function pollGamepad(){
+  if(!navigator.getGamepads) return;
+  let gp=null;
+  for(const g of navigator.getGamepads()){ if(g&&g.connected){ gp=g; break; } }
+  if(!gp) return;
+  const edge=(i,fn)=>{ const p=gp.buttons[i]&&gp.buttons[i].pressed; if(p&&!_padBtn[i]) fn(); _padBtn[i]=p; };
+  const act=()=>{ if(state==='title') beginBattle(); else if(state==='over') location.href=RETURN; else spur(); };
+  edge(0,act);   // A / Cross
+  edge(9,act);   // Start
+}
 
 /* ---------- boot ---------- */
 $('t-begin').onclick=beginBattle;

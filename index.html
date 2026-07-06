@@ -537,7 +537,18 @@ const Sound={
 /* ================= INPUT ================= */
 const Input={
   keys:{}, joy:{x:0,y:0,active:false}, actQueued:false,
+  pad:{x:0,y:0,active:false}, _padBtn:{}, _padOn:false,
   init(){
+    // Bluetooth / USB gamepad support via the standard Gamepad API.
+    // The OS handles pairing; the browser just exposes controller state.
+    addEventListener('gamepadconnected',e=>{
+      this._padOn=true;
+      try{ toast('🎮 Controller connected — '+(e.gamepad.id||'gamepad').split('(')[0].trim()); }catch(_){}
+    });
+    addEventListener('gamepaddisconnected',()=>{
+      this.pad={x:0,y:0,active:false}; this._padBtn={};
+      if(!(navigator.getGamepads&&[...navigator.getGamepads()].some(g=>g))) this._padOn=false;
+    });
     addEventListener('keydown',e=>{
       if(e.repeat) return;
       this.keys[e.code]=true;
@@ -569,6 +580,30 @@ const Input={
     // tap canvas advances dialogue/slides
     canvas.addEventListener('pointerdown',()=>{ Game.onAction(); });
   },
+  // Poll the gamepad once per frame: left stick / d-pad drive movement,
+  // face buttons are edge-triggered into the same actions as the keyboard.
+  pollGamepad(){
+    if(!navigator.getGamepads) return;
+    let gp=null;
+    for(const g of navigator.getGamepads()){ if(g&&g.connected){ gp=g; break; } }
+    if(!gp){ if(this.pad.active) this.pad={x:0,y:0,active:false}; return; }
+    // left stick + d-pad → movement vector (with deadzone)
+    const dz=0.25;
+    let ax=gp.axes[0]||0, ay=gp.axes[1]||0;
+    if(Math.abs(ax)<dz) ax=0;
+    if(Math.abs(ay)<dz) ay=0;
+    const btn=i=>gp.buttons[i]&&gp.buttons[i].pressed;
+    if(btn(14)) ax=-1; if(btn(15)) ax=1;      // d-pad left / right
+    if(btn(12)) ay=-1; if(btn(13)) ay=1;      // d-pad up / down
+    const m=Math.hypot(ax,ay);
+    if(m>1){ ax/=m; ay/=m; }
+    this.pad.x=ax; this.pad.y=ay; this.pad.active=(ax!==0||ay!==0);
+    // edge-triggered buttons: fire on the frame the button goes down
+    const edge=(i,fn)=>{ const p=btn(i); if(p&&!this._padBtn[i]) fn(); this._padBtn[i]=p; };
+    edge(0,()=>Game.onAction());   // A / Cross → action / advance
+    edge(9,()=>Game.onAction());   // Start → action / advance
+    edge(1,()=>Game.onEscape());   // B / Circle → back / escape
+  },
   moveVec(){
     let x=0,y=0;
     if(this.keys['ArrowLeft']||this.keys['KeyA'])x-=1;
@@ -576,6 +611,7 @@ const Input={
     if(this.keys['ArrowUp']||this.keys['KeyW'])y-=1;
     if(this.keys['ArrowDown']||this.keys['KeyS'])y+=1;
     if(this.joy.active){x=this.joy.x;y=this.joy.y}
+    else if(this.pad.active){x=this.pad.x;y=this.pad.y}
     const m=Math.hypot(x,y);
     if(m>1){x/=m;y/=m}
     return {x,y};
@@ -9145,6 +9181,7 @@ document.querySelectorAll('.screen,.btn,#dlg,#sys-buttons').forEach(el=>{
 function frame(ts){
   const dt=Math.min(50,ts-(Game.lastTime||ts));
   Game.lastTime=ts;
+  Input.pollGamepad();
   Game.update(dt);
   Game.render();
   /* door-slide: the last room slides away, the new one already lives beneath */

@@ -46,14 +46,19 @@ begin at the Flood.
 
 ## Controls
 
-| Action | Keyboard | Touch |
-|---|---|---|
-| Move | WASD / Arrow keys | virtual joystick |
-| Interact / advance text | E, Space or Enter | ✦ button, or tap |
-| Previous slide | Backspace / ← | on-screen button |
-| Chapter menu | Esc / ☰ | ☰ button |
-| Story log (every line so far) | 📜 | 📜 button |
-| Fullscreen / sound | ⛶ / ♪ | ⛶ / ♪ |
+| Action | Keyboard | Touch | Controller |
+|---|---|---|---|
+| Move | WASD / Arrow keys | virtual joystick | left stick / d-pad |
+| Interact / advance text | E, Space or Enter | ✦ button, or tap | A / Start |
+| Previous slide | Backspace / ← | on-screen button | — |
+| Chapter menu | Esc / ☰ | ☰ button | B |
+| Story log (every line so far) | 📜 | 📜 button | — |
+| Fullscreen / sound | ⛶ / ♪ | ⛶ / ♪ | — |
+
+Any Bluetooth or USB gamepad paired to your computer works — the browser
+picks it up automatically through the standard Gamepad API, so there's
+nothing to install or configure. Pair it in your OS, then press a button
+in the game to connect.
 
 ## Mechanics
 
