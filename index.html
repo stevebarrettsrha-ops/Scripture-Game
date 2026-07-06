@@ -4126,7 +4126,7 @@ const Game={
         this._worldSpawn=[this.world.player.x,this.world.player.y];
         Sound.sfx('holy');
         toast('✦ “'+ch.title+'” complete — the face of the land is changed');
-        this.startChapter(allChapters().find(c=>c.id==='freeroam'));
+        openChapters();
         return;
       }
       this.chapter=allChapters().find(c=>c.id==='freeroam');
@@ -4189,15 +4189,14 @@ const Game={
       }
       this._worldSpawn=rw.pos;
       Sound.sfx('holy');
-      toast(eraTurn?'✦ “'+ch.title+'” complete — the face of the land is changed'
-                   :'✦ Returned to the land — “'+ch.title+'” complete');
-      this.startChapter(allChapters().find(c=>c.id==='freeroam'));
+      toast('✦ “'+ch.title+'” complete');
+      openChapters();
       return;
     }
-    /* the very beginning: when the days of creation are told, the world opens */
+    /* the very beginning: when the days of creation are told, the story-select opens */
     if(ch.id==='c1'&&!this._returnWorld){
       Sound.sfx('holy');
-      this.startChapter(allChapters().find(c=>c.id==='freeroam'));
+      openChapters();
       return;
     }
     // a chapter opened by deep-link from another file returns there
@@ -9047,7 +9046,8 @@ function nextChapter(id){
   return i>=0&&i<chs.length-1?chs[i+1]:null;
 }
 function firstUnfinished(){
-  const chs=allChapters();
+  /* the next story to play — never the dormant freeroam/interior helper chapters */
+  const chs=storyChapters();
   return chs.find(c=>!Save.data.done[c.id])||chs[0];
 }
 function continuityUnlocked(){
@@ -9064,11 +9064,13 @@ function continuityCovers(ch){
   const chs=allChapters();
   return chs.findIndex(c=>c.id===ch.id)<=chs.findIndex(c=>c.id===CONTINUITY_LAST);
 }
+/* the tellable story chapters in order, without the dormant freeroam/interior helpers */
+function storyChapters(){ return allChapters().filter(c=>c.id!=='freeroam'&&c.id!=='interior'); }
 function naturallyUnlocked(ch){
-  const chs=allChapters();
+  const chs=storyChapters();
   const i=chs.findIndex(c=>c.id===ch.id);
-  if(i===0) return true;
-  return !!Save.data.done[chs[i-1].id];
+  if(i<=0) return true;                       /* the first story is always open */
+  return !!Save.data.done[chs[i-1].id];       /* each opens when the story before it is finished */
 }
 function isUnlocked(ch){
   if(naturallyUnlocked(ch)) return true;
@@ -9097,7 +9099,7 @@ function buildChapterMenu(){
       const card=document.createElement('div');
       const unlocked=isUnlocked(ch), done=!!Save.data.done[ch.id];
       card.className='ch-card'+(done?' done':'')+(unlocked?'':' locked');
-      const num=allChapters().findIndex(c=>c.id===ch.id)+1;
+      const num=storyChapters().findIndex(c=>c.id===ch.id)+1;
       card.innerHTML=`<div class="num">CHAPTER ${num}</div><div class="t">${ch.title}</div><div class="r">${ch.ref}</div>`;
       if(unlocked) card.onclick=()=>{
         Sound.init(); Sound.sfx('blip');
@@ -9226,9 +9228,9 @@ $('btn-new').onclick=()=>{ Sound.init();
   Save.reset();
   Save.data.world=null; Save.data.front=0; Save.data.visited={}; Save.write();
   try{ localStorage.removeItem('scripture_world_done'); }catch(_){}
-  /* in the beginning: the days of creation are told first, and then the world opens */
+  /* in the beginning: the days of creation are told first, and then the story-select opens */
   Game.startChapter(allChapters().find(c=>c.id==='c1')); };
-$('btn-continue').onclick=()=>{ Sound.init(); Game.startChapter(allChapters().find(c=>c.id==='freeroam')); };
+$('btn-continue').onclick=()=>{ Sound.init(); Game.startChapter(firstUnfinished()); };
 $('btn-chapters').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-book').onclick=()=>{
   if(!Save.data.done['c4']){ Sound.init(); Sound.sfx('bad');
@@ -9542,8 +9544,8 @@ try{ const xd=JSON.parse(localStorage.getItem('scripture_world_done')||'{}');
   if(_from){ Save.data.done[_from]=true;
     const j=JOURNEY.findIndex(s=>s.id===_from); if(j>=0&&(Save.data.front||0)<=j) Save.data.front=j+1;
     Save.write();
-    Game.startChapter(allChapters().find(c=>c.id==='freeroam'));
-    try{toast('✦ Returned to the land — “'+_from+'” complete');}catch(_){}; }
+    openChapters();
+    try{toast('✦ “'+_from+'” complete');}catch(_){}; }
   else openTitle(); }
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
