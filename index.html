@@ -1550,7 +1550,7 @@ function drawQuadVert(g,px,py,type,o){
 }
 
 /* ================= PROPS ================= */
-const PROP_SCALE={tree:1.45,palm:1.5,treeLife:1.3,treeKnow:1.3,tent:1.55,bush:1.2,vine:1.25};
+const PROP_SCALE={tree:1.45,palm:1.5,treeLife:1.3,treeKnow:1.3,tent:1.55,bush:1.2,vine:1.25,hedge:1.35};
 function drawProp(g,px,py,p,t){
   const u=2.6*(TILE/40)*(PROP_SCALE[p.type]||1);
   const sway=Math.sin(t/900+(p.x||0)*2.1)*1.5;
@@ -1624,6 +1624,48 @@ function drawProp(g,px,py,p,t){
       g.arc(-2.6*u,-2.2*u,2.6*u,0,Math.PI*2); g.arc(2.6*u,-2.2*u,2.6*u,0,Math.PI*2); g.fill();
       if(p.berry){ g.fillStyle='#c8584a'; [[-2,-4],[1.4,-3],[-0.2,-2],[2.8,-4.2]].forEach(([x,y])=>{
         g.beginPath(); g.arc(x*u,y*u,.7*u,0,Math.PI*2); g.fill(); }); }
+      break; }
+    case 'hedge': {
+      /* a tall, thick clipped garden hedge — the wall of the garden of Ĕḏen. Segments
+         stand a tile apart; each is tall and wide enough to overlap the one before it,
+         so a run of them reads as one continuous, unbroken green wall. */
+      shadow(7.4);
+      const base=p.col||'#2f5824';
+      const H=15*(p.tall||1), bw=8.5*u, seed=p.seed||0;
+      /* dark silhouette behind, so the wall reads as a solid mass against the grass */
+      g.fillStyle=shade(base,-46);
+      g.beginPath();
+      g.moveTo(-bw-1.4*u,0.9*u); g.lineTo(-bw-1.4*u,-H*u+1.6*u);
+      g.quadraticCurveTo(-bw-1.4*u,-H*u-1*u,-bw+1.2*u,-H*u-1*u);
+      g.lineTo(bw-1.2*u,-H*u-1*u);
+      g.quadraticCurveTo(bw+1.4*u,-H*u-1*u,bw+1.4*u,-H*u+1.6*u);
+      g.lineTo(bw+1.4*u,0.9*u); g.closePath(); g.fill();
+      /* the lit body */
+      const grd=g.createLinearGradient(-bw,0,bw,-H*u);
+      grd.addColorStop(0,shade(base,-18)); grd.addColorStop(.5,shade(base,10)); grd.addColorStop(1,shade(base,32));
+      g.fillStyle=grd;
+      g.beginPath();
+      g.moveTo(-bw,0.6*u); g.lineTo(-bw,-H*u+2*u);
+      g.quadraticCurveTo(-bw,-H*u,-bw+2*u,-H*u);
+      g.lineTo(bw-2*u,-H*u);
+      g.quadraticCurveTo(bw,-H*u,bw,-H*u+2*u);
+      g.lineTo(bw,0.6*u); g.closePath(); g.fill();
+      /* clipped topiary lumps along the crown */
+      for(let i=-3;i<=3;i++){
+        const lx=i*2.15*u, r=(2.3+((seed+i*5)%3)*.16)*u, ly=-H*u+Math.sin(seed*.6+i)*.55*u;
+        const lg=g.createRadialGradient(lx-r*.3,ly-r*.35,r*.2,lx,ly,r);
+        lg.addColorStop(0,shade(base,38)); lg.addColorStop(1,shade(base,-10));
+        g.fillStyle=lg; g.beginPath(); g.arc(lx,ly,r,0,Math.PI*2); g.fill();
+      }
+      /* leafy speckle for texture */
+      g.fillStyle=shade(base,24);
+      for(let i=0;i<7;i++){ const sx=(((seed*7+i*29)%100)/100-0.5)*bw*1.7, sy=-(((seed*3+i*17)%100)/100)*H*u*.82-1.6*u;
+        g.beginPath(); g.arc(sx,sy,.85*u,0,Math.PI*2); g.fill(); }
+      /* woody base band keeps the row unbroken along the ground */
+      g.fillStyle=shade(base,-40); g.fillRect(-bw,-0.5*u,bw*2,1.6*u);
+      if(seed%2===0){ g.fillStyle='rgba(242,222,132,.8)';
+        [[-3.4,.6],[3,.42],[.7,.78],[-1,.3]].forEach(([x,f])=>{
+          g.beginPath(); g.arc(x*u,-H*f*u,.6*u,0,Math.PI*2); g.fill(); }); }
       break; }
     case 'rock': {
       shadow(4);
@@ -1905,13 +1947,14 @@ function drawProp(g,px,py,p,t){
         gl9.addColorStop(0,`rgba(255,230,140,${.20+Math.sin(t/500)*.08})`); gl9.addColorStop(1,'rgba(255,230,140,0)');
         g.fillStyle=gl9; g.beginPath(); g.arc(dx9*.5,-gh*.6,TILE*2.2,0,Math.PI*2); g.fill();
         if(p.guard!==false){
-          /* the keruv hovers over the gate, turned toward the way out, a sword in his hand */
+          /* the keruv stands over the gate, turned toward the way out, a sword in his
+             hand — a great and terrible guardian, larger than a man */
           const bob=Math.sin(t/460)*4;
-          const kx=dx9*.5, ky=-gh-dy9-TILE*.12+bob;
-          const gl2=g.createRadialGradient(kx,ky-TILE*.9,4,kx,ky-TILE*.9,TILE*1.25);
-          gl2.addColorStop(0,'rgba(255,244,200,.5)'); gl2.addColorStop(1,'rgba(255,244,200,0)');
-          g.fillStyle=gl2; g.beginPath(); g.arc(kx,ky-TILE*.9,TILE*1.25,0,Math.PI*2); g.fill();
-          drawChar(g,kx,ky,'cherub',{t,dir:'left',hold:'sword',scale:.55});
+          const kx=dx9*.5, ky=-gh-dy9+TILE*.35+bob;
+          const gl2=g.createRadialGradient(kx,ky-TILE*1.5,6,kx,ky-TILE*1.5,TILE*2.6);
+          gl2.addColorStop(0,`rgba(255,246,205,${.5+Math.sin(t/430)*.12})`); gl2.addColorStop(1,'rgba(255,244,200,0)');
+          g.fillStyle=gl2; g.beginPath(); g.arc(kx,ky-TILE*1.5,TILE*2.6,0,Math.PI*2); g.fill();
+          drawChar(g,kx,ky,'cherub',{t,dir:'left',hold:'sword',scale:1.25});
         }
         break;
       }
@@ -2276,6 +2319,25 @@ function generateMap(cfg){
   }
   // explicit features
   (cfg.features||[]).forEach(f=>{
+    if(f.type==='hedgewall'){
+      /* a continuous wall of hedge enclosing the garden, with a single gap left
+         for the gate — so the gate is the only way in or out. */
+      const col=f.x, y0=f.y0!==undefined?f.y0:1, y1=f.y1!==undefined?f.y1:h-2;
+      const gapA=f.gap[0], gapB=f.gap[1], thick=f.thick||1;
+      /* clear whatever grew along the wall line */
+      for(let i=decor.length-1;i>=0;i--){
+        if(!decor[i].id&&Math.abs(decor[i].x-col)<1.4+thick&&decor[i].y>=y0-1&&decor[i].y<=y1+1) decor.splice(i,1);
+      }
+      for(let yy=y0; yy<=y1; yy++){
+        if(yy>=gapA&&yy<=gapB) continue;                      /* the one opening: the gate */
+        for(let d=0; d<thick; d++){
+          const cx=col+d, jig=(((yy*1.3+cx)%1)+1)%1*0.16-0.08;
+          decor.push({type:'hedge', x:cx+jig, y:yy, solid:true, id:'gwall',
+                      col:pick(rng,biome.treeCol), tall:1+((yy*7+cx*3)%3)*0.10, seed:(yy*13+cx*7)%97});
+        }
+      }
+      return;
+    }
     // clear area around feature
     const rad=f.clear!==undefined?f.clear:2;
     for(let i=decor.length-1;i>=0;i--){
@@ -6067,6 +6129,7 @@ const STORY=[
   scene:{
    map:{biome:'eden', w:52, h:30, seed:11,
      features:[
+       {type:'hedgewall',x:43,gap:[14,16],thick:1},
        {type:'gate',side:true,guard:false,x:43,y:15,solid:true,clear:3,flat:2,id:'gate'},
        {type:'treeLife',x:10,y:14,solid:true,clear:3,id:'treelife'},
        {type:'clearing',x:43,y:18,flat:3},
