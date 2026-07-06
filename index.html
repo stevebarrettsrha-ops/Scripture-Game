@@ -751,6 +751,9 @@ const CHARS={
   serpent_c:{name:'The Serpent', serpent:true},
   cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
   malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  /* the player's own avatar for walking the world — a hooded traveller, not any
+     one of the fathers, who journeys from story to story with a staff in hand */
+  traveler:{name:'The Traveller', skin:'#7c5a3a', hair:'#2c1d10', hairStyle:'short', robe:'#46607a', headcover:'#5a7186'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -3900,8 +3903,8 @@ const Game={
     if(sc.onStart) this.runScript(sc.onStart.slice());
     if(sc.map.world){
       this._storyCooldown=this.t+1200;   // grace so spawning on a waypoint doesn't auto-trigger
-      const hp=this.worldHero();          // the walker reflects the current protagonist & spouse
-      if(this.world.player) this.world.player.char=hp.hero;
+      const hp=this.worldHero();          // the walker is the player's own traveller avatar
+      if(this.world.player){ this.world.player.char=hp.hero; this.world.player.hold=hp.hold||null; }
       const wf=this.world.npcs.find(n=>n.id==='chavvah');
       if(wf){ if(hp.wife){ wf.char=hp.wife; wf.hidden=false; } else { wf.hidden=true; } }
     }
@@ -3937,7 +3940,8 @@ const Game={
   /* the journey's progress cursor — the story always continues forward from here,
      whatever point the player chose to begin at (defaults to the first unwalked) */
   frontIdx(){
-    if(typeof Save.data.front==='number') return Math.max(0,Math.min(Save.data.front,JOURNEY.length));
+    /* the soft "suggested next" pointer: the first story not yet finished. In the
+       sandbox you may walk to any site in any order — this only guides the marker. */
     const i=JOURNEY.findIndex(s=>!Save.data.done[s.id]); return i<0?JOURNEY.length:i;
   },
   steerJourney(){
@@ -3962,32 +3966,18 @@ const Game={
     const p=this.world&&this.world.player;
     if(!p||this.battle||this.script||this.dlgChar||this.state!=='play') return;
     if(this.t<(this._storyCooldown||0)) return;
-    /* only the current front story may begin by walking — one at a time, in order */
-    const s=JOURNEY[this.frontIdx()];
+    /* sandbox: walking onto ANY site's waypoint begins that story — in any order */
+    let s=null,bd=1.5;
+    for(const j of JOURNEY){ const d=dist(p.x,p.y,j.x,j.y); if(d<bd){ bd=d; s=j; } }
     if(!s) return;
-    if(dist(p.x,p.y,s.x,s.y)<1.5){
-      this._storyCooldown=this.t+4000;
-      if(s.book){ this.enterGate({url:s.book,play:s.id,title:s.name}); }
-      else { try{toast('Entering — “'+s.name+'”');}catch(_){}; this.enterSite(s.id); }
-    }
+    this._storyCooldown=this.t+4000;
+    if(s.book){ this.enterGate({url:s.book,play:s.id,title:s.name}); }
+    else { try{toast('Entering — “'+s.name+'”');}catch(_){}; this.enterSite(s.id); }
   },
-  /* the one who walks the world is the story's living protagonist (and spouse) at the
-     current point: Aḏam → Noaḥ → Aḇraham → Yitsḥaq → Yaaqoḇ → Yosĕph */
-  worldHero(){
-    const f=this.frontIdx();
-    const id=(JOURNEY[f]&&!JOURNEY[f].book)?JOURNEY[f].id:'c22a';
-    const noah=['c7','c8','c9','c9b','c10','c10a'];
-    const abr=['c11','c11a','c11b','c12','c12a','c13','c13a','c14','c14b','c15','c15b','c16','c17'];
-    const isa=['c17a','c17b','c17c','c18','c18b'];
-    const yaa=['c18a','c19','c20','c20a','c21','c21b','c21a'];
-    const yos=['c22','c22b','c22a'];
-    if(yos.includes(id)) return {hero:'yoseph',wife:null};
-    if(yaa.includes(id)) return {hero:'yaaqov',wife:'rachel'};
-    if(isa.includes(id)) return {hero:'yitschaq',wife:'rivqah'};
-    if(abr.includes(id)) return {hero:'avraham',wife:'sarah'};
-    if(noah.includes(id)) return {hero:'noach',wife:'noach_w'};
-    return {hero:'adam_c',wife:'chavvah_c'};
-  },
+  /* the one who walks the world is the player's own avatar — a single traveller with
+     a staff, the same at every point of the journey (not any of the fathers). The
+     biblical figures still appear within each story, which sets its own player char. */
+  worldHero(){ return {hero:'traveler', wife:null, hold:'staff'}; },
   /* remember which story-sites the player has physically reached, so the map can
      unlock the reached/completed ones and keep far-future ones locked */
   markVisited(){
@@ -4143,7 +4133,7 @@ const Game={
       $('hud-chapter').textContent=this.chapter.title;
       this.setupObjectives(this.chapter.scene.objectives);
       const p=this.world.player, hp=this.worldHero();
-      if(p){ p.char=hp.hero; p.mount=null; p.hold=null; p.lightBody=null; p.target=null; }
+      if(p){ p.char=hp.hero; p.mount=null; p.hold=hp.hold||null; p.lightBody=null; p.target=null; }
       const wf=this.world.npcs.find(n=>n.id==='chavvah');
       if(wf){ if(hp.wife){ wf.char=hp.wife; wf.hidden=false; wf.x=p.x-1; wf.y=p.y+.5; wf.target=null; } else wf.hidden=true; }
       const rd=this.world.npcs.find(n=>n.id==='ride');
@@ -4181,7 +4171,7 @@ const Game={
         $('hud-chapter').textContent=this.chapter.title;
         this.setupObjectives(this.chapter.scene.objectives);
         const p=this.world.player, hp=this.worldHero();
-        if(p){ p.x=rw.pos[0]; p.y=rw.pos[1]; p.target=null; p.mount=null; p.hidden=false; p.char=hp.hero; p.hold=null; }
+        if(p){ p.x=rw.pos[0]; p.y=rw.pos[1]; p.target=null; p.mount=null; p.hidden=false; p.char=hp.hero; p.hold=hp.hold||null; }
         const wf=this.world.npcs.find(n=>n.id==='chavvah');
         if(wf){ if(hp.wife){ wf.char=hp.wife; wf.hidden=false; wf.x=p.x-1; wf.y=p.y+.5; wf.target=null; } else wf.hidden=true; }
         if(j>=0){ this.world.map.decor.push({type:'pillar',oil:true,x:JOURNEY[j].x,y:JOURNEY[j].y});
