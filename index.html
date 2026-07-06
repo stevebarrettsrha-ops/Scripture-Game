@@ -430,13 +430,17 @@ const Save={
 
 /* ================= AUDIO (procedural, WebAudio) ================= */
 const Sound={
-  ctx:null, master:null, padNodes:[], rainNode:null, enabled:true, mood:null,
+  ctx:null, master:null, musicGain:null, padNodes:[], rainNode:null, enabled:true, mood:null,
+  _mus:null, _musTimer:null, _step:0, _bar:0, _nextT:0, _noise:null,
   init(){
-    if(this.ctx) return;
+    if(this.ctx){ if(this.ctx.state==='suspended'){ try{this.ctx.resume();}catch(e){} } return; }
     try{
       this.ctx=new (window.AudioContext||window.webkitAudioContext)();
       this.master=this.ctx.createGain(); this.master.gain.value=.55;
       this.master.connect(this.ctx.destination);
+      /* a separate bus for the generative music, so it can fade independently of sfx */
+      this.musicGain=this.ctx.createGain(); this.musicGain.gain.value=0;
+      this.musicGain.connect(this.master);
     }catch(e){}
   },
   setEnabled(on){
@@ -458,6 +462,7 @@ const Sound={
   ambient(mood){
     if(!this.ctx||mood===this.mood) return;
     this.mood=mood;
+    this.startMusic(mood);   /* the melodic layer follows the same mood as the pad */
     const t=this.ctx.currentTime;
     this.padNodes.forEach(n=>{ try{n.g.gain.linearRampToValueAtTime(0,t+1.8); n.o.stop(t+2); n.lfo.stop(t+2);
       setTimeout(()=>{try{n.o.disconnect();n.g.disconnect();n.lfo.disconnect();}catch(e){}},2200);}catch(e){} });
@@ -476,6 +481,120 @@ const Sound={
       o.start();
       this.padNodes.push({o,g,lfo});
     });
+  },
+  /* ============ GENERATIVE MUSIC ============
+     A small in-key sequencer layered over the ambient pad: bass on the chord
+     roots, an optional arpeggio, a sparse lead melody, and subtle percussion.
+     Every mood picks a scale + chord progression so what plays is always
+     consonant. No audio files — it is all synthesised, so the game stays offline. */
+  MUSIC:{
+    //         root (Hz)  scale (semitone degrees)      bpm  progression      pad wave  lead wave   perc vol   arp  density  extras
+    eden:   {root:130.81, scale:[0,2,4,7,9],            bpm:66, prog:[0,3,4,3], wave:'triangle', lead:'sine',     perc:0, vol:.50, arp:1, density:.55},
+    holy:   {root:98.00,  scale:[0,2,4,5,7,9,11],       bpm:60, prog:[0,4,5,3], wave:'sine',     lead:'triangle', perc:0, vol:.55, arp:1, density:.50, bell:1},
+    night:  {root:110.00, scale:[0,3,5,7,10],           bpm:54, prog:[0,5,3,4], wave:'sine',     lead:'sine',     perc:0, vol:.42, arp:0, density:.32},
+    sorrow: {root:146.83, scale:[0,2,3,5,7,8,10],       bpm:56, prog:[0,5,3,4], wave:'triangle', lead:'triangle', perc:0, vol:.46, arp:0, density:.34},
+    storm:  {root:98.00,  scale:[0,2,3,5,7,8,10],       bpm:92, prog:[0,0,5,5], wave:'sawtooth', lead:'square',   perc:2, vol:.42, arp:1, density:.60},
+    desert: {root:130.81, scale:[0,1,4,5,7,8,10],       bpm:70, prog:[0,3,0,4], wave:'triangle', lead:'triangle', perc:1, vol:.42, arp:0, density:.40},
+    royal:  {root:164.81, scale:[0,2,3,5,7,8,11],       bpm:80, prog:[0,3,4,5], wave:'triangle', lead:'triangle', perc:1, vol:.48, arp:1, density:.55},
+    tense:  {root:103.83, scale:[0,2,3,5,6,8,10],       bpm:96, prog:[0,0,1,5], wave:'sawtooth', lead:'square',   perc:2, vol:.40, arp:0, density:.50, ostinato:1}
+  },
+  /* map a scale-degree (may exceed the scale length / go negative) + octave to a frequency */
+  _deg(cfg,degree,oct){
+    const sc=cfg.scale, n=sc.length;
+    const semi=sc[((degree%n)+n)%n] + 12*(oct+Math.floor(degree/n));
+    return cfg.root*Math.pow(2,semi/12);
+  },
+  /* a sustained, filtered tone (bass, lead) */
+  _tone(freq,time,dur,wave,peak,cut){
+    const c=this.ctx, o=c.createOscillator(), g=c.createGain(), f=c.createBiquadFilter();
+    o.type=wave; o.frequency.value=freq;
+    f.type='lowpass'; f.frequency.value=cut||2400; f.Q.value=.5;
+    g.gain.setValueAtTime(0,time);
+    g.gain.linearRampToValueAtTime(peak,time+Math.min(.04,dur*.3));
+    g.gain.exponentialRampToValueAtTime(.0001,time+dur);
+    o.connect(f); f.connect(g); g.connect(this.musicGain);
+    o.start(time); o.stop(time+dur+.05);
+  },
+  /* a short plucked note (arpeggio, ostinato) */
+  _pluck(freq,time,dur,wave,peak){
+    const c=this.ctx, o=c.createOscillator(), g=c.createGain();
+    o.type=wave; o.frequency.value=freq;
+    g.gain.setValueAtTime(0,time);
+    g.gain.linearRampToValueAtTime(peak,time+.008);
+    g.gain.exponentialRampToValueAtTime(.0001,time+dur);
+    o.connect(g); g.connect(this.musicGain);
+    o.start(time); o.stop(time+dur+.03);
+  },
+  _perc(time,kind){
+    const c=this.ctx;
+    if(kind==='kick'){
+      const o=c.createOscillator(), g=c.createGain();
+      o.type='sine'; o.frequency.setValueAtTime(120,time); o.frequency.exponentialRampToValueAtTime(45,time+.12);
+      g.gain.setValueAtTime(.0001,time); g.gain.linearRampToValueAtTime(.45,time+.005); g.gain.exponentialRampToValueAtTime(.0001,time+.18);
+      o.connect(g); g.connect(this.musicGain); o.start(time); o.stop(time+.2);
+    }else if(kind==='hat'){
+      const buf=this._noise||(this._noise=(()=>{const b=c.createBuffer(1,(c.sampleRate*.2)|0,c.sampleRate);const d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;return b})());
+      const s=c.createBufferSource(); s.buffer=buf;
+      const f=c.createBiquadFilter(); f.type='highpass'; f.frequency.value=7000;
+      const g=c.createGain(); g.gain.setValueAtTime(.11,time); g.gain.exponentialRampToValueAtTime(.0001,time+.05);
+      s.connect(f); f.connect(g); g.connect(this.musicGain); s.start(time); s.stop(time+.06);
+    }
+  },
+  startMusic(mood){
+    if(!this.ctx) return;
+    const cfg=this.MUSIC[mood];
+    if(!cfg){ this.stopMusic(); return; }
+    this._mus=cfg; this._step=0; this._bar=0;
+    this._nextT=this.ctx.currentTime+.08;
+    const t=this.ctx.currentTime;
+    this.musicGain.gain.cancelScheduledValues(t);
+    this.musicGain.gain.setValueAtTime(this.musicGain.gain.value,t);
+    this.musicGain.gain.linearRampToValueAtTime(cfg.vol,t+2.5);
+    if(!this._musTimer) this._musTimer=setInterval(()=>this._sched(),25);
+  },
+  stopMusic(){
+    if(this.ctx&&this.musicGain){
+      const t=this.ctx.currentTime;
+      this.musicGain.gain.cancelScheduledValues(t);
+      this.musicGain.gain.setValueAtTime(this.musicGain.gain.value,t);
+      this.musicGain.gain.linearRampToValueAtTime(0,t+1.5);
+    }
+    this._mus=null;
+    if(this._musTimer){ clearInterval(this._musTimer); this._musTimer=null; }
+  },
+  /* look-ahead scheduler: queue every sixteenth note ~120ms before it sounds */
+  _sched(){
+    const cfg=this._mus; if(!cfg||!this.ctx) return;
+    if(this._nextT<this.ctx.currentTime) this._nextT=this.ctx.currentTime+.05; /* recover after tab throttling */
+    const six=(60/cfg.bpm)/4;
+    const ahead=this.ctx.currentTime+.12;
+    while(this._nextT<ahead){
+      if(this.enabled) this._playStep(cfg,this._step,this._bar,this._nextT,six);
+      this._nextT+=six; this._step++;
+      if(this._step>=16){ this._step=0; this._bar++; }
+    }
+  },
+  _playStep(cfg,step,bar,t,six){
+    const chordRoot=cfg.prog[bar%cfg.prog.length];  /* scale-degree of this bar's chord */
+    /* bass: chord root on beat 1, the fifth on beat 3, an octave down */
+    if(step===0)      this._tone(this._deg(cfg,chordRoot,-1),   t, six*7, cfg.wave, .16, 700);
+    else if(step===8) this._tone(this._deg(cfg,chordRoot+2,-1), t, six*6, cfg.wave, .13, 700);
+    /* ostinato: a steady low eighth-note pulse (suspense) */
+    if(cfg.ostinato && step%2===0) this._pluck(this._deg(cfg,chordRoot,0), t, six*1.4, cfg.wave, .09);
+    /* arpeggio: 1-3-5-3 of the chord, cycling on the eighths */
+    if(cfg.arp && step%2===0){
+      const tone=chordRoot+[0,2,4,2][(step/2)%4];
+      this._pluck(this._deg(cfg,tone,1), t, six*1.8, cfg.lead, cfg.bell?.10:.075);
+    }
+    /* lead: a sparse in-key melody note on the strong beats */
+    if(step%4===0 && Math.random()<cfg.density){
+      const around=[0,2,4,1,3,5,-1];
+      const pick=chordRoot+around[(Math.random()*around.length)|0];
+      this._tone(this._deg(cfg,pick,cfg.bell?2:1), t, six*3.5, cfg.lead, .07, 3000);
+    }
+    /* percussion: a soft kick on the half-notes, closed hat on the offbeats */
+    if(cfg.perc>=1 && (step===0||step===8)) this._perc(t,'kick');
+    if(cfg.perc>=2 && step%2===1)           this._perc(t,'hat');
   },
   rain(on){
     if(!this.ctx) return;
@@ -1431,7 +1550,7 @@ function drawQuadVert(g,px,py,type,o){
 }
 
 /* ================= PROPS ================= */
-const PROP_SCALE={tree:1.45,palm:1.5,treeLife:1.3,treeKnow:1.3,tent:1.55,bush:1.2,vine:1.25};
+const PROP_SCALE={tree:1.45,palm:1.5,treeLife:1.3,treeKnow:1.3,tent:1.55,bush:1.2,vine:1.25,hedge:1.35};
 function drawProp(g,px,py,p,t){
   const u=2.6*(TILE/40)*(PROP_SCALE[p.type]||1);
   const sway=Math.sin(t/900+(p.x||0)*2.1)*1.5;
@@ -1505,6 +1624,48 @@ function drawProp(g,px,py,p,t){
       g.arc(-2.6*u,-2.2*u,2.6*u,0,Math.PI*2); g.arc(2.6*u,-2.2*u,2.6*u,0,Math.PI*2); g.fill();
       if(p.berry){ g.fillStyle='#c8584a'; [[-2,-4],[1.4,-3],[-0.2,-2],[2.8,-4.2]].forEach(([x,y])=>{
         g.beginPath(); g.arc(x*u,y*u,.7*u,0,Math.PI*2); g.fill(); }); }
+      break; }
+    case 'hedge': {
+      /* a tall, thick clipped garden hedge — the wall of the garden of Ĕḏen. Segments
+         stand a tile apart; each is tall and wide enough to overlap the one before it,
+         so a run of them reads as one continuous, unbroken green wall. */
+      shadow(7.4);
+      const base=p.col||'#2f5824';
+      const H=15*(p.tall||1), bw=8.5*u, seed=p.seed||0;
+      /* dark silhouette behind, so the wall reads as a solid mass against the grass */
+      g.fillStyle=shade(base,-46);
+      g.beginPath();
+      g.moveTo(-bw-1.4*u,0.9*u); g.lineTo(-bw-1.4*u,-H*u+1.6*u);
+      g.quadraticCurveTo(-bw-1.4*u,-H*u-1*u,-bw+1.2*u,-H*u-1*u);
+      g.lineTo(bw-1.2*u,-H*u-1*u);
+      g.quadraticCurveTo(bw+1.4*u,-H*u-1*u,bw+1.4*u,-H*u+1.6*u);
+      g.lineTo(bw+1.4*u,0.9*u); g.closePath(); g.fill();
+      /* the lit body */
+      const grd=g.createLinearGradient(-bw,0,bw,-H*u);
+      grd.addColorStop(0,shade(base,-18)); grd.addColorStop(.5,shade(base,10)); grd.addColorStop(1,shade(base,32));
+      g.fillStyle=grd;
+      g.beginPath();
+      g.moveTo(-bw,0.6*u); g.lineTo(-bw,-H*u+2*u);
+      g.quadraticCurveTo(-bw,-H*u,-bw+2*u,-H*u);
+      g.lineTo(bw-2*u,-H*u);
+      g.quadraticCurveTo(bw,-H*u,bw,-H*u+2*u);
+      g.lineTo(bw,0.6*u); g.closePath(); g.fill();
+      /* clipped topiary lumps along the crown */
+      for(let i=-3;i<=3;i++){
+        const lx=i*2.15*u, r=(2.3+((seed+i*5)%3)*.16)*u, ly=-H*u+Math.sin(seed*.6+i)*.55*u;
+        const lg=g.createRadialGradient(lx-r*.3,ly-r*.35,r*.2,lx,ly,r);
+        lg.addColorStop(0,shade(base,38)); lg.addColorStop(1,shade(base,-10));
+        g.fillStyle=lg; g.beginPath(); g.arc(lx,ly,r,0,Math.PI*2); g.fill();
+      }
+      /* leafy speckle for texture */
+      g.fillStyle=shade(base,24);
+      for(let i=0;i<7;i++){ const sx=(((seed*7+i*29)%100)/100-0.5)*bw*1.7, sy=-(((seed*3+i*17)%100)/100)*H*u*.82-1.6*u;
+        g.beginPath(); g.arc(sx,sy,.85*u,0,Math.PI*2); g.fill(); }
+      /* woody base band keeps the row unbroken along the ground */
+      g.fillStyle=shade(base,-40); g.fillRect(-bw,-0.5*u,bw*2,1.6*u);
+      if(seed%2===0){ g.fillStyle='rgba(242,222,132,.8)';
+        [[-3.4,.6],[3,.42],[.7,.78],[-1,.3]].forEach(([x,f])=>{
+          g.beginPath(); g.arc(x*u,-H*f*u,.6*u,0,Math.PI*2); g.fill(); }); }
       break; }
     case 'rock': {
       shadow(4);
@@ -1770,29 +1931,60 @@ function drawProp(g,px,py,p,t){
       // garden gate: two golden posts + arch
       const gw=TILE*2.2;
       if(p.side){
-        /* the gate stands in the west wall of the garden, seen edge-on: the near
-           jamb, the far jamb behind it in depth, and the arch spanning between */
-        const gh=TILE*2.6, dx9=TILE*.95, dy9=TILE*.62;
-        g.fillStyle='rgba(0,0,0,.25)';
-        g.beginPath(); g.ellipse(dx9*.4,2,TILE*1.05,TILE*.32,0,0,Math.PI*2); g.fill();
-        g.fillStyle='#c9a34b'; g.fillRect(dx9-4,-gh-dy9,8,gh);            /* far jamb */
-        g.strokeStyle='#e8c66a'; g.lineWidth=6;
-        g.beginPath(); g.moveTo(0,-gh); g.quadraticCurveTo(dx9*.5,-gh-dy9*.9-TILE*.42,dx9,-gh-dy9); g.stroke();
-        g.strokeStyle='#b8923c'; g.lineWidth=2.4;
-        g.beginPath(); g.moveTo(0,-gh); g.quadraticCurveTo(dx9*.5,-gh-dy9*.9-TILE*.42,dx9,-gh-dy9); g.stroke();
-        g.fillStyle='#e8c66a'; g.fillRect(-4,-gh,8,gh);                    /* near jamb */
-        g.fillStyle='#f5e3a8'; g.fillRect(-4,-gh,3,gh);
-        const gl9=g.createRadialGradient(dx9*.5,-gh*.6,TILE*.3,dx9*.5,-gh*.6,TILE*2.2);
-        gl9.addColorStop(0,`rgba(255,230,140,${.20+Math.sin(t/500)*.08})`); gl9.addColorStop(1,'rgba(255,230,140,0)');
-        g.fillStyle=gl9; g.beginPath(); g.arc(dx9*.5,-gh*.6,TILE*2.2,0,Math.PI*2); g.fill();
+        /* the gate set in the wall: two golden columns flanking the opening, and a
+           barred golden door hinged on the north column that swings out into the
+           wilderness and shuts again once one has passed through. */
+        const TP=TILE, half=1.5*TP;                 /* the opening spans two posts, ~3 tiles */
+        const Ny=-half, Sy=half;                    /* north post (behind) and south post (in front) */
+        const postH=TP*1.5, pw=TP*.3;
+        const doorT=Math.max(0,Math.min(1,p.doorT||0));
+        /* base shadows of the two columns */
+        g.fillStyle='rgba(0,0,0,.28)';
+        g.beginPath(); g.ellipse(0,Ny+2,TP*.5,TP*.2,0,0,Math.PI*2); g.fill();
+        g.beginPath(); g.ellipse(0,Sy+2,TP*.5,TP*.2,0,0,Math.PI*2); g.fill();
+        /* radiance in the gateway */
+        const gl9=g.createRadialGradient(TP*.3,-TP*.2,TP*.3,TP*.3,-TP*.2,TP*2.4);
+        gl9.addColorStop(0,`rgba(255,230,140,${.18+Math.sin(t/500)*.07})`); gl9.addColorStop(1,'rgba(255,230,140,0)');
+        g.fillStyle=gl9; g.beginPath(); g.arc(TP*.3,-TP*.2,TP*2.4,0,Math.PI*2); g.fill();
+        /* the swinging door — hinged at the north post, angle from shut (across the
+           opening) to open (swung east, out toward the wilderness) */
+        {
+          const phi=(Math.PI/2)*(1-doorT);          /* +90°: shut (points south) → 0°: open (points east) */
+          const L=3*TP-TP*.2, dw=TP*.46;
+          g.save(); g.translate(0,Ny); g.rotate(phi);
+          g.fillStyle='rgba(0,0,0,.16)'; g.fillRect(0,dw*.4,L,dw*1.1);            /* the door's shadow on the ground */
+          const rail=g.createLinearGradient(0,-dw,0,dw);
+          rail.addColorStop(0,'#f7e29a'); rail.addColorStop(.5,'#e0b44e'); rail.addColorStop(1,'#a87f2c');
+          g.fillStyle=rail;
+          g.fillRect(0,-dw,L,dw*.44); g.fillRect(0,dw*.56,L,dw*.44);              /* top & bottom rails */
+          g.fillStyle='#e6bd58';
+          const pk=6; for(let i=0;i<=pk;i++){ const bx=L*(i/pk); g.fillRect(bx-dw*.11,-dw,dw*.22,dw*2); }  /* upright pickets */
+          g.strokeStyle='#f7e6a8'; g.lineWidth=Math.max(1.5,dw*.12);
+          g.beginPath(); g.moveTo(0,dw); g.lineTo(L,-dw); g.stroke();             /* diagonal brace */
+          g.fillStyle='#8a6a26'; g.fillRect(-dw*.28,-dw*1.1,dw*.6,dw*2.2);        /* hinge stile at the post */
+          g.fillStyle='#f7e6a8'; g.beginPath(); g.arc(L,0,dw*.44,0,Math.PI*2); g.fill();  /* latch finial */
+          g.restore();
+        }
+        /* the two golden columns, drawn after the door so they stand before it */
+        const post=(by)=>{
+          g.fillStyle='rgba(0,0,0,.18)'; g.fillRect(-pw+2,by-postH*.5,pw*2,postH*.5);
+          const gp=g.createLinearGradient(-pw,0,pw,0);
+          gp.addColorStop(0,'#8f6c22'); gp.addColorStop(.42,'#f5dd8a'); gp.addColorStop(1,'#b8923c');
+          g.fillStyle=gp; g.fillRect(-pw,by-postH,pw*2,postH);                    /* shaft */
+          g.fillStyle='#f5e3a8'; g.fillRect(-pw,by-postH,pw*.55,postH);           /* lit edge */
+          g.fillStyle='#e8c66a'; g.fillRect(-pw-3,by-postH-7,pw*2+6,9);           /* capital */
+          g.fillStyle='#f5e3a8'; g.beginPath(); g.arc(0,by-postH-12,pw*.85,0,Math.PI*2); g.fill();  /* finial */
+        };
+        post(Ny); post(Sy);
         if(p.guard!==false){
-          /* the keruv hovers over the gate, turned toward the way out, a sword in his hand */
+          /* the keruv stands in the gateway, turned toward the way out, a sword in his
+             hand — a great and terrible guardian, larger than a man */
           const bob=Math.sin(t/460)*4;
-          const kx=dx9*.5, ky=-gh-dy9-TILE*.12+bob;
-          const gl2=g.createRadialGradient(kx,ky-TILE*.9,4,kx,ky-TILE*.9,TILE*1.25);
-          gl2.addColorStop(0,'rgba(255,244,200,.5)'); gl2.addColorStop(1,'rgba(255,244,200,0)');
-          g.fillStyle=gl2; g.beginPath(); g.arc(kx,ky-TILE*.9,TILE*1.25,0,Math.PI*2); g.fill();
-          drawChar(g,kx,ky,'cherub',{t,dir:'left',hold:'sword',scale:.55});
+          const kx=TP*.25, ky=-TP*.15+bob;
+          const gl2=g.createRadialGradient(kx,ky-TP*1.5,6,kx,ky-TP*1.5,TP*2.6);
+          gl2.addColorStop(0,`rgba(255,246,205,${.5+Math.sin(t/430)*.12})`); gl2.addColorStop(1,'rgba(255,244,200,0)');
+          g.fillStyle=gl2; g.beginPath(); g.arc(kx,ky-TP*1.5,TP*2.6,0,Math.PI*2); g.fill();
+          drawChar(g,kx,ky,'cherub',{t,dir:'left',hold:'sword',scale:1.25});
         }
         break;
       }
@@ -2157,6 +2349,55 @@ function generateMap(cfg){
   }
   // explicit features
   (cfg.features||[]).forEach(f=>{
+    if(f.type==='hedgewall'){
+      /* a continuous wall of hedge enclosing the garden. Runs either down a column
+         (f.x with f.y0..f.y1) or along a row (f.y with f.x0..f.x1); a single gap is
+         left for the gate, so it is the only way in or out. */
+      const thick=f.thick||1, gap=f.gap||null;
+      const inGap=v=> gap && v>=gap[0] && v<=gap[1];
+      const addHedge=(cx,cy)=>{
+        const jig=(((cy*1.3+cx*1.7)%1)+1)%1*0.16-0.08;
+        decor.push({type:'hedge', x:cx+jig, y:cy, solid:true, id:'gwall',
+                    col:pick(rng,biome.treeCol), tall:1+(((cy*7+cx*3)%3))*0.10, seed:(cy*13+cx*7)%97});
+      };
+      if(f.x0!==undefined){                                   /* horizontal run along row f.y */
+        const yy=f.y, x0=f.x0, x1=f.x1;
+        for(let i=decor.length-1;i>=0;i--){ const d=decor[i];
+          if(!d.id&&d.x>=x0-1&&d.x<=x1+1&&Math.abs(d.y-yy)<1.4+thick) decor.splice(i,1); }
+        for(let xx=x0; xx<=x1; xx++){ if(inGap(xx)) continue;
+          for(let dd=0; dd<thick; dd++) addHedge(xx, yy+dd); }
+      } else {                                                /* vertical run down column f.x */
+        const col=f.x, y0=f.y0!==undefined?f.y0:1, y1=f.y1!==undefined?f.y1:h-2;
+        for(let i=decor.length-1;i>=0;i--){ const d=decor[i];
+          if(!d.id&&Math.abs(d.x-col)<1.4+thick&&d.y>=y0-1&&d.y<=y1+1) decor.splice(i,1); }
+        for(let yy=y0; yy<=y1; yy++){ if(inGap(yy)) continue;
+          for(let dd=0; dd<thick; dd++) addHedge(col+dd, yy); }
+      }
+      return;
+    }
+    if(f.type==='wildzone'){
+      /* the wilderness beyond the wall: dry ground, dead trees, rocks and bones of
+         shrubs — the barren land east of the garden the man is driven out into. */
+      const x0=f.x0, y0=f.y0, x1=Math.min(w-2,f.x1), y1=Math.min(h-2,f.y1);
+      for(let yy=y0; yy<=y1; yy++) for(let xx=x0; xx<=x1; xx++){
+        if(xx<1||xx>=w-1||yy<1||yy>=h-1) continue;
+        const tl=tiles[yy*w+xx];
+        if(SOLID.has(tl)||tl===T.PATH) continue;              /* keep the border heights and the way through */
+        const r=rng();
+        tiles[yy*w+xx]= r<.66?T.DIRT : (r<.82?T.SAND : T.DIRT);
+      }
+      for(let i=decor.length-1;i>=0;i--){ const d=decor[i];
+        if(!d.id&&d.x>=x0-.5&&d.x<=x1+.5&&d.y>=y0-.5&&d.y<=y1+.5) decor.splice(i,1); }
+      for(let yy=y0+1; yy<y1; yy++) for(let xx=x0+1; xx<x1; xx++){
+        if(SOLID.has(tiles[yy*w+xx])||tiles[yy*w+xx]===T.PATH) continue;
+        if(Math.abs(yy-16)<1.1) continue;                     /* leave the exit lane clear */
+        const r=rng();
+        if(r<.045) decor.push({type:'tree', x:xx+rng()*.5, y:yy+rng()*.5, col:'#6e6a3e', dead:true, solid:true});
+        else if(r<.085) decor.push({type:'rock', x:xx+rng()*.5, y:yy+rng()*.5, solid:true});
+        else if(r<.12) decor.push({type:'bush', x:xx+rng()*.5, y:yy+rng()*.5, col:'#847e4e'});
+      }
+      return;
+    }
     // clear area around feature
     const rad=f.clear!==undefined?f.clear:2;
     for(let i=decor.length-1;i>=0;i--){
@@ -4101,6 +4342,19 @@ const Game={
     if(this.state==='slides'){ this.slideT+=dt; }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
+    /* the gate of the garden opens as one draws near the way, and shuts once through */
+    { const w9=this.world;
+      if(w9.map&&w9._gate===undefined) w9._gate=w9.map.decor.find(d=>d.id==='gate'&&d.side)||null;
+      if(w9._gate){ const gp=w9._gate; let tgt=0;
+        /* open for whoever is drawing near the way or still passing through — the man and his wife both */
+        const walkers=[w9.player]; if(w9.npcs) for(const n of w9.npcs) walkers.push(n);
+        for(const e of walkers){ if(!e||e.hidden) continue;
+          const near=e.x>37&&e.x<gp.x+.5&&Math.abs(e.y-gp.y)<3.6;
+          const passing=e.x>=gp.x+.5&&e.x<=gp.x+3.2;
+          if(near||passing){ tgt=1; break; } }
+        gp.doorT=(gp.doorT||0)+(tgt-(gp.doorT||0))*Math.min(1,dt*.006);
+      }
+    }
     if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkStoryArrival(); this.updateMount(); this.checkDoorways(); this.markVisited(); }
     else if(this.world&&this.world.map&&this.world.map.world&&this.state==='play') worldLifeTick(this);   /* the world breathes on through a staged telling */
     this.updateScript(dt);
@@ -5946,13 +6200,19 @@ const STORY=[
    {art:'expulsion', music:'sorrow', text:'And YAHUAH Aluahim said, “See, the man has become like one of Us, to know good and evil. And now, lest he stretch out his hand and take also of the tree of life and eat and live forever…”', ref:'BERĔSHITH 3:22'},
   ],
   scene:{
-   map:{biome:'eden', w:52, h:30, seed:11,
+   map:{biome:'eden', w:58, h:30, seed:11,
      features:[
+       /* the garden walled about on every side, with one gate on the east */
+       {type:'hedgewall',x:43,y0:9,y1:22,gap:[14,16],thick:1},   /* east wall — holds the gate */
+       {type:'hedgewall',x:6, y0:9,y1:22,thick:1},               /* west wall */
+       {type:'hedgewall',y:9, x0:6,x1:43,thick:1},               /* north wall */
+       {type:'hedgewall',y:22,x0:6,x1:43,thick:1},               /* south wall */
+       {type:'wildzone',x0:44,y0:3,x1:55,y1:27},                 /* the wilderness beyond the gate */
        {type:'gate',side:true,guard:false,x:43,y:15,solid:true,clear:3,flat:2,id:'gate'},
        {type:'treeLife',x:10,y:14,solid:true,clear:3,id:'treelife'},
        {type:'clearing',x:43,y:18,flat:3},
      ],
-     path:[[12,16,42,16]]},
+     path:[[12,16,54,16]]},
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[12,17],
    npcs:[
@@ -5966,13 +6226,16 @@ const STORY=[
      {say:['narrator','Therefore YAHUAH Aluahim sent him out of the garden of Ĕḏen, to till the ground from which he was taken.']},
    ],
    onComplete:[
-     {prop:['gate',{guard:true}]},{burst:[43,12,'holy',18]},
-     {addProp:{type:'sword',x:43,y:12.5,id:'sword'}},
-     {sfx:'holy'},{burst:[43,13,'holy',22]},{wait:600},
-     {say:['narrator','And He placed keruḇim at the east of the garden of Ĕḏen, and a flaming sword which turned every way, to guard the way to the tree of life.']},
      {say:['adam','Come, Ḥawwah. By the sweat of my face we shall eat bread, until we return to the ground.']},
      {say:['chavvah','And yet He clothed us with His own hand — and He has said it: my Seed shall crush the serpent’s head.']},
-     {move:['player',49,16,.04,'bg']},{move:['chavvah',48,17,.04]},
+     /* they go out through the gate into the wilderness, and it swings shut behind them */
+     {move:['chavvah',49,16,.04,'bg']},
+     {move:['player',52,16,.04]},
+     {wait:800},
+     {prop:['gate',{guard:true}]},
+     {addProp:{type:'sword',x:43,y:12.5,id:'sword'}},
+     {sfx:'holy'},{burst:[43,13,'holy',22]},{wait:500},
+     {say:['narrator','And He placed keruḇim at the east of the garden of Ĕḏen, and a flaming sword which turned every way, to guard the way to the tree of life.']},
      {fade:'out'},
    ],
   },
