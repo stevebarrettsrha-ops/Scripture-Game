@@ -5704,26 +5704,37 @@ function drawSlideArt(g,key,st,t,slide){
          const sx=VW*.52+(h5-.5)*VW*.34, sy=VH*.64-(hash2(i,5))*VH*.06;
          g.fillStyle=`rgba(220,235,245,${.4*h5})`; g.beginPath(); g.arc(sx,sy,1+h5*2.4,0,Math.PI*2); g.fill();
        }
-       // --- Yonah, tumbling and flailing as he falls toward the mouth ---
+       // --- Yonah, in the game's blocky style, tumbling and flailing as he falls ---
        (function(){
-         const yx=VW*.52, yy=VH*.42+Math.sin(t/340)*9;
-         g.save(); g.translate(yx,yy); g.rotate(Math.sin(t/430)*0.42);
-         const S=Math.min(VW,VH)*0.058, skin='#7a4e29', robe='#4f6072', hair='#2c1a0c';
-         g.lineCap='round';
-         const la=Math.sin(t/95)*1.0+2.5, lb=Math.sin(t/95+2.2)*1.0+2.5;
-         g.strokeStyle=skin; g.lineWidth=S*.32;
-         g.beginPath(); g.moveTo(-S*.15,S*.42); g.lineTo(-S*.15+Math.sin(la)*S*.6,S*.42+Math.cos(la)*S*.7); g.stroke();
-         g.beginPath(); g.moveTo(S*.15,S*.42); g.lineTo(S*.15+Math.sin(lb)*S*.6,S*.42+Math.cos(lb)*S*.7); g.stroke();
-         g.fillStyle=robe; g.beginPath(); g.moveTo(-S*.32,-S*.16); g.lineTo(S*.32,-S*.16); g.lineTo(S*.26,S*.46); g.lineTo(-S*.26,S*.46); g.closePath(); g.fill();
-         const aa=Math.sin(t/80)*1.1-0.9, ab=Math.sin(t/80+2.6)*1.1-0.9;
-         g.strokeStyle=skin; g.lineWidth=S*.26;
-         g.beginPath(); g.moveTo(-S*.28,-S*.04); g.lineTo(-S*.28+Math.sin(aa)*S*.72,-S*.04-Math.cos(aa)*S*.72); g.stroke();
-         g.beginPath(); g.moveTo(S*.28,-S*.04); g.lineTo(S*.28-Math.sin(ab)*S*.72,-S*.04-Math.cos(ab)*S*.72); g.stroke();
-         g.fillStyle=skin; g.fillRect(-S*.24,-S*.60,S*.48,S*.46);
-         g.fillStyle=hair; g.fillRect(-S*.26,-S*.66,S*.52,S*.16);
-         g.fillStyle='#fff'; g.fillRect(-S*.16,-S*.46,S*.13,S*.14); g.fillRect(S*.03,-S*.46,S*.13,S*.14);
-         g.fillStyle='#12202a'; g.fillRect(-S*.115,-S*.42,S*.06,S*.07); g.fillRect(S*.075,-S*.42,S*.06,S*.07);
-         g.fillStyle='#2a1414'; g.beginPath(); g.ellipse(0,-S*.22,S*.07,S*.10,0,0,Math.PI*2); g.fill();
+         const yx=VW*.52, yy=VH*.40+Math.sin(t/340)*9;
+         const u=Math.min(VW,VH)*0.0076;
+         const skin='#7a4e29', hairC='#2c1a0c', robe='#4f6072', beard='#2c1a0c';
+         const armC=shade(robe,-12), shoe=shade(skin,-32), studC=hairC;
+         const blk=(x,y,w,h,col,lip)=>{ lip=(lip===undefined)?1:lip; g.fillStyle=col; g.fillRect(x,y,w,h);
+           if(lip){ g.fillStyle=shade(col,20); g.fillRect(x,y,w,.9*lip); g.fillStyle=shade(col,-18); g.fillRect(x+w-.9*lip,y+.9*lip,.9*lip,h-.9*lip); } };
+         g.save(); g.translate(yx,yy); g.rotate(Math.sin(t/430)*0.5); g.scale(u,u); g.translate(0,13);
+         // legs kicking (pivot at the hips)
+         const legA=Math.sin(t/95)*0.85+0.18, legB=Math.sin(t/95+2.4)*0.85-0.18;
+         g.save(); g.translate(-2.6,-8.2); g.rotate(legA); blk(-1.7,0,3.4,6.4,skin,.7); blk(-1.7,6.0,3.6,1.9,shoe,.6); g.restore();
+         g.save(); g.translate(2.6,-8.2); g.rotate(legB); blk(-1.7,0,3.4,6.4,skin,.7); blk(-1.9,6.0,3.6,1.9,shoe,.6); g.restore();
+         // torso
+         blk(-6,-15,12,7,robe); g.fillStyle=shade(robe,10); g.fillRect(-1,-14.1,2,6.1);
+         // arms flailing (pivot at the shoulders)
+         const armA=Math.sin(t/80)*1.05-1.5, armB=Math.sin(t/80+2.7)*1.05-1.5;
+         g.save(); g.translate(-5.7,-14.6); g.rotate(armA); blk(-2.3,0,2.3,5.2,armC,.6); blk(-2.2,4.8,2.1,1.9,skin,.5); g.restore();
+         g.save(); g.translate(5.7,-14.6); g.rotate(-armB); blk(0,0,2.3,5.2,armC,.6); blk(0.1,4.8,2.1,1.9,skin,.5); g.restore();
+         // head cube + stud
+         g.fillStyle=studC; g.fillRect(-1.7,-27.5,3.4,1.6); g.fillStyle=shade(studC,18); g.fillRect(-1.7,-27.5,3.4,.6);
+         blk(-5.8,-26,11.6,10.6,skin,1.1);
+         // short hair
+         g.fillStyle=hairC; g.fillRect(-6.3,-26.8,12.6,3.2); g.fillStyle=shade(hairC,18); g.fillRect(-6.3,-26.8,12.6,.9);
+         g.fillStyle=hairC; g.fillRect(-6.3,-24.8,1.7,3.2); g.fillRect(4.6,-24.8,1.7,3.2);
+         // wide panicked eyes
+         g.fillStyle='#160e08'; g.fillRect(-3.4,-22.6,2.2,2.8); g.fillRect(1.2,-22.6,2.2,2.8);
+         g.fillStyle='#fff6ee'; g.fillRect(-2.9,-22.1,1.1,1.1); g.fillRect(1.7,-22.1,1.1,1.1);
+         // open shouting mouth, then beard
+         g.fillStyle='#2a1414'; g.fillRect(-1.5,-19.5,3,1.6);
+         g.fillStyle=beard; g.fillRect(-4.2,-17.8,8.4,3.2); g.fillRect(-2.8,-14.8,5.6,1.8);
          g.restore();
        })();
        break; }
