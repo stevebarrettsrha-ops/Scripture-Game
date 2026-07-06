@@ -1931,29 +1931,59 @@ function drawProp(g,px,py,p,t){
       // garden gate: two golden posts + arch
       const gw=TILE*2.2;
       if(p.side){
-        /* the gate stands in the west wall of the garden, seen edge-on: the near
-           jamb, the far jamb behind it in depth, and the arch spanning between */
-        const gh=TILE*2.6, dx9=TILE*.95, dy9=TILE*.62;
-        g.fillStyle='rgba(0,0,0,.25)';
-        g.beginPath(); g.ellipse(dx9*.4,2,TILE*1.05,TILE*.32,0,0,Math.PI*2); g.fill();
-        g.fillStyle='#c9a34b'; g.fillRect(dx9-4,-gh-dy9,8,gh);            /* far jamb */
-        g.strokeStyle='#e8c66a'; g.lineWidth=6;
-        g.beginPath(); g.moveTo(0,-gh); g.quadraticCurveTo(dx9*.5,-gh-dy9*.9-TILE*.42,dx9,-gh-dy9); g.stroke();
-        g.strokeStyle='#b8923c'; g.lineWidth=2.4;
-        g.beginPath(); g.moveTo(0,-gh); g.quadraticCurveTo(dx9*.5,-gh-dy9*.9-TILE*.42,dx9,-gh-dy9); g.stroke();
-        g.fillStyle='#e8c66a'; g.fillRect(-4,-gh,8,gh);                    /* near jamb */
-        g.fillStyle='#f5e3a8'; g.fillRect(-4,-gh,3,gh);
-        const gl9=g.createRadialGradient(dx9*.5,-gh*.6,TILE*.3,dx9*.5,-gh*.6,TILE*2.2);
-        gl9.addColorStop(0,`rgba(255,230,140,${.20+Math.sin(t/500)*.08})`); gl9.addColorStop(1,'rgba(255,230,140,0)');
-        g.fillStyle=gl9; g.beginPath(); g.arc(dx9*.5,-gh*.6,TILE*2.2,0,Math.PI*2); g.fill();
+        /* the gate set in the wall: two golden columns flanking the opening, and a
+           barred golden door hinged on the north column that swings out into the
+           wilderness and shuts again once one has passed through. */
+        const TP=TILE, half=1.5*TP;                 /* the opening spans two posts, ~3 tiles */
+        const Ny=-half, Sy=half;                    /* north post (behind) and south post (in front) */
+        const postH=TP*1.5, pw=TP*.3;
+        const doorT=Math.max(0,Math.min(1,p.doorT||0));
+        /* base shadows of the two columns */
+        g.fillStyle='rgba(0,0,0,.28)';
+        g.beginPath(); g.ellipse(0,Ny+2,TP*.5,TP*.2,0,0,Math.PI*2); g.fill();
+        g.beginPath(); g.ellipse(0,Sy+2,TP*.5,TP*.2,0,0,Math.PI*2); g.fill();
+        /* radiance in the gateway */
+        const gl9=g.createRadialGradient(TP*.3,-TP*.2,TP*.3,TP*.3,-TP*.2,TP*2.4);
+        gl9.addColorStop(0,`rgba(255,230,140,${.18+Math.sin(t/500)*.07})`); gl9.addColorStop(1,'rgba(255,230,140,0)');
+        g.fillStyle=gl9; g.beginPath(); g.arc(TP*.3,-TP*.2,TP*2.4,0,Math.PI*2); g.fill();
+        /* the swinging door — hinged at the north post, angle from shut (across the
+           opening) to open (swung east, out toward the wilderness) */
+        {
+          const phi=(Math.PI/2)*(1-doorT);          /* +90°: shut (points south) → 0°: open (points east) */
+          const L=3*TP-TP*.2, dw=TP*.46;
+          g.save(); g.translate(0,Ny); g.rotate(phi);
+          g.fillStyle='rgba(0,0,0,.16)'; g.fillRect(0,dw*.4,L,dw*1.1);            /* the door's shadow on the ground */
+          const rail=g.createLinearGradient(0,-dw,0,dw);
+          rail.addColorStop(0,'#f7e29a'); rail.addColorStop(.5,'#e0b44e'); rail.addColorStop(1,'#a87f2c');
+          g.fillStyle=rail;
+          g.fillRect(0,-dw,L,dw*.44); g.fillRect(0,dw*.56,L,dw*.44);              /* top & bottom rails */
+          g.fillStyle='#e6bd58';
+          const pk=6; for(let i=0;i<=pk;i++){ const bx=L*(i/pk); g.fillRect(bx-dw*.11,-dw,dw*.22,dw*2); }  /* upright pickets */
+          g.strokeStyle='#f7e6a8'; g.lineWidth=Math.max(1.5,dw*.12);
+          g.beginPath(); g.moveTo(0,dw); g.lineTo(L,-dw); g.stroke();             /* diagonal brace */
+          g.fillStyle='#8a6a26'; g.fillRect(-dw*.28,-dw*1.1,dw*.6,dw*2.2);        /* hinge stile at the post */
+          g.fillStyle='#f7e6a8'; g.beginPath(); g.arc(L,0,dw*.44,0,Math.PI*2); g.fill();  /* latch finial */
+          g.restore();
+        }
+        /* the two golden columns, drawn after the door so they stand before it */
+        const post=(by)=>{
+          g.fillStyle='rgba(0,0,0,.18)'; g.fillRect(-pw+2,by-postH*.5,pw*2,postH*.5);
+          const gp=g.createLinearGradient(-pw,0,pw,0);
+          gp.addColorStop(0,'#8f6c22'); gp.addColorStop(.42,'#f5dd8a'); gp.addColorStop(1,'#b8923c');
+          g.fillStyle=gp; g.fillRect(-pw,by-postH,pw*2,postH);                    /* shaft */
+          g.fillStyle='#f5e3a8'; g.fillRect(-pw,by-postH,pw*.55,postH);           /* lit edge */
+          g.fillStyle='#e8c66a'; g.fillRect(-pw-3,by-postH-7,pw*2+6,9);           /* capital */
+          g.fillStyle='#f5e3a8'; g.beginPath(); g.arc(0,by-postH-12,pw*.85,0,Math.PI*2); g.fill();  /* finial */
+        };
+        post(Ny); post(Sy);
         if(p.guard!==false){
-          /* the keruv stands over the gate, turned toward the way out, a sword in his
+          /* the keruv stands in the gateway, turned toward the way out, a sword in his
              hand — a great and terrible guardian, larger than a man */
           const bob=Math.sin(t/460)*4;
-          const kx=dx9*.5, ky=-gh-dy9+TILE*.35+bob;
-          const gl2=g.createRadialGradient(kx,ky-TILE*1.5,6,kx,ky-TILE*1.5,TILE*2.6);
+          const kx=TP*.25, ky=-TP*.15+bob;
+          const gl2=g.createRadialGradient(kx,ky-TP*1.5,6,kx,ky-TP*1.5,TP*2.6);
           gl2.addColorStop(0,`rgba(255,246,205,${.5+Math.sin(t/430)*.12})`); gl2.addColorStop(1,'rgba(255,244,200,0)');
-          g.fillStyle=gl2; g.beginPath(); g.arc(kx,ky-TILE*1.5,TILE*2.6,0,Math.PI*2); g.fill();
+          g.fillStyle=gl2; g.beginPath(); g.arc(kx,ky-TP*1.5,TP*2.6,0,Math.PI*2); g.fill();
           drawChar(g,kx,ky,'cherub',{t,dir:'left',hold:'sword',scale:1.25});
         }
         break;
@@ -2320,21 +2350,51 @@ function generateMap(cfg){
   // explicit features
   (cfg.features||[]).forEach(f=>{
     if(f.type==='hedgewall'){
-      /* a continuous wall of hedge enclosing the garden, with a single gap left
-         for the gate — so the gate is the only way in or out. */
-      const col=f.x, y0=f.y0!==undefined?f.y0:1, y1=f.y1!==undefined?f.y1:h-2;
-      const gapA=f.gap[0], gapB=f.gap[1], thick=f.thick||1;
-      /* clear whatever grew along the wall line */
-      for(let i=decor.length-1;i>=0;i--){
-        if(!decor[i].id&&Math.abs(decor[i].x-col)<1.4+thick&&decor[i].y>=y0-1&&decor[i].y<=y1+1) decor.splice(i,1);
+      /* a continuous wall of hedge enclosing the garden. Runs either down a column
+         (f.x with f.y0..f.y1) or along a row (f.y with f.x0..f.x1); a single gap is
+         left for the gate, so it is the only way in or out. */
+      const thick=f.thick||1, gap=f.gap||null;
+      const inGap=v=> gap && v>=gap[0] && v<=gap[1];
+      const addHedge=(cx,cy)=>{
+        const jig=(((cy*1.3+cx*1.7)%1)+1)%1*0.16-0.08;
+        decor.push({type:'hedge', x:cx+jig, y:cy, solid:true, id:'gwall',
+                    col:pick(rng,biome.treeCol), tall:1+(((cy*7+cx*3)%3))*0.10, seed:(cy*13+cx*7)%97});
+      };
+      if(f.x0!==undefined){                                   /* horizontal run along row f.y */
+        const yy=f.y, x0=f.x0, x1=f.x1;
+        for(let i=decor.length-1;i>=0;i--){ const d=decor[i];
+          if(!d.id&&d.x>=x0-1&&d.x<=x1+1&&Math.abs(d.y-yy)<1.4+thick) decor.splice(i,1); }
+        for(let xx=x0; xx<=x1; xx++){ if(inGap(xx)) continue;
+          for(let dd=0; dd<thick; dd++) addHedge(xx, yy+dd); }
+      } else {                                                /* vertical run down column f.x */
+        const col=f.x, y0=f.y0!==undefined?f.y0:1, y1=f.y1!==undefined?f.y1:h-2;
+        for(let i=decor.length-1;i>=0;i--){ const d=decor[i];
+          if(!d.id&&Math.abs(d.x-col)<1.4+thick&&d.y>=y0-1&&d.y<=y1+1) decor.splice(i,1); }
+        for(let yy=y0; yy<=y1; yy++){ if(inGap(yy)) continue;
+          for(let dd=0; dd<thick; dd++) addHedge(col+dd, yy); }
       }
-      for(let yy=y0; yy<=y1; yy++){
-        if(yy>=gapA&&yy<=gapB) continue;                      /* the one opening: the gate */
-        for(let d=0; d<thick; d++){
-          const cx=col+d, jig=(((yy*1.3+cx)%1)+1)%1*0.16-0.08;
-          decor.push({type:'hedge', x:cx+jig, y:yy, solid:true, id:'gwall',
-                      col:pick(rng,biome.treeCol), tall:1+((yy*7+cx*3)%3)*0.10, seed:(yy*13+cx*7)%97});
-        }
+      return;
+    }
+    if(f.type==='wildzone'){
+      /* the wilderness beyond the wall: dry ground, dead trees, rocks and bones of
+         shrubs — the barren land east of the garden the man is driven out into. */
+      const x0=f.x0, y0=f.y0, x1=Math.min(w-2,f.x1), y1=Math.min(h-2,f.y1);
+      for(let yy=y0; yy<=y1; yy++) for(let xx=x0; xx<=x1; xx++){
+        if(xx<1||xx>=w-1||yy<1||yy>=h-1) continue;
+        const tl=tiles[yy*w+xx];
+        if(SOLID.has(tl)||tl===T.PATH) continue;              /* keep the border heights and the way through */
+        const r=rng();
+        tiles[yy*w+xx]= r<.66?T.DIRT : (r<.82?T.SAND : T.DIRT);
+      }
+      for(let i=decor.length-1;i>=0;i--){ const d=decor[i];
+        if(!d.id&&d.x>=x0-.5&&d.x<=x1+.5&&d.y>=y0-.5&&d.y<=y1+.5) decor.splice(i,1); }
+      for(let yy=y0+1; yy<y1; yy++) for(let xx=x0+1; xx<x1; xx++){
+        if(SOLID.has(tiles[yy*w+xx])||tiles[yy*w+xx]===T.PATH) continue;
+        if(Math.abs(yy-16)<1.1) continue;                     /* leave the exit lane clear */
+        const r=rng();
+        if(r<.045) decor.push({type:'tree', x:xx+rng()*.5, y:yy+rng()*.5, col:'#6e6a3e', dead:true, solid:true});
+        else if(r<.085) decor.push({type:'rock', x:xx+rng()*.5, y:yy+rng()*.5, solid:true});
+        else if(r<.12) decor.push({type:'bush', x:xx+rng()*.5, y:yy+rng()*.5, col:'#847e4e'});
       }
       return;
     }
@@ -4282,6 +4342,19 @@ const Game={
     if(this.state==='slides'){ this.slideT+=dt; }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
+    /* the gate of the garden opens as one draws near the way, and shuts once through */
+    { const w9=this.world;
+      if(w9.map&&w9._gate===undefined) w9._gate=w9.map.decor.find(d=>d.id==='gate'&&d.side)||null;
+      if(w9._gate){ const gp=w9._gate; let tgt=0;
+        /* open for whoever is drawing near the way or still passing through — the man and his wife both */
+        const walkers=[w9.player]; if(w9.npcs) for(const n of w9.npcs) walkers.push(n);
+        for(const e of walkers){ if(!e||e.hidden) continue;
+          const near=e.x>37&&e.x<gp.x+.5&&Math.abs(e.y-gp.y)<3.6;
+          const passing=e.x>=gp.x+.5&&e.x<=gp.x+3.2;
+          if(near||passing){ tgt=1; break; } }
+        gp.doorT=(gp.doorT||0)+(tgt-(gp.doorT||0))*Math.min(1,dt*.006);
+      }
+    }
     if(this.chapter&&this.chapter.id==='freeroam'){ this.steerJourney(); this.checkStoryArrival(); this.updateMount(); this.checkDoorways(); this.markVisited(); }
     else if(this.world&&this.world.map&&this.world.map.world&&this.state==='play') worldLifeTick(this);   /* the world breathes on through a staged telling */
     this.updateScript(dt);
@@ -6127,14 +6200,19 @@ const STORY=[
    {art:'expulsion', music:'sorrow', text:'And YAHUAH Aluahim said, “See, the man has become like one of Us, to know good and evil. And now, lest he stretch out his hand and take also of the tree of life and eat and live forever…”', ref:'BERĔSHITH 3:22'},
   ],
   scene:{
-   map:{biome:'eden', w:52, h:30, seed:11,
+   map:{biome:'eden', w:58, h:30, seed:11,
      features:[
-       {type:'hedgewall',x:43,gap:[14,16],thick:1},
+       /* the garden walled about on every side, with one gate on the east */
+       {type:'hedgewall',x:43,y0:9,y1:22,gap:[14,16],thick:1},   /* east wall — holds the gate */
+       {type:'hedgewall',x:6, y0:9,y1:22,thick:1},               /* west wall */
+       {type:'hedgewall',y:9, x0:6,x1:43,thick:1},               /* north wall */
+       {type:'hedgewall',y:22,x0:6,x1:43,thick:1},               /* south wall */
+       {type:'wildzone',x0:44,y0:3,x1:55,y1:27},                 /* the wilderness beyond the gate */
        {type:'gate',side:true,guard:false,x:43,y:15,solid:true,clear:3,flat:2,id:'gate'},
        {type:'treeLife',x:10,y:14,solid:true,clear:3,id:'treelife'},
        {type:'clearing',x:43,y:18,flat:3},
      ],
-     path:[[12,16,42,16]]},
+     path:[[12,16,54,16]]},
    time:'dusk', music:'sorrow',
    player:'adam_c', playerPos:[12,17],
    npcs:[
@@ -6148,13 +6226,16 @@ const STORY=[
      {say:['narrator','Therefore YAHUAH Aluahim sent him out of the garden of Ĕḏen, to till the ground from which he was taken.']},
    ],
    onComplete:[
-     {prop:['gate',{guard:true}]},{burst:[43,12,'holy',18]},
-     {addProp:{type:'sword',x:43,y:12.5,id:'sword'}},
-     {sfx:'holy'},{burst:[43,13,'holy',22]},{wait:600},
-     {say:['narrator','And He placed keruḇim at the east of the garden of Ĕḏen, and a flaming sword which turned every way, to guard the way to the tree of life.']},
      {say:['adam','Come, Ḥawwah. By the sweat of my face we shall eat bread, until we return to the ground.']},
      {say:['chavvah','And yet He clothed us with His own hand — and He has said it: my Seed shall crush the serpent’s head.']},
-     {move:['player',49,16,.04,'bg']},{move:['chavvah',48,17,.04]},
+     /* they go out through the gate into the wilderness, and it swings shut behind them */
+     {move:['chavvah',49,16,.04,'bg']},
+     {move:['player',52,16,.04]},
+     {wait:800},
+     {prop:['gate',{guard:true}]},
+     {addProp:{type:'sword',x:43,y:12.5,id:'sword'}},
+     {sfx:'holy'},{burst:[43,13,'holy',22]},{wait:500},
+     {say:['narrator','And He placed keruḇim at the east of the garden of Ĕḏen, and a flaming sword which turned every way, to guard the way to the tree of life.']},
      {fade:'out'},
    ],
   },
