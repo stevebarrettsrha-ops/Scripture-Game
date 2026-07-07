@@ -3048,16 +3048,6 @@ function elevAt(map,x,y){
   const tx=clamp(Math.floor(x),0,map.w-1), ty=clamp(Math.floor(y),0,map.h-1);
   return map.elev[ty*map.w+tx];
 }
-function elevAtF(map,x,y){
-  /* smooth height under a walker's feet, blended across the tile corners */
-  if(!map.elev) return 0;
-  const fx=x-.5, fy=y-.5;
-  const x0=clamp(Math.floor(fx),0,map.w-1), y0=clamp(Math.floor(fy),0,map.h-1);
-  const x1=Math.min(x0+1,map.w-1), y1=Math.min(y0+1,map.h-1);
-  const u=clamp(fx-x0,0,1), v=clamp(fy-y0,0,1);
-  const E=(X,Y)=>map.elev[Y*map.w+X];
-  return E(x0,y0)*(1-u)*(1-v)+E(x1,y0)*u*(1-v)+E(x0,y1)*(1-u)*v+E(x1,y1)*u*v;
-}
 const FACE_COL={};        // the colour of a block's cut face, by the ground above it
 FACE_COL[T.GRASS]='#6b5a40'; FACE_COL[T.GRASS2]='#66563d'; FACE_COL[T.FLOWER]='#6b5a40';
 FACE_COL[T.PATH]='#8a744f'; FACE_COL[T.SAND]='#a98f5e'; FACE_COL[T.DIRT]='#6e5d42';
@@ -3201,7 +3191,11 @@ function drawWorldElev(g,world,t,offX,offY,x0,x1,y0,y1){
       b.sort((a,q)=>a.y-q.y);
       for(const ent of b){
         const d=ent.d;
-        const lift=elevAtF(map,d.x,d.y)*ESTEP;
+        /* stand every walker and prop on the flat top of the block it occupies —
+           the world is built of discrete stepped blocks, so the lift must be the
+           block's own whole height, not a height blended between neighbours
+           (blending leaves bushes, stones and mountains hovering at cliff edges). */
+        const lift=elevAt(map,d.x,d.y)*ESTEP;
         const sx=d.x*TILE+offX, sy=d.y*TILE+offY-lift;
         if(sx<-TILE*8||sx>VW+TILE*8||sy<-TILE*8||sy>VH+TILE*6) continue;
         drawWorldEnt(g,world,ent,sx,sy,t);
@@ -3296,7 +3290,7 @@ function drawWorld(g,world,t){
   for(const it of world.items){
     if(it.taken) continue;
     if(world.overlook&&it.y<world.overlook.cliffY) continue;
-    const sx=it.x*TILE+offX, sy=it.y*TILE+offY-elevAtF(map,it.x,it.y)*ESTEP;
+    const sx=it.x*TILE+offX, sy=it.y*TILE+offY-elevAt(map,it.x,it.y)*ESTEP;
     const bob=Math.sin(t/300+it.x*3)*3;
     const gl=g.createRadialGradient(sx,sy-8+bob,2,sx,sy-8+bob,16);
     gl.addColorStop(0,'rgba(255,235,150,.5)'); gl.addColorStop(1,'rgba(255,235,150,0)');
@@ -3322,7 +3316,7 @@ function drawWorld(g,world,t){
   // goto target marker
   if(world.gotoMark){
     const m=world.gotoMark;
-    const sx=m.x*TILE+offX, sy=m.y*TILE+offY-elevAtF(map,m.x,m.y)*ESTEP;
+    const sx=m.x*TILE+offX, sy=m.y*TILE+offY-elevAt(map,m.x,m.y)*ESTEP;
     const pul=.5+Math.sin(t/300)*.5;
     g.strokeStyle=`rgba(232,198,106,${.35+pul*.4})`;
     g.lineWidth=2.5;
@@ -3338,7 +3332,7 @@ function drawWorld(g,world,t){
     const a=Math.atan2(world.guide.y-p.y,world.guide.x-p.x);
     const lead=Math.sin(t/300)*5;
     const ax=p.x*TILE+offX+Math.cos(a)*(TILE*1.9+lead);
-    const ay=p.y*TILE+offY-TILE*0.9-elevAtF(map,p.x,p.y)*ESTEP+Math.sin(a)*(TILE*1.9+lead);
+    const ay=p.y*TILE+offY-TILE*0.9-elevAt(map,p.x,p.y)*ESTEP+Math.sin(a)*(TILE*1.9+lead);
     const pul=.6+Math.sin(t/260)*.4;
     g.save(); g.translate(ax,ay); g.rotate(a);
     g.fillStyle=`rgba(232,198,106,${.5+pul*.4})`;
@@ -3373,7 +3367,7 @@ function drawWorld(g,world,t){
     // light sources glow through night
     for(const d of map.decor){
       if((d.type==='firepit'&&d.lit!==false)||(d.type==='altar'&&d.stage>=3)||d.type==='treeLife'){
-        const sx=d.x*TILE+offX, sy=d.y*TILE+offY-elevAtF(map,d.x,d.y)*ESTEP;
+        const sx=d.x*TILE+offX, sy=d.y*TILE+offY-elevAt(map,d.x,d.y)*ESTEP;
         const r=d.type==='treeLife'?TILE*5:(d.type==='firepit'&&d.big?TILE*5.6:TILE*3.4);
         const gl2=g.createRadialGradient(sx,sy-TILE*.5,TILE*.3,sx,sy-TILE*.5,r);
         gl2.addColorStop(0,'rgba(255,190,90,.32)'); gl2.addColorStop(1,'rgba(255,190,90,0)');
