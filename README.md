@@ -88,9 +88,12 @@ Second Books of Aḏam & Ḥawwah. Reference PDFs are kept in the repository roo
 ## Assets
 
 All art, music and sound are generated procedurally in code — there are no
-binary game assets. The soundtrack is a small generative sequencer (`Sound.MUSIC`
-in `index.html`): each scene mood picks a scale and chord progression and plays
-an in-key bass line, arpeggio, sparse lead melody and subtle percussion over the
-ambient pad, so every scene has its own evolving music while the game stays fully
-offline. Custom art can be added under `assets/` and wired into the
+binary game assets. The calm background music is real **Mozart**: public-domain
+themes (the Andante of K.155, the Adagios of K.458, K.80 and K.156, the
+"Ah! vous dirai-je, maman" theme K.265, and the Sonata facile K.545) are
+embedded as note data (`Sound.MZPIECES`) and synthesised very softly, like a
+music box, over a quiet ambient pad — peaceful on purpose, and still fully
+offline. Only dramatic storm/tense scenes use the small generative sequencer
+(`Sound.MUSIC` in `index.html`), now heavily softened and much quieter.
+Custom art can be added under `assets/` and wired into the
 prop/character renderers.
