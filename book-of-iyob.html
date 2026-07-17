@@ -5716,7 +5716,10 @@ function drawTitleBg(g,t){
    · gem-veined mine walls, and darkness with a lamp about the player  */
 (function(){
   const _drawProp=drawProp;
-  const EXT_SCALE={house:1.8,rubble:1.8,whirlwind:1.5,gemvein:1.6};
+  /* sizes are calculated against the player figure (~1.5 tiles tall):
+     a house stands ~2.5 people tall and ~4 tiles wide; rubble is the same
+     footprint fallen low; a mine face rises well over head height. */
+  const EXT_SCALE={house:4,rubble:3.6,whirlwind:1.5,gemvein:2.2,liwyathan:2};
   drawProp=function(g,px,py,p,t){
     const u=2.6*(TILE/40)*(p.scale||1)*(EXT_SCALE[p.type]||1);
     const R=(x,y,w,h,col)=>{g.fillStyle=col;g.fillRect(px+x*u,py+y*u,w*u,h*u)};
@@ -5772,6 +5775,43 @@ function drawTitleBg(g,t){
         g.restore();
         if(p.x!==undefined&&Math.random()<.3)
           Particles.spawn({x:p.x*TILE+(Math.random()-.5)*TILE*1.6,y:p.y*TILE-Math.random()*TILE*7,vx:(Math.random()-.5)*.3,vy:-.05-Math.random()*.12,life:900,max:900,type:'ash'});
+        break; }
+      case 'liwyathan': {
+        /* the great serpent of the deep — legless, coiling through the water
+           (the upright dragon form belongs to Bereshith alone, before the curse) */
+        const tt=t/520, bob=Math.sin(tt)*u*.5;
+        // wake ripples at the waterline
+        g.strokeStyle='rgba(220,236,244,.35)'; g.lineWidth=Math.max(1,u*.3);
+        for(let i=0;i<3;i++){ const hx=px+(5+i*9)*u;
+          g.beginPath(); g.ellipse(hx,py+1.2*u,(5.4-i*.8)*u,1.1*u,0,0,Math.PI*2); g.stroke(); }
+        // body coils — humps rising from the water, sinking toward the tail
+        for(let i=2;i>=0;i--){
+          const hx=px+(5+i*9)*u, hy=py+bob*Math.sin(1+i*1.7), r=(4.4-i*.8)*u;
+          g.fillStyle='#2e5a46';
+          g.beginPath(); g.arc(hx,hy,r,Math.PI,0); g.fill();
+          g.fillStyle='#3d7a5c';
+          g.beginPath(); g.arc(hx,hy+r*.16,r*.62,Math.PI,0); g.fill();
+          // spines along the ridge — rows of scales are his pride
+          g.fillStyle='#c8b13c';
+          for(let k=-1;k<=1;k++){
+            const sx=hx+k*r*.5;
+            g.beginPath(); g.moveTo(sx-.7*u,hy-r+.4*u); g.lineTo(sx,hy-r-1.5*u); g.lineTo(sx+.7*u,hy-r+.4*u); g.closePath(); g.fill();
+          }
+        }
+        // neck rising at the head end
+        const hy2=py-6.5*u+bob;
+        g.strokeStyle='#2e5a46'; g.lineWidth=3.4*u; g.lineCap='round';
+        g.beginPath(); g.moveTo(px+1.5*u,py+1*u); g.quadraticCurveTo(px-2*u,py-3*u,px-2.2*u,hy2+2*u); g.stroke();
+        // head facing left, jaws open
+        g.fillStyle='#2e5a46'; g.fillRect(px-8*u,hy2-1.9*u,6.6*u,3.2*u);
+        g.fillStyle='#27503e'; g.fillRect(px-7.6*u,hy2+1.3*u,5.6*u,1.5*u);
+        g.fillStyle='#e8e4d0';
+        for(let k=0;k<3;k++) g.fillRect(px-(7-k*1.5)*u,hy2+.7*u,.6*u,.8*u);
+        g.fillStyle='#ffd24a'; g.fillRect(px-3.6*u,hy2-1.2*u,1.1*u,1.1*u);
+        g.fillStyle='#151a10'; g.fillRect(px-3.3*u,hy2-.95*u,.6*u,.6*u);
+        // firebrands out of his mouth
+        if(p.x!==undefined&&Math.random()<.2)
+          Particles.spawn({x:(p.x-2.2)*TILE,y:(p.y-1.7)*TILE,vx:-.06-Math.random()*.06,vy:-.02-Math.random()*.04,life:700,max:700,type:'spark'});
         break; }
       case 'gemvein': {
         shadow(6);
@@ -5860,7 +5900,6 @@ Object.assign(CHARS,{
   son:{name:'The Firstborn of Iyoḇ', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#8a6a45'},
   daughter:{name:'A Daughter of Iyoḇ', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#9c7d8c', headcover:'#c8b486'},
   vision:{name:'A Form Before My Eyes', skin:'#cfd4dc', hair:'#e8ecf2', hairStyle:'short', robe:'#dfe4ec', beard:'#e8ecf2'},
-  liwyathan:{name:'Liwiathan', dragon:true},
   elder:{name:'An Elder of the Gate', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a5030', beard:'#cfc8b8'},
   youth:{name:'A Child of the City', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#7a5a3a', beard:'#8a6038'},
 });
@@ -6415,11 +6454,10 @@ STORY.push(
   ],
   scene:{
    map:{biome:'plains', w:48, h:30, seed:6414, edgeWater:true,
-     features:[ {type:'whirlwind',x:24,y:7,id:'wind',divine:true,h:13},{type:'clearing',x:24,y:20,flat:3} ]},
+     features:[ {type:'whirlwind',x:24,y:7,id:'wind',divine:true,h:13},{type:'liwyathan',x:38,y:27.6,id:'liwyathan',examine:'Liwiathan — the great serpent of the deep. Rows of scales are his pride; he makes the deep boil like a pot.'},{type:'clearing',x:24,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'iyob_a', playerPos:[24,21],
-   npcs:[ {id:'behemoth',animal:'cow',scale:2.6,x:13,y:14,wander:false,noTalk:true},
-     {id:'liwyathan',char:'liwyathan',scale:2.8,x:37,y:25,wander:false,noTalk:true,dir:'left'} ],
+   npcs:[ {id:'behemoth',animal:'cow',scale:2.6,x:13,y:14,wander:false,noTalk:true} ],
    objectives:[
      {type:'goto',x:15,y:15,text:'See now Behĕmoth, which I made along with you',radius:2.4,
       script:[
@@ -6428,12 +6466,12 @@ STORY.push(
        {shake:.4},{sfx:'thunder'},{burst:[13,14,'ash',10]},
        {say:['iyob_a','See, I am insignificant — what would I answer You? I lay my hand over my mouth.']},
       ]},
-     {type:'goto',x:34,y:24,text:'Would you draw out Liwiathan with a hook?',radius:2.6,hiddenUntil:1,
+     {type:'goto',x:36,y:24,text:'Would you draw out Liwiathan with a hook?',radius:2.6,hiddenUntil:1,
       script:[
        {say:['voice','Would you draw out Liwiathan with a hook, or snare his tongue with a line? Would you play with him as with a bird, or leash him for your young girls? Put your hand on him — think of the struggle! Do not do it again!']},
-       {call:G=>{ const n=G.world.npcs.find(n=>n.id==='liwyathan'); if(n){ Particles.burst(n.x*TILE-14,n.y*TILE-20,'spark',18); } }},{sfx:'thunder'},{shake:.6},
+       {call:G=>{ Particles.burst(35.8*TILE,25.6*TILE,'spark',18); }},{sfx:'thunder'},{shake:.6},
        {say:['voice','Out of his mouth go firebrands — sparks of fire shoot out. Out of his nostrils comes smoke; his breath sets coals on fire. His heart is as hard as stone; iron he reckons as straw. He makes the deep boil like a pot. No one on earth is like him — one made without fear; he is sovereign over all the sons of pride.']},
-       {call:G=>{ const n=G.world.npcs.find(n=>n.id==='liwyathan'); if(n){ Particles.burst(n.x*TILE-14,n.y*TILE-20,'spark',22); Particles.burst(n.x*TILE,n.y*TILE-8,'ash',10); } }},{sfx:'thunder'},
+       {call:G=>{ Particles.burst(35.8*TILE,25.6*TILE,'spark',22); Particles.burst(38*TILE,26.6*TILE,'ash',10); }},{sfx:'thunder'},
        {say:['voice','No one is so foolhardy to wake him — who then is able to stand against Me? Who has given to Me first, that I should repay him? Under all the shamayim, all is Mine.']},
        {rays:.8,raysX:24},{sfx:'holy'},{burst:[24,7,'holy',18]},
       ]},
