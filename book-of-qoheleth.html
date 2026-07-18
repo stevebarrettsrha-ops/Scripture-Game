@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0e1a">
+<title>QOHELETH — Kethuḇim — The Writings</title>
+<style>
+  :root{--gold:#e8c66a;--gold-dim:#a8893f;--parch:#efe3c8;--ui-edge:rgba(232,198,106,.45)}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
+  @supports(height:100dvh){html,body{height:100dvh}}
+  body{font-family:Georgia,'Times New Roman',serif;color:var(--parch);position:fixed;inset:0}
+  canvas#bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;z-index:20;opacity:0;pointer-events:none;transition:opacity .5s ease}
+  .screen.show{opacity:1;pointer-events:auto}
+  .btn{font-family:inherit;cursor:pointer;background:linear-gradient(180deg,rgba(34,28,12,.85),rgba(18,14,6,.9));
+       color:var(--gold);border:1px solid var(--ui-edge);border-radius:3px;padding:1.1vh 4vw;
+       font-size:clamp(14px,2.4vmin,20px);letter-spacing:.18em;text-transform:uppercase;
+       min-width:min(300px,68vw);text-align:center;transition:all .2s;margin-top:1.2vh}
+  .btn:hover,.btn:focus-visible{color:#fff3cf;border-color:var(--gold);box-shadow:0 0 16px rgba(232,198,106,.3);outline:none}
+  .btn.small{min-width:0;padding:.7vh 2.4vw;font-size:clamp(12px,1.8vmin,15px)}
+
+  /* title */
+  #title-screen{justify-content:flex-end;padding-bottom:7vh}
+  .t-hebrew{font-size:clamp(22px,4vmin,42px);letter-spacing:.28em;color:var(--gold);
+            text-shadow:0 0 20px rgba(232,198,106,.5)}
+  .t-main{font-size:clamp(30px,7vmin,80px);font-weight:bold;letter-spacing:.16em;color:#fff7e0;margin-top:.6vh;
+          text-shadow:0 0 30px rgba(232,198,106,.5),0 3px 0 #2b2008}
+  .t-sub{font-style:italic;font-size:clamp(12px,2vmin,19px);color:#cdbf9b;letter-spacing:.26em;
+         margin-top:1vh;text-transform:uppercase}
+  .t-verse{font-style:italic;font-size:clamp(12px,1.9vmin,17px);color:#a9a488;margin-top:2.2vh;
+           max-width:70ch;text-align:center;padding:0 20px;line-height:1.6}
+  .t-blurb{color:#8d8770;font-style:italic;font-size:clamp(11px,1.7vmin,14px);max-width:78ch;
+           text-align:center;padding:1.6vh 24px 0;line-height:1.55}
+
+  /* reader */
+  #reader{position:absolute;inset:0;z-index:15;display:none;flex-direction:column}
+  #reader.show{display:flex}
+  #topbar{display:flex;align-items:center;gap:10px;padding:calc(1vh + env(safe-area-inset-top,0)) 3vw 1vh;
+          background:linear-gradient(180deg,rgba(6,8,16,.82),rgba(6,8,16,0));z-index:3}
+  #topbar .name{color:var(--gold);letter-spacing:.2em;font-size:clamp(12px,2vmin,17px);text-transform:uppercase;
+        text-shadow:0 1px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #topbar .spacer{flex:1}
+  .icon-btn{cursor:pointer;width:36px;height:36px;border-radius:4px;border:1px solid rgba(232,198,106,.3);
+        background:rgba(10,14,26,.6);color:var(--gold);font-size:15px;display:flex;align-items:center;
+        justify-content:center;flex:0 0 auto;font-family:inherit}
+  .icon-btn:hover{border-color:var(--gold)}
+  #scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;
+          padding:1vh 4vw 2vh;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  #panel{width:100%;max-width:760px;background:linear-gradient(180deg,rgba(12,14,22,.72),rgba(8,10,18,.8));
+         border:1px solid rgba(232,198,106,.28);border-radius:8px;padding:3vh 5vw;margin:auto 0;
+         box-shadow:0 10px 50px rgba(0,0,0,.6)}
+  #ch-num{text-align:center;color:var(--gold);font-size:clamp(30px,7vmin,64px);font-weight:bold;
+          text-shadow:0 0 22px rgba(232,198,106,.4);line-height:1}
+  #ch-label{text-align:center;color:#cdbf9b;font-style:italic;letter-spacing:.24em;text-transform:uppercase;
+            font-size:clamp(11px,1.8vmin,14px);margin-top:.8vh;margin-bottom:2.4vh}
+  .verse{color:#efe7d2;font-size:clamp(15px,2.5vmin,20px);line-height:1.7;margin-bottom:.7em;text-align:left}
+  .verse .vn{color:var(--gold);font-size:.7em;vertical-align:super;margin-right:.35em;font-weight:bold}
+  .dn{color:#e8c66a;font-variant:small-caps;letter-spacing:.02em}
+  #navbar{display:flex;align-items:center;gap:12px;justify-content:center;
+          padding:1vh 3vw calc(1.4vh + env(safe-area-inset-bottom,0));
+          background:linear-gradient(0deg,rgba(6,8,16,.82),rgba(6,8,16,0));z-index:3}
+  #nav-prev,#nav-next{cursor:pointer;font-family:inherit;background:rgba(10,14,26,.7);
+          border:1px solid rgba(232,198,106,.4);color:var(--gold);border-radius:4px;
+          padding:.7vh 4vw;font-size:clamp(13px,2vmin,17px);letter-spacing:.14em;transition:all .2s}
+  #nav-prev:hover,#nav-next:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  #nav-prev[disabled],#nav-next[disabled]{opacity:.3;pointer-events:none}
+  #nav-pos{color:#cdbf9b;font-style:italic;font-size:clamp(11px,1.8vmin,15px);letter-spacing:.1em;min-width:9ch;text-align:center}
+
+  /* chapter grid */
+  #grid-screen{background:linear-gradient(180deg,rgba(6,8,16,.95),rgba(10,12,22,.97));
+               justify-content:flex-start;padding:calc(4vh + env(safe-area-inset-top,0)) 4vw 3vh}
+  #grid-screen h2{color:var(--gold);letter-spacing:.26em;font-size:clamp(16px,3.2vmin,28px);
+                  text-transform:uppercase;margin-bottom:2vh;text-align:center}
+  #ch-grid{width:100%;max-width:1000px;overflow-y:auto;flex:1;display:grid;
+           grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:9px;padding:0 4px 2vh;
+           scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  .ch-cell{cursor:pointer;border:1px solid rgba(232,198,106,.25);border-radius:5px;aspect-ratio:1;
+           display:flex;align-items:center;justify-content:center;font-size:clamp(14px,2.4vmin,19px);
+           color:#e8dfc8;background:linear-gradient(160deg,rgba(28,24,12,.55),rgba(12,12,18,.7));transition:all .18s}
+  .ch-cell:hover{border-color:var(--gold);color:#fff6dd;box-shadow:0 0 12px rgba(232,198,106,.3);transform:translateY(-2px)}
+
+  #fader{position:absolute;inset:0;background:#000;z-index:40;pointer-events:none;opacity:1;transition:opacity .7s ease}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div class="screen show" id="title-screen">
+  <div class="t-hebrew">✦ ✦ ✦</div>
+  <div class="t-main">QOHELETH</div>
+  <div class="t-sub">Ecclesiastes · Kethuḇim — The Writings</div>
+  <div class="t-verse">The end of the matter — all having been heard: Fear Aluahim and guard His commands, for this applies to all mankind. — QOHELETH 12:13</div>
+  <div class="t-blurb">The words of the Preacher, son of Dawiḏ, sovereign in Yerushalayim — “Vanity of vanities, all is vanity”: the sun and the wind and the rivers that never fill the sea, a time for every matter under the shamayim, and the whole conclusion — fear Aluahim, and guard His commands.</div>
+  <button class="btn" id="btn-read">Read from the Beginning</button>
+  <button class="btn small" id="btn-chapters">Chapters</button>
+  <button class="btn small" id="btn-back">⟵ ĔḴAH</button>
+</div>
+
+<div id="reader">
+  <div id="topbar">
+    <div class="name" id="rd-name">QOHELETH</div>
+    <div class="spacer"></div>
+    <div class="icon-btn" id="btn-grid" title="Chapters">☰</div>
+    <div class="icon-btn" id="btn-besorah" title="Read in the Besorah">📖</div>
+    <div class="icon-btn" id="btn-title" title="Title">✦</div>
+  </div>
+  <div id="scroll">
+    <div id="panel">
+      <div id="ch-num"></div>
+      <div id="ch-label"></div>
+      <div id="verses"></div>
+    </div>
+  </div>
+  <div id="navbar">
+    <button id="nav-prev">⟨ Prev</button>
+    <div id="nav-pos"></div>
+    <button id="nav-next">Next ⟩</button>
+  </div>
+</div>
+
+<div class="screen" id="grid-screen">
+  <h2>QOHELETH — Chapters</h2>
+  <div id="ch-grid"></div>
+  <button class="btn small" id="btn-grid-title" style="margin-top:1.4vh">⟵ Title</button>
+</div>
+
+<div id="fader"></div>
+
+<script id="book-data" type="application/json">{"id": "qoheleth", "hebrew": "QOHELETH", "english": "Ecclesiastes", "chapters": {"1": [{"v": 1, "t": "The words of Qoheleth, son of Dawiḏ, sovereign in Yahrushalayim."}, {"v": 2, "t": "“Futility! Futility!” says Qoheleth. “Futility, futility, all is futile!”"}, {"v": 3, "t": "What does man gain from all his labour in which he toils under the sun?"}, {"v": 4, "t": "A generation passes away and a generation comes, but the earth stands forever."}, {"v": 5, "t": "The sun also rises and the sun sets and hurries back to the place where it arose."}, {"v": 6, "t": "Going to the south and turning round to the north, turning, turning and on its rounds the ruach returns."}, {"v": 7, "t": "All the rivers run into the sea, yet the sea never overflows. To the place from which the rivers come, there they return again."}, {"v": 8, "t": "All matters are wearisome, no one is able to speak of it. The eye is not satisfied with seeing, nor the ear filled with hearing."}, {"v": 9, "t": "What has been is what shall be, what has been done is what shall be done and there is no new matter under the sun."}, {"v": 10, "t": "Is there a matter of which it is said, “See, this is new”? It was here already, long ago."}, {"v": 11, "t": "There is no remembrance of former ones, nor is there any remembrance of those that are to come by those who come later on."}, {"v": 12, "t": "I, Qoheleth, was sovereign over Yasharal in Yahrushalayim."}, {"v": 13, "t": "And I set my heart to seek and search out by wisdom concerning all that has been done under the shamayim; this evil task Aluahim has given to the sons of man, to be humbled by it."}, {"v": 14, "t": "I have seen all the works that are done under the sun. And see, all was futile and feeding on ruach."}, {"v": 15, "t": "The crooked could not be straightened and what is lacking could not be counted."}, {"v": 16, "t": "So I spoke to my heart, saying, “See, I have attained greatness and have gained more wisdom than all who were before me in Yahrushalayim. And my heart has seen much wisdom and knowledge.”"}, {"v": 17, "t": "And I set my heart to know wisdom – and to know madness and folly. I know that this too is feeding on ruach."}, {"v": 18, "t": "For in much wisdom is much grief and he who increases knowledge increases suffering."}], "2": [{"v": 1, "t": "I said in my heart, “Come now, let me try you with rejoicing and find out what is good.” But see, that too was futile."}, {"v": 2, "t": "I said of laughter, “It is madness,”and of rejoicing, “What does it do?”"}, {"v": 3, "t": "I searched in my heart how to stimulate my body with wine, while guiding my heart with wisdom and how to lay hold on folly, until I could see what was good for the sons of men to do under the shamayim all the days of their lives."}, {"v": 4, "t": "I made my works great, I built myself houses, I planted vineyards for myself."}, {"v": 5, "t": "I made gardens and parks for myself and I planted all kinds of fruit trees in them."}, {"v": 6, "t": "I made pools of water for myself, to water from them a plantation of growing trees."}, {"v": 7, "t": "I bought male and female servants and I came to have sons of the house-hold. Also, I had greater possessions of herds and flocks than all who were before me in Yahrushalayim."}, {"v": 8, "t": "I also gathered for myself silver and gold and the treasures of sovereigns and of the provinces. I provided male and female singers for myself and the pleasures of men – a woman and women."}, {"v": 9, "t": "Thus I became great and increased more than all who were before me in Yahrushalayim. Also my wisdom remained with me."}, {"v": 10, "t": "And all that my eyes desired I did not keep from them. I did not withhold my heart from any pleasure, for my heart rejoiced in all my labour. And this was my portion from all my labour."}, {"v": 11, "t": "But when I looked on all the works that my hands had done and on the labour in which I had toiled, see, all was futile and feeding on ruach and there was no gain under the sun."}, {"v": 12, "t": "And I turned myself to look at wisdom and madness and folly. For what would the man do who comes after the sovereign except what already has been done?"}, {"v": 13, "t": "Then I saw that wisdom is better than folly, as light is better than darkness."}, {"v": 14, "t": "The wise one’s eyes are in his head, but the fool walks in darkness. And I also knew that one event befalls them all."}, {"v": 15, "t": "And I said in my heart, “As the event of the fool, even so it befalls me and why was I then more wise?” Then I said in my heart, “This also is futile.”"}, {"v": 16, "t": "For there is no more lasting remembrance of the wise than of the fool, since in the days to come all is forgotten. And how does a wise man die? With the fool!"}, {"v": 17, "t": "And I hated life because the work that was done under the sun was evil on me, for all is futile and feeding on ruach."}, {"v": 18, "t": "And I hated all my labour in which I had toiled under the sun, because I leave it to a man who would come after me."}, {"v": 19, "t": "And who knows whether he is wise or foolish? Yet he shall rule over all my labour in which I toiled and in which I have shown myself wise under the sun. That too is futile."}, {"v": 20, "t": "So I turned my heart and despaired of all the labour in which I had toiled under the sun."}, {"v": 21, "t": "For a man might labour with wisdom, knowledge and skill; yet he leaves his heritage to a man who has not laboured for it. That too is futile and a great evil."}, {"v": 22, "t": "For what does a man get for all his labour and strain of his heart with which he has toiled under the sun?"}, {"v": 23, "t": "For all his days are sufferings and his work grievous; even in the night his heart takes no rest. That too is futile."}, {"v": 24, "t": "A man could do no better but to eat and drink and enjoy himself in his labour! That too, I saw, was from the hand of Aluahim."}, {"v": 25, "t": "For who eats or who finds enjoyment without Him?"}, {"v": 26, "t": "For He gives wisdom and knowledge and joy to a man who is good in His eyes. But to the sinner He gives the task of gathering and collecting, to give to him who is good before Aluahim. That too is futile and feeding on ruach."}], "3": [{"v": 1, "t": "For every matter there is an appointed time, even a time for every pursuit under the shamayim:"}, {"v": 2, "t": "A time to be born and a time to die; a time to plant and a time to uproot;"}, {"v": 3, "t": "a time to slay and a time to heal; a time to break down and a time to build up;"}, {"v": 4, "t": "a time to weep and a time to laugh; a time to mourn and a time to dance;"}, {"v": 5, "t": "a time to throw away stones and a time to gather stones; a time to embrace and a time to refrain from embracing;"}, {"v": 6, "t": "a time to seek and a time to lose; a time to keep and a time to throw away;"}, {"v": 7, "t": "a time to tear and a time to sew; a time to be silent and a time to speak;"}, {"v": 8, "t": "a time to love and a time to hate; a time for battle and a time for shalom."}, {"v": 9, "t": "What does the worker gain from his toil?"}, {"v": 10, "t": "I have seen the task Aluahim has given to the sons of men to be humbled by it."}, {"v": 11, "t": "He has made it all, pretty in its time. Even the ages He has put in their hearts, except that no one finds out the work that Aluahim does from beginning to end."}, {"v": 12, "t": "I know that there is no good for them but to rejoice and to do good in their lives,"}, {"v": 13, "t": "and also that every man should eat and drink and enjoy the good of all his labour, it is a gift of Aluahim."}, {"v": 14, "t": "I know that whatever Aluahim does is forever. There is no adding to it and there is no taking from it. Aluahim does it, that men should fear before Him."}, {"v": 15, "t": "Whatever is has already been and what shall be has been before. But Aluahim seeks out what has been pursued."}, {"v": 16, "t": "Then again I saw under the sun: In the place of right-ruling, wrongness was there. And in the place of righteousness, wrongness was there."}, {"v": 17, "t": "I said in my heart, “Aluahim judges the righteous and the wrong, for there is a time for every matter and for every work.”"}, {"v": 18, "t": "I said in my heart, “Concerning the matter of the sons of men, Aluahim selects them, so as to see that they themselves are beasts.”"}, {"v": 19, "t": "For the event of the sons of men is also the event of beasts – one event befalls them: as one dies, so dies the other. Indeed, they all have one breath – man has no advantage over beasts.For all is futile."}, {"v": 20, "t": "All are going to one place – all came from the dust and all return to dust."}, {"v": 21, "t": "Who knows the ruach of the sons of men, which goes upward and the ruach of the beast, which goes down to the earth?"}, {"v": 22, "t": "So I saw that man could do no better but to rejoice in his own works, for that is his portion. For who would bring him to see what shall be after him?"}], "4": [{"v": 1, "t": "Then I looked again at all the oppression that is done under the sun: And see! The tears of the oppressed, but they have no comforter; and power on the side of their oppressors, but they have no comforter."}, {"v": 2, "t": "Therefore I commended the dead who were already dead, more than the living who are still alive."}, {"v": 3, "t": "And better than both is he who has never existed, who has not seen the evil work that is done under the sun."}, {"v": 4, "t": "And I saw that all the toil and skill of the work bring envy between man and his neighbour. That too is futile and feeding on ruach."}, {"v": 5, "t": "The fool folds his hands and consumes his own flesh."}, {"v": 6, "t": "Better is a hand filled with rest than both hands filled with toil and feeding on ruach."}, {"v": 7, "t": "Then I looked again at futility under the sun:"}, {"v": 8, "t": "There is one, without a second, who has neither son nor brother. And there is no end to all his labours. His eye also is not satisfied with riches. “And for whom am I toiling and depriving myself of good?” That too is futility and an evil task."}, {"v": 9, "t": "Two are better than one, because they have a good reward for their labour."}, {"v": 10, "t": "For if they fall, one lifts his companion up. But woe to him who is alone when he falls, for he has no one to help him up."}, {"v": 11, "t": "Also, if two lie down together, they keep warm; but how does one keep warm by himself?"}, {"v": 12, "t": "Although one might be overpowered, two withstand him. And a threefold cord is not readily broken."}, {"v": 13, "t": "A poor and wise youth is better than an old and foolish sovereign who no longer knows how to take warning."}, {"v": 14, "t": "For he comes out of prison to be sovereign, although in his reign he was born poor."}, {"v": 15, "t": "I have seen all the living who walk under the sun; they were with the second youth who stands in his place."}, {"v": 16, "t": "There was no end of all the people; all of whom he headed. But the ones who come afterward do not rejoice in him. For that too is futile and feeding on ruach."}], "5": [{"v": 1, "t": "Guard your steps when you go to the House of Aluahim. And draw near to listen rather than to give the slaughtering of fools, for they do not know that they do evil."}, {"v": 2, "t": "Do not be hasty with your mouth and let not your heart hurry to bring forth a word before Aluahim. For Aluahim is in the shamayim and you on earth, therefore let your words be few."}, {"v": 3, "t": "For a dream comes through the greatness of the task and a fool’s voice is known by his many words."}, {"v": 4, "t": "When you make a vow to Aluahim, do not delay to pay it, for He takes no pleasure in fools. Pay that which you have vowed."}, {"v": 5, "t": "It is better not to vow than to vow and not pay."}, {"v": 6, "t": "Do not allow your mouth to cause your flesh to sin, nor say before the mal'ak of Aluahim that it was a mistake. Why should Aluahim be wroth at your voice and destroy the work of your hands?"}, {"v": 7, "t": "For in much dreaming and many words there is futility. But fear Aluahim."}, {"v": 8, "t": "If you see the oppression of the poor and denial of right-ruling and righteousness in a province, do not be astonished at the matter. For a higher than the high is guarding and there are higher ones over them."}, {"v": 9, "t": "And the increase of the land is for all. The sovereign himself is served from the field."}, {"v": 10, "t": "He who loves silver is not satisfied with silver; nor he who loves wealth and increase. That too is futile."}, {"v": 11, "t": "With the increase of goods, there is an increase of those consuming them. What advantage then is there to their owners, but to look on?"}, {"v": 12, "t": "Sweet is the sleep of a labourer whether he eats little or much, but the plenty of the rich does not let him sleep."}, {"v": 13, "t": "There is a sickly evil I have seen under the sun: riches kept for their owner, for his evil."}, {"v": 14, "t": "But those riches perish through evil use. And he brings forth a son and there is naught in his hand."}, {"v": 15, "t": "As he came naked from his mother’s womb, so he returns, to go as he came. And from his labour which goes into his hand he takes none whatsoever."}, {"v": 16, "t": "And this too is a grievous evil – exactly as he came, so he goes. And what gain has he since he toiled for the ruach?"}, {"v": 17, "t": "All his days he also eats in darkness and with much sorrow and sickness and wrath."}, {"v": 18, "t": "See what I have seen: It is good and pleasant for one to eat and drink and to enjoy the good of all his labour in which he toils under the sun all the days of his life which Aluahim gives him, for it is his portion."}, {"v": 19, "t": "Further, when Aluahim has given any man riches and wealth and permitted him to enjoy them and to receive his portion and rejoice in his labour, this is a gift of Aluahim."}, {"v": 20, "t": "Though it not be much, let him remember the days of his life, because Aluahim bears witness by the gladness of his heart."}], "6": [{"v": 1, "t": "There is an evil which I have seen under the sun and it is great among men:"}, {"v": 2, "t": "A man to whom Aluahim has given riches and wealth and esteem, so that his being lacks none at all of what he desires, but Aluahim does not permit him to eat of it and a foreigner consumes it. This is futile and it is an evil disease."}, {"v": 3, "t": "If a man brings forth a hundred children and lives many years, so that the days of his years are many, but his being is not satisfied with goodness, or indeed he has no burial, I say that a premature birth is better than he,"}, {"v": 4, "t": "for it comes in futility and goes away in darkness and in darkness its name is covered;"}, {"v": 5, "t": "even the sun it has not seen – it has more rest than that man."}, {"v": 6, "t": "And though he lives a thousand years twice over, yet he shall not see goodness. Do not all go to one place?"}, {"v": 7, "t": "All the labour of man is for his mouth and yet the appetite is not satisfied."}, {"v": 8, "t": "For what advantage has the wise over the fool? What advantage does the poor have who knows how to walk before the living?"}, {"v": 9, "t": "What the eyes see is better than what the desire goes after. That too is futile and feeding on ruach."}, {"v": 10, "t": "Whatever shall be, has already been named and it is known that he is son of Aḏam. And he is unable to contend with Him who is mightier than he."}, {"v": 11, "t": "The more words, the more futility – what is to man the advantage?"}, {"v": 12, "t": "For who knows what is good for man in life, all the days of his futile life, which he passes like a shadow? For who declares to man what shall be after him, under the sun?"}], "7": [{"v": 1, "t": "A good name is better than precious oil and the day of death than the day of one’s birth."}, {"v": 2, "t": "It is better to go to the house of mourning than to go to the house of feasting, for that is the end of all men. And the living take it to heart."}, {"v": 3, "t": "Sorrow is better than laughter, for by the sadness of the face the heart becomes better."}, {"v": 4, "t": "The heart of the wise is in the house of mourning, but the heart of fools is in the house of rejoicing."}, {"v": 5, "t": "It is better to hear the rebuke of the wise than for man to hear the song of fools."}, {"v": 6, "t": "For as the crackling of thorns under a pot, so is the laughter of a fool. That too is futile."}, {"v": 7, "t": "For oppression makes a wise one mad and a bribe destroys the heart."}, {"v": 8, "t": "The end of a matter is better than its beginning. The patient in ruach is better than the proud in ruach."}, {"v": 9, "t": "Do not be hasty in your ruach to be vexed, for vexation rests in the bosom of fools."}, {"v": 10, "t": "Do not say, “Why were the former days better than these?” For it is not wise of you to have asked about this."}, {"v": 11, "t": "Wisdom is good with an inheritance and an advantage to those who see the sun."}, {"v": 12, "t": "For wisdom protects as silver protects, but the advantage of knowledge is that wisdom gives life to those who have it."}, {"v": 13, "t": "See the work of Aluahim: For who is able to make straight what He has made crooked?"}, {"v": 14, "t": "Be glad in the day of prosperity, but in the evil day take note that Aluahim has also appointed the one as well as the other, so that man should not uncover whatever shall be after him."}, {"v": 15, "t": "I have seen it all in my days of futility: There is a righteous one perishing in his righteousness and there is a wrong one living long in his evil."}, {"v": 16, "t": "Do not be overrighteous, neither be overwise – why destroy yourself?"}, {"v": 17, "t": "Do not be wrong overmuch and do not be a fool – why die before your time?"}, {"v": 18, "t": "It is good that you should take hold of this and also not withhold your hand from the other. For he who fears Aluahim comes forth with all of them."}, {"v": 19, "t": "Wisdom makes the wise strong, more than ten rulers that are in the city."}, {"v": 20, "t": "For there is not a righteous man on earth who does good and does not sin."}, {"v": 21, "t": "Also do not take to heart all the words they speak, lest you hear your servant cursing you."}, {"v": 22, "t": "For you know in your heart that many times you have cursed others."}, {"v": 23, "t": "All this I have proved by wisdom. I said, “I am wise,” but it was far from me."}, {"v": 24, "t": "That which is, is far off and exceedingly deep – who does find it?"}, {"v": 25, "t": "I have turned round, even my heart, to know and to search and to seek out wisdom and a conclusion, to know the wrongness of folly, even of foolishness and madness."}, {"v": 26, "t": "And I found more bitter than death, the woman whose heart is snares and nets, whose hands are shackles. He who pleases Aluahim escapes from her, but the sinner is captured by her."}, {"v": 27, "t": "“See, this I have found,” says Qoheleth, “Counting one by one, to find a conclusion,"}, {"v": 28, "t": "which my being still seeks but have not found: I have found one man among a thousand, but a woman among all these I have not found."}, {"v": 29, "t": "Truly, this only I have found: that Aluahim made man straight, but they have sought out many devices.”"}], "8": [{"v": 1, "t": "Who is like a wise one? And who knows the meaning of a matter? A man’s wisdom makes his face shine and the hardness of his face is changed."}, {"v": 2, "t": "I say, “Guard the sovereign’s command because of the oath before Aluahim."}, {"v": 3, "t": "Do not be in a hurry to go from his presence. Do not take a stand in an evil matter, for he does whatever he pleases.”"}, {"v": 4, "t": "Where the word of a sovereign is, there is power. And who says to him, “What are you doing?”"}, {"v": 5, "t": "He who guards the command knows no evil matter. And the heart of the wise discerns both time and right-ruling,"}, {"v": 6, "t": "Because for every matter there is a time and right-ruling, though the trouble of man is heavy upon him."}, {"v": 7, "t": "For he does not know what shall be; so who declares to him when it shall be?"}, {"v": 8, "t": "No one has power over the ruach to retain the ruach and no one has power in the day of death. There is no discharge in battle and wrongness does not release those who are given to it."}, {"v": 9, "t": "All this I have seen; I applied my heart to every work that is done under the sun: There is a time in which a man rules over a man for his evil."}, {"v": 10, "t": "And so I saw the wrong ones buried and they came and went from the place of set-apartness and they were forgotten in the city where they had so done. That too is futile."}, {"v": 11, "t": "Because the sentence against an evil deed is not executed speedily, therefore the heart of the sons of men is filled in them to do evil."}, {"v": 12, "t": "Although a sinner is doing evil a hundred times and his life is prolonged, yet I know that there is good to those who fear Aluahim, who fear before Him."}, {"v": 13, "t": "But it shall not be well with the wrong one, nor would he prolong his days as a shadow, because he does not fear before Aluahim."}, {"v": 14, "t": "There is a futility which has been done on earth, that there are righteous ones who get according to the deeds of the wrong. And there are wrong ones who get according to the deeds of the righteous. I said that this too is futile."}, {"v": 15, "t": "Therefore I praised enjoyment, because there is no good to man except to eat and to drink and to rejoice – and it remains with him in his labour for the days of his life which Aluahim has given him under the sun."}, {"v": 16, "t": "When I gave my heart to know wisdom and to see the task which has been done on earth, even though one sees no sleep day or night,"}, {"v": 17, "t": "then I saw all the work of Aluahim, that man is unable to find out the work that has been done under the sun. For though a man labours to seek, yet he does not find it. And even though a wise one claims to know, he is unable to find it."}], "9": [{"v": 1, "t": "For all this I took to heart, even to search out all this: that the righteous and the wise and their deeds are in the hand of Aluahim. No man knows whether love or hatred awaits him."}, {"v": 2, "t": "It is the same for all: One event to the righteous and to the wrong; to the good and to the clean and to the unclean; and to the one slaughtering and to the one not slaughtering. As is the good one, so is the sinner; the one swearing as the one fearing an oath."}, {"v": 3, "t": "This is an evil in all that is done under the sun: there is one event to all. Truly the hearts of the sons of men are filled with evil and madness is in their hearts while they live and then – to the dead!"}, {"v": 4, "t": "But for him who is joined to all the living there is trust, for a living dog is better than a dead lion."}, {"v": 5, "t": "For the living know that they shall die, but the dead know naught, nor do they have any more reward, for their remembrance is forgotten."}, {"v": 6, "t": "Also their love and their hatred and their envy have now perished; and they no longer have a share in all that is done under the sun."}, {"v": 7, "t": "Go, eat your bread with joy and drink your wine with a glad heart; for Aluahim has already approved your works."}, {"v": 8, "t": "Let your garments be white at all times and let your head lack no oil."}, {"v": 9, "t": "See life with the wife whom you love all the days of your futile life which He has given you under the sun, all your days of futility. For that is your share in life and in your toil which you have laboured under the sun."}, {"v": 10, "t": "All that your hand finds to do, do it with your might; for there is no work or planning or knowledge or wisdom in the grave where you are going."}, {"v": 11, "t": "I again saw under the sun that the race is not to the swift, nor the battle to the mighty, nor even bread to the wise, nor even riches to men of understanding, nor even chen to men of knowledge – for time and chance meets with them all."}, {"v": 12, "t": "For even man does not know his time. Like fish taken in an evil net and like birds caught in a snare, so the sons of men are snared in an evil time, when it come down on them suddenly."}, {"v": 13, "t": "Also this I saw as wisdom under the sun and it is great to me:"}, {"v": 14, "t": "A little city and few men in it and a great sovereign came against it and besieged it and built huge siege-works against it."}, {"v": 15, "t": "And there was found in it a poor wise man and by his wisdom he delivered the city, yet no one remembered that poor man."}, {"v": 16, "t": "And I said, “Wisdom is better than might. But the wisdom of the poor man is despised and his words are not heard.”"}, {"v": 17, "t": "The words of the wise, spoken calmly, should be heard rather than the shout of a ruler of fools."}, {"v": 18, "t": "Wisdom is better than weapons of conflict, but one sinner destroys much good."}], "10": [{"v": 1, "t": "Dead flies make the perfumer’s ointment stink, ferment; a little folly outweighs wisdom, esteem."}, {"v": 2, "t": "A wise man’s heart is at his right hand, but a fool’s heart at his left."}, {"v": 3, "t": "And also, when a fool walks along the way, his heart fails and he shows everyone that he is a fool."}, {"v": 4, "t": "If the ruach of the ruler rises against you, do not leave your post, for calmness lays to rest great faults."}, {"v": 5, "t": "There is an evil I have seen under the sun, as a mistake coming from the ruler:"}, {"v": 6, "t": "Folly is set in many high positions, while the rich sit in a humble place."}, {"v": 7, "t": "I have seen servants on horses – and rulers walking on the ground like servants."}, {"v": 8, "t": "He who digs a pit falls into it and whoever breaks through a wall is bitten by a snake."}, {"v": 9, "t": "He who quarries stones is hurt by them. He who splits wood is endangered by it."}, {"v": 10, "t": "If an iron tool is blunt and one does not sharpen the edge, then he needs more strength and wisdom is advantageous to make right."}, {"v": 11, "t": "If the snake bites without enchantment, then ‘the master of the tongue’ is no better!"}, {"v": 12, "t": "Words of a wise man’s mouth show chen, but the lips of a fool swallow him up;"}, {"v": 13, "t": "the beginning of the words of his mouth is foolishness and the end of his talk is wicked madness."}, {"v": 14, "t": "And a fool increases words; a man knows not what shall come to be; and who declares to him what shall be after him?"}, {"v": 15, "t": "The labour of fools wearies them, because not one knows how to go to the city!"}, {"v": 16, "t": "Woe to you, O land, when your sovereign is a youth and your rulers feast in the morning!"}, {"v": 17, "t": "Baruk are you, O land, when your sovereign is the son of nobles and your rulers feast in due season – for strength and not for drunkenness!"}, {"v": 18, "t": "Because of laziness the framework tumbles and through idleness of hands the house leaks."}, {"v": 19, "t": "A feast is made for laughter and wine gladdens life; and the silver answers all."}, {"v": 20, "t": "Do not curse the sovereign, even in your thought; do not curse the rich, even in your bedroom; for a bird of the shamayim conveys the voice and a bird in flight makes the matter known."}], "11": [{"v": 1, "t": "Send out your bread on the face of the waters, for after many days you shall find it."}, {"v": 2, "t": "Give a portion to seven and also to eight, for you do not know what evil might be on the earth."}, {"v": 3, "t": "If the clouds are filled with rain, they empty themselves upon the earth. And if a tree falls to the south or the north, in the place where the tree falls, there it is."}, {"v": 4, "t": "He who watches the ruach does not sow and he who looks at the clouds does not reap."}, {"v": 5, "t": "As you do not know what is the way of the ruach, or how the bones grow in the womb of her who is with child, so you do not know the works of Aluahim who makes all."}, {"v": 6, "t": "Sow your seed in the morning and until evening do not let your hand rest; since you do not know which prosper, this or that, or whether both alike are good."}, {"v": 7, "t": "Sweet also is the light and good for the eyes to see the sun;"}, {"v": 8, "t": "But if a man lives many years, let him rejoice in them all. But let him remember the days of darkness, for they are many. All that is coming is futility."}, {"v": 9, "t": "Rejoice, O young man, in your youth and let your heart gladden you in the days of your youth. And walk in the ways of your heart and in the sight of your eyes, but know that for all these Aluahim brings you into right-ruling."}, {"v": 10, "t": "Therefore remove vexation from your heart and put away evil from your flesh, for youth and dawn of life are futility."}], "12": [{"v": 1, "t": "remember also your Creator in the days of your youth, before the evil days come and the years draw near when you say, “I have no pleasure in them”:"}, {"v": 2, "t": "Before the sun and the light, the moon and the stars, are darkened and the clouds return after the rain;"}, {"v": 3, "t": "in the day when the guards of the house tremble and the strong men shall bow down; when the grinders shall cease because they are few and those that look through the windows shall become dim;"}, {"v": 4, "t": "and the doors shall be shut in the streets and the sound of grinding is low; and one rises up at the sound of a bird and all the daughters of song are bowed down;"}, {"v": 5, "t": "furthermore, they are afraid of what is high and of low places in the way; and the almond tree blossoms and the grasshopper becomes a burden and desire perishes. For man is going to his everlasting home and the mourners shall go about the streets."}, {"v": 6, "t": "Remember Him before the silver cord is loosed, or the golden bowl is broken, or the jar shattered at the fountain, or the wheel broken at the well,"}, {"v": 7, "t": "and the dust returns to the earth as it was and the ruach returns to Aluahim who gave it."}, {"v": 8, "t": "“Futility! Futility!” said the Qoheleth, “All is futile.”"}, {"v": 9, "t": "And besides being wise, Qoheleth also taught the people knowledge and he listened and sought out – set in order many proverbs."}, {"v": 10, "t": "Qoheleth sought to find out words of delight and words of truth, rightly written."}, {"v": 11, "t": "The words of the wise are like goads and as nails driven by the masters of collections – they were given by one Shepherd."}, {"v": 12, "t": "And besides these, my son, be warned – the making of many books has no end and much study is a wearying of the flesh."}, {"v": 13, "t": "Let us hear the conclusion of the entire matter: Fear Aluahim and guard His commands, for this applies to all mankind!"}, {"v": 14, "t": "For Aluahim shall bring every work into right-ruling, including all that is hidden, whether good or whether evil."}]}}</script>
+<script>
+'use strict';
+const BOOK=JSON.parse(document.getElementById('book-data').textContent);
+const BASE_THEME='vanity';
+const BESORAH_ID='qoheleth';
+const $=id=>document.getElementById(id);
+const CH_KEYS=Object.keys(BOOK.chapters).sort((a,b)=>(+a)-(+b));
+let idx=0;
+
+/* ================= SCENIC BACKGROUND ================= */
+const cv=$('bg'), g=cv.getContext('2d');
+let VW=0,VH=0,DPR=1,stars=[];
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  VW=innerWidth; VH=innerHeight;
+  cv.width=VW*DPR; cv.height=VH*DPR;
+  g.setTransform(DPR,0,0,DPR,0,0);
+  stars=[]; for(let i=0;i<160;i++) stars.push({x:Math.random(),y:Math.random()*.72,r:Math.random()*1.4+.3,p:Math.random()*6.28});
+}
+addEventListener('resize',resize);
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+let curTheme=BASE_THEME, seed=1;
+const GRAD={
+  dawn:[[0,'#12203f'],[.4,'#2a4a78'],[.7,'#7a6a5a'],[1,'#caa26a']],
+  night:[[0,'#04060f'],[.5,'#0a1226'],[1,'#1a2440']],
+  waters:[[0,'#0a1a30'],[.55,'#164058'],[1,'#2a7088']],
+  mountains:[[0,'#0e1830'],[.5,'#2a3a56'],[1,'#5a6478']],
+  garden:[[0,'#10261f'],[.5,'#1f4a34'],[1,'#4a7a44']],
+  ruins:[[0,'#12100e'],[.5,'#2a2420'],[1,'#4a3e34']],
+  field:[[0,'#132038'],[.45,'#3a4a60'],[.75,'#8a8250'],[1,'#c8b274']],
+  storm:[[0,'#0a0c14'],[.5,'#161c2a'],[1,'#2c3446']],
+  fire:[[0,'#100a08'],[.5,'#2c1810'],[1,'#7a3a1a']],
+  vanity:[[0,'#141420'],[.5,'#2a2a3a'],[1,'#6a6458']],
+};
+function paint(t){
+  const gr=GRAD[curTheme]||GRAD.dawn;
+  const lg=g.createLinearGradient(0,0,0,VH);
+  for(const[o,c]of gr) lg.addColorStop(o,c);
+  g.fillStyle=lg; g.fillRect(0,0,VW,VH);
+  const rng=mul(seed*7919+1);
+  // stars for dark themes
+  if(['night','storm','mountains','vanity','ruins'].includes(curTheme)){
+    for(const s of stars){ const tw=.5+.5*Math.sin(t/900+s.p);
+      g.fillStyle=`rgba(240,238,220,${tw*.7})`; g.beginPath();
+      g.arc(s.x*VW,s.y*VH*.9,s.r,0,6.28); g.fill(); }
+  }
+  // sun / moon glow
+  if(['dawn','field','garden','fire','waters'].includes(curTheme)){
+    const sx=VW*.5,sy=VH*.72,rr=VW*.5*(.9+Math.sin(t/2600)*.06);
+    const rg=g.createRadialGradient(sx,sy,8,sx,sy,rr);
+    rg.addColorStop(0,'rgba(255,240,190,.42)'); rg.addColorStop(.3,'rgba(232,198,106,.14)'); rg.addColorStop(1,'rgba(232,198,106,0)');
+    g.fillStyle=rg; g.fillRect(0,0,VW,VH);
+  } else {
+    const sx=VW*.72,sy=VH*.2,rr=VW*.16;
+    const rg=g.createRadialGradient(sx,sy,2,sx,sy,rr);
+    rg.addColorStop(0,'rgba(220,228,240,.5)'); rg.addColorStop(1,'rgba(220,228,240,0)');
+    g.fillStyle=rg; g.beginPath(); g.arc(sx,sy,VW*.03,0,6.28); g.fill();
+    g.fillStyle=rg; g.fillRect(0,0,VW,VH);
+  }
+  // horizon silhouettes
+  g.save();
+  if(curTheme==='mountains'){
+    g.fillStyle='rgba(10,14,26,.7)';
+    for(let k=0;k<3;k++){ g.beginPath(); g.moveTo(0,VH);
+      let x=0; const baseY=VH*(.62+k*.08);
+      while(x<VW){ const h=(rng())*VH*.22; g.lineTo(x,baseY-h); x+=VW*.14; }
+      g.lineTo(VW,VH); g.closePath(); g.fillStyle=`rgba(10,14,26,${.4+k*.18})`; g.fill(); }
+  } else if(curTheme==='waters'){
+    g.fillStyle='rgba(255,240,190,.14)';
+    for(let i=0;i<10;i++){ const y=VH*.72+i*VH*.026; g.fillRect(VW*.5-(70-i*6),y,(70-i*6)*2,2); }
+  } else if(curTheme==='garden'){
+    g.fillStyle='rgba(10,26,16,.55)';
+    g.beginPath(); g.moveTo(0,VH); g.quadraticCurveTo(VW*.3,VH*.74,VW*.55,VH*.82);
+    g.quadraticCurveTo(VW*.8,VH*.9,VW,VH*.78); g.lineTo(VW,VH); g.closePath(); g.fill();
+    for(let i=0;i<14;i++){ const fx=(i*0.09+0.03)*VW, fy=VH*(.8+Math.sin(i)*.03);
+      g.fillStyle=['#caa2c8','#e8c66a','#c85a6a'][i%3]; g.beginPath(); g.arc(fx,fy,3,0,6.28); g.fill(); }
+  } else if(curTheme==='ruins'){
+    g.fillStyle='rgba(20,16,12,.7)';
+    let x=0; while(x<VW){ const w=VW*(.05+rng()*.05), h=VH*(.1+rng()*.22); g.fillRect(x,VH-h,w,h); x+=w+VW*.02; }
+    for(let i=0;i<28;i++){ if(rng()<.5) continue; g.fillStyle='rgba(120,110,100,'+(.1+rng()*.15)+')';
+      g.fillRect(rng()*VW,VH*(.4+rng()*.5),2,2); }
+  } else if(curTheme==='field'){
+    g.fillStyle='rgba(120,104,58,.5)'; g.fillRect(0,VH*.78,VW,VH*.22);
+    g.strokeStyle='rgba(180,150,80,.35)'; g.lineWidth=2;
+    for(let i=0;i<40;i++){ const wx=rng()*VW, wy=VH*(.78+rng()*.18);
+      g.beginPath(); g.moveTo(wx,wy); g.lineTo(wx,wy-VH*.05); g.stroke(); }
+  } else if(curTheme==='fire'){
+    for(let i=0;i<40;i++){ const fx=VW*.5+(rng()-.5)*VW*.5, fy=VH-(rng()*VH*.3);
+      g.fillStyle=`rgba(255,${140+rng()*90|0},40,${.3+rng()*.3})`; g.beginPath(); g.arc(fx,fy,2+rng()*3,0,6.28); g.fill(); }
+  } else {
+    // gentle hills for dawn/night/storm/vanity
+    g.fillStyle='rgba(10,14,26,.5)';
+    g.beginPath(); g.moveTo(0,VH); g.quadraticCurveTo(VW*.3,VH*.8,VW*.5,VH*.85);
+    g.quadraticCurveTo(VW*.75,VH*.9,VW,VH*.8); g.lineTo(VW,VH); g.closePath(); g.fill();
+  }
+  g.restore();
+  // rain for storm
+  if(curTheme==='storm'){ g.strokeStyle='rgba(160,180,210,.25)'; g.lineWidth=1;
+    for(let i=0;i<60;i++){ const rx=(rng()*VW+t*.1)%VW, ry=(rng()*VH+t*.4)%VH;
+      g.beginPath(); g.moveTo(rx,ry); g.lineTo(rx-3,ry+14); g.stroke(); } }
+  // vignette
+  const vg=g.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.4,VW/2,VH/2,Math.max(VW,VH)*.72);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.55)');
+  g.fillStyle=vg; g.fillRect(0,0,VW,VH);
+}
+function loop(t){ paint(t); requestAnimationFrame(loop); }
+
+/* ================= THEME PER CHAPTER ================= */
+const THEME_KEYWORDS=[["ruins",["desolate","ruin","laid waste","burned","ashes","lonely sits","no comforter","mourn"]],["storm",["thunder","lightning","tempest","whirlwind","storm","the deep","waves","floods"]],["waters",["waters","sea","rivers","streams","springs","the deep","still waters"]],["night",["night","darkness","the pit","grave","shadow of death","out of the depths","weep"]],["mountains",["mountains","hills","rock","fortress","stronghold","tsiyon","high place"]],["garden",["vineyard","garden","spices","lily","rose","fig","pomegranate","myrrh","fragrance","beloved"]],["fire",["fire","refine","furnace","coals","flame","burning"]],["field",["wisdom","knowledge","understanding","folly","fool","discipline","harvest","wheat","labour","sun"]],["dawn",["praise","sing","rejoice","hallelu","give thanks","morning","light","joy","shout"]]];
+function themeFor(chKey){
+  const vs=BOOK.chapters[chKey]||[];
+  const low=vs.map(v=>v.t).join(' ').toLowerCase();
+  for(const[theme,keys]of THEME_KEYWORDS){ for(const k of keys){ if(low.indexOf(k)>=0) return theme; } }
+  return BASE_THEME;
+}
+
+/* ================= REND ================= */
+function renderChapter(){
+  const key=CH_KEYS[idx];
+  curTheme=themeFor(key); seed=(+key)||1;
+  $('ch-num').textContent=key;
+  $('ch-label').textContent=BOOK.hebrew+' · '+BOOK.english;
+  const box=$('verses'); box.innerHTML='';
+  for(const v of BOOK.chapters[key]){
+    const d=document.createElement('div'); d.className='verse';
+    const t=highlightNames(v.t);
+    d.innerHTML='<span class="vn">'+v.v+'</span>'+t;
+    box.appendChild(d);
+  }
+  $('nav-pos').textContent='Chapter '+key+' / '+CH_KEYS.length;
+  $('nav-prev').disabled=idx<=0;
+  $('nav-next').disabled=idx>=CH_KEYS.length-1;
+  $('scroll').scrollTop=0;
+}
+function esc(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function highlightNames(t){
+  t=esc(t);
+  t=t.replace(/(YAHUAH|HWHY|YAHU[ĂA]H|Aluahim|Aloah|Yah)\b/g,'<span class="dn">$1</span>');
+  return t;
+}
+function go(n){ idx=Math.max(0,Math.min(CH_KEYS.length-1,n)); renderChapter(); }
+
+/* ================= NAV / SCREENS ================= */
+function hideAll(){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $('reader').classList.remove('show'); }
+function showTitle(){ hideAll(); $('title-screen').classList.add('show'); }
+function showReader(){ hideAll(); $('reader').classList.add('show'); renderChapter(); }
+function showGrid(){ hideAll(); const grid=$('ch-grid'); grid.innerHTML='';
+  CH_KEYS.forEach((k,i)=>{ const c=document.createElement('div'); c.className='ch-cell'; c.textContent=k;
+    c.onclick=()=>{ idx=i; showReader(); }; grid.appendChild(c); });
+  $('grid-screen').classList.add('show'); }
+
+$('btn-read').onclick=()=>{ idx=0; showReader(); };
+$('btn-chapters').onclick=showGrid;
+$('btn-grid-title').onclick=showTitle;
+$('btn-back').onclick=()=>{ location.href='book-of-ekah.html'; };
+$('btn-grid').onclick=showGrid;
+$('btn-title').onclick=showTitle;
+$('btn-besorah').onclick=()=>{ location.href='besorah-offline.html#/book/'+BESORAH_ID+'/'+CH_KEYS[idx]; };
+$('nav-prev').onclick=()=>go(idx-1);
+$('nav-next').onclick=()=>go(idx+1);
+addEventListener('keydown',e=>{
+  if(!$('reader').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){ go(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ go(idx-1); e.preventDefault(); }
+  else if(e.key==='Escape'){ showGrid(); }
+});
+// swipe
+let tx=0,ty=0;
+$('scroll').addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+$('scroll').addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){ go(idx+(dx<0?1:-1)); } },{passive:true});
+
+/* deep link: ?ch=NN */
+(function(){ const q=new URLSearchParams(location.search); const c=q.get('ch');
+  if(c){ const i=CH_KEYS.indexOf(String(+c)); if(i>=0){ idx=i; showReader(); return; } } })();
+resize(); requestAnimationFrame(loop);
+setTimeout(()=>{ $('fader').style.opacity='0'; },120);
+</script>
+</body>
+</html>
