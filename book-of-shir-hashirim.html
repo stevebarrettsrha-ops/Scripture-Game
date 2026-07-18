@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0e1a">
+<title>SHIR HASHIRIM — Kethuḇim — The Writings</title>
+<style>
+  :root{--gold:#e8c66a;--gold-dim:#a8893f;--parch:#efe3c8;--ui-edge:rgba(232,198,106,.45)}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
+  @supports(height:100dvh){html,body{height:100dvh}}
+  body{font-family:Georgia,'Times New Roman',serif;color:var(--parch);position:fixed;inset:0}
+  canvas#bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;z-index:20;opacity:0;pointer-events:none;transition:opacity .5s ease}
+  .screen.show{opacity:1;pointer-events:auto}
+  .btn{font-family:inherit;cursor:pointer;background:linear-gradient(180deg,rgba(34,28,12,.85),rgba(18,14,6,.9));
+       color:var(--gold);border:1px solid var(--ui-edge);border-radius:3px;padding:1.1vh 4vw;
+       font-size:clamp(14px,2.4vmin,20px);letter-spacing:.18em;text-transform:uppercase;
+       min-width:min(300px,68vw);text-align:center;transition:all .2s;margin-top:1.2vh}
+  .btn:hover,.btn:focus-visible{color:#fff3cf;border-color:var(--gold);box-shadow:0 0 16px rgba(232,198,106,.3);outline:none}
+  .btn.small{min-width:0;padding:.7vh 2.4vw;font-size:clamp(12px,1.8vmin,15px)}
+
+  /* title */
+  #title-screen{justify-content:flex-end;padding-bottom:7vh}
+  .t-hebrew{font-size:clamp(22px,4vmin,42px);letter-spacing:.28em;color:var(--gold);
+            text-shadow:0 0 20px rgba(232,198,106,.5)}
+  .t-main{font-size:clamp(24px,5vmin,54px);font-weight:bold;letter-spacing:.16em;color:#fff7e0;margin-top:.6vh;
+          text-shadow:0 0 30px rgba(232,198,106,.5),0 3px 0 #2b2008}
+  .t-sub{font-style:italic;font-size:clamp(12px,2vmin,19px);color:#cdbf9b;letter-spacing:.26em;
+         margin-top:1vh;text-transform:uppercase}
+  .t-verse{font-style:italic;font-size:clamp(12px,1.9vmin,17px);color:#a9a488;margin-top:2.2vh;
+           max-width:70ch;text-align:center;padding:0 20px;line-height:1.6}
+  .t-blurb{color:#8d8770;font-style:italic;font-size:clamp(11px,1.7vmin,14px);max-width:78ch;
+           text-align:center;padding:1.6vh 24px 0;line-height:1.55}
+
+  /* reader */
+  #reader{position:absolute;inset:0;z-index:15;display:none;flex-direction:column}
+  #reader.show{display:flex}
+  #topbar{display:flex;align-items:center;gap:10px;padding:calc(1vh + env(safe-area-inset-top,0)) 3vw 1vh;
+          background:linear-gradient(180deg,rgba(6,8,16,.82),rgba(6,8,16,0));z-index:3}
+  #topbar .name{color:var(--gold);letter-spacing:.2em;font-size:clamp(12px,2vmin,17px);text-transform:uppercase;
+        text-shadow:0 1px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #topbar .spacer{flex:1}
+  .icon-btn{cursor:pointer;width:36px;height:36px;border-radius:4px;border:1px solid rgba(232,198,106,.3);
+        background:rgba(10,14,26,.6);color:var(--gold);font-size:15px;display:flex;align-items:center;
+        justify-content:center;flex:0 0 auto;font-family:inherit}
+  .icon-btn:hover{border-color:var(--gold)}
+  #scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;
+          padding:1vh 4vw 2vh;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  #panel{width:100%;max-width:760px;background:linear-gradient(180deg,rgba(12,14,22,.72),rgba(8,10,18,.8));
+         border:1px solid rgba(232,198,106,.28);border-radius:8px;padding:3vh 5vw;margin:auto 0;
+         box-shadow:0 10px 50px rgba(0,0,0,.6)}
+  #ch-num{text-align:center;color:var(--gold);font-size:clamp(30px,7vmin,64px);font-weight:bold;
+          text-shadow:0 0 22px rgba(232,198,106,.4);line-height:1}
+  #ch-label{text-align:center;color:#cdbf9b;font-style:italic;letter-spacing:.24em;text-transform:uppercase;
+            font-size:clamp(11px,1.8vmin,14px);margin-top:.8vh;margin-bottom:2.4vh}
+  .verse{color:#efe7d2;font-size:clamp(15px,2.5vmin,20px);line-height:1.7;margin-bottom:.7em;text-align:left}
+  .verse .vn{color:var(--gold);font-size:.7em;vertical-align:super;margin-right:.35em;font-weight:bold}
+  .dn{color:#e8c66a;font-variant:small-caps;letter-spacing:.02em}
+  #navbar{display:flex;align-items:center;gap:12px;justify-content:center;
+          padding:1vh 3vw calc(1.4vh + env(safe-area-inset-bottom,0));
+          background:linear-gradient(0deg,rgba(6,8,16,.82),rgba(6,8,16,0));z-index:3}
+  #nav-prev,#nav-next{cursor:pointer;font-family:inherit;background:rgba(10,14,26,.7);
+          border:1px solid rgba(232,198,106,.4);color:var(--gold);border-radius:4px;
+          padding:.7vh 4vw;font-size:clamp(13px,2vmin,17px);letter-spacing:.14em;transition:all .2s}
+  #nav-prev:hover,#nav-next:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  #nav-prev[disabled],#nav-next[disabled]{opacity:.3;pointer-events:none}
+  #nav-pos{color:#cdbf9b;font-style:italic;font-size:clamp(11px,1.8vmin,15px);letter-spacing:.1em;min-width:9ch;text-align:center}
+
+  /* chapter grid */
+  #grid-screen{background:linear-gradient(180deg,rgba(6,8,16,.95),rgba(10,12,22,.97));
+               justify-content:flex-start;padding:calc(4vh + env(safe-area-inset-top,0)) 4vw 3vh}
+  #grid-screen h2{color:var(--gold);letter-spacing:.26em;font-size:clamp(16px,3.2vmin,28px);
+                  text-transform:uppercase;margin-bottom:2vh;text-align:center}
+  #ch-grid{width:100%;max-width:1000px;overflow-y:auto;flex:1;display:grid;
+           grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:9px;padding:0 4px 2vh;
+           scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  .ch-cell{cursor:pointer;border:1px solid rgba(232,198,106,.25);border-radius:5px;aspect-ratio:1;
+           display:flex;align-items:center;justify-content:center;font-size:clamp(14px,2.4vmin,19px);
+           color:#e8dfc8;background:linear-gradient(160deg,rgba(28,24,12,.55),rgba(12,12,18,.7));transition:all .18s}
+  .ch-cell:hover{border-color:var(--gold);color:#fff6dd;box-shadow:0 0 12px rgba(232,198,106,.3);transform:translateY(-2px)}
+
+  #fader{position:absolute;inset:0;background:#000;z-index:40;pointer-events:none;opacity:1;transition:opacity .7s ease}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div class="screen show" id="title-screen">
+  <div class="t-hebrew">✦ ✦ ✦</div>
+  <div class="t-main">SHIR HASHIRIM</div>
+  <div class="t-sub">Song of Songs · Kethuḇim — The Writings</div>
+  <div class="t-verse">Many waters are unable to quench love, nor do floods wash it away. — SHIR HASHIRIM 8:7</div>
+  <div class="t-blurb">The song of songs, which is Shelomoh’s — the beloved and her love through the vineyards and the gardens of spices: “I am my beloved’s, and my beloved is mine,” and love as strong as death, a flame of Yah that many waters cannot quench.</div>
+  <button class="btn" id="btn-read">Read from the Beginning</button>
+  <button class="btn small" id="btn-chapters">Chapters</button>
+  <button class="btn small" id="btn-back">⟵ MISHLĔ</button>
+</div>
+
+<div id="reader">
+  <div id="topbar">
+    <div class="name" id="rd-name">SHIR HASHIRIM</div>
+    <div class="spacer"></div>
+    <div class="icon-btn" id="btn-grid" title="Chapters">☰</div>
+    <div class="icon-btn" id="btn-besorah" title="Read in the Besorah">📖</div>
+    <div class="icon-btn" id="btn-title" title="Title">✦</div>
+  </div>
+  <div id="scroll">
+    <div id="panel">
+      <div id="ch-num"></div>
+      <div id="ch-label"></div>
+      <div id="verses"></div>
+    </div>
+  </div>
+  <div id="navbar">
+    <button id="nav-prev">⟨ Prev</button>
+    <div id="nav-pos"></div>
+    <button id="nav-next">Next ⟩</button>
+  </div>
+</div>
+
+<div class="screen" id="grid-screen">
+  <h2>SHIR HASHIRIM — Chapters</h2>
+  <div id="ch-grid"></div>
+  <button class="btn small" id="btn-grid-title" style="margin-top:1.4vh">⟵ Title</button>
+</div>
+
+<div id="fader"></div>
+
+<script id="book-data" type="application/json">{"id": "shir-hashirim", "hebrew": "SHIR HASHIRIM", "english": "Song of Songs", "chapters": {"1": [{"v": 1, "t": "The song of songs, which is Shelomoh’s."}, {"v": 2, "t": "Let him kiss me with the kisses of his mouth, For your loves are better than wine."}, {"v": 3, "t": "For fragrance your oils are good. Your Name is oil poured forth, Therefore the maidens love you."}, {"v": 4, "t": "Draw me! We run after you. The sovereign has brought me into his inner rooms. We exult and rejoice in you. We praise your loves more than wine. Rightly do they love you."}, {"v": 5, "t": "I am dark, but lovely, O daughters of Yahrushalayim, Like the tents of Qĕḏar, Like the curtains of Shelomoh."}, {"v": 6, "t": "Do not look upon me, because I am dark, Because the sun has tanned me. My mother’s sons were displeased with me. They made me the keeper of the vineyards, My own vineyard I have not kept."}, {"v": 7, "t": "Make known to me, O you whom my being loves, where you feed your flock and where you make it rest at noon. For why should I be as one who is veiled Beside the flocks of your companions?"}, {"v": 8, "t": "If you do not know, O fairest among women, Go in the footsteps of the flock, And feed your little goats beside the shepherds’ dwellings."}, {"v": 9, "t": "I have compared you, my love, To my filly among Pharaoh’s chariots."}, {"v": 10, "t": "Your cheeks are pretty with ornaments, Your neck with strings of beads."}, {"v": 11, "t": "Let us make you ornaments of gold with studs of silver."}, {"v": 12, "t": "While the sovereign is at his table, My nard shall give its fragrance."}, {"v": 13, "t": "My beloved is a bundle of myrrh to me, lying between my breasts."}, {"v": 14, "t": "My beloved is to me a cluster of henna blooms In the vineyards of Ĕn Geḏi."}, {"v": 15, "t": "See, you are fair, my love! See, you are fair! Your eyes are as doves."}, {"v": 16, "t": "See, you are handsome, my beloved! Yea, pleasant! Also our bed is green."}, {"v": 17, "t": "The beams of our houses are cedar, our rafters are of fir."}], "2": [{"v": 1, "t": "I am the rose of Sharon, The lily of the valleys."}, {"v": 2, "t": "Like a lily among thorns, So is my love among the daughters."}, {"v": 3, "t": "Like an apple tree among the trees of the forest, So is my beloved among the sons. I delighted in his shade and sat down, And his fruit was sweet to my taste."}, {"v": 4, "t": "He brought me to the house of wine, And his banner over me was love."}, {"v": 5, "t": "“Strengthen me with raisin cakes, Refresh me with apples, for I am faint with love.”"}, {"v": 6, "t": "His left hand is under my head, And his right hand embraces me."}, {"v": 7, "t": "I have put you under oath, O daughters of Yahrushalayim, By the gazelles or by the does of the field, do not stir up nor awaken love until it pleases."}, {"v": 8, "t": "The voice of my beloved! See, he is coming, leaping on the mountains and skipping on the hills."}, {"v": 9, "t": "My beloved is like a gazelle or like a young stag. See, he is standing behind our wall, Looking through the windows, Peering through the lattice."}, {"v": 10, "t": "My beloved responded and said to me,“Rise up, my love, my fair one, and come away."}, {"v": 11, "t": "“For look, the winter is past, the rain is over, gone."}, {"v": 12, "t": "“The flowers have appeared in the earth; the time of singing has come, And the voice of the turtledove has been heard in our land."}, {"v": 13, "t": "“The fig tree has ripened her figs, And the vines with the tender grapes have given a good fragrance. Rise up, my love, my fair one and come away!"}, {"v": 14, "t": "“O my dove, in the clefts of the rock, In the covering of the cliff, Let me see your appearance, Let me hear your voice; For your voice is sweet, And your appearance is lovely.”"}, {"v": 15, "t": "Catch the foxes for us, The little foxes that spoil the vines, And our vines are all blossom."}, {"v": 16, "t": "My beloved is mine and I am his. He feeds his flock among the lilies."}, {"v": 17, "t": "Until the day breaks and the shadows have fled, Turn, my beloved and be like a gazelle or a young stag on the mountains of Bether."}], "3": [{"v": 1, "t": "On my bed at night I sought the beloved of my being; I sought him, but I did not find him."}, {"v": 2, "t": "”Come, let me arise and go about the city, in the streets and in the broad places. I seek the beloved of my being.” I sought him, but I did not find him."}, {"v": 3, "t": "The watchmen who go about the city found me, to whom I said, “Have you seen the beloved of my being?”"}, {"v": 4, "t": "Scarcely had I passed by them, When I found the beloved of my being. I held him and would not let him go, Until I had brought him to the house of my mother, And into the room of her who conceived me."}, {"v": 5, "t": "I have put you under oath, O daughters of Yahrushalayim, By the gazelles or by the does of the field, do not stir up nor awaken love until it pleases."}, {"v": 6, "t": "Who is this coming out of the wilderness like columns of smoke, Perfumed with myrrh and frankincense, From all the merchant’s fragrant powders?"}, {"v": 7, "t": "See, it is Shelomoh’s couch – Sixty mighty men are around it, Of the mighty men of Yasharal,"}, {"v": 8, "t": "All of them holding swords, Skilled in battle, Each one has his sword on his thigh Because of fear in the night."}, {"v": 9, "t": "Sovereign Shelomoh made himself A litter of the wood of Leḇanon;"}, {"v": 10, "t": "He made its posts of silver, Its support of gold, its seat of purple, Within it was decked with love By the daughters of Yahrushalayim."}, {"v": 11, "t": "Go forth, O daughters of Tsiyon and see Sovereign Shelomoh with the crown With which his mother crowned him on the day of his wedding and on the day of his gladness of heart."}], "4": [{"v": 1, "t": "See, you are fair, my love! See, you are fair! Your eyes are as doves behind your veil. Your hair is like a flock of goats, Going down from Mount Gil‛aḏ."}, {"v": 2, "t": "Your teeth are like a flock of shorn sheep which have come up from the washing, All of them bear twins and not one loses her young."}, {"v": 3, "t": "Your lips are like a cord of scarlet, And your speech is lovely. Your cheeks behind your veil are like a piece of pomegranate."}, {"v": 4, "t": "Your neck is like the tower of Dawiḏ, Built for an armoury, On which hang a thousand shields, All the armour of mighty men."}, {"v": 5, "t": "Your two breasts are like two fawns, Twins of a gazelle, pasturing among the lilies."}, {"v": 6, "t": "Until the day breaks and the shadows have fled, I shall go my way to the mountain of myrrh and to the hill of frankincense."}, {"v": 7, "t": "You are all fair, my love, and not a blemish is on you."}, {"v": 8, "t": "Come with me from Leḇanon, My bride, with me from Leḇanon. Look from the top of Amana, From the top of Shenir and Ḥermon, From the dens of lions, From the mountains of the leopards."}, {"v": 9, "t": "You have put heart into me, My sister, my bride; You have put heart into me With one glance of your eyes, With one bead of your necklace."}, {"v": 10, "t": "How sweet have been your loves, My sister, my bride! How much better than wine are you loves and the fragrance of your perfumes than all spices!"}, {"v": 11, "t": "Your lips, O my bride, drip as the honeycomb; Honey and milk are under your tongue. And the fragrance of your garments Is like the fragrance of Leḇanon."}, {"v": 12, "t": "A garden locked is my sister, my bride, A fountain locked, a spring sealed up."}, {"v": 13, "t": "Your plants are an orchard of pomegranates with pleasant fruits, with henna, nard,"}, {"v": 14, "t": "Nard and saffron, Calamus and cinnamon, With all trees of frankincense, Myrrh and aloes, With all the chief spices;"}, {"v": 15, "t": "A garden spring, A well of living waters, And streams from Leḇanon."}, {"v": 16, "t": "Awake, O north ruach and come, O south! Blow upon my garden, let its spices flow out. Let my beloved come to his garden And eat its pleasant fruits."}], "5": [{"v": 1, "t": "I have come to my garden, My sister, my bride; I have plucked my myrrh with my spice; I have eaten my honeycomb with my honey; I have drunk my wine with my milk. Eat, O friends! Drink and drink deeply, O beloved ones!"}, {"v": 2, "t": "I was sleeping but my heart was awake –the voice of my beloved! He knocks, “Open for me, my sister, My love, my dove, my perfect one; For my head is drenched with dew, My locks with the drops of the night.”"}, {"v": 3, "t": "I have taken off my robe, should I put it on? I have washed my feet, should I dirty them?"}, {"v": 4, "t": "My beloved put his hand by the latch and my feelings were deeply moved for him."}, {"v": 5, "t": "I rose to open for my beloved, And my hands dripped with myrrh, My fingers with flowing myrrh, On the handles of the lock."}, {"v": 6, "t": "I opened for my beloved but my beloved had turned away and had gone. My being went out when he spoke. I sought him, but I could not find him; I called him,but he gave me no answer."}, {"v": 7, "t": "The watchmen who went about the city found me. They struck me, they bruised me; The keepers of the walls lifted my veil from me."}, {"v": 8, "t": "I have put you under oath, O daughters of Yahrushalayim, If you find my beloved, That you inform him that I am faint with love!"}, {"v": 9, "t": "What kind of a beloved is your beloved, O fairest among women? What kind of a beloved is your beloved, That you have put us under oath?"}, {"v": 10, "t": "My beloved is dazzling and ruddy, Chief among ten thousand."}, {"v": 11, "t": "His head is refined gold; His locks are wavy, black as a raven."}, {"v": 12, "t": "His eyes are like doves by streams of waters, washed with milk and fitly set."}, {"v": 13, "t": "His cheeks are like a bed of spices, Raised bed of scented plants. His lips are lilies, dripping flowing myrrh."}, {"v": 14, "t": "His hands are rods of gold set with beryl and His body is carved ivory, covered with sapphires."}, {"v": 15, "t": "His legs are columns of marble Founded on sockets of fine gold. His appearance is like Leḇanon, Choice as the cedars."}, {"v": 16, "t": "His mouth is most sweet, And he is altogether lovely. This is my beloved, and this is my friend, O daughters of Yahrushalayim!"}], "6": [{"v": 1, "t": "“Where has your beloved gone, O fairest among women? Where has your beloved turned aside? Let us seek him with you.”"}, {"v": 2, "t": "My beloved went down to his garden, to the beds of spices, To feed his flock in the gardens, And to gather lilies."}, {"v": 3, "t": "I am my beloved’s and my beloved is mine. He feeds his flock among the lilies."}, {"v": 4, "t": "O my love, you are as fair as Tirtsah, Lovely as Yahrushalayim, Awesome as an army with banners!"}, {"v": 5, "t": "Turn your eyes away from me, Because they overcome me. Your hair is like a flock of goats That have hopped down from Gil‛aḏ."}, {"v": 6, "t": "Your teeth are like a flock of sheep That have come up from the washing; All of them bear twins and not one among them has lost her young."}, {"v": 7, "t": "Your cheeks behind your veil are like a piece of pomegranate."}, {"v": 8, "t": "There are sixty sovereignesses and eighty concubines and innumerable maidens."}, {"v": 9, "t": "My dove, my perfect one, Is the only one, the only one of her mother, The choice of the one who bore her The daughters saw and called her baruk, Sovereignesses and concubines, And they praised her."}, {"v": 10, "t": "Who is she who shines forth as the morning, Fair as the moon, clear as the sun, Awesome as an army with banners?"}, {"v": 11, "t": "I went down to the garden of nuts To see the budding of the wadi, To see whether the vine had budded and the pomegranates had bloomed."}, {"v": 12, "t": "I did not know, my desire made me as the chariots of my noble people."}, {"v": 13, "t": "Return, return, O Shulammith; Return, return and let us look upon you! Why should you look upon the Shulammith, as it were the dance of two armies?"}], "7": [{"v": 1, "t": "How fair are your feet in sandals, O daughter of a noble! The curves of your thighs are like ornaments, The work of a craftsman’s hands."}, {"v": 2, "t": "Your navel is a rounded bowl Let it not lack mixed wine. Your body is a heap of wheat, Hedged about with lilies."}, {"v": 3, "t": "Your two breasts are like two fawns, twins of a gazelle."}, {"v": 4, "t": "Your neck is like an ivory tower, Your eyes pools in Ḥeshbon By the gate of Bath Rabbim. Your nose is like the tower of Leḇanon looking to Damascus."}, {"v": 5, "t": "Your head upon you is like Mount Karmal, And the hair of your head like purple; The sovereign is held captive by the ringlets."}, {"v": 6, "t": "How fair and how pleasant you are, O love, in delights!"}, {"v": 7, "t": "This stature of yours compares to palm tree and your breasts to clusters."}, {"v": 8, "t": "I said, “Let me go up to the palm tree, Let me take hold of its tips.” And please, let your breasts be like clusters of the vine, And the fragrance of your breath like apples,"}, {"v": 9, "t": "And your palate like the best wine, Going down smoothly for my beloved, Flowing gently, slumbering lips."}, {"v": 10, "t": "I am my beloved’s and his desire is toward me."}, {"v": 11, "t": "Come, my beloved, let us go forth to the field; Let us stay in the villages."}, {"v": 12, "t": "Let us get up early to the vineyards; Let us see whether the vine has budded, The grape blossoms have opened, The pomegranates have bloomed. There I give you my loves."}, {"v": 13, "t": "The love-apples have given fragrance, And at our gates are all pleasant fruit, New and old, which I have laid up for you, my beloved."}], "8": [{"v": 1, "t": "Who would make you a brother to me, Who nursed at my mother’s breasts! Should I find you outside, I would kiss you; I would not be despised."}, {"v": 2, "t": "I would lead you, I would bring you into the house of my mother, She who has taught me. I would give you spiced wine to drink, Of the juice of my pomegranate."}, {"v": 3, "t": "His left hand is under my head, And his right hand embraces me."}, {"v": 4, "t": "I have put you under oath, O daughters of Yahrushalayim, Do not stir up or awake love until it pleases."}, {"v": 5, "t": "Who is this coming up from the wilderness, Leaning upon her beloved? Under the apple tree I awakened you There your mother was in labour with you; There she was in labour and gave birth to you."}, {"v": 6, "t": "Set me as a seal upon your heart, As a seal upon your arm; For love is as strong as death, Jealousy as cruel as the grave; Its flames are flames of fire, a flame of Yah!"}, {"v": 7, "t": "Many waters are unable to extinguish love and floods do not wash it away. If one would give all the wealth of his house for love, It would be utterly scorned."}, {"v": 8, "t": "We have a little sister and she has no breasts. What do we do for our sister in the day when she is spoken for?"}, {"v": 9, "t": "If she is a wall, we build upon her a battlement of silver. And if she is a door, we would enclose her with boards of cedar."}, {"v": 10, "t": "I am a wall and my breasts like towers; So I became in his eyes as one who found shalom."}, {"v": 11, "t": "Shelomoh had a vineyard in Ba‛al Hamon; He let out the vineyard to keepers; Each one was to bring for its fruit a thousand pieces of silver."}, {"v": 12, "t": "My own vineyard is before me. O Shelomoh, a thousand belongs to you, And two hundred to those who keep its fruit."}, {"v": 13, "t": "You who sit in the gardens, The companions listen for your voice; Let me hear it!"}, {"v": 14, "t": "Hurry, my beloved and be like a gazelle or a young stag On the mountains of spices."}]}}</script>
+<script>
+'use strict';
+const BOOK=JSON.parse(document.getElementById('book-data').textContent);
+const BASE_THEME='garden';
+const BESORAH_ID='shir-hashirim';
+const $=id=>document.getElementById(id);
+const CH_KEYS=Object.keys(BOOK.chapters).sort((a,b)=>(+a)-(+b));
+let idx=0;
+
+/* ================= SCENIC BACKGROUND ================= */
+const cv=$('bg'), g=cv.getContext('2d');
+let VW=0,VH=0,DPR=1,stars=[];
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  VW=innerWidth; VH=innerHeight;
+  cv.width=VW*DPR; cv.height=VH*DPR;
+  g.setTransform(DPR,0,0,DPR,0,0);
+  stars=[]; for(let i=0;i<160;i++) stars.push({x:Math.random(),y:Math.random()*.72,r:Math.random()*1.4+.3,p:Math.random()*6.28});
+}
+addEventListener('resize',resize);
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+let curTheme=BASE_THEME, seed=1;
+const GRAD={
+  dawn:[[0,'#12203f'],[.4,'#2a4a78'],[.7,'#7a6a5a'],[1,'#caa26a']],
+  night:[[0,'#04060f'],[.5,'#0a1226'],[1,'#1a2440']],
+  waters:[[0,'#0a1a30'],[.55,'#164058'],[1,'#2a7088']],
+  mountains:[[0,'#0e1830'],[.5,'#2a3a56'],[1,'#5a6478']],
+  garden:[[0,'#10261f'],[.5,'#1f4a34'],[1,'#4a7a44']],
+  ruins:[[0,'#12100e'],[.5,'#2a2420'],[1,'#4a3e34']],
+  field:[[0,'#132038'],[.45,'#3a4a60'],[.75,'#8a8250'],[1,'#c8b274']],
+  storm:[[0,'#0a0c14'],[.5,'#161c2a'],[1,'#2c3446']],
+  fire:[[0,'#100a08'],[.5,'#2c1810'],[1,'#7a3a1a']],
+  vanity:[[0,'#141420'],[.5,'#2a2a3a'],[1,'#6a6458']],
+};
+function paint(t){
+  const gr=GRAD[curTheme]||GRAD.dawn;
+  const lg=g.createLinearGradient(0,0,0,VH);
+  for(const[o,c]of gr) lg.addColorStop(o,c);
+  g.fillStyle=lg; g.fillRect(0,0,VW,VH);
+  const rng=mul(seed*7919+1);
+  // stars for dark themes
+  if(['night','storm','mountains','vanity','ruins'].includes(curTheme)){
+    for(const s of stars){ const tw=.5+.5*Math.sin(t/900+s.p);
+      g.fillStyle=`rgba(240,238,220,${tw*.7})`; g.beginPath();
+      g.arc(s.x*VW,s.y*VH*.9,s.r,0,6.28); g.fill(); }
+  }
+  // sun / moon glow
+  if(['dawn','field','garden','fire','waters'].includes(curTheme)){
+    const sx=VW*.5,sy=VH*.72,rr=VW*.5*(.9+Math.sin(t/2600)*.06);
+    const rg=g.createRadialGradient(sx,sy,8,sx,sy,rr);
+    rg.addColorStop(0,'rgba(255,240,190,.42)'); rg.addColorStop(.3,'rgba(232,198,106,.14)'); rg.addColorStop(1,'rgba(232,198,106,0)');
+    g.fillStyle=rg; g.fillRect(0,0,VW,VH);
+  } else {
+    const sx=VW*.72,sy=VH*.2,rr=VW*.16;
+    const rg=g.createRadialGradient(sx,sy,2,sx,sy,rr);
+    rg.addColorStop(0,'rgba(220,228,240,.5)'); rg.addColorStop(1,'rgba(220,228,240,0)');
+    g.fillStyle=rg; g.beginPath(); g.arc(sx,sy,VW*.03,0,6.28); g.fill();
+    g.fillStyle=rg; g.fillRect(0,0,VW,VH);
+  }
+  // horizon silhouettes
+  g.save();
+  if(curTheme==='mountains'){
+    g.fillStyle='rgba(10,14,26,.7)';
+    for(let k=0;k<3;k++){ g.beginPath(); g.moveTo(0,VH);
+      let x=0; const baseY=VH*(.62+k*.08);
+      while(x<VW){ const h=(rng())*VH*.22; g.lineTo(x,baseY-h); x+=VW*.14; }
+      g.lineTo(VW,VH); g.closePath(); g.fillStyle=`rgba(10,14,26,${.4+k*.18})`; g.fill(); }
+  } else if(curTheme==='waters'){
+    g.fillStyle='rgba(255,240,190,.14)';
+    for(let i=0;i<10;i++){ const y=VH*.72+i*VH*.026; g.fillRect(VW*.5-(70-i*6),y,(70-i*6)*2,2); }
+  } else if(curTheme==='garden'){
+    g.fillStyle='rgba(10,26,16,.55)';
+    g.beginPath(); g.moveTo(0,VH); g.quadraticCurveTo(VW*.3,VH*.74,VW*.55,VH*.82);
+    g.quadraticCurveTo(VW*.8,VH*.9,VW,VH*.78); g.lineTo(VW,VH); g.closePath(); g.fill();
+    for(let i=0;i<14;i++){ const fx=(i*0.09+0.03)*VW, fy=VH*(.8+Math.sin(i)*.03);
+      g.fillStyle=['#caa2c8','#e8c66a','#c85a6a'][i%3]; g.beginPath(); g.arc(fx,fy,3,0,6.28); g.fill(); }
+  } else if(curTheme==='ruins'){
+    g.fillStyle='rgba(20,16,12,.7)';
+    let x=0; while(x<VW){ const w=VW*(.05+rng()*.05), h=VH*(.1+rng()*.22); g.fillRect(x,VH-h,w,h); x+=w+VW*.02; }
+    for(let i=0;i<28;i++){ if(rng()<.5) continue; g.fillStyle='rgba(120,110,100,'+(.1+rng()*.15)+')';
+      g.fillRect(rng()*VW,VH*(.4+rng()*.5),2,2); }
+  } else if(curTheme==='field'){
+    g.fillStyle='rgba(120,104,58,.5)'; g.fillRect(0,VH*.78,VW,VH*.22);
+    g.strokeStyle='rgba(180,150,80,.35)'; g.lineWidth=2;
+    for(let i=0;i<40;i++){ const wx=rng()*VW, wy=VH*(.78+rng()*.18);
+      g.beginPath(); g.moveTo(wx,wy); g.lineTo(wx,wy-VH*.05); g.stroke(); }
+  } else if(curTheme==='fire'){
+    for(let i=0;i<40;i++){ const fx=VW*.5+(rng()-.5)*VW*.5, fy=VH-(rng()*VH*.3);
+      g.fillStyle=`rgba(255,${140+rng()*90|0},40,${.3+rng()*.3})`; g.beginPath(); g.arc(fx,fy,2+rng()*3,0,6.28); g.fill(); }
+  } else {
+    // gentle hills for dawn/night/storm/vanity
+    g.fillStyle='rgba(10,14,26,.5)';
+    g.beginPath(); g.moveTo(0,VH); g.quadraticCurveTo(VW*.3,VH*.8,VW*.5,VH*.85);
+    g.quadraticCurveTo(VW*.75,VH*.9,VW,VH*.8); g.lineTo(VW,VH); g.closePath(); g.fill();
+  }
+  g.restore();
+  // rain for storm
+  if(curTheme==='storm'){ g.strokeStyle='rgba(160,180,210,.25)'; g.lineWidth=1;
+    for(let i=0;i<60;i++){ const rx=(rng()*VW+t*.1)%VW, ry=(rng()*VH+t*.4)%VH;
+      g.beginPath(); g.moveTo(rx,ry); g.lineTo(rx-3,ry+14); g.stroke(); } }
+  // vignette
+  const vg=g.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.4,VW/2,VH/2,Math.max(VW,VH)*.72);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.55)');
+  g.fillStyle=vg; g.fillRect(0,0,VW,VH);
+}
+function loop(t){ paint(t); requestAnimationFrame(loop); }
+
+/* ================= THEME PER CHAPTER ================= */
+const THEME_KEYWORDS=[["ruins",["desolate","ruin","laid waste","burned","ashes","lonely sits","no comforter","mourn"]],["storm",["thunder","lightning","tempest","whirlwind","storm","the deep","waves","floods"]],["waters",["waters","sea","rivers","streams","springs","the deep","still waters"]],["night",["night","darkness","the pit","grave","shadow of death","out of the depths","weep"]],["mountains",["mountains","hills","rock","fortress","stronghold","tsiyon","high place"]],["garden",["vineyard","garden","spices","lily","rose","fig","pomegranate","myrrh","fragrance","beloved"]],["fire",["fire","refine","furnace","coals","flame","burning"]],["field",["wisdom","knowledge","understanding","folly","fool","discipline","harvest","wheat","labour","sun"]],["dawn",["praise","sing","rejoice","hallelu","give thanks","morning","light","joy","shout"]]];
+function themeFor(chKey){
+  const vs=BOOK.chapters[chKey]||[];
+  const low=vs.map(v=>v.t).join(' ').toLowerCase();
+  for(const[theme,keys]of THEME_KEYWORDS){ for(const k of keys){ if(low.indexOf(k)>=0) return theme; } }
+  return BASE_THEME;
+}
+
+/* ================= REND ================= */
+function renderChapter(){
+  const key=CH_KEYS[idx];
+  curTheme=themeFor(key); seed=(+key)||1;
+  $('ch-num').textContent=key;
+  $('ch-label').textContent=BOOK.hebrew+' · '+BOOK.english;
+  const box=$('verses'); box.innerHTML='';
+  for(const v of BOOK.chapters[key]){
+    const d=document.createElement('div'); d.className='verse';
+    const t=highlightNames(v.t);
+    d.innerHTML='<span class="vn">'+v.v+'</span>'+t;
+    box.appendChild(d);
+  }
+  $('nav-pos').textContent='Chapter '+key+' / '+CH_KEYS.length;
+  $('nav-prev').disabled=idx<=0;
+  $('nav-next').disabled=idx>=CH_KEYS.length-1;
+  $('scroll').scrollTop=0;
+}
+function esc(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function highlightNames(t){
+  t=esc(t);
+  t=t.replace(/(YAHUAH|HWHY|YAHU[ĂA]H|Aluahim|Aloah|Yah)\b/g,'<span class="dn">$1</span>');
+  return t;
+}
+function go(n){ idx=Math.max(0,Math.min(CH_KEYS.length-1,n)); renderChapter(); }
+
+/* ================= NAV / SCREENS ================= */
+function hideAll(){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $('reader').classList.remove('show'); }
+function showTitle(){ hideAll(); $('title-screen').classList.add('show'); }
+function showReader(){ hideAll(); $('reader').classList.add('show'); renderChapter(); }
+function showGrid(){ hideAll(); const grid=$('ch-grid'); grid.innerHTML='';
+  CH_KEYS.forEach((k,i)=>{ const c=document.createElement('div'); c.className='ch-cell'; c.textContent=k;
+    c.onclick=()=>{ idx=i; showReader(); }; grid.appendChild(c); });
+  $('grid-screen').classList.add('show'); }
+
+$('btn-read').onclick=()=>{ idx=0; showReader(); };
+$('btn-chapters').onclick=showGrid;
+$('btn-grid-title').onclick=showTitle;
+$('btn-back').onclick=()=>{ location.href='book-of-mishle.html'; };
+$('btn-grid').onclick=showGrid;
+$('btn-title').onclick=showTitle;
+$('btn-besorah').onclick=()=>{ location.href='besorah-offline.html#/book/'+BESORAH_ID+'/'+CH_KEYS[idx]; };
+$('nav-prev').onclick=()=>go(idx-1);
+$('nav-next').onclick=()=>go(idx+1);
+addEventListener('keydown',e=>{
+  if(!$('reader').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){ go(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ go(idx-1); e.preventDefault(); }
+  else if(e.key==='Escape'){ showGrid(); }
+});
+// swipe
+let tx=0,ty=0;
+$('scroll').addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+$('scroll').addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){ go(idx+(dx<0?1:-1)); } },{passive:true});
+
+/* deep link: ?ch=NN */
+(function(){ const q=new URLSearchParams(location.search); const c=q.get('ch');
+  if(c){ const i=CH_KEYS.indexOf(String(+c)); if(i>=0){ idx=i; showReader(); return; } } })();
+resize(); requestAnimationFrame(loop);
+setTimeout(()=>{ $('fader').style.opacity='0'; },120);
+</script>
+</body>
+</html>

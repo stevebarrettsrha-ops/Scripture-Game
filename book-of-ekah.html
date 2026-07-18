@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0e1a">
+<title>ĔḴAH — Kethuḇim — The Writings</title>
+<style>
+  :root{--gold:#e8c66a;--gold-dim:#a8893f;--parch:#efe3c8;--ui-edge:rgba(232,198,106,.45)}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
+  @supports(height:100dvh){html,body{height:100dvh}}
+  body{font-family:Georgia,'Times New Roman',serif;color:var(--parch);position:fixed;inset:0}
+  canvas#bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;z-index:20;opacity:0;pointer-events:none;transition:opacity .5s ease}
+  .screen.show{opacity:1;pointer-events:auto}
+  .btn{font-family:inherit;cursor:pointer;background:linear-gradient(180deg,rgba(34,28,12,.85),rgba(18,14,6,.9));
+       color:var(--gold);border:1px solid var(--ui-edge);border-radius:3px;padding:1.1vh 4vw;
+       font-size:clamp(14px,2.4vmin,20px);letter-spacing:.18em;text-transform:uppercase;
+       min-width:min(300px,68vw);text-align:center;transition:all .2s;margin-top:1.2vh}
+  .btn:hover,.btn:focus-visible{color:#fff3cf;border-color:var(--gold);box-shadow:0 0 16px rgba(232,198,106,.3);outline:none}
+  .btn.small{min-width:0;padding:.7vh 2.4vw;font-size:clamp(12px,1.8vmin,15px)}
+
+  /* title */
+  #title-screen{justify-content:flex-end;padding-bottom:7vh}
+  .t-hebrew{font-size:clamp(22px,4vmin,42px);letter-spacing:.28em;color:var(--gold);
+            text-shadow:0 0 20px rgba(232,198,106,.5)}
+  .t-main{font-size:clamp(30px,7vmin,80px);font-weight:bold;letter-spacing:.16em;color:#fff7e0;margin-top:.6vh;
+          text-shadow:0 0 30px rgba(232,198,106,.5),0 3px 0 #2b2008}
+  .t-sub{font-style:italic;font-size:clamp(12px,2vmin,19px);color:#cdbf9b;letter-spacing:.26em;
+         margin-top:1vh;text-transform:uppercase}
+  .t-verse{font-style:italic;font-size:clamp(12px,1.9vmin,17px);color:#a9a488;margin-top:2.2vh;
+           max-width:70ch;text-align:center;padding:0 20px;line-height:1.6}
+  .t-blurb{color:#8d8770;font-style:italic;font-size:clamp(11px,1.7vmin,14px);max-width:78ch;
+           text-align:center;padding:1.6vh 24px 0;line-height:1.55}
+
+  /* reader */
+  #reader{position:absolute;inset:0;z-index:15;display:none;flex-direction:column}
+  #reader.show{display:flex}
+  #topbar{display:flex;align-items:center;gap:10px;padding:calc(1vh + env(safe-area-inset-top,0)) 3vw 1vh;
+          background:linear-gradient(180deg,rgba(6,8,16,.82),rgba(6,8,16,0));z-index:3}
+  #topbar .name{color:var(--gold);letter-spacing:.2em;font-size:clamp(12px,2vmin,17px);text-transform:uppercase;
+        text-shadow:0 1px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #topbar .spacer{flex:1}
+  .icon-btn{cursor:pointer;width:36px;height:36px;border-radius:4px;border:1px solid rgba(232,198,106,.3);
+        background:rgba(10,14,26,.6);color:var(--gold);font-size:15px;display:flex;align-items:center;
+        justify-content:center;flex:0 0 auto;font-family:inherit}
+  .icon-btn:hover{border-color:var(--gold)}
+  #scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;
+          padding:1vh 4vw 2vh;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  #panel{width:100%;max-width:760px;background:linear-gradient(180deg,rgba(12,14,22,.72),rgba(8,10,18,.8));
+         border:1px solid rgba(232,198,106,.28);border-radius:8px;padding:3vh 5vw;margin:auto 0;
+         box-shadow:0 10px 50px rgba(0,0,0,.6)}
+  #ch-num{text-align:center;color:var(--gold);font-size:clamp(30px,7vmin,64px);font-weight:bold;
+          text-shadow:0 0 22px rgba(232,198,106,.4);line-height:1}
+  #ch-label{text-align:center;color:#cdbf9b;font-style:italic;letter-spacing:.24em;text-transform:uppercase;
+            font-size:clamp(11px,1.8vmin,14px);margin-top:.8vh;margin-bottom:2.4vh}
+  .verse{color:#efe7d2;font-size:clamp(15px,2.5vmin,20px);line-height:1.7;margin-bottom:.7em;text-align:left}
+  .verse .vn{color:var(--gold);font-size:.7em;vertical-align:super;margin-right:.35em;font-weight:bold}
+  .dn{color:#e8c66a;font-variant:small-caps;letter-spacing:.02em}
+  #navbar{display:flex;align-items:center;gap:12px;justify-content:center;
+          padding:1vh 3vw calc(1.4vh + env(safe-area-inset-bottom,0));
+          background:linear-gradient(0deg,rgba(6,8,16,.82),rgba(6,8,16,0));z-index:3}
+  #nav-prev,#nav-next{cursor:pointer;font-family:inherit;background:rgba(10,14,26,.7);
+          border:1px solid rgba(232,198,106,.4);color:var(--gold);border-radius:4px;
+          padding:.7vh 4vw;font-size:clamp(13px,2vmin,17px);letter-spacing:.14em;transition:all .2s}
+  #nav-prev:hover,#nav-next:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  #nav-prev[disabled],#nav-next[disabled]{opacity:.3;pointer-events:none}
+  #nav-pos{color:#cdbf9b;font-style:italic;font-size:clamp(11px,1.8vmin,15px);letter-spacing:.1em;min-width:9ch;text-align:center}
+
+  /* chapter grid */
+  #grid-screen{background:linear-gradient(180deg,rgba(6,8,16,.95),rgba(10,12,22,.97));
+               justify-content:flex-start;padding:calc(4vh + env(safe-area-inset-top,0)) 4vw 3vh}
+  #grid-screen h2{color:var(--gold);letter-spacing:.26em;font-size:clamp(16px,3.2vmin,28px);
+                  text-transform:uppercase;margin-bottom:2vh;text-align:center}
+  #ch-grid{width:100%;max-width:1000px;overflow-y:auto;flex:1;display:grid;
+           grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:9px;padding:0 4px 2vh;
+           scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  .ch-cell{cursor:pointer;border:1px solid rgba(232,198,106,.25);border-radius:5px;aspect-ratio:1;
+           display:flex;align-items:center;justify-content:center;font-size:clamp(14px,2.4vmin,19px);
+           color:#e8dfc8;background:linear-gradient(160deg,rgba(28,24,12,.55),rgba(12,12,18,.7));transition:all .18s}
+  .ch-cell:hover{border-color:var(--gold);color:#fff6dd;box-shadow:0 0 12px rgba(232,198,106,.3);transform:translateY(-2px)}
+
+  #fader{position:absolute;inset:0;background:#000;z-index:40;pointer-events:none;opacity:1;transition:opacity .7s ease}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div class="screen show" id="title-screen">
+  <div class="t-hebrew">✦ ✦ ✦</div>
+  <div class="t-main">ĔḴAH</div>
+  <div class="t-sub">Lamentations · Kethuḇim — The Writings</div>
+  <div class="t-verse">Through the kindnesses of YAHUAH we are not consumed, for His compassions never fail; they are new every morning. — ĔḴAH 3:22–23</div>
+  <div class="t-blurb">Five laments over the fallen city — “How lonely sits the city that was full of people!” — the ways of Tsiyon mourning, the ash and the sword; yet in the midst of the ruins, the great turning: “His compassions never fail; they are new every morning; great is Your trustworthiness.”</div>
+  <button class="btn" id="btn-read">Read from the Beginning</button>
+  <button class="btn small" id="btn-chapters">Chapters</button>
+  <button class="btn small" id="btn-back">⟵ SHIR HASHIRIM</button>
+</div>
+
+<div id="reader">
+  <div id="topbar">
+    <div class="name" id="rd-name">ĔḴAH</div>
+    <div class="spacer"></div>
+    <div class="icon-btn" id="btn-grid" title="Chapters">☰</div>
+    <div class="icon-btn" id="btn-besorah" title="Read in the Besorah">📖</div>
+    <div class="icon-btn" id="btn-title" title="Title">✦</div>
+  </div>
+  <div id="scroll">
+    <div id="panel">
+      <div id="ch-num"></div>
+      <div id="ch-label"></div>
+      <div id="verses"></div>
+    </div>
+  </div>
+  <div id="navbar">
+    <button id="nav-prev">⟨ Prev</button>
+    <div id="nav-pos"></div>
+    <button id="nav-next">Next ⟩</button>
+  </div>
+</div>
+
+<div class="screen" id="grid-screen">
+  <h2>ĔḴAH — Chapters</h2>
+  <div id="ch-grid"></div>
+  <button class="btn small" id="btn-grid-title" style="margin-top:1.4vh">⟵ Title</button>
+</div>
+
+<div id="fader"></div>
+
+<script id="book-data" type="application/json">{"id": "ekah", "hebrew": "ĔḴAH", "english": "Lamentations", "chapters": {"1": [{"v": 1, "t": "How alone she sits, The city once great with people! Like a widow she has become, One great among the nations! A princess among provinces has become a slave!"}, {"v": 2, "t": "She weeps bitterly at night, And her tears are upon her cheeks Among all her lovers there is no comforter for her. All her friends have betrayed her, They have become her enemies."}, {"v": 3, "t": "Yahuḏah has gone into exile, Because of affliction and because of harsh labour. She has dwelt among gentiles, She has found no rest. All her pursuers have overtaken her Between narrow places."}, {"v": 4, "t": "The ways to Tsiyon mourn For no one comes to the appointed times. All her gates are deserted, Her kohanim sigh, her maidens are afflicted and she has bitterness."}, {"v": 5, "t": "Her adversaries have become chief, Her enemies have become at ease. For (YAHUAH) HWHY has afflicted her Because of her many transgressions. Her children have gone into captivity before the enemy."}, {"v": 6, "t": "And all the splendour has departed From the daughter of Tsiyon. Her rulers have become like buck, They have found no pasture, And they go powerless before the pursuer."}, {"v": 7, "t": "In the days of her affliction and wandering, Yahrushalayim remembered all her precious matters She had in the days of old. When her people fell into the hand of the enemy, With no one to help her, The adversaries saw her, They mocked at her Shabbaths."}, {"v": 8, "t": "Yahrushalayim has sinned greatly, Therefore she has become defiled. All who esteemed her despised her Because they have seen her nakedness. She herself has sighed and turned away."}, {"v": 9, "t": "Her uncleanness is in her skirts. She did not keep in mind her latter end, And has gone down appallingly, There was no one to comfort her. “See, O (YAHUAH) HWHY, my affliction, For the enemy has made himself great!”"}, {"v": 10, "t": "The adversary has spread his hand Over all her precious matters; Indeed, she has seen: The gentiles have entered her set-apart place, Those whom You commanded not to enter Your qahal."}, {"v": 11, "t": "All her people are sighing, seeking bread. They have given their precious matters For food, to bring back life. “See, O (YAHUAH) HWHY and look, For I have become despised.”"}, {"v": 12, "t": "“Is it naught to you, All you who pass by? Look and see if there is any pain like my pain, Which has been brought on me, Which (YAHUAH) HWHY has inflicted on me In the day of His burning displeasure."}, {"v": 13, "t": "“From above He has sent fire into my bones and it overpowered them; He has spread a net for my feet and turned me back; He has laid me waste and faint all the day."}, {"v": 14, "t": "“The yoke of my transgressions Has been bound by His hand, Woven together and thrust upon my neck. He has made my strength stumble, (YAHUAH) HWHY has given me into hands Which I am unable to withstand."}, {"v": 15, "t": "“(YAHUAH) HWHY has trodden down all my strong men in my midst, He has called an appointed time Against me to crush my young men (YAHUAH) HWHY has trodden down as in a winepress The maiden daughter of Yahuḏah."}, {"v": 16, "t": "“This is why I weep. My eye, my eye is running down with water, because the comforter, Who could bring back my life, Has been far from me. My children are stunned, Because the enemy has prevailed.”"}, {"v": 17, "t": "Tsiyon spreads out her hands, There is no comforter for her. (YAHUAH) HWHY has commanded concerning Ya‛aqoḇ, His neighbours are his adversaries. Yahrushalayim has become an uncleanness among them."}, {"v": 18, "t": "(YAHUAH) HWHY is righteous, for I rebelled against His mouth. Hear now, all peoples, and see my pain. My maidens and my young men have gone into captivity."}, {"v": 19, "t": "I called for my lovers, but they deceived me. My kohanim and my elders breathed their last in the city, While they sought food to bring back their life."}, {"v": 20, "t": "“See, O (YAHUAH) HWHY, that I am in distress My inward parts are boiling up, My heart is overturned within me, For I have been very rebellious. From without the sword has bereaved, At home it is like death."}, {"v": 21, "t": "“They have heard that I sighed, With no one to comfort me. All my enemies have heard of my calamity, They have rejoiced that You have done it. You shall bring on the day that You have announced, So let them become like me."}, {"v": 22, "t": "“Let all their evil come before You, And do to them as You have done to me for all my transgressions. For my sighs are many and my heart is faint.”"}], "2": [{"v": 1, "t": "How (YAHUAH) HWHY in His displeasure Has covered the daughter of Tsiyon with a cloud! He has cast down from the shamayim to the earth the comeliness of Yasharal, And has not remembered His foot-stool in the day of His displeasure."}, {"v": 2, "t": "(YAHUAH) HWHY has swallowed up, without compassion, All the pastures of Ya‛aqoḇ. In His wrath He has thrown down The strongholds of the daughter of Yahuḏah. He has brought them down to the ground. rulers."}, {"v": 3, "t": "In the heat of displeasure He has cut off every horn of Yasharal. He has withdrawn His right hand from before the enemy. And He burns against Ya‛aqoḇ like a flaming fire, consuming all around."}, {"v": 4, "t": "He has bent His bow like an enemy He has set His right hand like an adversary. And He slays all who delighted the eye in the tent of the daughter of Tsiyon, He has poured out His wrath like fire."}, {"v": 5, "t": "(YAHUAH) HWHY has been like an enemy. He has swallowed up Yasharal, He has swallowed up all her palaces, He has destroyed her strongholds. And He increases mourning and lamentation In the daughter of Yahuḏah."}, {"v": 6, "t": "He has demolished His booth like a garden and He has destroyed His place of meeting. (YAHUAH) HWHY has made the appointed times and Shabbaths to be forgotten in Tsiyon, And despises sovereign and kohen In His raging displeasure."}, {"v": 7, "t": "(YAHUAH) HWHY has cast off His mizbe'ach, He has rejected His set-apart place, He has delivered the walls of her palaces Into the hand of the enemy. They have made a noise in the House of (YAHUAH) HWHY As on the day of an appointed time."}, {"v": 8, "t": "(YAHUAH) HWHY has planned to destroy The wall of the daughter of Tsiyon. He has stretched out a line. He has not turned back His hand from destroying and He has made the rampart and wall to lament; Together they have languished."}, {"v": 9, "t": "Her gates have sunk into the ground He has destroyed and broken her bars. Her sovereign and her rulers are among the gentiles. The Torah is no more and her neḇi'im have found no vision from (YAHUAH) HWHY."}, {"v": 10, "t": "The elders of the daughter of Tsiyon Sit on the ground, are silent. They have thrown dust on their heads, They have girded themselves with sackcloth. The maidens of Yahrushalayim have let their heads hang to the ground."}, {"v": 11, "t": "My eyes are spent with tears, My inward parts ferment, My bile has been poured on the ground because of the destruction of the daughter of my people, As children and the infants languish In the streets of the city."}, {"v": 12, "t": "They say to their mothers, “Where is grain and wine?” As they languish like the wounded In the streets of the city, As their life is poured out in their mothers’ bosom."}, {"v": 13, "t": "How shall I admonish you, To what shall I compare you, O daughter of Yahrushalayim? To what shall I liken you to comfort you, O maiden daughter of Tsiyon? For your breach is as great as the sea. Who shall heal you?"}, {"v": 14, "t": "Your neḇi'im have seen falsehood and folly for you and have not shown you your crookedness so to turn back your captivity. Their visions for you are false and misleading messages."}, {"v": 15, "t": "All who pass by have clapped their hands at you. They have whistled and they shake their heads at the daughter of Yahrushalayim, “Is this the city that is called ‘The perfection of loveliness, The joy of all the earth’?”"}, {"v": 16, "t": "All your enemies have opened their mouth against you; They have whistled and they gnash their teeth and they say, “We have swallowed her up! This is certainly the day we waited for; We have found it, we have seen it.”"}, {"v": 17, "t": "(YAHUAH) HWHY has done what He planned, He has filled His word Which He commanded in days of old He has torn down, without compassion and He has let your enemy rejoice over you. He has exalted the horn of your adversaries."}, {"v": 18, "t": "Their heart cried out to (YAHUAH) HWHY, “O wall of the daughter of Tsiyon, Let tears run down like a river day and night. Give yourself no numbness, Let your eyes have no rest."}, {"v": 19, "t": "“Arise, cry out in the night, At the beginning of the watches, Pour out your heart like water before the face of (YAHUAH) HWHY and lift your hands toward Him for the life of your young children, who languish from hunger at the head of every street."}, {"v": 20, "t": "“See, O (YAHUAH) HWHY and look attentively To whom have You done thus. Should the women eat their offspring, Infants of a hand breadth? Should the kohen and naḇi be slain In the set-apart place of (YAHUAH) HWHY?"}, {"v": 21, "t": "“Young and old lie on the ground in the streets. My maidens and my young men have fallen by the sword. You have slain them in the day of Your displeasure, You have slaughtered without compassion."}, {"v": 22, "t": "“Would You proclaim, as in a day of appointed time, The fears that surround me? And no one escaped or survived In the day of the displeasure of (YAHUAH) HWHY. Those whom I have nursed and brought up My enemy has destroyed.”"}], "3": [{"v": 1, "t": "I am the man who has seen affliction by the rod of His wrath."}, {"v": 2, "t": "He has led me and made me walk In darkness and not light."}, {"v": 3, "t": "Indeed, He has turned back, He has turned His hand against me all the day."}, {"v": 4, "t": "He has worn out my flesh and my skin and He has broken my bones."}, {"v": 5, "t": "He has piled up against me and surrounded me with bitterness and hardship."}, {"v": 6, "t": "He has made me dwell in dark places Like the dead of old."}, {"v": 7, "t": "He has hedged me in and I do not go out, He has made my chain heavy."}, {"v": 8, "t": "Also, when I cry and shout, He shuts out my prayer."}, {"v": 9, "t": "He has blocked my ways with hewn stone, He has made my paths crooked."}, {"v": 10, "t": "He is to me like a bear lying in wait, A lion in hiding."}, {"v": 11, "t": "He has turned aside my ways And torn me in pieces, He has laid me waste."}, {"v": 12, "t": "He has bent His bow and set me up as a target for the arrow."}, {"v": 13, "t": "He made the arrows of His quiver pierce my kidneys."}, {"v": 14, "t": "I have been a mockery to all my people, their mocking song all the day."}, {"v": 15, "t": "He has filled me with bitterness, He drenched me with wormwood."}, {"v": 16, "t": "And He has broken my teeth with gravel, He has covered me with ashes."}, {"v": 17, "t": "And You have removed my being far from shalom, I have forgotten goodness."}, {"v": 18, "t": "And I said, “My strength and my expectancy have perished from (YAHUAH) HWHY.”"}, {"v": 19, "t": "Remember my affliction and my anguish, the wormwood and the gall."}, {"v": 20, "t": "Your being indeed remembers and bows down upon me."}, {"v": 21, "t": "This I recall to my mind, therefore I wait:"}, {"v": 22, "t": "The kindnesses of (YAHUAH) HWHY! For we have not been consumed, For His compassions have not ended."}, {"v": 23, "t": "They are new every morning, Great is Your trustworthiness."}, {"v": 24, "t": "“(YAHUAH) HWHY is my Portion,” says my being, “Therefore I wait for Him!”"}, {"v": 25, "t": "(YAHUAH) HWHY is good to those waiting for Him, to the being who seeks Him."}, {"v": 26, "t": "It is good – both to wait and to be silent, for the deliverance of (YAHUAH) HWHY."}, {"v": 27, "t": "It is good for a man to bear a yoke in his youth."}, {"v": 28, "t": "Let him sit alone and be silent, because He has laid it on him."}, {"v": 29, "t": "Let him put his mouth in the dust, There might yet be expectancy."}, {"v": 30, "t": "Let him give his cheek to the one who smites him – he is filled with reproach."}, {"v": 31, "t": "For (YAHUAH) HWHY does not cast off forever."}, {"v": 32, "t": "For though He afflicted, yet He shall show compassion according to the greatness of His kindnesses."}, {"v": 33, "t": "For He has not afflicted from His heart nor does He grieve the children of men."}, {"v": 34, "t": "To crush under His feet all the prisoners of the earth,"}, {"v": 35, "t": "To turn aside the right-ruling of man Before the face of the Most High,"}, {"v": 36, "t": "Or wrong a man in his cause – This (YAHUAH) HWHY does not approve."}, {"v": 37, "t": "Who was it that spoke and it came to be! Has (YAHUAH) HWHY not commanded it?"}, {"v": 38, "t": "Do not the evils and the good come out of the mouth of the Most High?"}, {"v": 39, "t": "What? Should mankind complain, A living man, because of his sins?"}, {"v": 40, "t": "Let us search and examine our ways, And turn back to (YAHUAH) HWHY."}, {"v": 41, "t": "Let us lift our hearts and hands To Al in the shamayim and say:"}, {"v": 42, "t": "We, we have transgressed and rebelled and You, You have not forgiven."}, {"v": 43, "t": "You have wrapped Yourself with displeasure and pursued us. You have slain and You have not shown compassion."}, {"v": 44, "t": "You have wrapped Yourself with a cloud so that prayer does not pass through."}, {"v": 45, "t": "You make us as scum and refuse in the midst of the peoples."}, {"v": 46, "t": "All our enemies have opened their mouth against us."}, {"v": 47, "t": "Fear and a snare have come upon us with shame and ruin."}, {"v": 48, "t": "Streams of water run down my eye For the ruin of the daughter of my people."}, {"v": 49, "t": "My eye flows out and does not cease, Without stopping,"}, {"v": 50, "t": "Until (YAHUAH) HWHY looks down and sees from the shamayim."}, {"v": 51, "t": "My eye pains my being because of all the daughters of my city."}, {"v": 52, "t": "My enemies hunted me down like a bird, without cause."}, {"v": 53, "t": "They have cut off my life in the pit, And they threw stones at me."}, {"v": 54, "t": "Waters flowed over my head; I said, “I am cut off!”"}, {"v": 55, "t": "I called on Your Name, O (YAHUAH) HWHY, from the lowest pit."}, {"v": 56, "t": "You have heard my voice, Do not hide Your ear from my groaning and from my outcry!"}, {"v": 57, "t": "You drew near on the day I called on You and You said, “Do not fear!”"}, {"v": 58, "t": "O (YAHUAH) HWHY, You did plead the case for my being; You have redeemed my life."}, {"v": 59, "t": "O (YAHUAH) HWHY, You have seen my oppression; Judge my case."}, {"v": 60, "t": "You have seen all their vengeance, All their plans against me."}, {"v": 61, "t": "You have heard their reproach, O (YAHUAH) HWHY, all their plans against me,"}, {"v": 62, "t": "The lips of those rising against me, And their scheming against me all the day."}, {"v": 63, "t": "Look at their sitting down and their rising up; I am their song."}, {"v": 64, "t": "Repay them, O (YAHUAH) HWHY, according to the work of their hands."}, {"v": 65, "t": "Give them a veiled heart, Your curse upon them!"}, {"v": 66, "t": "Pursue and destroy them in displeasure from under the shamayim of (YAHUAH) HWHY."}], "4": [{"v": 1, "t": "How dim the gold has become, The fine gold changed! The stones of the set-apart place Are scattered at the head of every street."}, {"v": 2, "t": "The precious sons of Tsiyon Who were weighed against fine gold, How they have been reckoned as clay pots, The work of the hands of the potter!"}, {"v": 3, "t": "Even jackals have presented their breasts, They have nursed their young. The daughter of my people has become as cruel, As ostriches in the wilderness."}, {"v": 4, "t": "The tongue of the infant has clung To the roof of its mouth for thirst; Children asked for bread and no one breaks it for them."}, {"v": 5, "t": "Those who ate delicacies have been laid waste in the streets; Those who were brought up in scarlet Have embraced dunghills."}, {"v": 6, "t": "And the crookedness of the daughter of my people is greater than the punishment of the sin of Seḏom, Which was overthrown in a moment, And no hands were wrung over her!"}, {"v": 7, "t": "Her Nazirites were brighter than snow And whiter than milk; More ruddy in body than rubies, Their cut like sapphire."}, {"v": 8, "t": "Their appearance has become blacker than soot; They have become unrecognised in the streets; Their skin has shrivelled on their bones, It has become dry, it has become as wood."}, {"v": 9, "t": "Better off were those pierced by the sword than those pierced by hunger; For these pine away, Pierced through for lack of the fruits of the field."}, {"v": 10, "t": "The hands of the compassionate women Have boiled their own children; They became food for them in the destruction of the daughter of my people."}, {"v": 11, "t": "(YAHUAH) HWHY has completed His wrath, He has poured out His burning displeasure. And He kindled a fire in Tsiyon, And it consumed her foundations."}, {"v": 12, "t": "The sovereigns of the earth did not believe nor any of the inhabitants of the world, That an adversary and enemy would enter the gates of Yahrushalayim."}, {"v": 13, "t": "It was because of the sins of her neḇi'im, The crookednesses of her kohanim, Who shed in her midst the blood of the righteous."}, {"v": 14, "t": "They staggered, blind, in the streets; They have defiled themselves with blood so that no one was able to touch their garments."}, {"v": 15, "t": "They shouted at them, “Away! Unclean! Away! Away! Touch not!” When they fled and staggered, They said, among the gentiles, “They shall stay no longer.”"}, {"v": 16, "t": "The face of (YAHUAH) HWHY scattered them He no longer regards them. They showed no respect for the kohanim Nor chen to the elders."}, {"v": 17, "t": "While we exist, our eyes are con-sumed watching vainly for our help. In our watch-tower we watched for a nation that could not save."}, {"v": 18, "t": "They have hunted our steps from going in our streets. Our end was near and our days were completed, For our end had come."}, {"v": 19, "t": "Our pursuers were swifter Than the eagles of the shamayim. They came hotly after us on the mountains and lay in wait for us in the wilderness."}, {"v": 20, "t": "The breath of our nostrils, the anointed of (YAHUAH) HWHY, Was caught in their pits, In whose shadow we had thought To live among the gentiles."}, {"v": 21, "t": "Rejoice and be glad, O daughter of Eḏom, You who dwell in the land of Uz! The cup is to pass over to you too, So that you become drunk and make yourself naked."}, {"v": 22, "t": "Your crookedness has been completed, O daughter of Tsiyon. He no longer prolongs your exile. He shall punish your crookedness, O daughter of Eḏom, He shall uncover your sins!"}], "5": [{"v": 1, "t": "Remember, O (YAHUAH) HWHY, what has come upon us. Look and see our reproach!"}, {"v": 2, "t": "Our inheritance has been turned over to strangers and our houses to foreigners."}, {"v": 3, "t": "We have become orphans, fatherless, Our mothers are like widows."}, {"v": 4, "t": "We had to pay for our drinking water and our wood comes at a price."}, {"v": 5, "t": "We have been pursued close onto our neck, We have laboured and had no rest."}, {"v": 6, "t": "To Mitsrayim we have given a hand; To Ashshur, to be satisfied with bread."}, {"v": 7, "t": "Our fathers sinned, they are no more We have borne their crookednesses."}, {"v": 8, "t": "Servants have ruled over us; There is no one to deliver from their hand."}, {"v": 9, "t": "With our lives we bring in our bread, Because of the sword of the wilderness."}, {"v": 10, "t": "Our skin has become as hot as an oven, because of the burning heat of scarcity of food."}, {"v": 11, "t": "They have humbled the women in Tsiyon, The maidens in the cities of Yahuḏah."}, {"v": 12, "t": "Rulers were hung up by their hands, And elders were not respected."}, {"v": 13, "t": "They have taken young men to grind, And youths stumbled under loads of wood."}, {"v": 14, "t": "Elders have ceased from the gate, Young men from their song."}, {"v": 15, "t": "The joy of our heart has ceased, Our dancing has turned into mourning."}, {"v": 16, "t": "The crown has fallen from our head. Woe to us, for we have sinned!"}, {"v": 17, "t": "Because of this our heart has been sick, Because of these our eyes have become dim,"}, {"v": 18, "t": "Because of Mount Tsiyon which is laid waste; Foxes have gone roaming in it."}, {"v": 19, "t": "You, O (YAHUAH) HWHY, remain forever, Your throne from generation to generation."}, {"v": 20, "t": "Why do You forget us forever, Forsake us for length of days?"}, {"v": 21, "t": "Turn us back to You, O (YAHUAH) HWHY, And let us turn back, Renew our days as of old."}, {"v": 22, "t": "For have You completely rejected us? You have been wroth with us, exceedingly!"}]}}</script>
+<script>
+'use strict';
+const BOOK=JSON.parse(document.getElementById('book-data').textContent);
+const BASE_THEME='ruins';
+const BESORAH_ID='ekah';
+const $=id=>document.getElementById(id);
+const CH_KEYS=Object.keys(BOOK.chapters).sort((a,b)=>(+a)-(+b));
+let idx=0;
+
+/* ================= SCENIC BACKGROUND ================= */
+const cv=$('bg'), g=cv.getContext('2d');
+let VW=0,VH=0,DPR=1,stars=[];
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  VW=innerWidth; VH=innerHeight;
+  cv.width=VW*DPR; cv.height=VH*DPR;
+  g.setTransform(DPR,0,0,DPR,0,0);
+  stars=[]; for(let i=0;i<160;i++) stars.push({x:Math.random(),y:Math.random()*.72,r:Math.random()*1.4+.3,p:Math.random()*6.28});
+}
+addEventListener('resize',resize);
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+let curTheme=BASE_THEME, seed=1;
+const GRAD={
+  dawn:[[0,'#12203f'],[.4,'#2a4a78'],[.7,'#7a6a5a'],[1,'#caa26a']],
+  night:[[0,'#04060f'],[.5,'#0a1226'],[1,'#1a2440']],
+  waters:[[0,'#0a1a30'],[.55,'#164058'],[1,'#2a7088']],
+  mountains:[[0,'#0e1830'],[.5,'#2a3a56'],[1,'#5a6478']],
+  garden:[[0,'#10261f'],[.5,'#1f4a34'],[1,'#4a7a44']],
+  ruins:[[0,'#12100e'],[.5,'#2a2420'],[1,'#4a3e34']],
+  field:[[0,'#132038'],[.45,'#3a4a60'],[.75,'#8a8250'],[1,'#c8b274']],
+  storm:[[0,'#0a0c14'],[.5,'#161c2a'],[1,'#2c3446']],
+  fire:[[0,'#100a08'],[.5,'#2c1810'],[1,'#7a3a1a']],
+  vanity:[[0,'#141420'],[.5,'#2a2a3a'],[1,'#6a6458']],
+};
+function paint(t){
+  const gr=GRAD[curTheme]||GRAD.dawn;
+  const lg=g.createLinearGradient(0,0,0,VH);
+  for(const[o,c]of gr) lg.addColorStop(o,c);
+  g.fillStyle=lg; g.fillRect(0,0,VW,VH);
+  const rng=mul(seed*7919+1);
+  // stars for dark themes
+  if(['night','storm','mountains','vanity','ruins'].includes(curTheme)){
+    for(const s of stars){ const tw=.5+.5*Math.sin(t/900+s.p);
+      g.fillStyle=`rgba(240,238,220,${tw*.7})`; g.beginPath();
+      g.arc(s.x*VW,s.y*VH*.9,s.r,0,6.28); g.fill(); }
+  }
+  // sun / moon glow
+  if(['dawn','field','garden','fire','waters'].includes(curTheme)){
+    const sx=VW*.5,sy=VH*.72,rr=VW*.5*(.9+Math.sin(t/2600)*.06);
+    const rg=g.createRadialGradient(sx,sy,8,sx,sy,rr);
+    rg.addColorStop(0,'rgba(255,240,190,.42)'); rg.addColorStop(.3,'rgba(232,198,106,.14)'); rg.addColorStop(1,'rgba(232,198,106,0)');
+    g.fillStyle=rg; g.fillRect(0,0,VW,VH);
+  } else {
+    const sx=VW*.72,sy=VH*.2,rr=VW*.16;
+    const rg=g.createRadialGradient(sx,sy,2,sx,sy,rr);
+    rg.addColorStop(0,'rgba(220,228,240,.5)'); rg.addColorStop(1,'rgba(220,228,240,0)');
+    g.fillStyle=rg; g.beginPath(); g.arc(sx,sy,VW*.03,0,6.28); g.fill();
+    g.fillStyle=rg; g.fillRect(0,0,VW,VH);
+  }
+  // horizon silhouettes
+  g.save();
+  if(curTheme==='mountains'){
+    g.fillStyle='rgba(10,14,26,.7)';
+    for(let k=0;k<3;k++){ g.beginPath(); g.moveTo(0,VH);
+      let x=0; const baseY=VH*(.62+k*.08);
+      while(x<VW){ const h=(rng())*VH*.22; g.lineTo(x,baseY-h); x+=VW*.14; }
+      g.lineTo(VW,VH); g.closePath(); g.fillStyle=`rgba(10,14,26,${.4+k*.18})`; g.fill(); }
+  } else if(curTheme==='waters'){
+    g.fillStyle='rgba(255,240,190,.14)';
+    for(let i=0;i<10;i++){ const y=VH*.72+i*VH*.026; g.fillRect(VW*.5-(70-i*6),y,(70-i*6)*2,2); }
+  } else if(curTheme==='garden'){
+    g.fillStyle='rgba(10,26,16,.55)';
+    g.beginPath(); g.moveTo(0,VH); g.quadraticCurveTo(VW*.3,VH*.74,VW*.55,VH*.82);
+    g.quadraticCurveTo(VW*.8,VH*.9,VW,VH*.78); g.lineTo(VW,VH); g.closePath(); g.fill();
+    for(let i=0;i<14;i++){ const fx=(i*0.09+0.03)*VW, fy=VH*(.8+Math.sin(i)*.03);
+      g.fillStyle=['#caa2c8','#e8c66a','#c85a6a'][i%3]; g.beginPath(); g.arc(fx,fy,3,0,6.28); g.fill(); }
+  } else if(curTheme==='ruins'){
+    g.fillStyle='rgba(20,16,12,.7)';
+    let x=0; while(x<VW){ const w=VW*(.05+rng()*.05), h=VH*(.1+rng()*.22); g.fillRect(x,VH-h,w,h); x+=w+VW*.02; }
+    for(let i=0;i<28;i++){ if(rng()<.5) continue; g.fillStyle='rgba(120,110,100,'+(.1+rng()*.15)+')';
+      g.fillRect(rng()*VW,VH*(.4+rng()*.5),2,2); }
+  } else if(curTheme==='field'){
+    g.fillStyle='rgba(120,104,58,.5)'; g.fillRect(0,VH*.78,VW,VH*.22);
+    g.strokeStyle='rgba(180,150,80,.35)'; g.lineWidth=2;
+    for(let i=0;i<40;i++){ const wx=rng()*VW, wy=VH*(.78+rng()*.18);
+      g.beginPath(); g.moveTo(wx,wy); g.lineTo(wx,wy-VH*.05); g.stroke(); }
+  } else if(curTheme==='fire'){
+    for(let i=0;i<40;i++){ const fx=VW*.5+(rng()-.5)*VW*.5, fy=VH-(rng()*VH*.3);
+      g.fillStyle=`rgba(255,${140+rng()*90|0},40,${.3+rng()*.3})`; g.beginPath(); g.arc(fx,fy,2+rng()*3,0,6.28); g.fill(); }
+  } else {
+    // gentle hills for dawn/night/storm/vanity
+    g.fillStyle='rgba(10,14,26,.5)';
+    g.beginPath(); g.moveTo(0,VH); g.quadraticCurveTo(VW*.3,VH*.8,VW*.5,VH*.85);
+    g.quadraticCurveTo(VW*.75,VH*.9,VW,VH*.8); g.lineTo(VW,VH); g.closePath(); g.fill();
+  }
+  g.restore();
+  // rain for storm
+  if(curTheme==='storm'){ g.strokeStyle='rgba(160,180,210,.25)'; g.lineWidth=1;
+    for(let i=0;i<60;i++){ const rx=(rng()*VW+t*.1)%VW, ry=(rng()*VH+t*.4)%VH;
+      g.beginPath(); g.moveTo(rx,ry); g.lineTo(rx-3,ry+14); g.stroke(); } }
+  // vignette
+  const vg=g.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.4,VW/2,VH/2,Math.max(VW,VH)*.72);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.55)');
+  g.fillStyle=vg; g.fillRect(0,0,VW,VH);
+}
+function loop(t){ paint(t); requestAnimationFrame(loop); }
+
+/* ================= THEME PER CHAPTER ================= */
+const THEME_KEYWORDS=[["ruins",["desolate","ruin","laid waste","burned","ashes","lonely sits","no comforter","mourn"]],["storm",["thunder","lightning","tempest","whirlwind","storm","the deep","waves","floods"]],["waters",["waters","sea","rivers","streams","springs","the deep","still waters"]],["night",["night","darkness","the pit","grave","shadow of death","out of the depths","weep"]],["mountains",["mountains","hills","rock","fortress","stronghold","tsiyon","high place"]],["garden",["vineyard","garden","spices","lily","rose","fig","pomegranate","myrrh","fragrance","beloved"]],["fire",["fire","refine","furnace","coals","flame","burning"]],["field",["wisdom","knowledge","understanding","folly","fool","discipline","harvest","wheat","labour","sun"]],["dawn",["praise","sing","rejoice","hallelu","give thanks","morning","light","joy","shout"]]];
+function themeFor(chKey){
+  const vs=BOOK.chapters[chKey]||[];
+  const low=vs.map(v=>v.t).join(' ').toLowerCase();
+  for(const[theme,keys]of THEME_KEYWORDS){ for(const k of keys){ if(low.indexOf(k)>=0) return theme; } }
+  return BASE_THEME;
+}
+
+/* ================= REND ================= */
+function renderChapter(){
+  const key=CH_KEYS[idx];
+  curTheme=themeFor(key); seed=(+key)||1;
+  $('ch-num').textContent=key;
+  $('ch-label').textContent=BOOK.hebrew+' · '+BOOK.english;
+  const box=$('verses'); box.innerHTML='';
+  for(const v of BOOK.chapters[key]){
+    const d=document.createElement('div'); d.className='verse';
+    const t=highlightNames(v.t);
+    d.innerHTML='<span class="vn">'+v.v+'</span>'+t;
+    box.appendChild(d);
+  }
+  $('nav-pos').textContent='Chapter '+key+' / '+CH_KEYS.length;
+  $('nav-prev').disabled=idx<=0;
+  $('nav-next').disabled=idx>=CH_KEYS.length-1;
+  $('scroll').scrollTop=0;
+}
+function esc(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function highlightNames(t){
+  t=esc(t);
+  t=t.replace(/(YAHUAH|HWHY|YAHU[ĂA]H|Aluahim|Aloah|Yah)\b/g,'<span class="dn">$1</span>');
+  return t;
+}
+function go(n){ idx=Math.max(0,Math.min(CH_KEYS.length-1,n)); renderChapter(); }
+
+/* ================= NAV / SCREENS ================= */
+function hideAll(){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $('reader').classList.remove('show'); }
+function showTitle(){ hideAll(); $('title-screen').classList.add('show'); }
+function showReader(){ hideAll(); $('reader').classList.add('show'); renderChapter(); }
+function showGrid(){ hideAll(); const grid=$('ch-grid'); grid.innerHTML='';
+  CH_KEYS.forEach((k,i)=>{ const c=document.createElement('div'); c.className='ch-cell'; c.textContent=k;
+    c.onclick=()=>{ idx=i; showReader(); }; grid.appendChild(c); });
+  $('grid-screen').classList.add('show'); }
+
+$('btn-read').onclick=()=>{ idx=0; showReader(); };
+$('btn-chapters').onclick=showGrid;
+$('btn-grid-title').onclick=showTitle;
+$('btn-back').onclick=()=>{ location.href='book-of-shir-hashirim.html'; };
+$('btn-grid').onclick=showGrid;
+$('btn-title').onclick=showTitle;
+$('btn-besorah').onclick=()=>{ location.href='besorah-offline.html#/book/'+BESORAH_ID+'/'+CH_KEYS[idx]; };
+$('nav-prev').onclick=()=>go(idx-1);
+$('nav-next').onclick=()=>go(idx+1);
+addEventListener('keydown',e=>{
+  if(!$('reader').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){ go(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ go(idx-1); e.preventDefault(); }
+  else if(e.key==='Escape'){ showGrid(); }
+});
+// swipe
+let tx=0,ty=0;
+$('scroll').addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+$('scroll').addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){ go(idx+(dx<0?1:-1)); } },{passive:true});
+
+/* deep link: ?ch=NN */
+(function(){ const q=new URLSearchParams(location.search); const c=q.get('ch');
+  if(c){ const i=CH_KEYS.indexOf(String(+c)); if(i>=0){ idx=i; showReader(); return; } } })();
+resize(); requestAnimationFrame(loop);
+setTimeout(()=>{ $('fader').style.opacity='0'; },120);
+</script>
+</body>
+</html>
