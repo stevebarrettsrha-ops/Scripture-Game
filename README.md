@@ -42,6 +42,7 @@ Each game is a single file and works offline:
 | `book-of-mattithyahu.html` | **MATTITHYAHU — The Renewed Covenant** (Matthew, 8 acts, all 28 chapters) | finishing 4 MAQQABIM |
 | `book-of-mark.html` | **MARK — The Renewed Covenant** (Mark, 7 acts, all 16 chapters) | finishing MATTITHYAHU |
 | `book-of-luke.html` | **LUKE — The Renewed Covenant** (Luke, 10 acts, all 24 chapters) | finishing MARK |
+| `book-of-yahuchanon.html` | **YAHUCHANON — The Renewed Covenant** (John, 9 acts, all 21 chapters) | finishing LUKE |
 
 Progress is saved automatically in the browser (localStorage). Finishing the
 Books of Aḏam & Ḥawwah also unlocks "continuity" mode in BERĔSHITH, letting you
