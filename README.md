@@ -39,6 +39,7 @@ Each game is a single file and works offline:
 | `book-of-hanok.html` | **The Book of Ḥanoḵ** (15 chapters) | finishing the Books of Aḏam & Ḥawwah |
 | `book-of-shemoth.html` | **SHEMOTH — These Are The Names** (Exodus, 8 acts, 37 chapters) | finishing BERĔSHITH |
 | `book-of-vayiqra.html` | **VAYIQRA — And He Called** (Leviticus, 7 acts, 18 chapters) | finishing SHEMOTH |
+| `book-of-mattithyahu.html` | **MATTITHYAHU — The Renewed Covenant** (Matthew, 8 acts, all 28 chapters) | finishing 4 MAQQABIM |
 
 Progress is saved automatically in the browser (localStorage). Finishing the
 Books of Aḏam & Ḥawwah also unlocks "continuity" mode in BERĔSHITH, letting you
