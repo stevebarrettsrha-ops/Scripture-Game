@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0e1a">
+<title>BARUḴ — Ethiopic & Eastern Apocrypha</title>
+<style>
+  :root{--gold:#e8c66a;--gold-dim:#a8893f;--parch:#efe3c8;--ui-edge:rgba(232,198,106,.45)}
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{width:100%;height:100%;overflow:hidden;background:#05070d}
+  @supports(height:100dvh){html,body{height:100dvh}}
+  body{font-family:Georgia,'Times New Roman',serif;color:var(--parch);position:fixed;inset:0}
+  canvas#bg{position:absolute;inset:0;width:100%;height:100%;display:block}
+  .screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+          justify-content:center;z-index:20;opacity:0;pointer-events:none;transition:opacity .5s ease}
+  .screen.show{opacity:1;pointer-events:auto}
+  .btn{font-family:inherit;cursor:pointer;background:linear-gradient(180deg,rgba(34,28,12,.85),rgba(18,14,6,.9));
+       color:var(--gold);border:1px solid var(--ui-edge);border-radius:3px;padding:1.1vh 4vw;
+       font-size:clamp(14px,2.4vmin,20px);letter-spacing:.18em;text-transform:uppercase;
+       min-width:min(300px,68vw);text-align:center;transition:all .2s;margin-top:1.2vh}
+  .btn:hover,.btn:focus-visible{color:#fff3cf;border-color:var(--gold);box-shadow:0 0 16px rgba(232,198,106,.3);outline:none}
+  .btn.small{min-width:0;padding:.7vh 2.4vw;font-size:clamp(12px,1.8vmin,15px)}
+
+  /* title */
+  #title-screen{justify-content:flex-end;padding-bottom:7vh}
+  .t-hebrew{font-size:clamp(22px,4vmin,42px);letter-spacing:.28em;color:var(--gold);
+            text-shadow:0 0 20px rgba(232,198,106,.5)}
+  .t-main{font-size:clamp(30px,7vmin,80px);font-weight:bold;letter-spacing:.16em;color:#fff7e0;margin-top:.6vh;
+          text-shadow:0 0 30px rgba(232,198,106,.5),0 3px 0 #2b2008}
+  .t-sub{font-style:italic;font-size:clamp(12px,2vmin,19px);color:#cdbf9b;letter-spacing:.26em;
+         margin-top:1vh;text-transform:uppercase}
+  .t-verse{font-style:italic;font-size:clamp(12px,1.9vmin,17px);color:#efe6cc;margin-top:2.2vh;
+           text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 16px rgba(0,0,0,.85);
+           max-width:70ch;text-align:center;padding:0 20px;line-height:1.6}
+  .t-blurb{color:#e2d8bc;font-style:italic;font-size:clamp(11px,1.7vmin,14px);max-width:78ch;
+           text-shadow:0 1px 3px rgba(0,0,0,.95),0 0 16px rgba(0,0,0,.85);
+           text-align:center;padding:1.6vh 24px 0;line-height:1.55}
+
+  /* reader */
+  #reader{position:absolute;inset:0;z-index:15;display:none;flex-direction:column}
+  #reader.show{display:flex}
+  #topbar{display:flex;align-items:center;gap:10px;padding:calc(1vh + env(safe-area-inset-top,0)) 3vw 1vh;
+          background:linear-gradient(180deg,rgba(6,8,16,.82),rgba(6,8,16,0));z-index:3}
+  #topbar .name{color:var(--gold);letter-spacing:.2em;font-size:clamp(12px,2vmin,17px);text-transform:uppercase;
+        text-shadow:0 1px 6px #000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #topbar .spacer{flex:1}
+  .icon-btn{cursor:pointer;width:36px;height:36px;border-radius:4px;border:1px solid rgba(232,198,106,.3);
+        background:rgba(10,14,26,.6);color:var(--gold);font-size:15px;display:flex;align-items:center;
+        justify-content:center;flex:0 0 auto;font-family:inherit}
+  .icon-btn:hover{border-color:var(--gold)}
+  #scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;
+          padding:1vh 4vw 2vh;scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  #panel{width:100%;max-width:760px;background:linear-gradient(180deg,rgba(12,14,22,.72),rgba(8,10,18,.8));
+         border:1px solid rgba(232,198,106,.28);border-radius:8px;padding:3vh 5vw;margin:auto 0;
+         box-shadow:0 10px 50px rgba(0,0,0,.6)}
+  #ch-num{text-align:center;color:var(--gold);font-size:clamp(30px,7vmin,64px);font-weight:bold;
+          text-shadow:0 0 22px rgba(232,198,106,.4);line-height:1}
+  #ch-label{text-align:center;color:#cdbf9b;font-style:italic;letter-spacing:.24em;text-transform:uppercase;
+            font-size:clamp(11px,1.8vmin,14px);margin-top:.8vh;margin-bottom:2.4vh}
+  .verse{color:#efe7d2;font-size:clamp(15px,2.5vmin,20px);line-height:1.7;margin-bottom:.7em;text-align:left}
+  .verse .vn{color:var(--gold);font-size:.7em;vertical-align:super;margin-right:.35em;font-weight:bold}
+  .dn{color:#e8c66a;font-variant:small-caps;letter-spacing:.02em}
+  #navbar{display:flex;align-items:center;gap:12px;justify-content:center;
+          padding:1vh 3vw calc(1.4vh + env(safe-area-inset-bottom,0));
+          background:linear-gradient(0deg,rgba(6,8,16,.82),rgba(6,8,16,0));z-index:3}
+  #nav-prev,#nav-next{cursor:pointer;font-family:inherit;background:rgba(10,14,26,.7);
+          border:1px solid rgba(232,198,106,.4);color:var(--gold);border-radius:4px;
+          padding:.7vh 4vw;font-size:clamp(13px,2vmin,17px);letter-spacing:.14em;transition:all .2s}
+  #nav-prev:hover,#nav-next:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  #nav-prev[disabled],#nav-next[disabled]{opacity:.3;pointer-events:none}
+  #nav-pos{color:#cdbf9b;font-style:italic;font-size:clamp(11px,1.8vmin,15px);letter-spacing:.1em;min-width:9ch;text-align:center}
+
+  /* chapter grid */
+  #grid-screen{background:linear-gradient(180deg,rgba(6,8,16,.95),rgba(10,12,22,.97));
+               justify-content:flex-start;padding:calc(4vh + env(safe-area-inset-top,0)) 4vw 3vh}
+  #grid-screen h2{color:var(--gold);letter-spacing:.26em;font-size:clamp(16px,3.2vmin,28px);
+                  text-transform:uppercase;margin-bottom:2vh;text-align:center}
+  #ch-grid{width:100%;max-width:1000px;overflow-y:auto;flex:1;display:grid;
+           grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:9px;padding:0 4px 2vh;
+           scrollbar-width:thin;scrollbar-color:var(--gold-dim) transparent}
+  .ch-cell{cursor:pointer;border:1px solid rgba(232,198,106,.25);border-radius:5px;aspect-ratio:1;
+           display:flex;align-items:center;justify-content:center;font-size:clamp(14px,2.4vmin,19px);
+           color:#e8dfc8;background:linear-gradient(160deg,rgba(28,24,12,.55),rgba(12,12,18,.7));transition:all .18s}
+  .ch-cell:hover{border-color:var(--gold);color:#fff6dd;box-shadow:0 0 12px rgba(232,198,106,.3);transform:translateY(-2px)}
+
+  #fader{position:absolute;inset:0;background:#000;z-index:40;pointer-events:none;opacity:1;transition:opacity .7s ease}
+</style>
+</head>
+<body>
+<canvas id="bg"></canvas>
+
+<div class="screen show" id="title-screen">
+  <div class="t-hebrew">✦ ✦ ✦</div>
+  <div class="t-main">BARUḴ</div>
+  <div class="t-sub">Baruch · Ethiopic &amp; Eastern Apocrypha</div>
+  <div class="t-verse">Hear the mitsvot of life, O Yasharal; give ear, and learn wisdom. — BARUḴ 3:9</div>
+  <div class="t-blurb">The words of Baruch son of Neriyah, written in Baḇel after Yahrushalayim was burned — the confession of a people in exile and a prayer for mercy, then a hymn to wisdom: the mitsvot of life that Yasharal forsook. Yet the mourning turns to comfort — “Take off the garment of your sorrow, O Yahrushalayim” — and the promise of the joy that comes from Aluahim, who leads Yasharal home in the light of His esteem.</div>
+  <button class="btn" id="btn-read">Read from the Beginning</button>
+  <button class="btn small" id="btn-chapters">Chapters</button>
+  <button class="btn small" id="btn-back">⟵ QOHELETH</button>
+  <button class="btn small" id="btn-home-title">⌂ Main Menu</button>
+</div>
+
+<div id="reader">
+  <div id="topbar">
+    <div class="name" id="rd-name">BARUḴ</div>
+    <div class="spacer"></div>
+    <div class="icon-btn" id="btn-home" title="Main Menu">⌂</div>
+    <div class="icon-btn" id="btn-grid" title="Chapters">☰</div>
+    <div class="icon-btn" id="btn-besorah" title="Read in the Besorah">📖</div>
+    <div class="icon-btn" id="btn-title" title="Title">✦</div>
+  </div>
+  <div id="scroll">
+    <div id="panel">
+      <div id="ch-num"></div>
+      <div id="ch-label"></div>
+      <div id="verses"></div>
+    </div>
+  </div>
+  <div id="navbar">
+    <button id="nav-prev">⟨ Prev</button>
+    <div id="nav-pos"></div>
+    <button id="nav-next">Next ⟩</button>
+  </div>
+</div>
+
+<div class="screen" id="grid-screen">
+  <h2>BARUḴ — Chapters</h2>
+  <div id="ch-grid"></div>
+  <button class="btn small" id="btn-grid-title" style="margin-top:1.4vh">⟵ Title</button>
+</div>
+
+<div id="fader"></div>
+
+<script id="book-data" type="application/json">{"id": "baruk", "hebrew": "BARUḴ", "english": "Baruch", "chapters": {"1": [{"v": 1, "t": "These are the words of the book which Baruch the son of Neraiah, son of Mahseiah, son of Zedekiah, son of Hasadiah, son of Hilkiah, wrote in Babylon,"}, {"v": 2, "t": "in the fifth year, on the seventh day of the month, at the time when the Chaldeans took Yahrushalayim and burned it with fire."}, {"v": 3, "t": "And Baruch read the words of this book in the hearing of Yahkanyah the son of Yahhoyaqim, king of Yahuḏah, and in the hearing of all the people who came to hear the book,"}, {"v": 4, "t": "and in the hearing of the mighty men and the princes, and in the hearing of the elders, and in the hearing of all the people, small and great, all who dwelt in Babylon by the river Sud."}, {"v": 5, "t": "Then they wept, and fasted, and prayed before Yahuah;"}, {"v": 6, "t": "and they collected money, each giving what he could;"}, {"v": 7, "t": "and they sent it to Yahrushalayim to Yahhoyaqim the kohen gadol, the son of Hilkiah, son of Shallum, and to the kohanim, and to all the people who were present with him in Yahrushalayim."}, {"v": 8, "t": "At the same time, on the tenth day of Sivan, Baruch took the vessels of the house of Yahuah, which had been carried away from the heykal, to return them to the land of Yahuḏah -- the silver vessels which Zedekiah the son of Yoshiyahu, king of Yahuḏah, had made,"}, {"v": 9, "t": "after Nebuchadnezzar king of Babylon had carried away from Yahrushalayim Yahkanyah and the princes and the prisoners and the mighty men and the people of the land, and brought them to Babylon."}, {"v": 10, "t": "And they said: \"Herewith we send you money; so buy with the money burnt offerings and sin offerings and incense, and prepare a cereal offering, and offer them upon the mizbe'ach of Yahuah our Aluahim;"}, {"v": 11, "t": "and pray for the life of Nebuchadnezzar king of Babylon, and for the life of Belshazzar his son, that their days on earth may be like the days of shamayim."}, {"v": 12, "t": "And Yahuah will give us strength, and he will give light to our eyes, and we shall live under the protection of Nebuchadnezzar king of Babylon, and under the protection of Belshazzar his son, and we shall serve them many days and find chen in their sight."}, {"v": 13, "t": "And pray for us to Yahuah our Aluahim, for we have sinned against Yahuah our Aluahim, and to this day the anger of Yahuah and his wrath have not turned away from us."}, {"v": 14, "t": "And you shall read this book which we are sending you, to make your confession in the house of Yahuah on the days of the feasts and at appointed seasons."}, {"v": 15, "t": "\"And you shall say: 'Righteousness belongs to Yahuah our Aluahim, but confusion of face, as at this day, to us, to the men of Yahuḏah, to the inhabitants of Yahrushalayim,"}, {"v": 16, "t": "and to our kings and our princes and our kohanim and our neḇi'im and our fathers,"}, {"v": 17, "t": "because we have sinned before Yahuah,"}, {"v": 18, "t": "and have disobeyed him, and have not heeded the voice of Yahuah our Aluahim, to walk in the statutes of Yahuah which he set before us."}, {"v": 19, "t": "From the day when Yahuah brought our fathers out of the land of Mitsrayim until today, we have been disobedient to Yahuah our Aluahim, and we have been negligent, in not heeding his voice."}, {"v": 20, "t": "So to this day there have clung to us the calamities and the curse which Yahuah declared through Mosheh his servant at the time when he brought our fathers out of the land of Mitsrayim to give to us a land flowing with milk and honey."}, {"v": 21, "t": "We did not heed the voice of Yahuah our Aluahim in all the words of the neḇi'im whom he sent to us, but we each followed the intent of his own wicked heart by serving other Aluahims and doing what is evil in the sight of Yahuah our Aluahim."}], "2": [{"v": 1, "t": "\"'So Yahuah confirmed his word, which he spoke against us, and against our judges who judged Yasharal, and against our kings and against our princes and against the men of Yasharal and Yahuḏah."}, {"v": 2, "t": "Under the whole shamayim there has not been done the like of what he has done in Yahrushalayim, in accordance with what is written in the law of Mosheh,"}, {"v": 3, "t": "that we should eat, one the flesh of his son and another the flesh of his daughter."}, {"v": 4, "t": "And he gave them into subjection to all the kingdoms around us, to be a reproach and a desolation among all the surrounding peoples, where Yahuah has scattered them."}, {"v": 5, "t": "They were brought low and not raised up, because we sinned against Yahuah our Aluahim, in not heeding his voice."}, {"v": 6, "t": "\"'Righteousness belongs to Yahuah our Aluahim, but confusion of face to us and our fathers, as at this day."}, {"v": 7, "t": "All those calamities with which Yahuah threatened us have come upon us."}, {"v": 8, "t": "Yet we have not entreated the chen of Yahuah by turning away, each of us, from the thoughts of his wicked heart."}, {"v": 9, "t": "And Yahuah has kept the calamities ready, and Yahuah has brought them upon us, for Yahuah is righteous in all his works which he has commanded us to do."}, {"v": 10, "t": "Yet we have not obeyed his voice, to walk in the statutes of Yahuah which he set before us."}, {"v": 11, "t": "\"'A nd now, O Yahuah Aluahim of Yasharal, who didst bring thy people out of the land of Mitsrayim with a mighty hand and with signs and wonders and with great power and outstretched arm, and hast made thee a name, as at this day,"}, {"v": 12, "t": "we have sinned, we have been ungodly, we have done wrong, O Yahuah our Aluahim, against all thy ordinances."}, {"v": 13, "t": "Let thy anger turn away from us, for we are left, few in number, among the nations where thou hast scattered us."}, {"v": 14, "t": "Hear, O Yahuah, our prayer and our supplication, and for thy own sake deliver us, and grant us chen in the sight of those who have carried us into exile;"}, {"v": 15, "t": "that all the earth may know that thou art Yahuah our Aluahim, for Yasharal and his descendants are called by thy name."}, {"v": 16, "t": "O Yahuah, look down from thy holy habitation, and consider us. Incline thy ear, O Yahuah, and hear;"}, {"v": 17, "t": "open thy eyes, O Yahuah, and see; for the dead who are in Hades, whose ruach has been taken from their bodies, will not ascribe glory or justice to Yahuah,"}, {"v": 18, "t": "but the person that is greatly distressed, that goes about bent over and feeble, and the eyes that are failing, and the person that hungers, will ascribe to thee glory and righteousness, O Yahuah."}, {"v": 19, "t": "For it is not because of any righteous deeds of our fathers or our kings that we bring before thee our prayer for mercy, O Yahuah our Aluahim."}, {"v": 20, "t": "For thou hast sent thy anger and thy wrath upon us, as thou didst declare by thy servants the neḇi'im, saying:"}, {"v": 21, "t": "\"Thus says Yahuah: Bend your shoulders and serve the king of Babylon, and you will remain in the land which I gave to your fathers."}, {"v": 22, "t": "But if you will not obey the voice of Yahuah and will not serve the king of Babylon,"}, {"v": 23, "t": "I will make to cease from the cities of Yahuḏah and from the region about Yahrushalayim the voice of mirth and the voice of gladness, the voice of the bridegroom and the voice of the bride, and the whole land will be a desolation without inhabitants.\""}, {"v": 24, "t": "\"'But we did not obey thy voice, to serve the king of Babylon; and thou hast confirmed thy words, which thou didst speak by thy servants the neḇi'im, that the bones of our kings and the bones of our fathers would be brought out of their graves;"}, {"v": 25, "t": "and behold, they have been cast out to the heat of day and the frost of night. They perished in great misery, by famine and sword and pestilence."}, {"v": 26, "t": "And the house which is called by thy name thou hast made as it is today, because of the wickedness of the house of Yasharal and the house of Yahuḏah."}, {"v": 27, "t": "\"' Yet thou hast dealt with us, O Yahuah our Aluahim, in all thy kindness and in all thy great compassion,"}, {"v": 28, "t": "as thou didst speak by thy servant Mosheh on the day when thou didst command him to write thy law in the presence of the people of Yasharal, saying,"}, {"v": 29, "t": "\"If you will not obey my voice, this very great multitude will surely turn into a small number among the nations, where I will scatter them."}, {"v": 30, "t": "For I know that they will not obey me, for they are a stiff-necked people. But in the land of their exile they will come to themselves,"}, {"v": 31, "t": "and they will know that I am Yahuah their Aluahim. I will give them a heart that obeys and ears that hear;"}, {"v": 32, "t": "and they will praise me in the land of their exile, and will remember my name,"}, {"v": 33, "t": "and will turn from their stubbornness and their wicked deeds; for they will remember the ways of their fathers, who sinned before Yahuah."}, {"v": 34, "t": "I will bring them again into the land which I swore to give to their fathers, to Aḇraham and to Yahtsḥaq and to Ya'aqoḇ, and they will rule over it; and I will increase them, and they will not be diminished."}, {"v": 35, "t": "I will make an everlasting berith with them to be their Aluahim and they shall be my people; and I will never again remove my people Yasharal from the land which I have given them.\""}], "3": [{"v": 1, "t": "\"'O Yahuah Almighty, Aluahim of Yasharal, the nephesh in anguish and the wearied ruach cry out to thee."}, {"v": 2, "t": "Hear, O Yahuah, and have mercy, for we have sinned before thee."}, {"v": 3, "t": "For thou art enthroned for ever, and we are perishing for ever."}, {"v": 4, "t": "O Yahuah Almighty, Aluahim of Yasharal, hear now the prayer of the dead of Yasharal and of the sons of those who sinned before thee, who did not heed the voice of Yahuah their Aluahim, so that calamities have clung to us."}, {"v": 5, "t": "Remember not the iniquities of our fathers, but in this crisis remember thy power and thy name."}, {"v": 6, "t": "For thou art Yahuah our Aluahim, and thee, O Yahuah, will we praise."}, {"v": 7, "t": "For thou hast put the fear of thee in our hearts in order that we should call upon thy name; and we will praise thee in our exile, for we have put away from our hearts all the iniquity of our fathers who sinned before thee."}, {"v": 8, "t": "Behold, we are today in our exile where thou hast scattered us, to be reproached and cursed and punished for all the iniquities of our fathers who forsook Yahuah our Aluahim. '\""}, {"v": 9, "t": "Hear the mitsvot of life, O Yasharal; give ear, and learn wisdom!"}, {"v": 10, "t": "Why is it, O Yasharal, why is it that you are in the land of your enemies, that you are growing old in a foreign country, that you are defiled with the dead,"}, {"v": 11, "t": "that you are counted among those in Hades?"}, {"v": 12, "t": "You have forsaken the fountain of wisdom."}, {"v": 13, "t": "If you had walked in the way of Aluahim, you would be dwelling in shalom for ever."}, {"v": 14, "t": "Learn where there is wisdom, where there is strength, where there is understanding, that you may at the same time discern where there is length of days, and life, where there is light for the eyes, and shalom."}, {"v": 15, "t": "Who has found her place? And who has entered her storehouses?"}, {"v": 16, "t": "Where are the princes of the nations, and those who rule over the beasts on earth;"}, {"v": 17, "t": "those who have sport with the birds of the air, and who hoard up silver and gold, in which men trust, and there is no end to their getting;"}, {"v": 18, "t": "those who scheme to get silver, and are anxious, whose labors are beyond measure?"}, {"v": 19, "t": "They have vanished and gone down to Hades, and others have arisen in their place."}, {"v": 20, "t": "Young men have seen the light of day, and have dwelt upon the earth; but they have not learned the way to knowledge, nor understood her paths, nor laid hold of her."}, {"v": 21, "t": "Their sons have strayed far from her way."}, {"v": 22, "t": "She has not been heard of in Kena'an, nor seen in Ternan;"}, {"v": 23, "t": "the sons of Haḡar, who seek for understanding on the earth, the merchants of Merran and Ternan, the story-tellers and the seekers for understanding, have not learned the way to wisdom, nor given thought to her paths."}, {"v": 24, "t": "O Yasharal, how great is the house of Aluahim! And how vast the territory that he possesses!"}, {"v": 25, "t": "It is great and has no bounds; it is high and immeasurable."}, {"v": 26, "t": "The giants were born there, who were famous of old, great in stature, expert in war."}, {"v": 27, "t": "Aluahim did not choose them, nor give them the way to knowledge;"}, {"v": 28, "t": "so they perished because they had no wisdom, they perished through their folly."}, {"v": 29, "t": "Who has gone up into shamayim, and taken her, and brought her down from the clouds?"}, {"v": 30, "t": "Who has gone over the sea, and found her, and will buy her for pure gold?"}, {"v": 31, "t": "No one knows the way to her, or is concerned about the path to her."}, {"v": 32, "t": "But he who knows all things knows her, he found her by his understanding. He who prepared the earth for all time filled it with four-footed creatures;"}, {"v": 33, "t": "he who sends forth the light, and it goes, called it, and it obeyed him in fear;"}, {"v": 34, "t": "the stars shone in their watches, and were glad; he called them, and they said, \"Here we are!\" They shone with gladness for him who made them."}, {"v": 35, "t": "This is our Aluahim; no other can be compared to him!"}, {"v": 36, "t": "He found the whole way to knowledge, and gave her to Ya'aqoḇ his servant and to Yasharal whom he loved."}, {"v": 37, "t": "Afterward she appeared upon earth and lived among men."}], "4": [{"v": 1, "t": "She is the book of the mitsvot of Aluahim, and the law that endures for ever. All who hold her fast will live, and those who forsake her will die."}, {"v": 2, "t": "Turn, O Ya'aqoḇ, and take her; walk toward the shining of her light."}, {"v": 3, "t": "Do not give your glory to another, or your advantages to an alien people."}, {"v": 4, "t": "Happy are we, O Yasharal, for we know what is pleasing to Aluahim."}, {"v": 5, "t": "Take courage, my people, O memorial of Yasharal!"}, {"v": 6, "t": "It was not for destruction that you were sold to the nations, but you were handed over to your enemies because you angered Aluahim."}, {"v": 7, "t": "For you provoked him who made you, by sacrificing to demons and not to Aluahim."}, {"v": 8, "t": "You forgot the everlasting Aluahim, who brought you up, and you grieved Yahrushalayim, who reared you."}, {"v": 9, "t": "For she saw the wrath that came upon you from Aluahim, and she said: \"Hearken, you neighbors of Tsiyon, Aluahim has brought great sorrow upon me;"}, {"v": 10, "t": "for I have seen the captivity of my sons and daughters, which the Everlasting brought upon them."}, {"v": 11, "t": "With joy I nurtured them, but I sent them away with weeping and sorrow."}, {"v": 12, "t": "Let no one rejoice over me, a widow and bereaved of many; I was left desolate because of the sins of my children, because they turned away from the law of Aluahim."}, {"v": 13, "t": "They had no regard for his statutes; they did not walk in the ways of Aluahim's mitsvot, nor tread the paths of discipline in his righteousness."}, {"v": 14, "t": "Let the neighbors of Tsiyon come; remember the capture of my sons and daughters, which the Everlasting brought upon them."}, {"v": 15, "t": "For he brought against them a nation from afar, a shameless nation, of a strange language, who had no respect for an old man, and had no pity for a child."}, {"v": 16, "t": "They led away the widow's beloved sons, and bereaved the lonely woman of her daughters."}, {"v": 17, "t": "\"But I, how can I help you?"}, {"v": 18, "t": "For he who brought these calamities upon you will deliver you from the hand of your enemies."}, {"v": 19, "t": "Go, my children, go; for I have been left desolate."}, {"v": 20, "t": "I have taken off the robe of shalom and put on the sackcloth of my supplication; I will cry to the Everlasting all my days."}, {"v": 21, "t": "\"Take courage, my children, cry to Aluahim, and he will deliver you from the power and hand of the enemy."}, {"v": 22, "t": "For I have put my hope in the Everlasting to save you, and joy has come to me from the Holy One, because of the mercy which soon will come to you from your everlasting Savior."}, {"v": 23, "t": "For I sent you out with sorrow and weeping, but Aluahim will give you back to me with joy and gladness for ever."}, {"v": 24, "t": "For as the neighbors of Tsiyon have now seen your capture, so they soon will see your yasha by Aluahim, which will come to you with great glory and with the splendor of the Everlasting."}, {"v": 25, "t": "My children, endure with patience the wrath that has come upon you from Aluahim. Your enemy has overtaken you, but you will soon see their destruction and will tread upon their necks."}, {"v": 26, "t": "My tender sons have traveled rough roads; they were taken away like a flock carried off by the enemy."}, {"v": 27, "t": "\"Take courage, my children, and cry to Aluahim, for you will be remembered by him who brought this upon you."}, {"v": 28, "t": "For just as you purposed to go astray from Aluahim, return with tenfold zeal to seek him."}, {"v": 29, "t": "For he who brought these calamities upon you will bring you everlasting joy with your yasha.\""}, {"v": 30, "t": "Take courage, O Yahrushalayim, for he who named you will comfort you."}, {"v": 31, "t": "Wretched will be those who afflicted you and rejoiced at your fall."}, {"v": 32, "t": "Wretched will be the cities which your children served as slaves; wretched will be the city which received your sons."}, {"v": 33, "t": "For just as she rejoiced at your fall and was glad for your ruin, so she will be grieved at her own desolation."}, {"v": 34, "t": "And I will take away her pride in her great population, and her insolence will be turned to grief."}, {"v": 35, "t": "For fire will come upon her from the Everlasting for many days, and for a long time she will be inhabited by demons."}, {"v": 36, "t": "Look toward the east, O Yahrushalayim, and see the joy that is coming to you from Aluahim!"}, {"v": 37, "t": "Behold, your sons are coming, whom you sent away; they are coming, gathered from east and west, at the word of the Holy One, rejoicing in the glory of Aluahim."}], "5": [{"v": 1, "t": "Take off the garment of your sorrow and affliction, O Yahrushalayim, and put on for ever the beauty of the glory from Aluahim."}, {"v": 2, "t": "Put on the robe of the righteousness from Aluahim; put on your head the diadem of the glory of the Everlasting."}, {"v": 3, "t": "For Aluahim will show your splendor everywhere under shamayim."}, {"v": 4, "t": "For your name will for ever be called by Aluahim, \"Shalom of righteousness and glory of godliness.\""}, {"v": 5, "t": "Arise, O Yahrushalayim, stand upon the height and look toward the east, and see your children gathered from west and east, at the word of the Holy One, rejoicing that Aluahim has remembered them."}, {"v": 6, "t": "For they went forth from you on foot, led away by their enemies; but Aluahim will bring them back to you, carried in glory, as on a royal throne."}, {"v": 7, "t": "For Aluahim has ordered that every high mountain and the everlasting hills be made low and the valleys filled up, to make level ground, so that Yasharal may walk safely in the glory of Aluahim."}, {"v": 8, "t": "The woods and every fragrant tree have shaded Yasharal at Aluahim's command."}, {"v": 9, "t": "For Aluahim will lead Yasharal with joy, in the light of his glory, with the mercy and righteousness that come from him."}]}}</script>
+<script>
+'use strict';
+const BOOK=JSON.parse(document.getElementById('book-data').textContent);
+const BASE_THEME='ruins';
+const BESORAH_ID='apoc-baruch';
+const $=id=>document.getElementById(id);
+const CH_KEYS=Object.keys(BOOK.chapters).sort((a,b)=>(+a)-(+b));
+let idx=0;
+
+/* ================= SCENIC BACKGROUND ================= */
+const cv=$('bg'), g=cv.getContext('2d');
+let VW=0,VH=0,DPR=1,stars=[];
+function resize(){
+  DPR=Math.min(window.devicePixelRatio||1,2);
+  VW=innerWidth; VH=innerHeight;
+  cv.width=VW*DPR; cv.height=VH*DPR;
+  g.setTransform(DPR,0,0,DPR,0,0);
+  stars=[]; for(let i=0;i<160;i++) stars.push({x:Math.random(),y:Math.random()*.72,r:Math.random()*1.4+.3,p:Math.random()*6.28});
+}
+addEventListener('resize',resize);
+function mul(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+
+let curTheme=BASE_THEME, seed=1;
+const GRAD={
+  dawn:[[0,'#12203f'],[.4,'#2a4a78'],[.7,'#7a6a5a'],[1,'#caa26a']],
+  night:[[0,'#04060f'],[.5,'#0a1226'],[1,'#1a2440']],
+  waters:[[0,'#0a1a30'],[.55,'#164058'],[1,'#2a7088']],
+  mountains:[[0,'#0e1830'],[.5,'#2a3a56'],[1,'#5a6478']],
+  garden:[[0,'#10261f'],[.5,'#1f4a34'],[1,'#4a7a44']],
+  ruins:[[0,'#12100e'],[.5,'#2a2420'],[1,'#4a3e34']],
+  field:[[0,'#132038'],[.45,'#3a4a60'],[.75,'#8a8250'],[1,'#c8b274']],
+  storm:[[0,'#0a0c14'],[.5,'#161c2a'],[1,'#2c3446']],
+  fire:[[0,'#100a08'],[.5,'#2c1810'],[1,'#7a3a1a']],
+  vanity:[[0,'#141420'],[.5,'#2a2a3a'],[1,'#6a6458']],
+};
+function paint(t){
+  const gr=GRAD[curTheme]||GRAD.dawn;
+  const lg=g.createLinearGradient(0,0,0,VH);
+  for(const[o,c]of gr) lg.addColorStop(o,c);
+  g.fillStyle=lg; g.fillRect(0,0,VW,VH);
+  const rng=mul(seed*7919+1);
+  // stars for dark themes
+  if(['night','storm','mountains','vanity','ruins'].includes(curTheme)){
+    for(const s of stars){ const tw=.5+.5*Math.sin(t/900+s.p);
+      g.fillStyle=`rgba(240,238,220,${tw*.7})`; g.beginPath();
+      g.arc(s.x*VW,s.y*VH*.9,s.r,0,6.28); g.fill(); }
+  }
+  // sun / moon glow
+  if(['dawn','field','garden','fire','waters'].includes(curTheme)){
+    const sx=VW*.5,sy=VH*.72,rr=VW*.5*(.9+Math.sin(t/2600)*.06);
+    const rg=g.createRadialGradient(sx,sy,8,sx,sy,rr);
+    rg.addColorStop(0,'rgba(255,240,190,.26)'); rg.addColorStop(.3,'rgba(232,198,106,.10)'); rg.addColorStop(1,'rgba(232,198,106,0)');
+    g.fillStyle=rg; g.fillRect(0,0,VW,VH);
+  } else {
+    const sx=VW*.72,sy=VH*.2,rr=VW*.16;
+    const rg=g.createRadialGradient(sx,sy,2,sx,sy,rr);
+    rg.addColorStop(0,'rgba(220,228,240,.5)'); rg.addColorStop(1,'rgba(220,228,240,0)');
+    g.fillStyle=rg; g.beginPath(); g.arc(sx,sy,VW*.03,0,6.28); g.fill();
+    g.fillStyle=rg; g.fillRect(0,0,VW,VH);
+  }
+  // horizon silhouettes
+  g.save();
+  if(curTheme==='mountains'){
+    g.fillStyle='rgba(10,14,26,.7)';
+    for(let k=0;k<3;k++){ g.beginPath(); g.moveTo(0,VH);
+      let x=0; const baseY=VH*(.62+k*.08);
+      while(x<VW){ const h=(rng())*VH*.22; g.lineTo(x,baseY-h); x+=VW*.14; }
+      g.lineTo(VW,VH); g.closePath(); g.fillStyle=`rgba(10,14,26,${.4+k*.18})`; g.fill(); }
+  } else if(curTheme==='waters'){
+    g.fillStyle='rgba(255,240,190,.14)';
+    for(let i=0;i<10;i++){ const y=VH*.72+i*VH*.026; g.fillRect(VW*.5-(70-i*6),y,(70-i*6)*2,2); }
+  } else if(curTheme==='garden'){
+    g.fillStyle='rgba(10,26,16,.55)';
+    g.beginPath(); g.moveTo(0,VH); g.quadraticCurveTo(VW*.3,VH*.74,VW*.55,VH*.82);
+    g.quadraticCurveTo(VW*.8,VH*.9,VW,VH*.78); g.lineTo(VW,VH); g.closePath(); g.fill();
+    for(let i=0;i<14;i++){ const fx=(i*0.09+0.03)*VW, fy=VH*(.8+Math.sin(i)*.03);
+      g.fillStyle=['#caa2c8','#e8c66a','#c85a6a'][i%3]; g.beginPath(); g.arc(fx,fy,3,0,6.28); g.fill(); }
+  } else if(curTheme==='ruins'){
+    g.fillStyle='rgba(20,16,12,.7)';
+    let x=0; while(x<VW){ const w=VW*(.05+rng()*.05), h=VH*(.1+rng()*.22); g.fillRect(x,VH-h,w,h); x+=w+VW*.02; }
+    for(let i=0;i<28;i++){ if(rng()<.5) continue; g.fillStyle='rgba(120,110,100,'+(.1+rng()*.15)+')';
+      g.fillRect(rng()*VW,VH*(.4+rng()*.5),2,2); }
+  } else if(curTheme==='field'){
+    g.fillStyle='rgba(120,104,58,.5)'; g.fillRect(0,VH*.78,VW,VH*.22);
+    g.strokeStyle='rgba(180,150,80,.35)'; g.lineWidth=2;
+    for(let i=0;i<40;i++){ const wx=rng()*VW, wy=VH*(.78+rng()*.18);
+      g.beginPath(); g.moveTo(wx,wy); g.lineTo(wx,wy-VH*.05); g.stroke(); }
+  } else if(curTheme==='fire'){
+    for(let i=0;i<40;i++){ const fx=VW*.5+(rng()-.5)*VW*.5, fy=VH-(rng()*VH*.3);
+      g.fillStyle=`rgba(255,${140+rng()*90|0},40,${.3+rng()*.3})`; g.beginPath(); g.arc(fx,fy,2+rng()*3,0,6.28); g.fill(); }
+  } else {
+    // gentle hills for dawn/night/storm/vanity
+    g.fillStyle='rgba(10,14,26,.5)';
+    g.beginPath(); g.moveTo(0,VH); g.quadraticCurveTo(VW*.3,VH*.8,VW*.5,VH*.85);
+    g.quadraticCurveTo(VW*.75,VH*.9,VW,VH*.8); g.lineTo(VW,VH); g.closePath(); g.fill();
+  }
+  g.restore();
+  // rain for storm
+  if(curTheme==='storm'){ g.strokeStyle='rgba(160,180,210,.25)'; g.lineWidth=1;
+    for(let i=0;i<60;i++){ const rx=(rng()*VW+t*.1)%VW, ry=(rng()*VH+t*.4)%VH;
+      g.beginPath(); g.moveTo(rx,ry); g.lineTo(rx-3,ry+14); g.stroke(); } }
+  // vignette
+  const vg=g.createRadialGradient(VW/2,VH/2,Math.min(VW,VH)*.4,VW/2,VH/2,Math.max(VW,VH)*.72);
+  vg.addColorStop(0,'rgba(0,0,0,0)'); vg.addColorStop(1,'rgba(0,0,0,.55)');
+  g.fillStyle=vg; g.fillRect(0,0,VW,VH);
+}
+function loop(t){ paint(t); requestAnimationFrame(loop); }
+
+/* ================= THEME PER CHAPTER ================= */
+const THEME_KEYWORDS=[["ruins",["desolate","ruin","laid waste","burned","ashes","lonely sits","no comforter","mourn"]],["storm",["thunder","lightning","tempest","whirlwind","storm","the deep","waves","floods"]],["waters",["waters","sea","rivers","streams","springs","the deep","still waters"]],["night",["night","darkness","the pit","grave","shadow of death","out of the depths","weep"]],["mountains",["mountains","hills","rock","fortress","stronghold","tsiyon","high place"]],["garden",["vineyard","garden","spices","lily","rose","fig","pomegranate","myrrh","fragrance","beloved"]],["fire",["fire","refine","furnace","coals","flame","burning"]],["field",["wisdom","knowledge","understanding","folly","fool","discipline","harvest","wheat","labour","sun"]],["dawn",["praise","sing","rejoice","hallelu","give thanks","morning","light","joy","shout"]]];
+function themeFor(chKey){
+  const vs=BOOK.chapters[chKey]||[];
+  const low=vs.map(v=>v.t).join(' ').toLowerCase();
+  for(const[theme,keys]of THEME_KEYWORDS){ for(const k of keys){ if(low.indexOf(k)>=0) return theme; } }
+  return BASE_THEME;
+}
+
+/* ================= REND ================= */
+function renderChapter(){
+  const key=CH_KEYS[idx];
+  curTheme=themeFor(key); seed=(+key)||1;
+  $('ch-num').textContent=key;
+  $('ch-label').textContent=BOOK.hebrew+' · '+BOOK.english;
+  const box=$('verses'); box.innerHTML='';
+  for(const v of BOOK.chapters[key]){
+    const d=document.createElement('div'); d.className='verse';
+    const t=highlightNames(v.t);
+    d.innerHTML='<span class="vn">'+v.v+'</span>'+t;
+    box.appendChild(d);
+  }
+  $('nav-pos').textContent='Chapter '+key+' / '+CH_KEYS.length;
+  $('nav-prev').disabled=idx<=0;
+  $('nav-next').disabled=idx>=CH_KEYS.length-1;
+  $('scroll').scrollTop=0;
+}
+function esc(s){ return s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c])); }
+function highlightNames(t){
+  t=esc(t);
+  t=t.replace(/(YAHUAH|HWHY|YAHU[ĂA]H|Yahuah|Aluahim|Aloah|Yasharal|Yah)\b/g,'<span class="dn">$1</span>');
+  return t;
+}
+function go(n){ idx=Math.max(0,Math.min(CH_KEYS.length-1,n)); renderChapter(); }
+
+/* ================= NAV / SCREENS ================= */
+function hideAll(){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show')); $('reader').classList.remove('show'); }
+function showTitle(){ hideAll(); $('title-screen').classList.add('show'); }
+function showReader(){ hideAll(); $('reader').classList.add('show'); renderChapter(); }
+function showGrid(){ hideAll(); const grid=$('ch-grid'); grid.innerHTML='';
+  CH_KEYS.forEach((k,i)=>{ const c=document.createElement('div'); c.className='ch-cell'; c.textContent=k;
+    c.onclick=()=>{ idx=i; showReader(); }; grid.appendChild(c); });
+  $('grid-screen').classList.add('show'); }
+
+$('btn-read').onclick=()=>{ idx=0; showReader(); };
+$('btn-chapters').onclick=showGrid;
+$('btn-grid-title').onclick=showTitle;
+$('btn-back').onclick=()=>{ location.href='book-of-qoheleth.html'; };
+$('btn-home').onclick=()=>{ location.href='index.html'; };
+$('btn-home-title').onclick=()=>{ location.href='index.html'; };
+$('btn-grid').onclick=showGrid;
+$('btn-title').onclick=showTitle;
+$('btn-besorah').onclick=()=>{ location.href='besorah-offline.html#/book/'+BESORAH_ID+'/'+CH_KEYS[idx]; };
+$('nav-prev').onclick=()=>go(idx-1);
+$('nav-next').onclick=()=>go(idx+1);
+addEventListener('keydown',e=>{
+  if(!$('reader').classList.contains('show')) return;
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){ go(idx+1); e.preventDefault(); }
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){ go(idx-1); e.preventDefault(); }
+  else if(e.key==='Escape'){ showGrid(); }
+});
+// swipe
+let tx=0,ty=0;
+$('scroll').addEventListener('touchstart',e=>{ tx=e.touches[0].clientX; ty=e.touches[0].clientY; },{passive:true});
+$('scroll').addEventListener('touchend',e=>{ const dx=e.changedTouches[0].clientX-tx, dy=e.changedTouches[0].clientY-ty;
+  if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5){ go(idx+(dx<0?1:-1)); } },{passive:true});
+
+/* deep link: ?ch=NN */
+(function(){ const q=new URLSearchParams(location.search); const c=q.get('ch');
+  if(c){ const i=CH_KEYS.indexOf(String(+c)); if(i>=0){ idx=i; showReader(); return; } } })();
+resize(); requestAnimationFrame(loop);
+setTimeout(()=>{ $('fader').style.opacity='0'; },120);
+</script>
+</body>
+</html>
