@@ -110,13 +110,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -198,7 +217,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -271,11 +299,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -3069,7 +3101,7 @@ function npcBlocked(world,x,y,px,py){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3344,8 +3376,9 @@ function drawWorldElev(g,world,t,offX,offY,x0,x1,y0,y1){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3814,6 +3847,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); w._risers=undefined; return true; }
@@ -3878,7 +3912,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3923,15 +3961,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3942,6 +4014,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3967,6 +4045,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -4024,6 +4103,7 @@ const Game={
       peace:!!sc.peace
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -4043,7 +4123,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4191,6 +4271,7 @@ const Game={
     for(const it of (sc.items||[])) w.items.push(Object.assign({},it,{_story:1}));
     w.time=sc.time||'day';
     if(sc.rain){ w.rain=true; Sound.rain(true); } else { w.rain=false; Sound.rain(false); }
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     w.raysTarget=0; w.camFollow='player'; w.camTarget=null; w.gotoMark=null;
     this.state='play';
@@ -4465,6 +4546,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     /* the gate of the garden opens as one draws near the way, and shuts once through */
@@ -4741,22 +4827,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4769,7 +4859,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4792,11 +4882,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5996,7 +6099,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -6144,7 +6247,7 @@ const STORY=[
   intro:[
    {art:'void', music:'night', text:'In the beginning Aluahim created the shamayim and the earth. And the earth came to be formless and empty and darkness was on the face of the deep. And the Ruach of Aluahim was moving on the face of the waters.', ref:'BERĔSHITH 1:1–2'},
    {art:'light', music:'holy', sfx:'holy', text:'And Aluahim said, “Let light come to be,” and light came to be. And Aluahim saw the light, that it was good. And Aluahim separated the light from the darkness — the first day.', ref:'BERĔSHITH 1:3–5'},
-   {art:'light', music:'holy', text:'For on the first day He created the shamayim which are above, and the earth, and the waters, and all the ruchot which serve before Him — the mal’akim of the presence, the mal’akim of sanctification, and the mal’akim of all the ruchot of His creatures.', ref:'YOḆELIM 2:2'},
+   {art:'light', music:'holy', text:'For on the first day He created the shamayim which are above and the earth and the waters and all the ruchot which serve before Him which are the mal’akim of the presence, and the mal’akim of set-apartness… and of all the ruchot of His creatures which are in the shamayim and on the earth.', ref:'YOḆELIM 2:2'},
    {art:'divide', text:'And Aluahim said, “Let an expanse come to be in the midst of the waters.” And Aluahim called the expanse ‘shamayim’ — the second day.', ref:'BERĔSHITH 1:6–8'},
    {art:'land', text:'“Let the waters be gathered together into one place and let the dry land appear.” And the earth brought forth grass, the plant that yields seed and the fruit tree that yields fruit — the third day.', ref:'BERĔSHITH 1:9–13'},
    {art:'luminaries', music:'night', text:'And Aluahim made two great lights: the greater light to rule the day and the lesser light to rule the night, and the stars — the fourth day.', ref:'BERĔSHITH 1:14–19'},
@@ -6175,7 +6278,7 @@ const STORY=[
    npcs:[
      {id:'sheep1',animal:'sheep',x:16,y:20,range:3,
       script:[
-       {say:['narrator','And out of the ground YAHUAH Aluahim formed every beast of the field, and brought them to the man to see what he would call them. The woolly creature stands before you.']},
+       {say:['narrator','And from the ground YAHUAH Aluahim formed every beast of the field… and brought them to the man to see what he would call them. The woolly creature stands before you.']},
        {say:['adam','Sheep.']},
        {toast:'And whatever the man called each living creature, that was its name. — BERĔSHITH 2:19'},
       ]},
@@ -6206,7 +6309,7 @@ const STORY=[
      {type:'goto',x:24,y:14,radius:2.6,text:'Go to the trees in the midst of the garden',hiddenUntil:4,
       script:[
        {rays:.8,raysX:24},{sfx:'holy'},{music:'holy'},
-       {say:['voice','Of every tree of the garden you are free to eat.']},
+       {say:['voice','Eat of every tree of the garden.']},
        {say:['voice','But of the tree of the knowledge of good and evil you shall not eat, for in the day that you eat of it you shall certainly die.']},
        {say:['adam','Of every tree of the garden I may eat — but not of this tree, lest I die. I shall guard Your word.']},
        {rays:0},{music:'eden'},
@@ -6216,7 +6319,7 @@ const STORY=[
      {say:['narrator','The garden lies before you. Walk with the arrow keys or WASD — gather, tend, and see all that YAHUAH Aluahim has made. Press E to draw near to His creatures.']},
    ],
    onComplete:[
-     {say:['voice','It is not good for the man to be alone — as I said before the naming began; and among all the living that Aḏam has named, there was found no helper as his counterpart. I shall make a helper for him.']},
+     {say:['voice','It is not good for the man to be alone — as I said before the naming began; and among all the living that Aḏam has named, there was not found a helper for him, as his counterpart. I am going to make a helper for him.']},
      {say:['narrator','And YAHUAH Aluahim caused a deep sleep to fall on the man, and he slept.']},
      {call:g=>{ g.world.player.lying=true; g.world.player.moving=false; }},
      {wait:1300},
@@ -6303,7 +6406,7 @@ const STORY=[
    ],
    onComplete:[
      {time:'dusk'},{rays:.9,raysX:18},{sfx:'holy'},{music:'sorrow'},
-     {say:['narrator','And they heard the sound of YAHUAH Aluahim walking about in the garden in the cool of the day. And the man and his wife hid themselves from His presence among the trees.']},
+     {say:['narrator','And they heard the sound of YAHUAH Aluahim walking about in the garden in the cool of the day. And Aḏam and his wife hid themselves from the presence of YAHUAH Aluahim among the trees of the garden.']},
      {say:['voice','Aḏam — where are you?']},
      {say:['adam','I heard Your sound in the garden and I was afraid, because I was naked, so I hid myself.']},
      {say:['voice','Who made you know that you were naked? Have you eaten of the tree of which I commanded you not to eat?']},
@@ -6322,7 +6425,7 @@ const STORY=[
   outro:[
    {art:'fall', music:'sorrow', text:'“Because you have done this, you are cursed more than all livestock… And I put enmity between you and the woman, and between your seed and her Seed. He shall crush your head, and you shall bruise His heel.”', ref:'BERĔSHITH 3:14–15'},
    {art:'fall', text:'“By the sweat of your face you are to eat bread, until you return to the ground. For dust you are, and to dust you return.” And the man called his wife’s name Ḥawwah, because she became the mother of all living.', ref:'BERĔSHITH 3:19–20'},
-   {art:'fall', music:'holy', text:'And YAHUAH Aluahim made coats of skin for the man and his wife and dressed them — the first blood shed to cover the shame of man.', ref:'BERĔSHITH 3:21'},
+   {art:'fall', music:'holy', text:'And YAHUAH Aluahim made coats of skin for the man and his wife and dressed them.', ref:'BERĔSHITH 3:21'},
   ],
   complete:'The serpent deceived me, and I ate. Yet even in judgment, a promise: her Seed shall crush the serpent’s head.'
 },
@@ -6454,7 +6557,7 @@ const STORY=[
       ]},
    ],
    onComplete:[
-     {say:['narrator','And Qayin was very wroth, and his face fell — and he sought a pretext against his brother.']},
+     {say:['narrator','And Qayin was very wroth and his face fell — and Qayin was jealous against his brother Heḇal on account of this, and he sought a pretext to slay him.']},
    ],
   },
   outro:[
@@ -6486,12 +6589,12 @@ const STORY=[
    objectives:[
      {type:'goto',x:28,y:16,radius:2,text:'Walk out to your brother in the field',
       script:[
-       {say:['narrator','They were both in the field, Qayin tilling and ploughing his ground, and Heḇal feeding his flock — and the flock passed over that part which Qayin had ploughed, and it sorely grieved Qayin.']},
+       {say:['narrator','They were both in the field, Qayin tilling and ploughing his ground, and Heḇal feeding his flock — and the flock passed that part which Qayin had ploughed in the ground, and it sorely grieved Qayin on this account.']},
        {say:['qayin','What is there between me and you, that you come to dwell and bring your flock to feed in MY land?']},
        {say:['hevel','And what is there between me and you — that you eat the flesh of my flock and clothe yourself with their wool? Put off the wool of my sheep with which you have clothed yourself, and recompense me for their fruit and flesh which you have eaten — and then I will go from your land, as you have said.']},
        {say:['qayin','…And if I slay you this day — who will require your blood from me?']},
        {say:['hevel','Aluahim, who made us in the earth — He will avenge my cause. He will require my blood from you if you slay me, for YAHUAH is the judge and arbiter, and He requites every man according to his evil. If you slay me here, surely Aluahim knows your secret thoughts, and will judge you for this evil.']},
-       {say:['narrator','And when Qayin heard the words his brother had spoken, behold — his anger was kindled. And he took up a stone of the field…']},
+       {say:['narrator','And when Qayin heard the words which Heḇal his brother had spoken, behold — the anger of Qayin was kindled against his brother Heḇal. And he took up a stone of the field…']},
        {fade:'out'},{sfx:'thunder'},{music:'sorrow'},{wait:1000},
        {despawn:'hevel'},{time:'night'},
        {fade:'in'},{wait:700},
@@ -6501,7 +6604,7 @@ const STORY=[
        {say:['qayin','I do not know. Am I my brother’s guard?']},
        {say:['voice','What have you done? The voice of your brother’s blood cries out to Me from the ground. And now you are cursed from the ground which opened its mouth to receive your brother’s blood.']},
        {say:['qayin','My punishment is greater than I can bear! I am hidden from Your face… and anyone who finds me shall kill me.']},
-       {say:['voice','Therefore, anyone who kills Qayin — vengeance is taken on him sevenfold. See — I set a sign upon you, that no one finding you shall slay you.']},
+       {say:['voice','Well, if anyone kills Qayin, vengeance is taken on him sevenfold. See — I set up a sign for you, lest anyone finding you kills you.']},
        {burst:[10,22,'holy',10]},{rays:0},
        {say:['narrator','And Qayin went out from the presence of YAHUAH and dwelt in the land of Noḏ, east of Ĕḏen.']},
       ]},
@@ -6509,12 +6612,12 @@ const STORY=[
   },
   outro:[
    {art:'stars', music:'holy', text:'And Aḏam knew his wife again and she bore a son and called his name Shĕth — “for Aluahim has appointed me another seed in place of Heḇal.” …Then it was begun to call on the Name of YAHUAH.', ref:'BERĔSHITH 4:25–26'},
-   {art:'camp', text:'And Qayin took Awan his sister to be his wife, and she bore Ḥanoḵ his son; and Qayin built a city, and called its name after the name of his son. And to Aḏam and Ḥawwah was also born the daughter Azura, who became wife to Shĕth.', ref:'YOḆELIM 4:1–11'},
-   {art:'corrupt', music:'sorrow', text:'And at the close of that Yoḇel, Qayin was killed: his house fell on him, and he died in the middle of his house, killed by its stones. For with a stone he had killed Heḇal, and by a stone he was killed in righteous mishpat — therefore it is ordained on the heavenly tablets: with the instrument with which a man kills his neighbor, with the same shall he be killed.', ref:'YOḆELIM 4:31–32'},
-   {art:'stars', text:'And Ḥanoḵ walked with Aluahim three hundred years… and he taught the sons of men the ways of YAHUAH, and kings and princes came to hear his wisdom, and crowned him over them.', ref:'BERĔSHITH 5:22; YASHAR 3'},
-   {art:'chariots', music:'holy', text:'And they lifted up their eyes, and the likeness of a great horse descended from the shamayim, pacing in the air. And Ḥanoḵ said, “On my account does this horse descend. The time has come that I must go from you.” And he ascended into the shamayim in a whirlwind, with horses and chariots of fire — and he was not, for Aluahim took him.', ref:'YASHAR 3:27–36; BERĔSHITH 5:24'},
+   {art:'camp', text:'And Qayin took Awan his sister to be his wife and she gave birth to Ḥanoḵ at the close of the fourth Yobal… and Qayin built a city, and called its name after the name of his son Ḥanoḵ… In the fifth week of the fifth Yobal Shĕth took Azura his sister to be his wife.', ref:'YOḆELIM 4:1–11'},
+   {art:'corrupt', music:'sorrow', text:'At the close of this Yobal Qayin was killed… because his house fell on him and he died in the middle of his house, and he was killed by its stones. With a stone he had killed Heḇal, and by a stone he was killed in righteous mishpat. For this reason it was ordained on the heavenly tablets, with the instrument with which a man kills his neighbor with the same shall he be killed.', ref:'YOḆELIM 4:31–32'},
+   {art:'stars', text:'Ḥanoḵ walked with Aluahim three hundred years… and he went to the sons of men and taught them the ways of YAHUAH… And all the kings of the sons of men… came to Ḥanoḵ when they heard of his wisdom… and they made Ḥanoḵ king over them.', ref:'BERĔSHITH 5:22; YASHAR 3'},
+   {art:'chariots', music:'holy', text:'And they lifted up their eyes and the likeness of a great horse descended from shamayim, and the horse paced in the air… and Ḥanoḵ said, “On my account does this horse descend upon earth; the time is come when I must go from you.” … Ḥanoḵ ascended into shamayim in a whirlwind, with horses and chariots of fire. … Then he was no more, for Aluahim took him.', ref:'YASHAR 3:27–36; BERĔSHITH 5:24'},
   ],
-  complete:'The voice of your brother’s blood cries out to Me from the ground. Yet another seed was appointed — and men began to call on the Name of YAHUAH.'
+  complete:'The voice of your brother’s blood cries out to Me from the ground. Yet another seed was appointed — then it was begun to call on the Name of YAHUAH.'
 },
 ]},
 ];
@@ -6526,7 +6629,7 @@ STORY.push(
 { id:'c6b', title:'The Earth Was Filled With Violence', ref:'BERĔSHITH 6 · ḤANOḴ 7–8 · YASHAR 4',
   intro:[
    {art:'watchers', music:'tense', text:'And it came to be, when men began to increase on the face of the earth… that the sons of Aluahim saw the daughters of men, that they were good, and they took wives for themselves of all whom they chose. And the Nephilim were on the earth in those days — the mighty men of old, the men of name.', ref:'BERĔSHITH 6:1–4'},
-   {art:'corrupt', music:'sorrow', text:'And the sons of men turned from YAHUAH; they corrupted the earth, they robbed and plundered every man his neighbour as well as his relative — and the earth was filled with violence. And their judges and rulers took the wives of men by force.', ref:'YASHAR 4:17–18'},
+   {art:'corrupt', music:'sorrow', text:'And every man made unto himself a Aluahim, and they robbed and plundered every man his neighbor as well as his relative, and they corrupted the earth, and the earth was filled with violence. And their judges and rulers went to the daughters of men and took their wives by force from their husbands according to their choice.', ref:'YASHAR 4:17–18'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:48, h:32, seed:66,
@@ -6586,7 +6689,7 @@ STORY.push(
        {say:['narrator','And on the high seat of the city — not a judge of the sons of men, but one of the fallen watchers, enthroned as sovereign: and men bowed to him, and served him, and brought him their daughters and their tribute.']},
        {say:['noach','You are no king. You left the shamayim for this — a chair of gold in a city of blood. My fathers’ Aluahim is witness: this shall not stand.']},
        {time:'deepnight'},{rays:.9,raysX:12},{sfx:'holy'},{music:'sorrow'},
-       {say:['voice','YAHUAH saw that the wickedness of man was great in the earth, and that every inclination of the thoughts of his heart was only evil continually. The earth is corrupt before Me, and filled with violence through them.']},
+       {say:['voice','YAHUAH saw that the wickedness of man was great in the earth and that every inclination of the thoughts of his heart was only evil continually. And the earth was corrupt before Aluahim and the earth was filled with violence.']},
        {say:['voice','The end of all flesh has come before Me… But you, Noaḥ — you have found favour in My eyes. Walk before Me. The work I give you is not a sword, but an ark.']},
        {rays:0},
       ]},
@@ -6639,8 +6742,8 @@ STORY.push(
    ],
    onStart:[
      {rays:.8,raysX:10},{sfx:'holy'},
-     {say:['voice','The end of all flesh has come before Me, for the earth is filled with violence through them. Make yourself an ark of gopherwood… for I Myself am bringing floodwaters on the earth.']},
-     {say:['voice','But I shall establish My covenant with you — and you shall come into the ark, you and your sons and your wife and your sons’ wives with you.']},
+     {say:['voice','The end of all flesh has come before Me, for the earth is filled with violence through them. Make yourself an ark of gopherwood… And see, I am bringing floodwaters on the earth.']},
+     {say:['voice','And I shall establish My berith with you — and you shall come into the ark, you and your sons and your wife and your sons’ wives with you.']},
      {rays:0},
      {say:['noach','According to all that You command, so I shall do.']},
    ],
@@ -6688,7 +6791,7 @@ STORY.push(
    ],
    onComplete:[
      {say:['noach','Sons! Wives! The hour has come — into the ark, all of us. Seven days, and the rain begins.']},
-     {say:['narrator','And of the clean beasts, and of the beasts that are not clean, and of the birds — two by two they went in to Noaḥ into the ark, male and female, as Aluahim had commanded Noaḥ.']},
+     {say:['narrator','Of the clean beasts and of the beasts that are unclean and of birds and of all that creep on the earth — two by two they went into the ark to Noaḥ, male and female, as Aluahim had commanded Noaḥ.']},
      {say:['noach','And of every CLEAN beast, seven pairs, the male and his female — so YAHUAH commanded — and of the birds of the shamayim seven pairs also, to keep seed alive on the face of all the earth. From these, when the earth is washed, shall come the offering.']},
      {call:g=>{ let i=0; g.world.npcs.forEach(n=>{ if(n.group==='pairs'){
          n.follow=false; n.wander=false; n.arrived=false;
@@ -6721,7 +6824,7 @@ STORY.push(
 { id:'c9', title:'The Waters Prevailed', ref:'BERĔSHITH 7:17–8:3',
   intro:[
    {art:'flood', music:'storm', text:'And the waters prevailed exceedingly on the earth and all the high mountains under all the shamayim were covered… But only Noaḥ was left, and those with him in the ark.', ref:'BERĔSHITH 7:19,23'},
-   {art:'flood', music:'night', text:'And Aluahim remembered Noaḥ and all that was with him in the ark. And Aluahim made a wind to pass over the earth, and the waters subsided.', ref:'BERĔSHITH 8:1'},
+   {art:'flood', music:'night', text:'And Aluahim remembered Noaḥ and all the beasts and all the cattle that were with him in the ark. And Aluahim made a ruach to pass over the earth and the waters subsided.', ref:'BERĔSHITH 8:1'},
   ],
   scene:{
    map:{biome:'interior', floorCol:'#6e5638', w:26, h:16, seed:41,
@@ -6729,10 +6832,29 @@ STORY.push(
        {type:'firepit',x:6,y:9,lit:true},
        {type:'doorway',closed:true,x:13,y:1.9,id:'arkdoor',examine:'The door of the ark — shut from the outside, by the hand of YAHUAH.'},
        {type:'stone',x:20,y:6,id:'window',examine:'The window of the ark, which Noaḥ had made.'},
+       /* the rooms of the ark (BERĔSHITH 6:14) — the beasts and the cattle that were with him (8:1) */
+       {type:'fold',x:4.2,y:5.2,w:3.4,h:2.4,examine:'“Make rooms in the ark” — and they went into the ark to Noaḥ, two by two, of all flesh in which is the breath of life.'},
+       {type:'fold',x:8.6,y:5.2,w:3.4,h:2.4},
+       {type:'fold',x:17.2,y:14.2,w:3.6,h:2.6},
+       {type:'fold',x:22,y:14.2,w:3.6,h:2.6},
+       {type:'trough',x:12.4,y:13.6},
+       {type:'basket',x:15,y:9.6,full:true,examine:'“Take of all food that is eaten and gather it to yourself. And it shall be food for you and for them.” And Noaḥ did according to all that Aluahim commanded him.'},
+       {type:'pot',x:3.4,y:9.4},
      ]},
    time:'night', music:'night', rain:true,
+   sway:4,             /* the house of gopher-wood rides the waters */
    player:'noach', playerPos:[8,10],
    npcs:[
+     {id:'ark_sheep1',animal:'sheep',x:3.6,y:4.3,wander:true,range:.6,tame:true,noTalk:true},
+     {id:'ark_sheep2',animal:'sheep',x:4.9,y:4.5,wander:true,range:.6,tame:true,noTalk:true},
+     {id:'ark_goat1',animal:'goat',x:8,y:4.3,wander:true,range:.6,tame:true,noTalk:true},
+     {id:'ark_goat2',animal:'goat',x:9.3,y:4.6,wander:true,range:.6,tame:true,noTalk:true},
+     {id:'ark_lion1',animal:'lion',x:16.4,y:13,wander:false,dir:'right',tame:true,noTalk:true},
+     {id:'ark_lion2',animal:'lion',x:18.1,y:13.3,wander:false,dir:'left',tame:true,noTalk:true},
+     {id:'ark_deer1',animal:'deer',x:21.2,y:13,wander:true,range:.6,tame:true,noTalk:true},
+     {id:'ark_deer2',animal:'deer',x:22.8,y:13.3,wander:true,range:.6,tame:true,noTalk:true},
+     {id:'ark_donkey1',animal:'donkey',x:11.2,y:13,wander:false,dir:'right',tame:true,noTalk:true},
+     {id:'ark_donkey2',animal:'donkey',x:13.7,y:13.2,wander:false,dir:'left',tame:true,noTalk:true},
      {id:'wife',char:'noach_w',x:5,y:10,wander:true,range:1.5,dlg:[['noach_w','One hundred and fifty days the waters prevailed… and now, listen — the rain has ceased, and the deep is stopped. The waters are going down. He remembers us.']]},
      {id:'shem',char:'shem',x:12,y:8,wander:true,range:2,dlg:[['shem','We came to rest with a great groan of timber — on the mountains of Ararat, father, I am sure of it.']]},
      {id:'dove',animal:'dove',x:21,y:8,wander:false,noTalk:true},
@@ -6742,8 +6864,8 @@ STORY.push(
      {type:'talk',npc:'wife',text:'Speak with your household'},
      {type:'interact',prop:'window',text:'Watch at the window — the waters are going down',hiddenUntil:1,
       script:[
-       {rain:false},{time:'dusk'},
-       {say:['narrator','And Aluahim remembered Noaḥ, and all the living beings that were with him in the ark. And the fountains of the deep and the windows of the shamayim were stopped, and the rain from the shamayim was restrained — and the waters receded steadily from the earth, going and receding.']},
+       {rain:false},{time:'dusk'},{sway:1.5},
+       {say:['narrator','And Aluahim remembered Noaḥ and all the beasts and all the cattle that were with him in the ark. And the fountains of the deep and the windows of the shamayim were stopped and the rain from the shamayim was withheld — and the waters receded steadily from the earth.']},
        {say:['noach','The rain has ceased, and the deep is shut. Now we wait upon Him — until the day He sets this house of gopher-wood down upon the earth again.']},
       ]},
    ],
@@ -6755,7 +6877,7 @@ STORY.push(
 },
 { id:'c9b', title:'The Mountains of Ararat', ref:'BERĔSHITH 8:1–12',
   intro:[
-   {art:'flood', music:'holy', text:'And Aluahim made a wind to pass over the earth, and the waters subsided… And the ark came to rest, in the seventh month, on the mountains of Ararat. And the waters decreased steadily, and the tops of the mountains were seen.', ref:'BERĔSHITH 8:1–5'},
+   {art:'flood', music:'holy', text:'And Aluahim made a ruach to pass over the earth and the waters subsided. And the fountains of the deep and the windows of the shamayim were stopped… And in the seventh month, the seventeenth day of the month, the ark rested on the mountains of Ararat.', ref:'BERĔSHITH 8:1–4'},
   ],
   scene:{
    map:{biome:'ararat', w:30, h:28, seed:46,
@@ -6776,14 +6898,14 @@ STORY.push(
    objectives:[
      {type:'goto',x:16,y:15,radius:2.4,text:'Go to the edge and look out over the face of the waters',
       script:[
-       {say:['narrator','And the ark came to rest on the mountains of Ararat. And Noaḥ went up to the edge of the mountain and looked out — and the waters were decreasing steadily upon the earth, and the tops of the mountains rose one by one out of the deep.']},
+       {say:['narrator','And in the seventh month, the seventeenth day of the month, the ark rested on the mountains of Ararat. And Noaḥ went up to the edge of the mountain and looked out — and the waters decreased steadily… the tops of the mountains became visible.']},
        {say:['noach','A whole world under the water… and the high places returning, one by one. He remembered us. The deep had its bound after all — and now it draws back at His word, as it drew back on the first morning, when He divided the waters from the waters.']},
        {say:['narrator','And Noaḥ knew that the judgment had an end, and that mercy stood on the far side of the flood — as a mountain stands when the waters go down.']},
       ]},
    ],
   },
   outro:[
-   {art:'flood', music:'holy', text:'The deep that had covered the high mountains drew back at the word of Aluahim — and the ark rested, and the tops of the mountains were seen: the first dry ground of a washed world.', ref:'BERĔSHITH 8:4–5'},
+   {art:'flood', music:'holy', text:'And the waters decreased steadily until the tenth month. In the tenth month, on the first day of the month, the tops of the mountains became visible.', ref:'BERĔSHITH 8:5'},
   ],
   complete:'The ark rested on the mountains of Ararat — and the tops of the mountains were seen.'
 },
@@ -6821,8 +6943,8 @@ STORY.push(
        {wait:900},
        {rays:.9,raysX:16},{music:'holy'},
        {say:['voice','Never again shall I curse the ground because of man… While the earth remains, seedtime and harvest, and cold and heat, and winter and summer, and day and night shall not cease.']},
-       {say:['voice','Be fruitful and increase, and fill the earth. And THE FEAR OF YOU AND THE DREAD OF YOU is now on every beast of the earth, on every bird of the shamayim, on all that creeps on the ground, and on all the fish of the sea — into your hand they have been given. Every moving thing that lives is food for you, as the green plants — only, do not eat flesh with its life, its blood.']},
-       {say:['voice','And I shall establish My covenant with you and with your seed after you. I shall set My rainbow in the cloud — and it shall be for the sign of the covenant between Me and the earth.']},
+       {say:['voice','Bear fruit and increase and fill the earth. And THE FEAR OF YOU AND THE DREAD OF YOU is on every beast of the earth, on every bird of the shamayim, on all that creeps on the ground and on all the fish of the sea — into your hand they have been given. Every moving creature that lives is food for you… as I gave the green plants. But do not eat flesh with its life, its blood.']},
+       {say:['voice','And I, see, I establish My berith with you and with your seed after you. I shall set My rainbow in the cloud — and it shall be for the sign of the berith between Me and the earth.']},
        {rays:0},{sfx:'chime'},
        {say:['noach','Look up, all of you — the bow in the cloud! The sign of the covenant between Aluahim and the earth, for all generations to come. And see how even the beasts now draw back from us — the dread of man is upon them, as He has said.']},
       ]},
@@ -6830,14 +6952,14 @@ STORY.push(
   },
   outro:[
    {art:'rainbow', music:'holy', text:'“And the rainbow shall be in the cloud, and I shall see it, to remember the everlasting covenant between Aluahim and every living creature of all flesh that is on the earth.”', ref:'BERĔSHITH 9:16'},
-   {art:'corrupt', music:'tense', text:'And in those days the unclean ruchot began to lead astray the children of Noaḥ’s sons — and Noaḥ prayed. And it was said: “Let one-tenth of them remain before him, and let nine-tenths of them descend into the place of condemnation,” a tenth left subject to Satan on the earth.', ref:'YOḆELIM 10:1–11'},
-   {art:'cavehome', music:'holy', text:'And one of the mal’akim was commanded to teach Noaḥ all their medicines — how he might heal with the herbs of the earth. And Noaḥ wrote down all things in a book, and gave it to Shĕm his eldest son.', ref:'YOḆELIM 10:10–14'},
+   {art:'corrupt', music:'tense', text:'The unclean demons began to lead astray the children of the sons of Noaḥ… And he prayed before YAHUAH his Aluahim… He said, “Let one-tenth of them remain before him, and let nine-tenths of them descend into the place of condemnation.” … And a tenth part of them we left that they might be subject in the presence of Satan on the earth.', ref:'YOḆELIM 10:1–11'},
+   {art:'cavehome', music:'holy', text:'He commanded one of us to teach Noaḥ all their medicines… We explained to Noaḥ all the medicines of their diseases… how he might heal them with herbs of the earth. Noaḥ wrote down all things in a book… He gave all that he had written to Shĕm, his eldest son.', ref:'YOḆELIM 10:10–14'},
   ],
   complete:'I shall set My rainbow in the cloud, and it shall be for the sign of the covenant between Me and the earth.'
 },
 { id:'c10a', title:'The Vineyard and the Lots', ref:'BERĔSHITH 9:18–27 · YOḆELIM 8–9',
   intro:[
-   {art:'land', music:'eden', text:'And the sons of Noaḥ who went out of the ark were Shĕm, Ḥam and Yahpheth — and from these the whole earth was populated. And Noaḥ, a man of the soil, began and planted a vineyard.', ref:'BERĔSHITH 9:18–20'},
+   {art:'land', music:'eden', text:'And the sons of Noaḥ who went out of the ark were Shĕm and Ḥam and Yahpheth… These three were the sons of Noaḥ and all the earth was overspread from them. And Noaḥ, a man of the soil, began and planted a vineyard.', ref:'BERĔSHITH 9:18–20'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:46, h:32, seed:76,
@@ -6907,7 +7029,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'land', music:'holy', text:'“Cursed be Kena‛an… Baruk be YAHUAH, the Aluahim of Shĕm — Aluahim enlarge Yahpheth, and let him dwell in the tents of Shĕm.” And the earth was divided by lot among the three, with a mal’ak of the presence among them.', ref:'BERĔSHITH 9:25–27 · YOḆELIM 8:10–19'},
+   {art:'land', music:'holy', text:'“Cursed is Kena‛an…” And he said, “Baruk be YAHUAH, the Aluahim of Shĕm… Let Aluahim enlarge Yahpheth and let him dwell in the tents of Shĕm.” … They divided the earth into three parts, for Shĕm and Ḥam and Yahpheth, according to the inheritance of each… when one of us (mal’akim) who had been sent, was with them.', ref:'BERĔSHITH 9:25–27 · YOḆELIM 8:10–19'},
   ],
   complete:'The garment on two shoulders, the faces turned away — and the earth divided into three lots before YAHUAH.'
 },
@@ -6916,8 +7038,8 @@ STORY.push(
 { id:'act5', roman:'V', title:'The Scattering', ref:'BERĔSHITH 10–11', chapters:[
 { id:'c11', title:'A Tower to the Shamayim', ref:'BERĔSHITH 10–11 · YASHAR 7; 9',
   intro:[
-   {art:'expulsion', music:'tense', text:'And the garments of skin which Aluahim made for Aḏam and his wife — in their going out of the ark, Ḥam stole them from Noaḥ his father, and hid them from his brothers. And Ḥam gave them in secret to Cush; and Cush gave them to Nimroḏ, through his love for him.', ref:'YASHAR 7:24–29'},
-   {art:'corrupt', music:'royal', text:'And Nimroḏ became strong when he put on the garments, and he was a mighty hunter in the earth… and he reigned upon the earth. Therefore it became a saying: “Like Nimroḏ, a mighty hunter before YAHUAH.”', ref:'YASHAR 7:30–33; BERĔSHITH 10:9'},
+   {art:'expulsion', music:'tense', text:'And the garments of skin which Aluahim made for Aḏam and his wife… Noaḥ took them and brought them to the ark… And in their going out, Ḥam stole those garments from Noaḥ his father, and he took them and hid them from his brothers. And when Ḥam begat his first born Cush, he gave him the garments in secret… and when Cush had begotten Nimroḏ, he gave him those garments through his love for him.', ref:'YASHAR 7:24–29'},
+   {art:'corrupt', music:'royal', text:'And Nimroḏ became strong when he put on the garments, and Aluahim gave him might and strength, and he was a mighty hunter in the earth… and he reigned upon earth. … He was a mighty hunter before YAHUAH, therefore it is said, “Like Nimroḏ the mighty hunter before YAHUAH.”', ref:'YASHAR 7:30–33; BERĔSHITH 10:9'},
    {art:'babel', music:'royal', text:'And all the earth had one language and one speech… And they said, “Come, let us build ourselves a city and a tower whose top is in the shamayim, and make a name for ourselves, lest we be scattered over the face of all the earth.”', ref:'BERĔSHITH 11:1,4'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
@@ -6963,7 +7085,7 @@ STORY.push(
        {toast:'The tower rises…'},{wait:800},
        {fade:'out'},{prop:['tower',{stage:3}]},{fade:'in'},
        {toast:'Its head reaches toward the clouds.'},{wait:800},
-       {say:['narrator','And from the top they cast arrows toward the shamayim — and the arrows fell back upon them filled with blood. And they said to one another, “Surely we have slain all those that are in the shamayim.” But this was from YAHUAH, to cause them to err, whose every thought was rebellion.']},
+       {say:['narrator','And from the top they cast the arrows toward the shamayim — and all the arrows fell upon them filled with blood. And they said to each other, “Surely we have slain all those that are in shamayim.” For this was from YAHUAH in order to cause them to err, whose every thought was rebellion.']},
        {rays:.9,raysX:23},{sfx:'holy'},{music:'tense'},
        {say:['narrator','And YAHUAH came down to see the city and the tower which the sons of men had built. And YAHUAH said, “See, they are one people and they all have one language… now they are not going to be withheld from doing whatever they plan.”']},
        {say:['voice','Come, let Us go down and confuse their language, so that they do not understand one another’s speech.']},
@@ -6993,7 +7115,7 @@ STORY.push(
   },
   outro:[
    {art:'babel', music:'desert', text:'Therefore its name was called Baḇel, because there YAHUAH confused the language of all the earth — and from there YAHUAH scattered them over the face of all the earth.', ref:'BERĔSHITH 11:9'},
-   {art:'sodom', music:'sorrow', text:'And the three companies were judged, each according to its design — and as for the tower: the earth opened its mouth and swallowed a third of it, fire came down from the shamayim and burned a third, and a third stands to this day — its circumference three days’ walk.', ref:'YASHAR 9:35–39'},
+   {art:'sodom', music:'sorrow', text:'And YAHUAH smote the three divisions that were there, and he punished them according to their works and designs… And as to the tower… the earth opened its mouth and swallowed up one third part thereof, and a fire also descended from shamayim and burned another third, and the other third is left to this day… and its circumference is three days’ walk.', ref:'YASHAR 9:35–39'},
   ],
   complete:'Come, let Us go down and confuse their language… and they ceased building the city.'
 },
@@ -7061,18 +7183,18 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'eden', text:'And they sowed their land, and that year they brought enough grain home to eat, and they were satisfied. And the name of the lad Aḇram became great in all the land of the Chaldees.', ref:'YOḆELIM 11:21–24'},
+   {art:'journey', music:'eden', text:'All who were with him throughout all the land saw him cry out, and all the ravens turn back, and his name became great in all the land of the Chaldees… And they sowed their land, and that year they brought enough grain home to eat and they were satisfied.', ref:'YOḆELIM 11:21–24'},
   ],
   complete:'Seventy times the ravens turned back — and not one settled where Aḇram stood.'
 },
 { id:'c11b', title:'The Furnace of Kasdim', ref:'YASHAR 8–12',
   intro:[
-   {art:'stars', music:'night', text:'And in the night that Aḇram was born, the wise men of Nimroḏ lifted their eyes and saw one very large star come from the east and run through the shamayim — and it swallowed up four stars from the four sides of the shamayim. And they said, “This betokens the child born to Teraḥ this night, who will grow up and possess all the earth, he and his seed forever.”', ref:'YASHAR 8:1–4'},
-   {art:'babel', music:'tense', text:'And the wise men feared, saying, “If this becomes known to the king in the latter days, we shall all suffer death.” So they went and bowed before Nimroḏ: “A son was born to Teraḥ, the prince of your host — and we saw the sign of the shamayim at his birth.” And the king said to Teraḥ: “Give me the child, that we may slay him before his evil springs up against us — and I will give you for his value your house full of silver and gold.”', ref:'YASHAR 8:7–16'},
-   {art:'babel', music:'tense', text:'And Teraḥ answered with a parable: “Ayon son of Mored came to me, saying, Give me the great horse the king gave you, and I will give you silver and straw for its value…” And the king said, “Would you be so silly as to sell your horse for silver and straw?” And Teraḥ said, “And what shall silver and gold be to me, if my heir is gone?” And the king’s anger burned — and Teraḥ begged three days to consider, and the king granted it.', ref:'YASHAR 8:18–31'},
-   {art:'corrupt', music:'sorrow', text:'And when the king’s demand grew urgent, Teraḥ took a child of one of his servants, born that very day, and brought him to the king, and received value for him. And the king with all his might dashed his head to the ground — for he thought it had been Aḇram. And YAHUAH was with Teraḥ in this matter, that Nimroḏ might not cause Aḇram’s death; and it was concealed, and forgotten by the king.', ref:'YASHAR 8:32–34'},
-   {art:'wilderness', music:'desert', text:'And Teraḥ took Aḇram his son secretly, together with his mother and his nurse, and concealed them in a cave, and brought them their provisions monthly — and Aḇram was in the cave ten years, while the king and his sages thought Aḇram was dead. And when he came out, he went to Noaḥ and to Shĕm his son, and remained with them to learn the instruction of YAHUAH and His ways — thirty-nine years in Noaḥ’s house, and he knew YAHUAH from three years old.', ref:'YASHAR 8:35–36; 9:5–6'},
-   {art:'luminaries', music:'night', text:'And Aḇram saw the sun shining upon the earth and said, “Surely this sun is Aluahim — him I will serve.” But the sun set. And he saw the moon and the stars — and they darkened. And Aḇram said, “These are not Aluahim that made the earth and all mankind. These are His servants.”', ref:'YASHAR 9:13–19'},
+   {art:'stars', music:'night', text:'And it was in the night that Aḇram was born… all the wise men and conjurors… lifted up their eyes… and behold one very large star came from the east and ran in the shamayim, and he swallowed up the four stars from the four sides of the shamayim. … And they said to each other, “This only betokens the child that has been born to Teraḥ this night, who will… possess all the earth.”', ref:'YASHAR 8:1–4'},
+   {art:'babel', music:'tense', text:'“Should this thing get known to the king… we shall all suffer death.” And they all went to the king and bowed down to him… “We heard that a son was born to Teraḥ… the prince of thy host.” … And the king said to Teraḥ… “Give me the child, that we may slay him before his evil springs up against us, and I will give thee for his value, thy house full of silver and gold.”', ref:'YASHAR 8:7–16'},
+   {art:'babel', music:'tense', text:'And Teraḥ said to the king, “Ayon, son of Mored, came to me… saying, Give unto me the great and beautiful horse that the king gave thee, and I will give thee silver and gold… for its value.” … And the king answered Teraḥ… “Art thou so silly… to give thy beautiful horse for silver and gold?” … And Teraḥ answered the king… “What shall I do with silver and gold after the death of my son?” … And the king… gave him three days’ time.', ref:'YASHAR 8:18–31'},
+   {art:'corrupt', music:'sorrow', text:'And Teraḥ hastened (as the thing was urgent from the king), and he took a child from one of his servants… and Teraḥ brought the child to the king and received value for him. And YAHUAH was with Teraḥ in this matter, that Nimroḏ might not cause Aḇram’s death, and the king… with all his might dashed his head to the ground, for he thought it had been Aḇram… and it was forgotten by the king.', ref:'YASHAR 8:32–34'},
+   {art:'wilderness', music:'desert', text:'And Teraḥ took Aḇram his son secretly… and Aḇram was in the cave ten years, and the king and his princes, soothsayers and sages, thought that the king had killed Aḇram. And when Aḇram came out… he went to Noaḥ and his son Shĕm, and he remained with them to learn the instruction of YAHUAH and his ways… And Aḇram was in Noaḥ’s house thirty-nine years, and Aḇram knew YAHUAH from three years old.', ref:'YASHAR 8:35–36; 9:5–6'},
+   {art:'luminaries', music:'night', text:'And Aḇram saw the sun shining upon the earth, and Aḇram said unto himself, “Surely now this sun… is Aluahim, and him will I serve.” … And when evening came the sun set as usual… And Aḇram saw the stars and moon before him… And Aḇram said unto himself, “Surely these are not Aluahims that made the earth and all mankind, but these are the servants of Aluahim.”', ref:'YASHAR 9:13–19'},
   ],
   scene:{
    map:{biome:'interior', floorCol:'#a08a66', w:26, h:16, seed:65,
@@ -7112,7 +7234,7 @@ STORY.push(
        {prop:['idol4',{broken:true,solid:false}]},{burst:[18,5,'ash',10]},{wait:250},
        {prop:['idol5',{broken:true,solid:false}]},{burst:[6,7,'ash',10]},{wait:250},
        {prop:['idol6',{broken:true,solid:false}]},{burst:[20,7,'ash',10]},{wait:400},
-       {say:['narrator','And he broke them all — and when he had finished, he placed the hatchet in the hand of the great image that stood before them, and went out.']},
+       {say:['narrator','And he broke all his father’s Aluahims — and when he had done breaking the images, he placed the hatchet in the hand of the great Aluahim which was there before them, and he went out.']},
        {prop:['idolbig',{hatchet:true}]},
        {show:'terah'},{move:['terah',14.5,8,.06]},
       ]},
@@ -7128,15 +7250,15 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'sorrow', text:'And the king said, “Cast him into the fire.” And the furnace of Kasdim was heated three days and three nights, and all the people of the land stood to see. And Haran his brother, whose heart was divided — “If Aḇram prevails, I am Aḇram’s; if the king prevails, I am the king’s” — was cast in with him, and died, for his heart was not perfect with YAHUAH.', ref:'YASHAR 12:6–26'},
+   {art:'corrupt', music:'sorrow', text:'And the king… commanded his servants that they should prepare a fire for three days and three nights… and all the inhabitants of the land… stood opposite the furnace to see Aḇram. … And Haran said in his heart… “If Aḇram prevail… I will follow him, but if the king prevail I will go after the king.” … And Haran died when they had cast him into the fire… for his heart was not perfect with YAHUAH.', ref:'YASHAR 12:6–26'},
    {art:'furnace', music:'holy', sfx:'holy', text:'And Aḇram walked in the midst of the fire three days and three nights. And the servants ran to the king, saying, “Behold, we have seen Aḇram walking about in the midst of the fire, and not even the lower garments upon him are burned!”', ref:'YASHAR 12:27–28'},
-   {art:'furnace', music:'holy', text:'And the king called, “Servant of the Aluahim who is in the shamayim — come out, and stand before me!” And Aḇram came out of the fire and stood before the king with not a hair singed. And from that day, Aḇram walked free — and many of that land followed him, to learn the ways of YAHUAH.', ref:'YASHAR 12:30–42'},
+   {art:'furnace', music:'holy', text:'The king called to Aḇram, “O servant of the Aluahim who is in shamayim, go forth from amidst the fire and come hither before me.” … And he went forth from the fire and came and stood before the king… And Aḇram went forth from the king in shalom, and many of the king’s servants followed him, and about three hundred men joined him.', ref:'YASHAR 12:30–42'},
   ],
   complete:'He brought one man through the fire of Kasdim — and the fire of kings was never again the measure of truth.'
 },
 { id:'c12', title:'Go From Your Land', ref:'BERĔSHITH 12',
   intro:[
-   {art:'journey', music:'desert', text:'And YAHUAH said to Aḇram, “Go yourself out of your land, from your relatives and from your father’s house, to a land which I show you. And I shall make you a great nation and barak you and make your name great — and you shall be a blessing!”', ref:'BERĔSHITH 12:1–2'},
+   {art:'journey', music:'desert', text:'And YAHUAH said to Aḇram, “Go yourself out of your land, from your relatives and from your father’s house, to a land which I show you. And I shall make you a great nation and bless you and make your name great and you shall be a berakah!”', ref:'BERĔSHITH 12:1–2'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'desert', w:50, h:34, seed:71,
@@ -7176,7 +7298,7 @@ STORY.push(
      {type:'interact',prop:'tent',text:'Take down your tent',hiddenUntil:2,
       script:[
        {removeProp:'tent'},{sfx:'pickup'},
-       {say:['narrator','So Aḇram left, as YAHUAH had commanded him, and Lot went with him. And Aḇram was seventy-five years old in his going out of Ḥaran.']},
+       {say:['narrator','So Aḇram left, as YAHUAH had commanded him, and Lot went with him. And Aḇram was seventy-five years old when he set out from Ḥaran.']},
       ]},
      {type:'goto',x:44,y:28,radius:2.4,text:'Set out on the road south, toward Kena‛an',hiddenUntil:3,
       script:[
@@ -7195,13 +7317,13 @@ STORY.push(
   outro:[
    {art:'journey', music:'desert', text:'And Aḇram passed through the land… And he built there an mizbe’ach to YAHUAH, who had appeared to him. And Aḇram set out, continuing toward the South.', ref:'BERĔSHITH 12:6–9'},
   ],
-  complete:'Go yourself out of your land… and you shall be a blessing. And he went, as YAHUAH had commanded.'
+  complete:'Go yourself out of your land… and you shall be a berakah! So Aḇram left, as YAHUAH had commanded him.'
 },
 { id:'c12a', title:'Say You Are My Sister', ref:'BERĔSHITH 12:10–20 · YASHAR 15',
   intro:[
-   {art:'wilderness', music:'sorrow', text:'And there was a scarcity of food in the land, and Aḇram went down to Mitsrayim to dwell there, for the scarcity was severe. And he said to Sarai, “See, I know that you are a fair woman to look at — and when the Mitsrites see you, they shall kill me and keep you alive. Please say you are my sister, so that it shall be well with me for your sake.”', ref:'BERĔSHITH 12:10–13'},
-   {art:'journey', music:'tense', text:'Yet Aḇram did not put his confidence even in this: he placed Sarai in a chest and concealed it among the vessels. And at the gates of the city the officers said, “Open the chest, and give tithe of all it contains.” And Aḇram said, “All that you demand I will give — but you must not open the chest.”', ref:'YASHAR 15:7–13'},
-   {art:'egypt', music:'tense', text:'But they opened it — and the princes of Pharaoh saw the woman, and praised her to Pharaoh. And the woman was taken into Pharaoh’s house. And he treated Aḇram well for her sake — sheep and cattle and donkeys and male and female servants and she-donkeys and camels.', ref:'BERĔSHITH 12:15–16'},
+   {art:'wilderness', music:'sorrow', text:'And a scarcity of food came to be in the land and Aḇram went down to Mitsrayim to dwell there. And… he said to Sarai his wife, “See, I know that you are a fair woman to look at. And it shall be, when the Mitsrites see you… they shall kill me, but let you live. Please say you are my sister, so that it shall be well with me for your sake.”', ref:'BERĔSHITH 12:10–13'},
+   {art:'journey', music:'tense', text:'And yet with all these orders Aḇram did not put confidence in them, but he took Sarai and placed her in a chest and concealed it amongst their vessels… And the king’s servants approached Aḇram, saying… “Now open thou the chest and give tithe to the king of all that it contains.” … Aḇram said, “All that you desire I will give, but you must not open the chest.”', ref:'YASHAR 15:7–13'},
+   {art:'egypt', music:'tense', text:'And Pharaoh’s officials saw her and praised her before Pharaoh and the woman was taken to Pharaoh’s house. And he treated Aḇram well for her sake and he had sheep and cattle and male donkeys and male and female servants and female donkeys and camels.', ref:'BERĔSHITH 12:15–16'},
   ],
   scene:{
    map:{biome:'interior', w:28, h:17, seed:117,
@@ -7221,7 +7343,7 @@ STORY.push(
    objectives:[
      {type:'goto',x:14,y:9.5,radius:1.8,text:'You are summoned before Pharaoh at first light',
       script:[
-       {say:['narrator','For in the night, YAHUAH had plagued Pharaoh and his house with great plagues, because of Sarai, Aḇram’s wife. As often as the king reached out toward her, a mal’ak smote him — and smote his whole household — until the house was filled with terror.']},
+       {say:['narrator','For in the night, YAHUAH plagued Pharaoh and his house with great plagues because of Sarai, Aḇram’s wife. And when the king came near to Sarai, the mal’ak smote him to the ground, and acted thus to him the whole night, and the king was terrified — and the mal’ak smote heavily all the servants of the king, and his whole household.']},
        {shake:1.5},{sfx:'thunder'},{wait:500},
        {say:['pharaoh','WHAT is this you have done to me?! Why did you not tell me that she was your wife? Why did you say, “She is my sister”? — and so I was about to take her to me for a wife. The plagues of your Aluahim have walked through my house all night!']},
        {say:['avram','I said it because I feared, O king — I said: there is no fear of Aluahim in this place, and they shall kill me on account of my wife.']},
@@ -7233,7 +7355,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'desert', text:'And he went on his journeys from the South as far as Bĕyth Al, to the place of the mizbe’ach which he had made there at first — and there Aḇram called on the Name of YAHUAH.', ref:'BERĔSHITH 13:3–4'},
+   {art:'journey', music:'desert', text:'And he went on his journey from the South as far as Bĕyth Al, to the place where his tent had been at the beginning, between Bĕyth Al and Ai, to the place of the mizbe’ach which he had made there at first. And there Aḇram called on the Name of YAHUAH.', ref:'BERĔSHITH 13:3–4'},
   ],
   complete:'The kings of the earth learned it early: the Most High guards the household of Aḇram.'
 },
@@ -7267,7 +7389,7 @@ STORY.push(
        ]}},
        {say:['lot','The plain of the Yardĕn — it is well watered everywhere, like the garden of YAHUAH. I shall take the plain, and pitch my tents toward… Seḏom.']},
        {move:['lot',46,30,.06,'bg']},
-       {say:['narrator','And Lot chose for himself all the plain, and pitched his tent as far as Seḏom — but the men of Seḏom were evil and sinned before YAHUAH, exceedingly so.']},
+       {say:['narrator','So Lot chose for himself all the plain of the Yardĕn… and pitched his tent as far as Seḏom — but the men of Seḏom were evil and sinned before YAHUAH, exceedingly so.']},
       ]},
      {id:'sheep1',animal:'sheep',x:14,y:20,range:3,noTalk:true},
      {id:'sheep2',animal:'sheep',x:13,y:21.4,range:2,noTalk:true},
@@ -7285,7 +7407,7 @@ STORY.push(
      {type:'goto',x:24,y:26,radius:2.4,text:'At nightfall, walk out beneath the open sky',hiddenUntil:1,
       script:[
        {time:'deepnight'},{music:'night'},{fade:'out'},{fade:'in'},
-       {say:['narrator','And in those days Keḏorla‛omer and the sovereigns with him made war in the plain — and they took Lot, Aḇram’s brother’s son, and his goods, and left. And one who had escaped came and told Aḇram the Iḇri.']},
+       {say:['narrator','And in those days Keḏorla‛omer and the sovereigns that were with him made war in the plain — and they took Lot, Aḇram’s brother’s son who dwelt in Seḏom and his goods and left. And one who had escaped came and informed Aḇram the Heḇrew.']},
        {say:['avram','They have taken my brother. Arm yourselves — the three hundred and eighteen trained ones, born in my house! We pursue them, even to Dan!']},
        {spawn:{id:'aly1',char:'servant',x:22,y:25,wander:false,noTalk:true}},
        {spawn:{id:'aly2',char:'shepherd',x:26,y:25,wander:false,noTalk:true}},
@@ -7317,7 +7439,7 @@ STORY.push(
        {say:['lot','Uncle — you came. Three hundred and eighteen, against the armies of four sovereigns… and you came for me.']},
        {say:['narrator','And he brought back all the goods, and also brought back his brother Lot and his goods, and the women and the people.']},
        {fade:'out'},{move:['lotc',46,30,.2,'bg']},{despawn:'lotc'},{fade:'in'},
-       {say:['narrator','And Malkitseḏeq, sovereign of Shalĕm, kohen of the Most High Ăl, brought out bread and wine, and baruk him: “Baruk be Aḇram of the Most High Ăl, Possessor of the shamayim and earth.” And Aḇram gave him a tenth of all — and would not take for himself a thread or a sandal strap from the spoil.']},
+       {say:['narrator','And Malkitseḏeq, sovereign of Shalĕm, kohen of the Most High Al, brought out bread and wine, and baruk him: “Baruk be Aḇram of the Most High Al, Possessor of the shamayim and earth.” And Aḇram gave him a tenth of all — and would not take for himself a thread or a sandal strap from the spoil.']},
        {say:['narrator','After these matters the word of YAHUAH came to Aḇram in a vision, saying:']},
        {rays:.7,raysX:24},{sfx:'holy'},
        {say:['voice','Do not be afraid, Aḇram. I am your shield, your reward is exceedingly great.']},
@@ -7330,15 +7452,15 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'“Look now toward the shamayim and count the stars, if you are able to count them… so shall your seed be.” And he believed in YAHUAH, and He reckoned it to him for righteousness.', ref:'BERĔSHITH 15:5–6'},
+   {art:'stars', music:'holy', text:'And He brought him outside and said, “Look now toward the shamayim and count the stars if you are able to count them.” And He said to him, “So are your seed.” And he believed in YAHUAH and He reckoned it to him for righteousness.', ref:'BERĔSHITH 15:5–6'},
    {art:'rest', music:'night', text:'And a deep sleep fell upon Aḇram — and see, a frightening great darkness. And He said, “Know for certain that your seed are to be sojourners in a land not theirs, and shall serve them, and be afflicted four hundred years. But the nation whom they serve I am judging — and afterward they shall come out with great possessions… and in the fourth generation they shall return here.”', ref:'BERĔSHITH 15:12–16'},
    {art:'corrupt', music:'holy', text:'And it came to be, when the sun had gone down and it was dark, that see — a smoking oven and a burning torch passing between the pieces of the covenant. On that same day YAHUAH made a berith with Aḇram: “To your seed I have given this land.”', ref:'BERĔSHITH 15:17–18'},
   ],
   complete:'Count the stars, if you are able… so shall your seed be. And he believed in YAHUAH.'
 },
-{ id:'c13a', title:'The Ăl Who Sees', ref:'BERĔSHITH 16–17',
+{ id:'c13a', title:'The Al Who Sees', ref:'BERĔSHITH 16–17',
   intro:[
-   {art:'journey', music:'sorrow', text:'And Sarai, who bore Aḇram no child, gave Haḡar her Mitsrite female servant to Aḇram… and when Haḡar saw that she had conceived, her mistress was despised in her eyes. And Sarai treated her harshly — and Haḡar fled from her presence, into the wilderness.', ref:'BERĔSHITH 16:1–6'},
+   {art:'journey', music:'sorrow', text:'And Sarai, Aḇram’s wife, had borne him no child… And Sarai… took Haḡar her female servant, the Mitsrite and gave her to her husband Aḇram… And he went in to Haḡar and she conceived. And when she saw that she had conceived, her mistress was despised in her eyes… And Sarai treated her harshly and she fled from her presence.', ref:'BERĔSHITH 16:1–6'},
   ],
   scene:{
    map:{biome:'desert', w:46, h:30, seed:86,
@@ -7360,17 +7482,17 @@ STORY.push(
        {say:['hagar','I am fleeing from the presence of Sarai my mistress.']},
        {say:['malak','Return to your mistress, and humble yourself under her hand. I shall greatly increase your seed, too many to be counted. See, you are conceiving and bearing a son, and shall call his name Yahshma‛Al — for YAHUAH has heard your affliction.']},
        {wait:500},
-       {say:['hagar','…You are the Ăl who sees! Even here — have I seen after Him who sees me?']},
-       {say:['narrator','Therefore the well was called Be’ĕr Laḥai Ro’i — the Well of the Living One who sees me. And Haḡar returned, and bore Aḇram a son, and he called his name Yahshma‛Al.']},
+       {say:['hagar','…You are the Al who sees! Even here — have I seen after Him who sees me?']},
+       {say:['narrator','That is why the well was called Be’ĕr Laḥai Ro’i — the Well of the Living One who sees me. And Haḡar returned, and bore Aḇram a son, and Aḇram called the name of his son, whom Haḡar bore, Yahshma‛Al.']},
        {rays:0},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'And when Aḇram was ninety-nine years old, YAHUAH appeared to him and said: “I am Ăl Shaddai — walk before Me, and be perfect. And I give My berith between Me and you… and no longer is your name called Aḇram, but your name shall be AḆRAHAM, for I shall make you a father of many nations.”', ref:'BERĔSHITH 17:1–5'},
-   {art:'stars', text:'“As for Sarai your wife — Sarah is her name, and I shall barak her and give you a son by her also.” And the sign of the berith was given in the flesh of Aḇraham and all his house: every male circumcised, an everlasting covenant in their generations.', ref:'BERĔSHITH 17:10–16,23'},
+   {art:'stars', music:'holy', text:'And when Aḇram was ninety-nine years old, YAHUAH appeared to him and said: “I am Al Shaddai — walk before Me, and be perfect. And I give My berith between Me and you… and no longer is your name called Aḇram, but your name shall be AḆRAHAM, for I shall make you a father of many nations.”', ref:'BERĔSHITH 17:1–5'},
+   {art:'stars', text:'“So shall My berith be in your flesh, for an everlasting berith… As for Sarai your wife… Sarah is her name. And I shall bless her and also give you a son by her.” And Aḇraham took Yahshma‛Al his son and all those born in his house… and circumcised the flesh of their foreskins that same day, as Aluahim told him.', ref:'BERĔSHITH 17:10–16,23'},
   ],
-  complete:'You are the Ăl who sees — and Aḇram became Aḇraham, father of many nations.'
+  complete:'You are the Al who sees — and Aḇram became Aḇraham, father of many nations.'
 },
 { id:'c14', title:'Three Visitors at Mamrĕ', ref:'BERĔSHITH 18',
   intro:[
@@ -7417,11 +7539,11 @@ STORY.push(
        {say:['voice','I shall certainly return to you according to the time of life, and see — Sarah your wife is to have a son!']},
        {say:['narrator','And Sarah laughed within herself, saying, “After I have grown old, shall I have pleasure, my master being old too?”']},
        {rays:.7,raysX:30},{sfx:'holy'},
-       {say:['voice','Why did Sarah laugh? Is any matter too hard for YAHUAH? At the appointed time I am going to return to you, and Sarah is to have a son.']},
+       {say:['voice','Why did Sarah laugh? Is any matter too hard for YAHUAH? At the appointed time I am going to return to you, according to the time of life and Sarah is to have a son.']},
        {say:['sarah','I… I did not laugh.']},
        {say:['voice','No — but you did laugh.']},
        {rays:0},{wait:500},
-       {say:['narrator','And the men rose up and looked toward Seḏom… And YAHUAH said, “Shall I hide from Aḇraham what I am doing? The cry against Seḏom and Amorah is great, and their sin is very heavy.”']},
+       {say:['narrator','And the men rose up and looked toward Seḏom… And YAHUAH said, “Shall I hide from Aḇraham what I am doing? The outcry against Seḏom and Amorah is great and their sin is very heavy.”']},
        {move:['m2',44,28,.06,'bg']},{move:['m3',44,29,.06,'bg']},
        {say:['avraham','Would You also destroy the righteous with the wrong? Suppose there are fifty righteous within the city — far be it from You! Shall the Judge of all the earth not do right?']},
        {say:['voice','If I find in Seḏom fifty righteous within the city, then I shall spare all the place for their sakes.']},
@@ -7437,7 +7559,7 @@ STORY.push(
        ]}},
        {say:['avraham','Let not YAHUAH be displeased, and let me speak only this time: suppose ten are found there?']},
        {say:['voice','I shall not destroy it for the sake of ten.']},
-       {say:['narrator','And YAHUAH went away as soon as He had ended speaking to Aḇraham. And Aḇraham returned to his place.']},
+       {say:['narrator','Then YAHUAH went away as soon as He had ended speaking to Aḇraham. And Aḇraham returned to his place.']},
        {despawn:'m1'},{despawn:'m2'},{despawn:'m3'},
       ]},
    ],
@@ -7449,8 +7571,8 @@ STORY.push(
 },
 { id:'c14b', title:'Two Mal’akim at the Gate', ref:'BERĔSHITH 19:1–26 · YASHAR 19',
   intro:[
-   {art:'corrupt', music:'tense', text:'And the men of Seḏom set beds in the streets — and a traveller they would seize and stretch upon them. And when a poor man came to their land, they gave him silver and gold, and proclaimed through the city that no one give him a morsel of bread — until he died of hunger; and at his death they came and took back their silver and gold.', ref:'YASHAR 19:3–9'},
-   {art:'corrupt', music:'sorrow', text:'And a young woman who pitied a starving stranger and carried him bread was judged by their judges, anointed with honey from head to foot, and given to the bees — and her cry ascended to the shamayim. And YAHUAH was provoked at this, and at all the works of the cities of Seḏom: “The cry of it has grown great before Me.”', ref:'YASHAR 19:41–44'},
+   {art:'corrupt', music:'tense', text:'And the people of Seḏom had beds erected in the streets, and if a man came to these places they laid hold of him… and by force made him to lie in them. And when a poor man came to their land they would give him silver and gold, and cause a proclamation… not to give him a morsel of bread… then at his death all the people of the city would come and take their silver and gold.', ref:'YASHAR 19:3–9'},
+   {art:'corrupt', music:'sorrow', text:'And the people of those cities assembled and brought out the young woman, and anointed her with honey from head to foot… and they placed her before a swarm of bees… and her cries ascended to shamayim. And YAHUAH was provoked at this and at all the works of the cities of Seḏom… and in those days their evil doings and sins became great before YAHUAH.', ref:'YASHAR 19:41–44'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:50, h:30, seed:119,
@@ -7482,7 +7604,7 @@ STORY.push(
       script:[
        {show:'m1'},{show:'m2'},
        {move:['m1',23.5,22.5,.045,'bg']},{move:['m2',25.2,22.8,.045]},
-       {say:['narrator','And the two mal’akim came to Seḏom in the evening, and Lot was sitting in the gate of Seḏom. And Lot saw, and rose to meet them, and bowed himself with his face to the ground.']},
+       {say:['narrator','And the two mal’akim came to Seḏom in the evening, and Lot was sitting in the gate of Seḏom. And when Lot saw them, he rose up to meet them and he bowed himself with his face toward the ground.']},
        {say:['lot','Look, please my masters — please turn in to your servant’s house and spend the night, and wash your feet. Then rise early and go your way.']},
        {say:['malak','No — we shall spend the night in the open square.']},
        {say:['lot','I beg you — not in this city’s square. Not at night. Come, my house is near.']},
@@ -7525,7 +7647,7 @@ STORY.push(
       script:[
        {time:'morning'},
        {say:['malak','Arise! Take your wife and your two daughters who are here, lest you be consumed in the punishment of the city!']},
-       {say:['narrator','And while he lingered, the men grasped his hand, and his wife’s hand, and the hands of his two daughters — YAHUAH having compassion on him — and they brought him out, and set him outside the city.']},
+       {say:['narrator','And while he loitered, the men took hold of his hand and his wife’s hand and the hands of his two daughters — YAHUAH having compassion on him — and they brought him out and set him outside the city.']},
        {call:g=>{ ['wife','d1','d2','m1','m2'].forEach(id=>{ const n=g.world.npcs.find(n=>n.id===id);
           if(n){ n.wander=false; n.follow=true; } }); }},
        {say:['malak','Escape for your life! Do not look behind you, nor stay anywhere in the plain. Escape to the mountains, lest you be consumed!']},
@@ -7558,7 +7680,7 @@ STORY.push(
   outro:[
    {art:'sodom', music:'sorrow', text:'And the sun had risen upon the earth when Lot entered Tso‛ar… and see, the smoke of the land went up like the smoke of a furnace.', ref:'BERĔSHITH 19:23,28'},
   ],
-  complete:'The cry of the city had grown great before YAHUAH — and only four went out, and only three went on.'
+  complete:'The cry against them has grown great before the face of YAHUAH — and only four went out, and only three went on.'
 },
 { id:'c15', title:'Seḏom', ref:'BERĔSHITH 19',
   intro:[
@@ -7620,22 +7742,22 @@ STORY.push(
       ]},
      {type:'interact',prop:'cave',text:'Return to the cave for the night',hiddenUntil:1,
       script:[
-       {say:['narrator','And the first-born said to the younger, “Our father is old, and there is no man in the earth to come in to us as is the way of all the earth. Come, let us make our father drink wine, and we shall preserve seed of our father.” — for they believed the whole world had ended, as in the days of the flood.']},
+       {say:['narrator','And the first-born said to the younger, “Our father is old and there is no man on the earth to come in to us, as is the way of all the earth. Come, let us make our father drink wine… so that we preserve the seed of our father.” — for they thought that the whole earth was destroyed, as in the days of the flood.']},
        {fade:'out'},{time:'night'},{wait:1200},{fade:'in'},
-       {say:['narrator','And both the daughters of Lot conceived by their father — and he did not know. The first-born bore Mo‛aḇ, father of the Mo‛aḇites; and the younger bore Ben-Ammi, father of the children of Ammon, to this day.']},
+       {say:['narrator','Thus both the daughters of Lot became pregnant by their father — and he was not aware of it. And the first-born bore a son and called his name Mo‛aḇ, he is the father of the Mo‛aḇites. And the younger, she also bore a son and called his name Ben-Ammi, he is the father of the children of Ammon to this day.']},
       ]},
    ],
   },
   outro:[
-   {art:'mountain', music:'holy', text:'From the heights above the ruined plain came Mo‛aḇ and Ammon. Yet out of Mo‛aḇ, in the fullness of time, came Ruth — and from Ruth, Dawiḏ: even from the cave of fear and shame, mercy traced a line toward the Sceptre.', ref:'BERĔSHITH 19:36–38 · RUTH 4'},
+   {art:'mountain', music:'holy', text:'And the first-born bore a son and called his name Mo‛aḇ, he is the father of the Mo‛aḇites to this day. And the younger… called his name Ben-Ammi… And Bo‛az said… “Ruth the Mo‛aḇitess… I have acquired as my wife”… And they called his name Oḇĕḏ. He was the father of Yahshai, the father of Dawiḏ.', ref:'BERĔSHITH 19:36–38 · RUTH 4'},
   ],
   complete:'Lot dwelt in the cave of the mountain — and the smoke of the plain went up behind him.'
 },
 { id:'c16', title:'Laughter', ref:'BERĔSHITH 21',
   intro:[
-   {art:'wilderness', music:'tense', text:'And Aḇraham sojourned in Gerar, and said of Sarah his wife, “She is my sister” — and Aḇimeleḵ sovereign of Gerar sent and took Sarah. But Aluahim came to Aḇimeleḵ in a dream by night and said to him, “See, you are a dead man, because of the woman whom you have taken — for she is a man’s wife.”', ref:'BERĔSHITH 20:1–3'},
-   {art:'rest', music:'holy', text:'“Restore the man’s wife, for he is a naḇi, and he shall pray for you, and you shall live.” And Aḇimeleḵ restored Sarah with sheep and cattle and a thousand pieces of silver — and Aḇraham prayed, and Aluahim healed Aḇimeleḵ’s house; for YAHUAH had closed up all the wombs of the house because of Sarah.', ref:'BERĔSHITH 20:7,14–18'},
-   {art:'journey', music:'eden', text:'And YAHUAH visited Sarah as He had said… And Sarah conceived and bore Aḇraham a son in his old age, at the appointed time of which Aluahim had spoken to him. And Aḇraham called his name Yahtsḥaq — “laughter.”', ref:'BERĔSHITH 21:1–3'},
+   {art:'wilderness', music:'tense', text:'And Aḇraham… stayed in Gerar. And Aḇraham said concerning Sarah his wife, “She is my sister.” And Aḇimeleḵ sovereign of Gerar sent and took Sarah. But Aluahim came to Aḇimeleḵ in a dream by night and said to him, “See, you are a dead man because of the woman whom you have taken, for she is a man’s wife.”', ref:'BERĔSHITH 20:1–3'},
+   {art:'rest', music:'holy', text:'“And now, return the man’s wife, for he is a naḇi and let him pray for you and you live.” Then Aḇimeleḵ took sheep and cattle… and gave them to Aḇraham. And he returned Sarah his wife to him… And Aḇraham prayed to Aluahim and Aluahim healed Aḇimeleḵ… for YAHUAH had closed up all the wombs of the house of Aḇimeleḵ because of Sarah.', ref:'BERĔSHITH 20:7,14–18'},
+   {art:'journey', music:'eden', text:'And YAHUAH visited Sarah as He had said… So Sarah conceived and bore Aḇraham a son in his old age, at the appointed time of which Aluahim had spoken to him. And Aḇraham called the name of his son who was born to him, whom Sarah bore to him, Yahtsḥaq.', ref:'BERĔSHITH 21:1–3'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'desert', w:46, h:32, seed:111,
@@ -7676,20 +7798,20 @@ STORY.push(
      {type:'interact',prop:'well',text:'Plant a tamarisk by the well of Be’ĕrsheḇa',hiddenUntil:3,
       script:[
        {addProp:{type:'tree',x:35,y:23,col:'#5d7a35',solid:true}},{sfx:'chime'},
-       {say:['avraham','Here I call on the Name of YAHUAH, the Everlasting Ăl. He keeps covenant down every long year of waiting.']},
+       {say:['avraham','Here I call on the Name of YAHUAH, the Everlasting Al. He keeps covenant down every long year of waiting.']},
       ]},
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'And Aḇraham planted a tamarisk tree in Be’ĕrsheḇa, and there called on the Name of YAHUAH, the Everlasting Ăl.', ref:'BERĔSHITH 21:33'},
+   {art:'journey', music:'holy', text:'And Aḇraham planted a tamarisk tree in Be’ĕrsheḇa, and there called on the Name of YAHUAH, the Everlasting Al.', ref:'BERĔSHITH 21:33'},
   ],
-  complete:'Aluahim has made laughter for me — at the appointed time, exactly as He had spoken.'
+  complete:'Aluahim has made me laugh — at the appointed time of which Aluahim had spoken to him.'
 },
-{ id:'c17', title:'YAHUAH Yireh', ref:'BERĔSHITH 22 · YASHAR 23',
+{ id:'c17', title:'YAHUAH Yahreh', ref:'BERĔSHITH 22 · YASHAR 23',
   intro:[
    {art:'stars', music:'tense', text:'There were voices in the shamayim regarding Aḇraham — that he was faithful in all that He told him. And Prince Mastema came and said before Aluahim: “Look, Aḇraham loves Yahtsḥaq his son and delights in him above all things. Tell him to offer him as a burnt offering — and You will see if he will do this command.”', ref:'YOḆELIM 17:15–16'},
    {art:'moriah', music:'sorrow', text:'And it came to be after these matters that Aluahim tried Aḇraham… “Take your son, now, your only son Yahtsḥaq, whom you love… and offer him there as a burnt offering on one of the mountains which I command you.”', ref:'BERĔSHITH 22:1–2'},
-   {art:'moriah', text:'And Aḇraham rose early in the morning… and the two of them went together, three days’ journey, to the land of Moriyah.', ref:'BERĔSHITH 22:3–4'},
+   {art:'moriah', text:'And Aḇraham rose early in the morning… and took two of his young men with him and Yahtsḥaq his son… And on the third day Aḇraham lifted his eyes and saw the place from a distance.', ref:'BERĔSHITH 22:3–4'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'rocky', w:44, h:34, seed:121,
@@ -7711,7 +7833,7 @@ STORY.push(
      {type:'goto',x:22,y:26,radius:2,text:'Climb the mountain of Moriyah',
       script:[
        {say:['avraham','Stay here with the donkey, while the boy and I go yonder and worship — and come back to you.']},
-       {say:['narrator','And Aḇraham took the wood of the burnt offering and laid it on Yahtsḥaq his son, and he took the fire in his hand, and the knife — and the two of them went together.']},
+       {say:['narrator','And Aḇraham took the wood of the burnt offering and laid it on Yahtsḥaq his son, and he took the fire in his hand, and a knife — and the two of them went together.']},
        {hold:['player','torch']},
        {say:['yitschaq','My father! See, the fire and the wood — but where is the lamb for a burnt offering?']},
        {say:['avraham','My son… Aluahim does provide for Himself the lamb for a burnt offering.']},
@@ -7724,7 +7846,7 @@ STORY.push(
        {say:['yitschaq','Father… do you hear what this man says?']},
        {say:['avraham','Take heed of him, my son, and do not listen — for I know him. It was no dream and no deceiver that spoke to me; it was YAHUAH, whose voice I have known since the furnace of Kasdim. Away from us, Satan — we walk in the command of the living Aluahim.']},
        {despawn:'oldman'},{sfx:'bad'},{burst:[22,15,'ash',14]},
-       {say:['narrator','And seeing he could not prevail, he hid himself — and passed before them on the road, and became a great brook of water where no brook had ever run.']},
+       {say:['narrator','And seeing he could not prevail over them he hid himself from them — and he went and passed before them in the road; and he transformed himself to a large brook of water, where no brook had ever run.']},
        {call:g=>{ const m=g.world.map; g._brookTiles=[];
          for(let y=12+g.oy;y<=14+g.oy;y++)for(let x=17+g.ox;x<=27+g.ox;x++){
            if(!SOLID.has(m.tiles[y*m.w+x])){ g._brookTiles.push([x,y,m.tiles[y*m.w+x]]); m.tiles[y*m.w+x]=(y===13+g.oy)?6:5; } } }},
@@ -7734,7 +7856,7 @@ STORY.push(
        {move:['player',22,14.6,.035,'bg']},{move:['yitschaq',23.2,14.8,.035]},
        {call:g=>{ g.world.player.submerged=true; const y=g.world.npcs.find(n=>n.id==='yitschaq'); if(y)y.submerged=true; }},
        {move:['player',22,13.2,.025,'bg']},{move:['yitschaq',23.2,13.4,.025]},
-       {say:['narrator','And they entered the brook and passed through it — and the waters at first reached their legs; and they went deeper, and the waters reached up to their necks.']},
+       {say:['narrator','And they entered the brook and passed through it — and the waters at first reached their legs. And they went deeper in the brook and the waters reached up to their necks.']},
        {say:['avraham','I know this mountain — and there was never water here! Be rebuked, and be dry, for we go at the word of YAHUAH!']},
        {rays:.8,raysX:22},{sfx:'holy'},
        {call:g=>{ const m=g.world.map;
@@ -7749,13 +7871,13 @@ STORY.push(
       script:[
        {hold:['player']},
        {prop:['altar',{stage:2}]},{wait:600},
-       {say:['narrator','And Aḇraham built the mizbe’ach there and laid the wood in order. And he bound Yahtsḥaq his son and laid him on the mizbe’ach, on the wood. And Aḇraham stretched out his hand and took the knife…']},
+       {say:['narrator','And Aḇraham built a mizbe’ach there and placed the wood in order. And he bound Yahtsḥaq his son and laid him on the mizbe’ach, upon the wood. And Aḇraham stretched out his hand and took the knife…']},
        {sfx:'holy'},{rays:1,raysX:22},{shake:2},{music:'holy'},
        {say:['malak','Aḇraham! Aḇraham! Do not lay your hand on the boy, nor touch him. For now I know that you fear Aluahim, seeing you have not withheld your son, your only son, from Me.']},
        {wait:400},
        {spawn:{id:'ram',animal:'ram',x:25,y:9,wander:false,noTalk:true}},
-       {say:['narrator','And Aḇraham lifted his eyes and looked — and see, behind him was a ram caught in a thicket by its horns.']},
-       {say:['avraham','YAHUAH Yireh — YAHUAH provides! In the Mount of YAHUAH it shall be provided. Come, Yahtsḥaq — He has given the lamb in your place.']},
+       {say:['narrator','And Aḇraham lifted his eyes and looked — and saw behind him a ram caught in a bush by its horns.']},
+       {say:['avraham','YAHUAH Yahreh — YAHUAH provides! In the Mount of YAHUAH it shall be provided. Come, Yahtsḥaq — He has given the lamb in your place.']},
        {despawn:'ram'},{prop:['altar',{stage:3}]},{burst:[22,8,'spark',18]},
        {say:['malak','By Myself I have sworn, declares YAHUAH: because you have not withheld your only son, I shall certainly barak you, and your seed shall be as the stars of the shamayim and as the sand on the seashore — and in your seed all the nations of the earth shall be baruk, because you have obeyed My voice.']},
        {rays:0},
@@ -7763,15 +7885,15 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'moriah', music:'holy', text:'And Aḇraham called the name of the place “YAHUAH Yireh” — as it is said to this day, “In the Mount of YAHUAH it is provided.”', ref:'BERĔSHITH 22:14'},
-   {art:'light', music:'holy', text:'And the holy mal’akim had stood weeping over the mizbe’ach, while Prince Mastema and his mal’akim rejoiced, saying, “Now we shall see if Aḇraham is faithful.” And the faithfulness of Aḇraham was shown, and Prince Mastema was put to shame.', ref:'YOḆELIM 18:9–12'},
+   {art:'moriah', music:'holy', text:'And Aḇraham called the name of the place, “YAHUAH Yahreh,” as it is said to this day, “On the mountain YAHUAH provides.”', ref:'BERĔSHITH 22:14'},
+   {art:'light', music:'holy', text:'And the qadash mal’akim stood and wept over the mizbe’ach as prince Mastema and his mal’akim rejoiced and said, “Yahtsḥaq will be destroyed and we will see if Aḇraham is faithful”… and YAHUAH said, “…for I have shown that he fears YAHUAH.” … Prince Mastema was put to shame.', ref:'YOḆELIM 18:9–12'},
   ],
-  complete:'YAHUAH Yireh — in the Mount of YAHUAH it is provided. In your seed all the nations of the earth shall be baruk.'
+  complete:'YAHUAH Yahreh — in the Mount of YAHUAH it is provided. In your seed all the nations of the earth shall be baruk.'
 },
 { id:'c17a', title:'A Bride for Yahtsḥaq', ref:'BERĔSHITH 23–24',
   intro:[
-   {art:'rest', music:'sorrow', text:'And the life of Sarah was one hundred and twenty-seven years — and Sarah died in Ḥeḇron, and Aḇraham came to mourn for her and to weep for her. And he bought from Ephron the cave of Maḵpĕlah for four hundred sheqels of silver, and buried Sarah his wife there.', ref:'BERĔSHITH 23'},
-   {art:'journey', music:'desert', text:'And Aḇraham said to the oldest servant of his house: “Swear by YAHUAH, the Aluahim of the shamayim, that you do not take a wife for my son from the daughters of Kena‛an — but go to my land and my relatives, and take a wife for my son Yahtsḥaq.”', ref:'BERĔSHITH 24:2–4'},
+   {art:'rest', music:'sorrow', text:'And Sarah lived one hundred and twenty-seven years… And Sarah died in Qiryath Arba, that is Ḥeḇron… and Aḇraham came to mourn for Sarah and to weep for her… And Aḇraham weighed out the silver for Ephron… four hundred sheqels of silver… And after this Aḇraham buried Sarah his wife in the cave of the field of Maḵpĕlah.', ref:'BERĔSHITH 23'},
+   {art:'journey', music:'desert', text:'And Aḇraham said to the oldest servant of his house… “Please, put your hand under my thigh, so that I make you swear by YAHUAH, the Aluahim of the shamayim… that you do not take a wife for my son from the daughters of the Kena‛anites… but to go to my land and to my relatives and take a wife for my son Yahtsḥaq.”', ref:'BERĔSHITH 24:2–4'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:46, h:30, seed:96,
@@ -7801,7 +7923,7 @@ STORY.push(
        {say:['rivqah','Drink, my master. — And let me draw water for your camels too, until they have finished drinking.']},
        {call:g=>{ g.world.npcs.forEach(n=>{ if(n.animal==='camel'){ n.follow=false; n.target={x:g.ox+24+(n.id==='cam1'?-1.5:1.2),y:g.oy+15.6}; n.speed=.04; } }); }},
        {wait:1600},{sfx:'pickup'},
-       {say:['narrator','And she quickly emptied her jar into the trough, and ran back to the well to draw — and drew for all his camels. And the man, wondering at her, remained silent, to know whether YAHUAH had prospered his way or not.']},
+       {say:['narrator','And she hurried and emptied her jar into the trough, ran back to the fountain to draw water — and drew for all his camels. And watching her, the man remained silent in order to know whether YAHUAH had prospered his way or not.']},
        {say:['abservant','Whose daughter are you? Is there room in your father’s house for us to spend the night?']},
        {say:['rivqah','I am the daughter of Bethu’al, son of Milkah, whom she bore to Naḥor. We have both straw and fodder enough, and room to spend the night.']},
        {sfx:'chime'},{burst:[24,15,'mote',14]},
@@ -7811,7 +7933,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'And they called Riḇqah and said to her, “Are you going with this man?” And she said, “I shall go.” And they sent away Riḇqah their sister, with her nurse — and baruk her: “Become the mother of thousands of ten thousands.”', ref:'BERĔSHITH 24:58–60'},
+   {art:'journey', music:'holy', text:'So they called Riḇqah and said to her, “Are you going with this man?” And she said, “I shall go.” So they let go Riḇqah their sister and her nurse… And they baruk Riḇqah and said to her, “Let our sister become the mother of thousands of ten thousands and let your seed possess the gates of those who hate them.”', ref:'BERĔSHITH 24:58–60'},
   ],
   complete:'Being on the way, YAHUAH led me. — “Are you going with this man?” “I shall go.”'
 },
@@ -7842,7 +7964,7 @@ STORY.push(
        {show:'rivqah'},{show:'servant'},
        {say:['narrator','And he lifted his eyes and looked — and saw: camels coming.']},
        {move:['rivqah',34,18.5,.04,'bg']},{move:['servant',35,20.5,.04]},
-       {say:['narrator','And Riḇqah lifted her eyes, and saw Yahtsḥaq — and she came down from the camel.']},
+       {say:['narrator','And Riḇqah lifted her eyes — and when she saw Yahtsḥaq she dismounted from her camel.']},
        {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
          if(r){ r.mount=null; }
          g.world.npcs.push(Object.assign(makeNpc({id:'rcam',animal:'camel',x:g.ox+35.5,y:g.oy+17.5,wander:false,noTalk:true}),g._staged?{_story:1}:{})); }},
@@ -7877,7 +7999,7 @@ STORY.push(
 },
 { id:'c17c', title:'The Death of Aḇraham', ref:'BERĔSHITH 25:7–10 · YOḆELIM 22–23',
   intro:[
-   {art:'rest', music:'sorrow', text:'And Aḇraham was old and full of days. And in the night of the feast, he called young Ya‘aqoḇ, the son of his son, to his bed — for he loved him, and saw that the blessing would run through him.', ref:'YOḆELIM 22:1–10'},
+   {art:'rest', music:'sorrow', text:'Yahtsḥaq and Yahshma‛Al came… to celebrate the feast of weeks… to Aḇraham, their father… “I am one hundred three score and fifteen years, an old man and full of days…” He called Ya‘aqoḇ and said, “My son Ya‘aqoḇ, may the Aluahim of all bless you… and may He choose you and your offspring that you may become a people for His inheritance…”', ref:'YOḆELIM 22:1–10'},
   ],
   scene:{
    map:{biome:'interior', floorCol:'#a89272', w:24, h:15, seed:108,
@@ -7895,22 +8017,22 @@ STORY.push(
        {call:g=>{ const p=g.world.player; p.x=13.4; p.y=6.8; p.lying=true; p.moving=false; p.dir='right';
          const a=g.world.npcs.find(n=>n.id==='avraham'); if(a) a.dir='down'; }},
        {wait:1200},
-       {say:['narrator','And he placed two of Ya‘aqoḇ’s fingers upon his eyes, and he baruk the Aluahim of Aluahim — and he covered his face, and stretched out his feet, and slept the sleep of eternity, and was gathered to his fathers.']},
+       {say:['narrator','And he placed Ya‘aqoḇ’s two fingers on his eyes, and he baruk the Aluahim of Aluahims — and he covered his face and stretched out his feet and slept the sleep of eternity, and was gathered to his fathers.']},
        {fade:'out'},{music:'night'},{wait:1300},{fade:'in'},
        {say:['narrator','And in spite of all this, Ya‘aqoḇ was lying in his embracing arms — and knew not that Aḇraham, his father’s father, was dead.']},
        {call:g=>{ g.world.player.lying=false; }},
        {say:['yaaqov','…Grandfather? The fire has burned low — grandfather? Father… FATHER! He is cold — he is cold as ice! Father, father!']},
-       {say:['narrator','But there was no answer. And Ya‘aqoḇ rose from his embracing arms and ran and told Riḇqah his mother.']},
+       {say:['narrator','But there was no answer. He arose from his embracing arms and ran and told Riḇqah, his mother.']},
        {spawn:{id:'rivqah',char:'rivqah',x:12,y:13,wander:false,noTalk:true}},
        {spawn:{id:'yitschaq',char:'yitschaq_o',x:10.5,y:13.5,wander:false,noTalk:true}},
        {move:['rivqah',13,8,.05,'bg']},{move:['yitschaq',15,8.5,.05]},
        {say:['narrator','And Riḇqah went to Yahtsḥaq in the night, and told him — and they went together, and Ya‘aqoḇ with them, and a lamp was in his hand. And they found Aḇraham lying dead.']},
        {say:['yitschaq_o','Father… my father.']},
-       {say:['narrator','And Yahtsḥaq fell on the face of his father, and kissed him, and wept.']},
+       {say:['narrator','And Yahtsḥaq fell on the face of his father and wept and kissed him.']},
        {wait:700},
        {spawn:{id:'yishmael',char:'yishmael',x:12,y:13.5,wander:false,noTalk:true}},
        {move:['yishmael',17,8.5,.05]},
-       {say:['narrator','And Aḇraham breathed his last and died in a good old age, aged and satisfied — one hundred and seventy-five years — and was gathered to his people. And his sons Yahtsḥaq and Yishma‛Al — together — buried him in the cave of Maḵpĕlah, beside Sarah his wife.']},
+       {say:['narrator','And Aḇraham breathed his last and died in a good old age, aged and satisfied — one hundred and seventy-five years — and was gathered to his people. And his sons Yahtsḥaq and Yahshma‛Al — together — buried him in the cave of Maḵpĕlah… There Aḇraham was buried with Sarah his wife.']},
        {rays:.6,raysX:15},{sfx:'holy'},{music:'holy'},
        {say:['voice','And after the death of Aḇraham, I baruk Yahtsḥaq his son — and he dwelt by Be’ĕr Laḥai Ro’i, the well of the Living One who sees.']},
        {rays:0},
@@ -7933,7 +8055,7 @@ STORY.push(
 { id:'act7', roman:'VII', title:'Ya‘aqoḇ', ref:'BERĔSHITH 25–35', chapters:[
 { id:'c18', title:'The Birthright', ref:'BERĔSHITH 25; 27 · YASHAR 27',
   intro:[
-   {art:'journey', music:'desert', text:'And Yahtsḥaq prayed to YAHUAH for his wife, because she was barren. And YAHUAH answered him, and Riḇqah his wife conceived… two nations are in your womb, and the older shall serve the younger.', ref:'BERĔSHITH 25:21,23'},
+   {art:'journey', music:'desert', text:'And Yahtsḥaq prayed to YAHUAH for his wife, because she was barren. And YAHUAH answered his prayer and Riḇqah his wife conceived. And YAHUAH said to her, “Two nations are in your womb and two peoples shall be separated from your body. And one people shall be stronger than the other and the older serve the younger.”', ref:'BERĔSHITH 25:21,23'},
   ],
   scene:{
    map:{biome:'plains', w:46, h:32, seed:131,
@@ -7984,14 +8106,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'tense', text:'Years later, with goat-skins on his hands and his brother’s garments on his back, Ya‘aqoḇ took the blessing also. And Ĕsaw cried with an exceedingly great and bitter cry — and Ya‘aqoḇ fled for his life, toward Ḥaran.', ref:'BERĔSHITH 27'},
+   {art:'journey', music:'tense', text:'And Riḇqah took the best garments of her elder son Ĕsaw… and put them on Ya‘aqoḇ… And she put the skins of the young goats on his hands… When Ĕsaw heard the words of his father, he cried with an exceedingly great and bitter cry… “Your brother came with deceit and took your berakah.” … And Riḇqah… called Ya‘aqoḇ… “…rise, flee to my brother Laḇan in Ḥaran.”', ref:'BERĔSHITH 27'},
   ],
   complete:'Thus Ĕsaw despised his birthright — and the heel-holder grasped what YAHUAH had promised, by his own crooked strength.'
 },
 { id:'c18b', title:'Wells of Strife', ref:'BERĔSHITH 26',
   intro:[
-   {art:'wilderness', music:'desert', text:'And there was a scarcity of food in the land. And YAHUAH appeared to Yahtsḥaq and said, “Do not go down to Mitsrayim. Dwell in this land, and I am with you and shall barak you — for I give all these lands to you and your seed, because Aḇraham obeyed My voice, and guarded My Charge: My commands, My laws, and My Torot.”', ref:'BERĔSHITH 26:1–5'},
-   {art:'journey', music:'tense', text:'And Yahtsḥaq dwelt in Gerar. And like his father before him he said of his wife, “She is my sister” — but Aḇimeleḵ sovereign of the Philistines looked through a window, and saw, and called him: “She is your wife! How could you say she is my sister? One of the people might well have lain with her, and you would have brought guilt on us!” And he commanded: whoever touches this man or his wife shall certainly be put to death.', ref:'BERĔSHITH 26:6–11'},
+   {art:'wilderness', music:'desert', text:'And there was a scarcity of food in the land… And Yahtsḥaq went to Aḇimeleḵ… in Gerar. And YAHUAH appeared to him and said, “Do not go down to Mitsrayim… Sojourn in this land. And I shall be with you and bless you, for I give all these lands to you and your seed… because Aḇraham obeyed My voice and guarded My Charge: My commands, My laws and My Torot.”', ref:'BERĔSHITH 26:1–5'},
+   {art:'journey', music:'tense', text:'And Yahtsḥaq dwelt in Gerar. And when the men of the place asked about his wife, he said, “She is my sister.” … Aḇimeleḵ sovereign of the Philistines looked through a window and he watched and saw Yahtsḥaq playing with Riḇqah his wife. So Aḇimeleḵ called Yahtsḥaq and said, “See, truly she is your wife!” … And Aḇimeleḵ commanded all his people, saying, “He who touches this man or his wife shall certainly be put to death.”', ref:'BERĔSHITH 26:6–11'},
   ],
   scene:{
    map:{biome:'desert', w:50, h:30, seed:148,
@@ -8020,7 +8142,7 @@ STORY.push(
      {type:'interact',prop:'field',text:'Reap what you sowed in the land of Gerar',
       script:[
        {sfx:'pickup'},{burst:[15,14,'mote',14]},
-       {say:['narrator','And Yahtsḥaq sowed in that land, and reaped in the same year a hundredfold — and YAHUAH baruk him. And the man grew great, until he became very great: flocks, herds, and a great body of servants — and the Philistines envied him.']},
+       {say:['narrator','And Yahtsḥaq sowed in that land, and reaped in the same year a hundredfold — and YAHUAH baruk him. And the man grew great and went forward until he became very great… possessions of flocks and possessions of herds and a great body of servants — and the Philistines envied him.']},
        {say:['narrator','And the Philistines had stopped all the wells which his father’s servants had dug in the days of Aḇraham, and filled them with dirt. And Aḇimeleḵ said to Yahtsḥaq, “Go away from us, for you are much mightier than we.”']},
       ]},
      {type:'goto',x:22,y:18,radius:2,text:'Dig again the first well of your father, in the wadi of Gerar',hiddenUntil:1,
@@ -8052,7 +8174,7 @@ STORY.push(
        {say:['narrator','And he moved from there and dug another well — and they did not strive over it.']},
        {say:['yitschaq','Reḥoḇoth! — for now YAHUAH has made room for us, and we shall bear fruit in the land.']},
        {time:'night'},{music:'night'},{rays:.7,raysX:39},{sfx:'holy'},
-       {say:['voice','I am the Aluahim of your father Aḇraham. Do not fear, for I am with you, and shall barak you and increase your seed, for the sake of My servant Aḇraham.']},
+       {say:['voice','I am the Aluahim of your father Aḇraham. Do not fear, for I am with you and shall bless you and increase your seed for My servant Aḇraham’s sake.']},
        {rays:0},
        {say:['narrator','And he built a mizbe’ach there, and called on the Name of YAHUAH, and pitched his tent there — at Be’ĕrsheḇa.']},
        {addProp:{type:'altar',stage:3,x:41,y:18.6,solid:true,id:'bsaltar'}},
@@ -8065,20 +8187,20 @@ STORY.push(
       script:[
        {say:['yitschaq','Why have you come to me, seeing you have hated me, and sent me away from you?']},
        {say:['abimelek','We have clearly seen that YAHUAH is with you. Let there now be an oath between us, and let us make a covenant with you: that you do us no evil, as we have not touched you, and as we have sent you away in peace. You are now baruk of YAHUAH.']},
-       {say:['narrator','And he made them a feast, and they ate and drank. And they rose early in the morning and swore an oath, each to his brother — and they departed from him in peace.']},
+       {say:['narrator','And he made them a feast, and they ate and drank. And they rose early in the morning and swore an oath with one another — and Yahtsḥaq let them go and they departed from him in shalom.']},
        {sfx:'chime'},{burst:[40,20,'mote',14]},
-       {say:['narrator','And on that same day Yahtsḥaq’s servants came and told him about the well they had dug: “We have found water!” And he called it Shiḇah — therefore the name of the city is Be’ĕrsheḇa, to this day.']},
+       {say:['narrator','And on the same day it came to be that the servants of Yahtsḥaq came and informed him about the well which they had dug and said to him, “We have found water.” So he called it Shiḇah. Therefore the name of the city is Be’ĕrsheḇa to this day.']},
       ]},
    ],
   },
   outro:[
    {art:'stars', music:'night', text:'And Ĕsaw was forty years old when he took as wives Yahuḏith and Basemath, daughters of the Ḥittites — and they were a bitterness of spirit to Yahtsḥaq and Riḇqah.', ref:'BERĔSHITH 26:34–35'},
   ],
-  complete:'Ĕseq, Sitnah — Reḥoḇoth: for now YAHUAH has made room for us. He did not strive; he dug again.'
+  complete:'Ĕseq, Sitnah — Reḥoḇoth: “For now YAHUAH has made room for us and we shall bear fruit in the land.” He did not strive; he dug again.'
 },
 { id:'c18a', title:'The Voice and the Hands', ref:'BERĔSHITH 27',
   intro:[
-   {art:'rest', music:'tense', text:'And it came to be, when Yahtsḥaq was old and his eyes were too dim to see, that he called Ĕsaw and said: “Hunt me game, and make me a tasty dish, and bring it to me to eat — so that my being does barak you before I die.” And Riḇqah was listening.', ref:'BERĔSHITH 27:1–5'},
+   {art:'rest', music:'tense', text:'And it came to be, when Yahtsḥaq was old and his eyes were too dim to see, that he called Ĕsaw his elder son… “…hunt wild game for me. And make me a tasty dish… and bring it to me to eat, in order that my being does bless you before I die.” And Riḇqah heard when Yahtsḥaq spoke to Ĕsaw his son.', ref:'BERĔSHITH 27:1–5'},
   ],
   scene:{
    map:{biome:'interior', floorCol:'#a89272', w:26, h:16, seed:106,
@@ -8156,13 +8278,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'sorrow', text:'And Yahtsḥaq called Ya‘aqoḇ and baruk him, and commanded him: “Take yourself a wife from the daughters of Laḇan your mother’s brother. And Ăl Shaddai barak you, and make you bear fruit — and give you the blessing of Aḇraham.” And Ya‘aqoḇ left Be’ĕrsheḇa, and went toward Ḥaran.', ref:'BERĔSHITH 28:1–5,10'},
+   {art:'journey', music:'sorrow', text:'And Yahtsḥaq called Ya‘aqoḇ and baruk him and commanded him and said to him, “Arise, go to Paddan Aram… and take a wife for yourself from there, from the daughters of Laḇan your mother’s brother. And Al Shaddai bless you and make you bear fruit… and give you the berakah of Aḇraham.” And Ya‘aqoḇ went out from Be’ĕrsheḇa and went toward Ḥaran.', ref:'BERĔSHITH 28:1–5,10'},
   ],
   complete:'The voice is the voice of Ya‘aqoḇ, but the hands are the hands of Ĕsaw.'
 },
 { id:'c19', title:'The Ladder', ref:'BERĔSHITH 28:10–22',
   intro:[
-   {art:'journey', music:'sorrow', text:'So Ya‘aqoḇ went out from Be’ĕrsheḇa toward Ḥaran — alone, with a stone field for his bed, the blessing on his head and the wrath of his brother behind him.', ref:'BERĔSHITH 28:10'},
+   {art:'journey', music:'sorrow', text:'And Ya‘aqoḇ went out from Be’ĕrsheḇa and went toward Ḥaran.', ref:'BERĔSHITH 28:10'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'night_camp', w:44, h:30, seed:141,
@@ -8186,7 +8308,7 @@ STORY.push(
        {spawn:{id:'ml1',char:'malak',x:26,y:11,wander:false,noTalk:true}},
        {spawn:{id:'ml2',char:'malak',x:23,y:9,wander:false,noTalk:true}},
        {burst:[24,12,'holy',26]},
-       {say:['voice','I am YAHUAH, Aluahim of Aḇraham your father and the Aluahim of Yahtsḥaq. The land on which you are lying, I give it to you and your seed… and in you and in your seed all the families of the earth shall be baruk.']},
+       {say:['voice','I am YAHUAH Aluahim of Aḇraham your father and the Aluahim of Yahtsḥaq. The land on which you are lying, I give it to you and your seed… And all the clans of the earth shall be baruk in you and in your seed.']},
        {say:['voice','And see, I am with you and shall guard you wherever you go, and shall bring you back to this land. For I am not going to leave you until I have done what I have spoken to you.']},
        {despawn:'ml1'},{despawn:'ml2'},{rays:0},
        {fade:'out'},{time:'morning'},{music:'eden'},
@@ -8203,11 +8325,11 @@ STORY.push(
   outro:[
    {art:'ladder', music:'holy', text:'“And see, I am with you and shall guard you wherever you go… for I am not going to leave you until I have done what I have spoken to you.” And he called the name of that place Bĕyth Al.', ref:'BERĔSHITH 28:15,19'},
   ],
-  complete:'Truly, YAHUAH is in this place — and I did not know it. This is the gate of the shamayim.'
+  complete:'Truly, YAHUAH is in this place and I did not know it. This is none other than the house of Aluahim and this is the gate of the shamayim!'
 },
 { id:'c20', title:'Seven Years for Raḥal', ref:'BERĔSHITH 29',
   intro:[
-   {art:'journey', music:'desert', text:'Then Ya‘aqoḇ moved on and came to the land of the people of the East — and see, a well in the field, and three flocks of sheep lying by it, and a great stone on the well’s mouth.', ref:'BERĔSHITH 29:1–2'},
+   {art:'journey', music:'desert', text:'And Ya‘aqoḇ moved on and came to the land of the people of the East. And he looked and saw a well in the field and saw three flocks of sheep lying by it… and a large stone was on the well’s mouth.', ref:'BERĔSHITH 29:1–2'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:46, h:32, seed:151,
@@ -8254,12 +8376,12 @@ STORY.push(
        {say:['shepherd','We know him. He is well — and see, Raḥal his daughter is coming with the sheep!']},
        {show:'rachel'},{show:'sheep1'},{show:'sheep2'},
        {move:['rachel',27,16,.045]},
-       {say:['narrator','And while he was still speaking with the shepherds, see — Raḥal came with her father’s sheep, for she was a shepherdess.']},
+       {say:['narrator','While he was still speaking with them, Raḥal came with her father’s sheep, for she was a shepherdess.']},
        {say:['narrator','And it came to be, when Ya‘aqoḇ saw Raḥal… that Ya‘aqoḇ went near and rolled the stone from the well’s mouth — alone, the stone that waited each day for all the shepherds together.']},
        {sfx:'pickup'},{burst:[24,15,'mote',12]},
        {say:['rachel','Stranger — the stone! You moved it yourself! Who are you, and whose son?']},
        {say:['yaaqov','Ya‘aqoḇ, son of Riḇqah — your father’s sister. I have come from Be’ĕrsheḇa… and I think I have come home.']},
-       {say:['narrator','And Ya‘aqoḇ kissed Raḥal, and lifted up his voice and wept. And she ran and told her father — and when Laḇan heard the news of Ya‘aqoḇ his sister’s son, he ran to meet him, and embraced him, and brought him to his house.']},
+       {say:['narrator','And Ya‘aqoḇ kissed Raḥal, and lifted up his voice and wept. And she ran and told her father — and when Laḇan heard the report about Ya‘aqoḇ his sister’s son, he ran to meet him and embraced him and kissed him and brought him to his house.']},
        {show:'lavan'},{move:['lavan',22,16,.06,'bg']},
       ]},
      {type:'talk',npc:'lavan',text:'Speak with Laḇan her father',hiddenUntil:1,
@@ -8291,20 +8413,20 @@ STORY.push(
        {say:['narrator','— that see: it was Lĕ’ah!']},
        {say:['yaaqov','What is this you have done to me?! Was it not for Raḥal that I served you? Why then have you deceived me?']},
        {say:['lavan','It is not done this way in our place, to give the younger before the first-born. Complete the week of this one — then we give you the other also, for the service of yet another seven years.']},
-       {say:['narrator','And Ya‘aqoḇ did so, and completed her week — and Laḇan gave him Raḥal his daughter as wife also. And he loved Raḥal more than Lĕ’ah — and served Laḇan yet another seven years. The trickster was tricked, measure for measure.']},
+       {say:['narrator','And Ya‘aqoḇ did so and completed her week — then he gave him his daughter Raḥal too, as wife. And he also loved Raḥal more than Lĕ’ah — and he served with Laḇan still another seven years. The trickster was tricked, measure for measure.']},
        {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rachel'); if(r){ r.target={x:g.ox+12,y:g.oy+16}; r.speed=.05; } }},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'camp', music:'eden', text:'And in Ḥaran were born to Ya‘aqoḇ eleven sons and a daughter: of Lĕ’ah — Re’uḇĕn, Shim‛on, Lĕwi, Yahuḏah, Yissasḵar, Zeḇulun, and Dinah; of Bilhah — Dan and Naphtali; of Zilpah — Gaḏ and Ashĕr; and of Raḥal — Yosĕph. Twelve heads of a nation yet to be.', ref:'BERĔSHITH 29:31–30:24'},
+   {art:'camp', music:'eden', text:'And Lĕ’ah conceived and bore a son and she called his name Re’uḇĕn… Shim‛on… Lĕwi… Yahuḏah. And Bilhah conceived and bore Ya‘aqoḇ a son… Dan… Naphtali. And Lĕ’ah’s female servant Zilpah bore Ya‘aqoḇ a son… Gaḏ… Ashĕr. And Aluahim listened to Lĕ’ah… Yahssasḵar… Zeḇulun. And afterward she bore a daughter and called her name Dinah. And Aluahim remembered Raḥal… So she called his name Yosĕph.', ref:'BERĔSHITH 29:31–30:24'},
   ],
   complete:'Veiled in the dark of the feast — and the trickster was tricked, measure for measure.'
 },
 { id:'c20a', title:'Speckled and Spotted', ref:'BERĔSHITH 30:25–31:21',
   intro:[
-   {art:'camp', music:'desert', text:'And it came to be, when Raḥal had borne Yosĕph, that Ya‘aqoḇ said to Laḇan, “Send me away, that I may go to my own place and to my land… for you know my service which I have served you — your livestock has been with me, and YAHUAH has baruk you since my coming.”', ref:'BERĔSHITH 30:25–30'},
+   {art:'camp', music:'desert', text:'And it came to be, when Raḥal had borne Yosĕph, that Ya‘aqoḇ said to Laḇan, “Send me on my way, to go to my own place and to my land… for you yourself know my service which I have done for you… and how your livestock has been with me… and YAHUAH has baruk you since my coming.”', ref:'BERĔSHITH 30:25–30'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:48, h:32, seed:153,
@@ -8345,7 +8467,7 @@ STORY.push(
      {type:'collect',item:'rod',need:3,text:'Take rods of green poplar, almond and chestnut',hiddenUntil:1},
      {type:'interact',prop:'trough1',text:'Peel the rods, and set them in the watering troughs',hiddenUntil:2,item:'rod',need:3,
       script:[
-       {say:['narrator','And Ya‘aqoḇ peeled white strips in the rods, exposing the white which was in them — and set the rods which he had peeled before the flocks, in the gutters, in the watering troughs where the flocks came to drink.']},
+       {say:['narrator','And Ya‘aqoḇ took for himself rods… peeled white strips in them and exposed the white which was in the rods — and he set the rods which he had peeled before the flocks in the gutters, in the watering troughs where the flocks came to drink.']},
        {prop:['trough1',{rods:true}]},{prop:['trough2',{rods:true}]},{sfx:'pickup'},
        {fade:'out'},{toast:'And the flocks conceived before the rods…'},{wait:1500},
        {toast:'…season after season, in the strength of the flock.'},{wait:1500},{fade:'in'},
@@ -8367,13 +8489,13 @@ STORY.push(
      {type:'goto',x:24,y:22,radius:2.4,text:'Go out to the field, away from every ear',hiddenUntil:4,
       script:[
        {time:'night'},{music:'night'},{rays:.8,raysX:24},{sfx:'holy'},
-       {say:['voice','Lift your eyes and see: all the rams leaping on the flock are streaked, speckled and mottled — for I have seen all that Laḇan is doing to you. I am the Ăl of Bĕyth Ăl, where you anointed the standing column, where you made a vow to Me. Now rise, leave this land, and return to the land of your relatives — and I am with you.']},
+       {say:['voice','Lift your eyes now and see, all the rams which leap on the flocks are streaked, speckled and mottled — for I have seen all that Laḇan is doing to you. I am the Al of Bĕyth Al, where you anointed the standing column and where you made a vow to Me. Now rise up, get out of this land and return to the land of your relatives.']},
        {rays:0},{time:'morning'},{music:'tense'},
        {call:g=>{ ['rachel','leah'].forEach(id=>{ const n=g.world.npcs.find(n=>n.id===id);
           if(n){ n.wander=false; n.target={x:g.ox+24+(id==='leah'?1.6:-1.6),y:g.oy+22}; n.speed=.05; } }); }},
        {wait:1500},
        {say:['rachel','Is there yet any portion or inheritance for us in our father’s house? Are we not reckoned by him as strangers? For he has sold us, and has also entirely eaten up our silver. Whatever Aluahim has said to you — do it.']},
-       {say:['narrator','And Laḇan had gone to shear his sheep — and Raḥal stole the house idols that were her father’s. And Ya‘aqoḇ rose, and set his sons and his wives on camels, and drove off all his livestock — and fled, he and all that he had, toward the mountains of Gil‛aḏ.']},
+       {say:['narrator','And when Laḇan had gone to shear his sheep, Raḥal stole the house idols that were her father’s. So Ya‘aqoḇ rose and put his sons and his wives on camels, and he drove off all his livestock — and he fled with all that he had… and headed toward the mountains of Gil‛aḏ.']},
        {call:g=>{ g.world.npcs.forEach(n=>{ if(['rachel','leah','sp1','sp2','sp3','sp4','sp5','spcam','spserv','mg1','mg2'].includes(n.id)){
           n.wander=false; n.target={x:g.ox+46,y:g.oy+24+Math.random()*3-1.5}; n.speed=.04+Math.random()*.02; } }); }},
        {wait:2000},
@@ -8381,9 +8503,9 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'mountain', music:'tense', text:'And Laḇan pursued and overtook him in the mountains of Gil‛aḏ — but Aluahim came to Laḇan in a dream by night: “Guard yourself, that you speak to Ya‘aqoḇ neither good nor evil.”', ref:'BERĔSHITH 31:22–24'},
-   {art:'camp', music:'tense', text:'And Laḇan searched all the tents for his house idols, and did not find them — for Raḥal had put them in the camel’s saddle and sat on them, saying, “Let it not displease my master that I am unable to rise before you, for the way of women is with me.” And he searched, but did not find.', ref:'BERĔSHITH 31:33–35'},
-   {art:'mountain', music:'holy', text:'And they heaped a heap of witness — Gal‛ĕḏ, and Mitspah — “May YAHUAH watch between you and me when we are out of each other’s sight.” And Laḇan kissed his daughters and baruk them, and returned to his place.', ref:'BERĔSHITH 31:45–55'},
+   {art:'mountain', music:'tense', text:'And Laḇan was told that Ya‘aqoḇ had fled. Then he took his brothers with him and pursued him for seven days’ journey and he overtook him in the mountains of Gil‛aḏ. But in a dream by night Aluahim came to Laḇan the Aramean and said to him, “Guard yourself, that you do not speak to Ya‘aqoḇ either good or evil.”', ref:'BERĔSHITH 31:22–24'},
+   {art:'camp', music:'tense', text:'And Laḇan went into Ya‘aqoḇ’s tent and into Lĕ’ah’s tent… Now Raḥal had taken the house idols and put them in the camel’s saddle and sat on them… And she said to her father, “Let it not displease my master that I am unable to rise before you, for the way of women is with me.” And he searched but did not find the house idols.', ref:'BERĔSHITH 31:33–35'},
+   {art:'mountain', music:'holy', text:'And Laḇan said, “This heap is a witness between you and me today.” That is why its name was called Gal‛ĕḏ, also Mitspah, because he said, “Let YAHUAH watch between you and me when we are out of each other’s sight.” …And Laḇan rose up early in the morning and kissed his sons and daughters and baruk them… and returned to his place.', ref:'BERĔSHITH 31:45–55'},
    {art:'journey', music:'tense', text:'And messengers returned to Ya‘aqoḇ, saying, “We came to your brother Ĕsaw — and he is coming to meet you, and four hundred men with him.” And Ya‘aqoḇ was greatly afraid and distressed.', ref:'BERĔSHITH 32:6–7'},
   ],
   complete:'The rods in the troughs, the spotted wages, the stolen idols — and the long road home begun.'
@@ -8417,7 +8539,7 @@ STORY.push(
       script:[
        {say:['yaaqov','Take of what comes to my hand: goats and rams, camels and cows and donkeys — drove after drove. Pass over before me, and put space between drove and drove.']},
        {say:['yaaqov','When Ĕsaw my brother meets you and asks, “Whose are you, and where do you go, and whose are these before you?” — then you shall say: “They are your servant Ya‘aqoḇ’s. It is a present, sent to my master Ĕsaw. And see, he himself is behind us.”']},
-       {say:['narrator','For he said, “Let me cover his face with the present that goes before my face — and after that see his face. It might be that he lifts up my face.”']},
+       {say:['narrator','For he said, “Let me appease him with the present that goes before me and after that see his face. He might accept me.”']},
        {move:['giftsrv',43,16,.13,'bg']},{move:['g1',43,15,.13,'bg']},{move:['g2',43,17,.13,'bg']},
        {move:['cam1',43.5,18,.12,'bg']},{move:['cow1',43.5,16.5,.12,'bg']},{move:['dk1',43,18.5,.12]},
        {despawn:'giftsrv'},{despawn:'g1'},{despawn:'g2'},{despawn:'cam1'},{despawn:'cow1'},{despawn:'dk1'},
@@ -8431,7 +8553,7 @@ STORY.push(
        {call:G=>{ for(const id of ['leah','rachel','hm1','hm2','boy1','boy2']){
          const n=G.world.npcs.find(n=>n.id===id);
          if(n){ n.wander=true; n.home={x:n.x,y:n.y}; n.range=1.2; } } }},
-       {say:['narrator','And he sent them over the stream, and sent over all that he had — for he said, “If Ĕsaw comes to the one camp and smites it, then the camp which is left shall escape.” And Ya‘aqoḇ was left alone.']},
+       {say:['narrator','And he took them and sent them over the stream and sent over what he had — for he said, “If Ĕsaw comes to the one group and attacks it, then the other group which is left shall escape.” And Ya‘aqoḇ was left alone.']},
       ]},
      {type:'goto',x:26,y:15,radius:2.4,text:'Remain alone in the dark',hiddenUntil:2,
       script:[
@@ -8487,7 +8609,7 @@ STORY.push(
        {say:['yaaqov','To find favour in the eyes of my master.']},
        {say:['esav','I have enough, my brother. Let what you have be yours.']},
        {say:['yaaqov','No, please — if I have found favour in your eyes, take the present from my hand. For I have seen your face, and it is like seeing the face of Aluahim — and you were pleased with me. Please take my barakah that is brought to you, because Aluahim has favoured me, and because I have all.']},
-       {say:['narrator','And he urged him — and he took it. And the female servants came near, they and their children, and bowed themselves; and Lĕ’ah also; and afterward Yosĕph and Raḥal came near, and they bowed.']},
+       {say:['narrator','And he urged him — and he took it. Then the female servants came near, they and their children and bowed themselves. And Lĕ’ah also came near with her children and they bowed themselves. And Yosĕph and Raḥal came near and they bowed themselves.']},
       ]},
    ],
   },
@@ -8499,7 +8621,7 @@ STORY.push(
 { id:'c21b', title:'Dinah', ref:'BERĔSHITH 34 · YOḆELIM 34; YASHAR',
   intro:[
    {art:'camp', music:'sorrow', text:'And Dinah, the daughter of Lĕ’ah, whom she had borne to Ya‘aqoḇ, went out to see the daughters of the land. And Sheḵem, son of Ḥamor the Ḥiwwite, prince of the land, saw her — and took her, and humbled her.', ref:'BERĔSHITH 34:1–2'},
-   {art:'camp', music:'tense', text:'And Ya‘aqoḇ heard that he had defiled Dinah his daughter — and he kept silent until his sons came in from the field. And the men were grieved and very wroth, because he had done a senseless deed in Yasharal — which should not be done.', ref:'BERĔSHITH 34:5–7'},
+   {art:'camp', music:'tense', text:'And Ya‘aqoḇ heard that he had defiled Dinah his daughter. Now his sons were with his livestock in the field, so Ya‘aqoḇ kept silent until they came… And the sons of Ya‘aqoḇ came in from the field when they heard it. And the men were grieved and very wroth, because he had done a senseless deed in Yasharal… which should not be done.', ref:'BERĔSHITH 34:5–7'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'city', w:46, h:30, seed:163,
@@ -8603,14 +8725,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'camp', music:'sorrow', text:'And the sons of Ya‘aqoḇ plundered the city, because they had defiled their sister. And Ya‘aqoḇ’s grief at the sword of Shim‛on and Lĕwi was remembered to the last blessing: “Instruments of violence are their weapons… I divide them in Ya‘aqoḇ, and scatter them in Yasharal.”', ref:'BERĔSHITH 34:27; 49:5–7'},
-   {art:'camp', music:'tense', text:'And the kings of the Amorites gathered against the sons of Ya‘aqoḇ — but Yahuḏah and his brothers prevailed, and the dread of Aluahim fell upon the cities all around, so that they did not pursue after the sons of Ya‘aqoḇ.', ref:'YOḆELIM 34:1–9 · YASHAR 37–40 · BERĔSHITH 35:5'},
+   {art:'camp', music:'sorrow', text:'The sons of Ya‘aqoḇ came upon the slain and plundered the city, because they had defiled their sister. …“Shim‛on and Lĕwi are brothers, their weapons are implements of violence… Cursed be their displeasure for it is fierce and their wrath for it is cruel! I divide them in Ya‘aqoḇ and scatter them in Yasharal.”', ref:'BERĔSHITH 34:27; 49:5–7'},
+   {art:'camp', music:'tense', text:'Ya‘aqoḇ sent his sons and his servants to pasture their sheep… The seven kings of the Amorites assembled themselves together against them… and Yahuḏah and his brothers pursued them, and smote the remainder of them… and the fear of Aluahim was upon the cities that were all around them and they did not pursue the sons of Ya‘aqoḇ.', ref:'YOḆELIM 34:1–9 · YASHAR 37–40 · BERĔSHITH 35:5'},
   ],
-  complete:'Should he treat our sister like a whore? — And the dread of Aluahim was upon the cities all around.'
+  complete:'Should he treat our sister like a whore? — And the fear of Aluahim was upon the cities that were all around them.'
 },
 { id:'c21a', title:'Bĕyth Al and Ephrath', ref:'BERĔSHITH 35',
   intro:[
-   {art:'ladder', music:'holy', text:'And Aluahim said to Ya‘aqoḇ, “Arise, go up to Bĕyth Al and dwell there, and make a mizbe’ach there to the Ăl who appeared to you when you fled from Ĕsaw your brother.”', ref:'BERĔSHITH 35:1'},
+   {art:'ladder', music:'holy', text:'And Aluahim said to Ya‘aqoḇ, “Arise, go up to Bĕyth Al and dwell there, and make a mizbe’ach there to the Al who appeared to you when you fled from Ĕsaw your brother.”', ref:'BERĔSHITH 35:1'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:52, h:32, seed:167,
@@ -8641,7 +8763,7 @@ STORY.push(
    ],
    onStart:[
      {call:G=>campLife(G,{man:'shepherd',man2:'servant',woman:'yepheth_w',elder:'oldman'})},
-     {say:['yaaqov','Put away the foreign mighty ones that are among you, and cleanse yourselves, and change your garments. Then let us arise and go up to Bĕyth Al — and I make there a mizbe’ach to Ăl, who answered me in the day of my distress, and has been with me in the way that I have gone.']},
+     {say:['yaaqov','Put away the foreign mighty ones that are among you, and cleanse yourselves, and change your garments. Then let us arise and go up to Bĕyth Al — and I make there a mizbe’ach to Al, who answered me in the day of my distress, and has been with me in the way that I have gone.']},
    ],
    objectives:[
      {type:'collect',item:'idol',need:3,text:'Gather the foreign mighty ones and the earrings from your household'},
@@ -8654,8 +8776,8 @@ STORY.push(
      {type:'interact',prop:'altar',text:'Go up to Bĕyth Al and build the mizbe’ach',hiddenUntil:2,
       script:[
        {prop:['altar',{stage:3}]},{sfx:'holy'},{music:'holy'},{rays:.7,raysX:24},
-       {say:['narrator','And he built there a mizbe’ach, and called the place Ăl Bĕyth Al, because there Aluahim appeared to him when he fled from the face of his brother. And Aluahim appeared to Ya‘aqoḇ again, and baruk him:']},
-       {say:['voice','Your name is Ya‘aqoḇ — no longer is your name called Ya‘aqoḇ, but YASHARAL is your name. I am Ăl Shaddai: bear fruit and increase; a nation and a company of nations shall be from you, and sovereigns come from your body. And the land which I gave Aḇraham and Yahtsḥaq, I give to you — and to your seed after you I give this land.']},
+       {say:['narrator','And he built there a mizbe’ach, and called the place Al Bĕyth Al, because there Aluahim appeared to him when he fled from the face of his brother. And Aluahim appeared to Ya‘aqoḇ again, and baruk him:']},
+       {say:['voice','Your name is Ya‘aqoḇ — your name is no longer called Ya‘aqoḇ, but YASHARAL is your name. I am Al Shaddai: bear fruit and increase; a nation and a company of nations shall be from you, and sovereigns come from your body. And the land which I gave Aḇraham and Yahtsḥaq, I give to you — and to your seed after you I give this land.']},
        {burst:[24,12,'holy',22]},{rays:0},
        {addProp:{type:'pillar',oil:true,x:25.5,y:13,id:'bethelpillar'}},
        {say:['narrator','And Ya‘aqoḇ set up a standing column in the place where He had spoken with him, a column of stone — and he poured a drink offering on it, and poured oil on it. And Ya‘aqoḇ called the name of the place: Bĕyth Al.']},
@@ -8673,7 +8795,7 @@ STORY.push(
        {call:G=>{ const l=G.world.npcs.find(n=>n.id==='leah');
          if(l){ l.wander=false; l.dir='right'; } }},
        {fade:'in'},
-       {say:['narrator','And Raḥal began to give birth, and she had great difficulty in giving birth.']},
+       {say:['narrator','And Raḥal began to give birth and had great difficulty giving birth.']},
        {say:['midwife','Do not fear — for this one is also a son for you.']},
        {say:['narrator','And it came to be, as her life was going out — for she died — that she called his name:']},
        {say:['rachel','Ben-Oni… son of my sorrow…']},
@@ -8706,9 +8828,9 @@ STORY.push(
   },
   outro:[
    {art:'rest', music:'sorrow', text:'So Raḥal died, and was buried on the way to Ephrath, that is Bĕyth Leḥem — and Ya‘aqoḇ set a standing column on her grave, which is there to this day.', ref:'BERĔSHITH 35:19–20'},
-   {art:'mountain', music:'desert', text:'And Ĕsaw took his wives and his sons and all his possessions, and went to a land away from the face of his brother Ya‘aqoḇ — for their possessions were too great for them to dwell together. So Ĕsaw dwelt in Mount Sĕ‛ir. Ĕsaw is Eḏom — and these are the generations of Ĕsaw, fathers of sovereigns, before any sovereign reigned over the children of Yasharal.', ref:'BERĔSHITH 36'},
+   {art:'mountain', music:'desert', text:'And Ĕsaw took his wives and his sons… and all his possessions… and went to a land away from the presence of his brother Ya‘aqoḇ. For their possessions were too great for them to dwell together… So Ĕsaw dwelt in Mount Sĕ‛ir. Ĕsaw is Eḏom… And these were the sovereigns who reigned in the land of Eḏom before any sovereign reigned over the children of Yasharal.', ref:'BERĔSHITH 36'},
   ],
-  complete:'No longer Ya‘aqoḇ, but Yasharal — and the column stands on Raḥal’s grave to this day.'
+  complete:'No longer Ya‘aqoḇ, but Yasharal — and the standing column on her grave is the monument of Raḥal’s grave to this day.'
 },
 ]},
 /* ============ ACT VIII — YOSĔPH ============ */
@@ -8769,15 +8891,15 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'coat', music:'sorrow', text:'And he recognised it: “It is my son’s robe. An evil beast has devoured him. Torn, torn to pieces is Yosĕph!” …And his father wept for him. But YAHUAH was with Yosĕph.', ref:'BERĔSHITH 37:33–35; 39:2'},
-   {art:'rest', music:'sorrow', text:'And it was on the tenth of the seventh month that they brought the blood-dipped coat to Ya‘aqoḇ their father, and he mourned all that night. Therefore that day was appointed among the children of Yasharal — a day to afflict the soul, in memory of the mourning that came upon their father.', ref:'YOḆELIM 34:12–19'},
+   {art:'coat', music:'sorrow', text:'And he recognised it and said, “It is my son’s robe. An evil beast has devoured him. Yosĕph is torn, torn to pieces.” …So his father wept for him. And it came to be that YAHUAH was with Yosĕph.', ref:'BERĔSHITH 37:33–35; 39:2'},
+   {art:'rest', music:'sorrow', text:'The sons of Ya‘aqoḇ slaughtered a kid, and dipped Yosĕph’s coat in the blood and sent it to Ya‘aqoḇ their father on the tenth of the seventh month… and he mourned all that night… For this reason it is ordained for the children of Yasharal that they should remember and mourn on the tenth of the seventh month.', ref:'YOḆELIM 34:12–19'},
   ],
   complete:'Then we shall see what becomes of his dreams. — But YAHUAH was with Yosĕph.'
 },
 { id:'c22b', title:'Tamar', ref:'BERĔSHITH 38',
   intro:[
-   {art:'journey', music:'sorrow', text:'And in those days Yahuḏah went down from his brothers, and turned aside to a man of Aḏullam named Ḥirah. And Yahuḏah took a wife, and she bore him Ĕr, and Onan, and Shĕlah. And Yahuḏah took a wife for Ĕr his first-born, and her name was Tamar.', ref:'BERĔSHITH 38:1–6'},
-   {art:'rest', music:'sorrow', text:'But Ĕr was evil in the eyes of YAHUAH, and YAHUAH took his life. And Onan, who would not raise up seed for his brother, did evil also — and He took his life too. And Yahuḏah said to Tamar his daughter-in-law, “Remain a widow in your father’s house until my son Shĕlah is grown” — for he feared that he also might die. And Tamar went, and waited. And Shĕlah grew — and she was not given to him as a wife.', ref:'BERĔSHITH 38:7–14'},
+   {art:'journey', music:'sorrow', text:'And at that time it came to be that Yahuḏah left his brothers and turned aside to a man, an Aḏullamite whose name was Ḥirah. And Yahuḏah saw there a daughter of a certain Kena‛anite… and he took her… So she conceived and bore a son and he called his name Ĕr… Onan… Shĕlah. And Yahuḏah took a wife for Ĕr his first-born and her name was Tamar.', ref:'BERĔSHITH 38:1–6'},
+   {art:'rest', music:'sorrow', text:'But Ĕr was evil in the eyes of YAHUAH and YAHUAH took his life. And Onan knew that the offspring would not be his… But what he did displeased YAHUAH, so He took his life too. Then Yahuḏah said to Tamar his daughter-in-law, “Remain a widow in your father’s house until my son Shĕlah is grown.” For he said, “Lest he also die as his brothers did.” …Shĕlah was grown and she was not given to him as a wife.', ref:'BERĔSHITH 38:7–14'},
   ],
   scene:{
    map:{biome:'desert', w:46, h:28, seed:178,
@@ -8797,7 +8919,7 @@ STORY.push(
      {id:'hirah',char:'hirah',x:13,y:16.5,wander:false,
       script:[
        {say:['hirah','The days of mourning for your wife are past, friend. Your sheepshearers are at Timnah — come, let us go up to the shearing.']},
-       {say:['narrator','And it was told Tamar: “See, your father-in-law is going up to Timnah to shear his sheep.” And she put off her widow’s garments, and covered herself with a veil and wrapped herself, and sat at the entrance to Ĕnayim, which is on the way to Timnah — for she saw that Shĕlah was grown, and she had not been given to him as a wife.']},
+       {say:['narrator','And it was reported to Tamar, saying, “See, your father-in-law is going up to Timnah to shear his sheep.” And she took off her widow’s garments and covered herself with a veil and wrapped herself and sat at the entrance to Ĕnayim which was on the way to Timnah. For she saw that Shĕlah was grown and she was not given to him as a wife.']},
       ]},
      {id:'tamar',char:'tamar_v',x:28,y:13.4,wander:false,hidden:true,noTalk:true},
    ],
@@ -8833,9 +8955,9 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'And from Perets, son of Yahuḏah by Tamar: Ḥetsron, and Ram, and Amminaḏaḇ, and Naḥshon… down to Dawiḏ the sovereign. The wronged widow who waited is written into the line of the Sceptre itself.', ref:'BERĔSHITH 38:27–30 · RUTH 4:18–22'},
+   {art:'stars', music:'holy', text:'And she said, “How did you break through? This breach be upon you!” So his name was called Perets. …And this is the genealogy of Perets: Perets brought forth Ḥetsron. And Ḥetsron brought forth Ram and Ram brought forth Amminaḏaḇ. And Amminaḏaḇ brought forth Naḥshon… and Yahshai brought forth Dawiḏ.', ref:'BERĔSHITH 38:27–30 · RUTH 4:18–22'},
   ],
-  complete:'“She is more righteous than I.” — And Perets and Zeraḥ were born, and the line of the Sceptre ran on.'
+  complete:'“She has been more righteous than I.” — And Perets and Zeraḥ were born, and the line of the Sceptre ran on.'
 },
 { id:'c22a', title:'The House of Potiphar', ref:'BERĔSHITH 39',
   intro:[
@@ -8853,8 +8975,8 @@ STORY.push(
    npcs:[
      {id:'potiphar',char:'potiphar',x:8,y:7,wander:false,
       script:[
-       {say:['potiphar','Iḇri — since you came into my house, YAHUAH your Aluahim has baruk all that I have, in the house and in the field. See: I have appointed you over my house, and all that I have I give into your hand.']},
-       {say:['narrator','And he left all that he had in Yosĕph’s hand, and did not know what he had, except the bread that he ate. And Yosĕph was handsome in form and appearance.']},
+       {say:['potiphar','Heḇrew — since you came into my house, YAHUAH your Aluahim has baruk all that I have, in the house and in the field. See: I have appointed you over my house, and all that I have I give into your hand.']},
+       {say:['narrator','And he left in Yosĕph’s hand all that he had and he did not know what he had except for the bread which he ate. And Yosĕph was handsome in form and appearance.']},
        {say:['narrator','And after these matters it came to be that his master’s wife lifted up her eyes to Yosĕph…']},
       ]},
      {id:'wife',char:'potiphar_w',x:18,y:8,wander:true,range:1.4,noTalk:true},
@@ -8879,12 +9001,12 @@ STORY.push(
        {call:G=>{ const wf=G.world.npcs.find(n=>n.id==='wife');
          if(wf){ wf.chase=false; wf.target=null; wf.moving=false; }
          G.flags.chase=false; }},
-       {say:['narrator','And he fled, and went outside. And she called to the men of her house: “See, he brought in to us an Iḇri to mock us! He came in to me, to lie with me — and I cried with a loud voice, and he left his garment beside me and fled outside!”']},
+       {say:['narrator','And he fled, and went outside. And she called to the men of her house: “See, he has brought in to us a Heḇrew to mock us. He came in to me to lie with me and I cried out with a loud voice… he left his garment with me and fled and went outside.”']},
        {fade:'out'},{wait:600},{time:'dusk'},{fade:'in'},
        {call:G=>{ const ptf=G.world.npcs.find(n=>n.id==='potiphar');
          if(ptf){ ptf.hidden=false; ptf.x=13; ptf.y=6; ptf.dir='down'; } }},
        {say:['potiphar','“So your servant did to me”?! …']},
-       {say:['narrator','And it came to be, when his master heard the words of his wife, that his displeasure burned — and Yosĕph’s master took him and put him into the prison, the place where the sovereign’s prisoners were confined. But YAHUAH was with Yosĕph, and extended kindness to him.']},
+       {say:['narrator','And it came to be, when his master heard the words which his wife spoke to him… that his displeasure burned — then Yosĕph’s master took him and put him into the prison, a place where the sovereign’s prisoners were confined. But YAHUAH was with Yosĕph and extended kindness to him.']},
        {fade:'out'},{toast:'And the prison warden gave into Yosĕph’s hand all the prisoners — whatever was done there, he was the doer of it.'},{wait:1900},
       ]},
    ],
@@ -8903,13 +9025,13 @@ STORY.push(
    },
   },
   outro:[
-   {art:'egypt', music:'sorrow', text:'But YAHUAH was with Yosĕph and extended kindness to him, and gave him favour in the eyes of the prison warden — and whatever they did there, it was his doing, because YAHUAH was with him; and what he did, YAHUAH made it prosper.', ref:'BERĔSHITH 39:21–23'},
+   {art:'egypt', music:'sorrow', text:'But YAHUAH was with Yosĕph and extended kindness to him and He gave him chen in the eyes of the prison warden… and whatever was done there was his doing… because YAHUAH was with him. And whatever he did, YAHUAH made it prosper.', ref:'BERĔSHITH 39:21–23'},
   ],
   complete:'How shall I do this great evil and sin against Aluahim? — He fled and left his garment behind; and YAHUAH was with him, even in the prison.'
 },
 { id:'c23', title:'Dreams in the Dungeon', ref:'BERĔSHITH 39–41',
   intro:[
-   {art:'egypt', music:'tense', text:'And Yosĕph was in the prison of the sovereign’s captives, and the warden gave all the prisoners into his hand. And after these matters, the cupbearer and the baker of the sovereign of Mitsrayim offended their master — and Pharaoh put them in the prison, the place where Yosĕph was confined.', ref:'BERĔSHITH 39:22–40:4'},
+   {art:'egypt', music:'tense', text:'And the prison warden gave into the hand of Yosĕph all the prisoners who were in the prison… And after these events it came to be that the cupbearer and the baker of the sovereign of Mitsrayim sinned against their master… And Pharaoh was wroth with his two officers… So he put them in confinement… in the prison, the place where Yosĕph was a prisoner.', ref:'BERĔSHITH 39:22–40:4'},
   ],
   scene:{
    map:{biome:'interior', w:26, h:18, seed:181,
@@ -8927,13 +9049,13 @@ STORY.push(
        {say:['yoseph_s','Do not interpretations belong to Aluahim? Relate them to me, please.']},
        {say:['butler','In my dream a vine stood before me, with three branches. It budded, blossomed, and its clusters ripened — and I pressed the grapes into Pharaoh’s cup, and set the cup in Pharaoh’s hand.']},
        {say:['yoseph_s','This is its interpretation: the three branches are three days. Within three days Pharaoh shall lift up your head and restore you to your place — and you shall put Pharaoh’s cup in his hand as before.']},
-       {say:['yoseph_s','But remember me, when it is well with you — and please show kindness to me, and mention me to Pharaoh. For truly I was stolen away from the land of the Iḇrim, and I have done naught that they should put me here.']},
+       {say:['yoseph_s','But remember me, when it is well with you — and please show kindness to me, and mention me to Pharaoh. For truly I was stolen away from the land of the Heḇrews, and I have done naught that they should put me here.']},
       ]},
      {id:'baker',char:'baker',x:18,y:8,wander:true,range:1.5,
       script:[
        {say:['baker','Mine too, dream-reader! In my dream — three baskets of white bread on my head, and the birds were eating from the topmost basket…']},
        {say:['yoseph_s','…I shall tell you the truth, friend, though it is heavy. The three baskets are three days. Within three days Pharaoh shall lift off your head — and the birds shall eat. May Aluahim be merciful.']},
-       {say:['narrator','And on the third day it came to be exactly as Yosĕph had interpreted to them — the cupbearer restored, the baker hanged. But the chief cupbearer did not remember Yosĕph; he forgot him.']},
+       {say:['narrator','And on the third day, Pharaoh’s birthday… he restored the chief cupbearer to his post of cupbearer again… but he hanged the chief baker, as Yosĕph had interpreted to them. And the chief cupbearer did not remember Yosĕph, but forgot him.']},
       ]},
    ],
    objectives:[
@@ -8950,7 +9072,7 @@ STORY.push(
        {spawn:{id:'pharaoh',char:'pharaoh',x:13,y:7,wander:false,noTalk:true}},
        {addProp:{type:'throne',x:13,y:6.4,solid:true,id:'throne'}},
        {spawn:{id:'cup2',char:'butler',x:15.6,y:7.6,wander:false,noTalk:true}},
-       {say:['butler','I remember my sins this day. A young Iḇri was with us in the prison — and he interpreted our dreams to us, and as he interpreted, so it came to be: I was restored to my office, and the baker was hanged.']},
+       {say:['butler','I remember my sins this day. A Heḇrew youth was with us in the prison — and he interpreted our dreams to us, and as he interpreted, so it came to be: I was restored to my office, and the baker was hanged.']},
        {say:['pharaoh','I have dreamed a dream and there is no one to interpret it. Seven fat cows devoured by seven gaunt ones; seven plump heads of grain swallowed by seven scorched. I have heard it said of you that you hear a dream, to interpret it.']},
        {say:['yoseph_s','It is not in me. Aluahim shall answer Pharaoh with peace. …The dream of Pharaoh is one: Aluahim has shown Pharaoh what He is about to do.']},
        {say:['yoseph_s','See, seven years of great plenty are coming in all the land of Mitsrayim — and after them seven years of scarcity of food shall arise, and all the plenty be forgotten. Now, let Pharaoh look for a discerning and wise man, and store up grain in the years of plenty.']},
@@ -8964,15 +9086,15 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'egypt', music:'royal', text:'And in the seven years of plenty Yosĕph gathered grain as the sand of the sea. And to Yosĕph were born two sons before the scarcity came: Menashsheh — “for Aluahim has made me forget all my toil” — and Ephrayim — “for Aluahim has caused me to bear fruit in the land of my affliction.”', ref:'BERĔSHITH 41:47–52'},
-   {art:'egypt', music:'royal', text:'And the seven years of scarcity began, as Yosĕph had said — and all lands came to Mitsrayim to buy grain, because the scarcity was severe in all lands.', ref:'BERĔSHITH 41:53–57'},
+   {art:'egypt', music:'royal', text:'And in the seven years of plenty… Yosĕph gathered very much grain, as the sand of the sea… And to Yosĕph were born two sons… And Yosĕph called the name of the first-born Menashsheh, “For Aluahim has made me forget all my toil…” And the name of the second he called Ephrayim, “For Aluahim has caused me to bear fruit in the land of my affliction.”', ref:'BERĔSHITH 41:47–52'},
+   {art:'egypt', music:'royal', text:'And the seven years of scarcity of food began to come, as Yosĕph had said… And all the earth came to Yosĕph in Mitsrayim to buy grain, because the scarcity of food was severe in all the earth.', ref:'BERĔSHITH 41:53–57'},
   ],
   complete:'Do not interpretations belong to Aluahim? — From the pit to the prison to the palace, YAHUAH was with him.'
 },
 { id:'c24', title:'I Am Yosĕph', ref:'BERĔSHITH 42–45',
   intro:[
-   {art:'egypt', music:'tense', text:'And the sons of Yasharal went down to buy grain in Mitsrayim, for the scarcity was in the land of Kena‛an. And Yosĕph’s brothers came and bowed down before him with their faces to the earth — and Yosĕph recognised his brothers, but they did not recognise him.', ref:'BERĔSHITH 42:5–8'},
-   {art:'reunion', music:'tense', text:'He tried them: silver returned in their sacks, Shim‛on bound before their eyes, and at last his own silver cup hidden in the sack of Binyamin — the youngest, the other son of his own mother.', ref:'BERĔSHITH 42–44'},
+   {art:'egypt', music:'tense', text:'And the sons of Yasharal went to buy grain among those who journeyed, for the scarcity of food was in the land of Kena‛an… And Yosĕph’s brothers came and bowed down before him with their faces to the earth… So Yosĕph recognised his brothers, but they did not recognise him.', ref:'BERĔSHITH 42:5–8'},
+   {art:'reunion', music:'tense', text:'And he took Shim‛on from them and bound him before their eyes. And Yosĕph commanded… to put back every man’s silver to his sack… And he lifted his eyes and saw his brother Binyamin, his mother’s son… “And put my cup, the silver cup, in the mouth of the sack of the youngest…” …and the cup was found in Binyamin’s sack.', ref:'BERĔSHITH 42–44'},
   ],
   scene:{
    map:{biome:'interior', w:30, h:18, seed:191,
@@ -8984,7 +9106,7 @@ STORY.push(
    time:'day', music:'tense',
    player:'yoseph_r', playerPos:[15,7],
    onStart:[
-     {say:['narrator','And the scarcity was over all the face of the earth, and all lands came to Mitsrayim, to Yosĕph, to buy grain. And ten of Yosĕph’s brothers came down — and bowed themselves before him, with their faces to the earth. And Yosĕph recognised them, but they did not recognise him.']},
+     {say:['narrator','And the scarcity of food was over all the face of the earth… And all the earth came to Yosĕph in Mitsrayim to buy grain. And Yosĕph’s ten brothers went down… and bowed down before him with their faces to the earth. So Yosĕph recognised his brothers, but they did not recognise him.']},
      {show:'yahudah'},{show:'reuven'},{show:'shimon'},
      {show:'br1'},{show:'br2'},{show:'br3'},{show:'br4'},{show:'br5'},{show:'br6'},{show:'br7'},
      {face:['yahudah','up']},{face:['reuven','up']},{face:['shimon','up']},
@@ -8994,18 +9116,18 @@ STORY.push(
      {say:['yahudah','No, my master. Your servants are twelve brothers, sons of one man in the land of Kena‛an. See, the youngest is with our father today — and one is no more.']},
      {say:['yoseph_r','By this you shall be proven: by the life of Pharaoh, you do not leave here unless your youngest brother comes here! Let one of you be bound in the prison — and you, go, carry grain for the scarcity of your houses.']},
      {say:['reuven','Did I not speak to you, saying, “Do not sin against the boy” — and you would not listen? …Truly we are guilty concerning our brother. We saw the distress of his being when he pleaded with us, and we did not listen. That is why this distress has come upon us.']},
-     {say:['narrator','And they did not know that Yosĕph understood them, for an interpreter stood between them. And he turned away from them — and wept. And he took Shim‛on from them, and bound him before their eyes.']},
+     {say:['narrator','And they did not know that Yosĕph understood them, for he spoke to them through an interpreter. And he turned himself away from them — and wept. And he took Shim‛on from them and bound him before their eyes.']},
      {fade:'out'},
      {hide:'yahudah'},{hide:'reuven'},{hide:'shimon'},
      {hide:'br1'},{hide:'br2'},{hide:'br3'},{hide:'br4'},{hide:'br5'},{hide:'br6'},{hide:'br7'},
      {toast:'And their silver was returned, each man’s in the mouth of his sack — and their hearts failed them.'},{wait:1900},
-     {toast:'And the scarcity was severe. And Yasharal said at last: “Take also your brother — and may Ăl Shaddai give you compassion before the man.”'},{wait:2100},
+     {toast:'And the scarcity was severe. And Yasharal said at last: “Take also your brother — and may Al Shaddai give you compassion before the man.”'},{wait:2100},
      {fade:'in'},
      {show:'yahudah'},{show:'reuven'},{show:'shimon'},{show:'binyamin'},
      {show:'br1'},{show:'br2'},{show:'br3'},{show:'br4'},{show:'br5'},{show:'br6'},{show:'br7'},
      {say:['narrator','And they came again, and Binyamin with them — and Yosĕph saw his mother’s son, and his compassion burned, and he hurried out and wept in his chamber. And Shim‛on was restored to them; and they ate and drank with him, and Binyamin’s portion was five times greater than any of theirs.']},
-     {say:['narrator','Then his cup, the silver cup, was put in the mouth of Binyamin’s sack. And at morning light they were sent away — and the steward overtook them on the way: “Why have you repaid evil for good?” And the cup was found in the sack of Binyamin.']},
-     {say:['narrator','And they tore their garments, and returned to the city, and fell before him to the ground.']},
+     {say:['narrator','Then his cup, the silver cup, was put in the mouth of the sack of the youngest. As soon as the morning was light, the men were sent away — and the steward overtook them on the way: “Why have you repaid evil for good?” And the cup was found in Binyamin’s sack.']},
+     {say:['narrator','And they tore their garments… and went back to the city. And they fell before him on the ground.']},
      {say:['yoseph_r','What deed is this you have done? The man in whose hand the cup was found — he becomes my slave. And you — go up in peace to your father.']},
    ],
    npcs:[
@@ -9019,7 +9141,7 @@ STORY.push(
          } }},
        {say:['yahudah','O my master, please let your servant speak a word in my master’s hearing… My father said, “If you take this one from me too, and harm comes to him, you shall bring down my grey hair in evil to the grave.”']},
        {say:['yahudah','Now, please, let your servant remain instead of the boy as a slave to my master — and let the boy go up with his brothers. For how shall I go up to my father if the boy is not with me — lest I see the evil that would come upon my father?']},
-       {say:['narrator','Twenty-two years before, this same Yahuḏah had said, “Come, let us sell him.” Now he stood offering his own life for the other son of Raḥal. And Yosĕph could not restrain himself.']},
+       {say:['narrator','Twenty-two years before, this same Yahuḏah had said, “Come and let us sell him.” Now he stood offering his own life for the other son of Raḥal. And Yosĕph was unable to restrain himself.']},
       ]},
      {id:'binyamin',char:'binyamin',x:13.4,y:12.4,wander:false,noTalk:true,hidden:true},
      {id:'reuven',char:'reuven',x:16.8,y:12.8,wander:false,noTalk:true,hidden:true},
@@ -9066,7 +9188,7 @@ STORY.push(
   intro:[
    {art:'goshen', music:'eden', text:'And Yasharal set out with all that he had… And Aluahim spoke in the visions of the night: “Do not be afraid to go down to Mitsrayim, for I shall make you there into a great nation. I Myself am going down with you — and I shall certainly bring you up again.”', ref:'BERĔSHITH 46:1–4'},
    {art:'reunion', music:'royal', text:'And Yosĕph brought in Ya‘aqoḇ his father and set him before Pharaoh — and Ya‘aqoḇ baruk Pharaoh. And Pharaoh said, “How old are you?” And Ya‘aqoḇ said, “The days of the years of my sojournings are one hundred and thirty years. Few and evil have been the days of the years of my life, and they have not reached the days of my fathers.”', ref:'BERĔSHITH 47:7–10'},
-   {art:'egypt', music:'tense', text:'And the scarcity was severe, and there was no bread in all the land. And Yosĕph gathered all the silver for the grain, and then the livestock, and then the ground — so Yosĕph bought all the land of Mitsrayim for Pharaoh; only the ground of the kohanim he did not buy. And he set a law over the land: a fifth of the harvest is Pharaoh’s. But Yasharal dwelt in Goshen, and acquired property, and bore fruit, and increased exceedingly.', ref:'BERĔSHITH 47:13–27'},
+   {art:'egypt', music:'tense', text:'Now there was no bread in all the land… And Yosĕph gathered up all the silver… So they brought their livestock to Yosĕph… And Yosĕph bought the entire land of Mitsrayim for Pharaoh… Only the ground of the kohanim he did not buy… And Yosĕph made it a law over the land of Mitsrayim… that Pharaoh should have one-fifth… And Yasharal dwelt… in the land of Goshen. And they had possessions there and bore fruit and increased exceedingly.', ref:'BERĔSHITH 47:13–27'},
   ],
   scene:{ worldStage:true,   /* plays on the open world */
    map:{biome:'plains', w:46, h:32, seed:201,
@@ -9082,7 +9204,7 @@ STORY.push(
    player:'yoseph_r', playerPos:[34,24],
    onStart:[
      {call:G=>campLife(G,{man:'shepherd',man2:'servant',woman:'yepheth_w',elder:'oldman'})},
-     {say:['narrator','And Yasharal set out with all that he had, and came to Be’ĕrsheḇa, and offered slaughterings to the Aluahim of his father Yahtsḥaq. And his sons carried Ya‘aqoḇ their father, and their little ones and their wives, in the wagons which Pharaoh had sent to carry him.']},
+     {say:['narrator','And Yasharal set out with all that he had and came to Be’ĕrsheḇa and brought offerings to the Aluahim of his father Yahtsḥaq. And the sons of Yasharal brought their father Ya‘aqoḇ and their little ones and their wives, in the wagons which Pharaoh had sent to transport him.']},
      {show:'wagon'},{camera:['ent','wagon']},
      {move:['wagon',24,17.5,.055]},
      {hide:'wagon'},{teleport:['yaaqov',24,17.5]},{show:'yaaqov'},
@@ -9115,24 +9237,24 @@ STORY.push(
      {type:'goto',x:20,y:22,radius:2.4,text:'Seventeen years later — gather at your father’s blessing',hiddenUntil:1,
       script:[
        {fade:'out'},{time:'dusk'},{music:'sorrow'},{toast:'And Ya‘aqoḇ lived in the land of Mitsrayim seventeen years…'},{wait:1700},{fade:'in'},
-       {say:['narrator','And Yosĕph brought his two sons, Menashsheh and Ephrayim, to his father’s bed. And Yasharal stretched out his right hand and laid it on EPHRAYIM’S head, who was the younger — crossing his hands knowingly, though Menashsheh was the first-born — and Yosĕph was displeased.']},
+       {say:['narrator','And Yosĕph brought his two sons, Menashsheh and Ephrayim, to his father’s bed. And Yasharal stretched out his right hand and laid it on EPHRAYIM’S head, who was the younger — and his left hand on Menashsheh’s head, consciously directing his hands, for Menashsheh was the first-born. And when Yosĕph saw… it was evil in his eyes.']},
        {say:['yaaqov','I know, my son, I know. He also becomes a people, and he also is great — but indeed his younger brother is greater than he. In you shall Yasharal barak, saying: Aluahim make you as Ephrayim and as Menashsheh.']},
        {say:['yaaqov','Gather together, sons of Ya‘aqoḇ — and hear Yasharal your father, what shall befall you in the last days.']},
        {say:['yaaqov','Re’uḇĕn, my first-born, my power — boiling like water, you do not excel, for you went up to your father’s bed. Shim‛on and Lĕwi, brothers — instruments of violence are their weapons; I divide them in Ya‘aqoḇ, and scatter them in Yasharal.']},
        {say:['yaaqov','Yahuḏah — your brothers praise you. A lion’s cub is Yahuḏah. The sceptre shall not turn aside from Yahuḏah, nor the Lawgiver from between his feet, until SHILOH comes — and to Him is the obedience of peoples.']},
-       {say:['yaaqov','Zeḇulun dwells at the seashore, a haven for ships. Yissasḵar, a strong donkey between two burdens — he bowed his shoulder to bear. Dan rightly rules his people, as one of the tribes of Yasharal. Gaḏ — a raiding band raids him, but he raids its heel. Bread from Ashĕr is rich; he gives delicacies of a sovereign. Naphtali is a deer let loose, giving words of elegance.']},
+       {say:['yaaqov','Zeḇulun dwells at the seashore, a haven for ships. Yahssasḵar, a strong donkey between two burdens — he bowed his shoulder to bear. Dan rightly rules his people, as one of the tribes of Yasharal. Gaḏ — a raiding band raids him, but he raids its heel. Bread from Ashĕr is rich; he gives delicacies of a sovereign. Naphtali is a deer let loose, giving words of elegance.']},
        {say:['yaaqov','Yosĕph — a fruit-bearing son by a fountain, whose branches run over a wall. The archers bitterly grieved him, and shot at him — but his bow remained in strength, by the hands of the Mighty One of Ya‘aqoḇ, by the Aluahim of your father who helps you. The barakoth of your father are upon the head of Yosĕph, the one separated from his brothers.']},
        {say:['yaaqov','And Binyamin — a wolf that tears: in the morning he eats prey, and at night he divides the spoil. …All these are the twelve tribes of Yasharal.']},
        {say:['yaaqov','I wait for Your deliverance, O YAHUAH… I am to be gathered to my people. Bury me with my fathers in the cave that is in the field of Maḵpĕlah, in the land of Kena‛an — there they buried Aḇraham and Sarah, there they buried Yahtsḥaq and Riḇqah, and there I buried Lĕ’ah.']},
        {fade:'out'},{toast:'And when Ya‘aqoḇ finished commanding his sons, he drew his feet up into the bed — and was gathered to his people.'},{wait:1800},{time:'day'},{music:'sorrow'},{fade:'in'},
        {despawn:'yaaqov'},
-       {say:['narrator','And Yosĕph fell on his father’s face, and wept over him, and kissed him. And he commanded the physicians to embalm his father — forty days were completed for him — and the Mitsrites wept for him seventy days.']},
+       {say:['narrator','And Yosĕph fell on his father’s face, and wept over him, and kissed him. And Yosĕph commanded his servants the physicians to embalm his father — forty days were completed for him — and the Mitsrites wept for him seventy days.']},
        {spawn:{id:'fwagon1',propType:'chariot',horses:true,gold:true,rider:'steward',x:44,y:24,wander:false,noTalk:true}},
        {spawn:{id:'fwagon2',propType:'chariot',horses:true,rider:'servant',x:44,y:27,wander:false,noTalk:true}},
        {spawn:{id:'frider',char:'steward',mount:'horse',x:45,y:25.5,wander:false,noTalk:true}},
        {move:['fwagon1',26,24,.05,'bg']},{move:['frider',28,25.5,.05,'bg']},{move:['fwagon2',29,27,.05]},
-       {say:['narrator','And Yosĕph went up to bury his father, and with him went up all the servants of Pharaoh, and the elders of the land of Mitsrayim — and there went up with him both chariots and horsemen, a very great company.']},
-       {say:['narrator','And they lamented at the threshing-floor of Atad, beyond the Yardĕn, a great and very heavy lamentation — seven days. Therefore the place was called Aḇĕl Mitsrayim. And his sons carried him into the land of Kena‛an, and buried him in the cave of the field of Maḵpĕlah, as he had commanded them.']},
+       {say:['narrator','And Yosĕph went up to bury his father, and with him went up all the servants of Pharaoh, and the elders of the land of Mitsrayim — and there went up with him both chariots and horsemen and it was a very great company.']},
+       {say:['narrator','And they came to the threshing-floor of Atad, which is beyond the Yardĕn and they lamented there with a great and very heavy lamentation — seven days. That is why its name was called Aḇĕl Mitsrayim. And his sons did to him as he had commanded them, for his sons brought him to the land of Kena‛an and buried him in the cave of the field of Maḵpĕlah.']},
        {fade:'out'},{despawn:'fwagon1'},{despawn:'fwagon2'},{despawn:'frider'},
        {toast:'And after he had buried his father, Yosĕph returned to Mitsrayim, he and his brothers.'},{wait:1800},{fade:'in'},
        {say:['narrator','And when the brothers saw that their father was dead, they said, “What if Yosĕph hates us and pays us back all the evil which we did to him?” And they fell down before his face, saying, “See, we are your servants.”']},
@@ -9790,6 +9912,8 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); Game.skipSlides(); };
 $('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
@@ -9861,7 +9985,7 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){

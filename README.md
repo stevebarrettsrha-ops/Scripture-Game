@@ -51,6 +51,7 @@ begin at the Flood.
 | Move | WASD / Arrow keys | virtual joystick | left stick / d-pad |
 | Interact / advance text | E, Space or Enter | ✦ button, or tap | A / Start |
 | Previous slide | Backspace / ← | on-screen button | — |
+| Skip a chapter's opening verses (chapters already finished) | — | Skip ⟩⟩ button | — |
 | Chapter menu | Esc / ☰ | ☰ button | B |
 | Story log (every line so far) | 📜 | 📜 button | — |
 | Fullscreen / sound | ⛶ / ♪ | ⛶ / ♪ | — |
@@ -84,6 +85,12 @@ Beyond walking and talking, scenes use mechanics fitted to their stories:
 Game text follows The Besorah (Natsarim translation), condensed for play, with
 cross-witnesses cited on-screen from YASHAR, YOḆELIM, ḤANOḴ, and the First and
 Second Books of Aḏam & Ḥawwah. Reference PDFs are kept in the repository root.
+
+The in-game reader, `besorah-offline.html`, is the text the games follow word for
+word: a slide that cites a verse quotes that verse as the reader prints it,
+shortened only by leaving words out (marked “…”), never by rewording. The Name
+is shown as YAHUAH. Every scripture reference in every game links to its passage
+in the reader.
 
 ## Assets
 
