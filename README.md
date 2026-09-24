@@ -90,7 +90,10 @@ The in-game reader, `besorah-offline.html`, is the text the games follow word fo
 word: a slide that cites a verse quotes that verse as the reader prints it,
 shortened only by leaving words out (marked “…”), never by rewording. The Name
 is shown as YAHUAH. Every scripture reference in every game links to its passage
-in the reader.
+in the reader. This holds for all the games: dialogue that quotes a verse uses
+the reader's wording and terms (berith, mizbe’ach, qadash (Set Apart), ruach,
+mal’ak, chen, shalom…), and ḤANOḴ references use the reader's own chapter
+numbering rather than 1 Enoch's.
 
 ## Assets
 
