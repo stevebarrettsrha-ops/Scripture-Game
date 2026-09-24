@@ -64,7 +64,7 @@
   <div style="color:#8d8770;font-style:italic">against</div>
   <div class="side"><span class="cnt" id="b-def"></span><span class="nm" id="b-def-nm"></span><span class="dot" id="b-def-dot"></span></div>
 </div>
-<div id="hint" class="hidden">tap to spur the host forward</div>
+<div id="hint" class="hidden">tap, or press Space, to spur the host forward</div>
 
 <div id="titleOv" class="overlay">
   <div class="ov-ref" id="t-ref"></div>
@@ -786,6 +786,10 @@ function setupUI(){
 }
 
 function beginBattle(){
+  /* only from the title: a second press (Space on the still-focused button, a held key)
+     must never restart the fight — it reset the battle clock, so it could never end */
+  if(state!=='title') return;
+  if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
   $('titleOv').classList.remove('show');
   $('banner').classList.remove('hidden'); $('hint').classList.remove('hidden');
   state='charge'; battleT=0;
@@ -918,6 +922,14 @@ function spur(){
   burst(CW/2,CH-6,'dust',6);
 }
 cv.addEventListener('pointerdown',spur);
+/* ---------- keyboard: Space / Enter / E (the story's action keys) begin, spur, or return ---------- */
+addEventListener('keydown',e=>{
+  const k=e.key;
+  if(k!==' '&&k!=='Enter'&&k!=='e'&&k!=='E') return;
+  e.preventDefault();
+  if(e.repeat) return;
+  if(state==='title') beginBattle(); else if(state==='over') location.href=RETURN; else spur();
+});
 
 /* ---------- gamepad: a face button begins the battle, spurs the host, or returns ---------- */
 const _padBtn={};
