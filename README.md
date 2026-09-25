@@ -30,7 +30,9 @@ from one machine with **no internet**. Run `host-windows.bat` / `host-mac.comman
 that any device on the same Wi-Fi/router can open. See that folder's `README.txt`.
 Not needed for normal solo play.
 
-Each game is a single file and works offline:
+Each game is a single HTML file and works offline; two shared scripts beside it,
+`cinema.js` (the staged cutscenes) and `gfx.js` (the world's ground and light),
+add to every game and should be kept in the same folder:
 
 | File | Game | Unlocked by |
 |---|---|---|
@@ -98,6 +100,19 @@ and book blurbs use the same terms, and "lord" as a title is written "master",
 as the reader writes it. Two things differ on purpose: the games keep their own
 spelling of names (Aḏam, Baḇel, Kasdim, Yerushalayim…), and where the reader
 has an obvious misprint (e.g. "an mizbe’ach") the games print the correct word.
+
+## Cutscenes
+
+Every cutscene is staged: the passage it quotes is acted out on a painted set —
+the palace, the House of YAHUAH, the wilderness camp, Mitsrayim, Baḇel, Shushan,
+the parted sea — by the book's own characters, who walk in, kneel, bow, speak,
+fight and leave in time with the verse, with crowds, props, weather and effects
+(fire from heaven, the pillar of cloud, rain, glory). The verse is shown beneath
+as a caption that comes up part by part; a tap shows the rest of it, the next tap
+moves on. YAHUAH is never drawn as a person — only as light, cloud and fire. The
+stage for each slide is written in the slide's `stage` field and drawn by
+`cinema.js`; a slide without one (or a copy of a game without the file) shows its
+own painting as before.
 
 ## Assets
 
