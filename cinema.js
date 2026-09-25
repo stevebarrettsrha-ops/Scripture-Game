@@ -732,7 +732,9 @@ const BEASTS={
   lion:   {W:48,L:60,D:22,col:'#c09050',leg:'paw',legW:6,neck:[11,8,15],head:[16,13,9,.35],ear:'round',tail:'lion',mane:'lion',hair:'#5e3616'},
   leopard:{W:36,L:52,D:16,col:'#d0a050',leg:'paw',legW:4.2,neck:[9,6,9],head:[11,9,6,.3],ear:'round',tail:'long',spots:1},
   bear:   {W:56,L:58,D:30,col:'#5a3a24',leg:'paw',legW:9,neck:[8,1,20],head:[15,14,8,.45],ear:'round',tail:'none',humpS:1},
-  dog:    {W:30,L:34,D:12,col:'#8a6a44',leg:'paw',legW:3,neck:[8,10,7],head:[12,7,4.5,.3],ear:'point',tail:'curl'}
+  dog:    {W:30,L:34,D:12,col:'#8a6a44',leg:'paw',legW:3,neck:[8,10,7],head:[12,7,4.5,.3],ear:'point',tail:'curl'},
+  /* the fourth beast of Daniy'al's vision: fearsome and burly, great iron teeth, ten horns */
+  fourth: {W:62,L:72,D:36,col:'#34343e',leg:'paw',legW:9.5,neck:[12,5,22],head:[22,16,12,.3],ear:'none',tail:'long',humpS:1,horns:'ten',roar:1,teeth:'#a8b0b8'}
 };
 /* a smooth closed outline through points (a curve through the midpoints) */
 function blob(g,P){ const n=P.length, m=(a,b)=>[(a[0]+b[0])/2,(a[1]+b[1])/2]; let s=m(P[n-1],P[0]); g.beginPath(); g.moveTo(s[0],s[1]);
@@ -806,8 +808,9 @@ function beastHead(g,S,poll,u,col,hair,t,ph,o){
   g.quadraticCurveTo(-u*2,HD*.46,-u*1.2,-HD*.45); g.closePath(); g.fill();
   if(S.muzzle){ g.fillStyle=S.muzzle; ell(g,HL*.86,MD*.05,HL*.2,MD*.5); g.fill(); }
   /* the lion's mouth open in a roar */
-  if(o.roar&&S.mane==='lion'){ g.fillStyle='#3a120c'; poly(g,[[HL*1.02,MD*.02],[HL*.62,MD*.3],[HL*.98,MD*.9]]); g.fill();
-    g.fillStyle='#f4ecd8'; poly(g,[[HL*.94,MD*.08],[HL*.9,MD*.36],[HL*.86,MD*.1]]); g.fill(); poly(g,[[HL*.92,MD*.84],[HL*.88,MD*.56],[HL*.84,MD*.8]]); g.fill(); }
+  if((o.roar&&S.mane==='lion')||S.roar){ g.fillStyle='#3a120c'; poly(g,[[HL*1.02,MD*.02],[HL*.62,MD*.3],[HL*.98,MD*.9]]); g.fill();
+    g.fillStyle=S.teeth||'#f4ecd8'; const nt=S.roar?4:1;
+    for(let k=0;k<nt;k++){ const q=k/Math.max(1,nt), tx=HL*(.94-q*.26); poly(g,[[tx,MD*.08],[tx-HL*.03,MD*.4],[tx-HL*.07,MD*.1]]); g.fill(); poly(g,[[tx-HL*.02,MD*.86],[tx-HL*.05,MD*.54],[tx-HL*.09,MD*.82]]); g.fill(); } }
   else { g.strokeStyle='rgba(20,12,8,.45)'; g.lineWidth=Math.max(.6,u*.4); g.beginPath(); g.moveTo(HL*.99,MD*.22); g.quadraticCurveTo(HL*.86,MD*.34,HL*.72,MD*.26); g.stroke(); }
   /* nostril and eye */
   g.fillStyle='rgba(18,10,6,.75)'; ell(g,HL*.93,-MD*.12,u*.8,u*.55,.4); g.fill();
@@ -816,6 +819,11 @@ function beastHead(g,S,poll,u,col,hair,t,ph,o){
   if(S.beard){ g.fillStyle=shd(fc,-.3); poly(g,[[HL*.62,MD*.45],[HL*.72,MD*.5],[HL*.62,MD*.5+u*6]]); g.fill(); }
   /* horns */
   if(S.horns==='ox'){ g.strokeStyle=lin(g,0,-HD,HL*.4,-HD-u*12,[[0,'#d8ccae'],[1,'#3a3028']]); g.lineWidth=u*2.6; g.lineCap='round'; g.beginPath(); g.moveTo(HL*.06,-HD*.42); g.quadraticCurveTo(-u*4,-HD*.42-u*8,HL*.22,-HD*.42-u*12); g.stroke(); }
+  if(S.horns==='ten'){ g.lineCap='round';
+    for(let k=0;k<10;k++){ const a=-2.5+k*.19, bx=HL*(.05+k*.035), by=-HD*.45, l=u*(9+((k*7)%4)*2);
+      g.strokeStyle=lin(g,bx,by,bx+Math.cos(a)*l,by+Math.sin(a)*l,[[0,'#6a6a70'],[1,'#d8d4c8']]); g.lineWidth=u*2.2;
+      g.beginPath(); g.moveTo(bx,by); g.quadraticCurveTo(bx+Math.cos(a)*l*.6-u*1.5,by+Math.sin(a)*l*.6,bx+Math.cos(a)*l,by+Math.sin(a)*l); g.stroke(); }
+    g.strokeStyle='#e8e0d0'; g.lineWidth=u*1.4; g.beginPath(); g.moveTo(HL*.22,-HD*.46); g.lineTo(HL*.26,-HD*.46-u*5); g.stroke(); }     /* and the little horn */
   if(S.horns==='goat'){ g.strokeStyle='#3a3028'; g.lineWidth=u*1.8; g.lineCap='round'; g.beginPath(); g.moveTo(HL*.1,-HD*.45); g.quadraticCurveTo(-u*2,-HD*.45-u*10,-u*9,-HD*.45-u*7); g.stroke(); }
   if(S.horns==='ram'){ g.strokeStyle='#cfc0a0'; g.lineCap='round';
     for(let k=0;k<26;k++){ const a=-.6+k*.24, r=u*(6.2-k*.17), cx=u*1.5, cy=-HD*.05; g.lineWidth=u*(3.4-k*.1);
@@ -1274,7 +1282,7 @@ const GROUND={
 const WET_POSE=/^(fall|lie|dead|drown|swim)$/;
 /* things that float or live in the water, and beasts that may stand in it */
 const FLOATS={liwyathan:1,ship:1,boat:1,noahark:1,basket:1,reeds:1,fish:1,serpent:1,fire:1,cloud:1,rock:1,stones:1,bones:1,sacks:1,wheel:1,sword:1,hand:1,crown:1,scroll:1,chest:1};
-const WADERS={behemoth:1,leopard:1,lion:1,bear:1,dog:1,bull:1,horse:1,chariot:1,camel:1,donkey:1,sheep:1,oxen:1,goat:1,ram:1,calf:1};
+const WADERS={fourth:1,behemoth:1,leopard:1,lion:1,bear:1,dog:1,bull:1,horse:1,chariot:1,camel:1,donkey:1,sheep:1,oxen:1,goat:1,ram:1,calf:1};
 const PROP_W={ship:.9,noahark:1,boat:.5,tent:.55,tabernacle:.8,house:.6,tower:.35,gate:.6,wall:.9,pyramid:1,ziggurat:.9,chariot:.35,chariotback:.34,cart:.35,tree:.3,palm:.2,altar:.25,mizbeach:.25,throne:.25,camel:.3,horse:.3,oxen:.35};
 /* the pillar of cloud and of fire, smoke and fire from the heavens stand at a distance in the scene */
 const DEPTH_FX={firepillar:.95,cloud:.95,pillar:.95,shekinah:.95,smoke:-1,firefall:-1};
