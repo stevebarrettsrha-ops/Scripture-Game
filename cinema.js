@@ -653,8 +653,9 @@ prop('chariot',(g,x,y,s,t,o)=>{ const u=s/100, d=o.face==='l'?-1:1, fire=o.fire;
   g.fillStyle=dark; ell(g,u*73,-u*66,u*4,u*3); g.fill();
   g.strokeStyle=fire?'#fff0c0':'#3a2414'; g.lineWidth=u*1.4; g.beginPath(); g.moveTo(u*73,-u*64); g.quadraticCurveTo(u*84,-u*58,u*90,-u*50); g.stroke();
   g.beginPath(); g.moveTo(u*73,-u*63); g.lineTo(u*72,-u*44); g.stroke();
-  /* the car */
+  /* the car, and whoever stands in it */
   const fx0=wx+u*22, bx0=wx-u*16, fl=wy-u*1;
+  if(o.rider){ const L=lookOf(o.rider); drawFigure(g,(bx0+fx0)/2+u*2,fl,s*.96,L,animPose(POSES[o.riderPose||'raise']||POSES.stand,t,1.3),'r',t,{hold:o.riderHold||null}); }
   g.fillStyle=lin(g,0,fl-u*30,0,fl,[[0,shd(wood,.15)],[1,shd(wood,-.2)]]);
   g.beginPath(); g.moveTo(bx0,fl); g.lineTo(fx0,fl); g.quadraticCurveTo(fx0+u*6,fl-u*16,fx0+u*1,fl-u*30); g.lineTo(fx0-u*4,fl-u*30);
   g.quadraticCurveTo(bx0+u*6,fl-u*30,bx0,fl-u*8); g.closePath(); g.fill();
@@ -666,7 +667,7 @@ prop('chariot',(g,x,y,s,t,o)=>{ const u=s/100, d=o.face==='l'?-1:1, fire=o.fire;
     for(let k=0;k<3;k++) poly(g,[[-u*1.6+k*u*1.4,0],[-u*1+k*u*1.4,-u*4],[-u*.4+k*u*1.4,0]]); g.fill(); g.restore(); }
   g.strokeStyle=dark; g.lineWidth=u*2.2; g.beginPath(); g.moveTo(bx0-u*1,fl+u*.5); g.lineTo(fx0+u*2,fl+u*.5); g.stroke();       /* the floor */
   spokeWheel(g,wx,wy,wr,6,dark,wood,dark,rot);                                                   /* the near wheel */
-  if(fire){ fireAt(g,wx,fl-u*6,u*52,u*46,t); fireAt(g,u*60,-u*40,u*60,u*40,t+300); }
+  if(fire){ fireAt(g,wx,fl-u*2,u*50,o.rider?u*26:u*46,t); fireAt(g,u*60,-u*40,u*60,u*40,t+300); }   /* lower about one who stands in it */
   g.restore(); });
 prop('fish',(g,x,y,s,t,o)=>{ const u=s/100, big=o.big; const k=big?3.2:1; g.save(); g.translate(x,y+Math.sin(t/700)*u*4); if(o.face==='l') g.scale(-1,1);
   g.fillStyle='#4a6a7a'; ell(g,0,0,u*40*k,u*16*k); g.fill(); poly(g,[[-u*36*k,0],[-u*58*k,-u*16*k],[-u*56*k,u*16*k]]); g.fill();
@@ -1565,14 +1566,28 @@ const Stage={
   },
   drawProp(g,p,st,t){
     const at=p.at!=null?this.beatTime(p.at):0; if(st<at) return;
-    const lay=this._lay, z=p.z||0, s=lay.H0*lay.sc(z)*(p.s||1), x=lay.X(p.x!=null?p.x:.5), y=lay.gy(z)+(p.dy||0)*VH;
+    const lay=this._lay, z=p.z||0, s=lay.H0*lay.sc(z)*(p.s||1), x=lay.X(p.x!=null?p.x:.5);
+    let y=lay.gy(z)+(p.dy||0)*VH;
     const fn=PROPS[p.k]; if(!fn) return;
+    /* timed changes: taking fire, a rider mounting, being lifted up into the heavens */
+    let o=p;
+    if(p.fireAt!=null||p.riderAt!=null||p.liftAt!=null){ o=Object.assign({},p);
+      if(p.fireAt!=null) o.fire=st>=this.beatTime(p.fireAt);
+      if(p.riderAt!=null&&st<this.beatTime(p.riderAt)) o.rider=null;
+      if(p.liftAt!=null&&st>=this.beatTime(p.liftAt)){ const k=ease((st-this.beatTime(p.liftAt))/4500); y-=k*(p.lift||.45)*VH; o.move=1; } }
+    /* a chariot or horse in the sea goes down: the head above the waves, the rest dim beneath them */
+    if((p.k==='chariot'||p.k==='horse'||p.k==='chariotback')&&(p.dy||0)>=-.03&&this.wetAt(x,y)){
+      const wl=y+Math.sin(t/700+x)*s*.01, yd=y+s*.62;
+      g.save(); if(p.at!=null) g.globalAlpha*=ease((st-at)/700);
+      g.save(); g.beginPath(); g.rect(x-s*3,wl,s*6,s*4); g.clip(); g.globalAlpha*=.32; g.filter='brightness(.45) saturate(.5)'; fn(g,x,yd,s,t,o); g.restore();
+      g.beginPath(); g.rect(x-s*3,yd-s*4,s*6,wl-(yd-s*4)); g.clip(); fn(g,x,yd,s,t,o); g.restore();
+      ripples(g,x+s*.55*(p.face==='l'?-1:1),wl,s*.4,t,x); ripples(g,x,wl,s*.6,t,x+1); return; }
     const surf=p.k==='fish'&&(p.dy||0)>=-.03&&this.wetAt(x,y);             /* the great fish breaks the surface */
     const wade=(surf||WADERS[p.k])&&(p.dy||0)>=-.03&&this.wetAt(x,y), wl=surf?y+s*.04:y, yd=wade&&!surf?y+s*.16:y;   /* a beast stands in the water up to its belly */
     g.save(); if(p.at!=null) g.globalAlpha*=ease((st-at)/700);
     if(wade){ g.beginPath(); g.rect(x-s*3,yd-s*4,s*6,wl-(yd-s*4)); g.clip(); }
     if(p.flip){ g.translate(x,0); g.scale(-1,1); g.translate(-x,0); }
-    fn(g,x,yd,s,t,p.fireAt!=null?Object.assign({},p,{fire:st>=this.beatTime(p.fireAt)}):p); g.restore();
+    fn(g,x,yd,s,t,o); g.restore();
     if(wade) ripples(g,x,wl,s*.5,t,x);
   },
   /* an actor's timeline.
@@ -1614,6 +1629,7 @@ const Stage={
       prev=target; walking=false;
     }
     if(!pose) pose=POSES[a.pose]||POSES.stand;
+    if(a.until!=null&&st>=bt(a.until)){ const k=(st-bt(a.until))/450; if(k>=1) return {visible:false}; alpha*=1-k; }
     if(a.turn&&st>=bt(a.turn[0])&&!walking) face=a.turn[1];
     if(z>1.25) return {visible:false};
     return {visible:true,x,z,pose,face,alpha:alpha*(z>1.05?cl((1.25-z)/.2,0,1):1),walking,shown};
