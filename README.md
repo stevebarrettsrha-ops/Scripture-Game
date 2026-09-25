@@ -93,7 +93,11 @@ is shown as YAHUAH. Every scripture reference in every game links to its passage
 in the reader. This holds for all the games: dialogue that quotes a verse uses
 the reader's wording and terms (berith, mizbe’ach, qadash (Set Apart), ruach,
 mal’ak, chen, shalom…), and ḤANOḴ references use the reader's own chapter
-numbering rather than 1 Enoch's.
+numbering rather than 1 Enoch's. Chapter titles, objectives, item descriptions
+and book blurbs use the same terms, and "lord" as a title is written "master",
+as the reader writes it. Two things differ on purpose: the games keep their own
+spelling of names (Aḏam, Baḇel, Kasdim, Yerushalayim…), and where the reader
+has an obvious misprint (e.g. "an mizbe’ach") the games print the correct word.
 
 ## Assets
 
