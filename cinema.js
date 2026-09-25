@@ -105,7 +105,7 @@ const POSES={
   hold:  {lean:0,  head:0,  aF:[30,70],  aB:[-6,6],   lF:[3,0],    lB:[-3,0]},
   flee:  {lean:18, head:-10,aF:[-30,40], aB:[40,70],  lF:[0,0],    lB:[0,0], walk:2.2},
   lie:   {lean:0,  head:0,  aF:[6,4],    aB:[-4,4],   lF:[2,0],    lB:[-2,0], lie:1},
-  dead:  {lean:0,  head:8,  aF:[60,10],  aB:[-20,10], lF:[8,12],   lB:[-4,6], lie:1, still:1},
+  dead:  {lean:0,  head:10, aF:[14,8],   aB:[-8,6],   lF:[6,10],   lB:[-4,6], lie:1, still:1},
   fall:  {lean:40, head:30, aF:[120,20], aB:[100,20], lF:[40,60],  lB:[10,40], low:1},
   bound: {lean:12, head:18, aF:[-25,-45],aB:[-30,-40],lF:[3,0],    lB:[-3,0]},
   enthroned:{lean:-3,head:0,aF:[30,75],  aB:[22,70],  lF:[90,88],  lB:[86,84], throne:1},
