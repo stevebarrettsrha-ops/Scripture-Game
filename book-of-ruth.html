@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -528,8 +560,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -637,7 +669,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -737,7 +769,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -999,6 +1033,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1042,7 +1086,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1304,6 +1350,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2785,6 +2841,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2980,7 +3056,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3185,8 +3261,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3673,6 +3750,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3736,7 +3814,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3789,15 +3871,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3808,6 +3924,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3833,6 +3955,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     $('slide-ui').classList.remove('show');
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
@@ -3862,6 +3985,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3879,7 +4003,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4019,6 +4143,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4082,17 +4211,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4256,22 +4386,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4284,7 +4418,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4307,11 +4441,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5672,7 +5819,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5908,7 +6055,7 @@ STORY.push(
 
 { id:'r1', title:'To Sojourn in the Fields of Mo’aḇ', ref:'RUTH 1:1–5',
   intro:[
-   {art:'wasteland', music:'sorrow', text:'And it came to be, in the days when the rulers ruled, that there was a scarcity of food in the land. And a man from Bĕyth Leḥem, Yahuḏah, went to sojourn in the fields of Mo’aḇ — he and his wife and his two sons: Alimeleḵ, and Na‛omi his wife, and Maḥlon and Kilyon their sons, Ephrathites of Bĕyth Leḥem.', ref:'RUTH 1:1–2'},
+   {art:'wasteland', music:'sorrow', text:'And it came to be, in the days when the rulers ruled, that there was a scarcity of food in the land. And a man from Bĕyth Leḥem, Yahuḏah, went to sojourn in the fields of Mo’aḇ, he and his wife and his two sons. And the name of the man was Alimeleḵ and the name of his wife was Na‛omi and the names of his two sons were Maḥlon and Kilyon – Ephrathites of Bĕyth Leḥem, Yahuḏah.', ref:'RUTH 1:1–2', stage:{"set":"road","time":"noon","wx":"dust","cam":"pan-r","focus":0.6,"cast":[{"id":"elimelek","enter":"l","at":0,"to":0.72,"face":"r","pose":"stand","hold":"staff","acts":[{"at":2,"face":"l"}]},{"id":"naomi","enter":"l","at":0,"to":0.56,"z":0.08,"face":"r","pose":"stand","hold":"jar"},{"id":"mahlon","enter":"l","at":0,"to":0.4,"z":0.16,"face":"r","pose":"stand"},{"id":"kilyon","enter":"l","at":0,"to":0.26,"z":0.2,"face":"r","pose":"stand","hold":"basket"}],"props":[{"k":"bush","x":0.86,"z":0.4},{"k":"rock","x":0.1,"z":0.5,"w":50},{"k":"donkey","x":0.84,"z":0.3,"face":"l","at":2}]}},
   ],
   scene:{
    map:{biome:'wild', w:44, h:28, seed:6501,
@@ -5935,20 +6082,20 @@ STORY.push(
        {say:['narrator','And Maḥlon and Kilyon also died, both of them — so the woman was bereaved of her two sons and of her husband.']},
        {call:G=>{ ['mahlon','kilyon'].forEach(id=>{ const n=G.world.npcs.find(n=>n.id===id); if(n){ n.hidden=true; Particles.burst(n.x*TILE,n.y*TILE-8,'mote',10); } }); }},
        {shake:.4},{sfx:'bad'},
-       {say:['naomi','Empty. The hand of YAHUAH has gone out against me… Yet I have heard that YAHUAH has visited His people, in giving them bread. I shall rise, and return to the land of Yahuḏah.']},
+       {say:['naomi','Empty. The hand of YAHUAH has gone out against me… Yet I have heard that YAHUAH has visited His people in giving them bread. I shall rise, and return to the land of Yahuḏah.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'And Alimeleḵ died; and Maḥlon and Kilyon also died, both of them — so the woman was bereaved of her two sons and of her husband. And she rose up, with her daughters-in-law, to return from the fields of Mo’aḇ — for she had heard that YAHUAH had visited His people, in giving them bread.', ref:'RUTH 1:3–6'},
+   {art:'wasteland', music:'sorrow', text:'And Alimeleḵ, husband of Na‛omi, died. … And Maḥlon and Kilyon also died, both of them, so the woman was bereaved of her two sons and of her husband. And she rose up, with her daughters-in-law and returned from the fields of Mo’aḇ, for she had heard in the fields of Mo’aḇ that YAHUAH had visited His people in giving them bread.', ref:'RUTH 1:3–6', stage:{"set":"tomb","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"elimelek","x":0.44,"z":0.06,"face":"r","pose":"dead"},{"id":"naomi","x":0.3,"z":0.12,"face":"r","pose":"mourn","acts":[{"at":2,"to":0.2,"pose":"stand"}]},{"id":"mahlon","x":0.64,"z":0.3,"face":"l","pose":"weep","acts":[{"at":1,"pose":"dead"}]},{"id":"kilyon","x":0.82,"z":0.16,"face":"l","pose":"weep","acts":[{"at":1,"pose":"dead"}]},{"id":"ruth","x":0.56,"z":0.5,"face":"r","pose":"mourn","at":1,"acts":[{"at":2,"pose":"stand","face":"l"}]},{"id":"orpah","x":0.74,"z":0.55,"face":"l","pose":"mourn","at":1,"acts":[{"at":2,"pose":"stand","face":"l"}]}],"fx":[{"k":"rays","x":0.05,"at":2}]}},
   ],
-  complete:'Bereaved in a strange land — yet word comes that YAHUAH has visited His people with bread.'
+  complete:'Bereaved in a strange land — yet word comes that YAHUAH has visited His people in giving them bread.'
 },
 
-{ id:'r2', title:'Where You Go, I Go', ref:'RUTH 1:6–18',
+{ id:'r2', title:'Wherever You Go, I Go', ref:'RUTH 1:6–18',
   intro:[
-   {art:'journey', music:'sorrow', text:'And she left the place where she was, and her two daughters-in-law with her — and they went on the way to return to the land of Yahuḏah. And Na‛omi said to them, “Go, return each to her mother’s house. YAHUAH show kindness to you, as you have shown to the dead and to me.”', ref:'RUTH 1:7–8'},
+   {art:'journey', music:'sorrow', text:'And she left the place where she was and her two daughters-in-law with her. And they went on the way to return to the land of Yahuḏah. And Na‛omi said to her two daughters-in-law, “Go, return each to her mother’s house. YAHUAH show kindness to you, as you have shown to the dead and to me.”', ref:'RUTH 1:7–8', stage:{"set":"road","time":"day","cam":"pan-l","focus":0.4,"cast":[{"id":"naomi","enter":"r","at":0,"to":0.5,"face":"l","pose":"walk","acts":[{"at":1,"to":0.32},{"at":2,"face":"r","pose":"speak"},{"at":3,"pose":"bless"}],"say":2},{"id":"ruth","enter":"r","at":0,"to":0.7,"z":0.06,"face":"l","pose":"walk","hold":"basket","acts":[{"at":1,"to":0.56},{"at":2,"pose":"stand"},{"at":3,"pose":"weep"}]},{"id":"orpah","enter":"r","at":0,"to":0.84,"z":0.12,"face":"l","pose":"walk","acts":[{"at":1,"to":0.72},{"at":2,"pose":"stand"},{"at":3,"pose":"weep"}]}],"props":[{"k":"rock","x":0.14,"z":0.35,"w":46},{"k":"bush","x":0.9,"z":0.45}]}},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:28, seed:6502,
@@ -5977,14 +6124,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'Orpah kissed her mother-in-law and went back — but Ruth clung to her: “Do not urge me to leave you. For wherever you go, I go; and wherever you stop over, I stop over. Your people is my people, and your Aluahim is my Aluahim. Where you die, I die, and there I shall be buried.” And both of them went, until they came to Bĕyth Leḥem.', ref:'RUTH 1:14–19'},
+   {art:'journey', music:'holy', text:'Orpah kissed her mother-in-law, but Ruth clung to her. … Ruth said, “Do not urge me to leave you … For wherever you go, I go; and wherever you stop over, I stop over. Your people is my people and your Aluahim is my Aluahim. Where you die, I die and there I shall be buried.” … And both of them went until they came to Bĕyth Leḥem.', ref:'RUTH 1:14–19', stage:{"set":"wilderness","time":"dusk","cam":"push","focus":0.4,"cast":[{"id":"naomi","x":0.46,"z":0.05,"face":"r","pose":"weep","turn":[1,"l"],"acts":[{"at":2,"pose":"stand"},{"at":6,"exit":"l"}]},{"id":"ruth","x":0.34,"z":0.08,"face":"r","pose":"kneel","say":1,"acts":[{"at":2,"pose":"speak"},{"at":4,"pose":"raise"},{"at":5,"pose":"speak"},{"at":6,"exit":"l"}]},{"id":"orpah","x":0.58,"z":0.1,"face":"l","pose":"hold","acts":[{"at":1,"exit":"r"}]}],"props":[{"k":"rock","x":0.8,"z":0.4,"w":60,"h":34},{"k":"bush","x":0.14,"z":0.45}]}},
   ],
   complete:'Your people is my people, and your Aluahim is my Aluahim — the Mo’aḇitess walks on to Yahuḏah.'
 },
 
 { id:'r3', title:'Call Me Marah', ref:'RUTH 1:19–22',
   intro:[
-   {art:'vista', music:'sorrow', text:'And it came to be, when they had come to Bĕyth Leḥem, that all the city was moved because of them — and they said, “Is this Na‛omi?”', ref:'RUTH 1:19'},
+   {art:'vista', music:'sorrow', text:'And it came to be, when they had come to Bĕyth Leḥem, that all the city was moved because of them — and they said, “Is this Na‛omi?”', ref:'RUTH 1:19', stage:{"set":"gate","time":"day","cam":"push","focus":0.55,"cast":[{"id":"naomi","enter":"r","at":0,"to":0.62,"z":0.08,"face":"l","pose":"stand","hold":"staff"},{"id":"ruth","enter":"r","at":0,"to":0.78,"z":0.12,"face":"l","pose":"stand","hold":"basket"},{"id":"townwoman","x":0.4,"z":0.1,"face":"r","pose":"stand","say":1,"acts":[{"at":1,"pose":"point"}]}],"crowd":[{"kind":"women","n":6,"x":0.2,"w":0.26,"z":0.55,"face":"r","from":"stand","at":1,"pose":"raise"},{"kind":"elders","n":3,"x":0.5,"w":0.14,"z":0.8,"face":"r"}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6503,
@@ -6010,7 +6157,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'vista', music:'holy', text:'“Do not call me Na‛omi — call me Marah, for the Almighty has dealt very bitterly with me. I went out filled, and YAHUAH has brought me back empty.” Thus Na‛omi returned, and Ruth the Mo’aḇitess with her — and they came to Bĕyth Leḥem at the beginning of barley harvest.', ref:'RUTH 1:20–22'},
+   {art:'vista', music:'holy', text:'“Do not call me Na‛omi, call me Marah, for the Almighty has dealt very bitterly with me. I went out filled and YAHUAH has brought me back empty.” … Thus Na‛omi returned and Ruth the Mo’aḇitess her daughter-in-law with her … and they came to Bĕyth Leḥem at the beginning of barley harvest.', ref:'RUTH 1:20–22', stage:{"set":"field","time":"dusk","cam":"pull","focus":0.4,"cast":[{"id":"naomi","x":0.44,"z":0.08,"face":"l","pose":"weep","say":0,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"stand","face":"r"}]},{"id":"ruth","x":0.58,"z":0.12,"face":"l","pose":"stand","acts":[{"at":2,"face":"r"}]},{"id":"townwoman","x":0.2,"z":0.12,"face":"r","pose":"stand","acts":[{"at":2,"exit":"l"}]}],"crowd":[{"kind":"women","n":4,"x":0.18,"w":0.18,"z":0.5,"face":"r","exit":"l","exitAt":2},{"kind":"people","n":5,"x":0.72,"w":0.3,"z":0.6,"face":"l","pose":"carry","at":3,"hold":null}],"props":[{"k":"sheaves","x":0.84,"z":0.35,"at":3,"n":4},{"k":"sheaves","x":0.62,"z":0.62,"at":3,"n":3}]}},
   ],
   complete:'Marah at the gate — yet the barley harvest is beginning, and the house of bread has bread again.'
 },
@@ -6022,7 +6169,7 @@ STORY.push(
 
 { id:'r4', title:'Glean Among the Sheaves', ref:'RUTH 2:1–16',
   intro:[
-   {art:'vista', music:'holy', text:'And Na‛omi had a relative on her husband’s side, a man of great wealth, of the clan of Alimeleḵ — and his name was Bo‛az. And Ruth the Mo’aḇitess said to Na‛omi, “Please let me go to the field and glean heads of grain after him in whose eyes I find favour.” And she said to her, “Go, my daughter.”', ref:'RUTH 2:1–2'},
+   {art:'vista', music:'holy', text:'And Na‛omi had a relative on her husband’s side, a man of great wealth, of the clan of Alimeleḵ and his name was Bo‛az. And Ruth the Mo’aḇitess said to Na‛omi, “Please let me go to the field and glean heads of grain after him in whose eyes I find chen.” So she said to her, “Go, my daughter.”', ref:'RUTH 2:1–2', stage:{"set":"city","time":"dawn","cam":"push","focus":0.35,"cast":[{"id":"boaz","x":0.74,"z":0.28,"face":"l","pose":"stand","hold":"staff","acts":[{"at":1,"exit":"r"}]},{"id":"ruth","x":0.42,"z":0.06,"face":"l","pose":"kneel","say":1,"hold":"basket","acts":[{"at":1,"pose":"speak"}]},{"id":"naomi","x":0.24,"z":0.1,"face":"r","pose":"sit","say":2,"acts":[{"at":2,"pose":"bless"}]}],"crowd":[{"kind":"people","n":3,"x":0.88,"w":0.1,"z":0.55,"face":"l","hold":null,"exit":"r","exitAt":1}],"props":[{"k":"house","x":0.12,"z":0.35,"w":80}]}},
   ],
   scene:{
    map:{biome:'plains', w:48, h:30, seed:6504,
@@ -6035,7 +6182,7 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'naomi',text:'“Let me go to the field and glean”',
       script:[
-       {say:['ruth','Please let me go to the field, and glean heads of grain after him in whose eyes I find favour.']},
+       {say:['ruth','Please let me go to the field, and glean heads of grain after him in whose eyes I find chen.']},
        {say:['naomi','Go, my daughter.']},
        {sfx:'chime'},
       ]},
@@ -6052,25 +6199,25 @@ STORY.push(
       ]},
      {type:'talk',npc:'boaz',text:'“Under whose wings you have come”',hiddenUntil:3,
       script:[
-       {say:['boaz','You have heard, have you not, my daughter? Do not go to glean in another field, but stay close to my young women. Have I not commanded the young men not to touch you? And when you are thirsty, go to the vessels and drink from what the young men have drawn.']},
-       {say:['ruth','Why have I found favour in your eyes, that you should take notice of me — seeing I am a foreigner?']},
+       {say:['boaz','You have heard, have you not, my daughter? Do not go to glean in another field, nor go from here, but stay close to my young women. Have I not commanded the young men not to touch you? And when you are thirsty, go to the vessels and drink from what the young men have drawn.']},
+       {say:['ruth','Why have I found chen in your eyes, that you should take notice of me — seeing I am a foreigner?']},
        {say:['boaz','I have been told all that you have done for your mother-in-law since the death of your husband — how you left your father and your mother and the land of your birth, and came to a people you did not know before.']},
-       {say:['boaz','YAHUAH repay your work, and your reward is complete from YAHUAH, Aluahim of Yisra’ĕl, under whose wings you have come to seek refuge.']},
+       {say:['boaz','YAHUAH repay your work, and your reward is complete from YAHUAH, Aluahim of Yasharal, under whose wings you have come to seek refuge.']},
        {rays:.6,raysX:23},{sfx:'holy'},{burst:[23,11,'holy',16]},
-       {say:['boaz','Come here at mealtime — eat of the bread, and dip your piece in the vinegar. And you, young men: let her glean even among the sheaves, and do not embarrass her. Rather, draw out from the bundles for her, and leave it for her to glean.']},
+       {say:['boaz','Come here at mealtime. Then you shall eat of the bread and dip your piece of bread in the vinegar. And you, young men: let her glean even among the sheaves, and do not embarrass her. Rather, draw out from the bundles for her, and leave it for her to glean.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'vista', music:'holy', text:'As it turned out, she came to the part of the field belonging to Bo‛az, of the clan of Alimeleḵ. “Do not go to glean in another field — stay close to my young women. YAHUAH repay your work, and your reward is complete from YAHUAH, Aluahim of Yisra’ĕl, under whose wings you have come to seek refuge.” And he commanded, “Let her glean even among the sheaves — draw out from the bundles for her.”', ref:'RUTH 2:3–16'},
+   {art:'vista', music:'holy', text:'As it turned out, she came to the part of the field belonging to Bo‛az, the near relative of Alimeleḵ. “Do not go to glean in another field, nor go from here, but stay close to my young women. … YAHUAH repay your work and your reward is complete from YAHUAH Aluahim of Yasharal, under whose wings you have come to seek refuge.” … Bo‛az commanded his young men, saying, “Let her glean even among the sheaves.”', ref:'RUTH 2:3–16', stage:{"set":"field","time":"day","cam":"push","focus":0.45,"cast":[{"id":"ruth","enter":"l","at":0,"to":0.36,"z":0.05,"face":"r","pose":"kneel","acts":[{"at":1,"pose":"bow"},{"at":3,"pose":"kneel","face":"l"}]},{"id":"boaz","enter":"r","at":1,"to":0.58,"z":0.1,"face":"l","pose":"stand","hold":"staff","say":1,"acts":[{"at":2,"pose":"bless"},{"at":3,"face":"r","pose":"point"}]},{"id":"reaper","x":0.8,"z":0.2,"face":"l","pose":"stand","at":3,"say":3}],"crowd":[{"kind":"women","n":4,"x":0.2,"w":0.26,"z":0.5,"face":"r","pose":"kneel"},{"kind":"people","n":5,"x":0.76,"w":0.3,"z":0.6,"face":"l","pose":"carry","hold":null}],"props":[{"k":"sheaves","x":0.5,"z":0.35,"n":4},{"k":"sheaves","x":0.9,"z":0.4,"n":3}]}},
   ],
-  complete:'She gleaned after the reapers — and found favour under the wings of the Almighty.'
+  complete:'She gleaned in the field after the reapers — and found chen under the wings of the Almighty.'
 },
 
 { id:'r5', title:'An Ĕphah of Barley', ref:'RUTH 2:17–23',
   intro:[
-   {art:'vista_sunset', music:'holy', text:'And she gleaned in the field until evening, and beat out that which she had gleaned — and it was about an ĕphah of barley.', ref:'RUTH 2:17'},
+   {art:'vista_sunset', music:'holy', text:'And she gleaned in the field until evening, and beat out that which she had gleaned — and it was about an ĕphah of barley.', ref:'RUTH 2:17', stage:{"set":"field","time":"dusk","cam":"close","focus":0.45,"cast":[{"id":"ruth","x":0.45,"z":0.08,"face":"r","pose":"strike","hold":"rod","acts":[{"at":1,"pose":"kneel"}]}],"crowd":[{"kind":"people","n":4,"x":0.8,"w":0.2,"z":0.7,"face":"r","pose":"carry","hold":null,"exit":"r","exitAt":0}],"props":[{"k":"sheaves","x":0.6,"z":0.12,"n":2},{"k":"basket","x":0.55,"z":0.04,"at":1,"fruit":"#d8c078","s":1.2},{"k":"sheaves","x":0.18,"z":0.4,"n":3}],"fx":[{"k":"embers","at":0}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6505,
@@ -6081,9 +6228,9 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'naomi',text:'“Where have you gleaned today?”',
       script:[
-       {say:['naomi','Where have you gleaned today? And where did you work? Blessed be the one who took notice of you!']},
+       {say:['naomi','Where have you gleaned today? And where did you work? Baruk be the one who took notice of you!']},
        {say:['ruth','The name of the man I worked with today is Bo‛az.']},
-       {say:['naomi','Blessed be he of YAHUAH, who has not forsaken His kindness to the living and the dead! The man is a relative of ours — one of our redeemers.']},
+       {say:['naomi','Baruk be he of YAHUAH, who has not forsaken His kindness to the living and the dead! The man is a relative of ours — one of our redeemers.']},
        {rays:.5,raysX:16},{sfx:'holy'},{burst:[16,10,'holy',12]},
       ]},
      {type:'interact',prop:'store',text:'Stay close by his young women',hiddenUntil:1,
@@ -6096,9 +6243,9 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'garden', music:'holy', text:'“The name of the man I worked with today is Bo‛az.” “Blessed be he of YAHUAH, who has not forsaken His kindness to the living and the dead! The man is a relative of ours — one of our redeemers.” And she stayed close by the young women of Bo‛az to glean, until the completion of barley harvest and wheat harvest.', ref:'RUTH 2:19–23'},
+   {art:'garden', music:'holy', text:'“The name of the man I worked today with is Bo‛az.” … “Baruk be he of YAHUAH, who has not forsaken His kindness to the living and the dead!” And Na‛omi said to her, “The man is a relative of ours, one of our redeemers.” … And she stayed close by the young women of Bo‛az to glean, until the completion of barley harvest and wheat harvest.', ref:'RUTH 2:19–23', stage:{"set":"house","time":"night","cam":"push","focus":0.45,"cast":[{"id":"ruth","x":0.58,"z":0.08,"face":"l","pose":"kneel","say":0,"acts":[{"at":3,"exit":"r"}]},{"id":"naomi","x":0.34,"z":0.1,"face":"r","pose":"sit","say":1,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"speak"}]}],"props":[{"k":"basket","x":0.47,"z":0.02,"fruit":"#d8c078"},{"k":"table","x":0.16,"z":0.35}]}},
   ],
-  complete:'An ĕphah of barley, and a name spoken at evening — Bo‛az, a relative, one of our redeemers.'
+  complete:'An ĕphah of barley, and a name spoken at evening — Bo‛az, a relative of ours, one of our redeemers.'
 },
 
 ]},
@@ -6106,9 +6253,9 @@ STORY.push(
 /* ============ ACT III — THE THRESHING FLOOR ============ */
 { id:'ract3', roman:'III', title:'The Threshing Floor', ref:'RUTH 3', chapters:[
 
-{ id:'r6', title:'Spread Your Wing Over Your Servant', ref:'RUTH 3:1–18',
+{ id:'r6', title:'Spread Your Covering Over Your Servant', ref:'RUTH 3:1–18',
   intro:[
-   {art:'stars', music:'holy', text:'And Na‛omi her mother-in-law said to her, “My daughter, should I not seek rest for you, so that it is well with you? And now, is not Bo‛az our relative, with whose young women you have been? See, he is winnowing barley tonight at the threshing-floor.”', ref:'RUTH 3:1–2'},
+   {art:'stars', music:'holy', text:'And Na‛omi her mother-in-law said to her, “My daughter, should I not seek rest for you, so that it is well with you? And now, is not Bo‛az, with whose young women you have been, our relative? See, he is winnowing barley tonight at the threshing-floor.”', ref:'RUTH 3:1–2', stage:{"set":"threshing","time":"dusk","cam":"pan-r","focus":0.55,"cast":[{"id":"naomi","x":0.2,"z":0.05,"face":"r","pose":"speak","say":0,"acts":[{"at":1,"pose":"stand"},{"at":2,"pose":"point"}]},{"id":"ruth","x":0.36,"z":0.1,"face":"l","pose":"stand","acts":[{"at":2,"face":"r"}]},{"id":"boaz","x":0.74,"z":0.55,"face":"l","pose":"raise","at":2,"hold":"staff"}],"crowd":[{"kind":"people","n":3,"x":0.86,"w":0.14,"z":0.6,"face":"l","pose":"carry","hold":null,"at":2}],"props":[{"k":"sheaves","x":0.6,"z":0.6,"n":4},{"k":"fire","x":0.92,"z":0.65,"at":2}]}},
   ],
   scene:{
    map:{biome:'wild', w:44, h:28, seed:6506,
@@ -6119,7 +6266,7 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'naomi',text:'“All that you say to me, I do”',
       script:[
-       {say:['naomi','Bathe and anoint yourself, and put your garments on, and go down to the threshing-floor. Do not make yourself known to the man until he has finished eating and drinking. And when he lies down, notice the place where he lies — and go in, and uncover his feet, and lie down. And he shall make known to you what you should do.']},
+       {say:['naomi','You shall bathe and anoint yourself and put your garments on and go down to the threshing-floor. Do not make yourself known to the man until he has finished eating and drinking. And it shall be, when he lies down, that you shall notice the place where he lies and shall go in and uncover his feet and lie down. And let him make known to you what you should do.']},
        {say:['ruth','All that you say to me, I do.']},
        {sfx:'chime'},
       ]},
@@ -6138,7 +6285,7 @@ STORY.push(
        {call:G=>{ const n=G.world.npcs.find(n=>n.id==='boaz'); if(n){ n.lying=false; } }},
        {say:['boaz','Who are you?']},
        {say:['ruth','I am Ruth, your female servant. Now you shall spread your covering over your female servant — for you are a redeemer.']},
-       {say:['boaz','Blessed are you of YAHUAH, my daughter! For you have shown more kindness at the end than at the beginning — not to go after young men, whether poor or rich. And now, do not fear. All that you say, I do for you — for all the people of my town know that you are a capable woman.']},
+       {say:['boaz','Baruk are you of YAHUAH, my daughter! For you have shown more kindness at the end than at the beginning — not to go after young men, whether poor or rich. And now, do not fear. All that you say, I do for you — for all the people of my town know that you are a capable woman.']},
        {rays:.5,raysX:27},{sfx:'holy'},{burst:[27,12,'holy',12]},
        {say:['boaz','It is true that I am your redeemer — but there is a redeemer nearer than I. Stop over tonight; and in the morning, if he redeems you, good — let him do it. But if he is not pleased to redeem you, then I shall redeem you, as YAHUAH lives!']},
        {fade:'out'},{time:'day'},{fade:'in'},
@@ -6150,9 +6297,9 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'At midnight the man was startled — a woman lay at his feet! “Who are you?” “I am Ruth, your female servant. Spread your covering over your female servant — for you are a redeemer.” “Blessed are you of YAHUAH, my daughter. I am your redeemer — but there is a redeemer nearer than I. If he does not redeem you, then I shall redeem you, as YAHUAH lives.”', ref:'RUTH 3:8–13'},
+   {art:'stars', music:'holy', text:'It came to be at midnight that the man was startled and turned himself and saw a woman lying at his feet! “Who are you?” “I am Ruth, your female servant. Now you shall spread your covering over your female servant – for you are a redeemer.” “Baruk are you of YAHUAH, my daughter! … I am your redeemer. However, there is a redeemer nearer than I. … If he is not pleased to redeem you, then I shall redeem you, as YAHUAH lives!”', ref:'RUTH 3:8–13', stage:{"set":"threshing","time":"night","cam":"push","focus":0.5,"cast":[{"id":"boaz","x":0.56,"z":0.3,"face":"l","pose":"lie","acts":[{"at":1,"pose":"sitground"},{"at":3,"pose":"bless"},{"at":4,"pose":"speak"},{"at":5,"pose":"raise"}],"say":1},{"id":"ruth","x":0.34,"z":0.32,"face":"r","pose":"lie","say":2,"acts":[{"at":1,"pose":"kneel"},{"at":3,"pose":"bow"}]}],"props":[{"k":"sheaves","x":0.78,"z":0.45,"n":4},{"k":"fire","x":0.9,"z":0.6}],"fx":[{"k":"stars"}]}},
   ],
-  complete:'Six measures of barley in the shawl — and the man shall not rest until the matter is complete.'
+  complete:'Six measures of barley in the shawl — and the man is not going to rest until he has completed the matter this day.'
 },
 
 ]},
@@ -6160,9 +6307,9 @@ STORY.push(
 /* ============ ACT IV — THE GATE OF REDEMPTION ============ */
 { id:'ract4', roman:'IV', title:'The Gate of Redemption', ref:'RUTH 4', chapters:[
 
-{ id:'r7', title:'The Sandal Drawn Off', ref:'RUTH 4:1–12',
+{ id:'r7', title:'The Sandal Taken Off', ref:'RUTH 4:1–12',
   intro:[
-   {art:'vista', music:'tense', text:'And Bo‛az went up to the gate, and sat down there. And see, the redeemer of whom Bo‛az had spoken came by. And he said, “Turn aside, So-and-so, sit down here.” And he took ten men of the elders of the city, and said, “Sit down here.” So they sat down.', ref:'RUTH 4:1–2'},
+   {art:'vista', music:'tense', text:'And Bo‛az went up to the gate, and sat down there. And see, the redeemer of whom Bo‛az had spoken came by. And Bo‛az said, “Turn aside, So-and-so, sit down here.” And he turned aside and sat down. And he took ten men of the elders of the city, and said, “Sit down here.” So they sat down.', ref:'RUTH 4:1–2', stage:{"set":"gate","time":"day","cam":"push","focus":0.45,"cast":[{"id":"boaz","enter":"l","at":0,"to":0.36,"z":0.06,"face":"r","pose":"sit","acts":[{"at":2,"pose":"bless"},{"at":3,"pose":"sit"}]},{"id":"redeemer","enter":"r","at":1,"to":0.76,"z":0.14,"face":"l","pose":"stand","acts":[{"at":3,"to":0.58,"pose":"sit","face":"l"}]},{"id":"elder","x":0.18,"z":0.2,"face":"r","pose":"sit","at":4}],"crowd":[{"kind":"elders","n":9,"x":0.48,"w":0.64,"z":0.58,"face":"r","enter":"l","at":4,"pose":"sitground"}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6507,
@@ -6175,31 +6322,31 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'redeemer',text:'“Buy it back in the presence of the elders”',
       script:[
-       {say:['boaz','Na‛omi, who has come back from the fields of Mo’aḇ, sold the piece of land which belonged to our brother Alimeleḵ. Buy it back in the presence of the inhabitants and the elders of my people. If you redeem it, redeem it — and if not, inform me, for there is no one but you to redeem it, and I am next after you.']},
+       {say:['boaz','Na‛omi, who has come back from the fields of Mo’aḇ, sold the piece of land which belonged to our brother Alimeleḵ. Buy it back in the presence of the inhabitants and the elders of my people. If you do redeem it, redeem it but if you do not redeem it, inform me, so that I know. For there is no one but you to redeem it and I am next after you.']},
        {say:['redeemer','I redeem it.']},
        {say:['boaz','On the day you buy the field from the hand of Na‛omi, you also acquire Ruth the Mo’aḇitess, the wife of the dead — to raise up the name of the dead on his inheritance.']},
        {say:['redeemer','Then I am not able to redeem it for myself, lest I ruin my own inheritance. Redeem my right of redemption for yourself — for I am not able to redeem it.']},
-       {say:['narrator','And this was formerly done in Yisra’ĕl concerning redeeming and exchanging, to confirm every word: one man took off his sandal and gave it to the other — and this was a witness in Yisra’ĕl.']},
+       {say:['narrator','And this was formerly done in Yasharal concerning redeeming and exchanging, to confirm every word: one man took off his sandal and gave it to the other — and this was a witness in Yasharal.']},
        {burst:[20,12,'mote',10]},{sfx:'pickup'},
        {say:['redeemer','Buy it for yourself.']},
       ]},
      {type:'talk',npc:'e1',text:'“You are witnesses this day”',hiddenUntil:1,
       script:[
        {say:['boaz','You are witnesses this day, that I have bought all that was Alimeleḵ’s, and all that was Kilyon’s and Maḥlon’s, from the hand of Na‛omi. And also Ruth the Mo’aḇitess, the wife of Maḥlon, I have acquired as my wife — to raise up the name of the dead on his inheritance, so that the name of the dead should not be cut off from among his brothers, and from the gate of his place.']},
-       {say:['elder','Witnesses! YAHUAH make the woman who is coming to your house as Raḥĕl and as Lĕ’ah, the two who built the house of Yisra’ĕl! Prove your worth in Ephrathah, and proclaim the Name in Bĕyth Leḥem — and let your house be like the house of Perets, whom Tamar bore to Yahuḏah, of the seed which YAHUAH gives you from this young woman.']},
+       {say:['elder','Witnesses! YAHUAH make the woman who is coming to your house as Raḥĕl and as Lĕ’ah, the two who built the house of Yasharal! Prove your worth in Ephrathah, and proclaim the Name in Bĕyth Leḥem — and let your house be like the house of Perets, whom Tamar bore to Yahuḏah, of the seed which YAHUAH gives you from this young woman.']},
        {rays:.7,raysX:22},{sfx:'holy'},{burst:[22,9,'holy',18]},
       ]},
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'The nearer redeemer drew off his sandal: “Buy it for yourself.” And Bo‛az said to the elders, “You are witnesses this day — Ruth the Mo’aḇitess I have acquired as my wife, to raise up the name of the dead on his inheritance.” And all the people at the gate said, “Witnesses! YAHUAH make the woman as Raḥĕl and as Lĕ’ah, the two who built the house of Yisra’ĕl!”', ref:'RUTH 4:8–12'},
+   {art:'reunion', music:'holy', text:'So the redeemer said to Bo‛az, “Buy it for yourself.” Then he took off his sandal. And Bo‛az said to the elders and to all the people, “You are witnesses this day … Ruth the Mo’aḇitess … I have acquired as my wife, to raise up the name of the dead on his inheritance.” And all the people who were at the gate and the elders, said, “Witnesses! YAHUAH make the woman who is coming to your house as Raḥĕl and as Lĕ’ah, the two who built the house of Yasharal.”', ref:'RUTH 4:8–12', stage:{"set":"gate","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"redeemer","x":0.64,"z":0.06,"face":"l","pose":"speak","say":0,"acts":[{"at":1,"pose":"kneel"},{"at":2,"pose":"hold"}]},{"id":"boaz","x":0.42,"z":0.08,"face":"r","pose":"stand","say":2,"acts":[{"at":2,"face":"l","pose":"raise"},{"at":3,"pose":"point"}]},{"id":"ruth","enter":"l","at":3,"to":0.2,"z":0.12,"face":"r","pose":"stand"},{"id":"elder","x":0.82,"z":0.2,"face":"l","pose":"sit","say":5,"acts":[{"at":4,"pose":"raise"},{"at":5,"pose":"bless"}]}],"crowd":[{"kind":"elders","n":6,"x":0.62,"w":0.4,"z":0.55,"face":"l","from":"sitground","at":4,"pose":"raise"},{"kind":"people","n":7,"x":0.3,"w":0.44,"z":0.72,"face":"r","from":"stand","at":4,"pose":"raise","hold":null}]}},
   ],
-  complete:'The sandal drawn off before ten elders — and the Mo’aḇitess is redeemed, with the land.'
+  complete:'The sandal taken off before ten elders — and the Mo’aḇitess is redeemed, with the land.'
 },
 
 { id:'r8', title:'A Son Born to Na‛omi', ref:'RUTH 4:13–22',
   intro:[
-   {art:'reunion', music:'holy', text:'And Bo‛az took Ruth, and she became his wife. And YAHUAH granted her conception, and she bore a son.', ref:'RUTH 4:13'},
+   {art:'reunion', music:'holy', text:'And Bo‛az took Ruth, and she became his wife. And YAHUAH granted her conception, and she bore a son.', ref:'RUTH 4:13', stage:{"set":"house","time":"day","cam":"push","focus":0.45,"cast":[{"id":"boaz","x":0.34,"z":0.08,"face":"r","pose":"stand"},{"id":"ruth","x":0.47,"z":0.06,"face":"l","pose":"stand","acts":[{"at":1,"face":"r","pose":"hold"}]},{"id":"townwoman","enter":"r","at":1,"to":0.66,"z":0.1,"face":"l","pose":"carry","hold":"baby"}],"props":[{"k":"bed","x":0.84,"z":0.4}],"fx":[{"k":"rays","x":0.55,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6508,
@@ -6211,16 +6358,16 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'naomi',text:'A restorer of life, a sustainer of old age',
       script:[
-       {say:['townwoman','Blessed be YAHUAH, who has not left you this day without a redeemer — and let His Name be proclaimed in Yisra’ĕl! He shall be to you a restorer of life, and a sustainer of your old age. For your daughter-in-law who loves you, who is better to you than seven sons, has borne him.']},
+       {say:['townwoman','Baruk be YAHUAH, who has not left you this day without a redeemer. And let His Name be proclaimed in Yasharal! And he shall be to you a restorer of life and a sustainer of your old age. For your daughter-in-law, who loves you, who is better to you than seven sons, has borne him.']},
        {say:['narrator','And Na‛omi took the child, and laid him on her bosom, and became a nurse to him. And the women, her neighbours, gave him a name, saying, “There is a son born to Na‛omi” — and they called his name Oḇĕḏ.']},
        {rays:.6,raysX:16},{sfx:'holy'},{burst:[16,10,'holy',16]},
-       {say:['naomi','Not Marah any longer. YAHUAH went out against me — and YAHUAH has filled me again.']},
+       {say:['naomi','Not Marah any longer. The hand of YAHUAH has gone out against me — and YAHUAH has filled me again.']},
        {sfx:'chime'},
       ]},
      {type:'interact',prop:'lineage',text:'The generations — to Dawiḏ the sovereign',hiddenUntil:1,
       script:[
        {say:['narrator','And this is the genealogy of Perets: Perets brought forth Ḥetsron, and Ḥetsron brought forth Ram, and Ram brought forth Amminaḏaḇ, and Amminaḏaḇ brought forth Naḥshon, and Naḥshon brought forth Salmon.']},
-       {say:['narrator','And Salmon brought forth Bo‛az, and Bo‛az brought forth Oḇĕḏ, and Oḇĕḏ brought forth Yahshai — and Yahshai brought forth Dawiḏ.']},
+       {say:['narrator','And Salmon brought forth Bo‛az and Bo‛az brought forth Oḇĕḏ. And Oḇĕḏ brought forth Yahshai and Yahshai brought forth Dawiḏ.']},
        {rays:.85,raysX:30},{sfx:'holy'},{burst:[30,11,'holy',22]},
        {say:['narrator','So the Mo’aḇitess who said “Your people is my people, and your Aluahim is my Aluahim” was grafted in among the chosen people — and became the great-grandmother of Dawiḏ the sovereign.']},
        {sfx:'chime'},
@@ -6228,7 +6375,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'garden', music:'holy', text:'The women said, “There is a son born to Na‛omi” — and they called his name Oḇĕḏ. He was the father of Yahshai, the father of Dawiḏ. So the Mo’aḇitess who clung to Na‛omi on the road — “Your people is my people, and your Aluahim is my Aluahim” — was grafted in among the chosen people, and became the great-grandmother of Dawiḏ.', ref:'RUTH 4:17–22'},
+   {art:'garden', music:'holy', text:'And the women, her neighbours, gave him a name, saying, “There is a son born to Na‛omi.” And they called his name Oḇĕḏ. He was the father of Yahshai, the father of Dawiḏ. … And Salmon brought forth Bo‛az and Bo‛az brought forth Oḇĕḏ. And Oḇĕḏ brought forth Yahshai and Yahshai brought forth Dawiḏ.', ref:'RUTH 4:17–22', stage:{"set":"city","time":"day","cam":"pan-r","focus":0.6,"cast":[{"id":"naomi","x":0.36,"z":0.06,"face":"r","pose":"sit","hold":"baby"},{"id":"townwoman","x":0.52,"z":0.1,"face":"l","pose":"raise","say":0,"acts":[{"at":1,"pose":"bless"}]},{"id":"ruth","x":0.2,"z":0.12,"face":"r","pose":"stand"},{"id":"boaz","x":0.1,"z":0.2,"face":"r","pose":"stand","at":3},{"id":"yahshai","look":{"name":"Yahshai","skin":"#7a4e29","hair":"#cfc8b8","robe":"#6a5a48","beard":"#cfc8b8","old":1},"x":0.72,"z":0.4,"face":"l","pose":"stand","hold":"staff","at":4},{"id":"dawid","look":{"name":"Dawiḏ son of Yahshai","skin":"#83552d","hair":"#8a4a20","robe":"#7a2a3a","beard":"#8a4a20","mantle":"#caa040"},"x":0.84,"z":0.36,"face":"l","pose":"stand","hold":"harp","crown":1,"at":2}],"crowd":[{"kind":"women","n":5,"x":0.46,"w":0.3,"z":0.55,"face":"l","pose":"raise"}],"fx":[{"k":"rays","x":0.84,"at":2}]}},
   ],
   complete:'A son born to Na‛omi — Oḇĕḏ, father of Yahshai, father of Dawiḏ.'
 },
@@ -6275,7 +6422,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6341,7 +6488,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6402,9 +6552,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6489,5 +6639,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

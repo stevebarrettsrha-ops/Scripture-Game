@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -529,8 +561,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -638,7 +670,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -738,7 +770,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1000,6 +1034,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1043,7 +1087,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1305,6 +1351,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2786,6 +2842,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2981,7 +3057,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3186,8 +3262,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3674,6 +3751,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3737,7 +3815,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3790,15 +3872,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3809,6 +3925,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3834,6 +3956,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     $('slide-ui').classList.remove('show');
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
@@ -3863,6 +3986,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3880,7 +4004,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4020,6 +4144,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4083,17 +4212,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4257,22 +4387,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4285,7 +4419,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4308,11 +4442,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5673,7 +5820,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5940,11 +6087,11 @@ STORY.push(
 
 { id:'e1', title:'The Feast of a Hundred and Eighty Days', ref:'ESTĔR 1:1–22',
   intro:[
-   {art:'vista_sunset', music:'holy', text:'And it came to be in the days of Aḥashwĕrosh — who reigned from India to Kush, a hundred and twenty-seven provinces — that in the third year of his reign he made a feast for all his officials and servants, showing the riches of his esteemed reign and the splendour of his excellent greatness for many days: a hundred and eighty days.', ref:'ESTĔR 1:1–4'},
+   {art:'vista_sunset', music:'holy', text:'And it came to be in the days of Aḥashwĕrosh — who reigned from India to Kush, a hundred and twenty-seven provinces — that in the third year of his reign he made a feast for all his officials and servants … when he showed the riches of his esteemed reign and the splendour of his excellent greatness for many days, a hundred and eighty days.', ref:'ESTĔR 1:1–4', stage:{"set":"persia","cam":"pull","focus":0.5,"cast":[{"id":"ahash","x":0.5,"z":0.14,"face":"r","pose":"enthroned","crown":1}],"crowd":[{"kind":"nations","n":5,"x":0.2,"w":0.2,"z":0.45,"face":"r","at":1,"pose":"bow"},{"kind":"nations","n":5,"x":0.8,"w":0.2,"z":0.45,"face":"l","at":1,"pose":"bow"},{"kind":"princes","n":6,"x":0.5,"w":0.8,"z":0.75,"face":"r","at":2,"hold":"cup"}],"props":[{"k":"table","x":0.26,"z":0.3,"cups":1,"at":2},{"k":"table","x":0.74,"z":0.3,"cups":1,"at":2},{"k":"chest","x":0.36,"z":0.12,"gold":1,"at":3},{"k":"chest","x":0.64,"z":0.12,"gold":1,"at":3}],"fx":[{"k":"bright","amt":0.1,"at":3}]}},
   ],
   scene:{
    map:{biome:'interior', w:44, h:26, seed:6601,
-     features:[ {type:'throne',x:22,y:7,id:'throne',examine:'The throne of Aḥashwĕrosh, in the citadel of Shushan.'},{type:'column',x:14,y:8},{type:'column',x:30,y:8},{type:'banner',x:17,y:8},{type:'banner',x:27,y:8},{type:'shewtable',x:18,y:12,id:'feast',examine:'Drinks in golden vessels, each different from the other — much royal wine, according to the hand of the sovereign.'},{type:'shewtable',x:26,y:12},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'throne',x:22,y:7,id:'throne',examine:'The throne of Aḥashwĕrosh, in the citadel of Shushan.'},{type:'column',x:14,y:8},{type:'column',x:30,y:8},{type:'banner',x:17,y:8},{type:'banner',x:27,y:8},{type:'shewtable',x:18,y:12,id:'feast',examine:'Drinks in golden vessels, different from one another — much royal wine, according to the hand of the sovereign.'},{type:'shewtable',x:26,y:12},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'night', music:'holy',
    player:'mordekai', playerPos:[22,19],
    npcs:[ {id:'ahash',char:'ahash',x:22,y:9,wander:false},{id:'memukan',char:'memukan',x:25,y:11,wander:false},{id:'harbona',char:'harbona',x:19,y:11,wander:false},
@@ -5952,8 +6099,8 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'feast',text:'The splendour of the feast of Shushan',
       script:[
-       {say:['narrator','White and blue tapestries on silver rods and marble columns; couches of gold and silver on a pavement of porphyry, marble, and mother-of-pearl — and drinks in golden vessels, with much royal wine, according to the hand of the sovereign.']},
-       {say:['mordekai','A hundred and eighty days of glory — and seven days of feasting for all in Shushan, from great to small. No one is compelled; each does according to his pleasure.']},
+       {say:['narrator','White and blue tapestries were fastened … on silver rods and marble columns — the couches were of gold and silver on a mosaic pavement of porphyry, marble, mother-of-pearl and black marble. And they served drinks in golden vessels … with much royal wine, according to the hand of the sovereign.']},
+       {say:['mordekai','A hundred and eighty days of esteem — and seven days of feasting for all in Shushan, from great to small. And drinking is according to the law, no one is compelled — they do according to each one’s pleasure.']},
        {sfx:'chime'},
       ]},
      {type:'talk',npc:'harbona',text:'The seventh day — send for Vashti',hiddenUntil:1,
@@ -5965,21 +6112,21 @@ STORY.push(
       ]},
      {type:'talk',npc:'memukan',text:'The counsel of Memuḵan',hiddenUntil:2,
       script:[
-       {say:['memukan','Vashti has misbehaved not only toward the sovereign, but toward all the princes and all the people. If it pleases the sovereign, let a royal decree go out, recorded in the laws of the Persians and the Medes, so that it does not pass away: Vashti shall come no more before Sovereign Aḥashwĕrosh — and let the sovereign give her royal position to another who is better than she.']},
-       {say:['narrator','And the word was good in the eyes of the sovereign, and he sent letters to all his provinces, to each province in its own writing, and to every people in their own language.']},
+       {say:['memukan','Sovereigness Vashti has misbehaved not only toward the sovereign, but also toward all the princes and all the people.']},{say:['memukan','If it pleases the sovereign, let a royal decree go out from him and let it be recorded in the laws of the Persians and the Medes, so that it does not pass away, that Vashti shall come no more before Sovereign Aḥashwĕrosh. And let the sovereign give her royal position to another who is better than she.']},
+       {say:['narrator','And the word was good in the eyes of the sovereign and the princes and the sovereign did according to the word of Memuḵan. So he sent letters to all the sovereign’s provinces, to each province in its own writing, and to every people in their own language.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'vista_sunset', music:'tense', text:'On the seventh day, when the heart of the sovereign was glad with wine, he commanded that Vashti be brought with her royal crown — but she refused to come. And by the counsel of Memuḵan a decree went out into every province: Vashti shall come no more before the sovereign, and her royal position shall be given to another who is better than she.', ref:'ESTĔR 1:10–22'},
+   {art:'vista_sunset', music:'tense', text:'On the seventh day, when the heart of the sovereign was glad with wine, he ordered … the seven eunuchs … to bring Sovereigness Vashti before the sovereign, with her royal crown. But Sovereigness Vashti refused to come. … And Memuḵan answered … “Let a royal decree go out from him … that Vashti shall come no more before Sovereign Aḥashwĕrosh. And let the sovereign give her royal position to another who is better than she.”', ref:'ESTĔR 1:10–22', stage:{"set":"palace","cam":"push","focus":0.45,"cast":[{"id":"ahash","x":0.18,"z":0.12,"face":"r","pose":"enthroned","crown":1,"hold":"cup"},{"id":"harbona","x":0.4,"z":0.16,"face":"l","pose":"bow","acts":[{"at":1,"exit":"r","run":1}]},{"id":"memukan","x":0.46,"z":0.1,"face":"l","pose":"stand","say":3,"acts":[{"at":4,"pose":"point"}]},{"id":"vashti","x":0.84,"z":0.2,"face":"r","at":2,"pose":"stand","crown":1,"acts":[{"at":5,"exit":"r"}]}],"crowd":[{"kind":"people","look":{"robe":"#7a6a4a","beard":null,"headcover":"#b8a888"},"n":4,"x":0.56,"w":0.16,"z":0.42,"face":"l","exit":"r","exitAt":1,"run":1},{"kind":"women","n":3,"x":0.9,"w":0.06,"z":0.45,"face":"r","at":2},{"kind":"princes","n":4,"x":0.62,"w":0.18,"z":0.58,"face":"l"}]}},
   ],
   complete:'The feast of Shushan ends with an empty throne beside the sovereign — a place kept for another.'
 },
 
 { id:'e2', title:'Haḏassah, His Uncle’s Daughter', ref:'ESTĔR 2:1–18',
   intro:[
-   {art:'vista', music:'sorrow', text:'In the citadel of Shushan there was a certain man, a Yahuḏi, whose name was Mordeḵai son of Ya’ir, a Binyamite, exiled from Yerushalayim with the captives. And he was raising Haḏassah — that is, Estĕr — his uncle’s daughter, for she had neither father nor mother; and when her father and mother died, Mordeḵai took her as his own daughter.', ref:'ESTĔR 2:5–7'},
+   {art:'vista', music:'sorrow', text:'In the citadel of Shushan there was a certain man, a Yahuḏi whose name was Mordeḵai son of Ya’ir … a Binyamite, who had been exiled from Yerushalayim with the captives … And it came to be that he was raising Haḏassah, that is Estĕr, his uncle’s daughter, for she had neither father nor mother. … And when her father and mother died, Mordeḵai took her as his own daughter.', ref:'ESTĔR 2:5–7', stage:{"set":"city","time":"day","cam":"push","focus":0.42,"cast":[{"id":"mordekai","x":0.34,"z":0.12,"face":"r","pose":"stand","acts":[{"at":3,"pose":"bless"}]},{"id":"ester","look":{"child":1},"x":0.5,"z":0.14,"face":"l","at":2,"pose":"stand","acts":[{"at":3,"pose":"look"}]}],"crowd":[{"kind":"people","n":5,"x":0.76,"w":0.26,"z":0.55,"face":"l"},{"kind":"captives","n":5,"x":0.64,"w":0.3,"z":0.8,"face":"r","at":1,"exit":"r","exitAt":2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:6602,
@@ -5990,34 +6137,34 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'ester',text:'“Do not make known your people”',
       script:[
-       {say:['ester','Uncle — the sovereign’s officers gather all the lovely young maidens to the citadel, into the house of the women. They have taken my name.']},
+       {say:['ester','Uncle — the sovereign’s officers gather all the lovely young maidens to the citadel of Shushan, into the women’s quarters. They have taken my name.']},
        {say:['mordekai','Then go, Haḏassah — and YAHUAH keep you. But do not make known your people or your relatives. Not yet.']},
        {say:['ester','All that you say to me, I shall do — as I have always done.']},
        {sfx:'chime'},
       ]},
      {type:'goto',x:31,y:12,text:'Walk before the courtyard of the women',radius:2.4,hiddenUntil:1,
       script:[
-       {say:['hegai','The young woman pleases me above them all. She shall have her preparations and her portions, and seven choice female servants — and the best place in the house of the women.']},
+       {say:['hegai','The young woman pleases me above them all. Give her preparations and her portions, and seven choice female servants from the sovereign’s palace — and move her and her female servants to the best place in the house of the women.']},
        {say:['narrator','And every day Mordeḵai walked about in front of the courtyard of the women’s quarters, to learn of Estĕr’s welfare, and what was done to her.']},
       ]},
      {type:'interact',prop:'crown',text:'The royal crown set on her head',hiddenUntil:2,
       script:[
-       {say:['narrator','And the sovereign loved Estĕr more than all the women, and she found favour and kindness in his eyes more than all the maidens. And he set the royal crown upon her head, and made her sovereigness instead of Vashti.']},
+       {say:['narrator','And the sovereign loved Estĕr more than all the women, and she found chen and kindness in his eyes more than all the maidens. And he set the royal crown upon her head, and made her sovereigness instead of Vashti.']},
        {rays:.65,raysX:40},{sfx:'holy'},{burst:[40,12,'holy',18]},
-       {say:['narrator','And the sovereign made a great feast — the Feast of Estĕr — and proclaimed a release in the provinces, and gave gifts according to the means of a sovereign. But Estĕr had not made known her people, as Mordeḵai had commanded her.']},
+       {say:['narrator','And the sovereign made a great feast, the Feast of Estĕr, for all his officials and servants. And he proclaimed a release in the provinces and gave gifts according to the means of a sovereign. Estĕr had not made known her relatives and her people yet, as Mordeḵai commanded her.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'Estĕr found favour in the eyes of all who saw her — and the sovereign loved her more than all the women, and set the royal crown upon her head, and made her sovereigness instead of Vashti. But Estĕr had not made known her people or her relatives, for Mordeḵai had commanded her not to make it known.', ref:'ESTĔR 2:15–20'},
+   {art:'reunion', music:'holy', text:'And Estĕr found chen in the eyes of all who saw her. … And the sovereign loved Estĕr more than all the women … And he set the royal crown upon her head and made her sovereigness instead of Vashti. … Estĕr had not made known her relatives and her people yet, as Mordeḵai commanded her.', ref:'ESTĔR 2:15–20', stage:{"set":"persia","cam":"push","focus":0.4,"props":[{"k":"throne","x":0.2,"z":0.16}],"cast":[{"id":"ahash","x":0.26,"z":0.12,"face":"r","pose":"stand","crown":1,"hold":"crown","acts":[{"at":2,"to":0.35,"pose":"bless"}]},{"id":"ester","x":0.72,"z":0.12,"to":0.47,"face":"l","pose":"stand","acts":[{"at":2,"pose":"kneel"}]},{"id":"hegai","x":0.64,"z":0.24,"face":"l","pose":"bless"},{"id":"mordekai","x":0.9,"z":0.16,"face":"l","at":3,"pose":"point"}],"crowd":[{"kind":"women","n":5,"x":0.78,"w":0.22,"z":0.52,"face":"l","at":1}],"fx":[{"k":"rays","x":0.45,"at":2}]}},
   ],
   complete:'The orphan of the exile wears the crown of Persia — and none in the palace knows her people.'
 },
 
 { id:'e3', title:'Two Doorkeepers at the Gate', ref:'ESTĔR 2:19–23',
   intro:[
-   {art:'stars', music:'tense', text:'While Mordeḵai sat within the sovereign’s gate, two of the sovereign’s eunuchs, Biḡthan and Teresh, doorkeepers, were wroth — and sought to lay hands on Sovereign Aḥashwĕrosh.', ref:'ESTĔR 2:21'},
+   {art:'stars', music:'tense', text:'While Mordeḵai sat within the sovereign’s gate, two of the sovereign’s eunuchs, Biḡthan and Teresh, doorkeepers, were wroth — and sought to lay hands on Sovereign Aḥashwĕrosh.', ref:'ESTĔR 2:21', stage:{"set":"gate","time":"night","cam":"push","focus":0.55,"cast":[{"id":"mordekai","x":0.2,"z":0.14,"face":"r","pose":"sit"},{"id":"bigthan","x":0.64,"z":0.12,"face":"r","pose":"speak","say":0,"acts":[{"at":1,"pose":"point","face":"l"}]},{"id":"teresh","x":0.8,"z":0.12,"face":"l","pose":"stand","hold":"sword","acts":[{"at":1,"pose":"hold"}]}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6603,
@@ -6036,7 +6183,7 @@ STORY.push(
       ]},
      {type:'talk',npc:'ester',text:'Inform the sovereigness',hiddenUntil:1,
       script:[
-       {say:['mordekai','Biḡthan and Teresh, the doorkeepers, seek to lay hands on the sovereign. Tell him — in my name.']},
+       {say:['mordekai','Two of the sovereign’s eunuchs, Biḡthan and Teresh, doorkeepers, were wroth and sought to lay hands on Sovereign Aḥashwĕrosh! Tell him — in my name.']},
        {say:['ester','I shall speak to the sovereign in the name of Mordeḵai.']},
        {say:['narrator','And when the matter was searched into, it was confirmed — and both were impaled on a stake. And it was written in the book of the annals in the presence of the sovereign.']},
        {sfx:'bad'},
@@ -6049,7 +6196,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'tense', text:'The matter became known to Mordeḵai, who informed Sovereigness Estĕr — and Estĕr spoke to the sovereign in Mordeḵai’s name. And when it was searched into, it was confirmed, and both doorkeepers were impaled on a stake. And it was written in the book of the annals in the presence of the sovereign — and nothing was done for Mordeḵai.', ref:'ESTĔR 2:22–23'},
+   {art:'stars', music:'tense', text:'And the matter became known to Mordeḵai, who informed Sovereigness Estĕr and Estĕr spoke to the sovereign in Mordeḵai’s name. And when the matter was searched into, it was confirmed and both were impaled on a stake. And it was written in the book of the annals in the presence of the sovereign.', ref:'ESTĔR 2:22–23', stage:{"set":"palace","cam":"push","focus":0.45,"cast":[{"id":"ahash","x":0.2,"z":0.12,"face":"r","pose":"enthroned","crown":1},{"id":"ester_r","x":0.42,"z":0.12,"face":"l","pose":"speak","say":0},{"id":"mordekai","x":0.62,"z":0.2,"face":"l","pose":"speak","acts":[{"at":1,"exit":"r"}]},{"id":"bigthan","x":0.72,"z":0.14,"face":"l","at":1,"pose":"bound","acts":[{"at":2,"exit":"r"}]},{"id":"teresh","x":0.82,"z":0.16,"face":"l","at":1,"pose":"bound","acts":[{"at":2,"exit":"r"}]},{"id":"annals","look":{"name":"A Scribe of the Annals","skin":"#8a6038","hair":"#b8b2a0","hairStyle":"short","robe":"#6a7a5a","headcover":"#8a6a1c","beard":"#b8b2a0"},"x":0.56,"z":0.14,"face":"l","at":2,"pose":"kneel","hold":"book"}],"crowd":[{"kind":"guards","side":"paras","n":3,"x":0.88,"w":0.08,"z":0.45,"face":"l","at":1,"exit":"r","exitAt":2}]}},
   ],
   complete:'A life saved, a name recorded, a reward forgotten — until a sleepless night shall open the book.'
 },
@@ -6061,7 +6208,7 @@ STORY.push(
 
 { id:'e4', title:'All Bowed — But Mordeḵai', ref:'ESTĔR 3:1–15',
   intro:[
-   {art:'corrupt', music:'tense', text:'After these events Sovereign Aḥashwĕrosh promoted Haman, son of Hammeḏatha the Aḡaḡite, and seated him higher than all the princes. And all the sovereign’s servants in the gate bowed and did obeisance to Haman — but Mordeḵai would not bow, nor do obeisance.', ref:'ESTĔR 3:1–2'},
+   {art:'corrupt', music:'tense', text:'After these events Sovereign Aḥashwĕrosh promoted Haman, son of Hammeḏatha the Aḡaḡite and exalted him and seated him higher than all the princes with him. And all the sovereign’s servants who were in the sovereign’s gate bowed and did obeisance to Haman… But Mordeḵai would not bow or do obeisance.', ref:'ESTĔR 3:1–2', stage:{"set":"gate","time":"day","cam":"push","focus":0.4,"cast":[{"id":"haman","enter":"r","at":0,"to":0.7,"face":"l","pose":"stand","hold":"staff","acts":[{"at":2,"pose":"point"}]},{"id":"mordekai","x":0.18,"z":0.12,"face":"r","pose":"stand"}],"crowd":[{"kind":"people","n":7,"x":0.44,"w":0.3,"z":0.5,"face":"r","from":"stand","at":1,"pose":"bow"},{"kind":"guards","side":"paras","n":2,"x":0.86,"w":0.06,"z":0.42,"face":"l"}],"fx":[{"k":"spotlight","x":0.18,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:6604,
@@ -6077,7 +6224,7 @@ STORY.push(
        {say:['haman','Why do you disobey the sovereign’s command, Yahuḏi? Bow!']},
        {say:['mordekai','I am a Yahuḏi. I bow to YAHUAH my Aluahim — and I shall not bow to an Aḡaḡite.']},
        {shake:.5},{sfx:'bad'},
-       {say:['narrator','And Haman was filled with wrath. But it was despicable in his eyes to lay hands on Mordeḵai alone — for they had told him the people of Mordeḵai. So Haman sought to destroy all the Yahuḏim throughout the reign of Aḥashwĕrosh.']},
+       {say:['narrator','And Haman was filled with wrath. But it was despicable in his eyes to lay hands on Mordeḵai alone, for they had informed him of the people of Mordeḵai. Therefore Haman sought to destroy all the Yahuḏim who were throughout all the reign of Aḥashwĕrosh, the people of Mordeḵai.']},
       ]},
      {type:'interact',prop:'pur',text:'The lot is cast — Pur',hiddenUntil:1,
       script:[
@@ -6086,28 +6233,28 @@ STORY.push(
       ]},
      {type:'goto',x:16,y:12,text:'The signet ring changes hands',radius:2.4,hiddenUntil:2,
       script:[
-       {say:['haman','There is a certain people scattered and dispersed among the peoples in all the provinces of your reign, whose laws are different from all people. It is not in the sovereign’s interest to let them remain. Let a decree be written to destroy them — and I shall pay ten thousand talents of silver into the sovereign’s treasuries.']},
+       {say:['haman','There is a certain people scattered and dispersed among the people in all the provinces of your reign, whose laws are different from all people and they do not do the sovereign’s laws. Therefore it is not in the sovereign’s interest to let them remain.']},{say:['haman','If it pleases the sovereign, let a decree be written to destroy them — and let me pay ten thousand talents of silver into the hands of those who do the work, to bring it into the sovereign’s treasuries.']},
        {say:['ahash','The silver and the people are given to you, to do with them as seems good to you.']},
        {say:['narrator','And the sovereign took his signet ring from his hand, and gave it to Haman, son of Hammeḏatha the Aḡaḡite — the enemy of the Yahuḏim.']},
        {shake:.7},{sfx:'thunder'},{burst:[14,11,'ash',14]},
-       {say:['narrator','Letters went by runners into all the provinces: to cut off, to slay, and to destroy all the Yahuḏim, young and old, little children and women, in one day — the thirteenth of Aḏar. The sovereign and Haman sat down to drink; but the city of Shushan was in confusion.']},
+       {say:['narrator','And the letters were sent by the runners into all the sovereign’s provinces, to cut off, to slay and to destroy all the Yahuḏim, both young and old, little children and women, in one day, on the thirteenth day of the twelfth month, which is the month of Aḏar and to plunder their possessions. The sovereign and Haman then sat down to drink, but the city of Shushan was in confusion.']},
        {music:'sorrow'},{sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'sorrow', text:'The sovereign took his signet ring and gave it to Haman, the enemy of the Yahuḏim: “The silver and the people are given to you.” And letters went to every province: to destroy all the Yahuḏim, young and old, little children and women, in one day — and to plunder their possessions. The sovereign and Haman sat down to drink; but the city of Shushan was in confusion.', ref:'ESTĔR 3:10–15'},
+   {art:'corrupt', music:'sorrow', text:'And the sovereign took his signet ring from his hand and gave it to Haman … the enemy of the Yahuḏim — “The silver and the people are given to you.” … And the letters were sent … into all the sovereign’s provinces, to cut off, to slay and to destroy all the Yahuḏim, both young and old, little children and women, in one day … The sovereign and Haman then sat down to drink, but the city of Shushan was in confusion.', ref:'ESTĔR 3:10–15', stage:{"set":"persia","cam":"push","focus":0.4,"props":[{"k":"table","x":0.38,"z":0.22,"cups":1,"at":5}],"cast":[{"id":"ahash","x":0.24,"z":0.12,"face":"r","pose":"enthroned","crown":1,"hold":"cup","say":2},{"id":"haman","x":0.5,"z":0.12,"face":"l","pose":"kneel","acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"point","face":"r"},{"at":5,"face":"l","pose":"hold"}]}],"crowd":[{"kind":"soldiers","side":"paras","n":4,"x":0.74,"w":0.16,"z":0.45,"face":"r","hold":"scroll","at":3,"exit":"r","exitAt":4,"run":1},{"kind":"guards","side":"paras","n":2,"x":0.9,"w":0.05,"z":0.55,"face":"l"}],"fx":[{"k":"red","amt":0.12,"at":1},{"k":"darkness","amt":0.25,"at":5}]}},
   ],
   complete:'One man would not bow — and a people is sold for silver, by the falling of a lot.'
 },
 
 { id:'e5', title:'For Such a Time as This', ref:'ESTĔR 4:1–17',
   intro:[
-   {art:'coffin', music:'sorrow', text:'And Mordeḵai learned of all that had been done, and tore his garments, and put on sackcloth and ashes, and went out into the midst of the city, and cried out with a loud and bitter cry — up to the front of the sovereign’s gate, for no one might enter the gate wearing sackcloth.', ref:'ESTĔR 4:1–2'},
+   {art:'coffin', music:'sorrow', text:'And Mordeḵai learned of all that had been done, and Mordeḵai tore his garments and put on sackcloth and ashes and went out into the midst of the city and cried out with a loud and bitter cry. And he went up to the front of the sovereign’s gate, for no one might enter the sovereign’s gate wearing sackcloth.', ref:'ESTĔR 4:1–2', stage:{"set":"city","time":"dusk","cam":"pan-r","focus":0.55,"props":[{"k":"gate","x":0.8,"z":0.7,"s":1.1}],"cast":[{"id":"mordekai_s","look":{"sack":1},"x":0.28,"z":0.12,"face":"r","pose":"raise","acts":[{"at":1,"to":0.52,"pose":"mourn"}]}],"crowd":[{"kind":"mourners","n":5,"x":0.2,"w":0.26,"z":0.55,"face":"r","at":1},{"kind":"guards","side":"paras","n":2,"x":0.72,"w":0.1,"z":0.45,"face":"l"}],"fx":[{"k":"darkness","amt":0.15}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:6605,
-     features:[ {type:'citygate',x:14,y:9,id:'gate'},{type:'house',x:34,y:9,id:'palace',feast:true,examine:'The palace of the sovereigness — the decree has not yet reached her ears.'},{type:'firepit',x:24,y:12,id:'fast',examine:'“Fast for me — do not eat or drink for three days, night or day.”'},{type:'clearing',x:24,y:19,flat:3} ]},
+     features:[ {type:'citygate',x:14,y:9,id:'gate'},{type:'house',x:34,y:9,id:'palace',feast:true,examine:'The palace of the sovereigness — the decree has not yet reached her ears.'},{type:'firepit',x:24,y:12,id:'fast',examine:'“Fast for me and do not eat or drink for three days, night or day.”'},{type:'clearing',x:24,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'ester_r', playerPos:[30,15],
    npcs:[ {id:'hathak',char:'hathak',x:28,y:14,wander:false},{id:'mordekai',char:'mordekai_s',x:16,y:12,wander:false,noTalk:true} ],
@@ -6115,9 +6262,9 @@ STORY.push(
      {type:'talk',npc:'hathak',text:'Why is Mordeḵai in sackcloth?',
       script:[
        {say:['ester_r','Hathaḵ — my uncle sits before the gate in sackcloth and ashes, and will not take the garments I sent. Go, learn what this is, and why.']},
-       {say:['hathak','…Sovereigness, he has told me all: Haman has paid silver into the treasuries to destroy the Yahuḏim. Here is a copy of the written decree, given at Shushan — he bids you go in to the sovereign, to make supplication for your people.']},
+       {say:['hathak','…Sovereigness, he has told me all that befell him and all about the silver that Haman promised to pay into the sovereign’s treasuries to destroy the Yahuḏim. Here is a copy of the written decree to destroy them, which was given at Shushan — he commands you to go in to the sovereign to make supplication to him and plead before him for your people.']},
        {shake:.4},{sfx:'bad'},
-       {say:['ester_r','All the sovereign’s servants know: any man or woman who goes to the inner court uncalled has but one law — death; except the one to whom the sovereign holds out the golden sceptre. And I have not been called these thirty days.']},
+       {say:['ester_r','All the sovereign’s servants and the people of the sovereign’s provinces know that any man or woman who goes into the inner court to the sovereign, who has not been called, he has but one law: to be put to death, except the one to whom the sovereign holds out the golden sceptre, who then shall live. But I have not been called to come in to the sovereign these thirty days.']},
       ]},
      {type:'goto',x:17,y:12,text:'The answer of Mordeḵai',radius:2.6,hiddenUntil:1,
       script:[
@@ -6125,9 +6272,9 @@ STORY.push(
        {say:['mordekai_s','And who knows whether you have come to the reign for such a time as this?']},
        {rays:.6,raysX:17},{sfx:'holy'},{burst:[17,12,'holy',14]},
       ]},
-     {type:'interact',prop:'fast',text:'“If I perish, I perish”',hiddenUntil:2,
+     {type:'interact',prop:'fast',text:'“If I shall perish, I shall perish”',hiddenUntil:2,
       script:[
-       {say:['ester_r','Go, gather all the Yahuḏim who are present in Shushan, and fast for me — do not eat or drink for three days, night or day. I too shall fast, and my young women. Then I shall go in to the sovereign, which is against the law.']},
+       {say:['ester_r','Go, gather all the Yahuḏim who are present in Shushan and fast for me and do not eat or drink for three days, night or day. I too and my young women shall fast in the same way, then I shall go to the sovereign, which is against the law.']},
        {say:['ester_r','And if I perish — I perish!']},
        {fade:'out'},{time:'night'},{fade:'in'},{wait:500},
        {fade:'out'},{time:'day'},{fade:'in'},{wait:500},
@@ -6138,9 +6285,9 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'coffin', music:'sorrow', text:'“If you keep entirely silent at this time, relief and deliverance shall arise for the Yahuḏim from another place, while you and your father’s house perish. And who knows whether you have come to the reign for such a time as this?” “Gather all the Yahuḏim and fast for me, three days, night or day — then I shall go in to the sovereign, which is against the law. And if I perish, I perish!”', ref:'ESTĔR 4:13–16'},
+   {art:'coffin', music:'sorrow', text:'“For if you keep entirely silent at this time, relief and deliverance shall arise for the Yahuḏim from another place, while you and your father’s house perish. And who knows whether you have come to the reign for such a time as this?” … “Go, gather all the Yahuḏim … and fast for me and do not eat or drink for three days, night or day … then I shall go to the sovereign, which is against the law. And if I shall perish, I shall perish!”', ref:'ESTĔR 4:13–16', stage:{"set":"gate","time":"night","cam":"push","focus":0.5,"cast":[{"id":"mordekai_s","look":{"sack":1},"x":0.18,"z":0.12,"face":"r","pose":"speak","say":0,"acts":[{"at":1,"pose":"point"}]},{"id":"hathak","x":0.5,"z":0.18,"face":"l","pose":"stand","acts":[{"at":1,"face":"r"},{"at":3,"face":"l"}]},{"id":"ester_r","x":0.8,"z":0.12,"face":"l","pose":"stand","say":2,"acts":[{"at":2,"pose":"speak"},{"at":3,"pose":"pray"},{"at":4,"pose":"stand"},{"at":5,"pose":"raise"}]},{"id":"maiden","x":0.9,"z":0.24,"face":"l","at":3,"pose":"pray"}],"crowd":[{"kind":"mourners","n":5,"x":0.3,"w":0.24,"z":0.6,"face":"r","at":3}]}},
   ],
-  complete:'For such a time as this — three days of fasting, and a queen resolved: if I perish, I perish.'
+  complete:'For such a time as this — three days of fasting, and a sovereigness resolved: if I shall perish, I shall perish.'
 },
 
 ]},
@@ -6150,7 +6297,7 @@ STORY.push(
 
 { id:'e6', title:'The Sceptre Extended', ref:'ESTĔR 5:1–8',
   intro:[
-   {art:'light', music:'tense', text:'And it came to be on the third day that Estĕr put on royal apparel, and stood in the inner court of the sovereign’s palace — while the sovereign sat on his royal throne, opposite the entrance of the house.', ref:'ESTĔR 5:1'},
+   {art:'light', music:'tense', text:'And it came to be on the third day that Estĕr put on royal apparel and stood in the inner court of the sovereign’s palace, in front of the sovereign’s house, while the sovereign sat on his royal throne in the royal house, opposite the entrance of the house.', ref:'ESTĔR 5:1', stage:{"set":"persia","cam":"push","focus":0.5,"cast":[{"id":"ahash","x":0.76,"z":0.15,"face":"l","pose":"enthroned","crown":1,"hold":"rod"},{"id":"ester_r","x":0.28,"z":0.12,"face":"r","pose":"stand","crown":1}],"crowd":[{"kind":"guards","side":"paras","n":4,"x":0.56,"w":0.3,"z":0.62,"face":"l"}],"fx":[{"k":"rays","x":0.28}]}},
   ],
   scene:{
    map:{biome:'interior', w:40, h:26, seed:6606,
@@ -6163,7 +6310,7 @@ STORY.push(
       script:[
        {say:['narrator','The guards’ hands moved to their spears. One law waits for the uncalled — death; except for the one to whom the sovereign holds out the golden sceptre.']},
        {wait:800},
-       {say:['narrator','And when the sovereign saw Sovereigness Estĕr standing in the court, she found favour in his eyes — and the sovereign held out to Estĕr the golden sceptre that was in his hand.']},
+       {say:['narrator','And when the sovereign saw Sovereigness Estĕr standing in the court, she found chen in his eyes — and the sovereign held out to Estĕr the golden sceptre that was in his hand.']},
        {addProp:{type:'sceptre',x:20,y:10,id:'sceptre'}},
        {rays:.75,raysX:20},{sfx:'holy'},{burst:[20,9,'holy',20]},
        {say:['narrator','And Estĕr went near, and touched the top of the sceptre.']},
@@ -6174,20 +6321,20 @@ STORY.push(
        {say:['ester_r','If it pleases the sovereign — let the sovereign and Haman come today to the feast which I have prepared for him.']},
        {say:['ahash','Get Haman at once, to do as Estĕr has said!']},
        {say:['ahash','What is your petition, at the feast of wine? It is given you — up to half my reign!']},
-       {say:['ester_r','If I have found favour in the eyes of the sovereign: let the sovereign and Haman come again tomorrow to the feast which I shall make for them — and tomorrow I shall do according to the word of the sovereign.']},
+       {say:['ester_r','If I have found chen in the eyes of the sovereign and if it pleases the sovereign to give my petition and perform my request, then let the sovereign and Haman come to the feast which I make for them — and tomorrow I shall do according to the word of the sovereign.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'When the sovereign saw Estĕr standing in the court, she found favour in his eyes — and he held out the golden sceptre in his hand, and Estĕr went near and touched its top. “What is your request? Up to half my reign, and it is given to you!” “Let the sovereign and Haman come to the feast I have prepared — and tomorrow I shall do according to the word of the sovereign.”', ref:'ESTĔR 5:2–8'},
+   {art:'light', music:'holy', text:'When the sovereign saw Sovereigness Estĕr standing in the court… she found chen in his eyes and the sovereign held out to Estĕr the golden sceptre which was in his hand. And Estĕr went near and touched the top of the sceptre. “What is your request? Up to half my reign and it is given to you!” … “Let the sovereign and Haman come to the feast which I make for them and tomorrow I shall do according to the word of the sovereign.”', ref:'ESTĔR 5:2–8', stage:{"set":"palace","cam":"push","focus":0.5,"cast":[{"id":"ahash","x":0.7,"z":0.12,"face":"l","pose":"enthroned","crown":1,"hold":"rod","say":3},{"id":"ester_r","x":0.2,"z":0.12,"face":"r","pose":"stand","crown":1,"say":5,"acts":[{"at":2,"to":0.56,"pose":"hold"},{"at":5,"pose":"speak"}]}],"crowd":[{"kind":"guards","side":"paras","n":3,"x":0.88,"w":0.08,"z":0.45,"face":"l"},{"kind":"princes","n":3,"x":0.4,"w":0.14,"z":0.6,"face":"r"}],"fx":[{"k":"rays","x":0.2,"at":1}]}},
   ],
-  complete:'The sceptre extended — the uncalled queen lives, and lays her table for the enemy.'
+  complete:'The sceptre extended — the uncalled sovereigness lives, and lays her table for the enemy.'
 },
 
 { id:'e7', title:'A Stake Fifty Cubits High', ref:'ESTĔR 5:9–14',
   intro:[
-   {art:'corrupt', music:'tense', text:'And Haman went out that day rejoicing, with a glad heart — but when he saw Mordeḵai in the sovereign’s gate, that he did not stand or tremble before him, he was filled with wrath against Mordeḵai.', ref:'ESTĔR 5:9'},
+   {art:'corrupt', music:'tense', text:'And Haman went out that day rejoicing and with a glad heart. But when Haman saw Mordeḵai in the sovereign’s gate and that he did not stand or tremble before him, he was filled with wrath against Mordeḵai.', ref:'ESTĔR 5:9', stage:{"set":"gate","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"haman","x":0.86,"z":0.12,"to":0.64,"face":"l","pose":"raise","say":1,"acts":[{"at":1,"pose":"point"}]},{"id":"mordekai","x":0.24,"z":0.12,"face":"r","pose":"sit"}],"crowd":[{"kind":"guards","side":"paras","n":2,"x":0.48,"w":0.08,"z":0.62,"face":"r"}],"fx":[{"k":"red","amt":0.15,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6607,
@@ -6198,7 +6345,7 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'haman',text:'The boasting of Haman',
       script:[
-       {say:['haman','See the esteem of my wealth, my many sons, all in which the sovereign has promoted me above the officials and servants! And besides — Estĕr the sovereigness let no one but me come in with the sovereign to her feast, and tomorrow too I am invited, along with the sovereign.']},
+       {say:['haman','See the esteem of my wealth and my many sons and all in which the sovereign has promoted me and how he has exalted me above the officials and servants of the sovereign! Besides, Estĕr the sovereigness let no one but me come in with the sovereign to the feast which she prepared. And tomorrow too I am invited by her, along with the sovereign.']},
        {say:['haman','But all this does not suit me — as long as I see Mordeḵai the Yahuḏi sitting at the sovereign’s gate.']},
        {shake:.4},{sfx:'bad'},
       ]},
@@ -6218,18 +6365,18 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'“All this does not suit me, as long as I see Mordeḵai the Yahuḏi sitting at the sovereign’s gate.” And Zeresh his wife and all his friends said, “Let a stake be made, fifty cubits high — and in the morning speak to the sovereign, that Mordeḵai be impaled on it.” And the word pleased Haman, and he had the stake made.', ref:'ESTĔR 5:13–14'},
+   {art:'corrupt', music:'tense', text:'“All this does not suit me, as long as I see Mordeḵai the Yahuḏi sitting at the sovereign’s gate.” So his wife Zeresh and all his friends said to him, “Let a stake be made, fifty cubits high and in the morning speak to the sovereign that Mordeḵai be impaled on it. And go with the sovereign to the feast, rejoicing.” And the word pleased Haman and he had the stake made.', ref:'ESTĔR 5:13–14', stage:{"set":"city","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"house","x":0.18,"z":0.45,"w":90,"h":60},{"k":"pillar","x":0.82,"z":0.6,"h":220,"w":6,"color":"#5a3a20","at":3}],"cast":[{"id":"haman","x":0.36,"z":0.12,"face":"r","pose":"speak","say":0,"acts":[{"at":3,"pose":"raise"}]},{"id":"zeresh","x":0.56,"z":0.12,"face":"l","pose":"stand","say":1,"acts":[{"at":1,"pose":"point"},{"at":2,"pose":"bless"}]}],"crowd":[{"kind":"people","n":3,"x":0.68,"w":0.1,"z":0.4,"face":"l"},{"kind":"people","n":2,"x":0.84,"w":0.06,"z":0.52,"face":"l","at":3,"pose":"carry"}]}},
   ],
   complete:'A stake fifty cubits high stands beside Haman’s house — and one eunuch remembers whose it is.'
 },
 
 { id:'e8', title:'Thus It Is Done to the Man', ref:'ESTĔR 6:1–14',
   intro:[
-   {art:'stars', music:'holy', text:'On that night the sleep of the sovereign fled — and he commanded to bring the book of the records of the annals, and they were read before the sovereign. And it was found written that Mordeḵai had told of the two doorkeepers who had sought to lay hands on Sovereign Aḥashwĕrosh.', ref:'ESTĔR 6:1–2'},
+   {art:'stars', music:'holy', text:'On that night the sleep of the sovereign fled and he commanded to bring the book of the records of the annals. And they were read before the sovereign. And it was found written that Mordeḵai had told of Biḡthan and Teresh, two of the sovereign’s eunuchs, the doorkeepers who had sought to lay hands on Sovereign Aḥashwĕrosh.', ref:'ESTĔR 6:1–2', stage:{"set":"palace","cam":"close","focus":0.4,"props":[{"k":"bed","x":0.2,"z":0.2}],"cast":[{"id":"ahash","x":0.3,"z":0.12,"face":"r","pose":"sit","say":0,"acts":[{"at":2,"pose":"point"}]},{"id":"annals","look":{"name":"A Scribe of the Annals","skin":"#8a6038","hair":"#b8b2a0","hairStyle":"short","robe":"#6a7a5a","headcover":"#8a6a1c","beard":"#b8b2a0"},"x":0.8,"z":0.12,"to":0.6,"face":"l","pose":"hold","hold":"book","hold2":"lamp","say":1,"acts":[{"at":1,"pose":"speak"}]}],"crowd":[{"kind":"guards","side":"paras","n":2,"x":0.88,"w":0.06,"z":0.45,"face":"l"}],"fx":[{"k":"darkness","amt":0.3},{"k":"rays","x":0.6,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:6608,
-     features:[ {type:'citygate',x:12,y:9,id:'gate'},{type:'tablets',x:18,y:12,id:'annals',examine:'The book of the annals, read in the sleepless night — “What has been done for Mordeḵai? Naught.”'},{type:'house',x:34,y:9},{type:'clearing',x:24,y:19,flat:3} ]},
+     features:[ {type:'citygate',x:12,y:9,id:'gate'},{type:'tablets',x:18,y:12,id:'annals',examine:'The book of the annals, read in the sleepless night — “What has been done in value or in greatness to Mordeḵai? Naught.”'},{type:'house',x:34,y:9},{type:'clearing',x:24,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'mordekai_r', playerPos:[16,14], playerMount:'horse',
    npcs:[ {id:'haman',char:'haman',x:18,y:15,wander:false,noTalk:true},{id:'ahash',char:'ahash',x:17,y:11,wander:false},
@@ -6237,8 +6384,8 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'annals',text:'The sleepless night — the book is opened',
       script:[
-       {say:['ahash','What has been done in value or in greatness to Mordeḵai, for telling of the doorkeepers? …Naught? Who is in the court?']},
-       {say:['haman','(Come early, to ask that Mordeḵai be impaled on the stake—) My sovereign! For the man whom the sovereign delights to value: let a royal robe be brought which the sovereign has worn, and a horse on which the sovereign has ridden, with a royal crest on its head — and let one of the most noble princes robe the man, and lead him on horseback through the city square, proclaiming before him: Thus it is done to the man whom the sovereign delights to value!']},
+       {say:['ahash','What has been done in value or in greatness to Mordeḵai for this? …Naught? Who is in the court?']},
+       {say:['haman','(Come early, to ask that Mordeḵai be impaled on the stake—) My sovereign! For the man whom the sovereign delights to value — let a royal robe be brought which the sovereign has worn and a horse on which the sovereign has ridden, one with a royal crest placed on its head.']},{say:['haman','And let this robe and horse be given into the hand of one of the sovereign’s most noble princes. Let them dress the man whom the sovereign delights to value. And make him ride on horseback through the city square and proclaim before him, ‘Thus it is done to the man whom the sovereign delights to value!’']},
        {say:['ahash','Hurry — take the robe and the horse, as you have spoken, and do so for Mordeḵai the Yahuḏi who sits in the sovereign’s gate. Let no word fail of all that you have spoken!']},
        {shake:.4},{sfx:'chime'},
       ]},
@@ -6248,20 +6395,20 @@ STORY.push(
        {say:['haman','…Thus it is done to the man whom the sovereign delights to value.']},
        {say:['narrator','And Haman robed Mordeḵai, and led him on horseback through the city square, proclaiming before him — while all Shushan looked on.']},
        {rays:.6,raysX:30},{sfx:'holy'},{burst:[30,15,'holy',16]},
-       {say:['narrator','Then Mordeḵai went back to the sovereign’s gate. But Haman hurried to his house, mourning, with covered head. And Zeresh his wife said to him: “If Mordeḵai, before whom you have begun to fall, is from the seed of the Yahuḏim, you shall not prevail against him — but shall certainly fall before him.”']},
+       {say:['narrator','Then Mordeḵai went back to the sovereign’s gate. But Haman hurried to his house, mourning and with covered head. And when Haman related to his wife Zeresh and all his friends all that had befallen him, his wise men and his wife Zeresh said to him, “If Mordeḵai, before whom you have begun to fall, is from the seed of the Yahuḏim, you are not going to prevail against him but certainly fall before him.”']},
        {sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'“What is to be done for the man whom the sovereign delights to value?” — and Haman, thinking in his heart “whom more than me?”, decreed his enemy’s honour: the royal robe, the royal horse, and the proclamation through the square, “Thus it is done to the man whom the sovereign delights to value!” And Haman hurried home mourning; and Zeresh said, “You shall certainly fall before him.”', ref:'ESTĔR 6:6–13'},
+   {art:'reunion', music:'holy', text:'“What is to be done for the man whom the sovereign delights to value?” Now Haman thought in his heart, “Whom would the sovereign delight to value more than me?” … And Haman took the robe and the horse and robed Mordeḵai … and proclaimed before him, “Thus it is done to the man the sovereign delights to value.” … But Haman hurried to his house, mourning … and his wife Zeresh said, “… you are not going to prevail against him but certainly fall before him.”', ref:'ESTĔR 6:6–13', stage:{"set":"city","time":"day","cam":"push","focus":0.45,"props":[{"k":"horse","x":0.63,"z":0.16,"face":"l","color":"#e8e0d0","at":2}],"cast":[{"id":"haman","x":0.42,"z":0.12,"face":"r","pose":"look","say":3,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"hold"},{"at":3,"pose":"raise","face":"l"},{"at":4,"to":0.22,"run":1,"pose":"mourn"}]},{"id":"mordekai_r","x":0.62,"z":0.12,"face":"l","at":2,"pose":"sit","noseat":1,"dy":-0.085},{"id":"zeresh","x":0.1,"z":0.16,"face":"r","at":5,"pose":"point","say":5}],"crowd":[{"kind":"people","n":4,"x":0.34,"w":0.16,"z":0.58,"face":"r","from":"stand","at":3,"pose":"bow"},{"kind":"people","n":3,"x":0.86,"w":0.1,"z":0.55,"face":"l","from":"stand","at":3,"pose":"bow"}]}},
   ],
   complete:'The forgotten record is read at last — and the enemy leads the Yahuḏi royally through the square.'
 },
 
 { id:'e9', title:'The Adversary and Enemy', ref:'ESTĔR 7:1–10',
   intro:[
-   {art:'vista_sunset', music:'tense', text:'And the sovereign and Haman came in, to drink with Sovereigness Estĕr. And again on the second day, at the feast of wine, the sovereign said, “What is your petition, Sovereigness Estĕr? And it is given to you. And what is your request? Up to half my reign — and it is done!”', ref:'ESTĔR 7:1–2'},
+   {art:'vista_sunset', music:'tense', text:'And the sovereign and Haman came in, to drink with Sovereigness Estĕr. And again on the second day, at the feast of wine, the sovereign said to Estĕr, “What is your petition, Sovereigness Estĕr? And it is given to you. And what is your request? Up to half my reign and it is done!”', ref:'ESTĔR 7:1–2', stage:{"set":"house","cam":"push","focus":0.5,"props":[{"k":"table","x":0.47,"z":0.22,"cups":1}],"cast":[{"id":"ester_r","x":0.26,"z":0.12,"face":"r","pose":"sit","crown":1},{"id":"ahash","enter":"r","at":0,"to":0.66,"face":"l","pose":"sit","crown":1,"hold":"cup","say":1},{"id":"haman","enter":"r","at":0,"to":0.84,"z":0.16,"face":"l","pose":"sit","hold":"cup"},{"id":"maiden","x":0.1,"z":0.3,"face":"r","pose":"stand","hold":"pitcher"}]}},
   ],
   scene:{
    map:{biome:'interior', w:40, h:26, seed:6609,
@@ -6273,12 +6420,12 @@ STORY.push(
      {type:'talk',npc:'ahash',text:'“Let my life be given me at my petition”',
       script:[
        {say:['ahash','What is your petition, Sovereigness Estĕr? Up to half my reign — and it is done!']},
-       {say:['ester_r','If I have found favour in your eyes, O sovereign — let my life be given me at my petition, and my people at my request! For we have been sold, my people and I — to be cut off, to be slain, and to be destroyed.']},
+       {say:['ester_r','If I have found chen in your eyes, O sovereign — let my life be given me at my petition, and my people at my request! For we have been sold, my people and I — to be cut off, to be slain, and to be destroyed.']},
        {shake:.5},{sfx:'bad'},
        {say:['ahash','Who is he — and where is he — whose heart is set to do so?!']},
        {say:['ester_r','The adversary and enemy… is this evil Haman!']},
        {shake:.8},{sfx:'thunder'},{burst:[22,11,'ash',14]},
-       {say:['narrator','Haman was afraid before the sovereign and the sovereigness. And the sovereign arose in his wrath and went into the palace garden — and Haman remained, pleading for his life; and he fell on the couch where Estĕr was, as the sovereign returned.']},
+       {say:['narrator','Then Haman was afraid before the sovereign and sovereigness. And the sovereign, arising in his wrath from the feast of wine, went into the palace garden. And Haman remained before Sovereigness Estĕr, pleading for his life, for he saw that evil had been decided against him by the sovereign. And when the sovereign returned from the palace garden to the place of the feast of wine, Haman was falling on the couch where Estĕr was.']},
        {say:['ahash','Also to ravish the sovereigness, while I am in the house?!']},
        {say:['narrator','As the word left the sovereign’s mouth, they covered Haman’s face.']},
       ]},
@@ -6294,9 +6441,9 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'“The adversary and enemy is this evil Haman!” And Ḥarḇona said, “See the stake, fifty cubits high, which Haman made for Mordeḵai, who spoke good on behalf of the sovereign.” And the sovereign said, “Impale him on it!” So they impaled Haman on the stake that he had prepared for Mordeḵai — and the sovereign’s wrath abated.', ref:'ESTĔR 7:6–10'},
+   {art:'corrupt', music:'tense', text:'“The adversary and enemy is this evil Haman!” … And Ḥarḇona, one of the eunuchs, said to the sovereign, “Also, see the stake, fifty cubits high, which Haman made for Mordeḵai, who spoke good on behalf of the sovereign, is standing at the house of Haman.” And the sovereign said, “Impale him on it!” And they impaled Haman on the stake that he had prepared for Mordeḵai and the sovereign’s wrath abated.', ref:'ESTĔR 7:6–10', stage:{"set":"house","cam":"push","focus":0.45,"props":[{"k":"table","x":0.34,"z":0.3,"cups":1}],"cast":[{"id":"ester_r","x":0.18,"z":0.12,"face":"r","pose":"point","crown":1,"say":0},{"id":"haman","x":0.46,"z":0.14,"face":"l","pose":"sit","acts":[{"at":1,"pose":"fall"},{"at":3,"pose":"bound","face":"r"}]},{"id":"ahash","x":0.68,"z":0.12,"face":"l","pose":"stand","crown":1,"say":2,"acts":[{"at":2,"pose":"point"}]},{"id":"harbona","enter":"r","at":1,"to":0.86,"face":"l","pose":"point","say":1}],"crowd":[{"kind":"guards","side":"paras","n":3,"x":0.56,"w":0.12,"z":0.38,"face":"l","enter":"r","at":3}],"fx":[{"k":"red","amt":0.12,"at":2}]}},
   ],
-  complete:'The plotter hangs on his own stake — the evil returned upon his own head.'
+  complete:'The plotter hangs on his own stake — the evil returned on his own head.'
 },
 
 ]},
@@ -6306,30 +6453,30 @@ STORY.push(
 
 { id:'e10', title:'The Signet Ring Turned', ref:'ESTĔR 8:1–17',
   intro:[
-   {art:'light', music:'holy', text:'On that day Sovereign Aḥashwĕrosh gave to Sovereigness Estĕr the house of Haman, the adversary of the Yahuḏim. And Mordeḵai came before the sovereign, for Estĕr had explained what he was to her — and the sovereign took off his signet ring, which he had taken from Haman, and gave it to Mordeḵai.', ref:'ESTĔR 8:1–2'},
+   {art:'light', music:'holy', text:'On that day Sovereign Aḥashwĕrosh gave to Sovereigness Estĕr the house of Haman, the adversary of the Yahuḏim. And Mordeḵai came before the sovereign, for Estĕr had explained what he was to her — and the sovereign took off his signet ring, which he had taken from Haman, and gave it to Mordeḵai.', ref:'ESTĔR 8:1–2', stage:{"set":"persia","cam":"push","focus":0.45,"cast":[{"id":"ahash","x":0.2,"z":0.12,"face":"r","pose":"enthroned","crown":1},{"id":"ester_r","x":0.44,"z":0.12,"face":"l","pose":"kneel","crown":1,"say":1,"acts":[{"at":1,"pose":"speak","face":"r"}]},{"id":"mordekai","enter":"r","at":1,"to":0.74,"face":"l","pose":"bow"}],"crowd":[{"kind":"princes","n":4,"x":0.6,"w":0.2,"z":0.56,"face":"l"}],"fx":[{"k":"rays","x":0.74,"at":2}]}},
   ],
   scene:{
    map:{biome:'interior', w:40, h:26, seed:6610,
-     features:[ {type:'throne',x:20,y:7,id:'throne'},{type:'column',x:14,y:9},{type:'column',x:26,y:9},{type:'standard',x:28,y:12,id:'decree',examine:'The second decree: the Yahuḏim may assemble, and stand for their lives.'},{type:'clearing',x:20,y:17,flat:3} ]},
+     features:[ {type:'throne',x:20,y:7,id:'throne'},{type:'column',x:14,y:9},{type:'column',x:26,y:9},{type:'standard',x:28,y:12,id:'decree',examine:'The second decree: the Yahuḏim may be assembled, and stand for their lives.'},{type:'clearing',x:20,y:17,flat:3} ]},
    time:'day', music:'holy',
    player:'ester_r', playerPos:[20,18],
    npcs:[ {id:'ahash',char:'ahash',x:20,y:9,wander:false},{id:'mordekai',char:'mordekai_r',x:23,y:11,wander:false} ],
    objectives:[
-     {type:'talk',npc:'ahash',text:'Plead for the turning of the letters',
+     {type:'talk',npc:'ahash',text:'Plead to bring back the letters',
       script:[
-       {say:['ester_r','If it pleases the sovereign, and if I have found favour in his sight — let it be written to bring back the letters, the plot of Haman the Aḡaḡite, which he wrote to destroy the Yahuḏim in all the provinces. For how could I bear to see the evil coming to my people? How could I bear to see the destruction of my relatives?']},
+       {say:['ester_r','If it pleases the sovereign, and if I have found chen in his sight and the matter is right before the sovereign and I am pleasing in his eyes, let it be written to bring back the letters, the plot by Haman, son of Hammeḏatha the Aḡaḡite, which he wrote to destroy the Yahuḏim who are in all the sovereign’s provinces.']},{say:['ester_r','For how could I bear to see the evil coming to my people? Or how could I bear to see the destruction of my relatives?']},
        {addProp:{type:'sceptre',x:20,y:10,id:'sceptre'}},
        {rays:.6,raysX:20},{sfx:'holy'},{burst:[20,9,'holy',14]},
-       {say:['ahash','Look — I have given Estĕr the house of Haman, and they have impaled him on the stake. Now you write on behalf of the Yahuḏim, as it pleases you, in the sovereign’s name, and seal it with the sovereign’s signet ring — for a letter written in the sovereign’s name and sealed with his ring, no one turns back.']},
+       {say:['ahash','Look, I have given Estĕr the house of Haman and they have impaled him on the stake because he laid his hand on the Yahuḏim. Now you write on behalf of the Yahuḏim, as it pleases you, in the sovereign’s name and seal it with the sovereign’s signet ring. For a letter which is written in the sovereign’s name and sealed with the sovereign’s signet ring no one turns back.']},
       ]},
      {type:'interact',prop:'decree',text:'Write the second decree — and let it ride',hiddenUntil:1,
       script:[
-       {say:['mordekai_r','Write: the sovereign grants the Yahuḏim in every city to be assembled, and to stand for their lives — against all who would distress them, on the thirteenth day of the twelfth month, the month of Aḏar.']},
+       {say:['mordekai_r','Write: that the sovereign has granted to the Yahuḏim who are in every city to be assembled and stand for their lives – to cut off, to slay and to destroy all the power of the people or province that would distress them — on one day in all the provinces of Sovereign Aḥashwĕrosh, on the thirteenth day of the twelfth month, which is the month of Aḏar.']},
        {spawn:{id:'run1',char:'defender',mount:'horse',x:20,y:14,wander:false,noTalk:true}},
        {spawn:{id:'run2',char:'defender',mount:'horse',x:22,y:15,wander:false,noTalk:true}},
        {call:G=>{ [['run1',38,14],['run2',38,16]].forEach(([id,x,y])=>{ const n=G.world.npcs.find(n=>n.id===id); if(n){ n.target={x,y}; n.speed=.09; n.onArrive=()=>{n.hidden=true;}; } }); }},
        {sfx:'chime'},{wait:1200},
-       {say:['narrator','The runners went out on royal horses, hastened and pressed on by the sovereign’s command. And Mordeḵai went out in royal garments of blue and white, with a great crown of gold — and the city of Shushan rejoiced and was glad.']},
+       {say:['narrator','The runners, riding on royal horses, went out, hastened and pressed on by the sovereign’s command. And the decree was given out in the citadel of Shushan. And Mordeḵai went out from the presence of the sovereign wearing royal garments of blue and white, with a great crown of gold and a garment of fine linen and purple. And the city of Shushan rejoiced and was glad.']},
        {rays:.7,raysX:23},{sfx:'holy'},{burst:[23,11,'holy',18]},
        {say:['narrator','For the Yahuḏim there was light and gladness and joy and value — and many of the people of the land were becoming Yahuḏim, for the fear of the Yahuḏim had fallen upon them.']},
        {sfx:'chime'},
@@ -6337,14 +6484,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'The ring passed from Haman’s hand to Mordeḵai’s; the letters rode on royal horses to a hundred and twenty-seven provinces: the Yahuḏim may assemble, and stand for their lives. And Mordeḵai went out in blue and white with a great crown of gold, and Shushan rejoiced — for the Yahuḏim there was light and gladness and joy and value.', ref:'ESTĔR 8:10–17'},
+   {art:'light', music:'holy', text:'And he wrote in the name of Sovereign Aḥashwĕrosh and sealed it with the sovereign’s signet ring and sent letters … That the sovereign has granted to the Yahuḏim who were in every city to be assembled and stand for their lives … And Mordeḵai went out … wearing royal garments of blue and white, with a great crown of gold … And the city of Shushan rejoiced … For the Yahuḏim there was light and gladness and joy and value.', ref:'ESTĔR 8:10–17', stage:{"set":"gate","time":"day","cam":"push","focus":0.45,"cast":[{"id":"mordekai_r","x":0.5,"z":0.2,"face":"r","at":2,"pose":"stand","crown":1,"acts":[{"at":3,"to":0.38},{"at":5,"pose":"bless"}]}],"crowd":[{"kind":"soldiers","side":"paras","n":4,"x":0.5,"w":0.3,"z":0.5,"face":"r","hold":"scroll","enter":"l","at":0,"exit":"r","exitAt":1,"run":1},{"kind":"people","n":6,"x":0.78,"w":0.24,"z":0.58,"face":"l","at":1,"hold":"spear"},{"kind":"worshippers","n":6,"x":0.18,"w":0.22,"z":0.58,"face":"r","at":4},{"kind":"children","n":3,"x":0.62,"w":0.1,"z":0.4,"face":"l","at":4,"pose":"dance"}],"fx":[{"k":"rays","x":0.4,"at":5}]}},
   ],
   complete:'The ring is turned, the letters ride — light and gladness and joy and value for the Yahuḏim.'
 },
 
 { id:'e11', title:'The Day That Turned Around', ref:'ESTĔR 9:1–19',
   intro:[
-   {art:'wasteland', music:'tense', text:'In the twelfth month, the month of Aḏar, on the thirteenth day — on the day that the enemies of the Yahuḏim had waited to overpower them — it turned around: the Yahuḏim overpowered those who hated them.', ref:'ESTĔR 9:1'},
+   {art:'wasteland', music:'tense', text:'In the twelfth month, that is, the month of Aḏar, on the thirteenth day, when the sovereign’s command and his decree came to be done, on the day that the enemies of the Yahuḏim had waited to overpower them, it turned around, so that the Yahuḏim overpowered those who hated them.', ref:'ESTĔR 9:1', stage:{"set":"walls","time":"dusk","wx":"dust","cam":"pan-r","focus":0.5,"cast":[{"id":"defender","x":0.38,"z":0.12,"face":"r","pose":"fight","hold":"sword"},{"id":"enemy","x":0.62,"z":0.14,"face":"l","pose":"fall","hold":"sword"}],"crowd":[{"kind":"people","n":6,"x":0.22,"w":0.26,"z":0.55,"face":"r","pose":"fight","hold":"sword"},{"kind":"nations","n":5,"x":0.8,"w":0.2,"z":0.55,"face":"r","pose":"flee"}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:6611,
@@ -6355,13 +6502,13 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'d1',text:'The enemies gather — stand for your lives',
       script:[
-       {say:['defender','They come, Mordeḵai — those who hated us, armed for the day the lot appointed. But the decree stands: we may assemble, and stand for our lives!']},
+       {say:['defender','They come, Mordeḵai — those who hated us, armed for the day the lot appointed. But the decree stands: the sovereign has granted to the Yahuḏim who are in every city to be assembled and stand for their lives!']},
        {spawn:{id:'x1',char:'enemy',x:6,y:14,wander:false,noTalk:true}},
        {spawn:{id:'x2',char:'enemy',x:5,y:17,wander:false,noTalk:true}},
        {spawn:{id:'x3',char:'enemy',x:7,y:20,wander:false,noTalk:true}},
        {sfx:'bad'},{shake:.5},
        {battle:{foes:['x1','x2','x3'],hits:2,text:'The thirteenth of Aḏar — stand for your lives!',won:'The first of the foes are fallen.'}},
-       {say:['narrator','The Yahuḏim assembled in their cities to lay hands on those who sought their evil — and no one stood against them, for fear of them fell upon all people; and all the officials of the provinces helped the Yahuḏim, for the fear of Mordeḵai had fallen upon them.']},
+       {say:['narrator','The Yahuḏim assembled in their cities, throughout all the provinces of Sovereign Aḥashwĕrosh to lay hands on those who sought their evil. And no one stood against them, because fear of them fell upon all people. And all the officials of the provinces and the viceroys and the governors and all those doing the sovereign’s work, helped the Yahuḏim, because the fear of Mordeḵai fell upon them.']},
       ]},
      {type:'goto',x:30,y:14,text:'Five hundred in the citadel — and the ten sons',radius:2.6,hiddenUntil:1,
       script:[
@@ -6370,26 +6517,26 @@ STORY.push(
        {spawn:{id:'x6',char:'enemy',x:39,y:21,wander:false,noTalk:true}},
        {sfx:'bad'},{shake:.5},
        {battle:{foes:['x4','x5','x6'],hits:2,text:'They rise again by the gate of Haman’s house!',won:'In the citadel of Shushan, five hundred fell.'}},
-       {say:['narrator','And in the citadel of Shushan the Yahuḏim slew five hundred men — and the ten sons of Haman son of Hammeḏatha, the enemy of the Yahuḏim. But they did not lay a hand on the plunder.']},
+       {say:['narrator','And in the citadel of Shushan the Yahuḏim slew and destroyed five hundred men — and the ten sons of Haman son of Hammeḏatha, the enemy of the Yahuḏim. But they did not lay a hand on the plunder.']},
        {shake:.6},{sfx:'thunder'},{burst:[36,11,'ash',16]},
        {say:['narrator','At the word of Estĕr, Haman’s ten sons were impaled on the stake of their father.']},
       ]},
      {type:'interact',prop:'gate',text:'Rest, feasting, and gladness',hiddenUntil:2,
       script:[
-       {say:['narrator','The rest of the Yahuḏim in the provinces assembled and stood for their lives, and had rest from their enemies — but they did not lay a hand on the plunder. And on the day after, they rested, and made it a day of feasting and gladness.']},
+       {say:['narrator','And the rest of the Yahuḏim in the sovereign’s provinces assembled and stood for their lives and to get rest from their enemies. But they did not lay a hand on the plunder. That was on the thirteenth day of the month of Aḏar and on the fourteenth day of the month they rested and made it a day of feasting and gladness.']},
        {music:'holy'},{rays:.6,raysX:22},{sfx:'holy'},{burst:[22,9,'holy',16]},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'tense', text:'On the day the enemies of the Yahuḏim had waited to overpower them, it turned around: the Yahuḏim overpowered those who hated them, and no one stood against them. In Shushan five hundred fell, and the ten sons of Haman were impaled on their father’s stake — but the Yahuḏim did not lay a hand on the plunder.', ref:'ESTĔR 9:1–15'},
+   {art:'wasteland', music:'tense', text:'On the day that the enemies of the Yahuḏim had waited to overpower them, it turned around, so that the Yahuḏim overpowered those who hated them. … And no one stood against them … And in the citadel of Shushan the Yahuḏim slew and destroyed five hundred men. … And they impaled Haman’s ten sons. … But they did not lay a hand on the plunder.', ref:'ESTĔR 9:1–15', stage:{"set":"city","time":"day","wx":"dust","cam":"push","focus":0.45,"props":[{"k":"chest","x":0.5,"z":0.2,"gold":1,"at":4},{"k":"sacks","x":0.56,"z":0.26,"n":4,"at":4}],"cast":[{"id":"defender","x":0.3,"z":0.12,"face":"r","pose":"stand","hold":"sword","acts":[{"at":2,"pose":"fight"},{"at":4,"pose":"stand","face":"l"}]},{"id":"enemy","x":0.72,"z":0.14,"face":"l","pose":"fight","hold":"sword","acts":[{"at":2,"pose":"fall"}]}],"crowd":[{"kind":"people","n":6,"x":0.22,"w":0.26,"z":0.56,"face":"r","hold":"sword"},{"kind":"nations","n":6,"x":0.78,"w":0.24,"z":0.56,"face":"l","pose":"fight","hold":"sword","exit":"r","exitAt":1,"run":1}]}},
   ],
   complete:'The day appointed by the lot turned around — and the hunted stood, and had rest from their enemies.'
 },
 
 { id:'e12', title:'Purim — From Sorrow to Joy', ref:'ESTĔR 9:20–10:3',
   intro:[
-   {art:'reunion', music:'holy', text:'And Mordeḵai wrote these matters, and sent letters to all the Yahuḏim in all the provinces, to establish among them the fourteenth and fifteenth days of Aḏar, yearly — as the days on which the Yahuḏim had rest from their enemies, and the month which was turned from sorrow to joy, and from mourning to a good day.', ref:'ESTĔR 9:20–22'},
+   {art:'reunion', music:'holy', text:'And Mordeḵai wrote these matters and sent letters to all the Yahuḏim … to establish among them … the fourteenth and fifteenth days of the month of Aḏar, yearly, as the days on which the Yahuḏim had rest from their enemies, as the month which was turned from sorrow to joy for them and from mourning to a good day, that they should make them days of feasting and joy, of sending portions to one another and gifts to the poor.', ref:'ESTĔR 9:20–22', stage:{"set":"house","cam":"push","focus":0.5,"props":[{"k":"table","x":0.74,"z":0.3,"cups":1,"at":2}],"cast":[{"id":"mordekai_r","x":0.24,"z":0.12,"face":"r","pose":"sit","hold":"scroll","crown":1},{"id":"hathak","x":0.42,"z":0.18,"face":"l","at":1,"pose":"bow"},{"id":"poorman","x":0.56,"z":0.12,"face":"r","at":2,"pose":"bless"},{"id":"defender","x":0.7,"z":0.12,"face":"l","at":2,"pose":"hold","hold":"bread"}],"crowd":[{"kind":"people","n":5,"x":0.78,"w":0.24,"z":0.5,"face":"l","at":2,"pose":"dance"}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6612,
@@ -6404,21 +6551,21 @@ STORY.push(
      {type:'talk',npc:'poorman',text:'Portions to one another, gifts to the poor',hiddenUntil:1,
       script:[
        {say:['ester_r','Take, friend — a portion for the feast. These are days of sending portions to one another, and gifts to the poor.']},
-       {say:['poorman','Blessed be YAHUAH, and blessed the sovereigness! From mourning to a good day indeed.']},
+       {say:['poorman','Baruk be YAHUAH, and baruk the sovereigness! From mourning to a good day indeed.']},
        {burst:[17,15,'holy',10]},{sfx:'chime'},
       ]},
      {type:'interact',prop:'book',text:'Written in the book — Purim, every generation',hiddenUntil:2,
       script:[
-       {say:['mordekai_r','Because Haman the Aḡaḡite had cast Pur — the lot — to crush and destroy the Yahuḏim, and it returned on his own head, these days are called Purim. They shall be remembered and observed throughout every generation, every clan, every province, every city — and these days of Purim shall not fail from among the Yahuḏim.']},
+       {say:['mordekai_r','Because Haman the Aḡaḡite, the adversary of all the Yahuḏim, had plotted against the Yahuḏim to destroy them and had cast Pur – that is, the lot – to crush them and to destroy them — and his evil plot which Haman had plotted against the Yahuḏim returned on his own head — these days are called Purim.']},{say:['mordekai_r','These days should be remembered and observed throughout every generation, every clan, every province and every city and these days of Purim should not fail from among the Yahuḏim.']},
        {rays:.7,raysX:36},{sfx:'holy'},{burst:[36,14,'holy',18]},
-       {say:['narrator','And the decree of Estĕr established these matters of Purim, and it was written in the book. For Mordeḵai the Yahuḏi was second to Sovereign Aḥashwĕrosh, and great among the Yahuḏim — seeking the good of his people, and speaking peace to all his seed.']},
+       {say:['narrator','And the decree of Estĕr established these matters of Purim, and it was written in the book. For Mordeḵai the Yahuḏi was second to Sovereign Aḥashwĕrosh, and great among the Yahuḏim — seeking the good of his people, and speaking shalom to all his seed.']},
        {burst:[22,10,'holy',20]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'garden', music:'holy', text:'They called these days Purim, after the name Pur — to be remembered and observed throughout every generation: days of feasting and joy, of sending portions to one another, and gifts to the poor; the month turned from sorrow to joy, from mourning to a good day.', ref:'ESTĔR 9:26–28'},
-   {art:'light', music:'holy', text:'And Mordeḵai the Yahuḏi was second to Sovereign Aḥashwĕrosh, and great among the Yahuḏim, and pleasing to his many brothers — seeking the good of his people, and speaking peace to all his seed. In the Book of Estĕr the reign of YAHUAH is assumed at every point: He directs every seeming coincidence, for the deliverance of His people.', ref:'ESTĔR 10:3'},
+   {art:'garden', music:'holy', text:'Therefore they called these days Purim, after the name Pur. … that these days should be remembered and observed throughout every generation … and that these days of Purim should not fail from among the Yahuḏim and that the remembrance of them should not cease from their seed.', ref:'ESTĔR 9:26–28', stage:{"set":"garden","time":"day","cam":"push","focus":0.45,"props":[{"k":"stones","x":0.44,"z":0.1,"n":3,"s":0.7}],"cast":[{"id":"elder","x":0.28,"z":0.12,"face":"r","pose":"speak","hold":"scroll","say":0},{"id":"defender","x":0.78,"z":0.14,"face":"l","at":1,"pose":"stand"},{"id":"maiden","x":0.88,"z":0.18,"face":"l","at":1,"pose":"stand"}],"crowd":[{"kind":"children","n":4,"x":0.56,"w":0.18,"z":0.34,"face":"l","at":1,"pose":"sitground"},{"kind":"people","n":6,"x":0.56,"w":0.6,"z":0.72,"face":"l","at":2,"pose":"dance"}],"fx":[{"k":"rays","x":0.5,"at":2}]}},
+   {art:'light', music:'holy', text:'For Mordeḵai the Yahuḏi was second to Sovereign Aḥashwĕrosh and great among the Yahuḏim and pleasing to his many brothers, seeking the good of his people and speaking shalom to all his seed.', ref:'ESTĔR 10:3', stage:{"set":"palace","cam":"push","focus":0.45,"cast":[{"id":"ahash","x":0.18,"z":0.18,"face":"r","pose":"enthroned","crown":1},{"id":"mordekai_r","x":0.4,"z":0.1,"face":"r","pose":"bless","crown":1,"say":0}],"crowd":[{"kind":"people","n":7,"x":0.74,"w":0.3,"z":0.52,"face":"l"},{"kind":"children","n":3,"x":0.6,"w":0.1,"z":0.36,"face":"l"}],"fx":[{"k":"rays","x":0.42}]}},
   ],
   complete:'Purim established for every generation — the month turned from sorrow to joy.'
 },
@@ -6465,7 +6612,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6531,7 +6678,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6592,9 +6742,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6679,5 +6829,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main">YEHUDITH</div>
     <div class="title-sub">Judith — Ethiopic &amp; Eastern Apocrypha</div>
-    <div class="title-verse">“YAHUAH is Aluahim who crushes wars — He has foiled them by the hand of a woman!” — YEHUDITH 16:2,5</div>
+    <div class="title-verse">“For Aluahim is YAHUAH who crushes wars… But YAHUAH Almighty has foiled them by the hand of a woman.” — YEHUDITH 16:3, 6</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Yehudith</h2>
-    <div class="hint">Four acts · YEHUDITH — when Holofernes, commander of the host of Nebuḵaḏnetstsar, laid siege to Bethulia and seized the springs, and the fainting city swore to surrender in five days: from Achior the Ammonite bound and cast at the foot of the hill for telling the truth about the Aluahim of Yisra’ĕl, through the widow Yehudith who rebuked the elders — “do not put Aluahim to the test” — and prayed in ashes to the Aluahim of the lowly before arraying herself in beauty; into the enemy camp on a lie of deliverance, the banquet where the commander drank himself senseless, and the two strokes of his own sword by the hand of a woman; to the head on the parapet, Achior’s belief, the rout of Ashshur, and the song and the dance of deliverance.</div>
+    <div class="hint">Four acts · YEHUDITH — when Holofernes, commander of the host of Nebuḵaḏnetstsar, laid siege to Bethulia and seized the springs, and the fainting city swore to surrender in five days: from Achior the Ammonite bound and cast at the foot of the hill for telling the truth about the Aluahim of Yasharal, through the widow Yehudith who rebuked the elders — “do not put Aluahim to the test” — and prayed in ashes to the Aluahim of the lowly before arraying herself in beauty; into the enemy camp on a lie of deliverance, the banquet where the commander drank himself senseless, and the two strokes of his own sword by the hand of a woman; to the head on the parapet, Achior’s belief, the rout of Ashshur, and the song and the dance of deliverance.</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -529,8 +561,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -638,7 +670,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -738,7 +770,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1000,6 +1034,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1043,7 +1087,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1305,6 +1351,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2786,6 +2842,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2981,7 +3057,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3186,8 +3262,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3674,6 +3751,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3737,7 +3815,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3790,15 +3872,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3809,6 +3925,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3834,6 +3956,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     $('slide-ui').classList.remove('show');
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
@@ -3863,6 +3986,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3880,7 +4004,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4020,6 +4144,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4083,17 +4212,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4257,22 +4387,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4285,7 +4419,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4308,11 +4442,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5673,7 +5820,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5989,9 +6136,9 @@ Object.assign(CHARS,{
   achior:{name:'Achior the Ammonite', skin:'#a9764a', hair:'#33230f', hairStyle:'short', robe:'#6a5a3a', beard:'#33230f'},
   holofernes:{name:'Holofernes the Commander', skin:'#7a5a36', hair:'#1d1208', hairStyle:'short', robe:'#5a2a2a', collar:'#8a3030', headcover:'#8a3030', beard:'#1d1208'},
   bagoas:{name:'Bagoas the Eunuch', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#6a7a5a'},
-  assyrian:{name:'A Soldier of Ashshur', skin:'#6a5540', hair:'#14100a', hairStyle:'short', robe:'#6a3a3a', headcover:'#4a2a2a', beard:'#14100a'},
+  assyrian:{name:'An Assyrian Soldier', skin:'#6a5540', hair:'#14100a', hairStyle:'short', robe:'#6a3a3a', headcover:'#4a2a2a', beard:'#14100a'},
   elder:{name:'An Elder of Bethulia', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a5030', beard:'#cfc8b8'},
-  soldier:{name:'A Man of Yisra’ĕl', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#79653f', beard:'#2c1a0c'},
+  soldier:{name:'A Man of Yasharal', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#79653f', beard:'#2c1a0c'},
   woman:{name:'A Woman of Bethulia', skin:'#a9764a', hair:'#3a2a18', hairStyle:'long', robe:'#7a5a6a', headcover:'#c8b486'},
 });
 
@@ -6003,38 +6150,38 @@ STORY.push(
 
 { id:'j1', title:'Achior’s Warning', ref:'YEHUDITH 5–6',
   intro:[
-   {art:'corrupt', music:'tense', text:'Holofernes, commander of the army of Nebuḵaḏnetstsar, called together the princes of Mo’aḇ and the commanders of Ammon: “What people is this that dwells in the hill country, that alone of all the west has refused to meet me?” And Achior the Ammonite answered him.', ref:'YEHUDITH 5:1–5'},
+   {art:'corrupt', music:'tense', text:'Holofernes, the general of the Assyrian army … called together all the princes of Mo’aḇ and the commanders of Ammon … “What people is this that lives in the hill country? … Why have they alone, of all who live in the west, refused to come out and meet me?” Then Achior, the leader of all the Ammonites, said to him, “… I will tell you the truth about this people.”', ref:'YEHUDITH 5:1–5', stage:{"set":"tentin","cam":"push","focus":0.4,"cast":[{"id":"holofernes","x":0.24,"z":0.1,"face":"r","pose":"stand","say":2,"acts":[{"at":2,"pose":"point"},{"at":3,"pose":"raise"},{"at":4,"pose":"stand"}]},{"id":"bagoas","x":0.1,"z":0.3,"face":"r","pose":"stand"},{"id":"achior","enter":"r","at":4,"to":0.6,"z":0.12,"face":"l","pose":"speak","say":5}],"crowd":[{"kind":"princes","n":6,"x":0.72,"w":0.34,"z":0.66,"face":"l","enter":"r","at":1},{"kind":"guards","side":"ashshur","n":3,"x":0.42,"w":0.1,"z":0.82,"face":"r"}],"props":[{"k":"banner","x":0.06,"z":0.7,"color":"#6a2a3a"}]}},
   ],
   scene:{
    map:{biome:'desert', w:48, h:28, seed:8201,
-     features:[ {type:'wartent',x:22,y:9,id:'tent',examine:'The great pavilion of Holofernes — purple and gold, and a hundred and seventy thousand men behind it.'},{type:'banner',x:15,y:11},{type:'banner',x:29,y:11},{type:'standard',x:36,y:13,id:'hill',examine:'The foot of the hill below Bethulia — where the bound man is left for the men of Yisra’ĕl to find.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'wartent',x:22,y:9,id:'tent',examine:'The great pavilion of Holofernes — purple and gold, and a hundred and seventy thousand men behind it.'},{type:'banner',x:15,y:11},{type:'banner',x:29,y:11},{type:'standard',x:36,y:13,id:'hill',examine:'The foot of the hill below Bethulia — where the bound man is left for the men of Yasharal to find.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'achior', playerPos:[22,20],
    npcs:[ {id:'holofernes',char:'holofernes',x:22,y:12,wander:false},{id:'a1',char:'assyrian',x:18,y:14,wander:false},{id:'a2',char:'assyrian',x:26,y:14,wander:false} ],
    objectives:[
      {type:'talk',npc:'holofernes',text:'Tell Holofernes the truth about this people',
       script:[
-       {say:['achior','Hear the truth about this people, my lord. As long as they did not sin against their Aluahim, they prospered — for the Aluahim who hates iniquity is with them. But if there is transgression in them, then go up, and their Aluahim will deliver them into your hand.']},
-       {say:['holofernes','And who is Aluahim, except Nebuḵaḏnetstsar?! Who are you, Achior, hireling of Ammon, to prophesy that their Aluahim will defend them? We shall destroy them as one man — you shall not see my face again until I take my revenge on this race that came out of Mitsrayim.']},
+       {say:['achior','My master, I will tell you the truth about this people. As long as they did not sin against their Aluahim they prospered, for the Aluahim who hates iniquity is with them.']},{say:['achior','If there is any unwitting error in this people and they sin against their Aluahim and we find out their offense, then we will go up and defeat them. But if there is no transgression in their nation, then let my master pass them by; for their Aluahim will protect them.']},
+       {say:['holofernes','And who is Aluahim, except Nebuḵaḏnetstsar?! And who are you, Achior, to prophesy among us as you have done today, and tell us not to make war against the people of Yasharal because their Aluahim will defend them?']},{say:['holofernes','We the king’s servants will destroy them as one man — but you, Achior, you Ammonite hireling — you shall not see my face again from this day until I take revenge on this race that came out of Mitsrayim.']},
        {shake:.5},{sfx:'bad'},
       ]},
-     {type:'goto',x:35,y:14,text:'Bound, and cast at the foot of Bethulia',radius:2.4,hiddenUntil:1,
+     {type:'goto',x:35,y:14,text:'Bound, and left at the foot of Bethulia',radius:2.4,hiddenUntil:1,
       script:[
        {say:['narrator','So Holofernes ordered his slaves to seize Achior, and bind him, and leave him at the foot of the hill below Bethulia — that he might perish with the people he had defended. And the men of the city came down, and untied him, and brought him in.']},
-       {say:['achior','Rulers of Bethulia — hear what Holofernes has said, and how he boasted against the house of Yisra’ĕl. A hundred and seventy thousand foot, and twelve thousand horse, come against you.']},
+       {say:['achior','Rulers of Bethulia — hear all that Holofernes has said so boastfully against the house of Yasharal. One hundred and seventy thousand infantry and twelve thousand cavalry come against you.']},
        {rays:.4,raysX:35},{sfx:'holy'},{burst:[35,13,'holy',10]},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'“As long as they do not sin, their Aluahim is with them,” warned Achior — and for it, Holofernes had him bound and cast at the foot of Bethulia, to perish with the people he defended. But the men of the city found him, and untied him, and brought him in, and heard the full weight of the army that was coming.', ref:'YEHUDITH 5:17–6:21'},
+   {art:'corrupt', music:'tense', text:'“As long as they did not sin against their Aluahim they prospered, for the Aluahim who hates iniquity is with them.” … Then Holofernes ordered his slaves … to seize Achior and take him to Bethulia … and they bound Achior and left him lying at the foot of the hill. … Then the men of Yasharal … found him; and they untied him and brought him into Bethulia.', ref:'YEHUDITH 5:17–6:21', stage:{"set":"walls","time":"day","cam":"pan-r","focus":0.55,"cast":[{"id":"holofernes","x":0.18,"z":0.12,"face":"r","pose":"stand","say":1,"acts":[{"at":1,"pose":"point"},{"at":3,"exit":"l"}]},{"id":"achior","x":0.34,"z":0.1,"face":"l","pose":"speak","say":0,"acts":[{"at":2,"to":0.56,"pose":"bound","face":"r"},{"at":3,"pose":"lie"},{"at":5,"exit":"r"}]},{"id":"assyrian","enter":"l","at":2,"to":0.46,"z":0.14,"face":"r","pose":"hold","hold":"spear","acts":[{"at":3,"exit":"l"}]},{"id":"soldier","enter":"r","at":4,"to":0.66,"z":0.12,"face":"l","pose":"kneel","acts":[{"at":5,"exit":"r"}]}],"crowd":[{"kind":"people","n":3,"x":0.84,"w":0.12,"z":0.4,"face":"l","enter":"r","at":4,"hold":"spear","exit":"r","exitAt":5}]}},
   ],
   complete:'The one honest voice in the enemy’s tent — bound, cast out, and taken in by those he defended.'
 },
 
 { id:'j2', title:'The Springs Seized', ref:'YEHUDITH 7',
   intro:[
-   {art:'wasteland', music:'sorrow', text:'The next day Holofernes moved his whole army against Bethulia, and seized the springs that supplied their water, and set guards over them: “Thirst will destroy them, and they will give up their city.” And the people of Bethulia were faint.', ref:'YEHUDITH 7:1–17'},
+   {art:'wasteland', music:'sorrow', text:'The next day Holofernes ordered his whole army … to break camp and move against Bethulia. … When the Yasharalites saw their vast numbers they were greatly terrified. … Holofernes … visited the springs that supplied their water, and seized them and set guards of soldiers over them. … “So thirst will destroy them, and they will give up their city.”', ref:'YEHUDITH 7:1–17', stage:{"set":"valley","time":"day","wx":"dust","cam":"push","focus":0.55,"cast":[{"id":"holofernes","enter":"l","at":3,"to":0.54,"z":0.12,"face":"r","pose":"point","say":4}],"crowd":[{"kind":"army","side":"ashshur","n":11,"x":0.4,"w":0.56,"z":0.8,"face":"r","enter":"l","at":1},{"kind":"people","n":5,"x":0.9,"w":0.1,"z":0.95,"face":"l","pose":"weep","at":2},{"kind":"guards","side":"ashshur","n":3,"x":0.78,"w":0.16,"z":0.32,"face":"l","enter":"l","at":3}],"props":[{"k":"well","x":0.7,"z":0.2},{"k":"tent","x":0.1,"z":0.8,"color":"#6a2a3a"},{"k":"wall","x":0.92,"z":1.05,"w":0.22,"h":50}]}},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:28, seed:8202,
@@ -6059,7 +6206,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'Holofernes seized the springs, and thirst wasted the city; and Uzziah swore an oath: if YAHUAH did not deliver Bethulia within five days, he would open the gates to the Assyrians. “Better slaves than corpses,” said the fainting people — and they waited, and counted the days.', ref:'YEHUDITH 7:19–32'},
+   {art:'wasteland', music:'sorrow', text:'All the vessels of water belonging to every inhabitant of Bethulia were empty. … Then all the people … cried out … “We will be slaves, but our lives will be spared.” … And Uzziah said to them, “… Let us hold out for five more days … But if these days pass by, and no help comes for us, I will do what you say.”', ref:'YEHUDITH 7:19–32', stage:{"set":"city","time":"noon","wx":"haze","cam":"push","focus":0.5,"cast":[{"id":"woman","x":0.26,"z":0.1,"face":"r","pose":"hold","hold":"jar","say":2,"acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"weep"}]},{"id":"elder","x":0.4,"z":0.2,"face":"r","pose":"weep","hold":"staff"},{"id":"uzziah","x":0.72,"z":0.12,"face":"l","pose":"stand","say":4,"acts":[{"at":3,"pose":"speak"},{"at":5,"pose":"raise"}]}],"crowd":[{"kind":"people","n":8,"x":0.42,"w":0.6,"z":0.8,"face":"r","from":"stand","pose":"raise","at":1},{"kind":"elders","n":3,"x":0.86,"w":0.1,"z":0.45,"face":"l"}],"props":[{"k":"well","x":0.56,"z":0.3}]}},
   ],
   complete:'The water cut off, the city fainting, and an oath sworn: five days — and then surrender.'
 },
@@ -6071,64 +6218,64 @@ STORY.push(
 
 { id:'j3', title:'Do Not Put Aluahim to the Test', ref:'YEHUDITH 8',
   intro:[
-   {art:'vista', music:'holy', text:'Now Yehudith, a widow of Bethulia — beautiful in appearance, and one who feared Aluahim with great devotion — heard of the oath Uzziah had sworn. And she sent for the elders of her city.', ref:'YEHUDITH 8:1–10'},
+   {art:'vista', music:'holy', text:'Yehudith had lived at home as a widow … She was beautiful in appearance … No one spoke ill of her, for she feared Aluahim with great devotion. When Yehudith heard … all that Uzziah said to them, and how he promised them under oath to surrender the city to the Assyrians after five days, she sent her maid … to summon … the elders of her city.', ref:'YEHUDITH 8:1–10', stage:{"set":"tentin","cam":"push","focus":0.4,"cast":[{"id":"judith","look":{"sack":1},"x":0.34,"z":0.1,"face":"r","pose":"mourn","acts":[{"at":2,"pose":"pray"},{"at":3,"pose":"stand"},{"at":4,"pose":"point"}],"say":4},{"id":"maid","enter":"r","at":3,"to":0.62,"z":0.12,"face":"l","pose":"stand","say":3,"acts":[{"at":4,"exit":"r"}]}],"props":[{"k":"basket","x":0.84,"z":0.35},{"k":"seat","x":0.14,"z":0.4}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8203,
-     features:[ {type:'house',x:16,y:10,id:'house',examine:'The house of Yehudith — a tent set on the roof, and the garments of her widowhood.'},{type:'standard',x:31,y:12,id:'plan',examine:'“Stand at the gate tonight — YAHUAH will deliver Yisra’ĕl by my hand.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'house',x:16,y:10,id:'house',examine:'The house of Yehudith — a tent set on the roof, and the garments of her widowhood.'},{type:'standard',x:31,y:12,id:'plan',examine:'“Stand at the city gate tonight — YAHUAH will deliver Yasharal by my hand.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'judith', playerPos:[22,20],
    npcs:[ {id:'uzziah',char:'uzziah',x:19,y:14,wander:false},{id:'elder',char:'elder',x:26,y:14,wander:false},{id:'maid',char:'maid',x:24,y:16,wander:false} ],
    objectives:[
      {type:'talk',npc:'uzziah',text:'Rebuke the rulers of the people',
       script:[
-       {say:['judith','What you have said to the people is not right — that you would put Aluahim to the test, and set a day for the Almighty! Who are you, to put YAHUAH to the test, and set yourselves in the place of Aluahim among men? You cannot plumb the depths of the human heart — how then will you search out the mind of Aluahim, who made all things?']},
-       {say:['judith','Do not bind the purposes of YAHUAH our Aluahim; for He is not like a man, to be threatened, nor like a mortal, to be won over by pleading. Let us call upon Him — and give thanks, for He is putting us to the test as He did our fathers: Aḇraham, and Yitsḥaq, and Ya‛aqoḇ.']},
-       {say:['uzziah','All that you have said is spoken from a true heart, and none can deny your words. But the people were thirsty, and forced the oath from us. Pray for us, devout woman, that YAHUAH send rain.']},
+       {say:['judith','What you have said to the people today is not right — promising to surrender the city to our enemies unless YAHUAH turns and helps us within so many days!']},{say:['judith','Who are you, that have put Aluahim to the test this day, and are setting yourselves up in the place of Aluahim among the sons of men? You cannot plumb the depths of the human heart — how do you expect to search out Aluahim, who made all these things, and find out His mind?']},
+       {say:['judith','Do not try to bind the purposes of YAHUAH our Aluahim; for Aluahim is not like man, to be threatened, nor like a human being, to be won over by pleading. Therefore, while we wait for His deliverance, let us call upon Him to help us. In spite of everything let us give thanks to YAHUAH our Aluahim, who is putting us to the test as He did our forefathers: Aḇraham, and Yitsḥaq, and Ya‛aqoḇ.']},
+       {say:['uzziah','All that you have said has been spoken out of a true heart, and there is no one who can deny your words. But the people were very thirsty, and they compelled us to do for them what we have promised, and made us take an oath which we cannot break. So pray for us, since you are a reverent woman, and YAHUAH will send us rain to fill our cisterns.']},
       ]},
      {type:'interact',prop:'plan',text:'“YAHUAH will deliver by my hand”',hiddenUntil:1,
       script:[
-       {say:['judith','Listen to me. I am about to do a thing that shall go down through all the generations of our people. Stand at the city gate tonight — I will go out with my maid; and within the days you set for surrender, YAHUAH will deliver Yisra’ĕl by my hand. Only, do not ask what I plan; for I will not tell you until it is finished.']},
-       {say:['uzziah','Go in peace — and may YAHUAH Aluahim go before you, to take revenge upon our enemies.']},
+       {say:['judith','Listen to me. I am about to do a thing which will go down through all generations of our descendants. Stand at the city gate tonight, and I will go out with my maid; and within the days after which you have promised to surrender the city to our enemies, YAHUAH will deliver Yasharal by my hand.']},{say:['judith','Only, do not try to find out what I plan, for I will not tell you until I have finished what I am about to do.']},
+       {say:['uzziah','Go in shalom — and may YAHUAH Aluahim go before you, to take revenge upon our enemies.']},
        {rays:.55,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',14]},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“Who are you, to put Aluahim to the test, and set Him a day?” Yehudith rebuked the rulers — and then declared: “Stand at the gate tonight. Within your five days, YAHUAH will deliver Yisra’ĕl by my hand. Only, do not ask what I plan.” And Uzziah said, “Go in peace; may YAHUAH go before you.”', ref:'YEHUDITH 8:11–36'},
+   {art:'light', music:'holy', text:'“Who are you, that have put Aluahim to the test this day …?” … Yehudith said to them, “… Stand at the city gate tonight … and within the days after which you have promised to surrender the city to our enemies, YAHUAH will deliver Yasharal by my hand.” … Uzziah and the rulers said to her, “Go in shalom, and may YAHUAH Aluahim go before you.”', ref:'YEHUDITH 8:11–36', stage:{"set":"house","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"judith","x":0.37,"z":0.1,"face":"r","pose":"point","say":3,"acts":[{"at":1,"pose":"speak"},{"at":3,"pose":"raise"},{"at":4,"pose":"bow"}]},{"id":"maid","x":0.13,"z":0.25,"face":"r","pose":"stand"},{"id":"uzziah","x":0.62,"z":0.1,"face":"l","pose":"stand","say":4,"acts":[{"at":4,"pose":"bless"}]},{"id":"elder","x":0.76,"z":0.18,"face":"l","pose":"stand","hold":"staff"}],"crowd":[{"kind":"elders","n":3,"x":0.88,"w":0.1,"z":0.45,"face":"l"}]}},
   ],
-  complete:'A widow silences the elders — and takes the deliverance of Yisra’ĕl into her own two hands.'
+  complete:'A widow silences the elders — and takes the deliverance of Yasharal into her own two hands.'
 },
 
 { id:'j4', title:'The Prayer and the Adorning', ref:'YEHUDITH 9–10:5',
   intro:[
-   {art:'stars', music:'sorrow', text:'Then Yehudith fell on her face, and put ashes on her head, and uncovered her sackcloth; and at the hour when the evening incense was offered in Yerushalayim, she cried out to YAHUAH with a loud voice.', ref:'YEHUDITH 9:1'},
+   {art:'stars', music:'sorrow', text:'Then Yehudith fell upon her face, and put ashes on her head, and uncovered the sackcloth she was wearing; and at the very time when that evening’s incense was being offered in the house of Aluahim in Yerushalayim, Yehudith cried out to YAHUAH with a loud voice.', ref:'YEHUDITH 9:1', stage:{"set":"tentin","time":"night","cam":"close","focus":0.45,"cast":[{"id":"judith","look":{"sack":1},"x":0.44,"z":0.1,"face":"r","from":"stand","pose":"bow","at":0,"acts":[{"at":1,"pose":"pray"}],"say":1}],"fx":[{"k":"embers"},{"k":"smoke","at":1,"x":0.78},{"k":"rays","at":1,"x":0.46}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8204,
-     features:[ {type:'firepit',x:16,y:12,id:'ashes',examine:'Ashes on her head, and sackcloth uncovered — the prayer to the Aluahim of Shim‛on.'},{type:'standard',x:31,y:12,id:'adorn',examine:'The garments of gladness she wore while Menashsheh lived — sandals, anklets, bracelets, a tiara.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'firepit',x:16,y:12,id:'ashes',examine:'Ashes on her head, and sackcloth uncovered — the prayer to the Aluahim of Shim‛on.'},{type:'standard',x:31,y:12,id:'adorn',examine:'The gayest apparel she wore while Menashsheh lived — sandals, anklets, bracelets, a tiara.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'dusk', music:'sorrow',
    player:'judith', playerPos:[22,20],
    npcs:[ {id:'maid',char:'maid',x:26,y:15,wander:false} ],
    objectives:[
      {type:'interact',prop:'ashes',text:'Cry out to the Aluahim of the lowly',
       script:[
-       {say:['judith','O YAHUAH Aluahim of my father Shim‛on — Thou art Aluahim who crushest wars; YAHUAH is Thy Name. The Assyrians are exalted in their might; they glory in horse and rider, in shield and spear — and know not Thee. Break their strength by Thy might; bring down their power in Thy anger; for they intend to defile Thy set-apart place.']},
+       {say:['judith','O YAHUAH Aluahim of my father Shim‛on — behold now, the Assyrians are increased in their might; they are exalted, with their horses and riders; they trust in shield and spear, in bow and sling, and know not that Thou art YAHUAH who crushest wars; YAHUAH is Thy Name.']},{say:['judith','Break their strength by Thy might, and bring down their power in Thy anger; for they intend to defile Thy sanctuary, and to pollute the tabernacle where Thy esteemed Name rests.']},
        {say:['judith','Give to me, a widow, the strength to do what I plan. By the deceit of my lips, strike down the slave with the prince. For Thy power depends not upon numbers, nor Thy might upon the strong — Thou art the Aluahim of the lowly, the helper of the oppressed, the upholder of the weak, the savior of those without hope. Hear my prayer!']},
        {rays:.7,raysX:16},{sfx:'holy'},{burst:[16,12,'holy',18]},
       ]},
      {type:'interact',prop:'adorn',text:'Rise, and array yourself in beauty',hiddenUntil:1,
       script:[
-       {say:['narrator','When she had ended her prayer, she rose, and called her maid; and she took off the sackcloth and the garments of her widowhood, and bathed, and anointed herself with precious ointment, and combed her hair, and put on a tiara, and arrayed herself in her gayest apparel — sandals and anklets, bracelets and rings and earrings — and made herself very beautiful, to entice the eyes of all who might see her.']},
+       {say:['narrator','She rose from where she lay prostrate and called her maid; and she removed the sackcloth, and took off her widow’s garments, and bathed her body with water, and anointed herself with precious ointment, and combed her hair and put on a tiara, and arrayed herself in her gayest apparel.']},{say:['narrator','And she put sandals on her feet, and put on her anklets and bracelets and rings, and her earrings — and made herself very beautiful, to entice the eyes of all men who might see her.']},
        {charSwap:['player','judith_a']},
        {burst:[22,20,'holy',18]},{sfx:'chime'},
-       {say:['judith_a','Now — a bottle of wine, a flask of oil, parched grain, and fine bread. Come, my daughter. To the gate.']},
+       {say:['judith_a','Now — a bottle of wine and a flask of oil, and fill a bag with parched grain and a cake of dried fruit and fine bread. Come, my daughter. To the gate.']},
        {rays:.5,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',12]},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“Aluahim of the lowly, helper of the oppressed — crush their arrogance by the hand of a woman!” prayed Yehudith in ashes and sackcloth. Then she rose, and washed, and anointed herself, and put on the garments of gladness, and made herself beautiful — and with her maid, and bread and wine, she went out to the gate.', ref:'YEHUDITH 9:9–10:5'},
+   {art:'light', music:'holy', text:'“… Crush their arrogance by the hand of a woman … for thou art Aluahim of the lowly, helper of the oppressed …” She rose from where she lay prostrate … and took off her widow’s garments, and bathed her body with water, and anointed herself with precious ointment … and made herself very beautiful … And she gave her maid a bottle of wine …', ref:'YEHUDITH 9:9–10:5', stage:{"set":"house","time":"dawn","cam":"push","focus":0.45,"cast":[{"id":"judith","look":{"sack":1},"x":0.42,"z":0.1,"face":"r","pose":"pray","say":0,"acts":[{"at":2,"exit":"l"}]},{"id":"judith_a","at":4,"x":0.42,"z":0.1,"face":"r","pose":"stand","acts":[{"at":5,"pose":"hold"}]},{"id":"maid","x":0.7,"z":0.14,"face":"l","pose":"stand","hold":"pitcher","hold2":"basket","acts":[{"at":5,"to":0.56,"pose":"hold"}]}],"props":[{"k":"basket","x":0.84,"z":0.35,"fruit":"#c8a040"}],"fx":[{"k":"rays","at":2,"x":0.42}]}},
   ],
   complete:'From ashes to adorning — a prayer to the Aluahim of the lowly, and a widow arrayed for war.'
 },
@@ -6140,7 +6287,7 @@ STORY.push(
 
 { id:'j5', title:'Down to Holofernes', ref:'YEHUDITH 10:6–11:23',
   intro:[
-   {art:'vista_sunset', music:'tense', text:'Yehudith and her maid went out through the gate of Bethulia, down the mountain, and through the valley — until an Assyrian patrol met them, and took them, and brought them to the tent of Holofernes. And all the camp marveled at her beauty.', ref:'YEHUDITH 10:10–23'},
+   {art:'vista_sunset', music:'tense', text:'Yehudith went out, she and her maid with her; and the men of the city watched her until she had gone down the mountain and passed through the valley … and an Assyrian patrol met her and took her into custody … and they brought them to the tent of Holofernes. … And they marveled at her beauty.', ref:'YEHUDITH 10:10–23', stage:{"set":"valley","time":"dusk","cam":"pan-r","focus":0.6,"cast":[{"id":"judith_a","enter":"l","at":0,"to":0.38,"z":0.1,"face":"r","pose":"stand","acts":[{"at":3,"to":0.62}]},{"id":"maid","enter":"l","at":0,"to":0.26,"z":0.16,"face":"r","pose":"stand","hold":"basket","acts":[{"at":3,"to":0.5}]},{"id":"assyrian","enter":"r","at":2,"to":0.56,"z":0.12,"face":"l","pose":"point","hold":"spear","acts":[{"at":3,"to":0.8,"face":"l","pose":"stand"},{"at":4,"pose":"look"}]}],"crowd":[{"kind":"elders","n":4,"x":0.1,"w":0.12,"z":0.8,"face":"r","pose":"look","at":1},{"kind":"soldiers","side":"ashshur","n":4,"x":0.8,"w":0.16,"z":0.45,"face":"l","enter":"r","at":2}],"props":[{"k":"tent","x":0.9,"z":0.62,"color":"#6a2a3a","w":130,"h":80},{"k":"banner","x":0.84,"z":0.66,"color":"#6a2a3a"}]}},
   ],
   scene:{
    map:{biome:'desert', w:48, h:28, seed:8205,
@@ -6153,27 +6300,27 @@ STORY.push(
       script:[
        {say:['assyrian','To what people do you belong? Where are you coming from, and where are you going?']},
        {say:['judith_a','I am a daughter of the Heḇrews — but I am fleeing from them, for they are about to be handed over to you to be devoured. I go to Holofernes your commander, to give him a true report, and show him a way to take all the hill country without losing a single man.']},
-       {say:['assyrian','You have saved your life by hurrying down to our lord. She is marvellously fair — who can despise a people that has women like this? Go at once to his tent; we shall escort you.']},
+       {say:['assyrian','You have saved your life by hurrying down to the presence of our master. She is marvelously beautiful — who can despise these people, who have women like this among them? Go at once to his tent; some of us will escort you and hand you over to him.']},
       ]},
      {type:'goto',x:32,y:13,text:'Before the commander’s tent',radius:2.6,hiddenUntil:1,
       script:[
-       {say:['narrator','And Judith came before Holofernes and his servants, and they all marveled at the beauty of her face. She bowed low; and his slaves raised her up.']},
+       {say:['narrator','And when Yehudith came into the presence of Holofernes and his servants, they all marveled at the beauty of her face; and she prostrated herself and made obeisance to him, and his slaves raised her up.']},
        {say:['holofernes','Take courage, woman; do not be afraid in your heart. I have never hurt anyone who chose to serve Nebuḵaḏnetstsar. Tell me — why have you fled from your people to us?']},
-       {say:['judith_a','Their sin has caught up with them, my lord, and their Aluahim is angry. When their food fails and they lay hands on what is set-apart, then their Aluahim will give them to you to be destroyed. Let your servant go out each night to the valley to pray, and I shall know when their sin is complete — and I shall lead you through the midst of Yahuḏah, and none shall so much as growl at you.']},
+       {say:['judith_a','Their sin has caught up with them, my master, and their Aluahim is angry. When their food fails and they lay hands on what is qadash (Set Apart), then their Aluahim will give them to you to be destroyed.']},{say:['judith_a','Let your servant go out each night to the valley to pray, and I shall know when their sin is complete — and I shall lead you through the midst of Yahuḏah, and none shall so much as growl at you.']},
        {say:['holofernes','Aluahim has done well to send you before your people! Never has a woman been so fair of face and so wise of word. Eat and drink with us.']},
        {rays:.3,raysX:34},{sfx:'blip'},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'Yehudith went down through the valley into the enemy camp: “I am fleeing my people, for their sin has caught up with them — I will show you a way to take the hill country without losing a man.” And Holofernes, ravished by her beauty and her words, welcomed her — and gave her leave to go out each night to the valley to pray.', ref:'YEHUDITH 10:11–11:23'},
+   {art:'corrupt', music:'tense', text:'“I am a daughter of the Heḇrews, but I am fleeing from them … I will show him a way by which he can go and capture all the hill country without losing one of his men.” … “For a sin has overtaken them … and every night your servant will go out into the valley, and I will pray to Aluahim.” … Her words pleased Holofernes and all his servants.', ref:'YEHUDITH 10:11–11:23', stage:{"set":"tentin","time":"night","cam":"push","focus":0.55,"cast":[{"id":"judith_a","x":0.38,"z":0.1,"face":"r","from":"bow","pose":"speak","at":0,"say":1,"acts":[{"at":3,"pose":"pray"},{"at":4,"pose":"stand"}]},{"id":"maid","x":0.2,"z":0.2,"face":"r","pose":"bow","acts":[{"at":1,"pose":"kneel"}]},{"id":"holofernes","x":0.7,"z":0.12,"face":"l","pose":"enthroned"},{"id":"bagoas","x":0.86,"z":0.25,"face":"l","pose":"stand","acts":[{"at":4,"pose":"bless"}]}],"crowd":[{"kind":"guards","side":"ashshur","n":4,"x":0.62,"w":0.34,"z":0.72,"face":"l"}]}},
   ],
   complete:'Into the lion’s tent on a lie of deliverance — welcomed, and granted the freedom of the night.'
 },
 
 { id:'j6', title:'The Banquet', ref:'YEHUDITH 12',
   intro:[
-   {art:'vista_sunset', music:'tense', text:'For three days Yehudith stayed in the camp, going out each night to the valley to pray, and eating only what she had brought. On the fourth day, Holofernes held a banquet — for his household only — and sent Bagoas to bring the Heḇrew woman to eat and drink with him.', ref:'YEHUDITH 12:1–13'},
+   {art:'vista_sunset', music:'tense', text:'Yehudith said, “… I will be provided from the things I have brought with me.” … And she remained in the camp for three days, and went out each night to the valley of Bethulia … On the fourth day Holofernes held a banquet … and did not invite any of his officers. And he said to Bagoas, “… Go now and persuade the Heḇrew woman … to join us and eat and drink with us.”', ref:'YEHUDITH 12:1–13', stage:{"set":"camp","time":"night","cam":"push","focus":0.5,"cast":[{"id":"judith_a","x":0.36,"z":0.1,"face":"r","pose":"speak","say":0,"acts":[{"at":1,"to":0.22,"pose":"pray"},{"at":5,"pose":"stand","face":"r"}]},{"id":"maid","x":0.26,"z":0.2,"face":"r","pose":"stand","hold":"basket","acts":[{"at":1,"to":0.12,"pose":"kneel"}]},{"id":"holofernes","x":0.8,"z":0.12,"face":"l","pose":"hold","hold":"cup","at":2,"say":4,"acts":[{"at":4,"pose":"point"}]},{"id":"bagoas","x":0.64,"z":0.14,"face":"r","pose":"stand","at":4,"say":6,"acts":[{"at":5,"to":0.38,"face":"l","pose":"speak"}]}],"crowd":[{"kind":"guards","side":"ashshur","n":3,"x":0.62,"w":0.2,"z":0.72,"face":"l","exit":"r","exitAt":3}],"props":[{"k":"tent","x":0.84,"z":0.6,"color":"#6a2a3a","w":140,"h":85},{"k":"table","x":0.7,"z":0.3,"cups":1,"at":2},{"k":"fire","x":0.46,"z":0.5}]}},
   ],
   scene:{
    map:{biome:'desert', w:46, h:28, seed:8206,
@@ -6184,23 +6331,23 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'bagoas',text:'Bagoas summons her to the feast',
       script:[
-       {say:['bagoas','This fair maidservant will please come to my lord, and be honored in his presence, and drink wine and be merry with us.']},
-       {say:['judith_a','Who am I, to refuse my lord? Whatever pleases him I will do at once — and it shall be a joy to me until the day of my death.']},
+       {say:['bagoas','This beautiful maidservant will please come to my master and be respected in his presence, and drink wine and be merry with us.']},
+       {say:['judith_a','Who am I, to refuse my master? Surely whatever pleases him I will do at once, and it will be a joy to me until the day of my death!']},
       ]},
      {type:'interact',prop:'feast',text:'The banquet — and the drunken stupor',hiddenUntil:1,
       script:[
        {say:['holofernes','Drink now, and be merry with us! Never has my heart been so ravished — since the day I first saw you, I have waited for this.']},
-       {say:['judith_a','I will drink, my lord — for my life means more to me today than in all the days since I was born.']},
-       {say:['narrator','And Holofernes was greatly pleased with her, and drank a great quantity of wine — much more than he had ever drunk in any single day since he was born. When evening came, his slaves quickly withdrew; Bagoas closed the tent from outside; and they went to bed, weary, for the banquet had lasted long.']},
+       {say:['judith_a','I will drink now, my master, because my life means more to me today than in all the days since I was born.']},
+       {say:['narrator','And Holofernes was greatly pleased with her, and drank a great quantity of wine, much more than he had ever drunk in any one day since he was born. When evening came, his slaves quickly withdrew, and Bagoas closed the tent from outside and shut out the attendants from his master’s presence; and they went to bed, for they all were weary because the banquet had lasted long.']},
        {call:G=>{ const n=G.world.npcs.find(n=>n.id==='holofernes'); if(n){ n.lying=true; } const b=G.world.npcs.find(n=>n.id==='bagoas'); if(b){ b.hidden=true; } }},
        {sfx:'bad'},{wait:600},
-       {say:['narrator','So Yehudith was left alone in the tent, with Holofernes stretched on his bed, overcome with wine.']},
+       {say:['narrator','So Yehudith was left alone in the tent, with Holofernes stretched out on his bed, for he was overcome with wine.']},
        {music:'tense'},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'On the fourth day Holofernes feasted, his heart ravished with desire — and drank more wine than he had ever drunk in one day since he was born. When the banquet ended, his slaves withdrew and shut the tent from outside; and Yehudith was left alone with Holofernes, stretched on his bed, overcome with wine.', ref:'YEHUDITH 12:10–13:2'},
+   {art:'corrupt', music:'tense', text:'Holofernes’ heart was ravished with her … and drank a great quantity of wine, much more than he had ever drunk in any one day since he was born. When evening came, his slaves quickly withdrew, and Bagoas closed the tent from outside … So Yehudith was left alone in the tent, with Holofernes stretched out on his bed, for he was overcome with wine.', ref:'YEHUDITH 12:10–13:2', stage:{"set":"tentin","time":"night","cam":"push","focus":0.55,"cast":[{"id":"holofernes","x":0.68,"z":0.14,"face":"l","pose":"hold","hold":"cup","onbed":1,"acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"lie"}]},{"id":"judith_a","x":0.4,"z":0.1,"face":"r","pose":"stand"},{"id":"bagoas","x":0.2,"z":0.2,"face":"r","pose":"stand","acts":[{"at":2,"exit":"l"}]}],"crowd":[{"kind":"people","n":3,"x":0.16,"w":0.12,"z":0.55,"face":"r","pose":"carry","hold":"pitcher","exit":"l","exitAt":2}],"props":[{"k":"table","x":0.54,"z":0.4,"cups":1}],"fx":[{"k":"darkness","at":3,"amt":0.25}]}},
   ],
   complete:'The trap sprung by wine — the commander senseless on his bed, and the widow alone in the tent.'
 },
@@ -6212,45 +6359,45 @@ STORY.push(
 
 { id:'j7', title:'The Sword and the Head', ref:'YEHUDITH 13:1–20',
   intro:[
-   {art:'stars', music:'tense', text:'Every one had gone out; no one, small or great, was left in the bedchamber. And Yehudith, standing beside his bed, said in her heart, “O YAHUAH Aluahim of all might, look in this hour on the work of my hands, for the exaltation of Yerushalayim.”', ref:'YEHUDITH 13:4–5'},
+   {art:'stars', music:'tense', text:'So every one went out, and no one, either small or great, was left in the bedchamber. Then Yehudith, standing beside his bed, said in her heart, “O YAHUAH Aluahim of all might, look in this hour upon the work of my hands for the exaltation of Yerushalayim.”', ref:'YEHUDITH 13:4–5', stage:{"set":"tentin","time":"night","cam":"close","focus":0.5,"cast":[{"id":"holofernes","x":0.64,"z":0.14,"face":"l","pose":"lie","onbed":1,"label":false},{"id":"judith_a","x":0.4,"z":0.1,"face":"r","pose":"stand","acts":[{"at":1,"pose":"look"}]}],"props":[{"k":"pillar","x":0.84,"z":0.3,"h":120,"w":10,"color":"#6a4a2a"},{"k":"sword","x":0.84,"z":0.3,"dy":-0.2,"a":-0.3,"s":0.5}],"fx":[{"k":"darkness","amt":0.2},{"k":"rays","at":1,"x":0.4}]}},
   ],
   scene:{
    map:{biome:'desert', w:44, h:28, seed:8207,
-     features:[ {type:'wartent',x:22,y:9,id:'tent',examine:'The bedchamber — Holofernes on his bed, and his sword hanging at the bedpost above his head.'},{type:'sword',x:26,y:13,id:'sword',examine:'His own sword, hanging at the post above his head. “Give me strength this day, O YAHUAH Aluahim of Yisra’ĕl.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'wartent',x:22,y:9,id:'tent',examine:'The bedchamber — Holofernes on his bed, and his sword hanging at the bedpost above his head.'},{type:'sword',x:26,y:13,id:'sword',examine:'His own sword, hanging at the post above his head. “Give me strength this day, O YAHUAH Aluahim of Yasharal.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'night', music:'tense',
    player:'judith_a', playerPos:[22,20],
    npcs:[ {id:'holofernes',char:'holofernes',x:22,y:13,wander:false,noTalk:true,lying:true},{id:'maid',char:'maid',x:19,y:17,wander:false} ],
    objectives:[
      {type:'interact',prop:'sword',text:'Take down his sword',
       script:[
-       {say:['judith_a','For now is the time to help Thy inheritance, and to carry out my undertaking against the enemies who have risen against us…']},
-       {say:['judith_a','Give me strength this day, O YAHUAH Aluahim of Yisra’ĕl!']},
+       {say:['judith_a','For now is the time to help Thy inheritance, and to carry out my undertaking for the destruction of the enemies who have risen up against us…']},
+       {say:['judith_a','Give me strength this day, O YAHUAH Aluahim of Yasharal!']},
        {call:G=>{ if(G.world) G.world.flashT=0.7; }},{shake:.9},{sfx:'bad'},
-       {say:['narrator','And she took hold of the hair of his head, and struck his neck twice with all her might, and severed it from his body. Then she tumbled his body off the bed, and pulled down the canopy from the posts.']},
+       {say:['narrator','She came close to his bed and took hold of the hair of his head. And she struck his neck twice with all her might, and severed it from his body. Then she tumbled his body off the bed and pulled down the canopy from the posts.']},
        {call:G=>{ const n=G.world.npcs.find(n=>n.id==='holofernes'); if(n){ n.hidden=true; Particles.burst(n.x*TILE,n.y*TILE,'ash',12); }
                   const p=G.world.map.decor.find(d=>d.id==='tent'); if(p){ p.type='rubble'; } }},
        {shake:.6},{sfx:'thunder'},{burst:[22,10,'ash',16]},
       ]},
      {type:'goto',x:22,y:22,text:'Away through the camp, to the gate',radius:2.4,hiddenUntil:1,
       script:[
-       {say:['narrator','She gave the head to her maid, who placed it in the food bag; and the two went out together, as they did each night for prayer, and passed through the camp, and circled the valley, and went up the mountain to Bethulia.']},
-       {say:['judith_a','Open, open the gate! Aluahim, our Aluahim, is still with us — to show His power in Yisra’ĕl, and His strength against our enemies, this very day!']},
+       {say:['narrator','She gave the head to her maid, who placed it in the food bag. Then the two of them went out together, as they were accustomed to go for prayer; and they passed through the camp and circled around the valley and went up the mountain to Bethulia and came to its gates.']},
+       {say:['judith_a','Open, open the gate! Aluahim, our Aluahim, is still with us, to show His power in Yasharal, and His strength against our enemies, even as He has done this day!']},
        {rays:.6,raysX:22},{sfx:'holy'},{burst:[22,20,'holy',16]},
-       {say:['narrator','And the men of the city ran together, for it was unbelievable that she had returned. She lifted the head from the bag: “See — the head of Holofernes, the commander of the Assyrian army! YAHUAH has struck him down by the hand of a woman — and yet, as YAHUAH lives, he committed no sin with me.”']},
-       {say:['elder','Blessed are you, daughter, by the Most High Aluahim above all women on earth! Blessed be YAHUAH, who has guided you to strike the head of the leader of our enemies.']},
+       {say:['narrator','They all ran together, both small and great, for it was unbelievable that she had returned. Then she took the head out of the bag and showed it to them: “See, here is the head of Holofernes, the commander of the Assyrian army!”']},{say:['narrator','“YAHUAH has struck him down by the hand of a woman. As YAHUAH lives, it was my face that tricked him to his destruction, and yet he committed no act of sin with me.”']},
+       {say:['elder','O daughter, you are baruk by the Most High Aluahim above all women on earth; and baruk be YAHUAH Aluahim, who created the shamayim and the earth, who has guided you to strike the head of the leader of our enemies.']},
        {burst:[22,20,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“Give me strength this day, O YAHUAH!” — and Yehudith took his own sword, and struck twice, and severed the head of Holofernes; and with her maid she carried it through the camp and up to Bethulia. “See the head of the commander of Ashshur — YAHUAH has struck him down by the hand of a woman!” And the people bowed and worshiped Aluahim.', ref:'YEHUDITH 13:6–20'},
+   {art:'light', music:'holy', text:'She … took down his sword that hung there … and said, “Give me strength this day, O YAHUAH Aluahim of Yasharal!” And she struck his neck twice with all her might, and severed it from his body. … They passed through the camp … and went up the mountain to Bethulia. … “See, here is the head of Holofernes … YAHUAH has struck him down by the hand of a woman.” All the people … bowed down and worshiped Aluahim.', ref:'YEHUDITH 13:6–20', stage:{"set":"walls","time":"night","cam":"push","focus":0.5,"cast":[{"id":"holofernes","x":0.15,"z":0.2,"face":"r","pose":"lie","onbed":1,"label":false,"acts":[{"at":2,"pose":"dead"}]},{"id":"judith_a","x":0.3,"z":0.1,"face":"l","pose":"hold","hold":"sword","say":5,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"strike"},{"at":3,"to":0.62,"face":"r","pose":"stand"},{"at":5,"pose":"raise"}]},{"id":"maid","x":0.41,"z":0.16,"face":"l","pose":"stand","hold":"basket","acts":[{"at":3,"to":0.5,"face":"r"}]},{"id":"uzziah","x":0.84,"z":0.14,"face":"l","pose":"stand","acts":[{"at":7,"pose":"bow"}]}],"crowd":[{"kind":"people","n":8,"x":0.78,"w":0.3,"z":0.55,"face":"l","from":"stand","pose":"bow","at":7}],"props":[{"k":"tent","x":0.15,"z":0.5,"color":"#6a2a3a","w":140,"h":85}],"fx":[{"k":"rays","at":6,"x":0.62}]}},
   ],
   complete:'By the hand of a woman — the commander of a hundred and seventy thousand, felled with his own sword.'
 },
 
-{ id:'j8', title:'The Rout of Ashshur', ref:'YEHUDITH 14–16',
+{ id:'j8', title:'The Assyrians Routed', ref:'YEHUDITH 14–16',
   intro:[
-   {art:'vista', music:'tense', text:'“Hang this head upon the parapet of the wall,” said Yehudith. “And at dawn, let every valiant man take his weapons and go out as if to battle — but do not go down. Then the Assyrians will run to rouse Holofernes, and will not find him; and fear will fall upon them, and they will flee.”', ref:'YEHUDITH 14:1–4'},
+   {art:'vista', music:'tense', text:'Then Yehudith said to them, “… Take this head and hang it upon the parapet of your wall. And as soon as morning comes … let every valiant man take his weapons … as if you were going down to the plain … only do not go down. … And they will rush into the tent of Holofernes, and will not find him. Then fear will come over them, and they will flee before you.”', ref:'YEHUDITH 14:1–4', stage:{"set":"gate","time":"dawn","cam":"push","focus":0.45,"cast":[{"id":"judith_a","x":0.3,"z":0.1,"face":"r","pose":"speak","say":1,"acts":[{"at":1,"pose":"point"},{"at":3,"pose":"speak"},{"at":5,"pose":"point"},{"at":6,"pose":"raise"}]},{"id":"uzziah","x":0.56,"z":0.12,"face":"l","pose":"stand"},{"id":"soldier","x":0.7,"z":0.14,"face":"l","pose":"stand","hold":"spear","at":2}],"crowd":[{"kind":"soldiers","side":"yasharal","n":8,"x":0.6,"w":0.6,"z":0.78,"face":"l","enter":"r","at":3}],"props":[{"k":"basket","x":0.8,"z":0.9,"dy":-0.32,"at":1},{"k":"banner","x":0.2,"z":0.8,"color":"#3a5a8a","at":3}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:8208,
@@ -6261,34 +6408,34 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'achior',text:'Achior sees the head — and believes',
       script:[
-       {say:['narrator','They brought Achior the Ammonite; and when he saw the head of Holofernes in the hand of a man of the assembly, he fell on his face, and his spirit failed. And when they raised him up, he fell at Yehudith’s feet.']},
-       {say:['achior','Blessed are you in every tent of Yahuḏah! In every nation, those who hear your name will be alarmed. …And when I saw all that the Aluahim of Yisra’ĕl has done — I believed firmly in Aluahim, and was circumcised, and joined the house of Yisra’ĕl.']},
+       {say:['narrator','So they summoned Achior from the house of Uzziah. And when he came and saw the head of Holofernes in the hand of one of the men at the gathering of the people, he fell down on his face and his ruach failed him. And when they raised him up he fell at Yehudith’s feet, and knelt before her.']},
+       {say:['achior','Baruk are you in every tent of Yahuḏah! In every nation, those who hear your name will be alarmed. …And when I saw all that the Aluahim of Yasharal has done — I believed firmly in Aluahim, and was circumcised, and joined the house of Yasharal.']},
        {rays:.5,raysX:20},{sfx:'holy'},{burst:[20,15,'holy',12]},
       ]},
      {type:'goto',x:24,y:14,text:'At dawn — march out, and rout them',radius:2.4,hiddenUntil:1,
       script:[
-       {say:['judith_a','It is dawn — the head is on the wall. Now every man take his weapons, and go out in companies, as if to battle. They will run to wake Holofernes, and find him headless — and their hearts will melt.']},
+       {say:['judith_a','It is dawn — the head is on the wall. Now let every valiant man take his weapons and go out of the city, and set a captain over them, as if you were going down to the plain against the Assyrian outpost, only do not go down. They will rush into the tent of Holofernes, and will not find him. Then fear will come over them, and they will flee before you.']},
        {spawn:{id:'x1',char:'assyrian',x:8,y:16,wander:false,noTalk:true}},
        {spawn:{id:'x2',char:'assyrian',x:6,y:19,wander:false,noTalk:true}},
        {spawn:{id:'x3',char:'assyrian',x:9,y:22,wander:false,noTalk:true}},
        {sfx:'bad'},{shake:.4},
        {say:['soldier','They pour from their tents in terror — “One Heḇrew woman has brought disgrace on the house of Nebuḵaḏnetstsar!” After them!']},
        {battle:{foes:['x1','x2','x3'],hits:2,text:'The Assyrians break and flee — pursue and cut them down!',won:'The camp is in full flight!'}},
-       {say:['narrator','Fear and trembling fell on them, and they did not wait for one another, but fled by every path across the plain and through the hill country. And the men of Yisra’ĕl rushed out and cut them down, from Bethulia as far as Damascus; and they plundered the camp for thirty days.']},
+       {say:['narrator','Fear and trembling came over them, so that they did not wait for one another, but with one impulse all rushed out and fled by every path across the plain and through the hill country.']},{say:['narrator','Then the men of Yasharal, every one that was a soldier, rushed out upon them; with one accord they fell upon the enemy, and cut them down … even beyond Damascus and its borders. So all the people plundered the camp for thirty days.']},
        {rays:.6,raysX:24},{sfx:'holy'},{burst:[24,12,'holy',16]},
       ]},
      {type:'talk',npc:'judith',text:'The song of Yehudith',hiddenUntil:2,
       script:[
-       {say:['narrator','And Yoyaqim the high kohen, and the elders of Yisra’ĕl, came to see her; and they blessed her with one accord: “You are the exaltation of Yerushalayim! You are the great glory of Yisra’ĕl! You are the great pride of our nation! You have done all this by your own hand.”']},
-       {say:['judith_a','Begin a song to my Aluahim with tambourines; sing to YAHUAH with cymbals! For YAHUAH is Aluahim who crushes wars — He did not fall by the hand of the young men, nor did the sons of the titans strike him down; but Yehudith the daughter of Merari undid him by the beauty of her face. YAHUAH Almighty has foiled them by the hand of a woman!']},
+       {say:['narrator','Then Yoyaqim the kohen gadol, and the senate of the people of Yasharal who lived at Yerushalayim, came to witness the good things which YAHUAH had done for Yasharal, and to see her and to greet her; and they all baruk her with one accord: “You are the exaltation of Yerushalayim! You are the great esteem of Yasharal! You are the great pride of our nation! You have done all this singlehanded!”']},
+       {say:['judith_a','Begin a song to my Aluahim with tambourines, sing to my YAHUAH with cymbals! For Aluahim is YAHUAH who crushes wars — their mighty one did not fall by the hands of the young men, nor did the sons of the Titans smite him; but Yehudith the daughter of Merari undid him with the beauty of her countenance. YAHUAH Almighty has foiled them by the hand of a woman!']},
        {rays:.85,raysX:27},{sfx:'holy'},{burst:[27,15,'holy',22]},
-       {say:['narrator','And all the women of Yisra’ĕl gathered to see her, and blessed her, and danced; and she took branches in her hands, and went before all the people in the dance, and all the men followed, bearing their arms and crowned with garlands, with songs on their lips.']},
+       {say:['narrator','Then all the women of Yasharal gathered to see her, and baruk her, and some of them performed a dance for her; and she took branches in her hands and gave them to the women who were with her; and they crowned themselves with olive wreaths; and she went before all the people in the dance, leading all the women, while all the men of Yasharal followed, bearing their arms and wearing garlands and with songs on their lips.']},
        {burst:[24,10,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'The head on the parapet, the feint at dawn — and the Assyrians, finding their commander headless, fled in terror by every path, and Yisra’ĕl cut them down and plundered the camp thirty days. And Yehudith sang: “YAHUAH is Aluahim who crushes wars — He has foiled them by the hand of a woman!” And all the people danced before her, crowned with garlands.', ref:'YEHUDITH 14:11–16:17'},
+   {art:'reunion', music:'holy', text:'They hung the head of Holofernes on the wall … “Here is Holofernes lying on the ground, and his head is not on him!” … Fear and trembling came over them … all rushed out and fled by every path … So all the people plundered the camp for thirty days. … She went before all the people in the dance … And Yehudith said, “… For Aluahim is YAHUAH who crushes wars … But YAHUAH Almighty has foiled them by the hand of a woman.”', ref:'YEHUDITH 14:11–16:17', stage:{"set":"camp","time":"day","cam":"pan-r","focus":0.5,"cast":[{"id":"bagoas","x":0.34,"z":0.14,"face":"r","pose":"raise","say":1,"acts":[{"at":1,"pose":"weep"},{"at":3,"exit":"r","run":1}]},{"id":"judith_a","at":5,"x":0.46,"z":0.1,"face":"r","pose":"dance","hold":"branch","say":6,"acts":[{"at":6,"pose":"raise"},{"at":7,"pose":"dance"}]},{"id":"maid","at":5,"x":0.3,"z":0.16,"face":"r","pose":"dance","hold":"branch"}],"crowd":[{"kind":"soldiers","side":"ashshur","n":8,"x":0.66,"w":0.4,"z":0.55,"face":"l","pose":"look","exit":"r","exitAt":3,"run":1},{"kind":"people","n":5,"x":0.72,"w":0.3,"z":0.72,"face":"l","pose":"carry","enter":"l","at":4,"hold":"basket"},{"kind":"women","n":7,"x":0.42,"w":0.56,"z":0.62,"face":"r","pose":"dance","enter":"l","at":5,"hold":"branch"}],"props":[{"k":"tent","x":0.22,"z":0.55,"color":"#6a2a3a","w":140,"h":85},{"k":"tent","x":0.84,"z":0.8,"color":"#6a5440"},{"k":"sacks","x":0.9,"z":0.4,"n":5,"at":4}]}},
   ],
   complete:'The mighty host scattered by one widow’s courage — the hand of a woman, and the crushing of wars.'
 },
@@ -6335,7 +6482,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6401,7 +6548,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6462,9 +6612,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],['YEHUDITH','apoc-judith'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],['YEHUDITH','apoc-judith'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6549,5 +6699,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Hoshĕa</h2>
-    <div class="hint">Four acts · HOSHĔA — the prophet whose marriage became a sign to the whole nation, from the wife of whoredom and the children of a broken covenant, through the LORD’s controversy with the land, the calf of Shomeron, and the wind that becomes a whirlwind, to the Father who cannot give His son up, the ransom from the grave, and the free healing of a bride restored</div>
+    <div class="hint">Four acts · HOSHĔA — the naḇi whose marriage became a sign to the whole nation, from the wife of whoredom and the children of a broken berith, through YAHUAH’s controversy with the land, the calf of Shomeron, and the wind that becomes a whirlwind, to the Father who cannot give His son up, the ransom from the grave, and the free healing of a bride restored</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -620,8 +652,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -729,7 +761,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -829,7 +861,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1091,6 +1125,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1134,7 +1178,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1396,6 +1442,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2877,6 +2933,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -3072,7 +3148,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3277,8 +3353,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3765,6 +3842,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3828,7 +3906,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3880,15 +3962,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3899,6 +4015,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3924,6 +4046,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3952,6 +4075,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3969,7 +4093,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4109,6 +4233,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4172,17 +4301,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4346,22 +4476,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4374,7 +4508,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4397,11 +4531,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5762,7 +5909,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5807,8 +5954,8 @@ Object.assign(CHARS,{
   yizreel:{name:'Yizreʿel', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#8a7a4a', child:true},
   loruchamah:{name:'Lo-Ruḥamah', skin:'#b58a5c', hair:'#3a2416', hairStyle:'long', robe:'#9c6a7a', child:true},
   loammi:{name:'Lo-Ammi', skin:'#83552d', hair:'#231409', hairStyle:'short', robe:'#6a6a4a', child:true},
-  baalpriest:{name:'A Priest of Baʿal', skin:'#8a6038', hair:'#1d1208', hairStyle:'short', robe:'#5a2030', beard:'#1d1208', headcover:'#7a2a3a'},
-  ephraimking:{name:'The King in Shomeron', skin:'#a07048', hair:'#1d1208', hairStyle:'short', robe:'#3a4a6e', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
+  baalpriest:{name:'A Kohen of Baʿal', skin:'#8a6038', hair:'#1d1208', hairStyle:'short', robe:'#5a2030', beard:'#1d1208', headcover:'#7a2a3a'},
+  ephraimking:{name:'The Sovereign in Shomeron', skin:'#a07048', hair:'#1d1208', hairStyle:'short', robe:'#3a4a6e', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   merchant:{name:'A Merchant of the Market', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#5a5030', beard:'#231409', headcover:'#8a7a4a'},
   ashshur:{name:'An Envoy of Ashshur', skin:'#9a7048', hair:'#1d1208', hairStyle:'short', robe:'#4a4038', beard:'#1d1208', headcover:'#6a5a4a'},
 });
@@ -5817,53 +5964,53 @@ const STORY=[];
 STORY.push(
 
 /* ============ ACT I — THE PROPHET AND HIS WIFE ============ */
-{ id:'hact1', roman:'I', title:'The Prophet and His Wife', ref:'HOSHĔA 1–3', chapters:[
+{ id:'hact1', roman:'I', title:'The Naḇi and His Wife', ref:'HOSHĔA 1–3', chapters:[
 
 { id:'h1', title:'A Wife of Whoredom', ref:'HOSHĔA 1',
   intro:[
-   {art:'land', music:'sorrow', text:'The word of YAHUAH that came to Hoshĕa son of Be’ĕri, in the days of Uzziyah, Yotham, Aḥaz, and Ḥizqiyahu, sovereigns of Yahuḏah, and in the days of Yaraḇʿam son of Yo’ash, sovereign of Yisra’ĕl. The beginning of the word of YAHUAH through Hoshĕa. And YAHUAH said, “Go, take yourself a wife of whoredom and children of whoredom, for the land has utterly whored away from YAHUAH.” So he went and took Gomer daughter of Diḇlayim, and she conceived and bore him a son.', ref:'HOSHĔA 1:1–3'},
+   {art:'land', music:'sorrow', text:'The word of YAHUAH that came to Hoshĕa son of Be’ĕri, in the days of Uzziyah, Yotham, Aḥaz, and Ḥizqiyahu, sovereigns of Yahuḏah, and in the days of Yaraḇʿam son of Yo’ash, sovereign of Yasharal. The beginning of the word of YAHUAH with Hoshĕa. And YAHUAH said to Hoshĕa, “Go, take yourself a woman of whoring and children of whoring, for the land has utterly whored away from YAHUAH.” So he went and took Gomer daughter of Diḇlayim, and she conceived and bore him a son.', ref:'HOSHĔA 1:1–3', stage:{"set":"city","time":"day","cam":"push","focus":0.5,"cast":[{"id":"voice","x":0.16,"z":0},{"id":"hoshea","x":0.3,"z":0.1,"face":"l","pose":"look","hold":"scroll","acts":[{"at":2,"pose":"kneel"},{"at":3,"to":0.54,"face":"r","pose":"stand"}]},{"id":"gomer","x":0.74,"z":0.12,"face":"l","pose":"stand","at":2},{"id":"yizreel","x":0.85,"z":0.04,"face":"l","at":3}],"crowd":[{"kind":"people","n":5,"x":0.6,"w":0.5,"z":0.66,"face":"l"}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:28, seed:9001,
-     features:[ {type:'house',x:22,y:9,id:'home',examine:'The house of Hoshĕa the prophet — where a marriage becomes a sign to the whole nation.'},{type:'well',x:14,y:16,id:'well'},{type:'wheat',x:31,y:17},{type:'sheaf',x:30,y:19,id:'harvest',examine:'The harvest of Yizreʿel — “Aluahim sows.” The valley where blood was shed, and where the seed of a people will be scattered.'},{type:'tree',x:10,y:11},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'house',x:22,y:9,id:'home',examine:'The house of Hoshĕa the naḇi — where a marriage becomes a sign to the whole nation.'},{type:'well',x:14,y:16,id:'well'},{type:'wheat',x:31,y:17},{type:'sheaf',x:30,y:19,id:'harvest',examine:'The harvest of Yizreʿel — “Aluahim sows.” The valley where blood was shed, and where the seed of a people will be scattered.'},{type:'tree',x:10,y:11},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'sorrow',
    player:'hoshea', playerPos:[22,20],
    npcs:[ {id:'gomer',char:'gomer',x:20,y:12,wander:false},{id:'yizreel',char:'yizreel',x:24,y:13,wander:true} ],
    objectives:[
      {type:'talk',npc:'gomer',text:'Take Gomer to wife — and name the son YAHUAH gives you',
       script:[
-       {say:['narrator','So he took Gomer, and she conceived and bore him a son. And YAHUAH said to Hoshĕa:']},
-       {say:['voice','Call his name Yizreʿel, for in a little while I shall avenge the blood of Yizreʿel on the house of Yĕhu, and I shall make the reign of the house of Yisra’ĕl to cease. And in that day I shall break the bow of Yisra’ĕl in the Valley of Yizreʿel.']},
+       {say:['narrator','So he went and took Gomer, daughter of Diḇlayim, and she conceived and bore him a son. And YAHUAH said to Hoshĕa:']},
+       {say:['voice','Call his name Yizreʿel, for in a little while I shall revenge the bloodshed of Yizreʿel on the house of Yĕhu and put an end to the reign of the house of Yasharal. And it shall be in that day that I shall break the bow of Yasharal in the Valley of Yizreʿel.']},
        {say:['hoshea','Yizreʿel — Aluahim sows. A name that is at once a judgment and a seed.']},
        {burst:[24,13,'mote',10]},{sfx:'chime'},
       ]},
-     {type:'interact',prop:'home',text:'Receive the daughter and the second son — the names of a broken covenant',hiddenUntil:1,
+     {type:'interact',prop:'home',text:'Receive the daughter and the second son — the names of a broken berith',hiddenUntil:1,
       script:[
-       {say:['narrator','And she conceived again and bore a daughter. And YAHUAH said to him, “Call her name Lo-Ruḥamah — Not-Pitied — for I no longer have compassion on the house of Yisra’ĕl, that I should ever forgive them.”']},
+       {say:['narrator','And she conceived again and bore a daughter. And YAHUAH said to him, “Call her name Lo-Ruḥamah — Not-Pitied — for no longer do I have compassion on the house of Yasharal so as to forgive them at all.”']},
        {say:['narrator','Then she weaned Lo-Ruḥamah, and conceived and bore a son. And He said, “Call his name Lo-Ammi — Not-My-People — for you are not My people, and I am not your Aluah.”']},
-       {say:['hoshea','Not-Pitied. Not-My-People. In my own house I carry the sentence of my nation, and my children’s names are the LORD’s grief spoken aloud.']},
+       {say:['hoshea','Not-Pitied. Not-My-People. In my own house I carry the sentence of my nation, and my children’s names are YAHUAH’s grief spoken aloud.']},
        {rays:.5,raysX:22},{sfx:'holy'},
-       {say:['voice','Yet the number of the children of Yisra’ĕl shall be as the sand of the sea, which is not measured nor numbered. And in the place where it was said to them, “You are not My people,” there it shall be said to them, “Sons of the living Aluah.”']},
+       {say:['voice','Yet the number of the children of Yasharal shall be as the sand of the sea, which is not measured nor counted. And it shall be in the place where it was said to them, “You are not My people,” they shall be called, “You are the sons of the living Al.”']},
        {burst:[22,9,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'land', music:'sorrow', text:'And YAHUAH said to him, “Call his name Yizreʿel, for in a little while I shall avenge the blood of Yizreʿel on the house of Yĕhu, and shall make the reign of the house of Yisra’ĕl to cease. And in that day I shall break the bow of Yisra’ĕl in the Valley of Yizreʿel.”', ref:'HOSHĔA 1:4–5'},
-   {art:'land', music:'sorrow', text:'And she conceived again and bore a daughter. And He said, “Call her name Lo-Ruḥamah — Not-Pitied — for no longer do I have compassion on the house of Yisra’ĕl, that I should ever forgive them. But I shall have compassion on the house of Yahuḏah, and save them by YAHUAH their Aluah — not by bow or sword or battle, by horses or by horsemen.”', ref:'HOSHĔA 1:6–7'},
-   {art:'land', music:'sorrow', text:'And she weaned Lo-Ruḥamah, and conceived and bore a son. And He said, “Call his name Lo-Ammi — Not-My-People — for you are not My people, and I am not your Aluah.”', ref:'HOSHĔA 1:8–9'},
-   {art:'stars', music:'holy', text:'Yet the number of the children of Yisra’ĕl shall be as the sand of the sea, which is not measured nor numbered. And in the place where it was said to them, “You are not My people,” there it shall be said to them, “Sons of the living Aluah.” And the children of Yahuḏah and the children of Yisra’ĕl shall be gathered together, and appoint for themselves one head, and go up out of the land — for great is the day of Yizreʿel!', ref:'HOSHĔA 1:10–11'},
+   {art:'land', music:'sorrow', text:'And YAHUAH said to him, “Call his name Yizreʿel, for in a little while I shall revenge the bloodshed of Yizreʿel on the house of Yĕhu and put an end to the reign of the house of Yasharal. And it shall be in that day that I shall break the bow of Yasharal in the Valley of Yizreʿel.”', ref:'HOSHĔA 1:4–5', stage:{"set":"valley","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"hoshea","x":0.18,"z":0.1,"face":"r","pose":"hold","hold":"child","say":0},{"id":"ephraimking","x":0.56,"z":0.2,"face":"l","pose":"stand","crown":1,"acts":[{"at":1,"pose":"fall"}]}],"crowd":[{"kind":"soldiers","n":5,"x":0.64,"w":0.3,"z":0.52,"side":"yasharal","face":"r","hold":"bow","pose":"fall","at":1,"from":"stand"},{"kind":"army","n":6,"x":0.88,"w":0.18,"z":0.62,"side":"ashshur","face":"l","enter":"r","at":1,"pose":"fight"}],"fx":[{"k":"glory","x":0.12,"y":0.05},{"k":"red","at":1,"amt":0.18},{"k":"smoke","x":0.76,"at":1}]}},
+   {art:'land', music:'sorrow', text:'And she conceived again and bore a daughter. And He said to him, “Call her name Lo-Ruḥamah, for no longer do I have compassion on the house of Yasharal so as to forgive them at all. But I shall have compassion on the house of Yahuḏah and save them by YAHUAH their Aluahim and not save them by bow or by sword or battle, by horses or horsemen.”', ref:'HOSHĔA 1:6–7', stage:{"set":"house","cam":"close","focus":0.5,"cast":[{"id":"hoshea","x":0.36,"z":0.12,"face":"r","pose":"stand","say":1,"acts":[{"at":2,"pose":"look"}]},{"id":"gomer","x":0.62,"z":0.1,"face":"l","pose":"carry","hold":"baby"},{"id":"yizreel","x":0.8,"z":0.04,"face":"l"}],"props":[{"k":"table","x":0.14,"z":0.4}],"fx":[{"k":"glory","x":0.45,"y":0.02,"at":1},{"k":"rays","x":0.5,"at":2}]}},
+   {art:'land', music:'sorrow', text:'And she weaned Lo-Ruḥamah and conceived and bore a son, then He said, “Call his name Lo-Ammi, for you are not My people and I am not for you.”', ref:'HOSHĔA 1:8–9', stage:{"set":"city","time":"dusk","cam":"close","focus":0.55,"cast":[{"id":"hoshea","x":0.3,"z":0.12,"face":"r","pose":"speak","say":0},{"id":"gomer","x":0.58,"z":0.1,"face":"l","pose":"carry","hold":"baby"},{"id":"loruchamah","x":0.72,"z":0.03,"face":"l"},{"id":"yizreel","x":0.83,"z":0.07,"face":"l"}],"fx":[{"k":"glory","x":0.12,"y":0.04}]}},
+   {art:'stars', music:'holy', text:'Yet the number of the children of Yasharal shall be as the sand of the sea, which is not measured nor counted. And it shall be in the place where it was said to them, “You are not My people,” they shall be called, “You are the sons of the living Al.” And the children of Yahuḏah and the children of Yasharal shall be gathered together and appoint for themselves one head and shall come up out of the earth, for great is the day of Yizreʿel!', ref:'HOSHĔA 1:10–11', stage:{"set":"desert","time":"dawn","cam":"pull","focus":0.5,"cast":[{"id":"hoshea","x":0.14,"z":0.12,"face":"r","pose":"raise","say":0},{"id":"loammi","x":0.38,"z":0.03,"face":"r","pose":"raise","at":1,"from":"stand"},{"id":"loruchamah","x":0.48,"z":0.06,"face":"r","pose":"raise","at":1,"from":"stand"}],"crowd":[{"kind":"people","n":10,"x":0.6,"w":0.7,"z":0.72,"face":"l"},{"kind":"people","n":5,"x":0.32,"w":0.18,"z":0.46,"face":"r","enter":"l","at":2},{"kind":"people","n":5,"x":0.78,"w":0.18,"z":0.46,"face":"l","enter":"r","at":2}],"fx":[{"k":"rays","x":0.55,"at":2},{"k":"glory","x":0.55,"y":0.06,"at":2}]}},
   ],
-  complete:'Not-My-People — yet in that same place they shall be called sons of the living Aluah.'
+  complete:'Not-My-People — yet they shall be called, “You are the sons of the living Al.”'
 },
 
-{ id:'h2', title:'A Door of Hope', ref:'HOSHĔA 2',
+{ id:'h2', title:'A Door of Expectation', ref:'HOSHĔA 2',
   intro:[
-   {art:'wilderness', music:'sorrow', text:'Say to your brothers, “Ammi — My people,” and to your sisters, “Ruḥamah — Pitied.” Plead with your mother, plead — for she is not My wife, and I am not her Husband — that she turn her whorings from her face and her adulteries from between her breasts, lest I strip her naked and set her out as in the day she was born, make her like a wilderness, a dry land, and slay her with thirst. On her children I shall have no compassion, for they are children of whoring. For their mother has whored; she who conceived them acted shamefully, for she said, “Let me go after my lovers, who give my bread and water, my wool and flax, my oil and drink.”', ref:'HOSHĔA 2:1–5'},
+   {art:'wilderness', music:'sorrow', text:'Say to your brothers, “O my people,” and to your sisters, “O, compassioned one.” Strive with your mother, strive, for she is not My wife, nor am I her Husband! Let her put away her whorings from her face and her adulteries from between her breasts, lest I strip her naked and shall set her up as on the day she was born and shall make her like a wilderness… and shall put her to death with thirst. And I shall not have compassion on her children, for they are the children of whorings. For their mother has whored, she who conceived them has acted shamelessly. For she said, “I go after my lovers, who give me my bread and my water, my wool and my linen, my oil and my drink.”', ref:'HOSHĔA 2:1–5', stage:{"set":"wilderness","time":"noon","wx":"dust","wxAt":2,"cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.17,"z":0.14,"face":"r","pose":"speak","say":0,"acts":[{"at":4,"pose":"weep"}]},{"id":"yizreel","x":0.32,"z":0.04,"face":"r","pose":"point","at":1,"from":"stand"},{"id":"loruchamah","x":0.4,"z":0.07,"face":"r","pose":"point","at":1,"from":"stand"},{"id":"loammi","x":0.48,"z":0.02,"face":"r","pose":"point","at":1,"from":"stand"},{"id":"gomer","x":0.68,"z":0.12,"face":"l","pose":"stand","say":6,"acts":[{"at":3,"pose":"weep"},{"at":5,"face":"r","pose":"stand"},{"at":6,"to":0.74,"pose":"speak"}]},{"id":"merchant","x":0.87,"z":0.14,"face":"l","enter":"r","at":5,"pose":"hold","hold":"bread"}]}},
   ],
   scene:{
    map:{biome:'wilderness', w:44, h:28, seed:9002,
-     features:[ {type:'idol',x:32,y:9,id:'baalim',examine:'The Baʿalim — the lovers Yisra’ĕl chased, to whom she offered the silver, gold, and grain that YAHUAH Himself had given her.'},{type:'vine',x:12,y:10},{type:'well',x:15,y:17,id:'spring',examine:'A spring in the wilderness — where the LORD would allure His bride, and speak to her heart again.'},{type:'rock',x:26,y:20},{type:'clearing',x:20,y:16,flat:4} ]},
+     features:[ {type:'idol',x:32,y:9,id:'baalim',examine:'The Baʿalim — the lovers Yasharal chased, to whom she offered the silver, gold, and grain that YAHUAH Himself had given her.'},{type:'vine',x:12,y:10},{type:'well',x:15,y:17,id:'spring',examine:'A spring in the wilderness — where YAHUAH would allure His bride, and speak to her heart again.'},{type:'rock',x:26,y:20},{type:'clearing',x:20,y:16,flat:4} ]},
    time:'day', music:'sorrow',
    player:'hoshea', playerPos:[20,20], playerHold:'scroll',
    npcs:[ {id:'gomer',char:'gomer',x:28,y:11,wander:true},{id:'baalpriest',char:'baalpriest',x:33,y:11,wander:false} ],
@@ -5876,31 +6023,31 @@ STORY.push(
        {say:['voice','Therefore, see, I am hedging up her way with thorns, and I shall wall her in, so that she cannot find her paths. She shall chase her lovers but not overtake them, and seek them but not find them. Then she shall say, “Let me go and return to my first Husband, for then it was better for me than now.”']},
        {burst:[28,11,'ash',10]},{sfx:'bad'},
       ]},
-     {type:'interact',prop:'spring',text:'Follow YAHUAH into the wilderness — the door of hope',hiddenUntil:1,
+     {type:'interact',prop:'spring',text:'Follow YAHUAH into the wilderness — the door of expectation',hiddenUntil:1,
       script:[
-       {say:['narrator','But the LORD would not leave His bride to the thorns. Where judgment had spoken, a tenderer word rose:']},
+       {say:['narrator','But YAHUAH would not leave His bride to the thorns. Where judgment had spoken, a tenderer word rose:']},
        {rays:.6,raysX:15},{sfx:'holy'},
-       {say:['voice','Therefore, see, I am alluring her, and shall lead her into the wilderness, and shall speak to her heart. And I shall give her vineyards from there, and the Valley of Aḵor — of trouble — as a door of hope. And she shall respond there as in the days of her youth.']},
-       {say:['voice','And it shall be, in that day, that she calls Me Ishi — My Husband — and no longer calls Me Baʿali — My Master. For I shall betroth you to Me forever; I shall betroth you to Me in righteousness, in right-ruling, in loving-commitment and in compassion. And I shall betroth you to Me in trustworthiness, and you shall know YAHUAH.']},
+       {say:['voice','Therefore, see, I am alluring her, and shall lead her into the wilderness, and shall speak to her heart. And I shall give her vineyards from there, and the Valley of Aḵor — of trouble — as a door of expectation. And she shall respond there as in the days of her youth.']},
+       {say:['voice','And it shall be, in that day, that you call Me “My Husband,” and no longer call Me “My Baʿal.” And I shall take you as a bride unto Me forever and take you as a bride unto Me in righteousness and in right-ruling and kindness and compassion. And I shall take you as a bride unto Me in trustworthiness and you shall know YAHUAH.']},
        {burst:[15,17,'holy',20]},{sfx:'chime'},
-       {say:['voice','And I shall say to Lo-Ammi, “You are My people,” and they shall say, “My Aluah!”']},
+       {say:['voice','And I shall say to those who were not My people, “You are My people,” while they say, “My Aluahim!”']},
        {burst:[20,16,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'wilderness', music:'sorrow', text:'Therefore, see, I am hedging up her way with thorns, and I wall her in, so she cannot find her paths. She shall pursue her lovers but not overtake them, seek them but not find them. Then she shall say, “Let me go and return to my first Husband, for then it was better for me than now.” For she did not know that it was I who gave her the grain, the new wine, and the oil, and lavished silver and gold on her — which they used for Baʿal.', ref:'HOSHĔA 2:6–8'},
-   {art:'wasteland', music:'sorrow', text:'Therefore I take back My grain in its time and My new wine in its season, and snatch away My wool and My linen covering her nakedness. And now I uncover her shame before the eyes of her lovers, and no one delivers her from My hand. And I make all her rejoicing to cease — her festivals, her New Moons, her Sabbaths, and all her appointed times. And I lay waste her vines and fig trees, of which she said, “These are the wages my lovers gave me”; and I make them a forest, and the beasts of the field eat them.', ref:'HOSHĔA 2:9–13'},
-   {art:'wilderness', music:'holy', text:'Therefore, see, I am alluring her, and shall lead her into the wilderness, and speak to her heart. And I give her vineyards from there, and the Valley of Aḵor — of trouble — as a door of hope. And she shall respond there as in the days of her youth, as in the day she came up from the land of Mitsrayim. And in that day, declares YAHUAH, she calls Me Ishi — My Husband — and no longer calls Me Baʿali — My Master. For I remove the names of the Baʿals from her mouth, and they are remembered by their name no more.', ref:'HOSHĔA 2:14–17'},
-   {art:'garden', music:'holy', text:'And in that day I make a covenant for them with the beasts of the field, the birds of the heavens, and the creeping things of the ground; and bow and sword and battle I break from the earth, and make them lie down in safety. And I betroth you to Me forever; I betroth you to Me in righteousness, in right-ruling, in loving-commitment, and in compassion. And I betroth you to Me in trustworthiness, and you shall know YAHUAH.', ref:'HOSHĔA 2:18–20'},
-   {art:'garden', music:'holy', text:'And in that day I answer, declares YAHUAH — I answer the heavens, and they answer the earth, and the earth answers the grain and the new wine and the oil, and they answer Yizreʿel. And I sow her for Myself in the earth, and have compassion on Lo-Ruḥamah, and say to Lo-Ammi, “You are My people,” and they say, “My Aluah!”', ref:'HOSHĔA 2:21–23'},
+   {art:'wilderness', music:'sorrow', text:'Therefore, see, I am hedging up your way with thorns and I shall wall her in, so that she does not find her paths. And she shall pursue her lovers but not overtake them and shall seek them but not find them. Then she shall say, “Let me go and return to my first husband, for then it was better for me than now.” And she did not acknowledge that I gave her grain and new wine and oil and increased her silver and gold which they prepared for Baʿal.', ref:'HOSHĔA 2:6–8', stage:{"set":"wilderness","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"gomer","x":0.42,"z":0.1,"face":"r","enter":"l","at":0,"say":2,"acts":[{"at":1,"to":0.55,"run":1,"pose":"point"},{"at":2,"face":"l","pose":"weep"}]},{"id":"merchant","x":0.8,"z":0.22,"face":"l","acts":[{"at":1,"exit":"r"}]},{"id":"ashshur","x":0.9,"z":0.3,"face":"l","acts":[{"at":1,"exit":"r"}]},{"id":"baalpriest","x":0.2,"z":0.2,"face":"l","pose":"raise","at":3}],"props":[{"k":"bush","x":0.63,"z":0.02,"s":1.4},{"k":"bush","x":0.67,"z":0.14,"s":1.3},{"k":"bush","x":0.64,"z":0.26,"s":1.2},{"k":"bush","x":0.69,"z":0.38},{"k":"wall","x":0.86,"z":0.45,"w":0.3,"h":80},{"k":"idol","x":0.1,"z":0.36,"at":3},{"k":"sacks","x":0.3,"z":0.24,"n":5,"at":3}]}},
+   {art:'wasteland', music:'sorrow', text:'Therefore I shall turn back and shall take My grain in its time and My new wine in its season and I shall take away My wool and My linen covering her nakedness. And now I shall uncover her shame before the eyes of her lovers and no one shall deliver her from My hand. And I shall cause all her rejoicing, her festivals, her New Moons and her Shabbaths, even all her appointed times, to cease, and lay waste her vines and her fig trees, of which she has said, “These are my rewards that my lovers have given me.”', ref:'HOSHĔA 2:9–13', stage:{"set":"vineyard","time":"dusk","wx":"wind","cam":"push","focus":0.5,"cast":[{"id":"gomer","x":0.46,"z":0.1,"face":"r","pose":"stand","acts":[{"at":1,"pose":"weep"},{"at":2,"pose":"mourn"}]},{"id":"merchant","x":0.66,"z":0.14,"face":"l","pose":"stand","acts":[{"at":1,"exit":"r"}]},{"id":"baalpriest","x":0.78,"z":0.2,"face":"l","pose":"stand","acts":[{"at":1,"exit":"r"}]}],"crowd":[{"kind":"people","n":6,"x":0.24,"w":0.3,"z":0.6,"face":"r","pose":"mourn","at":2,"from":"dance"}],"props":[{"k":"tree","x":0.88,"z":0.42,"fruit":"#5a3a5a","h":110}],"fx":[{"k":"darkness","at":2,"amt":0.3}]}},
+   {art:'wilderness', music:'holy', text:'Therefore, see, I am alluring her and shall lead her into the wilderness and shall speak to her heart, and give to her vineyards from there and the Valley of Aḵor as a door of expectation. And there she shall respond as in the days of her youth, as in the day when she came up from the land of Mitsrayim. And it shall be, in that day, declares YAHUAH, that you call Me “My Husband,” and no longer call Me “My Baʿal.” And I shall remove the names of the Baʿals from her mouth and they shall no more be remembered by their name.', ref:'HOSHĔA 2:14–17', stage:{"set":"wilderness","time":"dawn","cam":"pan-r","focus":0.55,"cast":[{"id":"hoshea","x":0.3,"z":0.12,"face":"r","to":0.52,"at":0,"say":1,"acts":[{"at":1,"face":"l","pose":"speak"}]},{"id":"gomer_r","x":0.16,"z":0.1,"face":"r","to":0.36,"at":0,"say":2,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"speak"}]},{"id":"baalpriest","x":0.1,"z":0.36,"face":"r","pose":"stand","acts":[{"at":3,"exit":"l","run":1}]}],"props":[{"k":"gate","x":0.84,"z":0.5,"w":110,"h":100},{"k":"vine","x":0.64,"z":0.56,"w":110}],"fx":[{"k":"rays","x":0.84}]}},
+   {art:'garden', music:'holy', text:'And in that day I shall make a berith for them with the beasts of the field and with the birds of the shamayim and with the creeping creatures of the ground, when bow and sword and battle I break from the earth. And I shall make them lie down in safety. And I shall take you as a bride unto Me forever and take you as a bride unto Me in righteousness and in right-ruling and kindness and compassion. And I shall take you as a bride unto Me in trustworthiness and you shall know YAHUAH.', ref:'HOSHĔA 2:18–20', stage:{"set":"garden","time":"day","cam":"push","focus":0.5,"cast":[{"id":"yizreel","x":0.18,"z":0.22,"face":"r","pose":"lie","at":1,"from":"sitground"},{"id":"loammi","x":0.27,"z":0.24,"face":"r","pose":"lie","at":1,"from":"sitground"},{"id":"hoshea","x":0.42,"z":0.1,"face":"r","pose":"stand","say":2,"acts":[{"at":2,"pose":"bless"}]},{"id":"gomer_r","x":0.58,"z":0.1,"face":"l","pose":"stand","acts":[{"at":3,"pose":"raise"}]}],"props":[{"k":"lion","x":0.8,"z":0.42,"face":"l"},{"k":"sheep","x":0.68,"z":0.46,"n":3,"w":60},{"k":"tree","x":0.08,"z":0.45,"fruit":"#c04040"}],"fx":[{"k":"dove","x":0.5,"y":0.2},{"k":"glory","x":0.5,"y":0.04,"at":3}]}},
+   {art:'garden', music:'holy', text:'And it shall be in that day that I answer, declares YAHUAH, that I answer the shamayim and they answer the earth, and the earth answer the grain and the new wine and the oil and they answer Yizreʿel. And I shall sow her for Myself in the earth and I shall have compassion on her who had not obtained compassion. And I shall say to those who were not My people, “You are My people,” while they say, “My Aluahim!”', ref:'HOSHĔA 2:21–23', stage:{"set":"field","time":"day","wx":"rain","cam":"up","focus":0.5,"cast":[{"id":"yizreel","x":0.3,"z":0.08,"face":"r","pose":"carry","hold":"basket"},{"id":"loruchamah","x":0.46,"z":0.06,"face":"l","pose":"raise","at":1,"from":"weep"},{"id":"loammi","x":0.58,"z":0.04,"face":"l","pose":"raise","at":2,"say":2,"from":"stand"}],"crowd":[{"kind":"worshippers","n":5,"x":0.8,"w":0.22,"z":0.62,"face":"l","at":2}],"props":[{"k":"sheaves","x":0.84,"z":0.36,"n":4},{"k":"vine","x":0.18,"z":0.5,"w":100}],"fx":[{"k":"rays","x":0.4},{"k":"glory","x":0.5,"y":0.04,"at":2}]}},
   ],
-  complete:'I shall betroth you to Me forever — and you shall know YAHUAH.'
+  complete:'I shall take you as a bride unto Me forever — and you shall know YAHUAH.'
 },
 
 { id:'h3', title:'Love Her Again', ref:'HOSHĔA 3',
   intro:[
-   {art:'reunion', music:'sorrow', text:'Then YAHUAH said to me, “Go again, love a woman loved by a friend, yet an adulteress — as YAHUAH loves the children of Yisra’ĕl, though they turn to other mighty ones and love their raisin cakes.” So I bought her for myself for fifteen pieces of silver, and a ḥomer and a half of barley.', ref:'HOSHĔA 3:1–2'},
+   {art:'reunion', music:'sorrow', text:'Then YAHUAH said to me, “Go again, love a woman loved by a friend and an adulteress, according to the love of YAHUAH for the children of Yasharal, though they are turning to other mighty ones and love their raisin cakes.” So I bought her for myself for fifteen pieces of silver and one and one-half ḥomers of barley.', ref:'HOSHĔA 3:1–2', stage:{"set":"city","time":"day","cam":"push","focus":0.6,"cast":[{"id":"voice","x":0.12,"z":0},{"id":"hoshea","x":0.28,"z":0.12,"face":"l","pose":"look","hold":"basket","acts":[{"at":1,"to":0.43,"pose":"hold"}]},{"id":"merchant","x":0.66,"z":0.14,"face":"l","pose":"speak","say":1},{"id":"gomer","x":0.82,"z":0.1,"face":"l","pose":"bound"}],"crowd":[{"kind":"people","n":5,"x":0.56,"w":0.5,"z":0.64,"face":"l"}],"props":[{"k":"sacks","x":0.54,"z":0.2,"n":3,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:9003,
@@ -5921,17 +6068,17 @@ STORY.push(
        {say:['hoshea','You shall stay with me many days. You shall not whore, and you shall not belong to another man — and I also will be to you.']},
        {say:['gomer','You paid for me… after everything. Why would you take me back?']},
        {rays:.5,raysX:22},{sfx:'holy'},
-       {say:['voice','For the children of Yisra’ĕl shall dwell many days without sovereign, without prince, without slaughtering, without pillar, without ĕphoḏ, and without house-idols.']},
-       {say:['voice','Afterward the children of Yisra’ĕl shall return and seek YAHUAH their Aluah and Dawiḏ their sovereign, and shall fear YAHUAH and His goodness in the latter days.']},
+       {say:['voice','For many days the children of Yasharal are to remain without sovereign and without prince and without slaughtering and without pillar and without shoulder garment or house idols.']},
+       {say:['voice','Afterward the children of Yasharal shall return and seek YAHUAH their Aluah and Dawiḏ their sovereign, and shall fear YAHUAH and His goodness in the latter days.']},
        {burst:[22,9,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'reunion', music:'sorrow', text:'And I said to her, “You are to stay with me many days. You shall not whore, nor become another man’s — and I also am to be so toward you.”', ref:'HOSHĔA 3:3'},
-   {art:'stars', music:'holy', text:'For the children of Yisra’ĕl shall dwell many days with no sovereign and no prince, no slaughter and no pillar, no ĕphoḏ and no house-idols. Afterward the children of Yisra’ĕl shall return and seek YAHUAH their Aluah and Dawiḏ their sovereign, and shall fear YAHUAH and His goodness in the latter days.', ref:'HOSHĔA 3:4–5'},
+   {art:'reunion', music:'sorrow', text:'And I said to her, “You are to remain with me many days, you are not to whore, nor become any man’s and so I shall also be towards you.”', ref:'HOSHĔA 3:3', stage:{"set":"house","cam":"close","focus":0.5,"cast":[{"id":"hoshea","x":0.38,"z":0.12,"face":"r","pose":"speak","say":0},{"id":"gomer_r","x":0.6,"z":0.1,"face":"l","pose":"kneel"}],"props":[{"k":"table","x":0.14,"z":0.4}]}},
+   {art:'stars', music:'holy', text:'For many days the children of Yasharal are to remain without sovereign and without prince and without slaughtering and without pillar and without shoulder garment or house idols. Afterward the children of Yasharal shall return and seek YAHUAH their Aluahim and Dawiḏ their sovereign, and fear YAHUAH and His goodness, in the latter days.', ref:'HOSHĔA 3:4–5', stage:{"set":"ruins","time":"night","cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.1,"z":0.12,"face":"r","pose":"speak","say":0,"acts":[{"at":1,"pose":"raise"}]}],"crowd":[{"kind":"people","n":8,"x":0.52,"w":0.76,"z":0.6,"face":"r","pose":"pray","at":1,"from":"mourn"}],"props":[{"k":"throne","x":0.5,"z":0.34},{"k":"altar","x":0.26,"z":0.3,"fire":false},{"k":"pillar","x":0.78,"z":0.36,"h":70}],"fx":[{"k":"glory","x":0.5,"y":0.04,"at":1},{"k":"rays","x":0.5,"at":1}]}},
   ],
-  complete:'He bought her back, and brought her home — as YAHUAH loves the children of Yisra’ĕl.'
+  complete:'He bought her back, and brought her home — according to the love of YAHUAH for the children of Yasharal.'
 },
 
 ]},
@@ -5941,57 +6088,57 @@ STORY.push(
 
 { id:'h4', title:'No Knowledge in the Land', ref:'HOSHĔA 4',
   intro:[
-   {art:'corrupt', music:'tense', text:'Hear the word of YAHUAH, O children of Yisra’ĕl, for YAHUAH has a controversy with the inhabitants of the land: there is no truth, no kindness, and no knowledge of Aluahim in the land. Swearing, lying, murdering, stealing, and adultery break out, and bloodshed follows bloodshed. Therefore the land mourns, and everyone living in it languishes, with the beasts of the field and the birds of the heavens; even the fish of the sea are taken away.', ref:'HOSHĔA 4:1–3'},
+   {art:'corrupt', music:'tense', text:'Hear the word of YAHUAH, you children of Yasharal, for YAHUAH has a case against the inhabitants of the land: there is no truth or kindness or knowledge of Aluahim in the land. Swearing, lying, murdering, stealing and committing adultery have increased. And bloodshed follows bloodshed. Therefore the land mourns and everyone living there languishes, with the beasts of the field and the birds of the shamayim. And the fish of the sea are taken away.', ref:'HOSHĔA 4:1–3', stage:{"set":"city","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"hoshea","x":0.14,"z":0.12,"face":"r","pose":"point","hold":"scroll","say":0},{"id":"victim","x":0.5,"z":0.12,"face":"r","pose":"fall","at":1,"acts":[{"at":2,"pose":"dead"}],"from":"stand"},{"id":"raider","x":0.63,"z":0.16,"face":"l","pose":"strike","at":1,"label":false,"hold":"sword","from":"stand"}],"crowd":[{"kind":"mourners","n":5,"x":0.8,"w":0.22,"z":0.55,"face":"l","at":3}],"fx":[{"k":"red","at":2,"amt":0.15},{"k":"ravens","x":0.6,"y":0.18,"n":4,"at":3},{"k":"darkness","at":4,"amt":0.3}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:28, seed:9004,
-     features:[ {type:'altar',x:30,y:10,id:'highplace',examine:'An altar on a high place — where the priests fed on the sin of the people, and forgot the Torah of their Aluah.'},{type:'idol',x:14,y:11,id:'woodidol',examine:'A staff of wood — “My people ask counsel of a stick.” The spirit of whoring has led them astray.'},{type:'tree',x:18,y:9},{type:'rock',x:26,y:20},{type:'clearing',x:22,y:17,flat:3} ]},
+     features:[ {type:'altar',x:30,y:10,id:'highplace',examine:'A mizbe’ach on a high place — where the kohanim fed on the sin of the people, and forgot the Torah of their Aluah.'},{type:'idol',x:14,y:11,id:'woodidol',examine:'A staff of wood — “My people ask from their Wood.” A ruach of whorings has led them astray.'},{type:'tree',x:18,y:9},{type:'rock',x:26,y:20},{type:'clearing',x:22,y:17,flat:3} ]},
    time:'day', music:'tense',
    player:'hoshea', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'baalpriest',char:'baalpriest',x:29,y:12,wander:false},{id:'gomer',char:'gomer',x:16,y:13,wander:true} ],
    objectives:[
-     {type:'talk',npc:'baalpriest',text:'Charge the priest — you have rejected knowledge',
+     {type:'talk',npc:'baalpriest',text:'Charge the kohen — you have rejected knowledge',
       script:[
-       {say:['hoshea','Hear this, O priest! You were to keep the knowledge of Aluahim — instead you feed on the sin of My people, and set your heart on their crookedness.']},
+       {say:['hoshea','Hear this, O kohen! You were to keep the knowledge of Aluahim — instead you eat the sin of My people and lift up your desire to their crookedness.']},
        {say:['baalpriest','The people bring their offerings; who am I to turn them away? Let them worship as they please.']},
        {rays:.4,raysX:22},
-       {say:['voice','My people have perished for lack of knowledge. Because you have rejected knowledge, I reject you from serving as priest to Me. Since you have forgotten the Torah of your Aluah, I also forget your children.']},
+       {say:['voice','My people have perished for lack of knowledge. Because you have rejected knowledge, I reject you from being kohen for Me. Since you have forgotten the Torah of your Aluahim, I also forget your children.']},
        {burst:[29,10,'ash',12]},{sfx:'bad'},
       ]},
-     {type:'interact',prop:'woodidol',text:'Expose the spirit of whoring — let Ephrayim alone',hiddenUntil:1,
+     {type:'interact',prop:'woodidol',text:'Expose the ruach of whorings — let Ephrayim alone',hiddenUntil:1,
       script:[
-       {say:['hoshea','You ask counsel of a stick of wood, and a rod answers you. A spirit of whoring has led you astray, and you have whored away from under your Aluah.']},
+       {say:['hoshea','My people ask from their Wood and their Staff declares to them. For a ruach of whorings has led them astray and they went whoring from under their Aluahim.']},
        {say:['voice','Ephrayim is joined to idols — let him alone. Their drink is rebellion; they whore continually; her rulers dearly love shame.']},
        {shake:.8},{sfx:'bad'},{burst:[14,11,'ash',10]},
-       {say:['narrator','And so the LORD laid out His case: a land without truth, without kindness, without knowledge — a people who prospered in everything but the one thing that mattered, to know their Aluah.']},
+       {say:['narrator','And so YAHUAH laid out His case: a land without truth, without kindness, without knowledge — a people who prospered in everything but the one thing that mattered, to know their Aluah.']},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'Yet let no one contend or reprove another — for your people are like those who strive with a priest. And you stumble by day, and the prophet stumbles with you by night, and I make an end of your mother. My people have perished for lack of knowledge. Because you have rejected knowledge, I reject you from serving as priest to Me; since you have forgotten the Torah of your Aluah, I also forget your children.', ref:'HOSHĔA 4:4–6'},
-   {art:'corrupt', music:'tense', text:'The more they increased, the more they sinned against Me — I change their esteem into shame. They feed on the sin of My people, and set their heart on their crookedness. And it shall be, like people, like priest — I punish them for their ways and repay them for their deeds. They eat but do not have enough; they whore but do not increase, for they have stopped obeying YAHUAH.', ref:'HOSHĔA 4:7–10'},
-   {art:'corrupt', music:'tense', text:'Whoring, and wine, and new wine take away the heart. My people ask counsel of their block of wood, and their staff declares to them — for a spirit of whoring has led them astray, and they whore away from under their Aluah. They slaughter on the mountaintops and burn incense on the hills, under oak and poplar and terebinth, for their shade is good. Therefore your daughters whore and your brides commit adultery.', ref:'HOSHĔA 4:11–14'},
-   {art:'wasteland', music:'sorrow', text:'Though you, Yisra’ĕl, are whoring, let not Yahuḏah become guilty. Do not come to Gilgal, nor go up to Bĕyth Aven, nor swear, “As YAHUAH lives.” For Yisra’ĕl is stubborn like a stubborn heifer — can YAHUAH now feed them like a lamb in a broad place? Ephrayim is joined to idols — let him alone. Their drink is rebellion; they whore continually; her rulers dearly love shame. The wind has bound her up in its wings, and they are ashamed of their slaughterings.', ref:'HOSHĔA 4:15–19'},
+   {art:'corrupt', music:'tense', text:'However, let no one strive or reprove another, for your people are like those striving with a kohen. And you shall stumble in the day and the naḇi shall also stumble with you in the night. And I shall make your mother perish. My people have perished for lack of knowledge. Because you have rejected knowledge, I reject you from being kohen for Me. Since you have forgotten the Torah of your Aluahim, I also forget your children.', ref:'HOSHĔA 4:4–6', stage:{"set":"court","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"hoshea","x":0.16,"z":0.12,"face":"r","pose":"point","hold":"scroll","say":0,"acts":[{"at":3,"pose":"weep"}]},{"id":"baalpriest","x":0.58,"z":0.16,"face":"l","pose":"stand","acts":[{"at":1,"pose":"fall"},{"at":2,"pose":"stand"},{"at":4,"exit":"r"}]},{"id":"hebrew","x":0.76,"z":0.12,"face":"l","pose":"point","acts":[{"at":1,"pose":"fall"}]}],"crowd":[{"kind":"people","n":6,"x":0.48,"w":0.45,"z":0.62,"face":"l","pose":"fall","at":3,"from":"stand"},{"kind":"children","n":4,"x":0.84,"w":0.16,"z":0.42,"face":"l","pose":"weep","at":5}],"props":[{"k":"scroll","x":0.38,"z":0.18}]}},
+   {art:'corrupt', music:'tense', text:'As they were increased, so they sinned against Me. My esteem they have changed into shame. They eat the sin of My people and lift up their desire to their crookedness. And it shall be: like people, like kohen. And I shall punish them for their ways and reward them for their deeds. And they shall eat but not be satisfied, they shall whore but not increase, for they have stopped obeying YAHUAH.', ref:'HOSHĔA 4:7–10', stage:{"set":"temple","time":"night","cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.12,"z":0.12,"face":"r","pose":"point","hold":"scroll","say":0},{"id":"baalpriest","x":0.44,"z":0.16,"face":"r","pose":"stand","hold":"bread","acts":[{"at":2,"pose":"hold"},{"at":4,"pose":"fall"}]}],"crowd":[{"kind":"people","n":5,"x":0.74,"w":0.22,"z":0.5,"face":"l","enter":"r","at":3,"hold":"lamb","pose":"carry"},{"kind":"people","n":4,"x":0.3,"w":0.2,"z":0.55,"face":"r","pose":"sitground","hold":"bread","at":5}],"props":[{"k":"altar","x":0.56,"z":0.4,"sacrifice":1,"big":1},{"k":"table","x":0.34,"z":0.3,"cups":1}],"fx":[{"k":"darkness","at":4,"amt":0.3},{"k":"smoke","x":0.56,"at":4}]}},
+   {art:'corrupt', music:'tense', text:'Whoring and wine and new wine enslave the heart. My people ask from their Wood and their Staff declares to them. For a ruach of whorings has led them astray and they went whoring from under their Aluahim. They slaughter on the mountaintops and burn incense on the hills, under oak and poplars and terebinth, because its shade is good. Therefore your daughters commit whoring and your brides commit adultery.', ref:'HOSHĔA 4:11–14', stage:{"set":"highplace","time":"dusk","wx":"wind","wxAt":2,"cam":"push","focus":0.55,"cast":[{"id":"hebrew","x":0.34,"z":0.1,"face":"r","pose":"hold","hold":"cup","acts":[{"at":1,"to":0.5,"pose":"kneel"}]},{"id":"baalpriest","x":0.67,"z":0.16,"face":"l","pose":"point","hold":"rod","say":1}],"crowd":[{"kind":"worshippers","n":5,"x":0.46,"w":0.24,"z":0.62,"face":"r","pose":"bow","at":3,"from":"stand"},{"kind":"women","n":4,"x":0.2,"w":0.18,"z":0.55,"face":"r","pose":"dance","at":4}],"props":[{"k":"idol","x":0.74,"z":0.34,"h":80},{"k":"tree","x":0.9,"z":0.46,"h":150,"color":"#3a5a2a"},{"k":"tree","x":0.14,"z":0.5,"h":130},{"k":"altar","x":0.6,"z":0.4,"at":3}],"fx":[{"k":"smoke","x":0.6,"at":3}]}},
+   {art:'wasteland', music:'sorrow', text:'Though you are a whore, Yasharal, let not Yahuḏah become guilty. Do not come up to Gilgal, nor go up to Bĕyth Aven, nor swear an oath, saying, “As YAHUAH lives!” For Yasharal is stubborn, like a stubborn calf. Would YAHUAH now feed them like a lamb in a broad place? Ephrayim is joined to idols, let him alone. Their drink is sour, they have whored continually. Her rulers wildly loved shame. A ruach has bound her up in its wings and they are ashamed because of their slaughterings.', ref:'HOSHĔA 4:15–19', stage:{"set":"road","time":"dusk","wx":"wind","wxAt":7,"cam":"pan-r","focus":0.6,"cast":[{"id":"hoshea","x":0.12,"z":0.12,"face":"r","pose":"point","say":1,"hold":"staff"},{"id":"ephraimking","x":0.62,"z":0.18,"face":"r","enter":"l","at":4,"pose":"bow","crown":1}],"crowd":[{"kind":"people","n":6,"x":0.56,"w":0.3,"z":0.56,"face":"r","enter":"l","at":1},{"kind":"princes","n":3,"x":0.44,"w":0.12,"z":0.42,"face":"r","pose":"raise","at":6}],"props":[{"k":"calf","x":0.8,"z":0.36,"s":1.4},{"k":"altar","x":0.68,"z":0.44},{"k":"sheep","x":0.32,"z":0.3,"n":4,"w":70,"at":3}],"fx":[{"k":"darkness","at":7,"amt":0.3}]}},
   ],
-  complete:'My people are destroyed for lack of knowledge of Aluahim.'
+  complete:'There is no knowledge of Aluahim in the land — My people have perished for lack of knowledge.'
 },
 
-{ id:'h5', title:'I Will Be Like a Lion', ref:'HOSHĔA 5',
+{ id:'h5', title:'I Am Like a Lion', ref:'HOSHĔA 5',
   intro:[
-   {art:'wasteland', music:'tense', text:'Hear this, O priests! Give heed, O house of Yisra’ĕl! Listen, O house of the sovereign! For the judgment is for you, because you have been a snare at Mitspah and a net spread on Taḇor. The rebels are deep in slaughter, but I am a rebuke to them all. I know Ephrayim, and Yisra’ĕl is not hidden from Me — for now, O Ephrayim, you have whored; Yisra’ĕl is defiled. Their deeds do not allow them to turn back to their Aluah, for a spirit of whoring is in their midst, and they have not known YAHUAH.', ref:'HOSHĔA 5:1–4'},
+   {art:'wasteland', music:'tense', text:'Hear this, O kohanim! And listen, O house of Yasharal! Give ear, O house of the sovereign! For the mishpat is for you, for you have been a snare to Mitspah and a net spread on Taḇor. And they have made deep the pit of Shittim, so I reprove them all. I have known Ephrayim and Yasharal has not been hidden from Me. For now, O Ephrayim, you have whored, Yasharal is defiled. Their deeds do not allow them to turn back to their Aluahim, for the ruach of whorings is among them and they do not know YAHUAH.', ref:'HOSHĔA 5:1–4', stage:{"set":"gate","time":"day","cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.16,"z":0.12,"face":"r","pose":"raise","say":0,"acts":[{"at":3,"pose":"point"}]},{"id":"ephraimking","x":0.7,"z":0.2,"face":"l","enter":"r","at":2,"crown":1,"pose":"stand","acts":[{"at":7,"face":"r"}]}],"crowd":[{"kind":"kohanim","n":4,"x":0.4,"w":0.16,"z":0.42,"face":"l"},{"kind":"people","n":6,"x":0.66,"w":0.3,"z":0.62,"face":"l","at":1}],"fx":[{"k":"darkness","at":6,"amt":0.3}]}},
   ],
   scene:{
    map:{biome:'wasteland', w:44, h:28, seed:9005,
-     features:[ {type:'rock',x:30,y:12,id:'lair',examine:'A rocky lair — “I shall be like a lion to Ephrayim.” The LORD withdraws to His place until they seek His face.'},{type:'standard',x:14,y:11},{type:'idol',x:26,y:9,id:'snare',examine:'A snare at Mitspah, a net on Taḇor — the traps of a people who hunt one another instead of seeking Aluahim.'},{type:'clearing',x:20,y:17,flat:4} ]},
+     features:[ {type:'rock',x:30,y:12,id:'lair',examine:'A rocky lair — “I am like a lion to Ephrayim.” YAHUAH withdraws to His place until they seek His face.'},{type:'standard',x:14,y:11},{type:'idol',x:26,y:9,id:'snare',examine:'A snare at Mitspah, a net on Taḇor — the traps of a people who hunt one another instead of seeking Aluahim.'},{type:'clearing',x:20,y:17,flat:4} ]},
    time:'day', music:'tense',
    player:'hoshea', playerPos:[20,20], playerHold:'scroll',
    npcs:[ {id:'ephraimking',char:'ephraimking',x:15,y:13,wander:false},{id:'ashshur',char:'ashshur',x:27,y:13,wander:false} ],
    objectives:[
-     {type:'talk',npc:'ephraimking',text:'Warn the king — Ashshur cannot heal your wound',
+     {type:'talk',npc:'ephraimking',text:'Warn the sovereign — Ashshur cannot heal your wound',
       script:[
-       {say:['ephraimking','When our sickness grew, I sent to Ashshur, to the great king. Surely their armies can heal what ails Yisra’ĕl.']},
-       {say:['hoshea','When Ephrayim saw his sickness, and Yahuḏah his wound, then Ephrayim went to Ashshur and sent to the great king. But he is unable to heal you, nor cure you of your wound.']},
-       {say:['voice','For I am like a moth to Ephrayim, and like rot to the house of Yahuḏah. I withdraw and go to My place, until they confess their guilt and seek My face.']},
+       {say:['ephraimking','When our sickness grew, I sent to Ashshur, to the great sovereign. Surely their armies can heal what ails Yasharal.']},
+       {say:['hoshea','When Ephrayim saw his sickness and Yahuḏah saw his wound, then Ephrayim went to Ashshur and sent to Sovereign Yarĕḇ. But he is unable to heal you or to remove the wound from you.']},
+       {say:['voice','So I am to Ephrayim like a moth and to the house of Yahuḏah like rottenness. I shall go, I shall return to My place, until they confess their guilt and seek My face.']},
        {burst:[15,11,'ash',10]},{sfx:'bad'},
       ]},
      {type:'interact',prop:'lair',text:'Hear the lion’s warning — and the promise hidden in it',hiddenUntil:1,
@@ -6000,26 +6147,26 @@ STORY.push(
        {shake:1},{sfx:'thunder'},{burst:[30,12,'ash',14]},
        {say:['hoshea','Yet even the lion’s roar is not the end of the word. Hear how it closes —']},
        {rays:.5,raysX:20},{sfx:'holy'},
-       {say:['voice','I go, I return to My place, until they confess their guilt and seek My face. In their distress they earnestly seek Me.']},
+       {say:['voice','I shall go, I shall return to My place, until they confess their guilt and seek My face, in their distress diligently search for Me.']},
        {burst:[20,17,'holy',12]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'tense', text:'And the Excellency of Yisra’ĕl witnesses to his face, so Yisra’ĕl and Ephrayim stumble in their crookedness; Yahuḏah also stumbles with them. With their flocks and herds they go to seek YAHUAH, but do not find Him — He has withdrawn from them. They have been treacherous against YAHUAH, for they have brought forth strange children; now a New Moon devours them and their portions.', ref:'HOSHĔA 5:5–7'},
-   {art:'wasteland', music:'tense', text:'Blow the horn in Giḇʿah, the trumpet in Ramah! Sound an alarm at Bĕyth Aven — behind you, O Binyamin! Ephrayim is laid waste in the day of rebuke; among the tribes of Yisra’ĕl I make known what is sure. The princes of Yahuḏah are like those who move a boundary — on them I pour out My wrath like water. Ephrayim is oppressed, crushed in judgment, because he was determined to walk after the command of men.', ref:'HOSHĔA 5:8–11'},
-   {art:'wasteland', music:'sorrow', text:'So I am like a moth to Ephrayim, and like rot to the house of Yahuḏah. When Ephrayim saw his sickness, and Yahuḏah his wound, then Ephrayim went to Ashshur and sent to the great king — but he is unable to heal you or cure your wound. For I am like a lion to Ephrayim, like a young lion to the house of Yahuḏah — I tear and go, I take away, and there is no one to deliver. I go, I return to My place, until they confess their guilt and seek My face; in their distress they earnestly seek Me.', ref:'HOSHĔA 5:12–15'},
+   {art:'wasteland', music:'tense', text:'And the Excellency of Yasharal shall witness to his face and Yasharal and Ephrayim stumble in their crookedness. Yahuḏah shall also stumble with them. With their flocks and herds they go to seek YAHUAH, but do not find Him — He has withdrawn from them. They have acted treacherously against YAHUAH, for they have brought forth strange children. Now a new moon shall devour them with their portions.', ref:'HOSHĔA 5:5–7', stage:{"set":"mountain","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"hebrew","x":0.3,"z":0.1,"face":"r","pose":"fall","at":0,"from":"stand"},{"id":"yehudi","x":0.46,"z":0.14,"look":{"name":"A Man of Yahuḏah","skin":"#83552d","hair":"#231409","hairStyle":"short","robe":"#4a5a6a","beard":"#231409","headcover":"#c8b890"},"face":"r","pose":"fall","at":1,"from":"stand"}],"crowd":[{"kind":"shepherds","n":4,"x":0.5,"w":0.3,"z":0.52,"face":"r","enter":"l","at":2}],"props":[{"k":"sheep","x":0.56,"z":0.36,"n":6,"w":120,"at":2},{"k":"oxen","x":0.78,"z":0.42,"n":2,"at":2}],"fx":[{"k":"glory","x":0.8,"y":0.08},{"k":"darkness","at":3,"amt":0.4},{"k":"red","at":5,"amt":0.15}]}},
+   {art:'wasteland', music:'tense', text:'Blow the ram’s horn in Giḇʿah, the trumpet in Ramah! Shout, O Bĕyth Aven! Behind you, O Binyamin! Ephrayim is laid waste in the day of rebuke. Among the tribes of Yasharal I shall make known what is certain. The chiefs of Yahuḏah shall be like those who remove a border – on them I pour out My wrath like water. Ephrayim is oppressed, crushed in mishpat, because it pleased him to walk after Tsaw.', ref:'HOSHĔA 5:8–11', stage:{"set":"walls","time":"dusk","wx":"storm","wxAt":4,"cam":"push","focus":0.5,"cast":[{"id":"watchman","x":0.18,"z":0.1,"look":{"name":"The Watchman of Giḇʿah","skin":"#7a4e29","hair":"#2c1a0c","robe":"#5a4a3a","beard":"#2c1a0c","armor":"#8a7a50","helmet":"#8a7a50"},"face":"r","pose":"raise","hold":"shofar","say":0}],"crowd":[{"kind":"people","n":6,"x":0.6,"w":0.3,"z":0.45,"face":"l","exit":"l","exitAt":1,"run":1},{"kind":"army","n":6,"x":0.8,"w":0.24,"z":0.55,"side":"ashshur","face":"l","enter":"r","at":2,"pose":"fight"},{"kind":"captives","n":5,"x":0.46,"w":0.22,"z":0.38,"face":"l","at":5}],"fx":[{"k":"smoke","x":0.7,"at":2},{"k":"red","at":2,"amt":0.15}]}},
+   {art:'wasteland', music:'sorrow', text:'So I am to Ephrayim like a moth and to the house of Yahuḏah like rottenness. When Ephrayim saw his sickness and Yahuḏah saw his wound, then Ephrayim went to Ashshur and sent to Sovereign Yarĕḇ. But he is unable to heal you or to remove the wound from you. For I am like a lion to Ephrayim and like a young lion to the house of Yahuḏah. I Myself tear them and go, I take them away and there is no one to deliver. I shall go, I shall return to My place, until they confess their guilt and seek My face, in their distress diligently search for Me.', ref:'HOSHĔA 5:12–15', stage:{"set":"palace","time":"day","cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.1,"z":0.12,"face":"r","pose":"point","say":0},{"id":"ephraimking","x":0.3,"z":0.16,"face":"r","pose":"sit","crown":1,"acts":[{"at":4,"pose":"fall"},{"at":5,"pose":"bow"}]},{"id":"ashshur","x":0.62,"z":0.12,"face":"l","enter":"r","at":1,"pose":"stand","say":1,"acts":[{"at":2,"exit":"r"}]}],"props":[{"k":"lion","x":0.86,"z":0.3,"face":"l","roar":1,"at":3}],"fx":[{"k":"red","at":4,"amt":0.15}]}},
   ],
-  complete:'I return to My place, until they seek My face — in their distress they seek Me.'
+  complete:'I shall return to My place, until they seek My face — in their distress diligently search for Me.'
 },
 
-{ id:'h6', title:'Mercy, Not Sacrifice', ref:'HOSHĔA 6',
+{ id:'h6', title:'Kindness, Not Slaughtering', ref:'HOSHĔA 6',
   intro:[
-   {art:'light', music:'holy', text:'Come, and let us turn back to YAHUAH. For He has torn but He heals us; He has stricken but He binds us up. After two days He revives us; on the third day He raises us up, that we live before Him. So let us know, let us pursue to know YAHUAH. His going forth is as certain as the morning, and He comes to us like the rain, like the latter rain watering the earth.', ref:'HOSHĔA 6:1–3'},
+   {art:'light', music:'holy', text:'Come, and let us turn back to YAHUAH. For He has torn but He does heal us, He has stricken but He binds us up. After two days He shall revive us, on the third day He shall raise us up, so that we live before Him. So let us know, let us pursue to know YAHUAH. His going forth is as certain as the morning. And He comes to us like the rain, like the latter rain watering the earth.', ref:'HOSHĔA 6:1–3', stage:{"set":"field","time":"dawn","wx":"rain","wxAt":5,"cam":"push","focus":0.55,"cast":[{"id":"hoshea","x":0.14,"z":0.12,"face":"r","pose":"raise","say":0,"acts":[{"at":3,"pose":"point"}]},{"id":"hebrew","x":0.52,"z":0.1,"face":"r","pose":"kneel","at":1,"acts":[{"at":2,"pose":"raise"}],"from":"lie"}],"crowd":[{"kind":"people","n":6,"x":0.36,"w":0.24,"z":0.46,"face":"r","enter":"l","at":0,"pose":"pray"},{"kind":"people","n":5,"x":0.74,"w":0.22,"z":0.56,"face":"r","pose":"raise","at":2,"from":"lie"}],"fx":[{"k":"glory","x":0.86,"y":0.04,"at":4},{"k":"rays","x":0.8,"at":4}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:28, seed:9006,
-     features:[ {type:'altar',x:16,y:11,id:'altar',examine:'An altar heaped with sacrifices — yet the LORD says He desires kindness, and not sacrifice.'},{type:'well',x:28,y:16,id:'morning',examine:'A spring at daybreak — “His going forth is as the morning; He comes to us as the rain, as the latter rain watering the earth.”'},{type:'wheat',x:31,y:12},{type:'tree',x:12,y:9},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'altar',x:16,y:11,id:'altar',examine:'A mizbe’ach heaped with sacrifices — yet YAHUAH says He desires kindness and not slaughtering.'},{type:'well',x:28,y:16,id:'morning',examine:'A spring at daybreak — “His going forth is as certain as the morning. And He comes to us like the rain, like the latter rain watering the earth.”'},{type:'wheat',x:31,y:12},{type:'tree',x:12,y:9},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'holy',
    player:'hoshea', playerPos:[22,20],
    npcs:[ {id:'elder',char:'elder',x:18,y:13,wander:false},{id:'gomer',char:'gomer',x:26,y:14,wander:true} ],
@@ -6028,48 +6175,48 @@ STORY.push(
       script:[
        {say:['hoshea','Come, let us turn back to YAHUAH — He has torn, and He will heal us. Let us pursue to know Him; His coming is as sure as the sunrise, and He waters us like the spring rain.']},
        {rays:.6,raysX:28},{sfx:'holy'},{burst:[28,16,'holy',14]},
-       {say:['narrator','But the LORD looked on their fleeting devotion, and answered with a Father’s ache:']},
-       {say:['voice','O Ephrayim, what am I to do with you? O Yahuḏah, what am I to do with you? For your kindness is like a morning cloud, and like the early dew it goes away.']},
+       {say:['narrator','But YAHUAH looked on their fleeting devotion, and answered with a Father’s ache:']},
+       {say:['voice','Ephrayim, what would I do with you? Yahuḏah, what would I do with you? For your trustworthiness is like a morning cloud and like the early dew it goes away.']},
        {burst:[22,18,'mote',10]},
       ]},
-     {type:'talk',npc:'elder',text:'Hear what YAHUAH desires — mercy, not sacrifice',hiddenUntil:1,
+     {type:'talk',npc:'elder',text:'Hear what YAHUAH desires — kindness, not slaughtering',hiddenUntil:1,
       script:[
-       {say:['elder','We have brought our offerings, prophet — bulls and rams upon the altar, as the fathers did. Is that not enough for the Most High?']},
-       {say:['hoshea','You heap the altar high, and think the smoke is love. But hear the word the LORD has given me —']},
+       {say:['elder','We have brought our offerings, naḇi — bulls and rams upon the mizbe’ach, as the fathers did. Is that not enough for the Most High?']},
+       {say:['hoshea','You heap the mizbe’ach high, and think the smoke is love. But hear the word YAHUAH has given me —']},
        {rays:.5,raysX:16},{sfx:'holy'},
-       {say:['voice','For I desire kindness and not slaughtering, and the knowledge of Aluahim more than burnt offerings. But like Aḏam they transgressed the covenant; there they dealt treacherously with Me.']},
+       {say:['voice','For I delight in kindness and not slaughtering and in the knowledge of Aluahim more than burnt offerings. But like Aḏam they transgressed the berith. There they acted treacherously against Me.']},
        {burst:[16,11,'holy',12]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'sorrow', text:'O Ephrayim, what shall I do with you? O Yahuḏah, what shall I do with you? For your kindness is like a morning cloud, like the early dew that goes away. Therefore I have hewn them by the prophets, I have slain them by the words of My mouth — and My judgments go forth as the light. For I desire kindness and not slaughtering, and the knowledge of Aluahim more than burnt offerings.', ref:'HOSHĔA 6:4–6'},
-   {art:'corrupt', music:'tense', text:'But like Aḏam they transgressed the covenant; there they dealt treacherously with Me. Gilʿaḏ is a city of evildoers, tracked with blood. As bands of robbers wait for a man, so a company of priests murder on the way to Sheḵem — they commit deliberate wickedness. In the house of Yisra’ĕl I have seen a horror — there is the whoring of Ephrayim; Yisra’ĕl is defiled. Also, O Yahuḏah, a harvest is appointed for you, when I turn back the captivity of My people.', ref:'HOSHĔA 6:7–11'},
+   {art:'light', music:'sorrow', text:'Ephrayim, what would I do with you? Yahuḏah, what would I do with you? For your trustworthiness is like a morning cloud and like the early dew it goes away. Therefore I have hewn them by the naḇi’im, I have slain them by the words of My mouth. And My right-rulings break forth as the light. For I delight in kindness and not slaughtering and in the knowledge of Aluahim more than burnt offerings.', ref:'HOSHĔA 6:4–6', stage:{"set":"court","time":"day","wx":"mist","wxAt":2,"cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.12,"z":0.12,"face":"r","pose":"speak","hold":"scroll","say":3,"acts":[{"at":3,"pose":"point"}]},{"id":"hebrew","x":0.48,"z":0.12,"face":"r","pose":"carry","hold":"lamb","acts":[{"at":5,"face":"l","pose":"bless"}]},{"id":"yehudi","x":0.64,"z":0.16,"look":{"name":"A Man of Yahuḏah","skin":"#83552d","hair":"#231409","hairStyle":"short","robe":"#4a5a6a","beard":"#231409","headcover":"#c8b890"},"face":"r","pose":"carry","hold":"lamb","at":1},{"id":"poorbro","x":0.33,"z":0.05,"face":"r","pose":"sitground","at":5}],"props":[{"k":"altar","x":0.84,"z":0.4,"sacrifice":1}],"fx":[{"k":"rays","x":0.5,"at":4}]}},
+   {art:'corrupt', music:'tense', text:'But like Aḏam they transgressed the berith. There they acted treacherously against Me. Gilʿaḏ is a city of workers of wickedness – tracked up with blood. And as bands of robbers lie in wait for a man, so the company of kohanim murder on the way to Sheḵem, for they have done wickedness. I have seen a horrible matter in the house of Yasharal: the whoring of Ephrayim is there, Yasharal is defiled. Also, a harvest is appointed for you, O Yahuḏah, when I turn back the captivity of My people.', ref:'HOSHĔA 6:7–11', stage:{"set":"road","time":"dusk","cam":"pan-r","focus":0.55,"cast":[{"id":"hoshea","x":0.12,"z":0.12,"face":"r","pose":"point","say":0},{"id":"victim","x":0.54,"z":0.1,"face":"r","enter":"l","at":2,"acts":[{"at":3,"pose":"fall"}]},{"id":"baalpriest","x":0.67,"z":0.2,"face":"l","pose":"strike","at":3,"from":"kneel"}],"crowd":[{"kind":"kohanim","n":3,"x":0.84,"w":0.1,"z":0.36,"face":"l","pose":"fight","at":3,"hold":"staff","from":"kneel"}],"props":[{"k":"rock","x":0.72,"z":0.16,"w":60,"h":40},{"k":"rock","x":0.86,"z":0.26,"w":50,"h":34},{"k":"sheaves","x":0.24,"z":0.46,"n":4,"at":5}],"fx":[{"k":"red","at":3,"amt":0.12},{"k":"rays","x":0.25,"at":5}]}},
   ],
-  complete:'For I desire kindness and not slaughtering — the knowledge of Aluahim above burnt offerings.'
+  complete:'For I delight in kindness and not slaughtering — and in the knowledge of Aluahim more than burnt offerings.'
 },
 
-{ id:'h7', title:'A Cake Not Turned', ref:'HOSHĔA 7',
+{ id:'h7', title:'A Cake Unturned', ref:'HOSHĔA 7',
   intro:[
-   {art:'corrupt', music:'tense', text:'When I would heal Yisra’ĕl, the crookedness of Ephrayim was uncovered, and the evils of Shomeron — for they practice falsehood; a thief comes in, a band raids outside. And they do not consider in their hearts that I remember all their evil; now their own deeds surround them, they are before My face. They delight the sovereign with their evil, and the princes with their lies. They are all adulterers, like an oven heated by a baker who stops stirring the fire from kneading to rising. On the day of our sovereign the princes made him sick with the heat of wine; their heart is like an oven — all night their anger smolders, and in the morning it burns like a flame. They devour their judges; all their sovereigns have fallen — and none of them calls on Me.', ref:'HOSHĔA 7:1–7'},
+   {art:'corrupt', music:'tense', text:'Whenever I would heal Yasharal, then the crookedness of Ephrayim is uncovered and the evil deeds of Shomeron. For they have wrought falsehood and a thief comes in, a band of robbers raids outside. And they do not say to their hearts that I remember all their evil. Now their own deeds have surrounded them, they have been before Me. With their evil they make a sovereign glad and rulers with their lies. All of them are adulterers, as an oven heated by a baker… In the day of our sovereign rulers became sick, inflamed with wine. … their heart is like an oven… In the morning it burns like a flaming fire. All of them are as hot as an oven and they consumed their rulers. All their sovereigns have fallen – not one among them calls on Me.', ref:'HOSHĔA 7:1–7', stage:{"set":"palace","time":"night","cam":"push","focus":0.5,"cast":[{"id":"ephraimking","x":0.26,"z":0.18,"face":"r","pose":"enthroned","crown":1,"hold":"cup","acts":[{"at":10,"pose":"fall"}]},{"id":"raider","x":0.8,"z":0.12,"face":"l","enter":"r","at":1,"label":false,"acts":[{"at":2,"exit":"r","run":1}]},{"id":"baker","x":0.78,"z":0.32,"face":"r","pose":"carry","at":5}],"crowd":[{"kind":"princes","n":4,"x":0.58,"w":0.22,"z":0.44,"face":"l","pose":"fall","at":9,"hold":"cup","from":"raise"}],"props":[{"k":"table","x":0.5,"z":0.3,"cups":1},{"k":"furnace","x":0.88,"z":0.56,"at":5,"s":0.5}],"fx":[{"k":"red","at":6,"amt":0.15},{"k":"fire","at":8},{"k":"smoke","x":0.6,"at":9},{"k":"darkness","at":10,"amt":0.35}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:9007,
-     features:[ {type:'firepit',x:18,y:12,id:'oven',examine:'A baker’s oven — “they are all hot as an oven.” Their passions blaze all night for evil, and burn down their own rulers.'},{type:'house',x:30,y:9,id:'palace',examine:'The house of the king — where princes fall by the sword, and not one of them cries out to YAHUAH.'},{type:'idol',x:14,y:16,id:'mixing',examine:'A half-baked loaf — “Ephrayim is a cake not turned.” Half toward Aluahim, half toward the nations, and good for nothing.'},{type:'clearing',x:24,y:18,flat:3} ]},
+     features:[ {type:'firepit',x:18,y:12,id:'oven',examine:'A baker’s oven — “all of them are as hot as an oven.” Their passions blaze all night for evil, and burn down their own rulers.'},{type:'house',x:30,y:9,id:'palace',examine:'The house of the sovereign — where rulers fall by the sword, and not one of them calls on YAHUAH.'},{type:'idol',x:14,y:16,id:'mixing',examine:'A half-baked loaf — “Ephrayim has become a cake unturned.” Half toward Aluahim, half toward the nations, and good for nothing.'},{type:'clearing',x:24,y:18,flat:3} ]},
    time:'day', music:'tense',
    player:'hoshea', playerPos:[24,20], playerHold:'scroll',
    npcs:[ {id:'ephraimking',char:'ephraimking',x:29,y:11,wander:false},{id:'ashshur',char:'ashshur',x:15,y:13,wander:true} ],
    objectives:[
-     {type:'interact',prop:'mixing',text:'Name the sickness — a cake not turned',
+     {type:'interact',prop:'mixing',text:'Name the sickness — a cake unturned',
       script:[
-       {say:['hoshea','Ephrayim has mixed himself among the peoples — half toward Aluahim, half toward the nations. He is a cake not turned: burnt on one side, raw on the other, and good for nothing.']},
-       {say:['voice','Strangers have devoured his strength, and he does not know it. Grey hairs are here and there upon him, yet he does not know it. And the pride of Yisra’ĕl witnesses to his face, but they do not turn back to YAHUAH their Aluah, nor seek Him, for all this.']},
+       {say:['hoshea','Ephrayim mixes himself among the peoples — half toward Aluahim, half toward the nations. Ephrayim has become a cake unturned: burnt on one side, raw on the other, and good for nothing.']},
+       {say:['voice','Strangers have devoured his strength but he does not know it. Grey hairs are also sprinkled on him and he does not know it. And the Excellency of Yasharal did witness to his face but they did not return to YAHUAH their Aluahim nor did they seek Him for all this.']},
        {burst:[14,16,'ash',10]},{sfx:'bad'},
       ]},
      {type:'talk',npc:'ephraimking',text:'They call to Mitsrayim and Ashshur — but not to Me',hiddenUntil:1,
       script:[
        {say:['ephraimking','Egypt or Ashshur — one of them will save us. We will send envoys, buy their favor, secure the throne.']},
-       {say:['hoshea','Ephrayim is like a silly dove without heart — they call to Mitsrayim, they go to Ashshur. In all their scheming, not once do they call on the One who could truly deliver them.']},
+       {say:['hoshea','Ephrayim has become a simple dove without heart — they have called on Mitsrayim, they have gone to Ashshur. In all their scheming, not once do they call on the One who could truly deliver them.']},
        {rays:.4,raysX:24},
        {say:['voice','Woe to them, for they have fled from Me! Destruction to them, for they have transgressed against Me! Though I would redeem them, they have spoken lies against Me. They do not cry out to Me with their heart when they wail on their beds.']},
        {shake:.8},{sfx:'bad'},{burst:[29,9,'ash',12]},
@@ -6077,11 +6224,11 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'Ephrayim mixes himself among the peoples; Ephrayim has become a cake unturned. Strangers have devoured his strength, and he does not know it; grey hairs are here and there upon him, yet he does not know it. And the Excellency of Yisra’ĕl witnesses to his face, but they do not turn back to YAHUAH their Aluah, nor seek Him, for all this.', ref:'HOSHĔA 7:8–10'},
-   {art:'corrupt', music:'tense', text:'Ephrayim has become like a silly dove without heart — they call to Mitsrayim, they go to Ashshur. As they go, I spread My net over them; I bring them down like birds of the heavens; I discipline them as their assembly has heard. Woe to them, for they have fled from Me! Ruin to them, for they have transgressed against Me! Though I would redeem them, they have spoken lies against Me.', ref:'HOSHĔA 7:11–13'},
-   {art:'wasteland', music:'sorrow', text:'They did not cry out to Me with their heart when they wailed upon their beds; for grain and new wine they assemble, but turn away from Me. I disciplined them, I strengthened their arms — yet they devise evil against Me. They turn, but not upward; they are like a deceitful bow. Their princes fall by the sword for the rage of their tongue — this is their derision in the land of Mitsrayim.', ref:'HOSHĔA 7:14–16'},
+   {art:'corrupt', music:'tense', text:'Ephrayim mixes himself among the peoples, Ephrayim has become a cake unturned. Strangers have devoured his strength but he does not know it. Grey hairs are also sprinkled on him and he does not know it. And the Excellency of Yasharal did witness to his face but they did not return to YAHUAH their Aluahim nor did they seek Him for all this.', ref:'HOSHĔA 7:8–10', stage:{"set":"city","time":"day","cam":"close","focus":0.4,"cast":[{"id":"ephrayim","x":0.28,"z":0.1,"look":{"name":"Ephrayim","skin":"#8a6038","hair":"#a8a298","hairStyle":"short","robe":"#3a4a6e","beard":"#a8a298","headcover":"#8a7a4a","old":1},"face":"r","pose":"sitground","hold":"bread"}],"crowd":[{"kind":"nations","n":6,"x":0.68,"w":0.36,"z":0.56,"face":"l"},{"kind":"nations","n":3,"x":0.56,"w":0.1,"z":0.24,"face":"l","pose":"carry","hold":"basket","exit":"r","exitAt":1}],"props":[{"k":"fire","x":0.4,"z":0.12}],"fx":[{"k":"glory","x":0.08,"y":0.04,"at":3}]}},
+   {art:'corrupt', music:'tense', text:'And Ephrayim has become a simple dove without heart, they have called on Mitsrayim, they have gone to Ashshur. When they go I spread My net over them, I bring them down like the birds of the shamayim, I chastise them as their qahal has heard. Woe to them, for they have strayed from Me! Destruction to them, because they have transgressed against Me! And I Myself have ransomed them, yet they have spoken falsehoods against Me.', ref:'HOSHĔA 7:11–13', stage:{"set":"desert","time":"day","cam":"push","focus":0.5,"cast":[{"id":"mitsri","x":0.14,"z":0.14,"look":{"name":"An Envoy of Mitsrayim","skin":"#8a5a30","hair":"#1d1208","hairStyle":"egypt","robe":"#ece4cc","collar":"#caa23c"},"face":"r","pose":"stand","acts":[{"at":2,"exit":"l"}]},{"id":"ephraimking","x":0.42,"z":0.1,"face":"l","pose":"speak","crown":1,"say":0,"acts":[{"at":1,"pose":"fall"},{"at":4,"pose":"speak","face":"r"}]},{"id":"ashshur","x":0.8,"z":0.14,"face":"l","pose":"stand","acts":[{"at":2,"exit":"r"}]}],"fx":[{"k":"dove","x":0.42,"y":0.2},{"k":"darkness","at":1,"amt":0.25},{"k":"glory","x":0.5,"y":0.04,"at":4}]}},
+   {art:'wasteland', music:'sorrow', text:'…and did not cry out to Me with their heart when they wailed upon their beds. For grain and new wine they assemble themselves; they turn away from Me. And I instructed, I strengthened their arms, but they plot evil against Me. They return, but not to the Most High. They have been like a slack bow. Their rulers fall by the sword for the cursings of their tongue. This is their scorn in the land of Mitsrayim.', ref:'HOSHĔA 7:14–16', stage:{"set":"threshing","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"hebrew","x":0.2,"z":0.12,"face":"r","pose":"lie","onbed":1,"hold":"basket","acts":[{"at":1,"to":0.46,"pose":"carry"}]}],"crowd":[{"kind":"people","n":5,"x":0.62,"w":0.3,"z":0.5,"face":"r","enter":"l","at":1,"pose":"carry","hold":"basket"},{"kind":"princes","n":3,"x":0.84,"w":0.12,"z":0.36,"face":"l","pose":"fall","at":6,"from":"stand"}],"props":[{"k":"sheaves","x":0.6,"z":0.34,"n":4},{"k":"sacks","x":0.72,"z":0.28,"n":4},{"k":"idol","x":0.9,"z":0.42,"at":4}],"fx":[{"k":"glory","x":0.06,"y":0.04,"at":2},{"k":"red","at":6,"amt":0.15},{"k":"darkness","at":7,"amt":0.25}]}},
   ],
-  complete:'Ephrayim is a cake not turned — they call to the nations, but not to YAHUAH.'
+  complete:'Ephrayim has become a cake unturned — they call to the nations, but not to YAHUAH.'
 },
 
 ]},
@@ -6089,13 +6236,13 @@ STORY.push(
 /* ============ ACT III — THE WIND AND THE WHIRLWIND ============ */
 { id:'hact3', roman:'III', title:'The Wind and the Whirlwind', ref:'HOSHĔA 8–10', chapters:[
 
-{ id:'h8', title:'They Sow the Wind', ref:'HOSHĔA 8',
+{ id:'h8', title:'They Sow the Ruach', ref:'HOSHĔA 8',
   intro:[
-   {art:'wasteland', music:'tense', text:'Set the ram’s horn to your mouth! He comes like an eagle against the House of YAHUAH, because they have transgressed My covenant and rebelled against My Torah. Yisra’ĕl cries to Me, “My Aluah, we know You!” — yet Yisra’ĕl has rejected the good; an enemy pursues him. They set up sovereigns, but not from Me; they made princes, but I did not know. Of their silver and gold they made themselves idols, that they be cut off. Your calf is rejected, O Shomeron! My displeasure burns against them — how long will they be unable to be innocent? For it is from Yisra’ĕl — a craftsman made it, so it is not Aluahim; the calf of Shomeron shall be splinters!', ref:'HOSHĔA 8:1–6'},
+   {art:'wasteland', music:'tense', text:'Put the ram’s horn to your mouth, like an eagle against the House of YAHUAH, because they have transgressed My berith and they have rebelled against My Torah. They cry out to Me, “My Aluahim – we, Yasharal, know You!” Yasharal has rejected what is good, an enemy pursues him. They have made sovereigns, but not from Me. They have made rulers, but I have not known. From their silver and gold they made idols for themselves, so that they are cut off. O Shomeron, your calf has been cast off! My wrath has burned against them. How long shall they be incapable of innocence? For from Yasharal is even this: a workman made it and it is not Aluahim! For the calf of Shomeron is splinters!', ref:'HOSHĔA 8:1–6', stage:{"set":"city","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"hoshea","x":0.12,"z":0.12,"face":"r","pose":"raise","hold":"shofar","acts":[{"at":1,"pose":"point"}]},{"id":"ephraimking","x":0.64,"z":0.16,"face":"l","crown":1,"at":3,"pose":"stand","acts":[{"at":6,"pose":"weep"}]},{"id":"builder","x":0.32,"z":0.18,"face":"r","at":5,"pose":"strike","acts":[{"at":9,"pose":"stand"}]}],"crowd":[{"kind":"people","n":6,"x":0.46,"w":0.3,"z":0.56,"face":"l","pose":"raise","at":1,"from":"stand"},{"kind":"army","n":6,"x":0.86,"w":0.18,"z":0.64,"side":"ashshur","face":"l","enter":"r","at":2},{"kind":"princes","n":3,"x":0.75,"w":0.1,"z":0.42,"face":"l","at":4}],"props":[{"k":"calf","x":0.46,"z":0.28,"s":1.5,"at":5}],"fx":[{"k":"red","at":7,"amt":0.2},{"k":"firefall","x":0.46,"y":0.64,"at":10},{"k":"smoke","x":0.46,"at":10}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:9008,
-     features:[ {type:'idol',x:22,y:9,id:'calf',examine:'The calf of Shomeron — “a workman made it, so it is not Aluahim.” It shall be broken to pieces.'},{type:'altar',x:14,y:13,id:'altars',examine:'Altar upon altar for sinning — Ephrayim multiplied altars, and they became to him altars for sin.'},{type:'sheaf',x:31,y:16,id:'field',examine:'A stalk with no head — “they sow the wind, and reap the whirlwind. The standing grain has no bud; it yields no flour.”'},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'idol',x:22,y:9,id:'calf',examine:'The calf of Shomeron — “a workman made it and it is not Aluahim!” It shall be broken to pieces.'},{type:'altar',x:14,y:13,id:'altars',examine:'Mizbe’ach upon mizbe’ach — Ephrayim has made many mizbe’achot for sin; they have been mizbe’achot for sinning to him.'},{type:'sheaf',x:31,y:16,id:'field',examine:'A stalk with no head — “they sow the ruach and reap the whirlwind. The stalk has no bud, it yields no grain.”'},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'tense',
    player:'hoshea', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'baalpriest',char:'baalpriest',x:20,y:12,wander:false},{id:'ephraimking',char:'ephraimking',x:16,y:15,wander:false} ],
@@ -6103,96 +6250,96 @@ STORY.push(
      {type:'interact',prop:'calf',text:'Denounce the calf of Shomeron — it is not Aluahim',
       script:[
        {say:['hoshea','Your calf, O Shomeron — a craftsman made it; it is not Aluahim! The calf of Shomeron shall be broken to splinters.']},
-       {say:['voice','They have set up sovereigns, but not from Me; they have made princes, but I did not know it. Of their silver and gold they made themselves idols, so that they be cut off.']},
+       {say:['voice','They have made sovereigns, but not from Me. They have made rulers, but I have not known. From their silver and gold they made idols for themselves, so that they are cut off.']},
        {shake:1},{sfx:'bad'},{burst:[22,9,'ash',14]},
       ]},
      {type:'interact',prop:'field',text:'Reap what was sown — the wind becomes the whirlwind',hiddenUntil:1,
       script:[
-       {say:['hoshea','This is the harvest of forgetting your Maker: you scattered the wind across the field, and now the whirlwind comes back to reap you.']},
+       {say:['hoshea','This is the harvest of forgetting your Maker: you scattered the ruach across the field, and now the whirlwind comes back to reap you.']},
        {rays:.3,raysX:22},{shake:1.2},{sfx:'thunder'},{burst:[31,16,'ash',18]},
-       {say:['voice','For they sow the wind, and they reap the whirlwind. The standing grain has no stalk; it yields no flour. And should it yield, strangers would swallow it up. For Yisra’ĕl has forgotten his Maker, and has built palaces.']},
-       {say:['hoshea','Everything they raised up — kings, idols, altars, treaties — was seed thrown to the wind. And the wind is coming home.']},
+       {say:['voice','For they sow the ruach and reap the whirlwind. The stalk has no bud, it yields no grain. If it does yield, strangers swallow it up. For Yasharal has forgotten his Maker and has built palaces.']},
+       {say:['hoshea','Everything they raised up — sovereigns, idols, mizbe’achot, treaties — was seed thrown to the ruach. And the ruach is coming home.']},
        {burst:[22,18,'ash',12]},{sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'tense', text:'For they sow the wind, and they reap the whirlwind. The standing grain has no stalk; it yields no flour; and if it does, strangers swallow it up. Yisra’ĕl is swallowed up — now they are among the nations like a vessel no one delights in. For they have gone up to Ashshur like a wild donkey alone; Ephrayim has hired lovers. Though they hire among the nations, now I gather them, and they begin to diminish under the burden of the sovereign of princes.', ref:'HOSHĔA 8:7–10'},
-   {art:'wasteland', music:'sorrow', text:'Because Ephrayim made many altars for sin, they have become to him altars for sinning. I wrote for him the great matters of My Torah — but they were reckoned as a strange matter. They slaughter flesh for the offerings they bring, and eat it, but YAHUAH has not accepted them. Now He remembers their crookedness and punishes their sins — they return to Mitsrayim. For Yisra’ĕl has forgotten his Maker and built palaces; Yahuḏah has multiplied walled cities. But I send fire on his cities, and it consumes their strongholds.', ref:'HOSHĔA 8:11–14'},
+   {art:'wasteland', music:'tense', text:'For they sow the ruach and reap the whirlwind. The stalk has no bud, it yields no grain. If it does yield, strangers swallow it up. Yasharal has been swallowed up. They have now become among the nations as a vessel in which is no pleasure. For they themselves have gone up to Ashshur. A wild donkey alone by itself is Ephrayim, they have hired lovers. Also, although they sold themselves among the nations, this time I shall gather them, when they have suffered for a while from the burden of a sovereign, of rulers.', ref:'HOSHĔA 8:7–10', stage:{"set":"field","time":"dusk","wx":"wind","cam":"push","focus":0.5,"cast":[{"id":"hebrew","x":0.3,"z":0.1,"face":"r","pose":"carry","hold":"basket","acts":[{"at":1,"pose":"weep"},{"at":5,"to":0.56,"pose":"bow"}]},{"id":"ashshur","x":0.72,"z":0.12,"face":"l","pose":"stand","at":5}],"crowd":[{"kind":"nations","n":4,"x":0.7,"w":0.2,"z":0.46,"face":"l","enter":"r","at":2,"exit":"r","exitAt":3,"hold":"basket","pose":"carry"}],"props":[{"k":"donkey","x":0.88,"z":0.3,"face":"l","at":6}],"fx":[{"k":"darkness","at":3,"amt":0.25},{"k":"glory","x":0.5,"y":0.04,"at":7}]}},
+   {art:'wasteland', music:'sorrow', text:'Since Ephrayim has made many mizbe’achot for sin, they have been mizbe’achot for sinning to him. I have written for him numerous matters of My Torah – they were regarded as strange. As for My offerings: they slaughter flesh and they eat. YAHUAH shall not accept them. Now does He remember their crookedness and punish their sins. Let them return to Mitsrayim! For Yasharal has forgotten his Maker and has built palaces. And Yahuḏah has increased walled cities. But I shall send fire upon his cities and it shall devour his strongholds.', ref:'HOSHĔA 8:11–14', stage:{"set":"walls","time":"dusk","cam":"pull","focus":0.5,"cast":[{"id":"hoshea","x":0.1,"z":0.12,"face":"r","pose":"point","hold":"scroll","say":1},{"id":"baalpriest","x":0.42,"z":0.18,"face":"r","pose":"raise","hold":"bowl","acts":[{"at":2,"pose":"hold"}]}],"crowd":[{"kind":"people","n":5,"x":0.66,"w":0.26,"z":0.56,"face":"l","exit":"l","exitAt":5}],"props":[{"k":"altar","x":0.22,"z":0.36},{"k":"altar","x":0.36,"z":0.42},{"k":"altar","x":0.5,"z":0.38},{"k":"scroll","x":0.64,"z":0.1,"at":1},{"k":"tower","x":0.86,"z":0.5,"h":150,"at":6}],"fx":[{"k":"darkness","at":3,"amt":0.2},{"k":"firefall","x":0.84,"y":0.56,"at":8},{"k":"smoke","x":0.8,"at":8},{"k":"red","at":8,"amt":0.2}]}},
   ],
-  complete:'They sow the wind, and they reap the whirlwind — Yisra’ĕl has forgotten his Maker.'
+  complete:'They sow the ruach and reap the whirlwind — Yasharal has forgotten his Maker.'
 },
 
 { id:'h9', title:'The Days of Reckoning', ref:'HOSHĔA 9',
   intro:[
-   {art:'expulsion', music:'sorrow', text:'Do not rejoice, O Yisra’ĕl, with joy like the peoples, for you have whored away from your Aluah — you have loved a harlot’s wages on every threshing floor. Threshing floor and winepress shall not feed them, and the new wine shall fail. They shall not dwell in the land of YAHUAH — Ephrayim returns to Mitsrayim, and in Ashshur they eat unclean food. They pour no wine to YAHUAH, nor are pleasing to Him; their slaughterings are like the bread of mourners — all who eat it are defiled. What shall you do on the appointed day, on the day of the festival of YAHUAH? For look — even should they flee from ruin, Mitsrayim gathers them, Moph buries them; nettles possess their treasures of silver, thorns are in their tents.', ref:'HOSHĔA 9:1–6'},
+   {art:'expulsion', music:'sorrow', text:'O Yasharal, do not rejoice with exultation like the peoples, for you have whored from your Aluahim. You have loved a love-fee at all threshing-floors. Threshing floor and winepress shall not feed them and new wine shall fail in her. They shall not dwell in the land of YAHUAH but Ephrayim shall return to Mitsrayim and eat unclean food in Ashshur. They do not pour wine offerings to YAHUAH, nor are their offerings pleasing to Him – it being like bread of mourners to them, all who eat it are defiled. … What do you do for the appointed meeting and in the day of the festival of YAHUAH? For look, they shall go because of destruction – Mitsrayim gathers them up, Moph buries them, nettles possess their valuables of silver, thorns are in their tents.', ref:'HOSHĔA 9:1–6', stage:{"set":"threshing","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.12,"z":0.12,"face":"r","pose":"point","say":0,"acts":[{"at":4,"pose":"weep"}]}],"crowd":[{"kind":"people","n":6,"x":0.44,"w":0.34,"z":0.52,"face":"r","pose":"mourn","at":2,"from":"dance"},{"kind":"captives","n":4,"x":0.68,"w":0.18,"z":0.36,"face":"l","at":3,"exit":"l","exitAt":6},{"kind":"soldiers","n":3,"x":0.86,"w":0.1,"z":0.4,"side":"ashshur","face":"l","at":3}],"props":[{"k":"sheaves","x":0.3,"z":0.42,"n":4},{"k":"tent","x":0.86,"z":0.52,"at":6},{"k":"bush","x":0.76,"z":0.42,"at":6},{"k":"bush","x":0.94,"z":0.44,"at":6}],"fx":[{"k":"darkness","at":6,"amt":0.25}]}},
   ],
   scene:{
    map:{biome:'wilderness', w:44, h:28, seed:9009,
-     features:[ {type:'gate',x:20,y:8,id:'exile',examine:'The road out of the land — Ephrayim gathered up and carried off, to return to bondage in Mitsrayim and Ashshur.'},{type:'vine',x:30,y:12,id:'vine',examine:'A withered vine — “Ephrayim was planted like Tsor, in a meadow; yet Ephrayim brings out his children to the slayer.”'},{type:'rock',x:14,y:16},{type:'tree',x:34,y:18},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'gate',x:20,y:8,id:'exile',examine:'The road out of the land — Ephrayim gathered up and carried off, to return to bondage in Mitsrayim and Ashshur.'},{type:'vine',x:30,y:12,id:'vine',examine:'A withered vine — “I have seen Ephrayim, like Tsor, planted in a pleasant place. But Ephrayim shall bring out his children to the murderer.”'},{type:'rock',x:14,y:16},{type:'tree',x:34,y:18},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'sorrow',
    player:'hoshea', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:18,y:12,wander:false},{id:'baalpriest',char:'baalpriest',x:28,y:14,wander:true} ],
    objectives:[
      {type:'talk',npc:'elder',text:'Announce the reckoning — the harvest will not feed them',
       script:[
-       {say:['elder','The feast is upon us, prophet! The threshing-floor is full, the winepress overflows — surely the LORD smiles on Yisra’ĕl.']},
-       {say:['hoshea','Do not rejoice, O Yisra’ĕl, like the nations rejoice — for you have whored away from your Aluah. The threshing-floor and the winepress will not feed you; the new wine will fail.']},
-       {say:['voice','The days of punishment have come, the days of recompense have come — Yisra’ĕl shall know it! Because of your great crookedness and great hatred, the prophet is regarded a fool, the man of the Spirit mad.']},
+       {say:['elder','The feast is upon us, naḇi! The threshing-floor is full, the winepress overflows — surely YAHUAH smiles on Yasharal.']},
+       {say:['hoshea','O Yasharal, do not rejoice with exultation like the peoples, for you have whored from your Aluahim. Threshing floor and winepress shall not feed them and new wine shall fail in her.']},
+       {say:['voice','The days of punishment have come, the days of recompense have come — Yasharal shall know it! Because of your great crookedness and great hatred, the naḇi is regarded a fool, the man of the Ruach mad.']},
        {burst:[18,12,'ash',10]},{sfx:'bad'},
       ]},
      {type:'interact',prop:'exile',text:'Walk the road of exile — no dwelling in the land of YAHUAH',hiddenUntil:1,
       script:[
-       {say:['hoshea','You shall not remain in the land of YAHUAH. Ephrayim returns to Mitsrayim, and in Ashshur they eat what is unclean.']},
+       {say:['hoshea','They shall not dwell in the land of YAHUAH but Ephrayim shall return to Mitsrayim and eat unclean food in Ashshur.']},
        {rays:.3,raysX:22},{sfx:'bad'},{burst:[20,8,'ash',12]},
-       {say:['voice','As for Ephrayim, their glory flies away like a bird — no birth, no womb, no conception. My Aluah rejects them, because they did not obey Him, and they shall be wanderers among the nations.']},
+       {say:['voice','Ephrayim is like a bird, their esteem has flown away – no birth and none with child and no conception! My Aluahim rejects them, because they have not obeyed Him, so that they become wanderers among the gentiles!']},
        {say:['hoshea','Yet even here, He calls them "My Aluah" — the tie is strained to breaking, but the Husband has not let go of the name.']},
        {burst:[30,12,'ash',10]},
       ]},
    ],
   },
   outro:[
-   {art:'expulsion', music:'sorrow', text:'The days of punishment have come, the days of recompense have come — Yisra’ĕl shall know it! The prophet is a fool, the man of the Spirit is mad, because of your great crookedness and great hatred. The watchman of Ephrayim was with my Aluah — yet the prophet is a fowler’s snare on all his ways, and hatred in the house of his Aluah. They have gone deep into corruption, as in the days of Giḇʿah — He remembers their crookedness, He punishes their sins.', ref:'HOSHĔA 9:7–9'},
-   {art:'wilderness', music:'sorrow', text:'I found Yisra’ĕl like grapes in the wilderness; I saw your fathers as the first fruit on the fig tree in its first season. But they went to Baʿal Peʿor and separated themselves to that shame, and became as loathsome as the thing they loved. As for Ephrayim, their esteem flies away like a bird — no birth, no womb, no conception! Even should they raise their children, I bereave them till not a man is left; woe to them when I turn from them! Ephrayim, as I saw, was planted like Tsor in a meadow — yet Ephrayim brings out his children to the slayer.', ref:'HOSHĔA 9:10–13'},
-   {art:'wasteland', music:'sorrow', text:'Give them, O YAHUAH — what shall You give? Give them a miscarrying womb and dry breasts! All their evil is in Gilgal, for there I hated them; because of the evil of their deeds I drive them from My house — I love them no more; all their princes are rebels. Ephrayim is stricken — their root is dried up, they yield no fruit; even if they bear, I slay the delights of their womb. My Aluah rejects them, because they did not obey Him, and they become wanderers among the nations.', ref:'HOSHĔA 9:14–17'},
+   {art:'expulsion', music:'sorrow', text:'The days of punishment have come, the days of retribution have come. Yasharal knows! The naḇi is a fool, the ‘man of the Ruach’ is mad, because of the greatness of your crookedness and great is the enmity. Aluahim’s watchman over you, Ephrayim, is the naḇi, but a trapper’s snare is in all his ways. Enmity is in the House of his Aluahim. They have deeply corrupted themselves, as in the days of Giḇʿah. He remembers their crookedness, He punishes their sins.', ref:'HOSHĔA 9:7–9', stage:{"set":"temple","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"hoshea","x":0.3,"z":0.12,"face":"r","pose":"point","say":0,"acts":[{"at":2,"pose":"raise"},{"at":5,"pose":"weep"}]},{"id":"baalpriest","x":0.6,"z":0.14,"face":"l","pose":"point","at":3}],"crowd":[{"kind":"people","n":6,"x":0.68,"w":0.34,"z":0.52,"face":"l","pose":"point","at":1,"from":"stand"}],"fx":[{"k":"darkness","at":4,"amt":0.25},{"k":"lightning","at":5}]}},
+   {art:'wilderness', music:'sorrow', text:'I found Yasharal like grapes in the wilderness. I saw your fathers as the firstfruits on the fig tree in its beginning. They themselves have gone to Baʿal Peʿor and separated themselves to shame and became as abominable as that which they loved. Ephrayim is like a bird, their esteem has flown away – no birth and none with child and no conception! Though they bring up their children, I shall make them childless, without man. For it is woe to them when I turn away from them! I have seen Ephrayim, like Tsor, planted in a pleasant place. But Ephrayim shall bring out his children to the murderer.', ref:'HOSHĔA 9:10–13', stage:{"set":"wilderness","time":"day","cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.1,"z":0.12,"face":"r","pose":"speak","say":0}],"crowd":[{"kind":"people","n":5,"x":0.7,"w":0.2,"z":0.56,"face":"r","pose":"bow","at":2,"from":"stand"},{"kind":"children","n":3,"x":0.52,"w":0.1,"z":0.18,"face":"l","at":4,"exit":"r","exitAt":7}],"props":[{"k":"vine","x":0.24,"z":0.32,"w":90},{"k":"tree","x":0.4,"z":0.38,"fruit":"#6a4a6a","at":1,"h":100},{"k":"idol","x":0.84,"z":0.42,"at":2}],"fx":[{"k":"ravens","x":0.6,"y":0.2,"n":4,"at":3},{"k":"darkness","at":5,"amt":0.25}]}},
+   {art:'wasteland', music:'sorrow', text:'Give them, O YAHUAH – give what? Give them a miscarrying womb and dry breasts. All their evil is in Gilgal, for there I have hated them. Because of the evil of their deeds I drive them from My house, no more do I love them. All their rulers are rebels. Ephrayim has been smitten, their root has dried up, they yield no fruit. Even if they bear children, I shall put to death the precious ones of their womb. My Aluahim rejects them, because they have not obeyed Him, so that they become wanderers among the gentiles!', ref:'HOSHĔA 9:14–17', stage:{"set":"valley","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"hoshea","x":0.2,"z":0.12,"face":"r","pose":"pray","say":0,"acts":[{"at":3,"pose":"stand"},{"at":7,"pose":"weep"}]}],"crowd":[{"kind":"women","n":4,"x":0.4,"w":0.14,"z":0.3,"face":"l","pose":"weep","at":1},{"kind":"people","n":6,"x":0.72,"w":0.24,"z":0.56,"face":"l","exit":"l","exitAt":7}],"props":[{"k":"stones","x":0.8,"z":0.4,"n":12,"at":2},{"k":"altar","x":0.92,"z":0.46,"at":2},{"k":"tree","x":0.52,"z":0.34,"color":"#6a5a3a","h":90,"at":5}],"fx":[{"k":"darkness","at":6,"amt":0.25}]}},
   ],
-  complete:'The days of recompense have come — Ephrayim shall wander among the nations.'
+  complete:'The days of retribution have come — Ephrayim shall wander among the gentiles.'
 },
 
-{ id:'h10', title:'Break Up Your Fallow Ground', ref:'HOSHĔA 10',
+{ id:'h10', title:'Break Up Your Tilable Ground', ref:'HOSHĔA 10',
   intro:[
-   {art:'land', music:'tense', text:'Yisra’ĕl is an emptying vine; he brings forth fruit for himself. As his fruit increased, he increased the altars; as his land prospered, he adorned the pillars. Their heart is divided, now they are found guilty. He breaks down their altars, He ruins their pillars. For now they say, “We have no sovereign, for we did not fear YAHUAH — and the sovereign, what could he do for us?” They have spoken mere words, swearing falsely in making a covenant; so judgment springs up like hemlock in the furrows of the field.', ref:'HOSHĔA 10:1–4'},
+   {art:'land', music:'tense', text:'Yasharal is a degenerate vine, he brings forth fruit for himself. As his fruit increased, he increased the mizbe’achot. And the better his land, the better they made the pillars. Their heart has been slippery, now they are guilty. He breaks down their mizbe’achot, He destroys their pillars. For now they say, “We have no sovereign, because we did not fear YAHUAH. What would the sovereign do for us?” They have spoken words, swearing falsely in making a berith. Therefore mishpat shall spring up like poisonous weeds in the furrows of the field.', ref:'HOSHĔA 10:1–4', stage:{"set":"vineyard","time":"day","cam":"pan-r","focus":0.55,"cast":[{"id":"hebrew","x":0.2,"z":0.12,"face":"r","pose":"raise","acts":[{"at":5,"pose":"weep"},{"at":7,"pose":"speak"}]},{"id":"yehudi","x":0.34,"z":0.14,"look":{"name":"A Man of Yahuḏah","skin":"#83552d","hair":"#231409","hairStyle":"short","robe":"#4a5a6a","beard":"#231409","headcover":"#c8b890"},"face":"l","pose":"speak","at":7}],"crowd":[{"kind":"people","n":5,"x":0.62,"w":0.3,"z":0.62,"face":"l","pose":"mourn","at":5}],"props":[{"k":"altar","x":0.44,"z":0.36,"at":1},{"k":"altar","x":0.56,"z":0.4,"at":1},{"k":"pillar","x":0.7,"z":0.38,"h":110,"at":2},{"k":"pillar","x":0.8,"z":0.42,"h":110,"at":2},{"k":"bush","x":0.3,"z":0.06,"color":"#5a5a2a","at":8},{"k":"bush","x":0.62,"z":0.04,"color":"#5a5a2a","at":8}],"fx":[{"k":"lightning","at":4},{"k":"smoke","x":0.6,"at":4}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:28, seed:9010,
-     features:[ {type:'vine',x:14,y:10,id:'emptyvine',examine:'A luxuriant vine that keeps its fruit for itself — the more Yisra’ĕl prospered, the more altars and pillars she raised to other gods.'},{type:'idol',x:30,y:11,id:'calfaven',examine:'The calf of Bĕyth Aven — “the House of Wickedness.” Its people mourn over it, for its glory is carried off to Ashshur.'},{type:'wheat',x:26,y:19,id:'fallow',examine:'Hard, unbroken ground — “Break up your fallow ground: it is time to seek YAHUAH, till He comes and rains righteousness on you.”'},{type:'clearing',x:20,y:17,flat:3} ]},
+     features:[ {type:'vine',x:14,y:10,id:'emptyvine',examine:'A degenerate vine that keeps its fruit for itself — the more Yasharal prospered, the more mizbe’achot and pillars she raised to other gods.'},{type:'idol',x:30,y:11,id:'calfaven',examine:'The calf of Bĕyth Aven — “the House of Wickedness.” Its people mourn over it, for its esteem is carried off to Ashshur.'},{type:'wheat',x:26,y:19,id:'fallow',examine:'Hard, unbroken ground — “Break up your tilable ground, it is time to seek YAHUAH, til He comes and rains righteousness on you.”'},{type:'clearing',x:20,y:17,flat:3} ]},
    time:'day', music:'tense',
    player:'hoshea', playerPos:[20,20],
    npcs:[ {id:'baalpriest',char:'baalpriest',x:29,y:13,wander:false},{id:'gomer',char:'gomer',x:16,y:12,wander:true} ],
    objectives:[
-     {type:'interact',prop:'calfaven',text:'The calf of Bĕyth Aven is carried away — its glory departs',
+     {type:'interact',prop:'calfaven',text:'The calf of Bĕyth Aven is carried away — its esteem departs',
       script:[
-       {say:['hoshea','The calf of Bĕyth Aven — your House of Wickedness — its own people mourn over it. Its glory is carried off to Ashshur as tribute to the great king; Ephrayim is put to shame.']},
-       {say:['voice','The high places of Aven, the sin of Yisra’ĕl, are destroyed. Thorn and thistle grow on their altars. And they shall say to the mountains, “Cover us!” and to the hills, “Fall on us!”']},
+       {say:['hoshea','The calf of Bĕyth Aven — your House of Wickedness — its people shall mourn for it, because of its esteem that has departed from it. It is also brought to Ashshur as a present for the great sovereign. Ephrayim does receive shame.']},
+       {say:['voice','And the high places of Aven, the sin of Yasharal, shall be destroyed, thorn and thistle come up on their mizbe’achot. And they shall say to the mountains, “Cover us!” and to the hills, “Fall on us!”']},
        {shake:1},{sfx:'bad'},{burst:[30,11,'ash',12]},
       ]},
-     {type:'interact',prop:'fallow',text:'Break up the fallow ground — sow righteousness, reap kindness',hiddenUntil:1,
+     {type:'interact',prop:'fallow',text:'Break up the tilable ground — sow righteousness, reap kindness',hiddenUntil:1,
       script:[
-       {say:['hoshea','But the LORD does not end on the ruined altar. Hear His plea to a hardened people — a plea a plowman understands:']},
+       {say:['hoshea','But YAHUAH does not end on the ruined mizbe’ach. Hear His plea to a hardened people — a plea a plowman understands:']},
        {rays:.6,raysX:26},{sfx:'holy'},
-       {say:['voice','Sow for yourselves righteousness; reap according to kindness. Break up your fallow ground, for it is time to seek YAHUAH, till He comes and rains righteousness on you.']},
+       {say:['voice','Sow for yourselves righteousness; reap according to kindness. Break up your tilable ground, for it is time to seek YAHUAH, til He comes and rains righteousness on you.']},
        {burst:[26,19,'holy',16]},{sfx:'chime'},
-       {say:['hoshea','The ground of the heart, packed hard by years of sin, can still be broken open — and the same LORD who threatens the thornfield waits to rain righteousness on the field that turns to Him.']},
+       {say:['hoshea','The ground of the heart, packed hard by years of sin, can still be broken open — and the same YAHUAH who threatens the thornfield waits to rain righteousness on the field that turns to Him.']},
        {burst:[20,17,'mote',10]},
       ]},
    ],
   },
   outro:[
-   {art:'fall', music:'sorrow', text:'The inhabitants of Shomeron fear for the calf of Bĕyth Aven; its people mourn over it, and its priests tremble for it, for its esteem has departed. It too is carried to Ashshur as tribute to the great king; Ephrayim is put to shame, and Yisra’ĕl is ashamed of his own counsel. As for Shomeron, her sovereign is cut off like a twig on the water. The high places of Aven — the sin of Yisra’ĕl — are destroyed; thorn and thistle grow on their altars. And they say to the mountains, “Cover us!” and to the hills, “Fall on us!”', ref:'HOSHĔA 10:5–8'},
-   {art:'wasteland', music:'tense', text:'O Yisra’ĕl, you have sinned from the days of Giḇʿah — there they stood; shall not the battle in Giḇʿah against the sons of perversity overtake them? When I please, I discipline them; peoples gather against them when they are bound for their double crookedness. Ephrayim was a trained heifer that loved to thresh — I passed over her fair neck; I make Ephrayim pull the plow; Yahuḏah plows, Yaʿaqoḇ breaks his clods.', ref:'HOSHĔA 10:9–11'},
-   {art:'garden', music:'holy', text:'Sow for yourselves righteousness; reap according to kindness; break up your fallow ground, for it is time to seek YAHUAH, till He comes and rains righteousness on you. You have plowed wickedness, you have reaped injustice, you have eaten the fruit of lies — because you trusted in your own way, in your many mighty men. Therefore the roar of battle rises against your people, and all your strongholds are ravaged — as Shalman ravaged Bĕyth Arḇĕl in the day of battle. Thus it is done to you, O Bĕyth Ĕl, because of your great evil — at dawn the sovereign of Yisra’ĕl is utterly cut off.', ref:'HOSHĔA 10:12–15'},
+   {art:'fall', music:'sorrow', text:'The inhabitants of Shomeron fear because of the calf of Bĕyth Aven. For its people shall mourn for it … because of its esteem that has departed from it. It is also brought to Ashshur as a present for Sovereign Yarĕḇ. Ephrayim does receive shame and Yasharal is put to shame through his counsel. Shomeron is cut off, her sovereign is like a twig on the surface of the water. And the high places of Aven, the sin of Yasharal, shall be destroyed, thorn and thistle come up on their mizbe’achot. And they shall say to the mountains, “Cover us!” and to the hills, “Fall on us!”', ref:'HOSHĔA 10:5–8', stage:{"set":"highplace","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"baalpriest","x":0.36,"z":0.16,"face":"r","pose":"mourn","at":1,"from":"stand"},{"id":"ephraimking","x":0.6,"z":0.12,"face":"l","crown":1,"pose":"stand","acts":[{"at":4,"pose":"weep"},{"at":5,"pose":"fall"}]},{"id":"ashshur","x":0.84,"z":0.14,"face":"l","enter":"r","at":3,"pose":"point"}],"crowd":[{"kind":"people","n":6,"x":0.56,"w":0.4,"z":0.62,"face":"l","pose":"mourn","at":1,"from":"stand"},{"kind":"people","n":4,"x":0.16,"w":0.16,"z":0.5,"face":"l","pose":"fall","at":7}],"props":[{"k":"calf","x":0.46,"z":0.32},{"k":"altar","x":0.3,"z":0.4},{"k":"cart","x":0.76,"z":0.3,"face":"r","load":1,"at":3},{"k":"bush","x":0.25,"z":0.3,"at":6},{"k":"bush","x":0.36,"z":0.36,"at":6}],"fx":[{"k":"darkness","at":7,"amt":0.3}]}},
+   {art:'wasteland', music:'tense', text:'O Yasharal, you have sinned from the days of Giḇʿah. There they stood! The battle in Giḇʿah against the children of perversity did not overtake them. When I desire, then I bind them. And peoples shall be gathered against them when I bind them for their double guilt. And Ephrayim is a trained heifer, loving to thresh grain. But I Myself shall pass over her comely neck – I put Ephrayim to the yoke, Yahuḏah ploughs, Yaʿaqoḇ harrows for him.', ref:'HOSHĔA 10:9–11', stage:{"set":"field","time":"day","wx":"dust","wxAt":1,"cam":"push","focus":0.5,"cast":[{"id":"hoshea","x":0.1,"z":0.12,"face":"r","pose":"point","say":0},{"id":"hebrew","x":0.3,"z":0.1,"face":"r","enter":"l","at":5,"pose":"carry","hold":"yoke"}],"crowd":[{"kind":"soldiers","n":4,"x":0.62,"w":0.2,"z":0.46,"side":"yasharal","face":"r","pose":"bound","at":2,"hold":null,"from":"fight"},{"kind":"army","n":6,"x":0.86,"w":0.18,"z":0.56,"side":"ashshur","face":"l","enter":"r","at":3}],"props":[{"k":"oxen","x":0.44,"z":0.22,"n":1,"at":4},{"k":"sheaves","x":0.2,"z":0.44,"n":3}]}},
+   {art:'garden', music:'holy', text:'Sow for yourselves righteousness, reap according to kindness, break up your tilable ground, it is time to seek YAHUAH, til He comes and rains righteousness on you. You have ploughed wrongness, you have reaped unrighteousness, you have eaten the fruit of lying, because you trusted in your own way, in your many mighty men. And uproar shall arise among your people and all your strongholds shall be ravaged as Shalman ravaged Bĕyth Arḇĕl in the day of battle … Thus it shall be done to you, O Bĕyth Ĕl, because of the evil of your wickedness. At dawn the sovereign of Yasharal is completely cut off!', ref:'HOSHĔA 10:12–15', stage:{"set":"field","time":"dawn","wx":"rain","cam":"push","focus":0.5,"cast":[{"id":"hebrew","x":0.3,"z":0.1,"face":"r","pose":"carry","hold":"basket","acts":[{"at":1,"pose":"stand"},{"at":2,"exit":"l","run":1}]},{"id":"ephraimking","x":0.52,"z":0.14,"face":"r","crown":1,"at":1,"pose":"stand","acts":[{"at":4,"pose":"fall"}]}],"crowd":[{"kind":"soldiers","n":5,"x":0.66,"w":0.22,"z":0.46,"side":"yasharal","face":"r","at":1},{"kind":"army","n":6,"x":0.88,"w":0.14,"z":0.56,"side":"ashshur","face":"l","enter":"r","at":2,"pose":"fight"}],"fx":[{"k":"smoke","x":0.8,"at":2},{"k":"red","at":2,"amt":0.15},{"k":"firefall","x":0.78,"y":0.56,"at":3}]}},
   ],
-  complete:'Break up your fallow ground — it is time to seek YAHUAH, till He rains righteousness on you.'
+  complete:'Break up your tilable ground — it is time to seek YAHUAH, til He comes and rains righteousness on you.'
 },
 
 ]},
@@ -6200,149 +6347,149 @@ STORY.push(
 /* ============ ACT IV — THE LOVE THAT WILL NOT LET GO ============ */
 { id:'hact4', roman:'IV', title:'The Love That Will Not Let Go', ref:'HOSHĔA 11–14', chapters:[
 
-{ id:'h11', title:'When Yisra’ĕl Was a Child', ref:'HOSHĔA 11',
+{ id:'h11', title:'When Yasharal Was a Child', ref:'HOSHĔA 11',
   intro:[
-   {art:'egypt', music:'sorrow', text:'When Yisra’ĕl was a child, I loved him, and out of Mitsrayim I called My son. The more they called them, the more they went from them; they slaughtered to the Baʿals and burned incense to carved images. And it was I who taught Ephrayim to walk, taking them by their arms — but they did not know that I healed them. I drew them with cords of a man, with ropes of love, and I was to them as those who lift the yoke from their jaws, and I bent down and fed them.', ref:'HOSHĔA 11:1–4'},
+   {art:'egypt', music:'sorrow', text:'When Yasharal was a child, I loved him and out of Mitsrayim I called My son. They called to them, so they went from their face. They slaughtered to the Baʿals and burned incense to carved images. And I taught Ephrayim to walk, taking them by their arms, but they did not know that I healed them. I drew them with ropes of man, with cords of love and I was to them as those who take the yoke from their neck. And I bent down, fed them.', ref:'HOSHĔA 11:1–4', stage:{"set":"egypt","time":"day","cam":"push","focus":0.4,"cast":[{"id":"child","x":0.64,"z":0.06,"look":{"name":"Yasharal, the Child","skin":"#83552d","hair":"#231409","hairStyle":"short","robe":"#9a8a5a","child":1},"face":"l","to":0.46,"at":0,"acts":[{"at":1,"face":"r"},{"at":3,"to":0.3,"pose":"stand"},{"at":5,"pose":"sitground"}],"hold":"bread"}],"crowd":[{"kind":"people","n":5,"x":0.72,"w":0.2,"z":0.5,"face":"r","pose":"bow","at":2,"from":"stand"}],"props":[{"k":"idol","x":0.86,"z":0.4,"at":2,"color":"#8a8a7a"}],"fx":[{"k":"glory","x":0.14,"y":0.04},{"k":"smoke","x":0.86,"at":2},{"k":"rays","x":0.22,"at":4}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:28, seed:9011,
-     features:[ {type:'house',x:22,y:9,id:'father',examine:'A father’s house — where Aluahim taught Ephrayim to walk, took him up in His arms, and drew him with cords of love.'},{type:'tree',x:14,y:11},{type:'well',x:30,y:15,id:'cords',examine:'“I drew them with cords of a man, with ropes of love; I bent down to feed them.” The tenderness of a God who will not let His son go.'},{type:'clearing',x:22,y:18,flat:3},{type:'sheaf',x:32,y:19} ]},
+     features:[ {type:'house',x:22,y:9,id:'father',examine:'A father’s house — where Aluahim taught Ephrayim to walk, took him by his arms, and drew him with cords of love.'},{type:'tree',x:14,y:11},{type:'well',x:30,y:15,id:'cords',examine:'“I drew them with ropes of man, with cords of love. And I bent down, fed them.” The tenderness of a God who will not let His son go.'},{type:'clearing',x:22,y:18,flat:3},{type:'sheaf',x:32,y:19} ]},
    time:'day', music:'sorrow',
    player:'hoshea', playerPos:[22,20],
    npcs:[ {id:'yizreel',char:'yizreel',x:24,y:12,wander:true},{id:'gomer',char:'gomer',x:19,y:13,wander:false} ],
    objectives:[
      {type:'interact',prop:'cords',text:'Remember how Aluahim raised His son — with cords of love',
       script:[
-       {say:['hoshea','Hear how the Most High speaks of Yisra’ĕl — not as a judge over a criminal, but as a Father remembering a child He taught to walk:']},
+       {say:['hoshea','Hear how the Most High speaks of Yasharal — not as a judge over a criminal, but as a Father remembering a child He taught to walk:']},
        {rays:.5,raysX:30},{sfx:'holy'},
-       {say:['voice','I drew them with cords of a man, with ropes of love, and I was to them as those who lift the yoke from their jaws, and I bent down and fed them. Out of Mitsrayim I called My son — and taught his feet to walk.']},
+       {say:['voice','I drew them with ropes of man, with cords of love and I was to them as those who take the yoke from their neck. And I bent down, fed them. Out of Mitsrayim I called My son — and I taught Ephrayim to walk.']},
        {burst:[30,15,'holy',14]},{sfx:'chime'},
       ]},
-     {type:'interact',prop:'father',text:'Hear the Father’s heart turn — “How can I give you up?”',hiddenUntil:1,
+     {type:'interact',prop:'father',text:'Hear the Father’s heart turn — “How could I give you up?”',hiddenUntil:1,
       script:[
-       {say:['narrator','Justice demanded that the son be handed over. But listen to what happens inside the heart of Aluahim — the most tender passage in all the prophets:']},
+       {say:['narrator','Justice demanded that the son be handed over. But listen to what happens inside the heart of Aluahim — the most tender passage in all the naḇi’im:']},
        {rays:.7,raysX:22},{sfx:'holy'},
-       {say:['voice','How can I give you up, Ephrayim? How can I hand you over, Yisra’ĕl? How can I make you like Aḏmah? How can I treat you like Tseḇoyim? My heart turns over within Me; My compassions are kindled together.']},
-       {say:['voice','I shall not execute the burning of My wrath, I shall not turn to destroy Ephrayim. For I am Ĕl and not man, the Set-apart One in your midst — and I shall not come in fury.']},
+       {say:['voice','How could I give you up, Ephrayim? How could I hand you over, Yasharal? How could I make you like Aḏmah? How could I set you like Tseḇoyim? My heart turns within Me, all My compassion is kindled.']},
+       {say:['voice','I shall not let the heat of My wrath burn, I shall not turn to destroy Ephrayim. For I am Al and not man, the Qadash (Set Apart One) in your midst and I shall not come in enmity.']},
        {burst:[22,9,'holy',22]},{sfx:'chime'},
-       {say:['hoshea','This is the God of Yisra’ĕl: One whose justice is real, and whose mercy is greater — who would rather wound His own heart than lose His son.']},
+       {say:['hoshea','This is the God of Yasharal: One whose justice is real, and whose mercy is greater — who would rather wound His own heart than lose His son.']},
       ]},
    ],
   },
   outro:[
-   {art:'expulsion', music:'sorrow', text:'He shall not return to the land of Mitsrayim — but Ashshur shall be his sovereign, because they refused to repent. And the sword whirls in his cities, and consumes his branches, and devours them, because of their own counsels. And My people are bent on backsliding from Me; though they call to the Most High, none at all exalts Him.', ref:'HOSHĔA 11:5–7'},
-   {art:'stars', music:'holy', text:'How shall I give you up, Ephrayim? How shall I hand you over, Yisra’ĕl? How shall I make you like Aḏmah? How shall I set you like Tseḇoyim? My heart turns over within Me; My compassions are kindled together. I shall not execute the burning of My wrath; I shall not turn to destroy Ephrayim — for I am Ĕl and not man, the Set-apart One in your midst, and I shall not come in fury.', ref:'HOSHĔA 11:8–9'},
-   {art:'stars', music:'holy', text:'They walk after YAHUAH — He roars like a lion. When He roars, His sons come trembling from the west; they come trembling like a bird from Mitsrayim, like a dove from the land of Ashshur — and I let them dwell in their houses, declares YAHUAH. Ephrayim has surrounded Me with lies, and the house of Yisra’ĕl with deceit — but Yahuḏah still walks with Ĕl, and is true to the Set-apart One.', ref:'HOSHĔA 11:10–12'},
+   {art:'expulsion', music:'sorrow', text:'No, let him return to the land of Mitsrayim and let Ashshur be his sovereign, because they refused to repent! And the sword shall whirl in his cities and it shall demolish his gate bars and consume, because of their own counsels. My people are bent towards backsliding from Me. Though they call to the Most High, He lifts none of them up.', ref:'HOSHĔA 11:5–7', stage:{"set":"gate","time":"night","wx":"embers","wxAt":1,"cam":"push","focus":0.55,"cast":[{"id":"hoshea_o","x":0.12,"z":0.12,"face":"r","pose":"point","say":0,"acts":[{"at":2,"pose":"weep"}]}],"crowd":[{"kind":"army","n":6,"x":0.78,"w":0.24,"z":0.52,"side":"ashshur","face":"l","enter":"r","at":0,"pose":"fight"},{"kind":"captives","n":4,"x":0.5,"w":0.18,"z":0.38,"face":"l","at":1},{"kind":"people","n":5,"x":0.3,"w":0.18,"z":0.62,"face":"r","pose":"pray","at":3,"from":"stand"}],"fx":[{"k":"sword","x":0.6,"y":0.22,"at":1},{"k":"smoke","x":0.62,"at":1},{"k":"red","at":1,"amt":0.15}]}},
+   {art:'stars', music:'holy', text:'How could I give you up, Ephrayim? How could I hand you over, Yasharal? How could I make you like Aḏmah? How could I set you like Tseḇoyim? My heart turns within Me, all My compassion is kindled. I shall not let the heat of My wrath burn, I shall not turn to destroy Ephrayim. For I am Al and not man, the Qadash (Set Apart One) in your midst and I shall not come in enmity.', ref:'HOSHĔA 11:8–9', stage:{"set":"night","time":"night","cam":"up","focus":0.5,"cast":[{"id":"hoshea_o","x":0.18,"z":0.12,"face":"r","pose":"look","acts":[{"at":4,"pose":"pray"},{"at":6,"pose":"raise"}]}],"crowd":[{"kind":"people","n":6,"x":0.52,"w":0.34,"z":0.5,"face":"r","pose":"lie"}],"fx":[{"k":"stars"},{"k":"firefall","x":0.88,"y":0.52,"at":2},{"k":"red","at":2,"amt":0.1},{"k":"glory","x":0.5,"y":0.04,"at":4},{"k":"rays","x":0.5,"at":6}]}},
+   {art:'stars', music:'holy', text:'Let them follow YAHUAH. Like a lion He roars. When He roars, then sons shall tremble from the west. They shall tremble like a bird from Mitsrayim and like a dove from the land of Ashshur. And I shall let them dwell in their own houses, declares YAHUAH. Ephrayim has surrounded Me with lying and the house of Yasharal with deceit. But Yahuḏah is still wandering with Al and is true to the Qadash (Set Apart One).', ref:'HOSHĔA 11:10–12', stage:{"set":"road","time":"dawn","cam":"push","focus":0.5,"cast":[{"id":"hoshea_o","x":0.1,"z":0.12,"face":"r","pose":"raise","say":0}],"crowd":[{"kind":"people","n":7,"x":0.54,"w":0.34,"z":0.38,"face":"l","enter":"r","at":2}],"props":[{"k":"lion","x":0.86,"z":0.36,"face":"l","roar":1,"at":1},{"k":"house","x":0.2,"z":0.46,"at":3},{"k":"house","x":0.33,"z":0.52,"at":3,"color":"#b89868"}],"fx":[{"k":"dove","x":0.56,"y":0.24,"at":2},{"k":"darkness","at":4,"amt":0.2},{"k":"rays","x":0.3,"at":5}]}},
   ],
-  complete:'How can I give you up, Ephrayim? — for I am Ĕl and not man, the Set-apart One in your midst.'
+  complete:'How could I give you up, Ephrayim? — for I am Al and not man, the Qadash (Set Apart One) in your midst.'
 },
 
-{ id:'h12', title:'Ephrayim Feeds on Wind', ref:'HOSHĔA 12',
+{ id:'h12', title:'Ephrayim Feeds on Ruach', ref:'HOSHĔA 12',
   intro:[
-   {art:'wrestle', music:'tense', text:'Ephrayim feeds on wind and pursues the east wind; all day long he multiplies lies and violence; they make a covenant with Ashshur, and oil is carried to Mitsrayim. YAHUAH also has a controversy with Yahuḏah, and punishes Yaʿaqoḇ according to his ways; He repays him according to his deeds. In the womb he grasped his brother’s heel, and in his strength he strove with Aluahim. He struggled with the Messenger and overcame; he wept and sought His favor. He found Him at Bĕyth Ĕl, and there He spoke with us — YAHUAH, the Aluah of hosts, YAHUAH is His remembrance. So you, return to your Aluah — guard kindness and right-ruling, and wait on your Aluah continually.', ref:'HOSHĔA 12:1–6'},
+   {art:'wrestle', music:'tense', text:'Ephrayim is feeding on ruach and pursuing an east ruach. All the day he increases falsehood and ruin. And they make a berith with Ashshur and oil is sent to Mitsrayim. And YAHUAH has a controversy with Yahuḏah, to punish Yaʿaqoḇ according to his ways, to repay him according to his deeds. He took his brother by the heel in the womb and in his strength he strove with Aluahim. He strove with the Mal’ak and overcame, he wept and sought His chen. He found Him in Bĕyth Ĕl and there He spoke to us – even YAHUAH Aluahim of hosts, YAHUAH is His remembrance. Therefore, return to your Aluahim. Guard kindness and right-ruling and wait on your Aluahim continually.', ref:'HOSHĔA 12:1–6', stage:{"set":"river","time":"night","wx":"wind","cam":"pan-r","focus":0.55,"cast":[{"id":"ephraimking","x":0.19,"z":0.12,"face":"r","pose":"raise","crown":1,"hold":"jar","acts":[{"at":2,"pose":"hold"}]},{"id":"ashshur","x":0.34,"z":0.14,"face":"l","pose":"bless","at":2},{"id":"yaaqov","x":0.56,"z":0.1,"face":"r","pose":"fight","at":4,"acts":[{"at":5,"pose":"weep"},{"at":6,"pose":"look"},{"at":7,"pose":"pray"}]},{"id":"wrestler","x":0.68,"z":0.1,"face":"l","pose":"fight","at":4,"acts":[{"at":6,"exit":"r"}]}],"props":[{"k":"ladder","x":0.88,"z":0.6,"at":6}],"fx":[{"k":"darkness","at":3,"amt":0.2},{"k":"glory","x":0.88,"y":0.04,"at":6}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:9012,
-     features:[ {type:'stone',x:22,y:10,id:'bethel',examine:'The pillar of Bĕyth Ĕl — the House of Aluahim, where Yaʿaqoḇ wrestled and wept, and where the LORD spoke with His people.'},{type:'altar',x:14,y:13,id:'balances',examine:'A merchant’s scales, weighted false — “a trader with dishonest scales in his hand, he loves to oppress.” Ephrayim boasts, “I am rich.”'},{type:'rock',x:30,y:16},{type:'tent',x:32,y:11,id:'tents',examine:'“I shall again make you dwell in tents, as in the days of the appointed time” — a call back to the wilderness where Yisra’ĕl first knew her Aluah.'},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'stone',x:22,y:10,id:'bethel',examine:'The pillar of Bĕyth Ĕl — the House of Aluahim, where Yaʿaqoḇ wrestled and wept, and where YAHUAH spoke with His people.'},{type:'altar',x:14,y:13,id:'balances',examine:'A merchant’s scales, weighted false — “A merchant! In his hand are scales of deceit, he loved to oppress.” Ephrayim boasts, “I have become rich.”'},{type:'rock',x:30,y:16},{type:'tent',x:32,y:11,id:'tents',examine:'“Again I shall make you dwell in tents as in the days of the appointed time” — a call back to the wilderness where Yasharal first knew her Aluah.'},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'tense',
    player:'hoshea', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'merchant',char:'merchant',x:16,y:12,wander:false},{id:'elder',char:'elder',x:20,y:13,wander:false} ],
    objectives:[
-     {type:'talk',npc:'merchant',text:'Confront the false scales — “I am rich,” says Ephrayim',
+     {type:'talk',npc:'merchant',text:'Confront the false scales — “I have become rich,” says Ephrayim',
       script:[
-       {say:['merchant','Look how I have prospered, prophet! I am rich; I have made myself wealthy. Who can find in me any crookedness, any sin?']},
+       {say:['merchant','Look how I have prospered, naḇi! Indeed, I have become rich, I have found wealth for myself. In all my labours they shall find in me no crookedness that is sin.']},
        {say:['hoshea','A trader with dishonest scales in your hand — you love to oppress. And you say, “Surely I am rich; in all my labors they find in me no iniquity that is sin.”']},
        {say:['voice','But I am YAHUAH your Aluah from the land of Mitsrayim — I shall again make you dwell in tents, as in the days of the appointed feast.']},
        {burst:[16,12,'ash',8]},{sfx:'bad'},
       ]},
-     {type:'interact',prop:'bethel',text:'Return, like Yaʿaqoḇ at Bĕyth Ĕl — keep kindness and justice',hiddenUntil:1,
+     {type:'interact',prop:'bethel',text:'Return, like Yaʿaqoḇ at Bĕyth Ĕl — guard kindness and right-ruling',hiddenUntil:1,
       script:[
-       {say:['hoshea','Remember your father Yaʿaqoḇ — in the womb he grasped the heel, and in his strength he wrestled with Aluahim. He struggled with the Messenger and prevailed; he wept and begged His favor. He met Him here, at Bĕyth Ĕl.']},
+       {say:['hoshea','Remember your father Yaʿaqoḇ — in the womb he grasped the heel, and in his strength he wrestled with Aluahim. He struggled with the Mal’ak and prevailed; he wept and begged His chen. He met Him here, at Bĕyth Ĕl.']},
        {rays:.5,raysX:22},{sfx:'holy'},
-       {say:['voice','So you, return to your Aluah. Guard kindness and right-ruling, and wait on your Aluah continually.']},
+       {say:['voice','Therefore, return to your Aluahim. Guard kindness and right-ruling and wait on your Aluahim continually.']},
        {burst:[22,10,'holy',14]},{sfx:'chime'},
-       {say:['hoshea','The wrestler became Yisra’ĕl by clinging to Aluahim and refusing to let go. Do the same, Ephrayim — turn, hold fast, and wait on Him.']},
+       {say:['hoshea','The wrestler became Yasharal by clinging to Aluahim and refusing to let go. Do the same, Ephrayim — turn, hold fast, and wait on Him.']},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'A merchant with false scales in his hand — he loves to oppress. And Ephrayim says, “Surely I have become rich, I have found wealth for myself; in all my labors they find in me no crookedness that is sin.” But I am YAHUAH your Aluah from the land of Mitsrayim — I shall again make you dwell in tents, as in the days of the appointed time.', ref:'HOSHĔA 12:7–9'},
-   {art:'wilderness', music:'sorrow', text:'I have spoken by the prophets, and multiplied visions, and given parables through them. Is there wickedness in Gilʿaḏ? Surely they are worthless; they slaughter bulls in Gilgal, and their altars are like heaps in the furrows of the field. Yaʿaqoḇ fled to the field of Aram; Yisra’ĕl served for a wife, and for a wife he guarded sheep. By a prophet YAHUAH brought Yisra’ĕl up out of Mitsrayim, and by a prophet he was guarded. Ephrayim has bitterly provoked Him — so his Master leaves his bloodshed upon him, and repays him for his reproach.', ref:'HOSHĔA 12:10–14'},
+   {art:'corrupt', music:'tense', text:'A merchant! In his hand are scales of deceit, he loved to oppress. And Ephrayim says, “Indeed, I have become rich, I have found wealth for myself. In all my labours they shall find in me no crookedness that is sin.” But I am YAHUAH your Aluahim since the land of Mitsrayim, again I shall make you dwell in tents as in the days of the appointed time.', ref:'HOSHĔA 12:7–9', stage:{"set":"city","time":"noon","cam":"push","focus":0.5,"cast":[{"id":"poorbro","x":0.3,"z":0.1,"face":"r","pose":"kneel"},{"id":"merchant","x":0.48,"z":0.12,"face":"l","pose":"hold","hold":"bowl","say":1,"acts":[{"at":1,"face":"r","pose":"raise"}]},{"id":"hoshea_o","x":0.8,"z":0.12,"face":"l","pose":"point","at":3,"say":3}],"crowd":[{"kind":"people","n":5,"x":0.5,"w":0.5,"z":0.64,"face":"l"}],"props":[{"k":"sacks","x":0.62,"z":0.24,"n":5},{"k":"basket","x":0.7,"z":0.16,"fruit":"#c8a040"},{"k":"tent","x":0.12,"z":0.5,"at":3},{"k":"tent","x":0.9,"z":0.56,"at":3,"color":"#8a6a4a"}],"fx":[{"k":"glory","x":0.5,"y":0.04,"at":3}]}},
+   {art:'wilderness', music:'sorrow', text:'And I have spoken to the naḇi’im and have increased visions. And through the naḇi’im I gave parables. Is Gilʿaḏ wicked? Certainly, they have been false! In Gilgal they have offered bulls. Also their mizbe’achot are as heaps on a ploughed field. And when Yaʿaqoḇ fled to the country of Aram, Yasharal served for a wife and for a wife he kept watch. And by a naḇi YAHUAH brought Yasharal out of Mitsrayim and by a naḇi he was watched over. Ephrayim has provoked most bitterly. So his Master left his blood-guilt on him and repaid him for his reproach.', ref:'HOSHĔA 12:10–14', stage:{"set":"wilderness","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"hoshea_o","x":0.88,"z":0.12,"face":"l","pose":"look","say":2,"acts":[{"at":2,"pose":"point"}]},{"id":"yaaqov","x":0.14,"z":0.1,"face":"r","enter":"l","at":5,"pose":"hold","hold":"staff"},{"id":"rachel","x":0.28,"z":0.06,"face":"l","pose":"stand","at":5},{"id":"mosheh","x":0.66,"z":0.12,"face":"r","enter":"l","at":6,"pose":"hold","hold":"staff"}],"crowd":[{"kind":"people","n":6,"x":0.5,"w":0.2,"z":0.56,"face":"r","enter":"l","at":6}],"props":[{"k":"bull","x":0.62,"z":0.34,"at":3},{"k":"stones","x":0.5,"z":0.44,"n":8,"at":4},{"k":"stones","x":0.74,"z":0.46,"n":8,"at":4},{"k":"sheep","x":0.22,"z":0.3,"n":5,"w":80,"at":5}],"fx":[{"k":"glory","x":0.86,"y":0.04},{"k":"darkness","at":7,"amt":0.25}]}},
   ],
-  complete:'Return to your Aluah — guard kindness and justice, and wait on Him continually.'
+  complete:'Return to your Aluahim — guard kindness and right-ruling and wait on your Aluahim continually.'
 },
 
 { id:'h13', title:'Ransomed from the Grave', ref:'HOSHĔA 13',
   intro:[
-   {art:'void', music:'sorrow', text:'When Ephrayim spoke, there was trembling; he was exalted in Yisra’ĕl. But he became guilty through Baʿal, and died. And now they sin more and more, and make for themselves molten images from their silver — idols by their own skill, all the work of craftsmen. They say of them, “Let the men who slaughter kiss the calves!” Therefore they shall be like the morning cloud, like the early dew that vanishes, like chaff whirled from the threshing floor, like smoke from a window.', ref:'HOSHĔA 13:1–3'},
+   {art:'void', music:'sorrow', text:'When Ephrayim spoke there was trembling, he was lifted up in Yasharal. But through Baʿal he became guilty and he died. And now they sin more and more and make for themselves moulded images from their silver, idols according to their skill, all of them the work of craftsmen. They say of them, “Let the men who slaughter kiss the calves!” Therefore they shall be like a morning cloud and like dew that goes away early, like chaff blown off from a threshing-floor and like smoke from a window.', ref:'HOSHĔA 13:1–3', stage:{"set":"highplace","time":"day","wx":"wind","wxAt":4,"cam":"push","focus":0.5,"cast":[{"id":"ephraimking","x":0.34,"z":0.12,"face":"r","pose":"raise","crown":1,"acts":[{"at":1,"pose":"fall"}]},{"id":"baalpriest","x":0.52,"z":0.2,"face":"r","pose":"bow","at":3}],"crowd":[{"kind":"people","n":6,"x":0.18,"w":0.26,"z":0.5,"face":"r","pose":"bow"}],"props":[{"k":"idol","x":0.86,"z":0.38,"at":1,"h":80},{"k":"calf","x":0.6,"z":0.36,"at":2},{"k":"calf","x":0.72,"z":0.44,"at":2,"s":0.8}],"fx":[{"k":"darkness","at":1,"amt":0.2},{"k":"smoke","x":0.62,"at":4}]}},
   ],
   scene:{
    map:{biome:'wasteland', w:44, h:28, seed:9013,
-     features:[ {type:'idol',x:16,y:11,id:'molten',examine:'A molten calf, kissed by those who slaughter to it — “they sin more and more, idols by their own skill, all of them the work of craftsmen.”'},{type:'stone',x:30,y:14,id:'sheol',examine:'The mouth of the grave — Sheʾol — over which the LORD speaks the word that shatters death: “O Death, I will be your plagues; O grave, I will be your destruction.”'},{type:'rock',x:22,y:20},{type:'clearing',x:22,y:17,flat:3} ]},
+     features:[ {type:'idol',x:16,y:11,id:'molten',examine:'A moulded calf, kissed by those who slaughter to it — “they sin more and more … idols according to their skill, all of them the work of craftsmen.”'},{type:'stone',x:30,y:14,id:'sheol',examine:'The mouth of the grave — Sheʾol — over which YAHUAH speaks the word that shatters death: “Where is your plague, O Death? Where is your destruction, O Grave?”'},{type:'rock',x:22,y:20},{type:'clearing',x:22,y:17,flat:3} ]},
    time:'day', music:'sorrow',
    player:'hoshea', playerPos:[22,21], playerHold:'scroll',
    npcs:[ {id:'baalpriest',char:'baalpriest',x:15,y:13,wander:false},{id:'elder',char:'elder',x:26,y:15,wander:false} ],
    objectives:[
-     {type:'talk',npc:'baalpriest',text:'There is no Saviour beside Me — know no god but YAHUAH',
+     {type:'talk',npc:'baalpriest',text:'There is no Saviour besides Me — know no god but YAHUAH',
       script:[
-       {say:['baalpriest','The calf gives us rain and harvest and increase. Kiss it, prophet, and prosper with us.']},
-       {say:['hoshea','You forget the One who found you in the wilderness, in a land of drought — He fed you until you were full, and being full, your heart grew proud, and you forgot Him.']},
-       {say:['voice','Yet I am YAHUAH your Aluah from the land of Mitsrayim, and you know no Aluah but Me, for there is no Saviour besides Me.']},
+       {say:['baalpriest','The calf gives us rain and harvest and increase. Kiss it, naḇi, and prosper with us.']},
+       {say:['hoshea','You forget the One who knew you in the wilderness, in the land of drought — when you were fed you were satisfied, you were satisfied and your heart was exalted, therefore you forgot Him.']},
+       {say:['voice','But I am YAHUAH your Aluahim since the land of Mitsrayim and an Aluahim besides Me you shall not know, for there is no Saviour besides Me.']},
        {burst:[16,11,'ash',10]},{sfx:'bad'},
       ]},
-     {type:'interact',prop:'sheol',text:'Hear the word death cannot answer — “I will ransom them”',hiddenUntil:1,
+     {type:'interact',prop:'sheol',text:'Hear the word death cannot answer — “I ransom them”',hiddenUntil:1,
       script:[
-       {say:['hoshea','And now, over the very grave of a dying nation, the LORD speaks the greatest word yet — a word that runs ahead of Him to the empty tomb:']},
+       {say:['hoshea','And now, over the very grave of a dying nation, YAHUAH speaks the greatest word yet — a word that runs ahead of Him to the empty tomb:']},
        {rays:.7,raysX:30},{sfx:'holy'},{burst:[30,14,'holy',18]},
-       {say:['voice','I shall ransom them from the power of the grave; I shall redeem them from death. O Death, where are your plagues? O Sheʾol, where is your destruction?']},
-       {say:['narrator','It is this very promise the Messenger of the covenant will one day take up as a shout of triumph: “Death is swallowed up in victory. O Death, where is your sting?”']},
+       {say:['voice','From the power of the grave I ransom them, from death I redeem them. Where is your plague, O Death? Where is your destruction, O Grave?']},
+       {say:['narrator','It is this very promise the Mal’ak of the berith will one day take up as a shout of triumph: “Death is swallowed up in victory. O Death, where is your sting?”']},
        {burst:[30,14,'holy',22]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'Yet I am YAHUAH your Aluah from the land of Mitsrayim; you know no Aluah but Me, for there is no Saviour besides Me. I knew you in the wilderness, in the land of drought. When they had their pasture they were filled; being filled, their heart was exalted — therefore they forgot Me. So I am like a lion to them; like a leopard I watch by the road; I meet them like a bereaved bear and tear open the enclosure of their heart, and there I devour them like a lion — a wild beast tears them.', ref:'HOSHĔA 13:4–8'},
-   {art:'void', music:'sorrow', text:'You have destroyed yourself, O Yisra’ĕl, but your help is in Me. Where now is your sovereign, to save you in all your cities? And your judges, of whom you said, “Give me a sovereign and princes”? I gave you a sovereign in My displeasure, and took him away in My wrath. The crookedness of Ephrayim is bound up; his sin is stored away.', ref:'HOSHĔA 13:9–11'},
-   {art:'void', music:'holy', text:'The pains of a woman in labor come upon him — he is an unwise son, who does not present himself at the breaking forth of children. From the hand of Sheʾol I shall ransom them; from death I shall redeem them. O Death, where are your plagues? O Sheʾol, where is your destruction? Compassion is hidden from My eyes. Though he flourishes among the reeds, an east wind comes — the wind of YAHUAH rising from the wilderness; his spring dries up, his fountain is parched, it plunders every treasure. Shomeron is held guilty, for she has rebelled against her Aluah — they fall by the sword, their infants dashed, their pregnant women ripped open.', ref:'HOSHĔA 13:12–16'},
+   {art:'wasteland', music:'sorrow', text:'But I am YAHUAH your Aluahim since the land of Mitsrayim and an Aluahim besides Me you shall not know, for there is no Saviour besides Me. I knew you in the wilderness, in the land of drought. When they were fed they were satisfied. They were satisfied and their heart was exalted, therefore they forgot Me. So I am become like a lion to them, like a leopard I watch by the way, like a bear robbed of her young I attack them and rip open the enclosure of their heart. And there I devour them like a lion, a wild beast tear them apart.', ref:'HOSHĔA 13:4–8', stage:{"set":"desert","time":"noon","cam":"push","focus":0.5,"cast":[{"id":"hoshea_o","x":0.1,"z":0.14,"face":"r","pose":"speak","say":0,"acts":[{"at":4,"pose":"point"}]}],"crowd":[{"kind":"people","n":6,"x":0.44,"w":0.32,"z":0.3,"face":"l","enter":"r","at":1,"pose":"sitground","hold":"bread"}],"props":[{"k":"lion","x":0.84,"z":0.3,"face":"l","roar":1,"at":4},{"k":"bear","x":0.7,"z":0.42,"face":"l","at":4}],"fx":[{"k":"glory","x":0.2,"y":0.04},{"k":"manna","at":1},{"k":"darkness","at":3,"amt":0.25},{"k":"red","at":5,"amt":0.15}]}},
+   {art:'void', music:'sorrow', text:'You have destroyed yourself, O Yasharal, but your help is in Me. Where is your sovereign now to save you in all your cities and your rulers of whom you said, “Give me a sovereign and rulers”? I gave you a sovereign in My displeasure, but I took him away in My wrath.', ref:'HOSHĔA 13:9–11', stage:{"set":"palace","time":"night","cam":"push","focus":0.6,"cast":[{"id":"hoshea_o","x":0.12,"z":0.12,"face":"r","pose":"point","say":0},{"id":"ephraimking","x":0.68,"z":0.18,"face":"l","pose":"enthroned","crown":1,"acts":[{"at":2,"pose":"fall"}]}],"crowd":[{"kind":"people","n":6,"x":0.4,"w":0.28,"z":0.5,"face":"r","pose":"raise","at":1,"from":"stand"}],"fx":[{"k":"lightning","at":2},{"k":"darkness","at":2,"amt":0.3}]}},
+   {art:'void', music:'holy', text:'The crookedness of Ephrayim is bound up, his sin is hidden. Pains of a woman in labour shall come upon him. He is not a wise son … From the power of the grave I ransom them, from death I redeem them. Where is your plague, O Death? Where is your destruction, O Grave? Repentance is hidden from My eyes. Though he bears fruit among his brothers, an east ruach comes, a ruach from YAHUAH comes up from the wilderness and it dries up his fountain … it plunders a treasure of all desirable objects. Shomeron is held guilty, for she has rebelled against her Aluahim – they fall by the sword, their infants are dashed in pieces and their pregnant women ripped open.', ref:'HOSHĔA 13:12–16', stage:{"set":"tomb","time":"dusk","wx":"wind","wxAt":6,"cam":"push","focus":0.5,"cast":[{"id":"hoshea_o","x":0.1,"z":0.12,"face":"r","pose":"speak","say":0,"acts":[{"at":3,"pose":"raise"}]}],"crowd":[{"kind":"people","n":5,"x":0.56,"w":0.28,"z":0.28,"face":"r","pose":"raise","at":2,"from":"lie"},{"kind":"army","n":6,"x":0.86,"w":0.18,"z":0.56,"side":"ashshur","face":"l","enter":"r","at":8,"pose":"fight"}],"props":[{"k":"grave","x":0.52,"z":0.42,"open":1,"at":2},{"k":"well","x":0.24,"z":0.32}],"fx":[{"k":"glory","x":0.52,"y":0.04,"at":2},{"k":"darkness","at":5,"amt":0.25},{"k":"smoke","x":0.8,"at":8},{"k":"red","at":8,"amt":0.15}]}},
   ],
-  complete:'I shall ransom them from the grave — O Death, where are your plagues?'
+  complete:'From the power of the grave I ransom them — where is your plague, O Death?'
 },
 
-{ id:'h14', title:'Return, O Yisra’ĕl', ref:'HOSHĔA 14',
+{ id:'h14', title:'Return, O Yasharal', ref:'HOSHĔA 14',
   intro:[
-   {art:'garden', music:'holy', text:'O Yisra’ĕl, return to YAHUAH your Aluah, for you have stumbled by your crookedness. Take words with you, and return to YAHUAH. Say to Him, “Take away all crookedness, and receive us graciously, that we render the bulls of our lips. Ashshur does not save us, we do not ride on horses, and we no longer say to the work of our hands, ‘Our mighty ones’ — for in You the fatherless finds compassion.”', ref:'HOSHĔA 14:1–3'},
+   {art:'garden', music:'holy', text:'O Yasharal, return to YAHUAH your Aluahim, for you have stumbled by your crookedness. Take words with you and return to YAHUAH. Say to Him, “Take away all crookedness and accept what is good and we render the bulls of our lips. Ashshur does not save us. We do not ride on horses, nor ever again do we say to the work of our hands, ‘Our mighty ones.’ For the fatherless finds compassion in You.”', ref:'HOSHĔA 14:1–3', stage:{"set":"temple","time":"dawn","cam":"push","focus":0.5,"cast":[{"id":"hoshea_o","x":0.14,"z":0.12,"face":"r","pose":"raise","say":0,"acts":[{"at":1,"pose":"point"}]},{"id":"ashshur","x":0.84,"z":0.16,"face":"l","pose":"stand","acts":[{"at":3,"exit":"r"}]},{"id":"loammi","x":0.44,"z":0.04,"face":"r","pose":"raise","at":5}],"crowd":[{"kind":"people","n":6,"x":0.58,"w":0.28,"z":0.46,"face":"r","enter":"l","at":1,"pose":"pray"}],"fx":[{"k":"glory","x":0.6,"y":0.04,"at":2},{"k":"rays","x":0.44,"at":5}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:28, seed:9014,
-     features:[ {type:'tree',x:22,y:9,id:'cypress',examine:'A green cypress tree — “I am like a green cypress tree; from Me your fruit is found.” The LORD Himself is the shelter and the harvest of His healed people.'},{type:'vine',x:14,y:12,id:'lily',examine:'Lilies and roots and spreading branches — “he shall blossom like the lily, strike roots like Leḇanon.” The dew of YAHUAH on a restored Yisra’ĕl.'},{type:'well',x:30,y:16,id:'dew',examine:'“I shall be like the dew to Yisra’ĕl.” The quiet, faithful mercy that comes every morning and makes the dry land bloom.'},{type:'wheat',x:31,y:13},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'tree',x:22,y:9,id:'cypress',examine:'A green cypress tree — “I am like a green cypress tree, your fruit comes from Me.” YAHUAH Himself is the shelter and the harvest of His healed people.'},{type:'vine',x:14,y:12,id:'lily',examine:'Lilies and roots and spreading branches — “He shall blossom like the lily and cast out his roots like Leḇanon.” The dew of YAHUAH on a restored Yasharal.'},{type:'well',x:30,y:16,id:'dew',examine:'“I shall be like the dew to Yasharal.” The quiet, faithful mercy that comes every morning and makes the dry land bloom.'},{type:'wheat',x:31,y:13},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'holy',
    player:'hoshea', playerPos:[22,20],
    npcs:[ {id:'gomer_r',char:'gomer_r',x:20,y:12,wander:false},{id:'yizreel',char:'yizreel',x:24,y:13,wander:true} ],
    objectives:[
-     {type:'interact',prop:'dew',text:'Hear the healing — “I will love them freely”',
+     {type:'interact',prop:'dew',text:'Hear the healing — “I shall love them spontaneously”',
       script:[
-       {say:['hoshea','Take words with you and return to YAHUAH. Say, “Take away all our crookedness; receive us graciously.” And hear how the LORD answers a people who simply turn back to Him:']},
+       {say:['hoshea','Take words with you and return to YAHUAH. Say to Him, “Take away all crookedness and accept what is good and we render the bulls of our lips.” And hear how YAHUAH answers a people who simply turn back to Him:']},
        {rays:.7,raysX:30},{sfx:'holy'},{burst:[30,16,'holy',16]},
-       {say:['voice','I shall heal their backsliding; I shall love them spontaneously, for My displeasure has turned away from him. I shall be like the dew to Yisra’ĕl — he shall blossom like the lily, and strike his roots like Leḇanon.']},
+       {say:['voice','I shall heal their backsliding; I shall love them spontaneously, for My displeasure has turned away from him. I shall be like the dew to Yasharal — he shall blossom like the lily, and strike his roots like Leḇanon.']},
        {burst:[14,12,'holy',14]},{sfx:'chime'},
       ]},
-     {type:'interact',prop:'cypress',text:'Renounce the idols forever — “From Me your fruit is found”',hiddenUntil:1,
+     {type:'interact',prop:'cypress',text:'Renounce the idols forever — “Your fruit comes from Me”',hiddenUntil:1,
       script:[
        {say:['gomer_r','I have done with my lovers, and with the idols of my own hands. What have I to do anymore with them?']},
-       {say:['hoshea','Ephrayim says at last, “What have I to do any more with idols?” And the LORD Himself answers over the healed and fruitful land:']},
+       {say:['hoshea','Ephrayim says at last, “What have I to do any more with idols?” And YAHUAH Himself answers over the healed and fruitful land:']},
        {rays:.7,raysX:22},{sfx:'holy'},
        {say:['voice','It is I who answer and look after him. I am like a green cypress tree — from Me your fruit is found. Who is wise and understands these? The ways of YAHUAH are straight, and the righteous walk in them.']},
        {burst:[22,9,'holy',22]},{sfx:'chime'},
-       {say:['narrator','And so the book that began with Not-My-People ends beneath a living tree, with a bride restored, a nation healed, and a love given freely — the whirlwind spent, and only the morning dew remaining.']},
+       {say:['narrator','And so the book that began with Not-My-People ends beneath a living tree, with a bride restored, a nation healed, and a love given spontaneously — the whirlwind spent, and only the morning dew remaining.']},
        {burst:[22,18,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'garden', music:'holy', text:'I shall heal their backsliding; I shall love them spontaneously, for My displeasure has turned away from him. I shall be like the dew to Yisra’ĕl — he shall blossom like the lily, and strike his roots like Leḇanon. His branches shall spread; his splendor shall be like an olive tree, and his fragrance like Leḇanon.', ref:'HOSHĔA 14:4–6'},
-   {art:'garden', music:'holy', text:'Those who dwell under his shadow shall return; they shall revive like grain, and blossom like the vine; their fragrance shall be like the wine of Leḇanon. O Ephrayim, what have I to do anymore with idols? It is I who answer and look after him. I am like a green cypress tree — from Me your fruit is found. Who is wise and understands these? Discerning and knows them? For the ways of YAHUAH are straight, and the righteous walk in them, but the transgressors stumble in them.', ref:'HOSHĔA 14:7–9'},
+   {art:'garden', music:'holy', text:'I shall heal their backsliding, I shall love them spontaneously, for My displeasure has turned away from him. I shall be like the dew to Yasharal. He shall blossom like the lily and cast out his roots like Leḇanon. His branches shall spread and his splendour shall be like an olive tree and his fragrance like Leḇanon.', ref:'HOSHĔA 14:4–6', stage:{"set":"garden","time":"dawn","wx":"mist","wxAt":1,"cam":"push","focus":0.5,"cast":[{"id":"gomer_r","x":0.48,"z":0.1,"face":"r","pose":"kneel","at":1,"acts":[{"at":2,"pose":"raise"}],"from":"mourn"},{"id":"yizreel","x":0.64,"z":0.04,"face":"l","pose":"raise","at":2}],"props":[{"k":"tree","x":0.22,"z":0.4,"bloom":1,"h":110,"at":2},{"k":"tree","x":0.8,"z":0.36,"h":150,"color":"#5a7a3a","fruit":"#3a4a2a","at":3}],"fx":[{"k":"glory","x":0.5,"y":0.04},{"k":"rays","x":0.4,"at":1}]}},
+   {art:'garden', music:'holy', text:'Those who dwell under his shadow shall return. They shall revive like grain and blossom like the vine and become as fragrant as the wine of Leḇanon. What more has Ephrayim to do with idols? It is I who answer and look after him. I am like a green cypress tree, your fruit comes from Me. Who is wise and understands these words, discerning and knows them? For the ways of YAHUAH are straight and the righteous walk in them but the transgressors stumble in them.', ref:'HOSHĔA 14:7–9', stage:{"set":"field","time":"day","cam":"pull","focus":0.5,"cast":[{"id":"gomer_r","x":0.24,"z":0.12,"face":"l","pose":"point","at":2,"say":2},{"id":"hoshea_o","x":0.44,"z":0.12,"face":"r","pose":"raise","at":5,"say":5},{"id":"hebrew","x":0.6,"z":0.08,"face":"r","enter":"l","at":6},{"id":"baalpriest","x":0.88,"z":0.14,"face":"l","pose":"fall","at":6,"from":"stand"}],"crowd":[{"kind":"people","n":5,"x":0.72,"w":0.2,"z":0.34,"face":"l","enter":"r","at":0,"pose":"sitground"}],"props":[{"k":"tree","x":0.74,"z":0.42,"h":170,"color":"#2f5a2a"},{"k":"sheaves","x":0.4,"z":0.52,"n":4,"at":1},{"k":"vine","x":0.56,"z":0.58,"w":100,"at":1},{"k":"idol","x":0.1,"z":0.3,"at":2}],"fx":[{"k":"rays","x":0.72,"at":3}]}},
   ],
-  complete:'I shall heal their backsliding, I shall love them freely — the ways of YAHUAH are straight.'
+  complete:'I shall heal their backsliding, I shall love them spontaneously — the ways of YAHUAH are straight.'
 }
 
 ]}
@@ -6387,7 +6534,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6453,7 +6600,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6513,9 +6663,10 @@ function frame(ts){
 /* ============ BESORAH IN-GAME READER ============ */
 (function(){
   const BOOKS=[
+    ['HOSHĔA','hoshea'],
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
     ['YAHUSHA','yahusha'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
@@ -6601,5 +6752,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

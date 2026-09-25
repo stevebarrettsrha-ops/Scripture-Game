@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main">YONAH</div>
     <div class="title-sub">Neḇi’im — The Prophets</div>
-    <div class="title-verse">“And should I not have pity on Ninewĕh, that great city, in which are more than a hundred and twenty thousand people?” — YONAH 4:11</div>
+    <div class="title-verse">“And should I not pardon Ninewĕh, that great city, in which are more than one hundred and twenty thousand beings who have not known their right hand from their left and much cattle?” — YONAH 4:11</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Yonah</h2>
-    <div class="hint">Three acts · YONAH — the prophet who fled from the presence of YAHUAH: from the flight to Tarshish and the storm at sea, through the belly of the great fish and the cry that “deliverance belongs to YAHUAH,” to the repentance of Ninewĕh and the gourd — and the question the book leaves open, “should I not have pity on that great city?”</div>
+    <div class="hint">Three acts · YONAH — the naḇi who fled from the presence of YAHUAH: from the flight to Tarshish and the storm at sea, through the belly of the great fish and the cry that “deliverance belongs to YAHUAH,” to the repentance of Ninewĕh and the plant — and the question the book leaves open, “should I not have pity on that great city?”</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -620,8 +652,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -729,7 +761,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -829,7 +861,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1091,6 +1125,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1134,7 +1178,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1396,6 +1442,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2877,6 +2933,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -3072,7 +3148,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3277,8 +3353,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3765,6 +3842,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3828,7 +3906,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3880,15 +3962,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3899,6 +4015,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3924,6 +4046,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3952,6 +4075,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3969,7 +4093,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4109,6 +4233,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4172,17 +4301,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4346,22 +4476,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4374,7 +4508,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4397,11 +4531,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -6050,7 +6197,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -6104,11 +6251,11 @@ STORY.push(
 
 { id:'j1', title:'Flee to Tarshish', ref:'YONAH 1:1–6',
   intro:[
-   {art:'journey', music:'tense', text:'And the word of YAHUAH came to Yonah son of Amittai, saying, “Arise, go to Ninewĕh, that great city, and cry out against it, for their evil has come up before Me.” But Yonah rose up to flee to Tarshish from the presence of YAHUAH. He went down to Yapho and found a ship going to Tarshish; so he paid the fare, and went down into it, to go with them to Tarshish, from the presence of YAHUAH.', ref:'YONAH 1:1–3'},
+   {art:'journey', music:'tense', text:'And the Word of YAHUAH came to Yonah son of Amittai, saying, “Arise, go to Ninewĕh, the great city and cry out against it, for their evils have come up before Me.” But Yonah rose up to flee to Tarshish from the presence of YAHUAH and went down to Yapho and found a ship going to Tarshish. And he paid the fare and went down into it, to go with them to Tarshish from the presence of YAHUAH.', ref:'YONAH 1:1–3', stage:{"set":"sea","time":"day","cam":"pan-r","focus":0.55,"cast":[{"id":"voice","x":0.14,"say":0},{"id":"yonah","x":0.2,"z":0.02,"dy":-0.07,"face":"r","pose":"look","acts":[{"at":1,"to":0.5,"pose":"stand"},{"at":2,"to":0.62,"pose":"hold"}]},{"id":"captain","x":0.8,"z":0.02,"dy":-0.07,"face":"l","pose":"stand","acts":[{"at":2,"pose":"hold"}]}],"props":[{"k":"ship","x":0.7,"z":0.45,"s":1.3},{"k":"wall","x":0.5,"z":0.03,"w":1.3,"h":22,"color":"#9a8a6a"},{"k":"sacks","x":0.92,"z":0.01,"dy":-0.07,"n":3}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:9401,
-     features:[ {type:'reedark',x:22,y:9,id:'ship',examine:'The ship bound for Tarshish — the farthest west, as far from Ninewĕh as a man could sail; the fare Yonah paid to flee the presence of YAHUAH.'},{type:'standard',x:16,y:12,id:'dock',examine:'The quay of Yapho — where a prophet went down to the sea rather than go to the city he was sent to.'},{type:'well',x:30,y:16},{type:'column',x:14,y:9},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'reedark',x:22,y:9,id:'ship',examine:'The ship bound for Tarshish — the farthest west, as far from Ninewĕh as a man could sail; the fare Yonah paid to flee the presence of YAHUAH.'},{type:'standard',x:16,y:12,id:'dock',examine:'The quay of Yapho — where a naḇi went down to the sea rather than go to the city he was sent to.'},{type:'well',x:30,y:16},{type:'column',x:14,y:9},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'tense',
    player:'yonah', playerPos:[22,20],
    npcs:[ {id:'captain',char:'captain',x:20,y:12,wander:false},{id:'sailor',char:'sailor',x:28,y:14,wander:true} ],
@@ -6123,38 +6270,38 @@ STORY.push(
       script:[
        {say:['narrator','But YAHUAH hurled a great wind on the sea, and there was a mighty storm, so that the ship threatened to break up.']},
        {rain:.6},{shake:1},{sfx:'thunder'},{burst:[22,9,'ash',14]},
-       {say:['captain','What do you mean, sleeper? Get up, call on your mighty one! Perhaps he will think of us, so that we do not perish. The mariners are casting the cargo into the sea, and still she goes down!']},
+       {say:['captain','What do you mean, sleeper? Arise, cry out to your Aluahim, if so be that Aluahim shall think about us, so that we do not perish. The mariners are casting the cargo into the sea, and still she goes down!']},
        {say:['yonah','…I was fleeing. Even here, the sea will not let me hide.']},
        {shake:1.1},{sfx:'thunder'},
       ]},
    ],
   },
   outro:[
-   {art:'flood', music:'tense', text:'But YAHUAH hurled a great wind on the sea, and there was a mighty storm on the sea, so that the ship was about to break up. And the mariners were afraid, and each cried out to his mighty one, and threw the cargo into the sea to lighten the load. But Yonah had gone down into the hold of the ship, and had lain down, and was fast asleep. So the captain came to him and said, “What do you mean, sleeper? Arise, call on your Elohim! It may be that Elohim will think of us, so that we do not perish.”', ref:'YONAH 1:4–6'},
+   {art:'flood', music:'tense', text:'And YAHUAH sent out a great ruach on the sea and there was a great storm on the sea, so that the ship was thought to be broken up. And the seamen were afraid and each one cried out to his mighty one and threw the cargo which was in the ship into the sea, to lighten the load. But Yonah had gone down into the lowest parts of the ship and he lay down and was fast asleep. And the captain came to him and said to him, “What do you mean, sleeper? Arise, cry out to your Aluahim, if so be that Aluahim shall think about us, so that we do not perish.”', ref:'YONAH 1:4–6', stage:{"set":"storm","wx":"storm","cam":"push","focus":0.55,"cast":[{"id":"sailor","x":0.33,"z":0.08,"dy":-0.14,"face":"l","pose":"stand","acts":[{"at":1,"pose":"raise"}]},{"id":"sailor2","look":{"name":"A Mariner","skin":"#7a5230","hair":"#231409","hairStyle":"short","robe":"#6a5a44","beard":"#231409","headcover":"#5a6a6a","short":1},"x":0.42,"z":0.08,"dy":-0.14,"face":"l","pose":"carry","label":false,"acts":[{"at":1,"pose":"strike"}]},{"id":"yonah","x":0.66,"z":0.08,"dy":-0.13,"face":"r","pose":"lie"},{"id":"captain","at":3,"x":0.46,"z":0.08,"dy":-0.14,"face":"r","to":0.56,"pose":"point","say":3,"acts":[{"at":4,"pose":"raise"}]}],"props":[{"k":"ship","x":0.5,"z":0.12,"s":2.2,"storm":1},{"k":"sacks","x":0.16,"z":0.0,"dy":0.03,"n":3,"at":1}],"fx":[{"k":"lightning"}]}},
   ],
-  complete:'Yonah rose up to flee to Tarshish from the presence of YAHUAH — but YAHUAH hurled a wind on the sea.'
+  complete:'Yonah rose up to flee to Tarshish from the presence of YAHUAH — but YAHUAH sent out a great ruach on the sea.'
 },
 
 { id:'j2', title:'Cast into the Sea', ref:'YONAH 1:7–17',
   intro:[
-   {art:'flood', music:'tense', text:'And they said to one another, “Come, let us cast lots, so that we know for whose cause this evil is upon us.” So they cast lots, and the lot fell on Yonah. They said, “Tell us — for whose cause is this evil upon us? What is your work? Where do you come from? What is your land? And of what people are you?” And he said, “I am a Hebrew, and I fear YAHUAH, the Aluah of the heavens, who made the sea and the dry land.”', ref:'YONAH 1:7–9'},
+   {art:'flood', music:'tense', text:'And they said to each other, “Come and let us cast lots, so that we know for whose sake this evil has come upon us.” So they cast lots and the lot fell on Yonah. So they said to him, “Please explain to us! For whose sake is this evil upon us? What is your occupation? And where do you come from? What is your country? And from what people are you?” And he said to them, “I am a Heḇrew. And I am fearing YAHUAH, the Aluahim of the shamayim, who made the sea and the dry land.”', ref:'YONAH 1:7–9', stage:{"set":"storm","wx":"rain","cam":"close","focus":0.5,"cast":[{"id":"sailor","x":0.32,"z":0.08,"dy":-0.14,"face":"r","pose":"kneel","say":4,"acts":[{"at":1,"pose":"point"},{"at":3,"pose":"speak"}]},{"id":"sailor2","look":{"name":"A Mariner","skin":"#7a5230","hair":"#231409","hairStyle":"short","robe":"#6a5a44","beard":"#231409","headcover":"#5a6a6a","short":1},"x":0.42,"z":0.08,"dy":-0.14,"face":"r","pose":"kneel","label":false,"say":6,"acts":[{"at":2,"pose":"stand"}]},{"id":"captain","x":0.52,"z":0.08,"dy":-0.14,"face":"r","pose":"kneel","say":2,"acts":[{"at":1,"pose":"stand"},{"at":2,"pose":"point"}]},{"id":"yonah","x":0.66,"z":0.08,"dy":-0.14,"face":"l","pose":"stand","say":8,"acts":[{"at":9,"pose":"raise"}]}],"props":[{"k":"ship","x":0.5,"z":0.12,"s":2.2,"storm":1}],"fx":[{"k":"lightning","at":9}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:9402,
-     features:[ {type:'reedark',x:22,y:10,id:'deck',examine:'The pitching deck — where the sailors rowed hard to reach land, but could not, for the sea grew more and more tempestuous against them.'},{type:'standard',x:16,y:12,id:'lots',examine:'The lots the mariners cast — and the lot fell on Yonah, who fled from the face of YAHUAH.'},{type:'stone',x:30,y:15,id:'sea',examine:'“Take me up and throw me into the sea; then the sea will quiet for you — for I know this great storm is upon you because of me.”'},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'reedark',x:22,y:10,id:'deck',examine:'The pitching deck — where the sailors rowed hard to bring the ship to land, but were unable, for the sea continued to grow more stormy against them.'},{type:'standard',x:16,y:12,id:'lots',examine:'The lots the mariners cast — and the lot fell on Yonah, who fled from the presence of YAHUAH.'},{type:'stone',x:30,y:15,id:'sea',examine:'“Take me and throw me into the sea, so that the sea becomes calm for you. For I know that this great storm is because of me.”'},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'tense',
    player:'yonah', playerPos:[22,20],
    npcs:[ {id:'captain',char:'captain',x:20,y:12,wander:false},{id:'sailor',char:'sailor',x:26,y:14,wander:false} ],
    objectives:[
-     {type:'talk',npc:'sailor',text:'The lot has fallen on you — what shall we do to you?',
+     {type:'talk',npc:'sailor',text:'The lot has fallen on you — what are we to do to you?',
       script:[
-       {say:['sailor','What is this you have done? For we know you flee from the presence of YAHUAH — you told us! What shall we do to you, that the sea may quiet for us? For it grows more and more tempestuous!']},
+       {say:['sailor','Why have you done this? For we know you flee from the presence of YAHUAH — you told us! What are we to do to you to make the sea calm for us? For the sea is growing more stormy!']},
        {rain:.7},{shake:1},{sfx:'thunder'},
-       {say:['yonah','Take me up and throw me into the sea; then the sea will quiet for you. For I know that this great storm is upon you because of me.']},
+       {say:['yonah','Take me and throw me into the sea, so that the sea becomes calm for you. For I know that this great storm is because of me.']},
       ]},
      {type:'interact',prop:'sea',text:'Into the sea — the storm is stilled, and a great fish waits below',hiddenUntil:1,
       script:[
-       {say:['narrator','Nevertheless the men rowed hard to bring the ship back to land, but they could not, for the sea grew ever more tempestuous against them. So they cried out to YAHUAH: “We beg You, O YAHUAH, do not let us perish for this man’s life, and do not lay innocent blood on us — for You, O YAHUAH, have done as it pleased You.”']},
+       {say:['narrator','However, the men rowed hard to bring the ship to land, but were unable, for the sea continued to grow more stormy against them. And they cried out to YAHUAH and said, “We pray, O YAHUAH, please, let us not perish for this man’s life and do not lay on us innocent blood. For You, O YAHUAH, have done as it pleased You.”']},
        {say:['narrator','Then they took up Yonah and threw him into the sea — and the sea ceased from its raging.']},
        {rain:0},{shake:1.3},{sfx:'thunder'},{burst:[30,15,'ash',16]},
        {say:['narrator','And the men feared YAHUAH exceedingly, and offered a slaughtering to YAHUAH, and made vows. And YAHUAH appointed a great fish to swallow Yonah. And Yonah was in the belly of the fish three days and three nights.']},
@@ -6163,11 +6310,11 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'flood', music:'tense', text:'Nevertheless the men rowed hard to bring the ship back to land, but they could not, for the sea grew more and more tempestuous against them. So they cried out to YAHUAH, and said, “We beg You, O YAHUAH, please do not let us perish for this man’s life, and do not lay innocent blood on us — for You, O YAHUAH, have done as it pleased You.”', ref:'YONAH 1:10–13'},
-   {art:'boat', music:'sorrow', text:'Then they took up Yonah and threw him into the sea, and the sea ceased from its raging. And the men feared YAHUAH exceedingly, and offered a slaughtering to YAHUAH, and made vows.', ref:'YONAH 1:14–16'},
-   {art:'fish', music:'sorrow', text:'And YAHUAH appointed a great fish to swallow Yonah. And Yonah was in the belly of the fish three days and three nights.', ref:'YONAH 1:17'},
+   {art:'flood', music:'tense', text:'However, the men rowed hard to bring the ship to land, but were unable, for the sea continued to grow more stormy against them. And they cried out to YAHUAH and said, “We pray, O YAHUAH, please, let us not perish for this man’s life and do not lay on us innocent blood. For You, O YAHUAH, have done as it pleased You.”', ref:'YONAH 1:10–14', stage:{"set":"storm","wx":"storm","cam":"pan-r","focus":0.5,"cast":[{"id":"sailor","x":0.28,"z":0.08,"dy":-0.14,"face":"l","pose":"strike","hold":"staff","acts":[{"at":1,"pose":"pray"}]},{"id":"sailor2","look":{"name":"A Mariner","skin":"#7a5230","hair":"#231409","hairStyle":"short","robe":"#6a5a44","beard":"#231409","headcover":"#5a6a6a","short":1},"x":0.38,"z":0.08,"dy":-0.14,"face":"l","pose":"strike","hold":"staff","label":false,"acts":[{"at":1,"pose":"pray"}]},{"id":"sailor3","look":{"name":"A Mariner","skin":"#8a6038","hair":"#1d1208","hairStyle":"short","robe":"#4a5a5a","short":1},"x":0.48,"z":0.08,"dy":-0.14,"face":"l","pose":"strike","hold":"staff","label":false,"acts":[{"at":2,"pose":"raise"}]},{"id":"captain","x":0.58,"z":0.08,"dy":-0.14,"face":"r","pose":"stand","say":1,"acts":[{"at":1,"pose":"raise"}]},{"id":"yonah","x":0.68,"z":0.08,"dy":-0.14,"face":"l","pose":"stand"}],"props":[{"k":"ship","x":0.48,"z":0.12,"s":2.4,"storm":1}],"fx":[{"k":"lightning","at":0}]}},
+   {art:'boat', music:'sorrow', text:'Then they took Yonah and threw him into the sea and the sea stopped raging. And the men feared YAHUAH exceedingly and brought an offering to YAHUAH and made vows.', ref:'YONAH 1:14–16'},
+   {art:'fish', music:'sorrow', text:'But YAHUAH appointed a great fish to swallow Yonah. And Yonah was in the stomach of the fish three days and three nights.', ref:'YONAH 1:17'},
   ],
-  complete:'They threw Yonah into the sea, and it was stilled — and a great fish swallowed him, three days and nights.'
+  complete:'Then they took Yonah and threw him into the sea and the sea stopped raging — and YAHUAH appointed a great fish to swallow Yonah. And Yonah was in the stomach of the fish three days and three nights.'
 },
 
 ]},
@@ -6175,48 +6322,48 @@ STORY.push(
 /* ============ ACT II — THE DEEP, AND THE SECOND CALL ============ */
 { id:'jact2', roman:'II', title:'The Deep, and the Second Call', ref:'YONAH 2–3', chapters:[
 
-{ id:'j3', title:'Out of the Belly of Sheʾol', ref:'YONAH 2:1–10',
+{ id:'j3', title:'From the Stomach of the Grave', ref:'YONAH 2:1–10',
   intro:[
-   {art:'void', music:'sorrow', text:'Then Yonah prayed to YAHUAH his Aluah from the belly of the fish, and he said: “I called to YAHUAH because of my distress, and He answered me. Out of the belly of Sheʾol I cried, and You heard my voice. For You threw me into the deep, into the heart of the seas, and the flood surrounded me; all Your breakers and Your waves passed over me. Then I said, ‘I have been driven from Your sight — yet I look again toward Your set-apart Hĕḵal.’”', ref:'YONAH 2:1–4'},
+   {art:'void', music:'sorrow', text:'And Yonah prayed to YAHUAH his Aluahim from the stomach of the fish. And he said, “I called to YAHUAH because of my distress and He answered me. From the stomach of the grave I cried and You heard my voice. For You threw me into the deep, into the heart of the seas and the floods surrounded me. All Your breakers and Your waves passed over me. So I said, ‘I have been driven away from Your eyes. Would I ever look again toward Your qadash (Set Apart) Hĕḵal?’”', ref:'YONAH 2:1–4', stage:{"set":"vision","cam":"close","focus":0.5,"wx":"mist","wxAt":3,"cast":[{"id":"yonah","x":0.48,"z":0.06,"face":"r","pose":"pray","say":1,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"pray"},{"at":3,"pose":"bow"},{"at":4,"pose":"fall"},{"at":5,"pose":"weep"},{"at":6,"pose":"look"}]}],"props":[{"k":"reeds","x":0.3,"z":0.2,"w":90,"at":3},{"k":"reeds","x":0.7,"z":0.25,"w":90,"at":3}],"fx":[{"k":"rays","x":0.5,"at":1},{"k":"darkness","amt":0.3,"at":3},{"k":"glory","x":0.62,"y":0.08,"at":6}]}},
   ],
   scene:{
    map:{biome:'interior', w:30, h:22, seed:9403, floorCol:'#141826', wallCol:'#0a0d18',
-     features:[ {type:'rock',x:15,y:11,id:'deep',examine:'The bottoms of the mountains, the earth with her bars closing about him forever — yet from the pit YAHUAH brought up his life.'},{type:'stone',x:21,y:13,id:'dryland',examine:'“Deliverance belongs to YAHUAH” — and at His word the fish cast Yonah out upon the dry land.'},{type:'column',x:9,y:8},{type:'column',x:21,y:8},{type:'clearing',x:15,y:16,flat:3} ]},
+     features:[ {type:'rock',x:15,y:11,id:'deep',examine:'The base of the mountains, the earth with its bars behind him forever — yet from the pit YAHUAH brought up his life.'},{type:'stone',x:21,y:13,id:'dryland',examine:'“Deliverance is of YAHUAH” — and at His word the fish cast Yonah out upon the dry land.'},{type:'column',x:9,y:8},{type:'column',x:21,y:8},{type:'clearing',x:15,y:16,flat:3} ]},
    time:'deepnight', music:'sorrow',
    player:'yonah', playerPos:[15,18],
    npcs:[],
    objectives:[
-     {type:'interact',prop:'deep',text:'Remember YAHUAH from the pit — my prayer came to You',
+     {type:'interact',prop:'deep',text:'Remember YAHUAH from the pit — my prayer went up to You',
       script:[
-       {say:['yonah','The waters surrounded me, up to my soul; the deep closed around me; weeds were wrapped about my head. I went down to the bottoms of the mountains; the earth with her bars closed about me forever — yet You brought up my life from the pit, O YAHUAH my Aluah!']},
+       {say:['yonah','Waters encompassed me, unto life, the deep closed around me, weeds were wrapped around my head. I went down to the base of the mountains, the earth with its bars were behind me forever. But You brought up my life from the pit, O YAHUAH, my Aluahim!']},
        {rays:.4,raysX:15},{sfx:'holy'},
-       {say:['yonah','When my soul fainted within me, I remembered YAHUAH; and my prayer came to You, into Your set-apart Hĕḵal.']},
+       {say:['yonah','When my life fainted within me, I remembered YAHUAH. And my prayer went up to You, into Your qadash (Set Apart) Hĕḵal.']},
        {burst:[15,11,'holy',12]},{sfx:'chime'},
       ]},
      {type:'interact',prop:'dryland',text:'Deliverance is of YAHUAH — cast up onto dry land',hiddenUntil:1,
       script:[
-       {say:['yonah','Those who observe worthless idols forsake their own kindness. But I — I slaughter to You with the voice of thanksgiving; what I have vowed I pay. Deliverance belongs to YAHUAH!']},
+       {say:['yonah','Those observing false worthlessnesses forsake their own kindness. But I offer to You with the voice of thanksgiving, I pay what I have vowed. Deliverance is of YAHUAH!']},
        {rays:.7,raysX:15},{sfx:'holy'},{burst:[15,11,'holy',18]},
-       {say:['narrator','And YAHUAH spoke to the fish, and it vomited Yonah out onto the dry land.']},
+       {say:['narrator','Then YAHUAH spoke to the fish and it vomited Yonah on the dry land.']},
        {burst:[21,13,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'void', music:'sorrow', text:'“The waters surrounded me, up to my soul; the deep closed around me; weeds were wrapped about my head. I went down to the bottoms of the mountains; the earth with her bars closed about me forever — yet You brought up my life from the pit, O YAHUAH my Aluah! When my soul fainted within me, I remembered YAHUAH; and my prayer came to You, into Your set-apart Hĕḵal.”', ref:'YONAH 2:5–7'},
-   {art:'light', music:'holy', text:'“Those who observe false vanities forsake their own kindness. But I — with the voice of thanksgiving I slaughter to You; what I have vowed I pay. Deliverance belongs to YAHUAH!”', ref:'YONAH 2:8–9'},
-   {art:'rest', music:'holy', text:'And YAHUAH spoke to the fish, and it vomited Yonah out onto the dry land.', ref:'YONAH 2:10'},
+   {art:'void', music:'sorrow', text:'“Waters encompassed me, unto life, the deep closed around me, weeds were wrapped around my head. I went down to the base of the mountains, the earth with its bars were behind me forever. But You brought up my life from the pit, O YAHUAH, my Aluahim. When my life fainted within me, I remembered YAHUAH. And my prayer went up to You, into Your qadash (Set Apart) Hĕḵal.”', ref:'YONAH 2:5–7', stage:{"set":"pit","cam":"up","focus":0.5,"cast":[{"id":"yonah","x":0.46,"z":0.06,"face":"r","pose":"lie","acts":[{"at":2,"pose":"kneel"},{"at":3,"pose":"pray"},{"at":4,"pose":"raise"}]}],"props":[{"k":"reeds","x":0.4,"z":0.1,"w":110},{"k":"rock","x":0.14,"z":0.2,"w":90,"h":70,"color":"#3a3a36","at":1},{"k":"rock","x":0.84,"z":0.2,"w":100,"h":80,"color":"#3a3a36","at":1}],"fx":[{"k":"darkness","amt":0.3},{"k":"rays","x":0.46,"at":2},{"k":"glory","x":0.5,"y":0.06,"at":4}]}},
+   {art:'light', music:'holy', text:'“Those observing false worthlessnesses forsake their own kindness. But I offer to You with the voice of thanksgiving, I pay what I have vowed. Deliverance is of YAHUAH.”', ref:'YONAH 2:8–9', stage:{"set":"black","cam":"push","focus":0.55,"cast":[{"id":"yonah","x":0.52,"z":0.06,"face":"l","pose":"point","say":0,"acts":[{"at":1,"face":"r","pose":"raise"},{"at":2,"pose":"pray"}]}],"props":[{"k":"idol","x":0.2,"z":0.35,"color":"#5a5448"},{"k":"altar","x":0.76,"z":0.2,"at":1,"sacrifice":1}],"fx":[{"k":"spotlight","x":0.52},{"k":"rays","x":0.6,"at":1},{"k":"glory","x":0.7,"y":0.1,"at":2}]}},
+   {art:'rest', music:'holy', text:'Then YAHUAH spoke to the fish and it vomited Yonah on the dry land.', ref:'YONAH 2:10', stage:{"set":"sea","time":"dawn","cam":"push","focus":0.55,"cast":[{"id":"voice","x":0.3,"say":0},{"id":"yonah","x":0.72,"z":0.02,"dy":0.06,"face":"l","pose":"fall"}],"props":[{"k":"fish","x":0.4,"z":0.4,"big":1,"face":"r"}],"fx":[{"k":"rays","x":0.7}]}},
   ],
-  complete:'Out of the belly of Sheʾol I cried, and You heard me — deliverance belongs to YAHUAH.'
+  complete:'From the stomach of the grave I cried and You heard my voice — deliverance is of YAHUAH.'
 },
 
 { id:'j4', title:'Yet Forty Days', ref:'YONAH 3:1–10',
   intro:[
-   {art:'nineveh', music:'tense', text:'And the word of YAHUAH came to Yonah the second time, saying, “Arise, go to Ninewĕh, that great city, and proclaim to it the proclamation that I am telling you.” So Yonah arose and went to Ninewĕh, according to the word of YAHUAH. Now Ninewĕh was an exceedingly great city, a three days’ journey across. And Yonah began to go into the city, on the first day’s walk, and he cried out and said, “Yet forty days, and Ninewĕh shall be overthrown!”', ref:'YONAH 3:1–4'},
+   {art:'nineveh', music:'tense', text:'And the Word of YAHUAH came to Yonah the second time, saying, “Arise, go to Ninewĕh, that great city and proclaim to it the message that I am speaking to you.” And Yonah arose and went to Ninewĕh, according to the Word of YAHUAH. Now Ninewĕh was a great city before Aluahim, of three day’s journey. And Yonah began to go in to the city on the first day’s walk. And he cried out and said, “Yet forty days and Ninewĕh shall be overthrown!”', ref:'YONAH 3:1–4', stage:{"set":"city","time":"day","cam":"pan-r","focus":0.5,"cast":[{"id":"voice","x":0.14,"say":0},{"id":"yonah","x":0.12,"z":0.05,"face":"r","pose":"look","say":4,"acts":[{"at":1,"to":0.3,"pose":"stand"},{"at":3,"to":0.46,"pose":"stand"},{"at":4,"pose":"raise"}]},{"id":"ninevite","at":3,"x":0.7,"z":0.14,"face":"l","pose":"stand","acts":[{"at":4,"pose":"weep"}]}],"crowd":[{"kind":"nations","n":6,"x":0.74,"w":0.36,"z":0.6,"face":"l","at":2},{"kind":"people","n":5,"x":0.62,"w":0.5,"z":0.8,"at":2}],"props":[{"k":"ziggurat","x":0.82,"z":1.0,"s":0.7}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:9404,
-     features:[ {type:'citygate',x:22,y:7,id:'gate'},{type:'standard',x:16,y:12,id:'proclaim',examine:'The proclamation cried through the streets of Ninewĕh: “Yet forty days, and Ninewĕh shall be overthrown!”'},{type:'throne',x:30,y:11,id:'throne',examine:'The throne of Ninewĕh — from which the sovereign arose, laid aside his robe, covered himself with sackcloth, and sat in ashes.'},{type:'altar',x:24,y:15,id:'fast',examine:'The fast proclaimed from the greatest to the least — man and beast in sackcloth, crying mightily to Elohim.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'citygate',x:22,y:7,id:'gate'},{type:'standard',x:16,y:12,id:'proclaim',examine:'The proclamation cried through the streets of Ninewĕh: “Yet forty days, and Ninewĕh shall be overthrown!”'},{type:'throne',x:30,y:11,id:'throne',examine:'The throne of Ninewĕh — from which the sovereign arose, took off his robe, covered himself with sackcloth, and sat in ashes.'},{type:'altar',x:24,y:15,id:'fast',examine:'The fast proclaimed from the greatest to the least — man and beast in sackcloth, calling mightily to Aluahim.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'yonah', playerPos:[22,21], playerHold:'scroll',
    npcs:[ {id:'ninevehking',char:'ninevehking',x:28,y:13,wander:false},{id:'ninevite',char:'ninevite',x:18,y:14,wander:true} ],
@@ -6224,26 +6371,26 @@ STORY.push(
      {type:'interact',prop:'proclaim',text:'Cry through the city — “Yet forty days, and Ninewĕh shall be overthrown”',
       script:[
        {say:['yonah','Yet forty days, and Ninewĕh shall be overthrown!']},
-       {say:['narrator','And the people of Ninewĕh believed Elohim, and proclaimed a fast, and put on sackcloth, from the greatest of them to the least of them.']},
+       {say:['narrator','And the men of Ninewĕh believed in Aluahim and proclaimed a fast and put on sackcloth, from the greatest to the least of them.']},
        {burst:[16,12,'mote',10]},{sfx:'blip'},
       ]},
-     {type:'talk',npc:'ninevehking',text:'The sovereign rises from his throne — who knows if Elohim relents?',hiddenUntil:1,
+     {type:'talk',npc:'ninevehking',text:'The sovereign rises from his throne — who knows whether Aluahim does turn and relent?',hiddenUntil:1,
       script:[
-       {say:['narrator','And the word reached the sovereign of Ninewĕh, and he rose from his throne, laid aside his robe, covered himself with sackcloth, and sat in ashes.']},
-       {say:['ninevehking','Let neither man nor beast, herd nor flock, taste anything; let them not eat nor drink water. Let man and beast be covered with sackcloth, and cry mightily to Elohim; and let each turn from his evil way and from the violence in his hands.']},
-       {say:['ninevehking','Who knows? Elohim might turn and relent, and turn away from His burning wrath, so that we do not perish.']},
+       {say:['narrator','And the word reached the sovereign of Ninewĕh, so he arose from his throne and took off his robe and covered himself with sackcloth and sat in ashes.']},
+       {say:['ninevehking','No man or beast, herd or flock, shall taste whatever – let them not eat, let them not even drink water. But let man and beast be covered with sackcloth and call mightily to Aluahim. And let each one turn from his evil way and from the violence that is in his hands.']},
+       {say:['ninevehking','Who knows whether Aluahim does turn and relent and shall turn away from the heat of His displeasure, so that we do not perish?']},
        {rays:.5,raysX:24},{sfx:'holy'},
-       {say:['voice','And Elohim saw their works, that they turned from their evil way; and Elohim relented from the disaster He had said He would do to them, and He did not do it.']},
+       {say:['voice','And Aluahim saw their works, that they turned from their evil way. And Aluahim relented from the evil which He had said He would do to them and He did not do it.']},
        {burst:[24,15,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'repent', music:'holy', text:'And the people of Ninewĕh believed Elohim, and proclaimed a fast, and put on sackcloth, from the greatest of them to the least of them. And the word reached the sovereign of Ninewĕh, and he rose from his throne and laid aside his robe, covered himself with sackcloth, and sat in ashes.', ref:'YONAH 3:5–6'},
-   {art:'altarfire', music:'sorrow', text:'And he cried out and said throughout Ninewĕh, by the decree of the sovereign and his great ones: “Let neither man nor beast, herd nor flock, taste anything; let them not eat, nor drink water. But let man and beast be covered with sackcloth, and let them cry mightily to Elohim; and let each turn from his evil way and from the violence in his hands. Who knows — Elohim might turn and relent, and turn from His burning wrath, so that we do not perish.”', ref:'YONAH 3:7–9'},
-   {art:'light', music:'holy', text:'And Elohim saw their works, that they turned from their evil way; and Elohim relented from the disaster that He had said He would do to them, and He did not do it.', ref:'YONAH 3:10'},
+   {art:'repent', music:'holy', text:'And the men of Ninewĕh believed in Aluahim and proclaimed a fast and put on sackcloth, from the greatest to the least of them. And the word reached the sovereign of Ninewĕh, so he arose from his throne and took off his robe and covered himself with sackcloth and sat in ashes.', ref:'YONAH 3:5–6', stage:{"set":"palace","cam":"push","focus":0.55,"cast":[{"id":"ninevite","x":0.18,"z":0.06,"face":"r","pose":"raise","say":0,"look":{"sack":1,"robe":"#5a5040"}},{"id":"ninevehking","x":0.64,"z":0.3,"face":"l","pose":"enthroned","crown":1,"acts":[{"at":1,"to":0.44,"pose":"mourn"}]}],"crowd":[{"kind":"mourners","n":9,"x":0.44,"w":0.7,"z":0.7,"face":"r"},{"kind":"princes","n":4,"x":0.86,"w":0.1,"z":0.5,"face":"l","pose":"mourn","look":{"sack":1,"robe":"#4a4034"},"at":1}],"props":[{"k":"throne","x":0.64,"z":0.3},{"k":"rock","x":0.44,"z":0.32,"w":70,"h":8,"color":"#6a6660","at":1}]}},
+   {art:'altarfire', music:'sorrow', text:'And he proclaimed and said throughout Ninewĕh, “By decree of the sovereign and his nobles: No man or beast, herd or flock, shall taste whatever – let them not eat, let them not even drink water. But let man and beast be covered with sackcloth and call mightily to Aluahim. And let each one turn from his evil way and from the violence that is in his hands. Who knows whether Aluahim does turn and relent and shall turn away from the heat of His displeasure, so that we do not perish?”', ref:'YONAH 3:7–9', stage:{"set":"city","time":"dusk","cam":"pan-l","focus":0.5,"cast":[{"id":"ninevehking","look":{"robe":"#4a4034","sack":1,"collar":"#4a4034"},"crown":1,"x":0.8,"z":0.1,"face":"l","pose":"point","say":0,"acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"pray"}]},{"id":"ninevite","x":0.6,"z":0.16,"face":"l","pose":"hold","hold":"scroll","look":{"sack":1,"robe":"#5a5040"}}],"crowd":[{"kind":"mourners","n":8,"x":0.3,"w":0.4,"z":0.5,"face":"r","from":"mourn","at":1,"pose":"pray"},{"kind":"people","n":4,"x":0.16,"w":0.12,"z":0.7,"face":"r","at":2,"pose":"bow","look":{"sack":1,"robe":"#4a4034"}}],"props":[{"k":"sheep","x":0.46,"z":0.85,"n":6,"w":110,"at":1},{"k":"oxen","x":0.62,"z":0.8,"n":2,"at":1},{"k":"camel","x":0.3,"z":0.95,"face":"r","at":1},{"k":"donkey","x":0.74,"z":0.62,"face":"l","at":1}],"fx":[{"k":"rays","x":0.5,"at":3}]}},
+   {art:'light', music:'holy', text:'And Aluahim saw their works, that they turned from their evil way. And Aluahim relented from the evil which He had said He would do to them and He did not do it.', ref:'YONAH 3:10', stage:{"set":"city","time":"dawn","cam":"up","focus":0.5,"cast":[{"id":"ninevehking","look":{"robe":"#4a4034","sack":1,"collar":"#4a4034"},"crown":1,"x":0.5,"z":0.06,"face":"r","from":"bow","at":1,"pose":"pray"}],"crowd":[{"kind":"mourners","n":8,"x":0.3,"w":0.4,"z":0.45,"face":"r","from":"bow","at":1,"pose":"pray"},{"kind":"mourners","n":6,"x":0.76,"w":0.3,"z":0.55,"face":"l","from":"bow","at":1,"pose":"raise"}],"fx":[{"k":"glory","x":0.5,"y":0.08,"at":0},{"k":"rays","x":0.5,"at":1},{"k":"bright","amt":0.12,"at":1}]}},
   ],
-  complete:'Ninewĕh turned from its evil, and Elohim relented from the disaster — and did not do it.'
+  complete:'The men of Ninewĕh turned from their evil way, and Aluahim relented from the evil — and He did not do it.'
 },
 
 ]},
@@ -6251,42 +6398,42 @@ STORY.push(
 /* ============ ACT III — THE LESSON OF MERCY ============ */
 { id:'jact3', roman:'III', title:'The Lesson of Mercy', ref:'YONAH 4', chapters:[
 
-{ id:'j5', title:'The Gourd, and the Great City', ref:'YONAH 4:1–11',
+{ id:'j5', title:'The Plant, and the Great City', ref:'YONAH 4:1–11',
   intro:[
-   {art:'wilderness', music:'sorrow', text:'But it was greatly displeasing to Yonah, and he burned with anger. And he prayed to YAHUAH and said, “O YAHUAH, was this not what I said while I was still in my own land? That is why I fled beforehand to Tarshish — for I knew that You are a gracious and compassionate Ĕl, patient and of great kindness, and relenting from disaster. And now, O YAHUAH, please take my life from me, for it is better for me to die than to live!” And YAHUAH said, “Is it right for you to be angry?”', ref:'YONAH 4:1–4'},
+   {art:'wilderness', music:'sorrow', text:'But it greatly displeased Yonah and he was grieved. And he prayed to YAHUAH and he said, “Please, YAHUAH, was this not what I said while I was in my own land? This is why I went ahead and fled to Tarshish. For I know that You are an Al showing chen and compassionate, patient and of great kindness and relenting from doing evil. And now, O YAHUAH, please take my life from me, for it is better for me to die than to live!” And YAHUAH said, “Are you right to be displeased?”', ref:'YONAH 4:1–4', stage:{"set":"wilderness","time":"noon","cam":"push","focus":0.45,"cast":[{"id":"yonah","x":0.36,"z":0.05,"face":"r","pose":"weep","say":1,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"point"},{"at":3,"pose":"speak"},{"at":4,"pose":"mourn"}]},{"id":"voice","x":0.72,"at":5,"say":5}],"props":[{"k":"ziggurat","x":0.86,"z":1.0,"s":0.5},{"k":"house","x":0.74,"z":1.0,"s":0.6},{"k":"house","x":0.95,"z":1.0,"s":0.5}]}},
   ],
   scene:{
    map:{biome:'wilderness', w:44, h:28, seed:9405,
-     features:[ {type:'sukkah',x:16,y:11,id:'booth',examine:'The booth Yonah made east of the city, to sit in its shade and see what would become of Ninewĕh.'},{type:'vine',x:24,y:12,id:'gourd',examine:'The plant YAHUAH appointed to shade Yonah’s head — over which he was exceedingly glad; and the worm that struck it at dawn, so that it withered.'},{type:'rock',x:32,y:16,id:'city',examine:'Ninewĕh, the great city — more than a hundred and twenty thousand who cannot discern between their right hand and their left, and also much livestock.'},{type:'clearing',x:22,y:18,flat:3} ]},
+     features:[ {type:'sukkah',x:16,y:11,id:'booth',examine:'The shelter Yonah made east of the city, to sit in its shade and see what would become of Ninewĕh.'},{type:'vine',x:24,y:12,id:'gourd',examine:'The plant YAHUAH appointed to shade Yonah’s head — over which he greatly rejoiced; and the worm that attacked it as morning dawned, so that it withered.'},{type:'rock',x:32,y:16,id:'city',examine:'Ninewĕh, the great city — more than one hundred and twenty thousand beings who have not known their right hand from their left, and much cattle.'},{type:'clearing',x:22,y:18,flat:3} ]},
    time:'day', music:'sorrow',
    player:'yonah', playerPos:[22,20],
    npcs:[],
    objectives:[
      {type:'interact',prop:'gourd',text:'The plant grows, then the worm — Yonah faints in the scorching wind',
       script:[
-       {say:['narrator','And Yonah went out of the city and sat down east of it. There he made himself a booth, and sat under it in the shade, till he should see what would become of the city.']},
-       {say:['narrator','And YAHUAH Elohim appointed a plant, and it came up over Yonah to be a shade over his head, to deliver him from his misery. And Yonah was exceedingly glad of the plant.']},
+       {say:['narrator','Then Yonah went out of the city and sat on the east side of the city and made himself a shelter there and sat under it in the shade, to see what would become of the city.']},
+       {say:['narrator','And YAHUAH Aluahim appointed a plant and made it come up over Yonah, to be a shade for his head to deliver him from his discomfort. And Yonah greatly rejoiced over the plant.']},
        {rays:.5,raysX:24},{burst:[24,12,'leaf',12]},{sfx:'chime'},
-       {say:['narrator','But at dawn the next day Elohim appointed a worm, and it struck the plant, and it withered. And when the sun rose, Elohim appointed a scorching east wind; and the sun beat down on Yonah’s head, so that he grew faint and wished to die: “It is better for me to die than to live.”']},
+       {say:['narrator','But as morning dawned the next day Aluahim appointed a worm which attacked the plant so that it withered. And it came to be when the sun came up, that Aluahim appointed a scorching east ruach and the sun smote on Yonah’s head, so that he grew faint and asked for his life to die and said, “It is better for me to die than to live.”']},
        {burst:[24,12,'ash',12]},{sfx:'bad'},
       ]},
-     {type:'interact',prop:'city',text:'Hear the last question — “Should I not have pity on Ninewĕh?”',hiddenUntil:1,
+     {type:'interact',prop:'city',text:'Hear the last question — “Should I not pardon Ninewĕh?”',hiddenUntil:1,
       script:[
        {say:['voice','Is it right for you to be angry about the plant?']},
        {say:['yonah','It is right for me to be angry, even to death!']},
        {rays:.6,raysX:32},{sfx:'holy'},
-       {say:['voice','You had pity on the plant, for which you did not labour, nor make it grow — which came up in a night and perished in a night. And should I not have pity on Ninewĕh, that great city, in which are more than a hundred and twenty thousand people who cannot discern between their right hand and their left — and also much livestock?']},
+       {say:['voice','You felt sorry for the plant for which you have not laboured, nor made it grow, which came up in a night and perished in a night. And should I not pardon Ninewĕh, that great city, in which are more than one hundred and twenty thousand beings who have not known their right hand from their left and much cattle?']},
        {burst:[32,16,'holy',18]},{sfx:'chime'},
        {say:['narrator','And there the book ends — on a question, left open, for every reader who has ever begrudged the mercy of YAHUAH to those they would rather see judged.']},
       ]},
    ],
   },
   outro:[
-   {art:'gourd', music:'sorrow', text:'And Yonah went out of the city and sat on the east side of the city. There he made himself a booth and sat under it in the shade, till he should see what would become of the city. And YAHUAH Elohim appointed a plant and made it come up over Yonah, to be a shade over his head, to deliver him from his misery. And Yonah was exceedingly glad of the plant.', ref:'YONAH 4:5–6'},
-   {art:'gourd', music:'sorrow', text:'But at dawn the next day Elohim appointed a worm, and it struck the plant so that it withered. And when the sun rose, Elohim appointed a scorching east wind, and the sun beat down on Yonah’s head so that he grew faint and wished within himself to die, and said, “It is better for me to die than to live.” And Elohim said to Yonah, “Is it right for you to be angry about the plant?” And he said, “It is right for me to be angry, even to death.”', ref:'YONAH 4:7–9'},
-   {art:'light', music:'holy', text:'And YAHUAH said, “You had pity on the plant, for which you did not labour, nor make it grow, which came up in a night and perished in a night. And should I not have pity on Ninewĕh, that great city, in which are more than a hundred and twenty thousand people who cannot discern between their right hand and their left — and also much livestock?”', ref:'YONAH 4:10–11'},
+   {art:'gourd', music:'sorrow', text:'Then Yonah went out of the city and sat on the east side of the city and made himself a shelter there and sat under it in the shade, to see what would become of the city. And YAHUAH Aluahim appointed a plant and made it come up over Yonah, to be a shade for his head to deliver him from his discomfort. And Yonah greatly rejoiced over the plant.', ref:'YONAH 4:5–6', stage:{"set":"desert","time":"day","cam":"push","focus":0.45,"cast":[{"id":"yonah","x":0.14,"at":0,"to":0.42,"z":0.05,"face":"r","pose":"sitground","acts":[{"at":2,"pose":"raise"}]}],"props":[{"k":"ziggurat","x":0.86,"z":1.0,"s":0.5},{"k":"house","x":0.74,"z":1.0,"s":0.6},{"k":"house","x":0.95,"z":1.0,"s":0.5},{"k":"tent","x":0.4,"z":0.2,"w":80,"h":64,"color":"#8a7a5a"},{"k":"tree","x":0.37,"z":0.08,"h":165,"color":"#4a8a3a","at":1}],"fx":[{"k":"rays","x":0.38,"at":1}]}},
+   {art:'gourd', music:'sorrow', text:'But as morning dawned the next day Aluahim appointed a worm which attacked the plant so that it withered. And it came to be when the sun came up, that Aluahim appointed a scorching east ruach and the sun smote on Yonah’s head, so that he grew faint and asked for his life to die and said, “It is better for me to die than to live.” And Aluahim said to Yonah, “Have you rightly become displeased over the plant?” And he said, “I have rightly become displeased, even to death!”', ref:'YONAH 4:7–9', stage:{"set":"desert","time":"noon","cam":"close","focus":0.45,"wx":"wind","wxAt":1,"cast":[{"id":"yonah","x":0.42,"z":0.05,"face":"r","pose":"sitground","say":3,"acts":[{"at":1,"pose":"mourn"},{"at":3,"pose":"raise"}]},{"id":"voice","x":0.74,"at":2,"say":2}],"props":[{"k":"ziggurat","x":0.86,"z":1.0,"s":0.5},{"k":"house","x":0.74,"z":1.0,"s":0.6},{"k":"house","x":0.95,"z":1.0,"s":0.5},{"k":"tent","x":0.4,"z":0.2,"w":80,"h":64,"color":"#8a7a5a"},{"k":"tree","x":0.37,"z":0.08,"h":165,"color":"#8a7a40"}],"fx":[{"k":"bright","amt":0.18,"at":1},{"k":"red","amt":0.08,"at":1}]}},
+   {art:'light', music:'holy', text:'And YAHUAH said, “You felt sorry for the plant for which you have not laboured, nor made it grow, which came up in a night and perished in a night. And should I not pardon Ninewĕh, that great city, in which are more than one hundred and twenty thousand beings who have not known their right hand from their left and much cattle?”', ref:'YONAH 4:10–11', stage:{"set":"walls","time":"dusk","cam":"pull","focus":0.5,"cast":[{"id":"yonah","x":0.14,"z":0.05,"face":"r","pose":"sitground"},{"id":"voice","x":0.52,"say":0}],"crowd":[{"kind":"children","n":8,"x":0.62,"w":0.4,"z":0.4,"face":"l","at":1},{"kind":"people","n":6,"x":0.66,"w":0.5,"z":0.72,"face":"l","at":1}],"props":[{"k":"tree","x":0.08,"z":0.1,"h":150,"color":"#8a7a40"},{"k":"oxen","x":0.86,"z":0.3,"n":2,"at":1},{"k":"sheep","x":0.4,"z":0.62,"n":6,"w":110,"at":1},{"k":"camel","x":0.92,"z":0.55,"face":"l","at":1}],"fx":[{"k":"rays","x":0.52}]}},
   ],
-  complete:'Should I not have pity on Ninewĕh, that great city? — the book that ends on the mercy of YAHUAH.'
+  complete:'Should I not pardon Ninewĕh, that great city? — the book that ends on the mercy of YAHUAH.'
 },
 
 ]}
@@ -6331,7 +6478,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6397,7 +6544,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6457,9 +6607,10 @@ function frame(ts){
 /* ============ BESORAH IN-GAME READER ============ */
 (function(){
   const BOOKS=[
+    ['YONAH','yonah'],
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
     ['YAHUSHA','yahusha'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
@@ -6545,5 +6696,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Ḥaḇaqquq</h2>
-    <div class="hint">Three acts · ḤAḆAQQUQ — the naḇi who dared to argue with YAHUAH: from the complaint over violence and the rousing of the Chaldeans, through the harder question of a set-apart Ěl who uses the wicked, to the vision written on the tablets — the righteous one lives by his belief — the five woes on the plunderer, and the closing prayer that ends, though the fig tree does not blossom, in exulting in the Aluahim of deliverance</div>
+    <div class="hint">Three acts · ḤAḆAQQUQ — the naḇi who dared to argue with YAHUAH: from the complaint over violence and the rousing of the Chaldeans, through the harder question of a qadash (Set Apart) Al who uses the wicked, to the vision written on the tablets — the righteous one lives by his steadfastness — the five woes on the plunderer, and the closing prayer that ends, though the fig tree does not blossom, in exulting in the Aluahim of deliverance</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -526,8 +558,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -635,7 +667,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -735,7 +767,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -997,6 +1031,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1040,7 +1084,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1302,6 +1348,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2783,6 +2839,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2978,7 +3054,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3183,8 +3259,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3671,6 +3748,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3734,7 +3812,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3786,15 +3868,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3805,6 +3921,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3830,6 +3952,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3858,6 +3981,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3875,7 +3999,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4015,6 +4139,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4078,17 +4207,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4252,22 +4382,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4280,7 +4414,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4303,11 +4437,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5668,7 +5815,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5717,11 +5864,11 @@ const STORY=[];
 STORY.push(
 
 /* ============ ACT I — THE PROPHET'S COMPLAINT ============ */
-{ id:'hbact1', roman:'I', title:'The Prophet’s Complaint', ref:'ḤAḆAQQUQ 1', chapters:[
+{ id:'hbact1', roman:'I', title:'The Naḇi’s Complaint', ref:'ḤAḆAQQUQ 1', chapters:[
 
 { id:'hb1', title:'Til When Shall I Cry?', ref:'ḤAḆAQQUQ 1:1–11',
   intro:[
-   {art:'corrupt', music:'sorrow', text:'The message which the naḇi Ḥaḇaqquq saw. O YAHUAH, til when shall I cry, and You not hear? I cry to You, “Violence!” — and You do not save. Why do You show me wickedness and cause me to see perversity? Ruin and violence are before me; strife and contention arise.', ref:'ḤAḆAQQUQ 1:1–3'},
+   {art:'corrupt', music:'sorrow', text:'The message which the naḇi Ḥaḇaqquq saw. O YAHUAH, til when shall I cry and You not hear? I cry to You, “Violence!” and You do not save. Why do You show me wickedness and cause me to see perversity? Ruin and violence are before me. And there is strife and contention arises.', ref:'ḤAḆAQQUQ 1:1–3', stage:{"set":"city","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"habaquq","x":0.16,"z":0.06,"face":"r","pose":"look","say":1,"acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"point"},{"at":4,"pose":"weep"}]},{"id":"poorman","x":0.48,"z":0.1,"face":"r","pose":"stand","acts":[{"at":2,"pose":"fall"}]},{"id":"hebrew2","x":0.6,"z":0.12,"face":"l","pose":"stand","hold":"rod","acts":[{"at":2,"pose":"strike"}]}],"crowd":[{"kind":"people","n":6,"x":0.76,"w":0.3,"z":0.5,"face":"l","from":"stand","pose":"fight","at":4}],"fx":[{"k":"smoke","x":0.8,"at":4},{"k":"darkness","amt":0.2,"at":5}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6101,
@@ -5738,24 +5885,24 @@ STORY.push(
       ]},
      {type:'interact',prop:'answer',text:'Hear the answer — the Chaldeans are raised up',hiddenUntil:1,
       script:[
-       {say:['voice','Look among the nations and see, and be amazed, be amazed! For a work is being wrought in your days which you would not believe if it were told. See, I am raising up the Chaldeans, a bitter and hasty nation, who marches through the breadth of the earth to seize dwellings not their own.']},
+       {say:['voice','Look among the nations and see and be amazed, be amazed! For a work is being wrought in your days which you would not believe if it were told. See, I am raising up the Chaldeans, a bitter and hasty nation, who is going through the breadth of the earth, to possess dwelling places that are not theirs.']},
        {shake:.9},{sfx:'thunder'},{burst:[30,12,'ash',14]},
-       {say:['voice','They are frightening and fearsome; their right-ruling proceeds from themselves. Their horses are swifter than leopards, fiercer than evening wolves; they fly as the eagle rushing to eat. All of them come for violence, and they gather captives like the sand. They scoff at sovereigns, and laugh at every stronghold — piling up earth to seize it.']},
+       {say:['voice','They are frightening and fearsome, their right-ruling and their exaltation proceed from themselves. Their horses shall be swifter than leopards and more fierce than evening wolves. They fly as the eagle, rushing to eat. All of them come for violence … and they gather captives like sand. And they scoff at sovereigns and princes are a laughing matter to them. They laugh at every stronghold, for they pile up earth and seize it.']},
        {shake:.8},{sfx:'bad'},{burst:[22,9,'ash',12]},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'sorrow', text:'O YAHUAH, til when shall I cry, and You not hear? I cry, “Violence!” and You do not save. Why do You show me wickedness and cause me to see perversity? Ruin and violence are before me, and strife and contention arise. Therefore the Torah ceases, and right-ruling never goes forth — for the wrong hem in the righteous, so that right-ruling comes out twisted.', ref:'ḤAḆAQQUQ 1:1–4'},
-   {art:'fall', music:'tense', text:'“Look among the nations, and be amazed! For a work is being wrought in your days which you would not believe if it were told. See, I am raising up the Chaldeans, a bitter and hasty nation, marching through the breadth of the earth to seize dwellings not their own. They are frightening and fearsome; their right-ruling proceeds from themselves.”', ref:'ḤAḆAQQUQ 1:5–7'},
-   {art:'wasteland', music:'tense', text:'“Their horses are swifter than leopards, fiercer than evening wolves; their horsemen charge from afar, they fly as the eagle rushing to eat. All of them come for violence, gathering captives like sand. They scoff at sovereigns, princes are a laughing matter to them, they laugh at every stronghold — piling up earth to seize it. Then he sweeps on like the wind and passes over, guilty — this one whose power is his mighty one.”', ref:'ḤAḆAQQUQ 1:8–11'},
+   {art:'corrupt', music:'sorrow', text:'O YAHUAH, til when shall I cry and You not hear? I cry to You, “Violence!” and You do not save. Why do You show me wickedness and cause me to see perversity? Ruin and violence are before me. And there is strife and contention arises. Therefore the Torah ceases and right-ruling never goes forth. For the wrong hem in the righteous, so that right-ruling comes out twisted.', ref:'ḤAḆAQQUQ 1:1–4', stage:{"set":"gate","time":"day","cam":"push","focus":0.5,"cast":[{"id":"habaquq","x":0.1,"z":0.05,"face":"r","pose":"raise","say":0,"acts":[{"at":2,"pose":"point"},{"at":5,"pose":"weep"}]},{"id":"poorman","x":0.42,"z":0.12,"face":"r","pose":"stand","acts":[{"at":3,"pose":"fall"},{"at":6,"pose":"kneel"}]},{"id":"hebrew2","x":0.28,"z":0.16,"face":"r","pose":"stand","at":1,"acts":[{"at":3,"pose":"strike"}]},{"id":"elder","x":0.7,"z":0.1,"face":"l","pose":"sit","hold":"scroll","acts":[{"at":5,"pose":"weep"}]}],"crowd":[{"kind":"people","n":4,"x":0.44,"w":0.26,"z":0.34,"face":"l","pose":"point","at":6},{"kind":"people","n":5,"x":0.72,"w":0.3,"z":0.62,"face":"l","from":"stand","pose":"fight","at":4}],"fx":[{"k":"darkness","amt":0.25,"at":5}]}},
+   {art:'fall', music:'tense', text:'“Look among the nations and see and be amazed, be amazed! For a work is being wrought in your days which you would not believe if it were told. See, I am raising up the Chaldeans, a bitter and hasty nation, who is going through the breadth of the earth, to possess dwelling places that are not theirs. They are frightening and fearsome, their right-ruling and their exaltation proceed from themselves.”', ref:'ḤAḆAQQUQ 1:5–7', stage:{"set":"babylon","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"voice","x":0.4,"z":0.3},{"id":"habaquq","x":0.16,"z":0.06,"face":"r","pose":"look","acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"fall"}]},{"id":"chaldean","enter":"r","at":2,"to":0.62,"face":"l","pose":"stand","hold":"sword","say":3,"acts":[{"at":3,"pose":"point"}]}],"crowd":[{"kind":"army","side":"bavel","n":8,"x":0.72,"w":0.36,"z":0.55,"face":"l","enter":"r","at":2}]}},
+   {art:'wasteland', music:'tense', text:'“Their horses shall be swifter than leopards and more fierce than evening wolves. … their horsemen come from afar. They fly as the eagle, rushing to eat. All of them come for violence … and they gather captives like sand. And they scoff at sovereigns and princes are a laughing matter to them. They laugh at every stronghold, for they pile up earth and seize it. Then shall he pass on as a ruach and transgress and be guilty and ascribe this power to his mighty one.”', ref:'ḤAḆAQQUQ 1:8–11', stage:{"set":"desert","time":"dusk","wx":"dust","cam":"pan-l","cast":[{"id":"chaldean","x":0.52,"z":0.1,"face":"l","pose":"raise","at":5,"say":5,"acts":[{"at":7,"pose":"bow","face":"r"}]}],"crowd":[{"kind":"army","side":"bavel","n":6,"x":0.66,"w":0.3,"z":0.62,"face":"l","enter":"r","at":1},{"kind":"captives","n":6,"x":0.36,"w":0.22,"z":0.45,"face":"l","at":4},{"kind":"kings","n":3,"x":0.14,"w":0.12,"z":0.3,"face":"r","pose":"bound","at":5}],"props":[{"k":"horse","x":0.78,"z":0.3,"face":"l","color":"#3a2a1a"},{"k":"horse","x":0.92,"z":0.4,"face":"l","color":"#6a4a2a"},{"k":"tower","x":0.52,"z":0.95,"h":150,"tiers":2,"color":"#a89070","at":6},{"k":"stones","x":0.58,"z":0.85,"n":14,"at":6},{"k":"idol","x":0.64,"z":0.2,"at":7}],"fx":[{"k":"ravens","n":4,"x":0.5,"y":0.16,"at":2},{"k":"wind","at":7}]}},
   ],
   complete:'Til when shall I cry? — and YAHUAH answers: “See, I am raising up the Chaldeans.”'
 },
 
 { id:'hb2', title:'Too Clean to See Evil', ref:'ḤAḆAQQUQ 1:12–17',
   intro:[
-   {art:'void', music:'sorrow', text:'Are You not from everlasting, O YAHUAH my Aluahim, my Set-apart One? You do not die! O YAHUAH, You have appointed them for right-ruling; O Rock, You have established them for reproof. You whose eyes are too clean to see evil, who are not able to look on wrong — why do You look on the treacherous, and keep silent when the wrong devours one more righteous than he?', ref:'ḤAḆAQQUQ 1:12–13'},
+   {art:'void', music:'sorrow', text:'Are You not from everlasting, O YAHUAH my Aluahim, my Qadash (Set Apart One)? You do not die! O YAHUAH, You have appointed them for right-ruling, O Rock, You have established them for reproof. You, whose eyes are too clean to see evil, You are not able to look on wrong. Why do You look on those who act treacherously – keep silent when the wrong devours one more righteous than he?', ref:'ḤAḆAQQUQ 1:12–13', stage:{"set":"wilderness","time":"dusk","cam":"push","focus":0.4,"cast":[{"id":"habaquq","x":0.2,"z":0.06,"face":"r","pose":"pray","say":0,"acts":[{"at":2,"pose":"raise"},{"at":3,"pose":"point"}]},{"id":"poorman","x":0.58,"z":0.12,"face":"r","pose":"stand","at":2,"acts":[{"at":3,"pose":"fall"}]},{"id":"chaldean","x":0.72,"z":0.1,"face":"l","pose":"stand","hold":"sword","at":2,"acts":[{"at":3,"pose":"strike"}]}],"props":[{"k":"rock","x":0.36,"z":0.3,"w":80,"h":50}],"fx":[{"k":"glory","x":0.4,"y":0.05,"at":0},{"k":"rays","x":0.3,"at":1}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:6102,
@@ -5766,8 +5913,8 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'silence',text:'Press the harder question — why is YAHUAH silent?',
       script:[
-       {say:['habaquq','You whose eyes are too clean to see evil, who cannot look upon wrong — why do You look on those who act treacherously, and keep silent when the wrong devours one more righteous than he?']},
-       {say:['habaquq','Would You make men like the fish of the sea, like creeping things that have no ruler over them? The wicked foe pulls them all up with a hook, catches them in his net, gathers them in his dragnet — and so he rejoices and exults.']},
+       {say:['habaquq','You, whose eyes are too clean to see evil, You are not able to look on wrong — why do You look on those who act treacherously, keep silent when the wrong devours one more righteous than he?']},
+       {say:['habaquq','Would You make men like fish of the sea, like creeping creatures that have no ruler over them? The wicked foe has pulled all of them up with a hook, caught them in his net and gathers them in his dragnet. Therefore he rejoices and exults.']},
        {burst:[22,9,'ash',10]},{sfx:'bad'},
       ]},
      {type:'interact',prop:'net',text:'Ask the last question — shall he empty his net forever?',hiddenUntil:1,
@@ -5780,10 +5927,10 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'sorrow', text:'Are You not from everlasting, O YAHUAH my Aluahim, my Set-apart One? You do not die! O YAHUAH, You have appointed them for right-ruling; O Rock, You have established them for reproof. You whose eyes are too clean to see evil, and cannot look on wrong — why do You look on the treacherous, and keep silent when the wrong devours one more righteous than he?', ref:'ḤAḆAQQUQ 1:12–13'},
-   {art:'void', music:'sorrow', text:'Would You make men like the fish of the sea, like creeping things with no ruler over them? The wicked foe pulls them all up with a hook, catches them in his net and gathers them in his dragnet — therefore he rejoices and exults. So he offers to his net and burns incense to his dragnet, for by them his portion is fat. Is he therefore to keep on emptying his net, slaying nations without sparing?', ref:'ḤAḆAQQUQ 1:14–17'},
+   {art:'stars', music:'sorrow', text:'Are You not from everlasting, O YAHUAH my Aluahim, my Qadash (Set Apart One)? You do not die! O YAHUAH, You have appointed them for right-ruling, O Rock, You have established them for reproof. You, whose eyes are too clean to see evil, You are not able to look on wrong. Why do You look on those who act treacherously – keep silent when the wrong devours one more righteous than he?', ref:'ḤAḆAQQUQ 1:12–13', stage:{"set":"wilderness","time":"dusk","cam":"push","focus":0.4,"cast":[{"id":"habaquq","x":0.2,"z":0.06,"face":"r","pose":"pray","say":0,"acts":[{"at":2,"pose":"raise"},{"at":3,"pose":"point"}]},{"id":"poorman","x":0.58,"z":0.12,"face":"r","pose":"stand","at":2,"acts":[{"at":3,"pose":"fall"}]},{"id":"chaldean","x":0.72,"z":0.1,"face":"l","pose":"stand","hold":"sword","at":2,"acts":[{"at":3,"pose":"strike"}]}],"props":[{"k":"rock","x":0.36,"z":0.3,"w":80,"h":50}],"fx":[{"k":"glory","x":0.4,"y":0.05,"at":0},{"k":"rays","x":0.3,"at":1}]}},
+   {art:'void', music:'sorrow', text:'Would You make men like fish of the sea, like creeping creatures that have no ruler over them? The wicked foe has pulled all of them up with a hook, caught them in his net and gathers them in his dragnet. Therefore he rejoices and exults. Therefore he offers to his net and burns incense to his dragnet, for by them is his portion fat and his food is rich. Is he therefore to keep on emptying his net and slaying nations without sparing?', ref:'ḤAḆAQQUQ 1:14–17', stage:{"set":"river","time":"day","cam":"push","focus":0.55,"cast":[{"id":"habaquq","x":0.1,"z":0.04,"face":"r","pose":"look","say":4,"acts":[{"at":4,"pose":"raise"}]},{"id":"chaldean","x":0.6,"z":0.08,"face":"l","pose":"hold","hold":"staff","acts":[{"at":1,"pose":"carry"},{"at":2,"pose":"raise"},{"at":3,"to":0.72,"pose":"bow"},{"at":4,"pose":"stand","face":"l"}]}],"crowd":[{"kind":"captives","n":5,"x":0.38,"w":0.18,"z":0.22,"face":"r","at":1}],"props":[{"k":"fish","x":0.3,"z":0.5,"face":"r"},{"k":"fish","x":0.52,"z":0.55,"face":"l"},{"k":"fish","x":0.7,"z":0.5,"face":"r","s":0.8},{"k":"altar","x":0.88,"z":0.18,"at":3}],"fx":[{"k":"red","amt":0.15,"at":4}]}},
   ],
-  complete:'His eyes are too clean to see evil — so the prophet climbs the watch-tower to wait for the answer.'
+  complete:'His eyes are too clean to see evil — so the naḇi climbs the watch-tower to wait for the answer.'
 },
 
 ]},
@@ -5791,23 +5938,23 @@ STORY.push(
 /* ============ ACT II — THE VISION AND THE WOES ============ */
 { id:'hbact2', roman:'II', title:'The Vision and the Woes', ref:'ḤAḆAQQUQ 2', chapters:[
 
-{ id:'hb3', title:'The Righteous Shall Live by His Belief', ref:'ḤAḆAQQUQ 2:1–5',
+{ id:'hb3', title:'The Righteous One Lives by His Steadfastness', ref:'ḤAḆAQQUQ 2:1–5',
   intro:[
-   {art:'stars', music:'holy', text:'I stand at my watch, and station myself on the watch-tower, and wait to see what He says to me, and what I answer when I am reproved. And YAHUAH answered me and said, “Write the vision, and inscribe it plainly on tablets, so that he who reads it runs.”', ref:'ḤAḆAQQUQ 2:1–2'},
+   {art:'stars', music:'holy', text:'I stand at my watch and station myself on the watch-tower and wait to see what He says to me and what to answer when I am reproved. And YAHUAH answered me and said, “Write the vision and inscribe it on tablets, so that he who reads it runs.”', ref:'ḤAḆAQQUQ 2:1–2', stage:{"set":"walls","time":"night","cam":"push","focus":0.4,"cast":[{"id":"habaquq","x":0.22,"z":1,"dy":-0.23,"s":1.5,"face":"r","pose":"look","hold":"tablets","acts":[{"at":1,"pose":"kneel"}]},{"id":"voice","x":0.64,"z":0.3,"at":1},{"id":"reader","look":{"name":"He Who Reads It","skin":"#8a6038","hair":"#2c1a0c","robe":"#e8e0cc","beard":"#2c1a0c","sash":"#5a4a72","short":1},"enter":"l","at":1,"to":0.72,"run":1,"face":"r","pose":"hold","hold":"scroll"}],"fx":[{"k":"stars","at":0},{"k":"rays","x":0.4,"at":1}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:6103,
-     features:[ {type:'tower',x:22,y:8,id:'watchtower',examine:'The watch-tower where the naḇi stations himself to wait and see what YAHUAH answers.'},{type:'stone',x:16,y:13,id:'tablets',examine:'“Write the vision, inscribe it plainly on tablets, so that he who reads it runs.”'},{type:'standard',x:30,y:13,id:'faith',examine:'“The righteous one lives by his steadfastness” — while the puffed-up being is not upright within him.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'tower',x:22,y:8,id:'watchtower',examine:'The watch-tower where the naḇi stations himself to wait and see what YAHUAH answers.'},{type:'stone',x:16,y:13,id:'tablets',examine:'“Write the vision and inscribe it on tablets, so that he who reads it runs.”'},{type:'standard',x:30,y:13,id:'faith',examine:'“The righteous one lives by his steadfastness” — while the puffed-up being is not upright within him.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'habaquq', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:18,y:13,wander:false},{id:'poorman',char:'poorman',x:27,y:15,wander:false} ],
    objectives:[
      {type:'interact',prop:'tablets',text:'Write the vision on the tablets — wait for the appointed time',
       script:[
-       {say:['voice','Write the vision, and inscribe it plainly on tablets, so that he who reads it runs. For the vision is yet for an appointed time; it speaks of the end and does not lie. Though it lingers, wait for it — for it shall certainly come, it shall not delay.']},
+       {say:['voice','Write the vision and inscribe it on tablets, so that he who reads it runs. For the vision is yet for an appointed time, and it speaks of the end and does not lie. If it lingers, wait for it, for it shall certainly come, it shall not delay.']},
        {rays:.5,raysX:16},{sfx:'holy'},{burst:[16,13,'holy',14]},
       ]},
-     {type:'interact',prop:'faith',text:'Receive the heart of the vision — the righteous live by belief',hiddenUntil:1,
+     {type:'interact',prop:'faith',text:'Receive the heart of the vision — the righteous live by steadfastness',hiddenUntil:1,
       script:[
        {say:['voice','See — he whose being is not upright within him is puffed up. But the righteous one lives by his steadfastness.']},
        {rays:.7,raysX:30},{sfx:'holy'},{burst:[30,13,'holy',16]},
@@ -5817,44 +5964,44 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'I stand at my watch, and station myself on the watch-tower, to wait and see what He says, and what I answer when reproved. And YAHUAH answered: “Write the vision, and inscribe it plainly on tablets, so that he who reads it runs. For the vision is yet for an appointed time; it speaks of the end and does not lie. Though it lingers, wait for it — it shall certainly come, it shall not delay.”', ref:'ḤAḆAQQUQ 2:1–3'},
-   {art:'light', music:'holy', text:'“See — he whose being is not upright within him is puffed up. But the righteous one lives by his steadfastness. And the proud man is betrayed by wine; restless, he does not stay at home — enlarging his appetite like the grave, like death that is never satisfied, gathering to himself all nations and heaping up for himself all peoples.”', ref:'ḤAḆAQQUQ 2:4–5'},
+   {art:'stars', music:'holy', text:'I stand at my watch and station myself on the watch-tower and wait to see what He says to me and what to answer when I am reproved. And YAHUAH answered me and said, “Write the vision and inscribe it on tablets, so that he who reads it runs. For the vision is yet for an appointed time, and it speaks of the end and does not lie. If it lingers, wait for it, for it shall certainly come, it shall not delay.”', ref:'ḤAḆAQQUQ 2:1–3', stage:{"set":"walls","time":"night","cam":"push","focus":0.4,"cast":[{"id":"habaquq","x":0.22,"z":1,"dy":-0.23,"s":1.5,"face":"r","pose":"look","hold":"tablets","acts":[{"at":1,"pose":"kneel"}]},{"id":"voice","x":0.64,"z":0.3,"at":1},{"id":"reader","look":{"name":"He Who Reads It","skin":"#8a6038","hair":"#2c1a0c","robe":"#e8e0cc","beard":"#2c1a0c","sash":"#5a4a72","short":1},"enter":"l","at":1,"to":0.72,"run":1,"face":"r","pose":"hold","hold":"scroll"}],"fx":[{"k":"stars","at":0},{"k":"rays","x":0.4,"at":1}]}},
+   {art:'light', music:'holy', text:'“See, he whose being is not upright in him is puffed up. But the righteous one lives by his steadfastness. And also, because wine betrays him, a man is proud and he does not stay at home. Because he enlarges his appetite as the grave and he is like death and is not satisfied and gathers to himself all nations and heaps up for himself all peoples.”', ref:'ḤAḆAQQUQ 2:4–5', stage:{"set":"city","time":"noon","cam":"push","focus":0.5,"cast":[{"id":"chaldean","x":0.64,"z":0.1,"face":"l","pose":"raise","hold":"cup","acts":[{"at":2,"pose":"fall"},{"at":3,"pose":"point","face":"r"}]},{"id":"poorman","x":0.28,"z":0.08,"face":"r","pose":"kneel","acts":[{"at":1,"pose":"pray"}]}],"crowd":[{"kind":"captives","n":6,"x":0.8,"w":0.24,"z":0.5,"face":"l","at":3}],"props":[{"k":"grave","x":0.9,"z":0.3,"open":1,"at":3}],"fx":[{"k":"rays","x":0.28,"at":1}]}},
   ],
-  complete:'Write the vision and wait — for the righteous one lives by his belief.'
+  complete:'Write the vision and wait — for the righteous one lives by his steadfastness.'
 },
 
 { id:'hb4', title:'The Five Woes', ref:'ḤAḆAQQUQ 2:6–20',
   intro:[
-   {art:'corrupt', music:'tense', text:'Shall not all these lift up a proverb against him, a mocking riddle, and say: “Woe to him who heaps up what is not his — til when? — and loads himself with pledges! Shall not your creditors rise up suddenly, and those who make you tremble awake — and you become their plunder?”', ref:'ḤAḆAQQUQ 2:6–7'},
+   {art:'corrupt', music:'tense', text:'Shall not all these lift up a proverb against him and a mocking riddle against him and say, “Woe to him who increases what is not his! Til when is he to load on himself many pledges? Do not your creditors rise up suddenly? And those who make you tremble wake up and you be plunder for them?”', ref:'ḤAḆAQQUQ 2:6–7', stage:{"set":"palace","cam":"push","focus":0.55,"cast":[{"id":"elder","x":0.16,"z":0.06,"face":"r","pose":"point","say":0},{"id":"chaldean","x":0.7,"z":0.12,"face":"l","pose":"sit","acts":[{"at":2,"pose":"stand"},{"at":3,"pose":"fall"}]}],"crowd":[{"kind":"nations","n":6,"x":0.42,"w":0.26,"z":0.45,"face":"r","from":"sitground","pose":"point","at":2}],"props":[{"k":"chest","x":0.84,"z":0.3,"gold":1},{"k":"chest","x":0.9,"z":0.4,"gold":1,"at":1},{"k":"sacks","x":0.8,"z":0.5,"n":5,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6104,
-     features:[ {type:'house',x:16,y:11,id:'nest',examine:'Woe to him who gets evil gain for his house, to set his nest on high — the stone cries out from the wall, the beam answers from the timbers.'},{type:'wall',x:22,y:9,id:'blood',examine:'Woe to him who builds a town by blood — yet the earth shall be filled with the knowledge of the esteem of YAHUAH.'},{type:'standard',x:30,y:13,id:'idol',examine:'Woe to him who says to wood, “Awake!” — an overlaid idol with no breath in it. But YAHUAH is in His set-apart Hĕḵal.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'house',x:16,y:11,id:'nest',examine:'Woe to him who is getting evil gain for his house, to set his nest on high — a stone from the wall cries out, a beam from the timbers answers it.'},{type:'wall',x:22,y:9,id:'blood',examine:'Woe to him who builds a town by blood — yet the earth shall be filled with the knowledge of the esteem of YAHUAH.'},{type:'standard',x:30,y:13,id:'idol',examine:'Woe to him who says to wood, “Awake!” — an overlaid idol with no ruach in it. But YAHUAH is in His qadash (Set Apart) Hĕḵal.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'habaquq', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'chaldean',char:'chaldean',x:18,y:12,wander:false},{id:'elder',char:'elder',x:27,y:15,wander:false} ],
    objectives:[
      {type:'talk',npc:'chaldean',text:'Pronounce the woes of blood and plunder',
       script:[
-       {say:['chaldean','I have plundered many nations and set my house on high, prophet — who shall bring me down from my nest?']},
-       {say:['habaquq','Because you plundered many nations, all the remnant of the peoples shall plunder you — for the blood of men and the violence to the land, the city, and all who dwell in it. Woe to him who gets evil gain to set his nest on high, to escape the clutches of evil — you have counselled shame for your house!']},
-       {say:['voice','For a stone cries out from the wall, and a beam answers it from the timbers. Woe to him who builds a town by blood and founds a city by unrighteousness!']},
+       {say:['chaldean','I have plundered many nations and set my house on high, naḇi — who shall bring me down from my nest?']},
+       {say:['habaquq','Because you have plundered many nations, all the remnant of the people shall plunder you, because of men’s blood and doing violence to the land, to the city and to all who dwell in it. Woe to him who is getting evil gain for his house, in order to set his nest on high, to escape the clutches of evil! You have counselled shame for your house!']},
+       {say:['voice','For a stone from the wall cries out and a beam from the timbers answers it. Woe to him who builds a town by blood and establishes a city by unrighteousness!']},
        {shake:.9},{sfx:'bad'},{burst:[22,9,'ash',14]},
       ]},
      {type:'interact',prop:'idol',text:'Seal the woes — the earth filled, and YAHUAH in His Hĕḵal',hiddenUntil:1,
       script:[
-       {say:['habaquq','Woe to him who makes his neighbour drunk to look on his nakedness — the cup of the right hand of YAHUAH comes around to you, and shame upon your esteem. And woe to him who says to wood, “Awake!” and to silent stone, “Arise!” — an idol overlaid with gold, and no breath at all inside it.']},
+       {say:['habaquq','Woe to him who makes his neighbour drunk to look on his nakedness — the cup of the right hand of YAHUAH comes around to you, and shame upon your esteem. And woe to him who says to wood, “Awake!” and to silent stone, “Arise!” — an idol overlaid with gold, and no ruach at all inside it.']},
        {burst:[30,13,'ash',12]},{sfx:'bad'},
-       {say:['voice','For the earth shall be filled with the knowledge of the esteem of YAHUAH, as the waters cover the sea. But YAHUAH is in His set-apart Hĕḵal — let all the earth be silent before Him.']},
+       {say:['voice','For the earth shall be filled with the knowledge of the esteem of YAHUAH, as the waters cover the sea! But YAHUAH is in His qadash (Set Apart) Hĕḵal. Let all the earth be silent before Him.']},
        {rays:.7,raysX:22},{sfx:'holy'},{burst:[22,9,'holy',18]},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'“Woe to him who heaps up what is not his — how long? Shall not your creditors rise up suddenly, and you become their plunder? Because you plundered many nations, the remnant of the peoples shall plunder you — for men’s blood and the violence done to the land, the city, and all who dwell in it. Woe to him who gets evil gain to set his nest on high, to escape the clutches of evil — you have counselled shame for your house.”', ref:'ḤAḆAQQUQ 2:6–10'},
-   {art:'wasteland', music:'tense', text:'“For a stone cries out from the wall, and a beam answers it from the timbers. Woe to him who builds a town by blood and founds a city by unrighteousness! See, is it not from YAHUAH of hosts that the peoples labour only for fire, and nations weary themselves for naught — for the earth shall be filled with the knowledge of the esteem of YAHUAH, as the waters cover the sea!”', ref:'ḤAḆAQQUQ 2:11–14'},
-   {art:'corrupt', music:'sorrow', text:'“Woe to him who makes his neighbour drink, and makes him drunk, to look on his nakedness — the cup of the right hand of YAHUAH comes around to you, and great shame upon your esteem. Of what use is a carved image, that its maker has carved it — a moulded image, a teacher of falsehood? Woe to him who says to wood, ‘Awake!’ and to silent stone, ‘Arise!’ — overlaid with gold and silver, with no breath at all inside it.”', ref:'ḤAḆAQQUQ 2:15–19'},
-   {art:'light', music:'holy', text:'But YAHUAH is in His set-apart Hĕḵal — let all the earth be silent before Him.', ref:'ḤAḆAQQUQ 2:20'},
+   {art:'corrupt', music:'tense', text:'“Woe to him who increases what is not his! … Do not your creditors rise up suddenly? … Because you have plundered many nations, all the remnant of the people shall plunder you, because of men’s blood and doing violence to the land, to the city and to all who dwell in it. Woe to him who is getting evil gain for his house, in order to set his nest on high, to escape the clutches of evil! You have counselled shame for your house.”', ref:'ḤAḆAQQUQ 2:6–10', stage:{"set":"city","time":"dusk","cam":"pan-r","cast":[{"id":"elder","x":0.14,"z":0.06,"face":"r","pose":"point","say":0},{"id":"chaldean","x":0.56,"z":0.1,"face":"l","pose":"hold","hold":"bowl","acts":[{"at":1,"pose":"look","face":"r"},{"at":2,"pose":"fall"},{"at":3,"to":0.76,"pose":"carry"},{"at":4,"pose":"weep"}]}],"crowd":[{"kind":"nations","n":6,"x":0.36,"w":0.24,"z":0.45,"face":"r","enter":"l","at":1,"pose":"point"}],"props":[{"k":"tower","x":0.86,"z":0.62,"h":100,"tiers":3,"color":"#b09a70"},{"k":"house","x":0.86,"z":0.62,"dy":-0.12,"w":60,"h":40,"color":"#c8a878"}],"fx":[{"k":"smoke","x":0.5,"at":2},{"k":"red","amt":0.15,"at":2},{"k":"darkness","amt":0.25,"at":4}]}},
+   {art:'wasteland', music:'tense', text:'“For a stone from the wall cries out and a beam from the timbers answers it. Woe to him who builds a town by blood and establishes a city by unrighteousness! See, it is not from YAHUAH of hosts that peoples labour only for fire and nations weary themselves for naught, for the earth shall be filled with the knowledge of the esteem of YAHUAH, as the waters cover the sea!”', ref:'ḤAḆAQQUQ 2:11–14', stage:{"set":"walls","time":"day","cam":"push","focus":0.45,"cast":[{"id":"habaquq","x":0.1,"z":0.04,"face":"r","pose":"point","say":1,"at":1},{"id":"builder","x":0.26,"z":0.12,"face":"r","pose":"carry","hold":"stone"},{"id":"builder2","x":0.4,"z":0.16,"face":"l","pose":"kneel"},{"id":"chaldean","x":0.66,"z":0.08,"face":"l","pose":"point","hold":"rod","at":1}],"crowd":[{"kind":"captives","n":5,"x":0.5,"w":0.3,"z":0.5,"face":"r","pose":"carry","hold":"stone","at":1}],"props":[{"k":"stones","x":0.52,"z":0.1,"n":10},{"k":"bricks","x":0.34,"z":0.06,"n":12}],"fx":[{"k":"quake"},{"k":"firefall","x":0.5,"y":0.5,"at":2},{"k":"smoke","x":0.5,"at":2},{"k":"glory","x":0.5,"y":0.04,"at":2},{"k":"bright","amt":0.18,"at":2}]}},
+   {art:'corrupt', music:'sorrow', text:'“Woe to him who gives drink to his neighbour … making him drunk – in order to look on their nakedness! … The cup of the right hand of YAHUAH shall come around to you and great shame upon your esteem. Of what use shall a carved image be? … a moulded image and teacher of falsehood! … Woe to him who says to wood, ‘Awake!’ to silent stone, ‘Arise!’ … See, it is overlaid with gold and silver and there is no ruach at all inside it.”', ref:'ḤAḆAQQUQ 2:15–19', stage:{"set":"highplace","time":"dusk","cam":"pan-r","cast":[{"id":"hebrew","x":0.26,"z":0.1,"face":"r","pose":"stand","acts":[{"at":1,"pose":"sitground"}]},{"id":"chaldean","x":0.42,"z":0.1,"face":"l","pose":"hold","hold":"cup","say":5,"acts":[{"at":2,"pose":"weep"},{"at":5,"to":0.62,"face":"r","pose":"raise"},{"at":6,"pose":"kneel"}]},{"id":"habaquq","x":0.1,"z":0.04,"face":"r","pose":"point","at":7,"say":7}],"props":[{"k":"idol","x":0.76,"z":0.3,"at":3},{"k":"idol","x":0.88,"z":0.36,"color":"#c8c8d0","horns":false,"at":4}],"fx":[{"k":"red","amt":0.2,"at":2},{"k":"darkness","amt":0.2,"at":7}]}},
+   {art:'light', music:'holy', text:'But YAHUAH is in His qadash (Set Apart) Hĕḵal — let all the earth be silent before Him.', ref:'ḤAḆAQQUQ 2:20', stage:{"set":"temple","time":"glory","cam":"up","cast":[{"id":"habaquq","x":0.2,"z":0.06,"face":"r","pose":"look","acts":[{"at":1,"pose":"bow"}]}],"crowd":[{"kind":"people","n":7,"x":0.66,"w":0.3,"z":0.42,"face":"l","from":"stand","pose":"bow","at":1},{"kind":"nations","n":5,"x":0.34,"w":0.24,"z":0.62,"face":"r","from":"stand","pose":"bow","at":1},{"kind":"kohanim","n":3,"x":0.5,"w":0.12,"z":0.78,"face":"r","from":"stand","pose":"bow","at":1}],"fx":[{"k":"glory","x":0.5,"y":0.18,"at":0},{"k":"rays","x":0.5,"at":0}]}},
   ],
   complete:'Five woes on the plunderer — for the earth shall be filled with the knowledge of His esteem.'
 },
@@ -5866,26 +6013,26 @@ STORY.push(
 
 { id:'hb5', title:'Yet I Exult in YAHUAH', ref:'ḤAḆAQQUQ 3:1–19',
   intro:[
-   {art:'mountain', music:'holy', text:'A prayer of Ḥaḇaqquq the naḇi, on Shiḡionoth. O YAHUAH, I have heard Your report, and I was afraid. O YAHUAH, renew Your work in the midst of the years — make it known in the midst of the years; in wrath remember compassion.', ref:'ḤAḆAQQUQ 3:1–2'},
+   {art:'mountain', music:'holy', text:'A prayer of Ḥaḇaqquq the naḇi, on Shiḡionoth. O YAHUAH, I have heard Your report, I was afraid. O YAHUAH, renew Your work in the midst of the years! Make it known in the midst of the years. In wrath remember compassion.', ref:'ḤAḆAQQUQ 3:1–2', stage:{"set":"mountain","time":"dawn","cam":"push","focus":0.4,"cast":[{"id":"habaquq","x":0.34,"z":0.08,"face":"r","pose":"stand","hold":"harp","say":2,"acts":[{"at":1,"pose":"kneel"},{"at":2,"pose":"pray"},{"at":4,"pose":"raise"}]}],"crowd":[{"kind":"levites","n":4,"x":0.72,"w":0.18,"z":0.5,"face":"l","hold":"harp"}],"fx":[{"k":"darkness","amt":0.2,"at":1},{"k":"rays","x":0.36,"at":2},{"k":"glory","x":0.5,"y":0.05,"at":3}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:6105,
-     features:[ {type:'standard',x:22,y:9,id:'theophany',examine:'Aloah comes from Tĕman, the Set-apart One from Mount Paran — His splendour covers the shamayim, His praise fills the earth.'},{type:'rock',x:16,y:13,id:'mountains',examine:'The ancient mountains shattered, the age-old hills bow low — His ways are everlasting.'},{type:'tree',x:30,y:14,id:'figtree',examine:'“Though the fig tree does not blossom, and there is no fruit on the vine… yet I exult in YAHUAH.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'standard',x:22,y:9,id:'theophany',examine:'Aloah comes from Tĕman, the Qadash (Set Apart One) from Mount Paran — His splendour covers the shamayim, His praise fills the earth.'},{type:'rock',x:16,y:13,id:'mountains',examine:'The ancient mountains shattered, the age-old hills bow low — His ways are everlasting.'},{type:'tree',x:30,y:14,id:'figtree',examine:'“Though the fig tree does not blossom, and there is no fruit on the vine… yet I exult in YAHUAH.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'habaquq', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:18,y:13,wander:false},{id:'poorman',char:'poorman',x:27,y:15,wander:false} ],
    objectives:[
      {type:'interact',prop:'theophany',text:'Behold the coming of Aloah — the mountains shatter',
       script:[
-       {say:['habaquq','Aloah comes from Tĕman, the Set-apart One from Mount Paran. His splendour covers the shamayim, and His praise fills the earth. His brightness is as the light; rays flash from His hand, and there His power is hidden.']},
+       {say:['habaquq','Aloah comes from Tĕman, and the Qadash (Set Apart One) from Mount Paran. His splendour shall cover the shamayim, and His praise shall fill the earth. And the brightness is as the light, He has rays from His hand, and there His power is hidden.']},
        {rays:.8,raysX:22},{sfx:'holy'},{burst:[22,9,'holy',18]},
-       {say:['habaquq','He stands and measures the earth; He looks and shakes the nations. The ancient mountains are shattered, the age-old hills bow low — His ways are everlasting. He goes forth to save His people, to save His Anointed; He treads the sea with His horses, the foaming of many waters.']},
+       {say:['habaquq','He shall stand and measure the earth. He shall look and shake the nations. And the ancient mountains are shattered, the age-old hills shall bow. His ways are everlasting. … You shall go forth to save Your people, to save Your Anointed. … You shall tread the sea with Your horses, the foaming of many waters.']},
        {shake:1},{sfx:'thunder'},{burst:[16,13,'holy',16]},
       ]},
      {type:'interact',prop:'figtree',text:'End in faith — though the fig tree does not blossom',hiddenUntil:1,
       script:[
-       {say:['habaquq','I heard, and my body trembled; my lips quivered at the sound; rottenness came into my bones, and I trembled within myself — that I might rest in the day of distress coming upon the people who attack us.']},
-       {say:['habaquq','Though the fig tree does not blossom, and there is no fruit on the vine; though the yield of the olive fails, and the fields bring forth no food; though the flock is cut off from the fold, and there is no herd in the stalls —']},
+       {say:['habaquq','I heard and my body trembled, my lips quivered at the sound, rottenness came into my bones. And I trembled within myself, that I might rest for the day of distress, to come upon the people who would attack us.']},
+       {say:['habaquq','Though the fig tree does not blossom and there is no fruit on the vine, the yield of the olive has failed, and the fields brought forth no food, the flock has been cut off from the fold and there is no herd in the stalls —']},
        {rays:.7,raysX:30},{sfx:'holy'},{burst:[30,14,'holy',18]},
        {say:['habaquq','yet I exult in YAHUAH, I rejoice in the Aluahim of my deliverance! YAHUAH the Master is my strength; He makes my feet like those of deer, and makes me walk on my high places.']},
        {burst:[22,10,'holy',20]},{sfx:'chime'},
@@ -5893,12 +6040,12 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'mountain', music:'holy', text:'A prayer of Ḥaḇaqquq the naḇi. O YAHUAH, I have heard Your report, and I was afraid. Renew Your work in the midst of the years; in wrath remember compassion. Aloah comes from Tĕman, the Set-apart One from Mount Paran — His splendour covers the shamayim, and His praise fills the earth. His brightness is as the light; rays flash from His hand, and there His power is hidden. Before Him goes pestilence, and a burning flame at His feet.', ref:'ḤAḆAQQUQ 3:1–5'},
-   {art:'void', music:'tense', text:'He stands and measures the earth; He looks and shakes the nations; the ancient mountains are shattered, the age-old hills bow low — His ways are everlasting. The mountains see You and tremble; the storm of water sweeps by; the deep gives forth its voice and lifts its hands on high. Sun and moon stand still in their places; Your arrows fly like light, Your glittering spear like lightning.', ref:'ḤAḆAQQUQ 3:6–11'},
-   {art:'light', music:'holy', text:'You step through the earth in rage, You thresh the nations in wrath. You go forth to save Your people, to save Your Anointed; You smite the head from the house of the wrong, laying bare from foundation to neck. You tread the sea with Your horses, the foaming of many waters. I heard, and my body trembled; rottenness came into my bones — that I might rest in the day of distress.', ref:'ḤAḆAQQUQ 3:12–16'},
-   {art:'garden', music:'holy', text:'Though the fig tree does not blossom, and there is no fruit on the vine; though the yield of the olive fails, and the fields bring forth no food; though the flock is cut off from the fold, and there is no herd in the stalls — yet I exult in YAHUAH, I rejoice in the Aluahim of my deliverance! YAHUAH the Master is my strength; He makes my feet like those of deer, and makes me walk on my high places.', ref:'ḤAḆAQQUQ 3:17–19'},
+   {art:'mountain', music:'holy', text:'A prayer of Ḥaḇaqquq the naḇi. O YAHUAH, I have heard Your report, I was afraid. O YAHUAH, renew Your work in the midst of the years! … In wrath remember compassion. Aloah comes from Tĕman, and the Qadash (Set Apart One) from Mount Paran — His splendour shall cover the shamayim, and His praise shall fill the earth. And the brightness is as the light, He has rays from His hand, and there His power is hidden. Before Him goes pestilence, and a burning flame goes forth at His feet.', ref:'ḤAḆAQQUQ 3:1–5', stage:{"set":"desert","time":"dusk","cam":"up","cast":[{"id":"habaquq_o","x":0.2,"z":0.06,"face":"r","pose":"pray","say":0,"acts":[{"at":1,"pose":"bow"},{"at":3,"pose":"pray"},{"at":5,"pose":"raise"},{"at":7,"pose":"bow"}]}],"props":[{"k":"rock","x":0.8,"z":0.6,"w":90,"h":50}],"fx":[{"k":"glory","x":0.78,"y":0.12,"at":4},{"k":"bright","amt":0.18,"at":5},{"k":"rays","x":0.78,"at":6},{"k":"firefall","x":0.8,"y":0.62,"at":7},{"k":"embers","at":7}]}},
+   {art:'void', music:'tense', text:'He shall stand and measure the earth. He shall look and shake the nations. And the ancient mountains are shattered, the age-old hills shall bow. His ways are everlasting. … The mountains shall see You, they tremble. The storm of water shall pass over. The deep shall give forth its voice, it shall lift up its hands. Sun, moon shall stand still in their places. Like light Your arrows fly, like lightning is Your glittering spear.', ref:'ḤAḆAQQUQ 3:6–11', stage:{"set":"valley","time":"dusk","wx":"storm","wxAt":5,"cam":"push","cast":[{"id":"habaquq","x":0.12,"z":0.04,"face":"r","pose":"look","acts":[{"at":4,"pose":"fall"},{"at":8,"pose":"bow"}]}],"crowd":[{"kind":"nations","n":7,"x":0.6,"w":0.4,"z":0.45,"face":"l","from":"stand","pose":"fall","at":1}],"props":[{"k":"rock","x":0.34,"z":0.5,"w":70,"h":40},{"k":"rock","x":0.82,"z":0.55,"w":60,"h":36}],"fx":[{"k":"glory","x":0.5,"y":0.05,"at":0},{"k":"quake"},{"k":"smoke","x":0.34,"at":2},{"k":"smoke","x":0.8,"at":2},{"k":"bright","amt":0.15,"at":7},{"k":"lightning","at":8},{"k":"sword","x":0.62,"y":0.24,"at":8}]}},
+   {art:'light', music:'holy', text:'You step through the earth in rage, You thresh the gentiles in wrath. You shall go forth to save Your people, to save Your Anointed. You shall smite the Head from the house of the wrong, by laying bare from foundation to neck. … You shall tread the sea with Your horses, the foaming of many waters. I heard and my body trembled, my lips quivered at the sound, rottenness came into my bones… that I might rest for the day of distress.', ref:'ḤAḆAQQUQ 3:12–16', stage:{"set":"battle","time":"dusk","wx":"storm","wxAt":3,"cam":"push","focus":0.45,"cast":[{"id":"habaquq","x":0.1,"z":0.04,"face":"r","pose":"look","acts":[{"at":4,"pose":"weep"},{"at":5,"pose":"sitground"}]},{"id":"anointed","look":{"name":"Your Anointed","skin":"#8a6038","hair":"#2c1a0c","robe":"#f0e8d8","beard":"#2c1a0c","mantle":"#3a4a8a","sash":"#d8b040","glow":1},"crown":1,"x":0.34,"z":0.1,"face":"r","pose":"raise","at":1},{"id":"chaldean","x":0.64,"z":0.1,"face":"l","pose":"stand","hold":"sword","acts":[{"at":2,"pose":"fall"}]}],"crowd":[{"kind":"army","side":"bavel","n":7,"x":0.74,"w":0.3,"z":0.5,"face":"l","from":"fight","pose":"fall","at":0},{"kind":"people","n":6,"x":0.26,"w":0.24,"z":0.5,"face":"r","pose":"raise","at":1}],"props":[{"k":"horse","x":0.48,"z":0.35,"face":"r","color":"#e8e0d0","at":3},{"k":"horse","x":0.56,"z":0.45,"face":"r","color":"#d8d0c0","at":3}],"fx":[{"k":"quake"},{"k":"firefall","x":0.74,"y":0.6,"at":0},{"k":"rays","x":0.34,"at":1}]}},
+   {art:'garden', music:'holy', text:'Though the fig tree does not blossom and there is no fruit on the vine, the yield of the olive has failed, and the fields brought forth no food, the flock has been cut off from the fold and there is no herd in the stalls, yet I exult in YAHUAH, I rejoice in the Aluahim of my deliverance. YAHUAH the Master is my strength. And He makes my feet like those of deer, and makes me walk on my high places.', ref:'ḤAḆAQQUQ 3:17–19', stage:{"set":"field","time":"dawn","cam":"push","focus":0.55,"cast":[{"id":"habaquq","x":0.32,"z":0.08,"face":"r","pose":"raise","say":0,"acts":[{"at":2,"to":0.66,"pose":"raise"}]}],"props":[{"k":"tree","x":0.14,"z":0.3,"h":110,"color":"#6a5a3a"},{"k":"vine","x":0.46,"z":0.5,"w":140},{"k":"rock","x":0.84,"z":0.25,"w":70,"h":44},{"k":"goat","x":0.84,"z":0.25,"dy":-0.07,"face":"l","at":2}],"fx":[{"k":"glory","x":0.62,"y":0.05,"at":1},{"k":"rays","x":0.62,"at":1}]}},
   ],
-  complete:'Though the fig tree does not blossom — yet I exult in YAHUAH, the Aluahim of my deliverance.'
+  complete:'Though the fig tree does not blossom — yet I exult in YAHUAH, I rejoice in the Aluahim of my deliverance.'
 },
 
 ]}
@@ -5943,7 +6090,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6009,7 +6156,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6070,8 +6220,8 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
     ['YAHUSHA','yahusha'],['ḤAḆAQQUQ','habaqquq'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
@@ -6157,5 +6307,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

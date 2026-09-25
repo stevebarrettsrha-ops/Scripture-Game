@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main" style="font-size:clamp(26px,6vmin,64px)">3 MAQQABIM</div>
     <div class="title-sub">3 Maccabees — Ethiopic &amp; Eastern Apocrypha</div>
-    <div class="title-verse">“You, O YAHUAH, made the shamayim and the earth, and every beautiful thing therein — look now upon this arrogant and profane people, and deliver us who trust in You.” — 3 MAQQABIM 2:2–9</div>
+    <div class="title-verse">“YAHUAH, YAHUAH, king of the shamayim, and sovereign of all creation… give attention to us who are suffering grievously from a wicked and profane man, puffed up in his audacity and power.” — 3 MAQQABIM 2:2</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of 3 Maqqabim</h2>
-    <div class="hint">Four acts · 3 MAQQABIM — how the God of Yisra’ĕl guarded His people in the days of Ptolemy Philopator of Mitsrayim: when the king, flushed with victory at Raphia, forced his way toward the set-apart place to enter where no stranger may go, and Shim‛on the kohen prayed, and the king was scourged and cast down paralysed; when in his rage he went home and decreed the Yahuḏim of Mitsrayim branded with the ivy-leaf, enrolled for slavery, and gathered to the hippodrome of Alexandria to be trampled by five hundred elephants maddened with wine and frankincense; and how the hand of the shamayim turned the beasts aside — first by sleep, then by forgetfulness, and at the last by two glorious messengers who terrified the host and drove the raging elephants back upon the king’s own men — until Ptolemy repented, released the people with a banquet, and they kept a feast of deliverance for every generation.</div>
+    <div class="hint">Four acts · 3 MAQQABIM — how the Aluahim of Yasharal guarded His people in the days of Ptolemy Philopator of Mitsrayim: when the king, flushed with victory at Raphia, forced his way toward the Qodash (Set Apart Place) to enter where no stranger may go, and Shim‛on the kohen prayed, and the king was scourged and cast down paralysed; when in his rage he went home and decreed the Yahuḏim of Mitsrayim branded with the ivy-leaf, enrolled for slavery, and gathered to the hippodrome of Alexandria to be trampled by five hundred elephants maddened with wine and frankincense; and how the hand of the shamayim turned the beasts aside — first by sleep, then by forgetfulness, and at the last by two esteemed mal’akim who terrified the host and drove the raging elephants back upon the king’s own men — until Ptolemy repented, released the people with a banquet, and they kept a feast of deliverance for every generation.</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -531,8 +563,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -640,7 +672,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -740,7 +772,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1002,6 +1036,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1045,7 +1089,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1307,6 +1353,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2788,6 +2844,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2983,7 +3059,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3188,8 +3264,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3676,6 +3753,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3739,7 +3817,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3792,15 +3874,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3811,6 +3927,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3836,6 +3958,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     $('slide-ui').classList.remove('show');
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
@@ -3865,6 +3988,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3882,7 +4006,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4022,6 +4146,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4085,17 +4214,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4259,22 +4389,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4287,7 +4421,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4310,11 +4444,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5675,7 +5822,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5984,18 +6131,18 @@ Object.assign(CHARS,{
   ptolemy_s:{name:'Ptolemy, Cast Down', skin:'#c8a884', hair:'#c8a24a', hairStyle:'short', robe:'#4a2a4a', collar:'#8a7a2c', beard:'#a8842a'},
   ptolemy_r:{name:'Ptolemy, Turned in Heart', skin:'#d8b48a', hair:'#c8a24a', hairStyle:'short', robe:'#3a5a6a', collar:'#caa23c', beard:'#a8842a'},
   shimon_k:{name:'Shim‛on the Kohen HaGaḏol', skin:'#b58650', hair:'#e2ddce', hairStyle:'short', robe:'#f0ead8', collar:'#caa23c', headcover:'#dcd6c6', beard:'#e2ddce'},
-  elazar_p:{name:'Ăl‛azar the Kohen', skin:'#8a6038', hair:'#d8d2c4', hairStyle:'short', robe:'#e6e0d0', collar:'#caa23c', headcover:'#dcd6c6', beard:'#d8d2c4', old:true},
+  elazar_p:{name:'Al‛azar the Kohen', skin:'#8a6038', hair:'#d8d2c4', hairStyle:'short', robe:'#e6e0d0', collar:'#caa23c', headcover:'#dcd6c6', beard:'#d8d2c4', old:true},
   hermon:{name:'Hermon, Keeper of the Beasts', skin:'#c8956a', hair:'#2c1a0c', hairStyle:'short', robe:'#5a4a2a', collar:'#8a6a1c', beard:'#2c1a0c'},
   officer:{name:'The Sovereign’s Officer', skin:'#7a5a36', hair:'#1d1208', hairStyle:'short', robe:'#5a2a2a', collar:'#8a3030', headcover:'#8a3030', beard:'#1d1208'},
   friend:{name:'A Friend of the King', skin:'#c8956a', hair:'#3a2a18', hairStyle:'short', robe:'#6a3a5a', headcover:'#8a6a3c', beard:'#3a2a18'},
   soldier:{name:'A Soldier of Mitsrayim', skin:'#c8956a', hair:'#3a2a18', hairStyle:'short', robe:'#6a3a3a', headcover:'#8a3030', beard:'#3a2a18'},
-  malak1:{name:'A Messenger of Terrible Glory', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd', glory:true},
-  malak2:{name:'A Messenger of Terrible Glory', angel:true, skin:'#6e4a28', hair:'#f0e6b0', hairStyle:'short', robe:'#f3eeda', glory:true},
+  malak1:{name:'A Mal’ak of Terrible Esteem', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd', glory:true},
+  malak2:{name:'A Mal’ak of Terrible Esteem', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', glory:true},
   kohen:{name:'A Kohen of the House', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#e6e0d0', collar:'#caa23c', headcover:'#dcd6c6', beard:'#231409'},
-  elder:{name:'An Elder of Yisra’ĕl', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a5030', beard:'#cfc8b8'},
-  youth_j:{name:'A Young Man of Yisra’ĕl', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#79653f', beard:'#2c1a0c'},
-  woman:{name:'A Mother of Yisra’ĕl', skin:'#a9764a', hair:'#3a2a18', hairStyle:'long', robe:'#7a5a6a', headcover:'#c8b486'},
-  bride:{name:'A Bride of Yisra’ĕl', skin:'#a9764a', hair:'#23150b', hairStyle:'long', robe:'#8c6a7d', headcover:'#d8c8a8', veil:'#d8c8a8'},
+  elder:{name:'An Elder of Yasharal', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a5030', beard:'#cfc8b8'},
+  youth_j:{name:'A Young Man of Yasharal', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#79653f', beard:'#2c1a0c'},
+  woman:{name:'A Mother of Yasharal', skin:'#a9764a', hair:'#3a2a18', hairStyle:'long', robe:'#7a5a6a', headcover:'#c8b486'},
+  bride:{name:'A Bride of Yasharal', skin:'#a9764a', hair:'#23150b', hairStyle:'long', robe:'#8c6a7d', headcover:'#d8c8a8', veil:'#d8c8a8'},
 });
 
 const STORY=[];
@@ -6006,64 +6153,64 @@ STORY.push(
 
 { id:'k1', title:'The King’s Presumption', ref:'3 MAQQABIM 1:1–2:1',
   intro:[
-   {art:'moriah', music:'holy', text:'After the battle of Raphia, where the God of Yisra’ĕl gave the victory over Antiochus, Ptolemy Philopator went through the cities, and came up to Yerushalayim. He offered sacrifice and brought gifts to the House; but beholding its beauty and its order, he purposed in his pride to enter the set-apart place, where none may go but the kohen ha-gaḏol alone, and he but once in the year.', ref:'3 MAQQABIM 1:1–11'},
+   {art:'moriah', music:'holy', text:'Philopator … marched out to the region near Raphia, where Antiochus’s supporters were encamped … the enemy was routed … After he had arrived in Yerushalayim, he offered sacrifice to the supreme Aluahim … and being impressed by its excellence and its beauty, he … conceived a desire to enter the Qodash haQodashim (Most Set Apart Place). When they said that this was not permitted … but only the kohen gadol … and he only once a year, the king was by no means persuaded.', ref:'3 MAQQABIM 1:1–11', stage:{"set":"temple","time":"day","cam":"push","focus":0.5,"cast":[{"id":"ptolemy","enter":"l","at":0,"to":0.2,"z":0.1,"face":"r","pose":"stand","crown":1,"acts":[{"at":1,"pose":"bless"},{"at":2,"pose":"look"},{"at":3,"to":0.46,"pose":"point"},{"at":6,"pose":"point"}],"say":6},{"id":"kohen","x":0.4,"z":0.22,"face":"l","pose":"stand","acts":[{"at":1,"pose":"raise"},{"at":3,"to":0.34,"pose":"stand"}]},{"id":"shimon_k","x":0.63,"z":0.08,"face":"l","pose":"stand","say":4,"acts":[{"at":4,"pose":"speak"},{"at":5,"pose":"bless"},{"at":6,"pose":"stand"}]}],"crowd":[{"kind":"soldiers","side":"yawan","n":5,"x":0.14,"w":0.2,"z":0.64,"face":"r","enter":"l","at":0},{"kind":"kohanim","n":4,"x":0.86,"w":0.12,"z":0.56,"face":"l","from":"stand","pose":"raise","at":4}],"props":[{"k":"altar","x":0.32,"z":0.42,"bronze":1,"fire":false},{"k":"altar","x":0.32,"z":0.419,"bronze":1,"sacrifice":1,"at":1}],"fx":[{"k":"smoke","x":0.32,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8501,
-     features:[ {type:'temple',x:22,y:9,id:'temple',examine:'The set-apart House — within is the place where none may enter but the kohen ha-gaḏol, once a year, with blood.'},{type:'altar',x:22,y:13,id:'altar',stage:3,examine:'The altar, where the kohanim prostrate themselves and cry toward the shamayim.'},{type:'standard',x:16,y:13,id:'threshold',examine:'The threshold of the inner place — the king presses toward it, and the whole city cries out against him.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'temple',x:22,y:9,id:'temple',examine:'The qadash (Set Apart) House — within is the place where none may enter but the kohen ha-gaḏol, once a year, with blood.'},{type:'altar',x:22,y:13,id:'altar',stage:3,examine:'The mizbe’ach, where the kohanim prostrate themselves and cry toward the shamayim.'},{type:'standard',x:16,y:13,id:'threshold',examine:'The threshold of the inner place — the king presses toward it, and the whole city cries out against him.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'elder', playerPos:[22,20],
    npcs:[ {id:'ptolemy',char:'ptolemy',x:18,y:14,wander:false},{id:'shimon',char:'shimon_k',x:24,y:12,wander:false},{id:'officer',char:'officer',x:15,y:15,wander:false,noTalk:true},{id:'woman',char:'woman',x:26,y:16,wander:false} ],
    objectives:[
-     {type:'talk',npc:'ptolemy',text:'The king declares he will enter the set-apart place',
+     {type:'talk',npc:'ptolemy',text:'The king declares he will enter the Qodash haQodashim',
       script:[
        {say:['ptolemy','I have honoured this House above all the temples of my kingdom; I have offered sacrifice and brought gifts. Now I will go in and see this inner place you keep hidden from every eye. Why should a king be barred from any chamber of a house he has adorned?']},
-       {say:['elder','My lord — it is not lawful. Not even our own people may enter there, nor all the kohanim, but the kohen ha-gaḏol alone, and he but once in the year, and not without blood. I beg you — do not do this thing.']},
+       {say:['elder','My master — it is not lawful. Not even our own people may enter there, nor all the kohanim, but the kohen ha-gaḏol alone, and he but once in the year, and not without blood. I beg you — do not do this thing.']},
        {say:['ptolemy','I am resolved. Though every voice forbid me, yet shall I be brought within.']},
        {shake:.3},{sfx:'bad'},
       ]},
      {type:'interact',prop:'threshold',text:'The whole city cries out',hiddenUntil:1,
       script:[
-       {say:['narrator','When the king could by no argument be turned aside, a cry went up through the whole city. The old men fell upon their knees; the young men gathered at the gates in arms; the mothers and the new brides left their chambers, and ran through the streets in sackcloth; and the maidens shut within ran to the doors and the walls, while others looked out from the windows — all lifting their hands to the shamayim.']},
-       {say:['woman','O YAHUAH — will You let this profane man defile the place of Your name? The whole city weeps, the kohanim lie prostrate before the altar — and still he presses in!']},
+       {say:['narrator','When the king could by no argument be turned aside, a cry went up through the whole city.']},{say:['narrator','The old men fell upon their knees; the young men gathered at the gates in arms; the mothers and the new brides left their chambers, and ran through the streets in sackcloth; and the maidens shut within ran to the doors and the walls, while others looked out from the windows — all lifting their hands to the shamayim.']},
+       {say:['woman','O YAHUAH — will You let this profane man defile the place of Your name? The whole city weeps, the kohanim lie prostrate before the mizbe’ach — and still he presses in!']},
        {shake:.3},{sfx:'bad'},{burst:[16,13,'ash',8]},
       ]},
      {type:'interact',prop:'temple',text:'The kohanim cry out, and Shim‛on resolves to pray',hiddenUntil:2,
       script:[
        {say:['narrator','The kohanim, in all their robes, prostrated themselves and called upon the Most High to help in this present need, and to turn back the wicked purpose of the one who pressed in. The sound of the mingled cry was carried up to the shamayim; and it seemed the very walls and floor cried out, so great was the anguish that filled the whole House.']},
-       {say:['shimon_k','I will go and stand before Him, and pray for the people. Perhaps the Sovereign of all will look upon this insolence, and not give His set-apart place to shame.']},
+       {say:['shimon_k','I will go and stand before Him, and pray for the people. Perhaps the Sovereign of all will look upon this insolence, and not give His Qodash (Set Apart Place) to shame.']},
        {rays:.4,raysX:22},{sfx:'holy'},{burst:[22,9,'holy',8]},
       ]},
    ],
   },
   outro:[
-   {art:'vista', music:'tense', text:'Ptolemy would not be turned aside; the whole city cried out — old men on their knees, young men at the gates, mothers and brides in the streets, maidens at the walls. And Shim‛on the kohen ha-gaḏol went to stand before YAHUAH, and pray for the House and the people against the profane king who pressed toward the inner place.', ref:'3 MAQQABIM 1:16–29'},
+   {art:'vista', music:'tense', text:'The virgins who had been enclosed in their chambers rushed out with their mothers … and filled the streets with groans and lamentations … the bolder of the citizens … shouted to their fellows to take arms and die courageously for the ancestral law … But he, in his arrogance, took heed of nothing, and began now to approach … all at that time preferred death to the profanation of the place.', ref:'3 MAQQABIM 1:16–29', stage:{"set":"city","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"bride","enter":"l","at":0,"to":0.3,"z":0.1,"face":"r","pose":"weep","run":1,"acts":[{"at":5,"pose":"pray"}]},{"id":"woman","enter":"l","at":0,"to":0.17,"z":0.16,"face":"r","pose":"raise","run":1,"acts":[{"at":1,"pose":"weep"},{"at":5,"pose":"pray"}]},{"id":"youth_j","x":0.55,"z":0.12,"face":"l","pose":"point","hold":"spear","at":2,"say":3,"acts":[{"at":3,"pose":"raise"},{"at":4,"face":"r","pose":"stand"},{"at":5,"pose":"raise"}]},{"id":"ptolemy","enter":"r","at":4,"to":0.84,"z":0.14,"face":"l","pose":"point","crown":1}],"crowd":[{"kind":"women","n":6,"x":0.22,"w":0.3,"z":0.62,"face":"r","enter":"l","at":0,"pose":"weep"},{"kind":"mourners","n":4,"x":0.7,"w":0.2,"z":0.5,"face":"l","at":1},{"kind":"people","n":5,"x":0.5,"w":0.24,"z":0.7,"face":"l","hold":"spear","pose":"raise","at":3},{"kind":"guards","side":"yawan","n":5,"x":0.88,"w":0.12,"z":0.62,"face":"l","enter":"r","at":4}],"fx":[{"k":"darkness","amt":0.15,"at":4}]}},
   ],
   complete:'The king would not be turned, and the whole city cried out — and Shim‛on the kohen went to stand before YAHUAH.'
 },
 
 { id:'k2', title:'The Prayer of Shim‛on', ref:'3 MAQQABIM 2:1–24',
   intro:[
-   {art:'moriah', music:'holy', text:'Then Shim‛on the kohen ha-gaḏol, bowing his knees before the set-apart place, and stretching out his hands in reverence, prayed to the Most High — while the king still pressed toward the veil, and the people cried without ceasing.', ref:'3 MAQQABIM 2:1'},
+   {art:'moriah', music:'holy', text:'Then the kohen gadol Shim‛on, facing the sanctuary, bending his knees and extending his hands with calm dignity, prayed as follows:', ref:'3 MAQQABIM 2:1', stage:{"set":"court","time":"dawn","cam":"close","focus":0.42,"cast":[{"id":"shimon_k","x":0.38,"z":0.08,"face":"r","pose":"pray"},{"id":"ptolemy","x":0.86,"z":0.18,"face":"l","pose":"stand","crown":1,"label":false}],"crowd":[{"kind":"kohanim","n":5,"x":0.13,"w":0.18,"z":0.6,"face":"r","pose":"pray"},{"kind":"people","n":6,"x":0.66,"w":0.2,"z":0.66,"face":"l","pose":"raise"}],"props":[{"k":"altar","x":0.52,"z":0.42,"bronze":1}],"fx":[{"k":"rays","x":0.5,"at":0}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8502,
-     features:[ {type:'altar',x:22,y:12,id:'altar',stage:3,examine:'The altar, where Shim‛on bows his knees and stretches out his hands to the Most High.'},{type:'temple',x:22,y:8,id:'temple',examine:'The House, set apart to the name of YAHUAH — He will not give it to shame.'},{type:'standard',x:16,y:12,id:'veil',examine:'The veil of the inner place — toward it the profane king presses, and toward it the judgement comes.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'altar',x:22,y:12,id:'altar',stage:3,examine:'The mizbe’ach, where Shim‛on bends his knees and extends his hands to the Most High.'},{type:'temple',x:22,y:8,id:'temple',examine:'The House, qadash (Set Apart) to the name of YAHUAH — He will not give it to shame.'},{type:'standard',x:16,y:12,id:'veil',examine:'The veil of the inner place — toward it the profane king presses, and toward it the judgement comes.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'shimon_k', playerPos:[22,19],
    npcs:[ {id:'ptolemy',char:'ptolemy',x:17,y:13,wander:false,noTalk:true},{id:'officer',char:'officer',x:14,y:14,wander:false,noTalk:true},{id:'kohen',char:'kohen',x:26,y:14,wander:false} ],
    objectives:[
      {type:'interact',prop:'altar',text:'The prayer of Shim‛on the kohen',
       script:[
-       {say:['shimon_k','O YAHUAH, YAHUAH, Sovereign of the shamayim, Aluahim of Aḇraham, Yitsḥaq, and Ya‛aqoḇ — You who made the shamayim and the earth and all their beauty; set-apart among the set-apart, the only Ruler, the Almighty: look upon this arrogant and profane man, who lifts himself up in his insolence and daring.']},
-       {say:['shimon_k','You struck Pharaoh, who enslaved Your people; You drowned the arrogant host in the sea; You broke the giants of old, and burned Seḏom for its pride. This place is set apart to Your name — do not take vengeance on us for the defilement of this one man, nor call us to account for his profaning. Let it not be said among the nations, “Where is their Aluahim?”']},
+       {say:['shimon_k','O YAHUAH, YAHUAH, King of the shamayim, and Sovereign of all creation; Aluahim of Aḇraham, Yitsḥaq, and Ya‛aqoḇ — You who made the shamayim and the earth and all their beauty; qadash (Set Apart) among the qadashiyms (Set Apart Ones), the only Ruler, Almighty: give attention to us who are suffering grievously from a wicked and profane man, puffed up in his audacity and power.']},
+       {say:['shimon_k','You destroyed even giants who trusted in their strength and boldness; You consumed with fire and sulphur the men of Seḏom who acted arrogantly; and the audacious Pharaoh who had enslaved Your qadash (Set Apart) people Yasharal — You overwhelmed him in the depths of the sea.']},{say:['shimon_k','You chose this city and qadash (Set Apart) this place for Your name — do not punish us for the defilement committed by these men, or call us to account for this profanation. Let it not be said among the nations, “Where is their Aluahim?”']},
        {rays:.5,raysX:22},{sfx:'holy'},{burst:[22,12,'holy',12]},
       ]},
      {type:'goto',x:19,y:13,text:'The king presses toward the veil — and is struck down',radius:2.6,hiddenUntil:1,
       script:[
-       {say:['narrator','While Shim‛on yet prayed, and the people cried out, the king pressed on toward the set-apart place, filled with pride and defiance. But the God who sees all, the Father of all, set-apart among the set-apart, heard the lawful prayer.']},
+       {say:['narrator','While Shim‛on yet prayed, and the people cried out, the king pressed on toward the Qodash (Set Apart Place), filled with pride and defiance. But the Aluahim who sees all, the Father of all, qadash (Set Apart) among the qadashiyms (Set Apart Ones), heard the lawful prayer.']},
        {sfx:'thunder'},{shake:1},{burst:[17,13,'ash',14]},
-       {say:['narrator','And He scourged the man puffed up with insolence; He shook him this way and that, as a reed is shaken by the wind, so that he lay helpless upon the ground, his limbs paralysed, unable even to speak — smitten by a righteous judgement.']},
+       {say:['narrator','And He scourged him who had exalted himself in insolence and audacity; He shook him on this side and that as a reed is shaken by the ruach, so that he lay helpless on the ground and, besides being paralyzed in his limbs, was unable even to speak — since he was smitten by a righteous mishpat.']},
        {call:G=>{ const p=G.world.npcs.find(n=>n.id==='ptolemy'); if(p){ p.lying=true; Particles.burst(p.x*TILE,p.y*TILE,'ash',12); } }},
        {say:['narrator','Then his friends and bodyguards, seeing the swift judgement fallen upon him, and fearing he would die, dragged him out in great haste, stricken with terror.']},
        {call:G=>{ const p=G.world.npcs.find(n=>n.id==='ptolemy'); if(p){ p.hidden=true; } }},
@@ -6071,17 +6218,17 @@ STORY.push(
       ]},
      {type:'interact',prop:'temple',text:'The people bless YAHUAH — but the king goes home unrepentant',hiddenUntil:2,
       script:[
-       {say:['shimon_k','Blessed is He who has kept His own place undefiled! He has heard the cry of His people, and turned back the pride of the profane.']},
+       {say:['shimon_k','Baruk is He who has kept His own place undefiled! He has heard the cry of His people, and turned back the pride of the profane.']},
        {rays:.5,raysX:22},{sfx:'holy'},{burst:[22,8,'holy',12]},
-       {say:['narrator','After a while the king revived; but he was in no way brought to repentance. He departed with bitter threats, and returned to Mitsrayim, growing worse in his wickedness, and spurred on by his companions in every evil.']},
+       {say:['narrator','After a while the king recovered, and though he had been punished, he by no means repented, but went away uttering bitter threats. When he arrived in Mitsrayim, he increased in his deeds of malice, abetted by drinking companions and comrades, who were strangers to everything just.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'The prayer of Shim‛on was heard: as the profane king pressed toward the veil, YAHUAH scourged him and shook him like a reed, until he lay paralysed and speechless, and his terrified friends dragged him from the House. But when he revived he did not repent; he went home to Mitsrayim breathing threats, and worse than before.', ref:'3 MAQQABIM 2:21–24'},
+   {art:'light', music:'holy', text:'Thereupon Aluahim … having heard the lawful supplication, scourged him who had exalted himself in insolence and audacity. He shook him on this side and that as a reed is shaken by the ruach, so that he lay helpless on the ground … unable even to speak … Then both friends and bodyguards … quickly dragged him out … After a while he recovered … he by no means repented, but went away uttering bitter threats.', ref:'3 MAQQABIM 2:21–24', stage:{"set":"temple","time":"day","wx":"wind","wxAt":0,"cam":"push","focus":0.45,"cast":[{"id":"ptolemy","x":0.44,"z":0.12,"face":"r","from":"point","pose":"fall","at":0,"crown":1,"acts":[{"at":1,"pose":"lie"},{"at":4,"pose":"kneel"},{"at":5,"to":0.2,"face":"r","pose":"point"}],"say":5},{"id":"friend","enter":"l","at":2,"to":0.32,"z":0.16,"face":"r","pose":"kneel","run":1,"acts":[{"at":3,"pose":"carry"},{"at":4,"pose":"stand"}]},{"id":"officer","enter":"r","at":2,"to":0.57,"z":0.16,"face":"l","pose":"kneel","run":1,"acts":[{"at":3,"pose":"carry"},{"at":4,"pose":"stand"}]},{"id":"shimon_k","x":0.86,"z":0.12,"face":"l","pose":"pray"}],"crowd":[{"kind":"kohanim","n":3,"x":0.68,"w":0.1,"z":0.64,"face":"l","pose":"pray"},{"kind":"guards","side":"yawan","n":4,"x":0.18,"w":0.2,"z":0.62,"face":"r"}],"fx":[{"k":"lightning","at":0},{"k":"glory","x":0.52,"y":0.02,"at":0}]}},
   ],
-  complete:'The prayer of Shim‛on was heard — the profane king cast down paralysed and dragged from the House; yet he went home unrepentant, breathing threats.'
+  complete:'The prayer of Shim‛on was heard — the profane king cast down paralysed and dragged from the House; yet he by no means repented, but went away uttering bitter threats.'
 },
 
 ]},
@@ -6091,11 +6238,11 @@ STORY.push(
 
 { id:'k3', title:'The Decree in Mitsrayim', ref:'3 MAQQABIM 2:25–3:30',
   intro:[
-   {art:'corrupt', music:'sorrow', text:'Returned to Mitsrayim, the king grew worse in his malice. Led on by his companions and by evil counsellors, he vented his rage upon the Yahuḏim: he set up a pillar at the palace with a decree — that any who would not sacrifice to his gods should be shut out from their own assemblies, enrolled among the common slaves, and branded on their bodies with the ivy-leaf of Dionysos.', ref:'3 MAQQABIM 2:25–30'},
+   {art:'corrupt', music:'sorrow', text:'When he arrived in Mitsrayim, he increased in his deeds of malice … and he set up a stone on the tower in the courtyard with this inscription: “None of those who do not sacrifice shall enter their sanctuaries, and all Yahuḏim shall be subjected … to the status of slaves … those who are registered are also to be branded on their bodies by fire with the ivy-leaf symbol of Dionysos …”', ref:'3 MAQQABIM 2:25–30', stage:{"set":"greek","time":"day","cam":"push","focus":0.55,"cast":[{"id":"ptolemy","enter":"l","at":0,"to":0.25,"z":0.12,"face":"r","pose":"stand","crown":1,"acts":[{"at":1,"pose":"point"}]},{"id":"officer","x":0.44,"z":0.1,"face":"r","pose":"hold","hold":"scroll","at":1,"say":1},{"id":"soldier","x":0.68,"z":0.1,"face":"r","pose":"hold","hold":"torch","at":3},{"id":"youth_j","x":0.8,"z":0.08,"face":"l","pose":"kneel","at":3}],"crowd":[{"kind":"captives","n":6,"x":0.8,"w":0.2,"z":0.64,"face":"l","enter":"r","at":2}],"props":[{"k":"tower","x":0.58,"z":0.6,"h":110,"tiers":3,"color":"#d8ccb4"},{"k":"pillar","x":0.58,"z":0.59,"dy":-0.25,"h":44,"w":30,"color":"#e4dccb","at":1},{"k":"idol","x":0.92,"z":0.5,"color":"#6a8a3a","at":3},{"k":"fire","x":0.74,"z":0.18,"s":0.7,"at":3}],"fx":[{"k":"smoke","x":0.74,"at":3}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8503,
-     features:[ {type:'idol',x:22,y:11,id:'idol',examine:'The image of Dionysos, and the branding-iron of the ivy-leaf — the mark the king would set on the flesh of the Yahuḏim.'},{type:'standard',x:30,y:13,id:'decree',examine:'The pillar of the decree — that the Yahuḏim of all Mitsrayim be gathered, bound in iron, and brought to Alexandria to perish.'},{type:'house',x:14,y:11,id:'home'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'idol',x:22,y:11,id:'idol',examine:'The image of Dionysos, and the branding-iron of the ivy-leaf — the mark the king would set on the flesh of the Yahuḏim.'},{type:'standard',x:30,y:13,id:'decree',examine:'The stone of the decree — that the Yahuḏim of all Mitsrayim be gathered, bound in iron, and brought to Alexandria to perish.'},{type:'house',x:14,y:11,id:'home'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'elder', playerPos:[22,20],
    npcs:[ {id:'ptolemy',char:'ptolemy',x:20,y:13,wander:false},{id:'officer',char:'officer',x:24,y:14,wander:false,noTalk:true},{id:'youth',char:'youth_j',x:18,y:15,wander:false},{id:'soldier',char:'soldier',x:26,y:15,wander:false,noTalk:true} ],
@@ -6105,30 +6252,30 @@ STORY.push(
        {say:['ptolemy','These Yahuḏim alone hold themselves apart — keeping strange laws, refusing our gods and our table, as though they were better than the king himself. Let them be branded with the ivy-leaf of Dionysos, enrolled for slavery, and reduced to their former mean estate. And whoever resists — let him die.']},
        {shake:.4},{sfx:'bad'},{burst:[22,11,'ash',8]},
       ]},
-     {type:'talk',npc:'youth',text:'The faithful will not forsake the covenant',hiddenUntil:1,
+     {type:'talk',npc:'youth',text:'The faithful will not forsake the berith',hiddenUntil:1,
       script:[
        {say:['youth_j','A few bought the freedom of the city, and were branded, and went over. But we will not exchange the reverence of our fathers for a moment’s ease. Let them mark us if they will — we bear the marks gladly, counting the true life to be with Him who gave us the Torah.']},
-       {say:['narrator','Few in comparison bought their freedom by conforming; the greater part stood firm with a noble resolve, and did not forsake their reverence for Aluahim. They held fast their hope of deliverance, and turned away in loathing from those who cut themselves off from the covenant.']},
+       {say:['narrator','Few in comparison bought their freedom by conforming; the greater part stood firm with a noble resolve, and did not forsake their reverence for Aluahim. They held fast their hope of deliverance, and turned away in loathing from those who cut themselves off from the berith.']},
        {rays:.4,raysX:18},{sfx:'holy'},{burst:[18,15,'holy',8]},
       ]},
      {type:'interact',prop:'decree',text:'The decree to gather all the Yahuḏim',hiddenUntil:2,
       script:[
        {say:['narrator','When the king heard that they still kept their own laws and would not obey, he was enraged, and wrote to all his generals and soldiers: that the Yahuḏim of every place in Mitsrayim should be gathered together, bound with iron, and brought to Alexandria — man, woman, and child — to be destroyed utterly; for he thought thus to blot out the whole nation.']},
        {shake:.5},{sfx:'bad'},{burst:[30,13,'ash',12]},
-       {say:['elder','They come for us in every city, and lead us bound toward Alexandria. Yet the eyes of YAHUAH are upon His people; He has not forgotten His covenant. Cry out to Him, O Yisra’ĕl — He who cast down the king at the veil can deliver us yet.']},
+       {say:['elder','They come for us in every city, and lead us bound toward Alexandria. Yet the eyes of YAHUAH are upon His people; He has not forgotten His berith. Cry out to Him, O Yasharal — He who cast down the king at the veil can deliver us yet.']},
        {rays:.4,raysX:22},{sfx:'holy'},{burst:[22,11,'holy',8]},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'The king decreed the Yahuḏim branded with the ivy-leaf of Dionysos and enrolled for slavery; and when the faithful would not forsake the covenant, he wrote to gather every Yahuḏi in Mitsrayim — man, woman, and child — bound in iron to Alexandria, to blot out the whole nation. Yet the greater part stood firm, holding fast their hope in the Aluahim of their fathers.', ref:'3 MAQQABIM 3:1–30'},
+   {art:'wasteland', music:'sorrow', text:'When the wicked king comprehended this situation, he became so infuriated … and he ordered that all should promptly be gathered into one place, and put to death by the most cruel means … The Yahuḏim, however, … worshiped Aluahim and conducted themselves by his law … Then the king … wrote this letter against them: “… send to us those who live among you, together with their wives and children … bound securely with iron fetters, to suffer the sure and shameful death that befits enemies.”', ref:'3 MAQQABIM 3:1–30', stage:{"set":"palace","cam":"push","focus":0.45,"cast":[{"id":"ptolemy","x":0.26,"z":0.12,"face":"r","pose":"raise","crown":1,"acts":[{"at":1,"pose":"point"},{"at":4,"pose":"stand"},{"at":5,"pose":"point"}],"say":5},{"id":"friend","x":0.42,"z":0.16,"face":"l","pose":"kneel","hold":"scroll","at":4},{"id":"elder","x":0.74,"z":0.12,"face":"l","pose":"stand","hold":"scroll","at":2,"acts":[{"at":3,"pose":"pray"},{"at":6,"pose":"bound"}]}],"crowd":[{"kind":"people","n":6,"x":0.8,"w":0.22,"z":0.56,"face":"l","pose":"pray","at":2},{"kind":"guards","side":"yawan","n":4,"x":0.62,"w":0.12,"z":0.5,"face":"r","enter":"l","at":5}],"props":[{"k":"throne","x":0.14,"z":0.36}]}},
   ],
   complete:'Branded with the ivy-leaf, enrolled for slavery, and gathered bound to Alexandria — the king purposed to blot out the whole nation.'
 },
 
 { id:'k4', title:'The Gathering to the Hippodrome', ref:'3 MAQQABIM 4:1–21',
   intro:[
-   {art:'vista', music:'sorrow', text:'From every part of Mitsrayim they were driven — old and young, men and women, new brides torn from their bridal chambers — and brought to the hippodrome before the city: a great multitude, bound and hemmed in, appointed for a cruel death. Yet in their chains they lifted their voices to the shamayim.', ref:'3 MAQQABIM 4:1–10'},
+   {art:'vista', music:'sorrow', text:'But among the Yahuḏim there was incessant mourning, lamentation, and tearful cries … with such a harsh and ruthless ruach were they being sent off, all together … a multitude of gray-headed old men … was being led away … young women who had just entered the bridal chamber … exchanged joy for wailing … They were brought on board like wild animals, driven under the constraint of iron bonds … When these men had been brought to the place called Schedia … he commanded that they should be enclosed in the hippodrome.', ref:'3 MAQQABIM 4:1–11', stage:{"set":"river","time":"dusk","cam":"still","focus":0.55,"cast":[{"id":"woman","x":0.12,"z":0.12,"face":"r","pose":"weep"},{"id":"soldier","enter":"l","at":1,"to":0.35,"z":0.11,"face":"r","pose":"point","hold":"spear","acts":[{"at":6,"exit":"r"}]},{"id":"elder","enter":"l","at":2,"to":0.46,"z":0.09,"face":"r","pose":"bound","acts":[{"at":5,"exit":"r"}]},{"id":"bride","enter":"l","at":3,"to":0.24,"z":0.07,"face":"r","pose":"stand","acts":[{"at":4,"pose":"weep"},{"at":6,"exit":"r"}]}],"crowd":[{"kind":"mourners","n":5,"x":0.3,"w":0.4,"z":0.82,"face":"r"},{"kind":"captives","n":8,"x":0.68,"w":0.26,"z":0.13,"dz":0.04,"face":"r","enter":"l","at":1,"exit":"r","exitAt":5}],"props":[{"k":"ship","x":0.8,"z":0.42,"at":5},{"k":"wall","x":0.72,"z":0.86,"w":0.5,"h":80,"color":"#c8b890","at":7}],"fx":[{"k":"darkness","amt":0.12,"at":6}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8504,
@@ -6150,14 +6297,14 @@ STORY.push(
       ]},
      {type:'talk',npc:'bride',text:'Even in chains, the people hope',hiddenUntil:2,
       script:[
-       {say:['bride','They tore me from my bridal chamber, and my husband from his wedding, and led us here in chains. Yet even here we lift our voices — not in despair, but in hope; for the Aluahim of our fathers has delivered before, and will not abandon His covenant now.']},
+       {say:['bride','They tore me from my bridal chamber, and my husband from his wedding, and led us here in chains. Yet even here we lift our voices — not in despair, but in hope; for the Aluahim of our fathers has delivered before, and will not abandon His berith now.']},
        {say:['narrator','The aged, their grey heads bowed, were dragged along by force; and the tender infants clung to their mothers. Yet the multitude, taking courage, cried out with one voice to the Almighty, that He would show Himself, and turn the cruel device to their deliverance.']},
        {rays:.5,raysX:26},{sfx:'holy'},{burst:[26,15,'holy',10]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'Hemmed in the hippodrome before the city, bound and appointed for death, the Yahuḏim of all Mitsrayim awaited the end. The king commanded them registered by name; but for forty days the scribes could not finish, and at the last the pens failed and the paper ran out, so the reckoning of the doomed could not be completed — and the people cried to the Almighty for deliverance.', ref:'3 MAQQABIM 4:14–21'},
+   {art:'wasteland', music:'sorrow', text:'The entire race was to be registered individually … and at the end to be destroyed in the space of a single day. The registration … though uncompleted … stopped after forty days … the scribes declared to the king that they were no longer able to take the census … both the paper and the pens they used for writing had already given out. But this was an act of the invincible providence of him who was aiding the Yahuḏim from shamayim.', ref:'3 MAQQABIM 4:14–21', stage:{"set":"egyptcourt","cam":"push","focus":0.45,"cast":[{"id":"ptolemy","x":0.13,"z":0.16,"face":"r","pose":"enthroned","crown":1},{"id":"scribe","look":{"name":"A Scribe of the King","skin":"#c8956a","hair":"#2c1a0c","hairStyle":"short","robe":"#e8e0cc","collar":"#caa23c","sash":"#3a5a8a"},"x":0.4,"z":0.14,"face":"r","pose":"sit","acts":[{"at":4,"to":0.27,"face":"l","pose":"speak"},{"at":5,"pose":"raise"}],"say":4},{"id":"officer","x":0.86,"z":0.12,"face":"l","pose":"stand","hold":"spear"}],"crowd":[{"kind":"captives","n":7,"x":0.7,"w":0.3,"z":0.46,"face":"l","enter":"r","at":0}],"props":[{"k":"table","x":0.47,"z":0.22},{"k":"scroll","x":0.47,"z":0.215,"dy":-0.05,"s":0.5}],"fx":[{"k":"rays","x":0.7,"at":6},{"k":"glory","x":0.7,"y":0.04,"at":6}]}},
   ],
   complete:'Hemmed in the hippodrome, appointed for death — yet the pens failed and the paper ran out, and the number of the doomed could not be finished.'
 },
@@ -6169,7 +6316,7 @@ STORY.push(
 
 { id:'k5', title:'The First Reprieve — The King Sleeps', ref:'3 MAQQABIM 5:1–22',
   intro:[
-   {art:'wasteland', music:'tense', text:'Then the king, filled with rage, summoned Hermon, keeper of the elephants, and commanded him: at dawn to drug five hundred elephants with great draughts of frankincense and unmixed wine, and drive them, maddened, upon the Yahuḏim, to trample them in the hippodrome. And all that night the people did not cease from prayer.', ref:'3 MAQQABIM 5:1–9'},
+   {art:'wasteland', music:'tense', text:'Then the king … was filled with overpowering anger and wrath; so he summoned Hermon, keeper of the elephants, and ordered him … to drug all the elephants – five hundred in number – with large handfuls of frankincense and plenty of unmixed wine, and to drive them in … so that the Yahuḏim might meet their doom. … with tears and a voice hard to silence they all called upon the Almighty YAHUAH … So their entreaty ascended fervently to shamayim.', ref:'3 MAQQABIM 5:1–9', stage:{"set":"egypt","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"ptolemy","x":0.18,"z":0.12,"face":"r","pose":"raise","crown":1,"acts":[{"at":2,"pose":"point"}],"say":2},{"id":"hermon","x":0.56,"to":0.4,"at":1,"z":0.12,"face":"l","pose":"bow","hold":"jar","hold2":"censer","acts":[{"at":2,"pose":"stand"},{"at":3,"exit":"r"}]}],"crowd":[{"kind":"captives","n":8,"x":0.36,"w":0.36,"z":0.84,"face":"r","from":"bound","pose":"pray","at":4}],"props":[{"k":"pillar","x":0.79,"z":0.44,"at":2,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.694,"z":0.44,"at":2,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.74,"z":0.44,"dy":-0.069,"at":2,"flip":1,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.731,"z":0.44,"dy":-0.069,"at":2,"w":140,"h":56,"color":"#77736e"},{"k":"pillar","x":0.772,"z":0.44,"dy":0.004,"at":2,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.676,"z":0.44,"dy":0.004,"at":2,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.648,"z":0.44,"dy":-0.11,"at":2,"w":48,"h":52,"color":"#7e7a74"},{"k":"pillar","x":0.625,"z":0.44,"at":2,"flip":1,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.667,"z":0.44,"dy":-0.119,"at":2,"flip":1,"w":30,"h":40,"color":"#6a6660"},{"k":"tower","x":0.745,"z":0.44,"dy":-0.174,"at":2,"flip":1,"s":0.55,"h":34,"tiers":2,"color":"#8a2a2a"},{"k":"banner","x":0.749,"z":0.44,"dy":-0.211,"at":2,"flip":1,"s":0.6,"color":"#c8a040"},{"k":"pillar","x":0.945,"z":0.62,"at":2,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.859,"z":0.62,"at":2,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.9,"z":0.62,"dy":-0.061,"at":2,"flip":1,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.892,"z":0.62,"dy":-0.061,"at":2,"w":140,"h":56,"color":"#77736e"},{"k":"pillar","x":0.928,"z":0.62,"dy":0.003,"at":2,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.843,"z":0.62,"dy":0.003,"at":2,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.819,"z":0.62,"dy":-0.097,"at":2,"w":48,"h":52,"color":"#7e7a74"},{"k":"pillar","x":0.799,"z":0.62,"at":2,"flip":1,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.835,"z":0.62,"dy":-0.106,"at":2,"flip":1,"w":30,"h":40,"color":"#6a6660"}],"fx":[{"k":"red","amt":0.1,"at":0},{"k":"rays","x":0.36,"at":5},{"k":"glory","x":0.36,"y":0.02,"at":5}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:8505,
@@ -6199,14 +6346,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'The five hundred elephants were drugged and readied at dawn, and Hermon came to give the word; but the Almighty sent upon the king a deep and pleasant sleep, that gift He gives His beloved, and bound him past the appointed hour. So the day of slaughter passed him by, and the people were delivered — the first time — by the sleep of their enemy.', ref:'3 MAQQABIM 5:10–22'},
+   {art:'stars', music:'holy', text:'Hermon … when he had drugged the pitiless elephants … presented himself at the courtyard early in the morning … But YAHUAH sent upon the king a portion of sleep … And by the action of YAHUAH he was overcome by so pleasant and deep a sleep that he quite failed in his lawless purpose … Then the Yahuḏim, since they had escaped the appointed hour, praised their qadash (Set Apart) Aluahim.', ref:'3 MAQQABIM 5:10–22', stage:{"set":"walls","time":"dawn","cam":"push","focus":0.4,"cast":[{"id":"ptolemy","x":0.18,"z":0.16,"face":"r","pose":"lie","onbed":1},{"id":"friend","x":0.32,"z":0.2,"face":"r","pose":"stand","acts":[{"at":3,"face":"l","pose":"look"}]},{"id":"hermon","x":0.68,"z":0.12,"face":"r","pose":"hold","hold":"jar","acts":[{"at":1,"to":0.46,"face":"l","pose":"bow"},{"at":3,"pose":"stand"}]}],"crowd":[{"kind":"captives","n":6,"x":0.58,"w":0.24,"z":0.88,"face":"r","from":"bound","pose":"raise","at":4}],"props":[{"k":"tent","x":0.14,"z":0.5,"color":"#7a2a4a","w":150,"h":90},{"k":"pillar","x":0.892,"z":0.38,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.792,"z":0.38,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.84,"z":0.38,"dy":-0.071,"flip":1,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.83,"z":0.38,"dy":-0.071,"w":140,"h":56,"color":"#77736e"},{"k":"pillar","x":0.873,"z":0.38,"dy":0.004,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.773,"z":0.38,"dy":0.004,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.745,"z":0.38,"dy":-0.114,"w":48,"h":52,"color":"#7e7a74"},{"k":"pillar","x":0.721,"z":0.38,"flip":1,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.764,"z":0.38,"dy":-0.124,"flip":1,"w":30,"h":40,"color":"#6a6660"},{"k":"tower","x":0.845,"z":0.38,"dy":-0.181,"flip":1,"s":0.55,"h":34,"tiers":2,"color":"#8a2a2a"},{"k":"banner","x":0.85,"z":0.38,"dy":-0.219,"flip":1,"s":0.6,"color":"#c8a040"}],"fx":[{"k":"glory","x":0.18,"y":0.1,"at":2},{"k":"rays","x":0.52,"at":4}]}},
   ],
   complete:'The beasts were drugged and readied at dawn — but the Almighty bound the king in a deep sleep, and the day of slaughter passed him by.'
 },
 
 { id:'k6', title:'The Second Reprieve — The King Forgets', ref:'3 MAQQABIM 5:23–35',
   intro:[
-   {art:'wasteland', music:'tense', text:'On the next day Hermon again drugged the beasts and drove them to the hippodrome; and the king’s friends came to lead the Yahuḏim out to their death. But when the king came forth, and Hermon reminded him of his command, the Sovereign of all turned the matter otherwise.', ref:'3 MAQQABIM 5:23–27'},
+   {art:'wasteland', music:'tense', text:'Then, as soon as the cock had crowed in the early morning, Hermon, having equipped the beasts, began to move them along in the great colonnade … while the king was receiving his friends, Hermon arrived and invited him to come out, indicating that what the king desired was ready for action. But he … inquired what the matter was for which this had been so zealously completed for him.', ref:'3 MAQQABIM 5:23–27', stage:{"set":"greek","time":"dawn","cam":"push","focus":0.42,"cast":[{"id":"ptolemy","x":0.25,"z":0.12,"face":"l","pose":"speak","crown":1,"turn":[1,"r"],"acts":[{"at":2,"pose":"speak"}],"say":2},{"id":"friend","x":0.11,"z":0.18,"face":"r","pose":"stand"},{"id":"hermon","enter":"r","at":0,"to":0.58,"z":0.12,"face":"l","pose":"stand","hold":"rod","acts":[{"at":1,"to":0.46,"pose":"speak"},{"at":2,"pose":"point","face":"r"}],"say":1}],"crowd":[{"kind":"princes","n":4,"x":0.16,"w":0.16,"z":0.52,"face":"r"}],"props":[{"k":"pillar","x":0.813,"z":0.36,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.712,"z":0.36,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.76,"z":0.36,"dy":-0.072,"flip":1,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.75,"z":0.36,"dy":-0.072,"w":140,"h":56,"color":"#77736e"},{"k":"pillar","x":0.794,"z":0.36,"dy":0.004,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.692,"z":0.36,"dy":0.004,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.664,"z":0.36,"dy":-0.116,"w":48,"h":52,"color":"#7e7a74"},{"k":"pillar","x":0.639,"z":0.36,"flip":1,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.683,"z":0.36,"dy":-0.125,"flip":1,"w":30,"h":40,"color":"#6a6660"},{"k":"tower","x":0.765,"z":0.36,"dy":-0.183,"flip":1,"s":0.55,"h":34,"tiers":2,"color":"#8a2a2a"},{"k":"banner","x":0.77,"z":0.36,"dy":-0.222,"flip":1,"s":0.6,"color":"#c8a040"},{"k":"pillar","x":0.947,"z":0.56,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.858,"z":0.56,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.9,"z":0.56,"dy":-0.064,"flip":1,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.892,"z":0.56,"dy":-0.064,"w":140,"h":56,"color":"#77736e"},{"k":"pillar","x":0.93,"z":0.56,"dy":0.003,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.841,"z":0.56,"dy":0.003,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.815,"z":0.56,"dy":-0.102,"w":48,"h":52,"color":"#7e7a74"},{"k":"pillar","x":0.794,"z":0.56,"flip":1,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.832,"z":0.56,"dy":-0.11,"flip":1,"w":30,"h":40,"color":"#6a6660"}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:8506,
@@ -6217,7 +6364,7 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'hermon',text:'Hermon presents the beasts a second time',
       script:[
-       {say:['hermon','My lord — the beasts are ready as you commanded, and the Yahuḏim gathered in the hippodrome. Give the word, and let them be trampled at last.']},
+       {say:['hermon','My master — the beasts are ready as you commanded, and the Yahuḏim gathered in the hippodrome. Give the word, and let them be trampled at last.']},
        {say:['narrator','But the Sovereign of all, YAHUAH, turned the king’s mind to forgetfulness of all that he had decreed; and he looked upon Hermon in anger, as upon a man who spoke of things he had never willed.']},
        {say:['ptolemy','What is this you press upon me? Have I ever given such a command? These Yahuḏim have been faithful to my father, and to me. Were it not for the child of my heart, I would put you to death for this insolence!']},
        {shake:.3},{sfx:'bad'},
@@ -6230,25 +6377,25 @@ STORY.push(
       ]},
      {type:'talk',npc:'friend',text:'The people take heart, and cry out again',hiddenUntil:2,
       script:[
-       {say:['elder','Twice delivered — first by sleep, and now by forgetting! Do you not see, O Yisra’ĕl, the hand that shields us? Lift your voices once more; for the Aluahim of our fathers is not slow, but works deliverance in His own hour.']},
+       {say:['elder','Twice delivered — first by sleep, and now by forgetting! Do you not see, O Yasharal, the hand that shields us? Lift your voices once more; for the Aluahim of our fathers is not slow, but works deliverance in His own hour.']},
        {say:['narrator','And the Yahuḏim, seeing two reprieves, took heart, and cried again to the Almighty with tears, that even now He would show the might of His hand to the nations, and not suffer them to be trodden down.']},
        {rays:.5,raysX:24},{sfx:'holy'},{burst:[24,20,'holy',12]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'A second day the beasts were readied, and Hermon reminded the king of his oath; but YAHUAH took the command clean out of the king’s memory, so that he rebuked Hermon in anger for a thing he could not remember willing. The enemies gnashed their teeth in confusion; and the Yahuḏim, twice delivered, cried out the more to the Almighty.', ref:'3 MAQQABIM 5:28–35'},
+   {art:'stars', music:'holy', text:'This was the act of Aluahim who rules over all things, for he had implanted in the king’s mind a forgetfulness of the things he had previously devised. Then Hermon and all the king’s friends pointed out that the beasts … were ready … But at these words he was filled with an overpowering wrath … Then the Yahuḏim … praised the manifest YAHUAH Aluahim, King of kings, since this also was his aid which they had received.', ref:'3 MAQQABIM 5:28–35', stage:{"set":"city","time":"day","cam":"push","focus":0.5,"cast":[{"id":"ptolemy","x":0.26,"z":0.12,"face":"r","pose":"look","crown":1,"acts":[{"at":2,"pose":"point"}],"say":2},{"id":"hermon","x":0.54,"z":0.12,"face":"l","pose":"stand","acts":[{"at":1,"face":"r","pose":"point"}],"say":1},{"id":"friend","x":0.42,"z":0.18,"face":"l","pose":"stand","acts":[{"at":1,"pose":"point","face":"r"}]}],"crowd":[{"kind":"captives","n":9,"x":0.5,"w":0.6,"z":0.98,"face":"l","from":"bound","pose":"raise","at":3}],"props":[{"k":"wall","x":0.5,"z":0.9,"w":0.9,"h":55,"color":"#c8b890"},{"k":"pillar","x":0.855,"z":0.3,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.75,"z":0.3,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.8,"z":0.3,"dy":-0.075,"flip":1,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.79,"z":0.3,"dy":-0.075,"w":140,"h":56,"color":"#77736e"},{"k":"pillar","x":0.835,"z":0.3,"dy":0.004,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.73,"z":0.3,"dy":0.004,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.7,"z":0.3,"dy":-0.12,"w":48,"h":52,"color":"#7e7a74"},{"k":"pillar","x":0.675,"z":0.3,"flip":1,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.72,"z":0.3,"dy":-0.13,"flip":1,"w":30,"h":40,"color":"#6a6660"},{"k":"tower","x":0.805,"z":0.3,"dy":-0.19,"flip":1,"s":0.55,"h":34,"tiers":2,"color":"#8a2a2a"},{"k":"banner","x":0.81,"z":0.3,"dy":-0.23,"flip":1,"s":0.6,"color":"#c8a040"}],"fx":[{"k":"rays","x":0.26,"at":0},{"k":"red","amt":0.12,"at":2},{"k":"glory","x":0.5,"y":0.02,"at":3}]}},
   ],
   complete:'A second time the beasts were readied — and a second time turned aside; for YAHUAH took the command clean out of the king’s memory.'
 },
 
-{ id:'k7', title:'The Two Messengers and the Beasts Turned', ref:'3 MAQQABIM 5:36–6:29',
+{ id:'k7', title:'The Two Mal’akim and the Beasts Turned', ref:'3 MAQQABIM 5:36–6:29',
   intro:[
-   {art:'wasteland', music:'tense', text:'On the third day, told again of what he had decreed, the king arose in fury; and this time no sleep, no forgetting held him. He swore to send the Yahuḏim and the beasts together into the field, and to march on Yerushalayim after. So the five hundred elephants, maddened with wine and frankincense, iron-clad and towered, were driven in — and the whole army came behind to watch the end.', ref:'3 MAQQABIM 5:36–47'},
+   {art:'wasteland', music:'tense', text:'The king … After summoning Hermon he said in a threatening tone, “… Equip the elephants now once more for the destruction of the Yahuḏim tomorrow!” … he firmly swore an irrevocable oath that he would send them to death … mangled by the knees and feet of the beasts, and would also march against Yahuḏah … when the beasts had been brought … to a state of madness … by the very fragrant draughts of wine mixed with frankincense … he … rushed out in full force along with the beasts.', ref:'3 MAQQABIM 5:36–47', stage:{"set":"persia","cam":"push","focus":0.45,"cast":[{"id":"ptolemy","x":0.3,"z":0.12,"face":"r","pose":"point","crown":1,"acts":[{"at":2,"pose":"raise"},{"at":3,"pose":"point"},{"at":6,"to":0.74,"run":1,"pose":"point"}],"say":1},{"id":"hermon","x":0.58,"z":0.12,"face":"l","pose":"bow","acts":[{"at":1,"pose":"kneel"},{"at":4,"exit":"r"}]},{"id":"soldier","x":0.84,"z":0.14,"face":"l","pose":"carry","hold":"jar","at":5,"acts":[{"at":6,"exit":"r"}]}],"crowd":[{"kind":"princes","n":5,"x":0.4,"w":0.4,"z":0.62,"face":"r"},{"kind":"guards","side":"yawan","n":5,"x":0.8,"w":0.16,"z":0.5,"face":"l","enter":"r","at":5,"exit":"r","exitAt":6,"run":1}],"props":[{"k":"table","x":0.4,"z":0.5,"cups":1},{"k":"table","x":0.56,"z":0.52,"cups":1}],"fx":[{"k":"red","amt":0.12,"at":5}]}},
   ],
   scene:{
    map:{biome:'rocky', w:50, h:28, seed:8507,
-     features:[ {type:'standard',x:16,y:13,id:'field',examine:'The killing-field before the beasts — here Ăl‛azar the aged kohen lifts his hands, and prays for the flock appointed to perish.'},{type:'clearing',x:24,y:20,flat:3} ]},
+     features:[ {type:'standard',x:16,y:13,id:'field',examine:'The killing-field before the beasts — here Al‛azar the aged kohen lifts his hands, and prays for a people perishing as foreigners in a foreign land.'},{type:'clearing',x:24,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'elazar_p', playerPos:[24,21], playerHold:'staff',
    npcs:[ {id:'ptolemy',char:'ptolemy',x:34,y:12,wander:false},{id:'hermon',char:'hermon',x:32,y:15,wander:false,noTalk:true},
@@ -6261,32 +6408,32 @@ STORY.push(
        {say:['ptolemy','Now let no sleep nor forgetting save them! Drive the beasts in — trample them all, and their Aluahim with them!']},
        {shake:.5},{sfx:'bad'},{burst:[40,13,'ash',10]},
       ]},
-     {type:'interact',prop:'field',text:'The prayer of Ăl‛azar the kohen',hiddenUntil:1,
+     {type:'interact',prop:'field',text:'The prayer of Al‛azar the kohen',hiddenUntil:1,
       script:[
-       {say:['elazar_p','O King, great in power, Most High, Almighty Aluahim, who governs all creation in mercy — look upon the seed of Aḇraham, upon the people of Your set-apart Ya‛aqoḇ, a flock appointed to perish, strangers in a strange land.']},
+       {say:['elazar_p','O King of great power, Almighty Aluahim Most High, governing all creation with mercy — look upon the descendants of Aḇraham, O Father, upon the children of the qadash (Set Apart) Ya‛aqoḇ, a people of Your qadash (Set Apart) portion who are perishing as foreigners in a foreign land.']},
        {say:['elazar_p','You drowned Pharaoh with his chariots in the sea; You brought the three companions unharmed through the fire of Baḇel; You shut the lions’ mouths for Daniyal; You lifted Yonah from the belly of the deep. Now also, O Hater of insolence, rich in mercy, Shield of all — show Yourself swiftly to us, and let the profane feel the might of Your hand!']},
        {rays:.6,raysX:24},{sfx:'holy'},{burst:[24,13,'holy',14]},
       ]},
-     {type:'goto',x:34,y:13,text:'Two messengers descend — and the beasts turn',radius:3,hiddenUntil:2,
+     {type:'goto',x:34,y:13,text:'Two mal’akim descend — and the beasts turn',radius:3,hiddenUntil:2,
       script:[
        {spawn:{id:'malak1',char:'malak1',x:30,y:11,wander:false,noTalk:true}},
        {spawn:{id:'malak2',char:'malak2',x:32,y:11,wander:false,noTalk:true}},
        {rays:.7,raysX:31},{sfx:'holy'},{shake:.6},{burst:[31,11,'holy',18]},
-       {say:['narrator','Then the Most High, YAHUAH, opened the gates of the shamayim; and there came down two messengers of terrible and glorious form, seen by all but the Yahuḏim. They stood over against the host, and filled the enemy with confusion and dread, so that they were bound as with fetters, and could not stir.']},
-       {say:['elazar_p','Behold — He has come! The Shield of Yisra’ĕl stands between us and the beasts!']},
+       {say:['narrator','Then the Most High, YAHUAH, opened the gates of the shamayim; and there came down two mal’akim of terrible and esteemed form, seen by all but the Yahuḏim. They stood over against the host, and filled the enemy with confusion and dread, so that they were bound as with fetters, and could not stir.']},
+       {say:['elazar_p','Behold — He has come! The Shield of Yasharal stands between us and the beasts!']},
        {call:G=>{ ['ele1','ele2'].forEach(id=>{ const e=G.world.npcs.find(n=>n.id===id); if(e){ e.dir='right'; e.moving=true; } }); }},
        {sfx:'thunder'},{shake:1},{burst:[38,15,'ash',20]},
        {say:['narrator','And the raging elephants turned back upon the armed men who drove them, and trod them down, and trampled and destroyed the very host that had come to watch the Yahuḏim perish; and the wrath prepared for the innocent fell upon their enemies.']},
        {call:G=>{ ['sol1','sol2','hermon'].forEach(id=>{ const s=G.world.npcs.find(n=>n.id===id); if(s){ s.hidden=true; Particles.burst(s.x*TILE,s.y*TILE,'ash',12);} }); }},
-       {say:['elazar_p','See — the beasts You maddened against us, You have turned against them! Blessed is He who has not given us as a prey to their teeth!']},
+       {say:['elazar_p','See — the beasts You maddened against us, You have turned against them! Baruk is He who has not given us as a prey to their teeth!']},
        {rays:.7,raysX:38},{sfx:'holy'},{burst:[38,14,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'On the third day the beasts were driven in at last — and Ăl‛azar the aged kohen lifted his hands and prayed, recounting the wonders of old. Then two messengers of terrible glory came down from the shamayim, seen by all but the Yahuḏim, and terrified the host; and the maddened elephants turned back and trampled the king’s own men. The wrath prepared for the innocent fell upon the persecutors.', ref:'3 MAQQABIM 6:1–21'},
+   {art:'light', music:'holy', text:'Then a certain Al‛azar, famous among the kohanim of the country … prayed … Just as Al‛azar was ending his prayer, the king arrived at the hippodrome with the beasts … Then the most esteemed, almighty, and true Aluahim … opened the heavenly gates, from which two esteemed mal’akim of fearful aspect descended, visible to all but the Yahuḏim … The beasts turned back upon the armed forces following them and began trampling and destroying them.', ref:'3 MAQQABIM 6:1–21', stage:{"set":"battle","time":"day","cam":"push","focus":0.5,"cast":[{"id":"elazar_p","x":0.16,"z":0.1,"pose":"pray"},{"id":"ptolemy","enter":"r","at":1,"to":0.86,"z":0.14,"face":"l","pose":"point","crown":1,"acts":[{"at":4,"pose":"fall"}]},{"id":"malak1","x":0.4,"z":0.3,"dy":-0.14,"face":"r","pose":"point","at":3},{"id":"malak2","x":0.54,"z":0.3,"dy":-0.16,"face":"r","pose":"raise","at":3,"label":false}],"crowd":[{"kind":"people","n":7,"x":0.22,"w":0.3,"z":0.52,"face":"r","pose":"pray"},{"kind":"army","side":"yawan","n":8,"x":0.82,"w":0.26,"z":0.64,"face":"l","enter":"r","at":1,"exit":"r","exitAt":4,"run":1}],"props":[{"k":"pillar","x":0.681,"z":0.74,"at":1,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.603,"z":0.74,"at":1,"flip":1,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.64,"z":0.74,"dy":-0.056,"at":1,"flip":1,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.633,"z":0.74,"dy":-0.056,"at":1,"w":140,"h":56,"color":"#77736e"},{"k":"pillar","x":0.666,"z":0.74,"dy":0.003,"at":1,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.588,"z":0.74,"dy":0.003,"at":1,"flip":1,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.566,"z":0.74,"dy":-0.089,"at":1,"w":48,"h":52,"color":"#7e7a74"},{"k":"pillar","x":0.547,"z":0.74,"at":1,"flip":1,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.581,"z":0.74,"dy":-0.096,"at":1,"flip":1,"w":30,"h":40,"color":"#6a6660"},{"k":"pillar","x":0.583,"z":0.24,"at":4,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.692,"z":0.24,"at":4,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.64,"z":0.24,"dy":-0.078,"at":4,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.65,"z":0.24,"dy":-0.078,"at":4,"flip":1,"w":140,"h":56,"color":"#77736e"},{"k":"pillar","x":0.604,"z":0.24,"dy":0.004,"at":4,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.712,"z":0.24,"dy":0.004,"at":4,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.744,"z":0.24,"dy":-0.124,"at":4,"flip":1,"w":48,"h":52,"color":"#7e7a74"},{"k":"pillar","x":0.769,"z":0.24,"at":4,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.723,"z":0.24,"dy":-0.135,"at":4,"w":30,"h":40,"color":"#6a6660"},{"k":"tower","x":0.635,"z":0.24,"dy":-0.197,"at":4,"s":0.55,"h":34,"tiers":2,"color":"#8a2a2a"},{"k":"banner","x":0.63,"z":0.24,"dy":-0.238,"at":4,"s":0.6,"color":"#c8a040"}],"fx":[{"k":"glory","x":0.47,"y":0.02,"at":2},{"k":"rays","x":0.47,"at":3}]}},
   ],
-  complete:'Ăl‛azar prayed, and two glorious messengers came down — and the maddened elephants turned and trampled the king’s own men, and the wrath fell upon the persecutors.'
+  complete:'Al‛azar prayed, and two esteemed mal’akim came down — and the maddened elephants turned and trampled the king’s own men, and the wrath fell upon the persecutors.'
 },
 
 ]},
@@ -6296,37 +6443,37 @@ STORY.push(
 
 { id:'k8', title:'The Feast of Deliverance', ref:'3 MAQQABIM 6:22–7:23',
   intro:[
-   {art:'light', music:'holy', text:'When the king saw it, he was filled with terror and with pity, and his anger turned to shame. He wept for what he had purposed, and rebuked the friends who had counselled him, and gave command that the Yahuḏim be set free, and restored to their homes and their goods.', ref:'3 MAQQABIM 6:22–29'},
+   {art:'light', music:'holy', text:'Then the king’s anger was turned to pity and tears because of the things that he had devised beforehand … he wept and angrily threatened his friends … “Loose and untie their unjust bonds! Send them back to their homes in shalom …” … and the Yahuḏim, immediately released, praised their qadash (Set Apart) Aluahim and Savior, since they now had escaped death.', ref:'3 MAQQABIM 6:22–29', stage:{"set":"walls","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"ptolemy_r","x":0.36,"z":0.12,"face":"r","pose":"weep","crown":1,"acts":[{"at":1,"face":"l","pose":"point"},{"at":2,"face":"r","pose":"point"},{"at":3,"pose":"bless"}],"say":2},{"id":"friend","x":0.17,"z":0.16,"face":"r","pose":"stand","acts":[{"at":1,"pose":"bow"}]},{"id":"elder","x":0.64,"z":0.14,"face":"l","pose":"bound","acts":[{"at":3,"pose":"stand"},{"at":4,"pose":"raise"}]},{"id":"soldier","x":0.88,"z":0.12,"face":"l","pose":"stand","acts":[{"at":2,"to":0.72,"pose":"kneel"},{"at":4,"pose":"stand"}]}],"crowd":[{"kind":"princes","n":3,"x":0.1,"w":0.1,"z":0.5,"face":"r","from":"stand","pose":"bow","at":1},{"kind":"captives","n":8,"x":0.72,"w":0.34,"z":0.56,"face":"l","from":"bound","pose":"raise","at":4}],"fx":[{"k":"glory","x":0.7,"y":0.03,"at":4},{"k":"rays","x":0.7,"at":4}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8508,
-     features:[ {type:'standard',x:16,y:12,id:'proclaim',examine:'The king’s new decree — the Yahuḏim set free, defended by royal command, and given a feast at the king’s own cost.'},{type:'temple',x:30,y:9,id:'house',examine:'A place of prayer, dedicated in thanksgiving — and the festival of deliverance, decreed for every generation.'},{type:'altar',x:30,y:13,id:'altar',stage:3,examine:'The altar of thanksgiving, where praise rises to Aluahim the Saviour of Yisra’ĕl.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'standard',x:16,y:12,id:'proclaim',examine:'The king’s new decree — the Yahuḏim set free, defended by royal command, and given a feast at the king’s own cost.'},{type:'temple',x:30,y:9,id:'house',examine:'A place of prayer, dedicated in thanksgiving — and the festival of deliverance, decreed for every generation.'},{type:'altar',x:30,y:13,id:'altar',stage:3,examine:'The mizbe’ach of thanksgiving, where praise rises to Aluahim the Saviour of Yasharal.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'elazar_p', playerPos:[22,20], playerHold:'staff',
    npcs:[ {id:'ptolemy',char:'ptolemy_r',x:18,y:13,wander:false},{id:'officer',char:'officer',x:14,y:14,wander:false,noTalk:true},{id:'elder',char:'elder',x:26,y:15,wander:false},{id:'woman',char:'woman',x:28,y:16,wander:false},{id:'kohen',char:'kohen',x:31,y:15,wander:false} ],
    objectives:[
      {type:'talk',npc:'ptolemy',text:'The king sets the people free',
       script:[
-       {say:['ptolemy_r','Set the Yahuḏim free — every one — and let them return to their own homes in peace. I have wronged an innocent people, and their Aluahim, mighty in the shamayim, has shielded them as a father shields his sons. Whoever now does them harm shall answer for it with his life.']},
+       {say:['ptolemy_r','Set the Yahuḏim free — every one — send them back to their homes in shalom! I have wronged an innocent people; the Aluahim of shamayim surely defends the Yahuḏim, always taking their part as a father does for his children. Whoever now does them harm shall answer for it with his life.']},
        {say:['narrator','And the king wrote letters to the officers of every place, charging them to let the Yahuḏim keep their own laws, and to defend them from all wrong; and he provided from his own stores all that was needful for a feast of seven days.']},
        {rays:.4,raysX:18},{sfx:'holy'},{burst:[18,13,'holy',10]},
       ]},
      {type:'interact',prop:'proclaim',text:'Seven days of gladness in the place of doom',hiddenUntil:1,
       script:[
-       {say:['narrator','Then the Yahuḏim, delivered from the very jaws of death, kept a feast of gladness for seven days in the place that was to have been their grave — turning the hippodrome of their sorrow into a hall of rejoicing. They crowned themselves with garlands, and sang praises to Aluahim, the Saviour of Yisra’ĕl, who had done wonders for their deliverance.']},
-       {say:['elder','Where the beasts were driven to devour us, there we dance; where the pens were readied to enroll our death, there our names are written among the living. Blessed is He who remembered His covenant!']},
+       {say:['narrator','Then the Yahuḏim, delivered from the very jaws of death, kept a feast of gladness for seven days in the place that was to have been their grave — turning the hippodrome of their sorrow into a hall of rejoicing. They crowned themselves with garlands, and sang praises to Aluahim, the Saviour of Yasharal, who had done wonders for their deliverance.']},
+       {say:['elder','Where the beasts were driven to devour us, there we dance; where the pens were readied to enroll our death, there our names are written among the living. Blessed is He who remembered His berith!']},
        {rays:.6,raysX:22},{sfx:'holy'},{burst:[22,12,'holy',16]},
       ]},
      {type:'interact',prop:'house',text:'A festival decreed for every generation',hiddenUntil:2,
       script:[
-       {say:['narrator','And they resolved, with the king’s blessing, to keep these days as a festival of joy through all the generations of their sojourning — a memorial of the deliverance of Aluahim. They dedicated a place of prayer, and departed to their homes in peace and gladness, greater in favour than before, and feared by their enemies.']},
-       {say:['elazar_p','Blessed be YAHUAH, the Deliverer of Yisra’ĕl, unto all the ages! He did not forsake His people in the furnace of affliction, but turned their mourning into dancing, and their chains into a crown. Here let the telling of His wonders make its end.']},
+       {say:['narrator','And they resolved, with the king’s blessing, to keep these days as a festival of joy through all the generations of their sojourning — a memorial of the deliverance of Aluahim. They dedicated a place of prayer, and departed to their homes in shalom and gladness, greater in chen than before, and feared by their enemies.']},
+       {say:['elazar_p','Baruk be YAHUAH, the Deliverer of Yasharal, unto all the ages! He did not forsake His people in the furnace of affliction, but turned their mourning into dancing, and their chains into a crown. Here let the telling of His wonders make its end.']},
        {rays:.8,raysX:30},{sfx:'holy'},{burst:[30,9,'holy',20]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'The king, turned in heart, set the people free with letters of favour and a feast at his own cost; and the Yahuḏim, snatched from the jaws of the beasts, kept seven days of gladness in the very place of their doom — crowned with garlands, singing to the Saviour of Yisra’ĕl. And they decreed a festival of deliverance for every generation, and went home in peace, greater in favour than before.', ref:'3 MAQQABIM 6:30–7:23'},
+   {art:'light', music:'holy', text:'Then the king … ordered him to provide to the Yahuḏim both wines and everything else needed for a festival of seven days, deciding that they should celebrate their rescue with all joyfulness in that same place in which they had expected to meet their destruction … they instituted the observance of the aforesaid days as a festival … began their departure from the city, crowned with all sorts of very fragrant flowers … giving thanks to … the eternal Savior of Yasharal … They also possessed greater prestige among their enemies.', ref:'3 MAQQABIM 6:30–7:23', stage:{"set":"garden","time":"day","cam":"push","focus":0.5,"cast":[{"id":"ptolemy_r","x":0.86,"z":0.14,"face":"l","pose":"point","crown":1,"say":0,"acts":[{"at":1,"pose":"stand"}]},{"id":"officer","x":0.72,"z":0.1,"face":"l","pose":"carry","hold":"jar","acts":[{"at":1,"to":0.62,"pose":"stand"}]},{"id":"bride","x":0.38,"z":0.08,"face":"r","pose":"stand","hold":"branch","acts":[{"at":1,"pose":"dance"},{"at":3,"pose":"raise"}]},{"id":"elder","x":0.26,"z":0.12,"face":"r","pose":"stand","hold":"branch","acts":[{"at":2,"to":0.14,"face":"l"},{"at":3,"pose":"raise"}]},{"id":"youth_j","x":0.48,"z":0.14,"face":"l","pose":"stand","hold":"branch","acts":[{"at":1,"pose":"dance"},{"at":3,"pose":"raise"}]}],"crowd":[{"kind":"people","n":9,"x":0.34,"w":0.5,"z":0.6,"face":"r","from":"stand","pose":"dance","at":1,"hold":"branch","exit":"l","exitAt":2},{"kind":"nations","n":5,"x":0.8,"w":0.2,"z":0.62,"face":"l","pose":"kneel","at":4}],"props":[{"k":"table","x":0.56,"z":0.3,"cups":1},{"k":"basket","x":0.5,"z":0.28,"fruit":"#c84a6a"}],"fx":[{"k":"bright","amt":0.06,"at":3}]}},
   ],
   complete:'Snatched from the jaws of the beasts, the people kept seven days of gladness in the place of their doom — and decreed a feast of deliverance for every generation. Here the telling makes its end.'
 }
@@ -6373,7 +6520,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6439,7 +6586,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6500,9 +6650,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],['3 MAQQABIM','apoc-3maccabees'],['2 MAQQABIM','apoc-2maccabees'],['1 MAQQABIM','apoc-1maccabees'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],['3 MAQQABIM','apoc-3maccabees'],['2 MAQQABIM','apoc-2maccabees'],['1 MAQQABIM','apoc-1maccabees'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6587,5 +6737,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main" style="font-size:clamp(26px,6vmin,64px)">2 DIḆRĔ HAYAMIM</div>
     <div class="title-sub">Kethuḇim — The Writings</div>
-    <div class="title-verse">“If My people humble themselves and pray and seek My face… then I shall hear from the shamayim and forgive their sin and heal their land.” — 2 DIḆRĔ HAYAMIM 7:14</div>
+    <div class="title-verse">“…My people upon whom My Name is called, shall humble themselves and pray and seek My face and turn from their evil ways, then I shall hear from the shamayim and forgive their sin and heal their land.” — 2 DIḆRĔ HAYAMIM 7:14</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of 2 Diḇrĕ HaYamim</h2>
-    <div class="hint">Four acts · 2 DIḆRĔ HAYAMIM — from Shelomoh’s wisdom to the fall and the door thrown open: the dream at Giḇ‛on where he asks not riches but wisdom, the glory-cloud that fills the House, the kneeling prayer on the bronze platform, and the fire from the shamayim that consumes the offering; through the sovereigness of Sheḇa who was not told the half, the heavy yoke that tears the kingdom in two, and Yahhoshaphat’s battle won by singers going out before the army — “the battle is not yours, but Aluahim’s”; through Ḥizqiyahu’s stopped springs and rebuilt wall and the mal’aḵ that undoes the camp of Ashshur in a night; to young Yoshiyahu grinding the idols to dust, the lost Book found in the House and the covenant renewed, and the burning of the House and the seventy years — closing not in ashes but in the stirring of the spirit of Koresh: “let him go up”</div>
+    <div class="hint">Four acts · 2 DIḆRĔ HAYAMIM — from Shelomoh’s wisdom to the fall and the door thrown open: the dream at Giḇ‛on where he asks not riches but wisdom, the cloud of esteem that fills the House, the kneeling prayer on the bronze platform, and the fire from the shamayim that consumes the offering; through the sovereigness of Sheḇa who was not told the half, the heavy yoke that tears the kingdom in two, and Yahhoshaphat’s battle won by singers going out before the army — “the battle is not yours, but Aluahim’s”; through Ḥizqiyahu’s stopped springs and rebuilt wall and the mal’ak that undoes the camp of Ashshur in a night; to young Yoshiyahu grinding the idols to dust, the lost Book found in the House and the berith renewed, and the burning of the House and the seventy years — closing not in ashes but in the stirring of the ruach of Koresh: “let him go up”</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -319,7 +351,7 @@
    2 DIḆRĔ HAYAMIM — Kethuḇim · The Writings
    A complete journey through 2 Chronicles, on the extended
    set-piece engine: the glory-cloud and the fire on the House,
-   the battle won by praise, the mal’aḵ that undoes Ashshur, and
+   the battle won by praise, the mal’ak that undoes Ashshur, and
    the fall of Yerushalayim ending in the decree of Koresh.
    Text: The Besorah (Natsarim translation) — condensed for play.
    ============================================================ */
@@ -529,8 +561,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -638,7 +670,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -738,7 +770,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1000,6 +1034,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1043,7 +1087,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1305,6 +1351,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2786,6 +2842,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2981,7 +3057,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3186,8 +3262,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3674,6 +3751,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3737,7 +3815,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3790,15 +3872,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3809,6 +3925,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3834,6 +3956,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     $('slide-ui').classList.remove('show');
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
@@ -3863,6 +3986,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3880,7 +4004,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4020,6 +4144,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4083,17 +4212,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4257,22 +4387,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4285,7 +4419,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4308,11 +4442,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5673,7 +5820,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5954,7 +6101,7 @@ Object.assign(CHARS,{
   koresh:{name:'Koresh, Sovereign of Persia', skin:'#7a5a36', hair:'#1d1208', hairStyle:'short', robe:'#5a2a6a', collar:'#caa23c', headcover:'#caa23c', beard:'#1d1208'},
   kohen:{name:'A Kohen in His Robes', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#e6e0d0', collar:'#caa23c', headcover:'#dcd6c6', beard:'#231409'},
   levite:{name:'A Lĕwite Singer', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#9c7d8c'},
-  elder:{name:'An Elder of Yisra’ĕl', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a5030', beard:'#cfc8b8'},
+  elder:{name:'An Elder of Yasharal', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a5030', beard:'#cfc8b8'},
   ruler:{name:'A Ruler of the People', skin:'#7a5a36', hair:'#1d1208', hairStyle:'short', robe:'#6a3a5a', collar:'#8a6a1c', beard:'#1d1208'},
   youth:{name:'A Child of Yerushalayim', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#7a5a3a', beard:'#8a6038'},
 });
@@ -5967,56 +6114,56 @@ STORY.push(
 
 { id:'s1', title:'Ask What I Should Give You', ref:'2 DIḆRĔ HAYAMIM 1:1–17',
   intro:[
-   {art:'stars', music:'holy', text:'And Shelomoh son of Dawiḏ strengthened himself over his reign, and YAHUAH his Aluahim was with him, and made him exceedingly great. And Shelomoh went up to the bronze altar before YAHUAH at the Tent of Meeting in Giḇ‛on, and offered a thousand burnt offerings on it.', ref:'2 DIḆRĔ HAYAMIM 1:1–6'},
+   {art:'stars', music:'holy', text:'And Shelomoh son of Dawiḏ strengthened himself over his reign, and YAHUAH his Aluahim was with him, and made him exceedingly great. … And Shelomoh … went to the high place that was at Giḇ‛on… And Shelomoh went up there to the bronze mizbe’ach before YAHUAH, which was at the Tent of Meeting and offered a thousand burnt offerings on it.', ref:'2 DIḆRĔ HAYAMIM 1:1–6', stage:{"set":"highplace","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"shelomoh_r","x":0.2,"z":0.08,"face":"r","pose":"stand","crown":1,"acts":[{"at":1,"to":0.32},{"at":2,"pose":"raise"}]}],"crowd":[{"kind":"elders","n":5,"x":0.14,"w":0.18,"z":0.55,"face":"r","enter":"l","at":1},{"kind":"kohanim","n":4,"x":0.66,"w":0.14,"z":0.5,"face":"l","at":2}],"props":[{"k":"tabernacle","x":0.78,"z":0.85},{"k":"altar","x":0.54,"z":0.3,"bronze":1,"w":60,"fire":false},{"k":"altar","x":0.54,"z":0.3,"bronze":1,"w":60,"big":1,"sacrifice":1,"at":2}],"fx":[{"k":"rays","x":0.2,"at":0},{"k":"smoke","x":0.54,"at":2}]}},
   ],
   scene:{
    map:{biome:'wild', w:44, h:28, seed:7001,
-     features:[ {type:'tent',x:22,y:9,id:'tent',examine:'The Tent of Meeting at Giḇ‛on, which Mosheh made in the wilderness.'},{type:'altar',x:22,y:13,id:'altar',stage:3,examine:'The bronze altar of Betsal’ĕl — a thousand burnt offerings before YAHUAH.'},{type:'standard',x:32,y:13,id:'dream',examine:'“Ask! What should I give you?” — Aluahim appeared to Shelomoh by night.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'tent',x:22,y:9,id:'tent',examine:'The Tent of Meeting at Giḇ‛on, which Mosheh made in the wilderness.'},{type:'altar',x:22,y:13,id:'altar',stage:3,examine:'The bronze mizbe’ach of Betsal’ĕl — a thousand burnt offerings before YAHUAH.'},{type:'standard',x:32,y:13,id:'dream',examine:'“Ask what should I give you!” — Aluahim appeared to Shelomoh by night.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'night', music:'holy',
    player:'shelomoh', playerPos:[22,20],
    npcs:[ {id:'elder',char:'elder',x:19,y:15,wander:false},{id:'kohen',char:'kohen',x:25,y:15,wander:false} ],
    objectives:[
      {type:'interact',prop:'altar',text:'A thousand offerings at Giḇ‛on',
       script:[
-       {say:['narrator','And Shelomoh went up to the bronze altar before YAHUAH, and offered a thousand burnt offerings on it.']},
+       {say:['narrator','And Shelomoh went up to the bronze mizbe’ach before YAHUAH, and offered a thousand burnt offerings on it.']},
        {rays:.6,raysX:22},{sfx:'holy'},{burst:[22,13,'holy',16]},
       ]},
-     {type:'interact',prop:'dream',text:'“Ask what I should give you”',hiddenUntil:1,
+     {type:'interact',prop:'dream',text:'“Ask what should I give you!”',hiddenUntil:1,
       script:[
        {say:['voice','Ask! What should I give you?']},
-       {say:['shelomoh','You have shown great kindness to Dawiḏ my father, and made me sovereign in his place. Now, YAHUAH Aluahim, let Your promise to my father stand fast — for You have set me over a people numerous as the dust of the earth. Give me wisdom and knowledge, that I may go out and come in before this people. For who is able to rightly rule this great people of Yours?']},
+       {say:['shelomoh','You have shown great kindness to Dawiḏ my father and have made me sovereign in his place. Now, YAHUAH Aluahim, let Your promise to Dawiḏ my father stand fast, for You have set me up to reign over a people as numerous as the dust of the earth.']},{say:['shelomoh','Now give me wisdom and knowledge, so that I go out and come in before this people. For who is able to rightly rule this great people of Yours?']},
        {rays:.7,raysX:32},{sfx:'holy'},{burst:[32,13,'holy',18]},
-       {say:['voice','Because this was in your heart — and you did not ask riches, or wealth, or esteem, or the life of your enemies, nor long life, but wisdom and knowledge to rightly rule My people — wisdom and knowledge are given to you. And riches and wealth and esteem I also give you, such as none of the sovereigns before you have had, nor any after you.']},
+       {say:['voice','Because this was in your heart and you have not asked riches or wealth or esteem or the life of your enemies, nor have you asked long life, but have asked wisdom and knowledge for yourself, so as to rightly rule My people over whom I have set you up to reign, wisdom and knowledge are given to you.']},{say:['voice','And riches and wealth and esteem I also give you, such as none of the sovereigns have had who have been before you, nor any after you have.']},
        {burst:[22,9,'holy',20]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'At Giḇ‛on, Aluahim appeared to Shelomoh by night: “Ask what I should give you.” And because he asked not for riches or long life, but for wisdom and knowledge to rightly rule the people, Aluahim gave him wisdom and knowledge — and riches, wealth, and esteem besides, such as no sovereign before or after him.', ref:'2 DIḆRĔ HAYAMIM 1:7–12'},
+   {art:'light', music:'holy', text:'That night Aluahim appeared to Shelomoh and said to him, “Ask what should I give you!” … And Aluahim said to Shelomoh, “Because … you have not asked riches or wealth or esteem … nor have you asked long life, but have asked wisdom and knowledge … wisdom and knowledge are given to you. And riches and wealth and esteem I also give you, such as none of the sovereigns have had who have been before you, nor any after you have.”', ref:'2 DIḆRĔ HAYAMIM 1:7–12', stage:{"set":"vision","time":"night","cam":"push","focus":0.45,"cast":[{"id":"shelomoh_r","x":0.3,"z":0.3,"face":"r","pose":"lie","acts":[{"at":1,"pose":"pray"},{"at":4,"pose":"bow"},{"at":5,"pose":"kneel"}]},{"id":"voice","x":0.66,"at":0}],"props":[{"k":"scroll","x":0.52,"z":0.1,"at":4},{"k":"chest","x":0.74,"z":0.2,"gold":1,"at":5},{"k":"crown","x":0.62,"z":0.3,"dy":-0.12,"at":5}],"fx":[{"k":"rays","x":0.3,"at":4}]}},
   ],
   complete:'Not riches nor long life, but wisdom to rule — and all the rest given besides.'
 },
 
 { id:'s2', title:'The Cloud Fills the House', ref:'2 DIḆRĔ HAYAMIM 5:1–14',
   intro:[
-   {art:'moriah', music:'holy', text:'And all the work that Shelomoh had done for the House of YAHUAH was completed. And he assembled the elders of Yisra’ĕl to bring up the ark of the covenant of YAHUAH from the City of Dawiḏ, which is Tsiyon.', ref:'2 DIḆRĔ HAYAMIM 5:1–2'},
+   {art:'moriah', music:'holy', text:'And all the work that Shelomoh had done for the House of YAHUAH was completed. … And Shelomoh assembled the elders of Yasharal and all the heads of the tribes … in Yerushalayim, to bring up the ark of the berith of YAHUAH from the City of Dawiḏ, which is Tsiyon.', ref:'2 DIḆRĔ HAYAMIM 5:1–2', stage:{"set":"temple","time":"day","cam":"push","focus":0.45,"cast":[{"id":"shelomoh_r","x":0.36,"z":0.08,"face":"r","pose":"raise","crown":1,"acts":[{"at":1,"pose":"bless"},{"at":2,"face":"l","pose":"point"}]}],"crowd":[{"kind":"elders","n":6,"x":0.7,"w":0.3,"z":0.55,"face":"l","enter":"r","at":1},{"kind":"princes","n":4,"x":0.86,"w":0.14,"z":0.72,"face":"l","enter":"r","at":1},{"kind":"kohanim","n":4,"x":0.14,"w":0.08,"z":0.34,"face":"r","pose":"carry","hold":null,"at":2}],"props":[{"k":"ark","x":0.14,"z":0.33,"dy":-0.19,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:7002,
-     features:[ {type:'temple',x:22,y:9,id:'house',examine:'The House of YAHUAH, completed — its Most Set-apart Place beneath the wings of the keruḇim.'},{type:'arkcov',x:22,y:13,id:'ark',examine:'The ark of the covenant — in it, the two tablets Mosheh put there at Ḥorĕḇ.'},{type:'standard',x:32,y:13,id:'song',examine:'“For He is good, for His kindness is everlasting” — trumpets and singers as one.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'temple',x:22,y:9,id:'house',examine:'The House of YAHUAH, completed — its Qodash haQodashim (Most Set Apart Place) under the wings of the keruḇim.'},{type:'arkcov',x:22,y:13,id:'ark',examine:'The ark of the berith — in it, the two tablets Mosheh put there at Ḥorĕḇ.'},{type:'standard',x:32,y:13,id:'song',examine:'“For He is good, for His kindness is everlasting” — trumpets and singers as one.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'shelomoh_r', playerPos:[22,20],
    npcs:[ {id:'kohen',char:'kohen',x:19,y:15,wander:false},{id:'l1',char:'levite',x:25,y:15,wander:false},{id:'l2',char:'levite',x:27,y:16,wander:false},{id:'elder',char:'elder',x:17,y:16,wander:false} ],
    objectives:[
-     {type:'interact',prop:'ark',text:'Bring the ark to the Most Set-apart Place',
+     {type:'interact',prop:'ark',text:'Bring the ark to the Qodash haQodashim',
       script:[
-       {say:['narrator','And the kohanim brought the ark of the covenant of YAHUAH to its place, into the Speaking Place of the House, the Most Set-apart Place, under the wings of the keruḇim — and the keruḇim spread their wings over the place of the ark and covered it, with its poles. There was naught in the ark but the two tablets which Mosheh put there at Ḥorĕḇ.']},
+       {say:['narrator','And the kohanim brought in the ark of the berith of YAHUAH to its place, into the Speaking Place of the House, to the Qodash haQodashim (Most Set Apart Place), under the wings of the keruḇim. For the keruḇim spread their wings over the place of the ark and the keruḇim covered over the ark and its poles. There was naught in the ark but the two tablets which Mosheh put there at Ḥorĕḇ.']},
        {rays:.6,raysX:22},{sfx:'holy'},{burst:[22,13,'holy',16]},
       ]},
      {type:'interact',prop:'song',text:'The trumpeters and singers as one',hiddenUntil:1,
       script:[
        {say:['l1','For He is good — for His kindness is everlasting!']},
-       {say:['narrator','And it came to be, as the trumpeters and singers were as one, to make one sound heard in praising and thanking YAHUAH — as they lifted their voices with trumpets and cymbals and instruments of song — that the House of YAHUAH was filled with a cloud.']},
+       {say:['narrator','Then it came to be, as the trumpeters and singers were as one, to make one sound to be heard in praising and thanking YAHUAH — and when they lifted up their voice with the trumpets and with cymbals and with instruments of song — that the House of YAHUAH was filled with a cloud.']},
        {call:G=>{ for(let i=0;i<60;i++) Particles.spawn({x:Math.random()*VW,y:Math.random()*VH*.7,vx:(Math.random()-.5)*.02,vy:.01,life:4000,max:4000,type:'smoke',screen:true}); }},
        {rays:.85,raysX:22},{sfx:'holy'},{shake:.4},{burst:[22,9,'holy',24]},
        {say:['narrator','And the kohanim were unable to stand and perform the service because of the cloud — for the esteem of YAHUAH filled the House of Aluahim.']},
@@ -6025,32 +6172,32 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'The kohanim set the ark beneath the wings of the keruḇim; and as the trumpeters and singers made one sound — “For He is good, for His kindness is everlasting” — the House was filled with a cloud, and the kohanim could not stand to serve, for the esteem of YAHUAH filled the House of Aluahim.', ref:'2 DIḆRĔ HAYAMIM 5:7–14'},
+   {art:'light', music:'holy', text:'And the kohanim brought in the ark of the berith of YAHUAH … under the wings of the keruḇim. … Then it came to be, as the trumpeters and singers were as one, to make one sound … “For He is good, for His kindness is everlasting,” that the house, the House of YAHUAH, was filled with a cloud, and the kohanim were unable to stand and perform the service because of the cloud, for the esteem of YAHUAH filled the House of Aluahim.', ref:'2 DIḆRĔ HAYAMIM 5:7–14', stage:{"set":"temple","time":"day","cam":"up","focus":0.5,"cast":[{"id":"kohen","x":0.3,"z":0.08,"face":"r","pose":"stand","acts":[{"at":2,"pose":"raise"},{"at":3,"pose":"fall"}]}],"crowd":[{"kind":"kohanim","n":4,"x":0.5,"w":0.2,"z":0.36,"face":"r","pose":"bow","hold":null,"from":"carry","at":3},{"kind":"levites","n":6,"x":0.14,"w":0.18,"z":0.55,"face":"r","hold":"trumpet","at":2,"pose":"raise"},{"kind":"levites","n":6,"x":0.86,"w":0.18,"z":0.55,"face":"l","hold":"harp","at":2,"pose":"raise"}],"props":[{"k":"ark","x":0.5,"z":0.32},{"k":"cherub","x":0.4,"z":0.45,"at":1},{"k":"cherub","x":0.6,"z":0.45,"at":1,"flip":1}],"fx":[{"k":"shekinah","x":0.5,"at":3},{"k":"cloud","x":0.5,"at":3}]}},
   ],
   complete:'One sound of praise, and the cloud descends — the esteem of YAHUAH fills the House.'
 },
 
 { id:'s3', title:'Shelomoh Kneels and Prays', ref:'2 DIḆRĔ HAYAMIM 6:1–42',
   intro:[
-   {art:'moriah', music:'holy', text:'Then Shelomoh said, “YAHUAH has said He would dwell in the dark cloud — but I have built You an exalted house, a place for You to dwell in forever.” And he stood on a bronze platform in the midst of the court, before all the assembly of Yisra’ĕl, and knelt, and spread out his hands toward the shamayim.', ref:'2 DIḆRĔ HAYAMIM 6:1,13'},
+   {art:'moriah', music:'holy', text:'Then Shelomoh said, “YAHUAH has said He would dwell in the dark cloud. But I have built You an exalted house and a place for You to dwell in forever.” … For Shelomoh had made a bronze platform … and had put it in the midst of the court. And he stood on it and knelt down on his knees before all the qahal of Yasharal and spread out his hands toward the shamayim.', ref:'2 DIḆRĔ HAYAMIM 6:1–2,13', stage:{"set":"court","time":"day","cam":"push","focus":0.5,"cast":[{"id":"shelomoh_r","x":0.5,"z":0.3,"dy":-0.06,"face":"r","pose":"speak","crown":1,"say":0,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"stand"},{"at":4,"pose":"pray"}]}],"crowd":[{"kind":"people","n":7,"x":0.2,"w":0.26,"z":0.55,"face":"r","from":"stand","at":4,"pose":"kneel"},{"kind":"people","n":7,"x":0.8,"w":0.26,"z":0.55,"face":"l","from":"stand","at":4,"pose":"kneel"}],"props":[{"k":"altar","x":0.5,"z":0.3,"bronze":1,"fire":false,"w":70,"h":16},{"k":"cloud","x":0.72,"z":1,"dy":-0.32,"dark":1,"at":0}],"fx":[{"k":"rays","x":0.5,"at":4}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:7003,
-     features:[ {type:'temple',x:22,y:8,id:'house'},{type:'tower',x:22,y:13,id:'platform',examine:'The bronze platform, five cubits by five — where Shelomoh knelt before all the assembly.'},{type:'standard',x:33,y:13,id:'plea',examine:'“When they pray toward this place — then hear from the shamayim, Your dwelling place, and forgive.”'},{type:'clearing',x:22,y:20,flat:3} ]},
+     features:[ {type:'temple',x:22,y:8,id:'house'},{type:'tower',x:22,y:13,id:'platform',examine:'The bronze platform, five cubits by five — where Shelomoh knelt before all the qahal.'},{type:'standard',x:33,y:13,id:'plea',examine:'“When they pray toward this place — then hear from the shamayim, Your dwelling place, and forgive.”'},{type:'clearing',x:22,y:20,flat:3} ]},
    time:'day', music:'holy',
    player:'shelomoh_r', playerPos:[22,21],
    npcs:[ {id:'elder',char:'elder',x:19,y:16,wander:false},{id:'kohen',char:'kohen',x:25,y:16,wander:false},{id:'ruler',char:'ruler',x:27,y:17,wander:false},{id:'y1',char:'youth',child:true,x:18,y:17,wander:false} ],
    objectives:[
      {type:'interact',prop:'platform',text:'Kneel on the bronze platform',
       script:[
-       {say:['shelomoh_r','YAHUAH Aluahim of Yisra’ĕl — there is no Aluahim in the shamayim or on earth like You, guarding the covenant and kindness with Your servants who walk before You with all their heart. You have guarded what You promised Your servant Dawiḏ my father: You spoke with Your mouth, and have filled it with Your hand, as it is this day.']},
+       {say:['shelomoh_r','YAHUAH Aluahim of Yasharal — there is no Aluahim in the shamayim or on earth like You, guarding the berith and kindness with Your servants who walk before You with all their heart. You have guarded what You promised Your servant Dawiḏ my father: You spoke with Your mouth, and have filled it with Your hand, as it is this day.']},
        {rays:.6,raysX:22},{sfx:'holy'},{burst:[22,13,'holy',16]},
        {say:['shelomoh_r','But is it true — Aluahim dwells with men on the earth? See, the shamayim, and the shamayim of the shamayim, are unable to contain You — how much less this House which I have built!']},
       ]},
      {type:'interact',prop:'plea',text:'“Then hear from the shamayim, and forgive”',hiddenUntil:1,
       script:[
-       {say:['shelomoh_r','Yet turn to the prayer of Your servant, O YAHUAH my Aluahim — let Your eyes be open toward this House day and night, toward the place where You have said to put Your Name. When Your people pray toward this place — and the foreigner from a far land, for the sake of Your great Name — then hear from the shamayim, Your dwelling place, and forgive; that all the peoples of the earth may know Your Name, and fear You.']},
-       {say:['shelomoh_r','When they sin — for there is no one who does not sin — and are carried captive to a land far or near, and turn back with all their heart in the land of their captivity, and pray toward this land, this city You have chosen, and this House I have built for Your Name — then hear their prayer, and maintain their cause, and forgive Your people who have sinned against You.']},
+       {say:['shelomoh_r','Yet, shall You turn to the prayer of Your servant … O YAHUAH my Aluahim? For Your eyes to be open toward this House day and night, toward the place You have said to put Your Name there. And shall You give heed to the supplications of … Your people Yasharal, when they pray toward this place … and shall hear and forgive?']},{say:['shelomoh_r','Also, concerning a foreigner … who comes from a far land for the sake of Your great Name … then hear from the shamayim Your dwelling place … so that all the people of the earth know Your Name and fear You.']},
+       {say:['shelomoh_r','When they sin against You — for there is no one who does not sin — and You … give them to the enemy and they take them captive to a land far or near …']},{say:['shelomoh_r','… and when they return to You with all their heart … in the land of their captivity … and they shall pray … toward the House which I have built for Your Name — then shall You hear from the shamayim, Your dwelling place, their prayer … and maintain their cause and forgive, Your people who have sinned against You?']},
        {rays:.75,raysX:33},{sfx:'holy'},{burst:[33,13,'holy',18]},
        {say:['shelomoh_r','Now arise, O YAHUAH Aluahim, to Your resting place — You and the ark of Your strength. Let Your kohanim be robed with deliverance, and let Your kind ones rejoice in goodness. O YAHUAH Aluahim, do not turn away the face of Your anointed; remember the kind acts of Your servant Dawiḏ.']},
        {burst:[22,8,'holy',20]},{sfx:'chime'},
@@ -6058,18 +6205,18 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'On a bronze platform, kneeling with hands spread toward the shamayim, Shelomoh prayed: “The shamayim cannot contain You — how much less this House! Yet when Your people, or the foreigner, or the captive who turns back with all his heart, prays toward this place — hear from the shamayim, and forgive. Arise, O YAHUAH, to Your resting place, You and the ark of Your strength.”', ref:'2 DIḆRĔ HAYAMIM 6:14–42'},
+   {art:'light', music:'holy', text:'“See, the shamayim … are unable to contain You, how much less this House which I have built! … Your people Yasharal, when they pray toward this place … hear and forgive … Also, concerning a foreigner … then hear from the shamayim … And when they return to You with all their heart … in the land of their captivity … then shall You hear … and forgive … And now, arise, O YAHUAH Aluahim, to Your resting place, You and the ark of Your strength.”', ref:'2 DIḆRĔ HAYAMIM 6:14–42', stage:{"set":"temple","time":"day","cam":"push","focus":0.45,"cast":[{"id":"shelomoh_r","x":0.32,"z":0.24,"dy":-0.055,"face":"r","pose":"pray","crown":1,"acts":[{"at":7,"pose":"raise"}]}],"crowd":[{"kind":"people","n":7,"x":0.7,"w":0.3,"z":0.5,"face":"l","from":"stand","at":1,"pose":"pray"},{"kind":"nations","n":4,"x":0.88,"w":0.12,"z":0.75,"face":"l","enter":"r","at":2,"pose":"raise"},{"kind":"captives","n":5,"x":0.12,"w":0.16,"z":0.6,"face":"r","at":5,"pose":"pray"}],"props":[{"k":"altar","x":0.32,"z":0.24,"bronze":1,"fire":false,"w":70,"h":16}],"fx":[{"k":"glory","x":0.55,"y":0.14,"at":7}]}},
   ],
   complete:'The wisest sovereign on his knees — “hear from the shamayim, Your dwelling place, and forgive.”'
 },
 
 { id:'s4', title:'Fire from the Shamayim', ref:'2 DIḆRĔ HAYAMIM 7:1–22',
   intro:[
-   {art:'moriah', music:'holy', text:'And when Shelomoh had ended praying, fire came down from the shamayim, and consumed the burnt offering and the slaughterings — and the esteem of YAHUAH filled the House.', ref:'2 DIḆRĔ HAYAMIM 7:1'},
+   {art:'moriah', music:'holy', text:'And when Shelomoh had ended praying, fire came down from the shamayim, and consumed the burnt offering and the slaughterings — and the esteem of YAHUAH filled the House.', ref:'2 DIḆRĔ HAYAMIM 7:1', stage:{"set":"court","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"shelomoh_r","x":0.22,"z":0.08,"face":"r","pose":"raise","crown":1,"acts":[{"at":1,"pose":"kneel"}]}],"crowd":[{"kind":"kohanim","n":4,"x":0.42,"w":0.12,"z":0.45,"face":"r","from":"stand","at":1,"pose":"fall"},{"kind":"people","n":8,"x":0.82,"w":0.24,"z":0.55,"face":"l","from":"stand","at":0,"pose":"kneel"}],"props":[{"k":"altar","x":0.6,"z":0.32,"big":1,"sacrifice":1,"fire":false,"w":56},{"k":"altar","x":0.6,"z":0.32,"big":1,"sacrifice":1,"w":56,"at":0}],"fx":[{"k":"firefall","x":0.6,"y":0.55,"at":0},{"k":"glory","x":0.5,"y":0.12,"at":1},{"k":"shekinah","x":0.5,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:7004,
-     features:[ {type:'temple',x:22,y:8,id:'house'},{type:'altar',x:22,y:13,id:'altar',stage:3,examine:'The altar of burnt offering — where the fire fell, and the offering was consumed.'},{type:'standard',x:33,y:13,id:'appear',examine:'“If My people humble themselves and pray and seek My face — I shall hear, and forgive, and heal their land.”'},{type:'clearing',x:22,y:20,flat:3} ]},
+     features:[ {type:'temple',x:22,y:8,id:'house'},{type:'altar',x:22,y:13,id:'altar',stage:3,examine:'The mizbe’ach of burnt offering — where the fire fell, and the offering was consumed.'},{type:'standard',x:33,y:13,id:'appear',examine:'“My people … shall humble themselves and pray and seek My face — then I shall hear from the shamayim and forgive … and heal their land.”'},{type:'clearing',x:22,y:20,flat:3} ]},
    time:'day', music:'holy',
    player:'shelomoh_r', playerPos:[22,21],
    npcs:[ {id:'kohen',char:'kohen',x:19,y:16,wander:false},{id:'l1',char:'levite',x:25,y:16,wander:false},{id:'elder',char:'elder',x:27,y:17,wander:false} ],
@@ -6078,23 +6225,23 @@ STORY.push(
       script:[
        {say:['narrator','And when Shelomoh had ended praying —']},
        {rays:.9,raysX:22},{sfx:'holy'},{shake:.6},{burst:[22,13,'holy',26]},{burst:[22,13,'spark',18]},
-       {say:['narrator','Fire came down from the shamayim, and consumed the burnt offering and the slaughterings, and the esteem of YAHUAH filled the House. And the kohanim could not enter the House, because the esteem of YAHUAH had filled it.']},
-       {say:['narrator','And all the children of Yisra’ĕl saw the fire come down, and the esteem of YAHUAH on the House — and they bowed their faces to the ground on the pavement, and did obeisance, and gave thanks to YAHUAH: “For He is good, for His kindness is everlasting.”']},
+       {say:['narrator','Fire came down from the shamayim and consumed the burnt offering and the slaughterings and the esteem of YAHUAH filled the House. And the kohanim were unable to enter the House of YAHUAH, because the esteem of YAHUAH had filled the House of YAHUAH.']},
+       {say:['narrator','And all the children of Yasharal saw the fire come down, and the esteem of YAHUAH on the House — and they bowed their faces to the ground on the pavement, and did obeisance, and gave thanks to YAHUAH: “For He is good, for His kindness is everlasting.”']},
        {call:G=>{ ['kohen','l1','elder'].forEach(id=>{ const n=G.world.npcs.find(n=>n.id===id); if(n) n.dir='up'; }); }},
        {sfx:'chime'},
       ]},
-     {type:'interact',prop:'appear',text:'“If My people humble themselves”',hiddenUntil:1,
+     {type:'interact',prop:'appear',text:'“My people … shall humble themselves”',hiddenUntil:1,
       script:[
        {say:['voice','I have heard your prayer, and have chosen this place for Myself as a house of slaughtering. If I shut up the shamayim and there is no rain, or command the locusts to devour the land, or send pestilence among My people —']},
-       {say:['voice','and My people, upon whom My Name is called, humble themselves and pray and seek My face, and turn from their evil ways — then I shall hear from the shamayim, and forgive their sin, and heal their land. Now My eyes are open, and My ears attentive, to the prayer of this place. I have set this House apart for My Name to be there forever; My eyes and My heart shall always be there.']},
+       {say:['voice','and My people, upon whom My Name is called, humble themselves and pray and seek My face, and turn from their evil ways — then I shall hear from the shamayim, and forgive their sin, and heal their land.']},{say:['voice','Now My eyes are open, and My ears attentive, to the prayer of this place. I have set this House apart for My Name to be there forever; My eyes and My heart shall always be there.']},
        {rays:.85,raysX:33},{sfx:'holy'},{burst:[33,13,'holy',22]},
-       {say:['voice','But if you turn away, and forsake My laws, and serve other mighty ones — then I shall pluck them from My land, and this House I shall cast out of My sight, and it shall become a proverb and a mockery among all peoples.']},
+       {say:['voice','But if you turn away and forsake My laws and My commands which I have set before you and shall go and serve other mighty ones and bow yourself to them — then I shall pluck them from My land, which I have given them, and this house which I have qadash (Set Apart) for My Name I shall cast out of My sight and make it to be a proverb and a mockery among all peoples.']},
        {shake:.3},{sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'Fire fell from the shamayim and consumed the offering, and the esteem of YAHUAH so filled the House that the kohanim could not enter; and all Yisra’ĕl bowed to the pavement: “For He is good.” And YAHUAH appeared by night: “If My people humble themselves and pray and seek My face and turn from their evil ways, I shall hear, and forgive, and heal their land.”', ref:'2 DIḆRĔ HAYAMIM 7:1–16'},
+   {art:'light', music:'holy', text:'Fire came down from the shamayim and consumed the burnt offering … and the esteem of YAHUAH filled the House. And the kohanim were unable to enter … And all the children of Yasharal … bowed … on the pavement … saying, “For He is good…” … And YAHUAH appeared to Shelomoh by night … “… My people … shall humble themselves and pray and seek My face and turn from their evil ways, then I shall hear … and forgive … and heal their land.”', ref:'2 DIḆRĔ HAYAMIM 7:1–16', stage:{"set":"temple","time":"day","cam":"pull","focus":0.5,"cast":[{"id":"shelomoh_r","x":0.3,"z":0.06,"face":"r","pose":"stand","crown":1,"acts":[{"at":4,"pose":"bow"},{"at":5,"pose":"raise"},{"at":6,"pose":"pray"},{"at":8,"pose":"raise"}]},{"id":"voice","x":0.7,"at":6}],"crowd":[{"kind":"kohanim","n":4,"x":0.5,"w":0.16,"z":0.48,"face":"r","from":"stand","at":2,"pose":"fall"},{"kind":"people","n":6,"x":0.16,"w":0.22,"z":0.42,"face":"r","from":"stand","at":4,"pose":"bow"},{"kind":"people","n":6,"x":0.84,"w":0.22,"z":0.42,"face":"l","from":"stand","at":4,"pose":"bow"}],"props":[{"k":"altar","x":0.5,"z":0.3,"big":1,"sacrifice":1}],"fx":[{"k":"firefall","x":0.5,"y":0.55,"at":0},{"k":"shekinah","x":0.5,"at":1},{"k":"darkness","at":6,"amt":0.55},{"k":"stars","at":6},{"k":"rays","x":0.5,"at":8}]}},
   ],
   complete:'Fire from the shamayim, and a promise: humble yourselves, and I shall heal your land.'
 },
@@ -6106,7 +6253,7 @@ STORY.push(
 
 { id:'s5', title:'The Sovereigness of Sheḇa', ref:'2 DIḆRĔ HAYAMIM 9:1–31',
   intro:[
-   {art:'vista', music:'holy', text:'And the sovereigness of Sheḇa heard the report of Shelomoh, and came to Yerushalayim to try him with hard questions — with a very great company, and camels bearing spices, and much gold, and precious stones.', ref:'2 DIḆRĔ HAYAMIM 9:1'},
+   {art:'vista', music:'holy', text:'And the sovereigness of Sheḇa heard of the report of Shelomoh and came to Yerushalayim to try Shelomoh with hard questions, with a very great company and camels bearing spices, and much gold, and precious stones.', ref:'2 DIḆRĔ HAYAMIM 9:1', stage:{"set":"gate","time":"dusk","cam":"pan-l","focus":0.55,"cast":[{"id":"sheba","enter":"r","at":0,"to":0.5,"z":0.1,"face":"l","pose":"stand","crown":1}],"crowd":[{"kind":"people","n":6,"x":0.72,"w":0.28,"z":0.6,"face":"l","enter":"r","at":0,"hold":"jar","look":{"robe":"#8a5a3a"}},{"kind":"guards","side":"yasharal","n":3,"x":0.16,"w":0.14,"z":0.5,"face":"r"}],"props":[{"k":"camel","x":0.76,"z":0.2,"face":"l","load":1},{"k":"camel","x":0.93,"z":0.3,"face":"l","load":1},{"k":"chest","x":0.62,"z":0.16,"gold":1}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:7005,
@@ -6118,32 +6265,32 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'sheba',text:'She tries him with hard questions',
       script:[
-       {say:['sheba','True was the word I heard in my own land of your words and your wisdom — but I did not believe until I came and saw with my own eyes. And see, I was not told the half of the greatness of your wisdom! You exceed the report which I heard.']},
+       {say:['sheba','True was the word I heard in my own land about your words and your wisdom. But I did not believe their words until I came and saw with my own eyes. And see, I have not been told the half of the greatness of your wisdom! You exceed the report which I heard.']},
        {say:['shelomoh_r','There is no matter hidden that I have not made known to you. Ask, and it is answered.']},
        {rays:.5,raysX:22},{sfx:'holy'},{burst:[22,8,'holy',12]},
       ]},
-     {type:'interact',prop:'gifts',text:'“Blessed be YAHUAH your Aluahim”',hiddenUntil:1,
+     {type:'interact',prop:'gifts',text:'“Baruk be YAHUAH your Aluahim”',hiddenUntil:1,
       script:[
-       {say:['sheba','Blessed are your men, and blessed are these your servants, who stand continually before you and hear your wisdom! Blessed be YAHUAH your Aluahim, who delighted in you, to set you on His throne as sovereign for YAHUAH your Aluahim — because your Aluahim has loved Yisra’ĕl, to establish them forever, He made you sovereign over them, to do right-ruling and righteousness.']},
-       {say:['narrator','And she gave the sovereign a hundred and twenty talents of gold, and very many spices and precious stones — such spices were never seen as those the sovereigness of Sheḇa gave to Shelomoh.']},
+       {say:['sheba','Baruk are your men, and baruk are these your servants, who stand continually before you and hear your wisdom! Baruk be YAHUAH your Aluahim, who delighted in you, to set you on His throne as sovereign for YAHUAH your Aluahim — because your Aluahim has loved Yasharal, to establish them forever, He made you sovereign over them, to do right-ruling and righteousness.']},
+       {say:['narrator','And she gave the sovereign one hundred and twenty talents of gold and very many spices and precious stones. And there has not been any spices such as those the sovereigness of Sheḇa gave to Sovereign Shelomoh.']},
        {burst:[32,14,'holy',14]},{sfx:'chime'},
-       {say:['narrator','And Shelomoh became greater than all the sovereigns of the earth in riches and wisdom; and all the sovereigns of the earth sought his presence, to hear the wisdom Aluahim had put in his heart. And Shelomoh reigned over all Yisra’ĕl forty years, and slept with his fathers.']},
+       {say:['narrator','And Sovereign Shelomoh became greater than all the sovereigns of the earth in riches and wisdom. And all the sovereigns of the earth sought the presence of Shelomoh to hear his wisdom, which Aluahim had put in his heart. And Shelomoh reigned in Yerushalayim over all Yasharal forty years. So Shelomoh slept with his fathers.']},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'The sovereigness of Sheḇa saw the wisdom of Shelomoh, and the House he had built, and there was no more spirit in her: “I was not told the half! Blessed be YAHUAH your Aluahim, who delighted in you.” And Shelomoh became greater than all the sovereigns of the earth in riches and wisdom — and reigned over Yisra’ĕl forty years.', ref:'2 DIḆRĔ HAYAMIM 9:5–31'},
+   {art:'light', music:'holy', text:'And the sovereigness of Sheḇa saw the wisdom of Shelomoh and the house that he had built … and there was no more ruach in her. Then she said to the sovereign, “… And see, I have not been told the half of the greatness of your wisdom! … Baruk be YAHUAH your Aluahim, who delighted in you…” … And Sovereign Shelomoh became greater than all the sovereigns of the earth in riches and wisdom. … And Shelomoh reigned in Yerushalayim over all Yasharal forty years.', ref:'2 DIḆRĔ HAYAMIM 9:3–31', stage:{"set":"palace","cam":"push","focus":0.45,"cast":[{"id":"shelomoh_r","x":0.3,"z":0.16,"face":"r","pose":"enthroned","crown":1},{"id":"sheba","x":0.6,"z":0.08,"face":"l","pose":"stand","crown":1,"say":2,"acts":[{"at":1,"pose":"kneel"},{"at":2,"pose":"speak"},{"at":4,"pose":"raise"}]}],"crowd":[{"kind":"guards","side":"yasharal","n":3,"x":0.12,"w":0.12,"z":0.55,"face":"r"},{"kind":"kings","n":5,"x":0.8,"w":0.24,"z":0.6,"face":"l","enter":"r","at":5,"pose":"kneel"}],"props":[{"k":"chest","x":0.76,"z":0.22,"gold":1},{"k":"basket","x":0.84,"z":0.3,"fruit":"#b8783a"}]}},
   ],
-  complete:'“I was not told the half” — and a foreign queen blesses the Name of YAHUAH.'
+  complete:'“I have not been told the half” — and a foreign sovereigness says, “Baruk be YAHUAH.”'
 },
 
 { id:'s6', title:'The Heavy Yoke', ref:'2 DIḆRĔ HAYAMIM 10:1–19',
   intro:[
-   {art:'vista_sunset', music:'tense', text:'And Reḥaḇ‛am went to Sheḵem, for all Yisra’ĕl had gone to Sheḵem to set him up to reign. And Yaroḇ‛am and all Yisra’ĕl came and said, “Your father made our yoke hard; now lighten the hard service of your father, and his heavy yoke, and we shall serve you.”', ref:'2 DIḆRĔ HAYAMIM 10:1–4'},
+   {art:'vista_sunset', music:'tense', text:'And Reḥaḇ‛am went to Sheḵem, for all Yasharal had gone to Sheḵem to set him up to reign. … And Yaroḇ‛am and all Yasharal came and spoke to Reḥaḇ‛am, saying, “Your father made our yoke hard and now, lighten the hard service of your father and his heavy yoke which he put on us, then we shall serve you.”', ref:'2 DIḆRĔ HAYAMIM 10:1–4', stage:{"set":"city","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"rehoboam","enter":"l","at":0,"to":0.3,"z":0.08,"face":"r","pose":"stand","crown":1},{"id":"yarobam","enter":"r","at":1,"to":0.56,"z":0.1,"face":"l","pose":"speak","hold":"yoke","say":1}],"crowd":[{"kind":"people","n":10,"x":0.72,"w":0.4,"z":0.55,"face":"l"},{"kind":"elders","n":3,"x":0.14,"w":0.12,"z":0.6,"face":"r"}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:7006,
-     features:[ {type:'throne',x:22,y:9,id:'throne'},{type:'standard',x:14,y:14,id:'elders',examine:'The elders who stood before Shelomoh: “Speak good words to them, and they shall be your servants all the days.”'},{type:'standard',x:34,y:12,id:'young',examine:'The young men grown up with him: “My little finger is thicker than my father’s waist!”'},{type:'clearing',x:22,y:20,flat:3} ]},
+     features:[ {type:'throne',x:22,y:9,id:'throne'},{type:'standard',x:14,y:14,id:'elders',examine:'The elders who stood before Shelomoh: “Speak good words to them, they shall be your servants all the days.”'},{type:'standard',x:34,y:12,id:'young',examine:'The young men grown up with him: “My little finger is thicker than my father’s waist!”'},{type:'clearing',x:22,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'rehoboam', playerPos:[22,21],
    npcs:[ {id:'yarobam',char:'yarobam',x:24,y:16,wander:false},{id:'elder',char:'elder',x:16,y:15,wander:false},{id:'youngman',char:'youngman',x:29,y:15,wander:false} ],
@@ -6158,27 +6305,27 @@ STORY.push(
        {say:['youngman','Say to them: “My little finger is thicker than my father’s waist! My father put a heavy yoke on you — I add to your yoke; my father chastised you with whips — I with scourges!”']},
        {say:['rehoboam','My father made your yoke heavy — but I add to it! My father chastised you with whips — but I with scourges!']},
        {shake:.5},{sfx:'bad'},
-       {say:['narrator','So the sovereign did not listen to the people — for the turn of events was from Aluahim, that YAHUAH might establish His word spoken by Aḥiyahu the Shilonite to Yaroḇ‛am.']},
+       {say:['narrator','So the sovereign did not listen to the people, for the turn of events was from Aluahim, in order for YAHUAH to establish His word, which He had spoken by the hand of Aḥiyahu the Shilonite to Yaroḇ‛am son of Neḇat.']},
       ]},
      {type:'goto',x:22,y:24,text:'“What portion have we in Dawiḏ?”',radius:2.4,hiddenUntil:2,
       script:[
-       {say:['yarobam','What portion have we in Dawiḏ? We have no inheritance in the son of Yahshai! Every man to your tents, O Yisra’ĕl! Now see to your own house, O Dawiḏ!']},
+       {say:['yarobam','What portion have we in Dawiḏ? We have no inheritance in the son of Yahshai! Every man to your mighty ones, O Yasharal! Now see to your own house, O Dawiḏ!']},
        {call:G=>{ const n=G.world.npcs.find(n=>n.id==='yarobam'); if(n){ n.target={x:2,y:24}; n.speed=.06; n.onArrive=()=>{n.hidden=true;}; } }},
        {shake:.5},{sfx:'bad'},
-       {say:['narrator','So all Yisra’ĕl went to their tents — and Reḥaḇ‛am reigned only over those in the cities of Yahuḏah. Thus Yisra’ĕl revolted against the house of Dawiḏ, and the one kingdom was torn in two.']},
+       {say:['narrator','So all Yasharal went to their tents — but as for the children of Yasharal who dwelt in the cities of Yahuḏah, Reḥaḇ‛am reigned over them. Thus Yasharal revolted against the house of Dawiḏ, and the one kingdom was torn in two.']},
        {music:'sorrow'},{sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'“Lighten the heavy yoke.” But Reḥaḇ‛am spurned the elders and heeded the young men: “I add to your yoke — whips for scourges!” And the turn was from Aluahim. “What portion have we in Dawiḏ? Every man to your tents, O Yisra’ĕl!” — and the kingdom was torn in two, and Yisra’ĕl revolted against the house of Dawiḏ.', ref:'2 DIḆRĔ HAYAMIM 10:6–19'},
+   {art:'wasteland', music:'sorrow', text:'Sovereign Reḥaḇ‛am ignored the advice of the elders, and spoke to them according to the advice of the young men, saying, “My father made your yoke heavy, but I, I add to it; my father chastised you with whips, but I with scourges!” … For the turn of events was from Aluahim. … “What portion have we in Dawiḏ?” … So all Yasharal went to their tents. … Thus Yasharal revolted against the house of Dawiḏ.', ref:'2 DIḆRĔ HAYAMIM 10:6–19', stage:{"set":"gate","time":"day","cam":"push","focus":0.5,"cast":[{"id":"rehoboam","x":0.3,"z":0.08,"face":"r","pose":"point","crown":1,"hold":"rod","say":0,"acts":[{"at":1,"pose":"strike"},{"at":4,"pose":"stand"}]},{"id":"youngman","x":0.16,"z":0.14,"face":"r","pose":"stand"},{"id":"yarobam","x":0.6,"z":0.1,"face":"l","pose":"stand","say":3,"acts":[{"at":3,"face":"r","pose":"raise"},{"at":5,"exit":"r"}]}],"crowd":[{"kind":"elders","n":3,"x":0.08,"w":0.08,"z":0.6,"face":"l"},{"kind":"people","n":10,"x":0.74,"w":0.38,"z":0.55,"face":"l","from":"stand","at":3,"pose":"raise","exit":"r","exitAt":4}],"props":[{"k":"tent","x":0.92,"z":0.9,"at":4},{"k":"tent","x":0.78,"z":0.95,"at":4,"color":"#6a5a3a"}]}},
   ],
   complete:'A hard word for a hard yoke — and the one kingdom of Dawiḏ is torn in two.'
 },
 
 { id:'s7', title:'The Battle Is Not Yours', ref:'2 DIḆRĔ HAYAMIM 20:1–30',
   intro:[
-   {art:'wasteland', music:'tense', text:'The children of Mo’aḇ and Ammon, and others, came against Yahhoshaphat to battle — a great army. And Yahhoshaphat was afraid, and set his face to seek YAHUAH, and proclaimed a fast throughout all Yahuḏah.', ref:'2 DIḆRĔ HAYAMIM 20:1–3'},
+   {art:'wasteland', music:'tense', text:'And after this it came to be that the children of Mo’aḇ and the children of Ammon came in and with them some of the peoples, against Yahhoshaphat to battle. … “A great army is coming against you…” And Yahhoshaphat was afraid and set his face to seek YAHUAH and proclaimed a fast throughout all Yahuḏah.', ref:'2 DIḆRĔ HAYAMIM 20:1–3', stage:{"set":"valley","time":"dusk","wx":"dust","cam":"push","focus":0.45,"cast":[{"id":"yahoshaphat","x":0.26,"z":0.08,"face":"r","pose":"stand","crown":1,"acts":[{"at":2,"pose":"pray"}]},{"id":"runner","look":{"name":"A Messenger from Ĕḏom","skin":"#7a4e29","hair":"#2c1a0c","robe":"#6a5a3a","beard":"#2c1a0c","short":1},"enter":"r","at":1,"to":0.5,"z":0.1,"face":"l","pose":"point","run":1,"say":1}],"crowd":[{"kind":"army","side":"aram","n":10,"x":0.76,"w":0.36,"z":0.78,"face":"l","enter":"r","at":0},{"kind":"mourners","n":5,"x":0.14,"w":0.18,"z":0.45,"face":"r","at":2}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:7007,
@@ -6189,27 +6336,27 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'prayer',text:'“Our eyes are upon You”',
       script:[
-       {say:['yahoshaphat','O YAHUAH Aluahim of our fathers — are You not Aluahim in the shamayim, ruling over all the reigns of the nations? In Your hand is power and might, and no one is able to stand against You. See, the children of Ammon and Mo’aḇ and Mount Sĕ‛ir are coming to drive us out of Your possession. O our Aluahim, would You not judge them? For we are powerless against this great army — and we do not know what to do; but our eyes are upon You.']},
+       {say:['yahoshaphat','O YAHUAH Aluahim of our fathers, are You not Aluahim in the shamayim and do You not rule over all the reigns of the nations and in Your hand is there not power and might, so that no one is able to stand against You?']},{say:['yahoshaphat','See, the children of Ammon and Mo’aḇ and Mount Sĕ‛ir are coming to drive us out of Your possession. O our Aluahim, would You not judge them? For we are powerless against this great army — and we do not know what to do; but our eyes are upon You.']},
        {rays:.55,raysX:22},{sfx:'holy'},{burst:[22,8,'holy',14]},
-       {say:['yahaziel','(And the Ruaḥ of YAHUAH came upon Yaḥazi’ĕl the Lĕwite, of the sons of Asaph, in the midst of the assembly —) Listen, all Yahuḏah, and Sovereign Yahhoshaphat! Thus said YAHUAH: Do not fear, nor be afraid of this great army — for the battle is not yours, but Aluahim’s!']},
+       {say:['yahaziel','(And the Ruach of YAHUAH came upon Yaḥazi’ĕl … a Lĕwite of the sons of Asaph, in the midst of the qahal) — Listen, all Yahuḏah and you inhabitants of Yerushalayim and Sovereign Yahhoshaphat! Thus said YAHUAH: Do not fear, nor be afraid of the face of this great army, for the battle is not yours, but Aluahim’s!']},
        {say:['yahaziel','It is not for you to fight in this. Position yourselves, stand still, and see the deliverance of YAHUAH with you, O Yahuḏah and Yerushalayim! Do not fear — go out against them tomorrow, for YAHUAH is with you.']},
        {rays:.7,raysX:22},{sfx:'holy'},{burst:[22,8,'holy',18]},
       ]},
      {type:'goto',x:36,y:14,text:'Send the singers out before the army',radius:2.6,hiddenUntil:1,
       script:[
-       {say:['yahoshaphat','Hear me, O Yahuḏah — trust in YAHUAH your Aluahim, and be steadfast; trust His neḇi’im, and prosper.']},
-       {say:['narrator','And he appointed singers to YAHUAH, to praise the splendour of set-apartness, going out before the army, saying: “Give thanks to YAHUAH, for His kindness is everlasting!”']},
+       {say:['yahoshaphat','Hear me, O Yahuḏah — trust in YAHUAH your Aluahim, and be steadfast; trust His naḇi’im, and prosper.']},
+       {say:['narrator','And he appointed those who should sing to YAHUAH and who should praise the splendour of set-apartness, as they went out before the army and were saying, “Give thanks to YAHUAH, for His kindness is everlasting.”']},
        {call:G=>{ ['l1','l2'].forEach((id,i)=>{ const n=G.world.npcs.find(n=>n.id===id); if(n){ n.target={x:40+i,y:13}; n.speed=.05; } }); }},
        {rays:.6,raysX:38},{sfx:'holy'},{burst:[38,13,'holy',16]},
        {say:['narrator','And when they began singing and praising, YAHUAH set ambushes against the children of Ammon, Mo’aḇ, and Mount Sĕ‛ir — and they were smitten; and they turned and destroyed one another, until none had escaped.']},
        {shake:.6},{sfx:'thunder'},{burst:[42,12,'ash',16]},
-       {say:['narrator','And Yahuḏah came to the lookout in the wilderness, and saw only dead bodies fallen on the ground — none had escaped. Three days they gathered the spoil, it was so much; and on the fourth they assembled in the Valley of Beraḵah, and blessed YAHUAH.']},
+       {say:['narrator','And when Yahuḏah came at the lookout in the wilderness, they looked toward the army and saw their dead bodies, lying on the ground and none had escaped. And they were three days plundering the spoil, for it was much. And on the fourth day they assembled in the Valley of Beraḵah, for there they baruk YAHUAH.']},
        {rays:.7,raysX:38},{sfx:'holy'},{burst:[38,13,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“We are powerless — but our eyes are upon You.” And the word came: “The battle is not yours, but Aluahim’s. Stand still and see the deliverance of YAHUAH.” And when the singers went out before the army, praising “His kindness is everlasting,” YAHUAH set ambushes against the enemy, and they destroyed one another — and Yahuḏah returned to Yerushalayim with joy, with harps and lyres and trumpets.', ref:'2 DIḆRĔ HAYAMIM 20:12–30'},
+   {art:'light', music:'holy', text:'“O our Aluahim … we are powerless against this great army … but our eyes are upon You.” … Thus said YAHUAH to you, “Do not fear … for the battle is not yours, but Aluahim’s. … Stand still and see the deliverance of YAHUAH…” … And when they began singing and praising, YAHUAH set ambushes against the children of Ammon, Mo’aḇ and Mount Sĕ‛ir … they helped to destroy one another. … Then they returned … to Yerushalayim with joy … with harps and lyres and trumpets.', ref:'2 DIḆRĔ HAYAMIM 20:12–30', stage:{"set":"wilderness","time":"day","wx":"dust","wxAt":5,"cam":"pan-r","focus":0.5,"cast":[{"id":"yahoshaphat","x":0.22,"z":0.08,"face":"r","pose":"pray","crown":1,"say":0,"acts":[{"at":4,"pose":"stand"},{"at":7,"pose":"raise"}]},{"id":"yahaziel","x":0.42,"z":0.1,"face":"l","pose":"point","at":2,"say":2,"acts":[{"at":4,"face":"r","pose":"raise"}]}],"crowd":[{"kind":"levites","n":5,"x":0.3,"w":0.24,"z":0.5,"face":"r","hold":"harp","at":5,"pose":"raise"},{"kind":"army","side":"aram","n":7,"x":0.78,"w":0.3,"z":0.7,"face":"l","from":"stand","at":5,"pose":"fight"},{"kind":"army","side":"aram","n":5,"x":0.7,"w":0.3,"z":0.5,"at":6,"pose":"dead","hold":null},{"kind":"worshippers","n":5,"x":0.14,"w":0.18,"z":0.7,"face":"l","at":7,"hold":"trumpet"}],"fx":[{"k":"rays","x":0.42,"at":2}]}},
   ],
   complete:'The battle won by praise — the singers went first, and none of the enemy escaped.'
 },
@@ -6217,11 +6364,11 @@ STORY.push(
 ]},
 
 /* ============ ACT III — ḤIZQIYAHU AND THE MAL’AḴ ============ */
-{ id:'sact3', roman:'III', title:'Ḥizqiyahu and the Mal’aḵ', ref:'2 DIḆRĔ HAYAMIM 32', chapters:[
+{ id:'sact3', roman:'III', title:'Ḥizqiyahu and the Mal’ak', ref:'2 DIḆRĔ HAYAMIM 32', chapters:[
 
 { id:'s8', title:'An Arm of Flesh', ref:'2 DIḆRĔ HAYAMIM 32:1–19',
   intro:[
-   {art:'corrupt', music:'tense', text:'After these matters, Sanḥĕriḇ sovereign of Ashshur came, and entered Yahuḏah, and encamped against the fortified cities, thinking to break them open. And Ḥizqiyahu saw that Sanḥĕriḇ had set his face to fight against Yerushalayim.', ref:'2 DIḆRĔ HAYAMIM 32:1–2'},
+   {art:'corrupt', music:'tense', text:'After these matters and this trustworthiness, Sanḥĕriḇ sovereign of Ashshur came. And he entered Yahuḏah and encamped against the cities of defence and said to break them open to himself. And Ḥizqiyahu saw that Sanḥĕriḇ had come and his face set to fight against Yerushalayim.', ref:'2 DIḆRĔ HAYAMIM 32:1–2', stage:{"set":"walls","time":"dusk","cam":"pan-r","focus":0.55,"cast":[{"id":"sancheriv","enter":"r","at":0,"to":0.72,"z":0.12,"face":"l","pose":"point","crown":1},{"id":"hizqiyah","x":0.22,"z":0.1,"face":"r","pose":"look","crown":1,"at":2}],"crowd":[{"kind":"army","side":"ashshur","n":10,"x":0.76,"w":0.34,"z":0.55,"face":"l","enter":"r","at":1},{"kind":"guards","side":"yasharal","n":5,"x":0.18,"w":0.2,"z":0.5,"face":"r","at":2}],"props":[{"k":"tent","x":0.9,"z":0.8,"color":"#6a2a2a","at":1},{"k":"tent","x":0.68,"z":0.9,"color":"#6a3a2a","at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:48, h:28, seed:7008,
@@ -6233,12 +6380,12 @@ STORY.push(
      {type:'interact',prop:'springs',text:'Stop the springs outside the city',
       script:[
        {say:['hizqiyah','Stop all the springs, and the stream that runs through the land. Why should the sovereigns of Ashshur come and find much water?']},
-       {say:['narrator','And many people gathered, and stopped all the springs.']},
+       {say:['narrator','And many people were gathered and they stopped all the springs.']},
        {sfx:'blip'},{burst:[34,13,'ash',8]},
       ]},
      {type:'interact',prop:'breach',text:'Build up the broken wall',hiddenUntil:1,
       script:[
-       {say:['narrator','And Ḥizqiyahu strengthened himself, and built up all the wall that was broken, raised it to the towers, and made another wall outside — and strengthened Millo in the City of Dawiḏ, and made weapons and shields in great number.']},
+       {say:['narrator','And Ḥizqiyahu strengthened himself and built up all the wall that was broken and raised it up to the towers — and outside of it another wall and strengthened Millo, the City of Dawiḏ and made large numbers of weapons and shields.']},
        {prop:['breach',{type:'wallseg'}]},
        {shake:.4},{sfx:'thunder'},{burst:[26,9,'ash',10]},{sfx:'chime'},
       ]},
@@ -6252,14 +6399,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'Ḥizqiyahu stopped the springs, built up the broken wall and its towers, made weapons, and heartened the people: “With him is an arm of flesh; but with us is YAHUAH our Aluahim, to fight our battles.” But Sanḥĕriḇ mocked, and reproached YAHUAH: “No mighty one of any nation delivered his people from my hand — much less your Aluahim.”', ref:'2 DIḆRĔ HAYAMIM 32:3–19'},
+   {art:'corrupt', music:'tense', text:'He took counsel … to stop the water from the springs … And he … built up all the wall that was broken … “With him is an arm of flesh, but with us is YAHUAH our Aluahim, to help us and to fight our battles.” … Thus said Sanḥĕriḇ the sovereign of Ashshur, “… no mighty one of any nation … was able to deliver his people from my hand … much less your Aluahim to deliver you from my hand!”', ref:'2 DIḆRĔ HAYAMIM 32:3–19', stage:{"set":"city","time":"day","cam":"push","focus":0.45,"cast":[{"id":"hizqiyah","x":0.3,"z":0.08,"face":"r","pose":"point","crown":1,"say":2,"acts":[{"at":2,"pose":"raise"},{"at":3,"pose":"stand"}]},{"id":"assyrian","enter":"r","at":3,"to":0.7,"z":0.12,"face":"l","pose":"speak","say":3,"acts":[{"at":6,"pose":"point"}]}],"crowd":[{"kind":"people","n":5,"x":0.66,"w":0.24,"z":0.45,"face":"r","pose":"carry","hold":"stone","exit":"r","exitAt":3},{"kind":"soldiers","side":"yasharal","n":6,"x":0.16,"w":0.22,"z":0.55,"face":"r","at":2}],"props":[{"k":"well","x":0.86,"z":0.3},{"k":"stones","x":0.86,"z":0.26,"n":8},{"k":"wall","x":0.5,"z":0.85,"w":1.2,"broken":1},{"k":"wall","x":0.5,"z":0.85,"w":1.2,"at":1}]}},
   ],
   complete:'The wall built, the springs stopped, the people heartened — an arm of flesh against the living Aluahim.'
 },
 
-{ id:'s9', title:'The Mal’aḵ in the Night', ref:'2 DIḆRĔ HAYAMIM 32:20–33',
+{ id:'s9', title:'The Mal’ak in the Night', ref:'2 DIḆRĔ HAYAMIM 32:20–33',
   intro:[
-   {art:'stars', music:'tense', text:'And Sovereign Ḥizqiyahu, and the naḇi Yahshayahu son of Amots, prayed about this, and cried out to the shamayim.', ref:'2 DIḆRĔ HAYAMIM 32:20'},
+   {art:'stars', music:'tense', text:'And Sovereign Ḥizqiyahu, and the naḇi Yahshayahu son of Amots, prayed about this, and cried out to the shamayim.', ref:'2 DIḆRĔ HAYAMIM 32:20', stage:{"set":"temple","time":"night","cam":"up","focus":0.5,"cast":[{"id":"hizqiyah","x":0.38,"z":0.08,"face":"r","pose":"pray","crown":1},{"id":"yahshayah","x":0.6,"z":0.1,"face":"l","pose":"raise","hold":"staff"}],"fx":[{"k":"stars"},{"k":"rays","x":0.5}]}},
   ],
   scene:{
    map:{biome:'city', w:48, h:28, seed:7009,
@@ -6277,20 +6424,20 @@ STORY.push(
       ]},
      {type:'goto',x:36,y:16,text:'The camp of Ashshur, at night',radius:3,hiddenUntil:1,
       script:[
-       {say:['narrator','And YAHUAH sent a mal’aḵ —']},
+       {say:['narrator','And YAHUAH sent a mal’ak —']},
        {rays:.6,raysX:40},{sfx:'thunder'},{shake:.8},
        {call:G=>{ ['a1','a2','a3'].forEach(id=>{ const n=G.world.npcs.find(n=>n.id===id); if(n){ Particles.burst(n.x*TILE,n.y*TILE-8,'spark',16); n.lying=true; n.noTalk=true; } }); }},
        {burst:[40,16,'holy',20]},{burst:[42,14,'holy',14]},{burst:[41,18,'holy',14]},
-       {say:['narrator','— who cut down every mighty brave one, and the leaders and commanders, in the camp of the sovereign of Ashshur. And he returned shamefaced to his own land; and there, in the house of his mighty one, his own offspring caused him to fall by the sword.']},
-       {say:['narrator','Thus YAHUAH saved Ḥizqiyahu and the inhabitants of Yerushalayim from the hand of Sanḥĕriḇ, and from all others, and guided them on every side. And many brought gifts to YAHUAH at Yerushalayim — and Ḥizqiyahu was exalted in the eyes of all nations thereafter.']},
+       {say:['narrator','— who cut down every mighty brave one, both the leader and the commander in the camp of the sovereign of Ashshur. And he returned shamefaced to his own land and went into the house of his mighty one and there some of his own offspring caused him to fall by the sword.']},
+       {say:['narrator','Thus YAHUAH saved Ḥizqiyahu and the inhabitants of Yerushalayim from the hand of Sanḥĕriḇ the sovereign of Ashshur and from the hand of all others and guided them on every side. And many brought gifts to YAHUAH at Yerushalayim and presents to Ḥizqiyahu sovereign of Yahuḏah and he was exalted in the eyes of all nations thereafter.']},
        {rays:.75,raysX:22},{sfx:'holy'},{burst:[22,12,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'Ḥizqiyahu and Yahshayahu cried out to the shamayim — and YAHUAH sent a mal’aḵ who cut down the mighty men, leaders, and commanders in the camp of Ashshur; and Sanḥĕriḇ returned shamefaced to his own land, and fell there by his own offspring’s sword. Thus YAHUAH saved Yerushalayim, and Ḥizqiyahu was exalted before all nations.', ref:'2 DIḆRĔ HAYAMIM 32:20–23'},
+   {art:'light', music:'holy', text:'And Sovereign Ḥizqiyahu and the naḇi Yahshayahu … cried out to the shamayim. And YAHUAH sent a mal’ak who cut down every mighty brave one … in the camp of the sovereign of Ashshur and he returned shamefaced to his own land … and there some of his own offspring caused him to fall by the sword. Thus YAHUAH saved Ḥizqiyahu and the inhabitants of Yerushalayim … and he was exalted in the eyes of all nations thereafter.', ref:'2 DIḆRĔ HAYAMIM 32:20–23', stage:{"set":"camp","time":"night","cam":"push","focus":0.55,"cast":[{"id":"hizqiyah","x":0.13,"z":0.08,"face":"r","pose":"pray","crown":1,"acts":[{"at":5,"pose":"raise"}]},{"id":"yahshayah","x":0.23,"z":0.14,"face":"r","pose":"raise","hold":"staff"},{"id":"malak","look":{"name":"The Mal’ak of YAHUAH","angel":1,"robe":"#f0ead8","hair":"#e8d8a8"},"x":0.5,"z":0.22,"face":"r","pose":"strike","hold":"sword","at":2,"acts":[{"at":3,"pose":"stand"}]},{"id":"sancheriv","x":0.72,"z":0.12,"face":"l","pose":"stand","crown":1,"acts":[{"at":3,"to":0.77,"face":"r","pose":"weep"},{"at":4,"pose":"fall"},{"at":5,"pose":"dead"}]},{"id":"assassin","look":{"name":"A Son of Sanḥĕriḇ","skin":"#7a5a36","hair":"#1d1208","robe":"#4a2a2a","beard":"#1d1208"},"enter":"r","at":4,"to":0.87,"z":0.16,"face":"l","pose":"strike","hold":"sword"}],"crowd":[{"kind":"army","side":"ashshur","n":10,"x":0.6,"w":0.44,"z":0.55,"face":"l","from":"stand","at":2,"pose":"dead","hold":null}],"fx":[{"k":"glory","x":0.5,"y":0.3,"at":2},{"k":"rays","x":0.12,"at":5}]}},
   ],
-  complete:'One prayer to the shamayim, one mal’aḵ in the night — and the great army of Ashshur is undone.'
+  complete:'One prayer to the shamayim, one mal’ak in the night — and the great army of Ashshur is undone.'
 },
 
 ]},
@@ -6300,18 +6447,18 @@ STORY.push(
 
 { id:'s10', title:'The Book Found in the House', ref:'2 DIḆRĔ HAYAMIM 34:1–21',
   intro:[
-   {art:'vista', music:'holy', text:'Yoshiyahu was eight years old when he began to reign, and did what was right in the eyes of YAHUAH, walking in the ways of Dawiḏ. While still young he began to seek the Aluahim of his father Dawiḏ, and to cleanse Yahuḏah of the high places, the Ashĕrim, and the carved images.', ref:'2 DIḆRĔ HAYAMIM 34:1–3'},
+   {art:'vista', music:'holy', text:'Yoshiyahu was eight years old when he began to reign … And he did what was right in the eyes of YAHUAH and walked in the ways of his father Dawiḏ … while he was still young, he began to seek the Aluahim of his father Dawiḏ. And in the twelfth year he began to cleanse Yahuḏah and Yerushalayim from the high places and the Ashĕrim and the carved images.', ref:'2 DIḆRĔ HAYAMIM 34:1–3', stage:{"set":"highplace","time":"day","cam":"push","focus":0.5,"cast":[{"id":"yoshiyah","look":{"child":1},"x":0.26,"z":0.08,"face":"r","pose":"stand","crown":1,"acts":[{"at":1,"pose":"bless"},{"at":2,"pose":"pray"},{"at":3,"pose":"point"}]},{"id":"hilqiyah","x":0.12,"z":0.16,"face":"r","pose":"stand"}],"crowd":[{"kind":"guards","side":"yasharal","n":6,"x":0.47,"w":0.16,"z":0.62,"face":"r","enter":"l","at":3,"pose":"fight"}],"props":[{"k":"idol","x":0.74,"z":0.4},{"k":"tree","x":0.86,"z":0.5,"color":"#3a4a2a"},{"k":"altar","x":0.64,"z":0.34}],"fx":[{"k":"smoke","x":0.72,"at":3}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:7010,
-     features:[ {type:'idol',x:14,y:12,id:'idol',examine:'The altars of the Ba‛als and the Ashĕrim — to be broken down, ground to dust, and scattered.'},{type:'temple',x:24,y:9,id:'house',examine:'The House of YAHUAH — being repaired; and within it, a book long forgotten.'},{type:'tablets',x:33,y:13,id:'book',examine:'The Book of the Torah of YAHUAH, given by Mosheh — found by Ḥilqiyahu in the House.'},{type:'clearing',x:22,y:20,flat:3} ]},
+     features:[ {type:'idol',x:14,y:12,id:'idol',examine:'The mizbe’achot of the Ba‛als and the Ashĕrim — to be broken down, ground to dust, and scattered.'},{type:'temple',x:24,y:9,id:'house',examine:'The House of YAHUAH — being repaired; and within it, a book long forgotten.'},{type:'tablets',x:33,y:13,id:'book',examine:'The Book of the Torah of YAHUAH, given by Mosheh — found by Ḥilqiyahu in the House.'},{type:'clearing',x:22,y:20,flat:3} ]},
    time:'day', music:'holy',
    player:'yoshiyah', playerPos:[22,21], playerHold:'staff',
    npcs:[ {id:'hilqiyah',char:'hilqiyah',x:26,y:15,wander:false},{id:'shaphan',char:'shaphan',x:22,y:16,wander:false} ],
    objectives:[
-     {type:'interact',prop:'idol',text:'Break down the altars of the Ba‛als',
+     {type:'interact',prop:'idol',text:'Break down the mizbe’achot of the Ba‛als',
       script:[
-       {say:['yoshiyah','Break down the altars of the Ba‛als, and cut down the sun-pillars above them! Grind the Ashĕrim and the carved images to dust, and scatter it on the graves of those who offered to them! Cleanse Yahuḏah and Yerushalayim — and every ruin, as far as Naphtali.']},
+       {say:['yoshiyah','Break down the mizbe’achot of the Ba‛als, and cut down the sun-pillars above them! Grind the Ashĕrim and the carved images to dust, and scatter it on the graves of those who offered to them! Cleanse Yahuḏah and Yerushalayim — and in the cities of Menashsheh and Ephrayim and Shim‛on, as far as Naphtali, in their ruins all around.']},
        {shake:.6},{sfx:'thunder'},{burst:[14,12,'ash',16]},
        {call:G=>{ const n=G.world.map.decor.find(d=>d.id==='idol'); if(n){ const i=G.world.map.decor.indexOf(n); G.world.map.decor.splice(i,1); } }},
        {rays:.5,raysX:14},{sfx:'holy'},{burst:[14,12,'holy',12]},
@@ -6320,96 +6467,96 @@ STORY.push(
       script:[
        {say:['hilqiyah','I have found the Book of the Torah in the House of YAHUAH!']},
        {rays:.6,raysX:33},{sfx:'holy'},{burst:[33,13,'holy',14]},
-       {say:['narrator','And Shaphan brought the book to the sovereign, and read it before him. And it came to be, when the sovereign heard the words of the Torah, that he tore his garments.']},
+       {say:['narrator','And Shaphan brought the book to the sovereign … And Shaphan read it before the sovereign. And it came to be, when the sovereign heard the words of the Torah, that he tore his garments.']},
        {shake:.4},{sfx:'bad'},
-       {say:['yoshiyah','Go, inquire of YAHUAH for me, and for the remnant of Yisra’ĕl and Yahuḏah, concerning the words of this book that is found. For great is the wrath of YAHUAH poured out on us — because our fathers did not guard the Word of YAHUAH, to do all that is written in this book.']},
+       {say:['yoshiyah','Go, inquire of YAHUAH for me and for him who is left in Yasharal and in Yahuḏah, concerning the words of the book that is found. For great is the wrath of YAHUAH that is poured out on us, because our fathers have not guarded the Word of YAHUAH, to do according to all that is written in this book.']},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'Young Yoshiyahu cleansed the land of the Ba‛als and the Ashĕrim, grinding them to dust; and while repairing the House, Ḥilqiyahu the kohen found the Book of the Torah of YAHUAH given by Mosheh. When it was read to him, the sovereign tore his garments: “Great is the wrath of YAHUAH — for our fathers did not guard His Word.”', ref:'2 DIḆRĔ HAYAMIM 34:3–21'},
+   {art:'light', music:'holy', text:'And they broke down the mizbe’achot of the Ba‛als … And the Ashĕrim … he smashed and ground them up … Ḥilqiyahu the kohen found the Book of the Torah of YAHUAH given by Mosheh. … And it came to be, when the sovereign heard the words of the Torah, that he tore his garments … “For great is the wrath of YAHUAH … because our fathers have not guarded the Word of YAHUAH.”', ref:'2 DIḆRĔ HAYAMIM 34:3–21', stage:{"set":"court","time":"day","cam":"push","focus":0.5,"cast":[{"id":"yoshiyah","x":0.56,"z":0.08,"face":"r","pose":"point","crown":1,"say":4,"acts":[{"at":2,"face":"l","pose":"stand"},{"at":3,"pose":"weep"},{"at":4,"pose":"raise"}]},{"id":"hilqiyah","enter":"l","at":2,"to":0.34,"z":0.1,"face":"r","pose":"hold","hold":"scroll"},{"id":"shaphan","enter":"l","at":2,"to":0.22,"z":0.16,"face":"r","pose":"stand","say":3,"acts":[{"at":3,"pose":"speak"}]}],"crowd":[{"kind":"guards","side":"yasharal","n":5,"x":0.8,"w":0.2,"z":0.5,"face":"r","pose":"strike"}],"props":[{"k":"idol","x":0.9,"z":0.55},{"k":"altar","x":0.84,"z":0.45,"fire":false},{"k":"stones","x":0.76,"z":0.36,"n":10,"at":1}],"fx":[{"k":"smoke","x":0.86,"at":1}]}},
   ],
   complete:'The idols ground to dust, and the lost Book found — a young sovereign tears his garments.'
 },
 
-{ id:'s11', title:'The Covenant Renewed', ref:'2 DIḆRĔ HAYAMIM 34:22–33',
+{ id:'s11', title:'The Berith Renewed', ref:'2 DIḆRĔ HAYAMIM 34:22–33',
   intro:[
-   {art:'stars', music:'holy', text:'Then Ḥilqiyahu and those of the sovereign went to Ḥuldah the prophetess, who dwelt in Yerushalayim in the Second Quarter — and they spoke to her about the words of the book.', ref:'2 DIḆRĔ HAYAMIM 34:22'},
+   {art:'stars', music:'holy', text:'Then Ḥilqiyahu and those of the sovereign went to Ḥuldah the prophetess … who was dwelling in Yerushalayim in the Second Quarter. And they spoke to her about this.', ref:'2 DIḆRĔ HAYAMIM 34:22', stage:{"set":"city","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"huldah","x":0.72,"z":0.1,"face":"l","pose":"stand","at":1},{"id":"hilqiyah","enter":"l","at":0,"to":0.44,"z":0.08,"face":"r","pose":"stand","say":2,"acts":[{"at":2,"pose":"speak"}]},{"id":"shaphan","enter":"l","at":0,"to":0.3,"z":0.14,"face":"r","pose":"stand","hold":"scroll"}],"crowd":[{"kind":"princes","n":3,"x":0.18,"w":0.12,"z":0.4,"face":"r","enter":"l","at":0}],"props":[{"k":"house","x":0.84,"z":0.3,"w":80,"h":56}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:7011,
-     features:[ {type:'house',x:14,y:12,id:'huldah',examine:'The house of Ḥuldah the prophetess, in the Second Quarter.'},{type:'temple',x:24,y:9,id:'house'},{type:'tower',x:31,y:13,id:'standing',examine:'The sovereign’s place in the House — where he stood and made a covenant before YAHUAH.'},{type:'clearing',x:22,y:20,flat:3} ]},
+     features:[ {type:'house',x:14,y:12,id:'huldah',examine:'The house of Ḥuldah the prophetess, in the Second Quarter.'},{type:'temple',x:24,y:9,id:'house'},{type:'tower',x:31,y:13,id:'standing',examine:'The sovereign’s place in the House — where he stood and made a berith before YAHUAH.'},{type:'clearing',x:22,y:20,flat:3} ]},
    time:'day', music:'holy',
    player:'yoshiyah', playerPos:[22,21],
    npcs:[ {id:'huldah',char:'huldah',x:16,y:15,wander:false},{id:'hilqiyah',char:'hilqiyah',x:26,y:15,wander:false},{id:'elder',char:'elder',x:28,y:16,wander:false},{id:'y1',char:'youth',child:true,x:20,y:16,wander:false} ],
    objectives:[
      {type:'talk',npc:'huldah',text:'The word of Ḥuldah',
       script:[
-       {say:['huldah','Thus said YAHUAH Aluahim of Yisra’ĕl: See, I am bringing evil on this place and its inhabitants — all the curses written in the book — because they have forsaken Me and burned incense to other mighty ones. My wrath is poured out on this place, and shall not be quenched.']},
+       {say:['huldah','Thus said YAHUAH Aluahim of Yasharal: See, I am bringing evil on this place and on its inhabitants, all the curses that are written in the book — because they have forsaken Me and burned incense to other mighty ones, to provoke Me with all the works of their hands. Therefore My wrath is poured out on this place and is not quenched.']},
        {shake:.4},{sfx:'bad'},
-       {say:['huldah','But to the sovereign of Yahuḏah, who sent you to inquire, say this: Because your heart was tender, and you humbled yourself before Aluahim when you heard His words, and tore your garments, and wept before Me — I also have heard, declares YAHUAH. See, I am gathering you to your fathers, and you shall be gathered to your grave in peace; your eyes shall not see all the evil I am bringing on this place.']},
+       {say:['huldah','And to the sovereign of Yahuḏah, who sent you to inquire of YAHUAH, say this: Because your heart was tender and you humbled yourself before Aluahim when you heard His words … and you tore your garments and wept before Me, I also have heard, declares YAHUAH.']},{say:['huldah','See, I am gathering you to your fathers and you shall be gathered to your grave in shalom, so that your eyes would not see all the evil that I am bringing on this place and its inhabitants.']},
        {rays:.5,raysX:16},{sfx:'holy'},{burst:[16,12,'holy',12]},
       ]},
-     {type:'interact',prop:'standing',text:'Read the Book, and make the covenant',hiddenUntil:1,
+     {type:'interact',prop:'standing',text:'Read the Book, and make the berith',hiddenUntil:1,
       script:[
-       {say:['narrator','And the sovereign gathered all the elders of Yahuḏah and Yerushalayim, and went up to the House of YAHUAH with all the people, great and small — and read in their hearing all the words of the Book of the Covenant that had been found.']},
+       {say:['narrator','And the sovereign gathered all the elders of Yahuḏah and Yerushalayim, and went up to the House of YAHUAH with all the people, great and small — and read in their hearing all the words of the Book of the Berith that had been found.']},
        {rays:.6,raysX:31},{sfx:'holy'},{burst:[31,13,'holy',14]},
-       {say:['yoshiyah','(And the sovereign stood in his place, and made a covenant before YAHUAH —) to follow YAHUAH, and guard His commands and His witnesses and His laws, with all my heart and all my being, to do the words of the covenant written in this book.']},
+       {say:['yoshiyah','(And the sovereign stood in his place and made a berith before YAHUAH —) to follow YAHUAH and to guard His commands and His witnesses and His laws, with all my heart and all my being, to do the words of the berith that were written in this book.']},
        {say:['narrator','And he made all who were present take their stand for it. And all Yoshiyahu’s days, they did not turn away from following YAHUAH Aluahim of their fathers.']},
        {burst:[24,9,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'Ḥuldah declared both the coming wrath and the mercy: “Because your heart was tender, and you humbled yourself and wept, you shall be gathered to your grave in peace.” And Yoshiyahu read the Book of the Covenant to all the people, and stood in his place, and made a covenant to follow YAHUAH with all his heart — and all his days, they did not turn away.', ref:'2 DIḆRĔ HAYAMIM 34:23–33'},
+   {art:'light', music:'holy', text:'And she said to them, “Thus said YAHUAH … ‘See, I am bringing evil on this place … Because your heart was tender and you humbled yourself … you shall be gathered to your grave in shalom.’ ” … And he read in their hearing all the words of the Book of the Berith … And the sovereign stood in his place and made a berith before YAHUAH, to follow YAHUAH … with all his heart … All his days they did not turn away from following YAHUAH.', ref:'2 DIḆRĔ HAYAMIM 34:23–33', stage:{"set":"court","time":"day","cam":"pan-r","focus":0.5,"cast":[{"id":"huldah","x":0.22,"z":0.08,"face":"r","pose":"point","say":0,"acts":[{"at":2,"pose":"bless"},{"at":3,"pose":"raise"},{"at":4,"exit":"l"}]},{"id":"hilqiyah","x":0.42,"z":0.12,"face":"l","pose":"stand","acts":[{"at":4,"face":"r"}]},{"id":"yoshiyah","enter":"r","at":4,"to":0.64,"z":0.08,"face":"l","pose":"hold","hold":"scroll","crown":1,"say":4,"acts":[{"at":5,"pose":"raise"}]}],"crowd":[{"kind":"people","n":8,"x":0.72,"w":0.4,"z":0.6,"face":"l","at":4},{"kind":"elders","n":5,"x":0.5,"w":0.3,"z":0.8,"face":"l","from":"stand","at":6,"pose":"raise"}],"fx":[{"k":"smoke","x":0.86,"at":1},{"k":"glory","x":0.6,"y":0.12,"at":5}]}},
   ],
-  complete:'A tender heart heard, a covenant renewed — one last turning before the night falls.'
+  complete:'A tender heart heard, a berith renewed — one last turning before the night falls.'
 },
 
 { id:'s12', title:'Until There Was No Healing', ref:'2 DIḆRĔ HAYAMIM 36:1–23',
   intro:[
-   {art:'corrupt', music:'sorrow', text:'And the heads of the kohanim and the people trespassed more and more, according to all the abominations of the gentiles, and defiled the House of YAHUAH which He had set apart in Yerushalayim. And YAHUAH, Aluahim of their fathers, sent to them by His messengers, rising up early and sending — for He had compassion on His people, and on His dwelling place.', ref:'2 DIḆRĔ HAYAMIM 36:14–15'},
+   {art:'corrupt', music:'sorrow', text:'Also, all the heads of the kohanim and the people trespassed more and more, according to all the abominations of the gentiles and they defiled the House of YAHUAH which He had qadash (Set Apart) in Yerushalayim. And YAHUAH Aluahim of their fathers sent to them, by His mal’akim, rising up early and sending them, for He had compassion on His people and on His dwelling place.', ref:'2 DIḆRĔ HAYAMIM 36:14–15', stage:{"set":"court","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"kohen","x":0.5,"z":0.12,"face":"r","pose":"hold","hold":"censer","acts":[{"at":1,"face":"l"}]},{"id":"navi","look":{"name":"A Messenger of YAHUAH","skin":"#8a6038","hair":"#8a8070","robe":"#6a5438","beard":"#8a8070","mantle":"#4a3a28"},"enter":"l","at":1,"to":0.26,"z":0.08,"face":"r","pose":"point","hold":"staff","say":1}],"crowd":[{"kind":"kohanim","n":4,"x":0.72,"w":0.16,"z":0.5,"face":"r","pose":"bow"},{"kind":"people","n":6,"x":0.82,"w":0.2,"z":0.72,"face":"l","pose":"dance"}],"props":[{"k":"idol","x":0.64,"z":0.35,"h":90},{"k":"altar","x":0.56,"z":0.3,"w":34}],"fx":[{"k":"smoke","x":0.6},{"k":"rays","x":0.22,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:7012,
-     features:[ {type:'temple',x:22,y:9,id:'house',examine:'The House of Aluahim — soon to be burned; its vessels carried to Baḇel.'},{type:'wallseg',x:12,y:11},{type:'standard',x:33,y:13,id:'decree',examine:'The decree of Koresh — that the Word of YAHUAH by Yirmeyahu be accomplished.'},{type:'clearing',x:22,y:20,flat:3} ]},
+     features:[ {type:'temple',x:22,y:9,id:'house',examine:'The House of Aluahim — soon to be burned; its utensils brought to Baḇel.'},{type:'wallseg',x:12,y:11},{type:'standard',x:33,y:13,id:'decree',examine:'The decree of Koresh — that the Word of YAHUAH by Yirmeyahu be accomplished.'},{type:'clearing',x:22,y:20,flat:3} ]},
    time:'dusk', music:'sorrow',
    player:'tsidqiyah', playerPos:[22,21],
    npcs:[ {id:'elder',char:'elder',x:19,y:15,wander:false},
      {id:'c1',char:'chaldean',x:8,y:15,wander:false,noTalk:true},{id:'c2',char:'chaldean',x:6,y:18,wander:false,noTalk:true},
      {id:'koresh',char:'koresh',x:36,y:16,wander:false,hidden:true,noTalk:true} ],
    objectives:[
-     {type:'talk',npc:'elder',text:'They mocked the messengers of Aluahim',
+     {type:'talk',npc:'elder',text:'They mocked the mal’akim of Aluahim',
       script:[
        {say:['elder','The naḇi Yirmeyahu speaks from the mouth of YAHUAH — but the sovereign will not humble himself, and stiffens his neck, and hardens his heart against turning to YAHUAH.']},
-       {say:['narrator','But they were mocking the messengers of Aluahim, and despising His words, and scoffing at His neḇi’im — until the wrath of YAHUAH arose against His people, until there was no healing.']},
+       {say:['narrator','But they were mocking the mal’akim of Aluahim, and despising His words, and scoffing at His naḇi’im — until the wrath of YAHUAH arose against His people, until there was no healing.']},
        {shake:.5},{sfx:'bad'},
       ]},
      {type:'goto',x:14,y:14,text:'The Chaldeans come against the House',radius:2.6,hiddenUntil:1,
       script:[
-       {say:['narrator','Therefore He brought against them the sovereign of the Chaldeans — Neḇuḵaḏnetstsar — who slew their young men with the sword, and had no compassion on young man or maiden, aged or weak.']},
+       {say:['narrator','Therefore He brought against them the sovereign of the Chaldeans — Neḇuḵaḏnetstsar — and he slew their young men with the sword in the House of their Qodash (Set Apart Place) and had no compassion on young man or maiden, on the aged or the weak – He gave all into his hand.']},
        {call:G=>{ ['c1','c2'].forEach(id=>{ const n=G.world.npcs.find(n=>n.id===id); if(n){ n.target={x:20,y:12}; n.speed=.06; } }); }},
        {shake:.9},{sfx:'thunder'},{burst:[22,9,'ash',22]},
        {prop:['house',{type:'rubble'}]},
-       {say:['narrator','And all the vessels of the House of Aluahim, great and small, and the treasures of the House and of the sovereign, he carried to Baḇel. And they burned the House of Aluahim, and broke down the wall of Yerushalayim, and burned all its palaces with fire.']},
+       {say:['narrator','And all the utensils from the House of Aluahim, great and small and the treasures of the House of YAHUAH and the treasures of the sovereign and of his leaders, all these he brought to Baḇel. And they burned the House of Aluahim and broke down the wall of Yerushalayim and burned all its palaces with fire and destroyed all its valuable utensils.']},
        {shake:.7},{sfx:'bad'},{burst:[22,9,'ash',16]},
-       {say:['narrator','And those who escaped the sword he exiled to Baḇel, where they became servants — until the reign of Persia; to fill the Word of YAHUAH by the mouth of Yirmeyahu, until the land had enjoyed her Shabbaths: seventy years.']},
+       {say:['narrator','And those who escaped from the sword he exiled to Baḇel, where they became servants to him and his sons until the reign of Persia — in order to fill the Word of YAHUAH by the mouth of Yirmeyahu, until the land had enjoyed her Shabbaths. As long as she lay waste she kept Shabbath, until seventy years were completed.']},
        {music:'sorrow'},
       ]},
-     {type:'interact',prop:'decree',text:'The stirring of the spirit of Koresh',hiddenUntil:2,
+     {type:'interact',prop:'decree',text:'The stirring of the ruach of Koresh',hiddenUntil:2,
       script:[
        {fade:'out'},{time:'day'},{fade:'in'},
        {show:'koresh'},{move:['koresh',33,15,.05]},
-       {say:['narrator','And in the first year of Koresh sovereign of Persia — to accomplish the Word of YAHUAH by the mouth of Yirmeyahu — YAHUAH stirred up the spirit of Koresh, so that he made a proclamation throughout all his reign, and also put it in writing:']},
+       {say:['narrator','And in the first year of Koresh sovereign of Persia — to accomplish the Word of YAHUAH by the mouth of Yirmeyahu — YAHUAH stirred up the ruach of Koresh, so that he made a proclamation throughout all his reign, and also put it in writing:']},
        {say:['koresh','Thus said Koresh sovereign of Persia: YAHUAH Aluahim of the shamayim has given me all the reigns of the earth, and He has commanded me to build Him a house in Yerushalayim, which is in Yahuḏah. Whoever is among you of all His people — YAHUAH his Aluahim be with him, and let him go up!']},
        {rays:.8,raysX:33},{sfx:'holy'},{burst:[33,13,'holy',22]},
-       {say:['narrator','So the Chronicles that opened with Aḏam close not in the ashes of the House, but in a door thrown open — “let him go up.” The set-apart seed goes home.']},
+       {say:['narrator','So the Chronicles that opened with Aḏam close not in the ashes of the House, but in a door thrown open — “let him go up.” The qadash (Set Apart) seed goes home.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'They mocked the messengers, until there was no healing; and the Chaldeans burned the House, broke down the wall, and carried the rest to Baḇel — until the land had kept her Shabbaths, seventy years. Yet the last word is not exile: “In the first year of Koresh, YAHUAH stirred his spirit — ‘Whoever is among you of all His people, let him go up.’”', ref:'2 DIḆRĔ HAYAMIM 36:16–23'},
+   {art:'wasteland', music:'sorrow', text:'But they were mocking the mal’akim of Aluahim … until there was no healing. … And they burned the House of Aluahim and broke down the wall of Yerushalayim … And those who escaped from the sword he exiled to Baḇel … until the land had enjoyed her Shabbaths … until seventy years were completed. And in the first year of Koresh sovereign of Persia … YAHUAH stirred up the ruach of Koresh … “Whoever is among you of all His people … let him go up!”', ref:'2 DIḆRĔ HAYAMIM 36:16–23', stage:{"set":"ruins","time":"dusk","wx":"embers","wxAt":2,"cam":"push","focus":0.5,"cast":[{"id":"navi","look":{"name":"A Messenger of YAHUAH","skin":"#8a6038","hair":"#8a8070","robe":"#6a5438","beard":"#8a8070","mantle":"#4a3a28"},"x":0.6,"z":0.1,"face":"l","pose":"point","hold":"staff","acts":[{"at":1,"exit":"r"}]},{"id":"chaldean","enter":"r","at":2,"to":0.6,"z":0.14,"face":"l","pose":"fight","hold":"sword","acts":[{"at":4,"exit":"l"}]},{"id":"koresh","enter":"r","at":6,"to":0.7,"z":0.1,"face":"l","pose":"hold","hold":"scroll","crown":1,"say":8,"acts":[{"at":8,"pose":"raise"}]}],"crowd":[{"kind":"people","n":5,"x":0.3,"w":0.24,"z":0.4,"face":"r","pose":"point","exit":"l","exitAt":2,"run":1},{"kind":"soldiers","side":"bavel","n":5,"x":0.74,"w":0.24,"z":0.55,"face":"l","enter":"r","at":2,"exit":"l","exitAt":4},{"kind":"captives","n":6,"x":0.42,"w":0.3,"z":0.6,"face":"l","at":3,"exit":"l","exitAt":4},{"kind":"people","n":6,"x":0.3,"w":0.3,"z":0.55,"face":"r","enter":"l","at":8}],"fx":[{"k":"smoke","x":0.5,"at":2},{"k":"smoke","x":0.78,"at":2},{"k":"rays","x":0.7,"at":5},{"k":"glory","x":0.7,"y":0.16,"at":7}]}},
   ],
   complete:'The House burned, the seventy years kept — and then a door thrown open: “let him go up.”'
 },
@@ -6456,7 +6603,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6522,7 +6669,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6583,9 +6733,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6670,5 +6820,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -529,8 +561,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -638,7 +670,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -738,7 +770,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1000,6 +1034,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1043,7 +1087,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1305,6 +1351,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2786,6 +2842,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2981,7 +3057,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3186,8 +3262,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3674,6 +3751,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3737,7 +3815,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3790,15 +3872,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3809,6 +3925,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3834,6 +3956,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     $('slide-ui').classList.remove('show');
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
@@ -3863,6 +3986,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3880,7 +4004,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4020,6 +4144,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4083,17 +4212,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4257,22 +4387,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4285,7 +4419,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4308,11 +4442,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5673,7 +5820,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5961,7 +6108,7 @@ STORY.push(
 
 { id:'n1', title:'The Broken Walls Reported', ref:'NEḤEMYAH 1:1–11',
   intro:[
-   {art:'stars', music:'sorrow', text:'The words of Neḥemyah son of Ḥaḵalyah. In the month of Kislĕw, in the twentieth year, as I was in the citadel of Shushan, Ḥanani, one of my brothers, came with men from Yahuḏah — and I asked them concerning the Yahuḏim who had escaped, who had survived the captivity, and concerning Yerushalayim.', ref:'NEḤEMYAH 1:1–2'},
+   {art:'stars', music:'sorrow', text:'The words of Neḥemyah son of Ḥaḵalyah. And it came to be in the month of Kislĕw, in the twentieth year, as I was in the citadel of Shushan, that Ḥanani, one of my brothers, came with men from Yahuḏah. And I asked them concerning the Yahuḏim who had escaped, who had survived the captivity, and concerning Yerushalayim.', ref:'NEḤEMYAH 1:1–2', stage:{"set":"persia","cam":"push","focus":0.45,"cast":[{"id":"nehemyah","x":0.3,"z":0.12,"face":"r","pose":"stand","hold":"cup","say":2},{"id":"hanani","enter":"r","at":1,"to":0.7,"face":"l","pose":"stand"}],"crowd":[{"kind":"people","n":3,"x":0.84,"w":0.1,"z":0.42,"face":"l","enter":"r","at":1},{"kind":"guards","side":"paras","n":2,"x":0.1,"w":0.06,"z":0.5,"face":"r"}]}},
   ],
   scene:{
    map:{biome:'interior', w:40, h:26, seed:6801,
@@ -5973,28 +6120,28 @@ STORY.push(
      {type:'talk',npc:'hanani',text:'News from Yahuḏah',
       script:[
        {say:['nehemyah','Brother! What of the Yahuḏim who escaped, who survived the captivity? What of Yerushalayim?']},
-       {say:['hanani','The remnant who are left of the captivity are there in great evil and reproach. And the wall of Yerushalayim is broken down — and its gates are burned with fire.']},
+       {say:['hanani','The remnant who are left of the captivity in the province are there in great evil and reproach. And the wall of Yerushalayim is broken down — and its gates are burned with fire.']},
        {shake:.4},{sfx:'bad'},
        {say:['narrator','And when Neḥemyah heard these words, he sat down and wept, and mourned for many days — fasting and praying before the Aluahim of the shamayim.']},
       ]},
      {type:'interact',prop:'prayer',text:'The prayer of the cupbearer',hiddenUntil:1,
       script:[
-       {say:['nehemyah','I pray, YAHUAH Aluahim of the shamayim, O great and awesome Ăl, guarding the covenant and kindness with those who love You — let Your ear be attentive, and Your eyes open, to hear the prayer of Your servant. I confess the sins of the children of Yisra’ĕl: both my father’s house and I have sinned.']},
-       {say:['nehemyah','Remember the word You commanded Your servant Mosheh: “If you trespass, I shall scatter you among the peoples; but if you turn back to Me and guard My commands — though you were cast out to the end of the shamayim, I shall gather you, and bring you to the place I have chosen, to make My Name dwell there.”']},
+       {say:['nehemyah','I pray, YAHUAH Aluahim of the shamayim, O great and awesome Al, guarding the berith and kindness with those who love You and with those guarding Your commands — please let Your ear be attentive and Your eyes open, to hear the prayer of Your servant … and confess the sins of the children of Yasharal which we have sinned against You. Both my father’s house and I have sinned.']},
+       {say:['nehemyah','Please remember the word that You commanded Your servant Mosheh: “If you trespass, I shall scatter you among the peoples; but if you shall turn back to Me and guard My commands and do them, though you were cast out to the end of the shamayim, I shall gather them from there and bring them to the place which I have chosen, to make My Name dwell there.”']},
        {say:['nehemyah','Let Your servant prosper this day, I pray — and grant him compassion in the presence of this man. …For I was cupbearer to the sovereign.']},
        {rays:.5,raysX:26},{sfx:'holy'},{burst:[26,14,'holy',12]},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'sorrow', text:'“The wall of Yerushalayim is broken down, and its gates are burned with fire.” And Neḥemyah sat down and wept, and mourned for many days, fasting and praying: “Let Your ear be attentive to the prayer of Your servant — and let Your servant prosper this day, and grant him compassion in the presence of this man.” For he was cupbearer to the sovereign.', ref:'NEḤEMYAH 1:3–11'},
+   {art:'stars', music:'sorrow', text:'“The wall of Yerushalayim is broken down and its gates are burned with fire.” And it came to be, when I heard these words, that I sat down and wept and mourned for many days. And I was fasting and praying… “Please let Your ear be attentive to the prayer of Your servant… And let Your servant prosper this day, I pray and grant him compassion in the presence of this man.” For I was cupbearer to the sovereign.', ref:'NEḤEMYAH 1:3–11', stage:{"set":"house","cam":"push","focus":0.4,"cast":[{"id":"hanani","x":0.68,"z":0.12,"face":"l","pose":"speak","say":0,"acts":[{"at":1,"exit":"r"}]},{"id":"nehemyah","x":0.38,"z":0.12,"face":"r","pose":"stand","acts":[{"at":1,"pose":"mourn"},{"at":2,"pose":"pray"},{"at":5,"pose":"stand"}]}],"props":[{"k":"table","x":0.62,"z":0.24,"bread":false,"cups":1,"at":5}],"fx":[{"k":"darkness","amt":0.25,"at":1},{"k":"rays","x":0.38,"at":3}]}},
   ],
   complete:'A broken wall a thousand miles away — and a cupbearer who weeps, fasts, and prays.'
 },
 
 { id:'n2', title:'Why Is Your Face Sad?', ref:'NEḤEMYAH 2:1–10',
   intro:[
-   {art:'vista_sunset', music:'tense', text:'In the month of Nisan, in the twentieth year of Artaḥshashta the sovereign, when wine was before him, I took the wine and gave it to the sovereign. And I had never been sad in his presence.', ref:'NEḤEMYAH 2:1'},
+   {art:'vista_sunset', music:'tense', text:'And it came to be in the month of Nisan, in the twentieth year of Artaḥshashta the sovereign, when wine was before him, that I took the wine and gave it to the sovereign. And I had never been sad in his presence.', ref:'NEḤEMYAH 2:1', stage:{"set":"persia","cam":"close","focus":0.4,"props":[{"k":"table","x":0.42,"z":0.22,"bread":false,"cups":1}],"cast":[{"id":"artah","x":0.24,"z":0.12,"face":"r","pose":"enthroned","crown":1},{"id":"nehemyah","x":0.78,"z":0.1,"to":0.54,"face":"l","pose":"hold","hold":"cup","acts":[{"at":1,"pose":"weep"}]}],"crowd":[{"kind":"guards","side":"paras","n":3,"x":0.86,"w":0.1,"z":0.5,"face":"l"}]}},
   ],
   scene:{
    map:{biome:'interior', w:40, h:26, seed:6802,
@@ -6008,17 +6155,17 @@ STORY.push(
        {say:['artah','Why is your face sad, since you are not sick? This is none else but sorrow of heart.']},
        {say:['nehemyah','(Then I was very much afraid —) Let the sovereign live forever! Why should my face not be sad, when the city, the place of my fathers’ tombs, lies waste, and its gates are burned with fire?']},
        {say:['artah','What are you asking for?']},
-       {say:['nehemyah','(And I prayed to the Aluahim of the shamayim —) If it seems good to the sovereign, and if your servant is pleasing before you: send me to Yahuḏah, to the city of my fathers’ tombs — so that I build it.']},
+       {say:['nehemyah','(Then I prayed to the Aluahim of the shamayim —) If it seems good to the sovereign and if your servant is pleasing before you, I ask that you send me to Yahuḏah, to the city of my fathers’ tombs, so that I build it.']},
        {rays:.55,raysX:20},{sfx:'holy'},{burst:[20,7,'holy',14]},
        {say:['narrator','And it seemed good before the sovereign to send him — and he set him a time.']},
       ]},
-     {type:'interact',prop:'letters',text:'Letters, timber, and an escort',hiddenUntil:1,
+     {type:'interact',prop:'letters',text:'Letters, timber, and horsemen',hiddenUntil:1,
       script:[
-       {say:['nehemyah','Let letters be given me for the governors beyond the River, that they let me pass through — and a letter to Asaph, keeper of the sovereign’s forest, for timber: beams for the gates of the palace, for the city wall, and for the house I shall enter.']},
+       {say:['nehemyah','Let letters be given to me for the governors beyond the River, that they should let me pass through til I come to Yahuḏah — and a letter to Asaph the keeper of the sovereign’s forest, that he should give me timber to make beams for the gates of the palace that belongs to the House, and for the city wall, and for the house I would enter.']},
        {say:['narrator','And the sovereign gave them, according to the good hand of his Aluahim upon him — and sent commanders of the army and horsemen with him.']},
        {sfx:'chime'},
        {show:'sanballat'},{show:'tobiyah'},
-       {say:['sanballat','A man has come to seek good for the children of Yisra’ĕl…']},
+       {say:['sanballat','A man has come to seek good for the children of Yasharal…']},
        {say:['tobiyah','…and to us, that is evil. A great evil.']},
        {shake:.4},{sfx:'bad'},
        {hide:'sanballat'},{hide:'tobiyah'},
@@ -6026,14 +6173,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“Why should my face not be sad, when the city of my fathers’ tombs lies waste?” And the sovereign said, “What are you asking for?” — and gave letters, and timber from the forest, and an escort, according to the good hand of Aluahim. But Sanballat the Ḥoronite and Toḇiyah the Ammonite heard of it, and it was evil to them — a great evil, that a man had come to seek good for the children of Yisra’ĕl.', ref:'NEḤEMYAH 2:2–10'},
+   {art:'light', music:'holy', text:'“Why should my face not be sad, when the city, the place of my fathers’ tombs, lies waste…?” And the sovereign said to me, “What are you asking for?” … “Let letters be given to me … that he should give me timber…” And the sovereign gave them to me according to the good hand of my Aluahim… Sanballat the Ḥoronite and Toḇiyah the Ammonite official heard of it and to them it was evil, a great evil that a man had come to seek good for the children of Yasharal.', ref:'NEḤEMYAH 2:2–10', stage:{"set":"palace","cam":"push","focus":0.55,"cast":[{"id":"artah","x":0.7,"z":0.12,"face":"l","pose":"enthroned","crown":1,"say":1},{"id":"queen","look":{"name":"The Sovereigness","skin":"#83552d","hair":"#23150b","hairStyle":"long","robe":"#8a3a4a","collar":"#caa23c","headcover":"#caa23c"},"x":0.87,"z":0.2,"face":"l","pose":"enthroned","crown":1},{"id":"nehemyah","x":0.38,"z":0.1,"face":"r","pose":"speak","say":0,"acts":[{"at":1,"pose":"stand"},{"at":2,"pose":"bless"},{"at":4,"pose":"bow"}]},{"id":"kscribe","look":{"name":"A Scribe of the Sovereign","skin":"#8a6038","hair":"#231409","hairStyle":"short","robe":"#6a7a5a"},"x":0.57,"z":0.24,"face":"l","pose":"stand","hold":"scroll","acts":[{"at":4,"to":0.5,"pose":"hold"}]},{"id":"sanballat","x":0.1,"z":0.3,"face":"r","at":5,"pose":"point"},{"id":"tobiyah","x":0.2,"z":0.34,"face":"r","at":5,"pose":"stand"}],"fx":[{"k":"red","amt":0.1,"at":5}]}},
   ],
-  complete:'One sad face before the throne — and the King of the shamayim moves the sovereign of Persia.'
+  complete:'One sad face before the throne — and the Sovereign of the shamayim moves the sovereign of Persia.'
 },
 
 { id:'n3', title:'The Night Ride', ref:'NEḤEMYAH 2:11–20',
   intro:[
-   {art:'stars', music:'tense', text:'Then I came to Yerushalayim, and was there three days. And I rose up in the night, I and a few men with me — but informed no one what my Aluahim had put in my heart to do at Yerushalayim; nor was there any beast with me, except the beast on which I rode.', ref:'NEḤEMYAH 2:11–12'},
+   {art:'stars', music:'tense', text:'Then I came to Yerushalayim, and was there three days. And I rose up in the night, I and a few men with me — but informed no one what my Aluahim had put in my heart to do at Yerushalayim; nor was there any beast with me, except the beast on which I rode.', ref:'NEḤEMYAH 2:11–12', stage:{"set":"gate","time":"night","cam":"push","focus":0.4,"cast":[{"id":"nehemyah","enter":"l","at":0,"to":0.28,"face":"r","pose":"stand","acts":[{"at":2,"pose":"look"},{"at":3,"pose":"stand"}]}],"crowd":[{"kind":"people","n":3,"x":0.15,"w":0.08,"z":0.42,"face":"r","enter":"l","at":1,"hold":"torch"}],"props":[{"k":"horse","x":0.52,"z":0.18,"face":"l","at":3,"color":"#6a4a2e"}],"fx":[{"k":"rays","x":0.28,"at":2}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:6803,
@@ -6044,7 +6191,7 @@ STORY.push(
    objectives:[
      {type:'goto',x:13,y:12,text:'Ride to the Valley Gate',radius:2.2,
       script:[
-       {say:['nehemyah','The Valley Gate… burned with fire. The stones scattered like bones. And no one knows what my Aluahim has put in my heart to do.']},
+       {say:['nehemyah','The Valley Gate… burned with fire. The stones scattered like bones. And I have informed no one what my Aluahim has put in my heart to do at Yerushalayim.']},
       ]},
      {type:'goto',x:25,y:10,text:'On to the Dung Gate',radius:2.2,hiddenUntil:1,
       script:[
@@ -6053,25 +6200,25 @@ STORY.push(
       ]},
      {type:'goto',x:35,y:13,text:'The Fountain Gate — no room to pass',radius:2.2,hiddenUntil:2,
       script:[
-       {say:['nehemyah','No room even for the beast beneath me to pass. I shall go up by the wadi, and examine the wall, and turn back.']},
+       {say:['nehemyah','There is no room for the beast that is under me to pass. I shall go up by the wadi, and examine the wall, and turn back.']},
       ]},
-     {type:'goto',x:24,y:20,text:'“Come, let us build the wall”',radius:2.6,hiddenUntil:3,
+     {type:'goto',x:24,y:20,text:'“Come and let us build the wall”',radius:2.6,hiddenUntil:3,
       script:[
        {spawn:{id:'e1',char:'elder',x:22,y:23,wander:false,noTalk:true}},
        {spawn:{id:'b1',char:'builder',x:26,y:23,wander:false,noTalk:true}},
-       {say:['nehemyah','You see the evil we are in — how Yerushalayim lies waste, and its gates are burned with fire. Come, and let us build the wall of Yerushalayim, and let us no longer be a reproach! The hand of my Aluahim has been good upon me, and the sovereign himself has spoken for us.']},
+       {say:['nehemyah','You see the evil which we are in, how Yerushalayim lies waste and its gates are burned with fire. Come and let us build the wall of Yerushalayim, and let us no longer be a reproach! Hear of the hand of my Aluahim which has been good upon me, and also of the sovereign’s words he has spoken to me.']},
        {say:['elder','Let us rise up — and we shall build!']},
        {rays:.6,raysX:24},{sfx:'holy'},{burst:[24,20,'holy',16]},
        {spawn:{id:'sanballat',char:'sanballat',x:40,y:22,wander:false,noTalk:true}},
        {say:['sanballat','What is this you are doing? Are you rebelling against the sovereign?']},
-       {say:['nehemyah','The Aluahim of the shamayim — He shall bless us; and we, His servants, shall rise and build. But you have no portion, or right, or remembrance in Yerushalayim!']},
+       {say:['nehemyah','The Aluahim of the shamayim, He shall bless us, and let us, His servants, rise and build! But you have no portion or right or remembrance in Yerushalayim!']},
        {shake:.4},{sfx:'thunder'},
        {despawn:'sanballat'},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'By night he rode out through the Valley Gate, past the Jackals’ Fountain and the Dung Gate, and examined the walls that were broken down and the gates burned with fire. “Come, let us build the wall of Yerushalayim, and no longer be a reproach!” And they said, “Let us rise up and build!” — and made their hands strong for good.', ref:'NEḤEMYAH 2:13–20'},
+   {art:'stars', music:'holy', text:'I went out by night through the Valley Gate to the Jackals’ Fountain and the Dung Gate and examined the walls of Yerushalayim which were broken down and its gates which were burned with fire. … “Come and let us build the wall of Yerushalayim and let us no longer be a reproach.” And they said, “Let us rise up and we shall build.” So they made their hands strong for good.', ref:'NEḤEMYAH 2:13–20', stage:{"set":"ruins","time":"night","cam":"pan-r","focus":0.45,"props":[{"k":"horse","x":0.3,"z":0.16,"face":"r","color":"#6a4a2e"},{"k":"stones","x":0.82,"z":0.2,"n":12,"at":3}],"cast":[{"id":"nehemyah","x":0.29,"z":0.12,"face":"r","pose":"sit","noseat":1,"dy":-0.085,"hold":"torch"},{"id":"hanani","x":0.58,"z":0.12,"face":"l","at":2,"pose":"raise"}],"crowd":[{"kind":"people","n":2,"x":0.12,"w":0.06,"z":0.42,"face":"r","hold":"torch"},{"kind":"elders","n":4,"x":0.72,"w":0.2,"z":0.45,"face":"l","at":1},{"kind":"people","n":5,"x":0.62,"w":0.34,"z":0.64,"face":"l","at":2,"pose":"raise"},{"kind":"people","n":3,"x":0.86,"w":0.1,"z":0.5,"face":"l","at":3,"pose":"carry"}]}},
   ],
   complete:'A silent ride through the ruins by night — and by morning, a people resolved to build.'
 },
@@ -6083,7 +6230,7 @@ STORY.push(
 
 { id:'n4', title:'Gate by Gate', ref:'NEḤEMYAH 3:1–32',
   intro:[
-   {art:'vista', music:'holy', text:'And Alyashiḇ the kohen gadol rose up with his brothers the kohanim, and built the Sheep Gate — they set it apart, and set up its doors. And next to him built the men of Yeriḥo; and next to them, gate by gate, hand by hand, the whole wall.', ref:'NEḤEMYAH 3:1–2'},
+   {art:'vista', music:'holy', text:'And Alyashiḇ the kohen gadol rose up with his brothers the kohanim and built the Sheep Gate. They set it apart and set up its doors … And next to him the men of Yeriḥo built. And next to them Zakkur son of Imri built.', ref:'NEḤEMYAH 3:1–2', stage:{"set":"gate","time":"day","cam":"push","focus":0.45,"props":[{"k":"sheep","x":0.14,"z":0.34,"n":4,"w":80},{"k":"gate","x":0.5,"z":0.824,"s":1.75,"open":false,"at":1}],"cast":[{"id":"kohen","x":0.3,"z":0.12,"face":"r","pose":"carry","hold":"stone","acts":[{"at":1,"pose":"bless"}]},{"id":"zakkur","look":{"name":"Zakkur son of Imri","skin":"#7a4e29","hair":"#33230f","hairStyle":"short","robe":"#6a5a3a","beard":"#33230f"},"x":0.8,"z":0.14,"face":"l","at":3,"pose":"carry","hold":"stone"}],"crowd":[{"kind":"kohanim","n":4,"x":0.4,"w":0.16,"z":0.45,"face":"r","pose":"carry"},{"kind":"people","n":5,"x":0.62,"w":0.14,"z":0.5,"face":"l","enter":"r","at":2,"pose":"carry"}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:6804,
@@ -6094,13 +6241,13 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'sheepgate',text:'The Sheep Gate — built and set apart',
       script:[
-       {say:['kohen','The kohanim build first. The Sheep Gate — we build it, and we set it apart, as far as the Tower of Ḥanan’ĕl.']},
+       {say:['kohen','The kohanim build first. The Sheep Gate — we build it. We set it apart and set up its doors, even as far as the Tower of Ḥanan’ĕl we set it apart.']},
        {prop:['sheepgate',{type:'wallseg'}]},
        {shake:.4},{sfx:'thunder'},{burst:[12,10,'ash',10]},{sfx:'chime'},
       ]},
      {type:'interact',prop:'fishgate',text:'The Fish Gate — beams, bolts, and bars',hiddenUntil:1,
       script:[
-       {say:['nehemyah','The sons of Hassena’ah lay its beams, and set up its doors, its bolts and its bars. Next to them the men of Yeriḥo; next to them, and next to them — every clan a stretch of wall.']},
+       {say:['nehemyah','The sons of Hassena’ah build the Fish Gate — they lay its beams and set up its doors, its bolts and bars. Next to them the men of Yeriḥo; next to them, and next to them — every clan a stretch of wall.']},
        {prop:['fishgate',{type:'wallseg'}]},
        {shake:.4},{sfx:'thunder'},{burst:[24,9,'ash',10]},{sfx:'chime'},
       ]},
@@ -6108,20 +6255,20 @@ STORY.push(
       script:[
        {prop:['oldgate',{type:'wallseg'}]},
        {shake:.4},{sfx:'thunder'},{burst:[36,11,'ash',10]},
-       {say:['nehemyah','Gate by gate the line closes: goldsmiths beside perfumers, rulers beside their daughters, kohanim beside merchants — each one repairing opposite his own house. The wall grows because every hand is on it.']},
+       {say:['nehemyah','Gate by gate the line closes: goldsmiths beside perfumers, rulers beside their daughters, kohanim beside merchants — each opposite his own house. The wall grows because every hand is on it.']},
        {rays:.55,raysX:24},{sfx:'holy'},{burst:[24,10,'holy',14]},
       ]},
    ],
   },
   outro:[
-   {art:'vista', music:'holy', text:'The kohen gadol built the Sheep Gate; the sons of Hassena’ah the Fish Gate; and next to them, and next to them — nobles and goldsmiths and perfumers, rulers and their daughters, each repairing opposite his own house — until the whole line of the wall was in hand.', ref:'NEḤEMYAH 3:1–32'},
+   {art:'vista', music:'holy', text:'And Alyashiḇ the kohen gadol … built the Sheep Gate. … And the sons of Hassena’ah built the Fish Gate … And next to him Ḥananyah, one of the perfumers, made repairs. … Shallum … made repairs, he and his daughters. … Beyond the Horse Gate the kohanim made repairs, each opposite his own house. … And between the going up of the corner to the Sheep Gate, the goldsmiths and the merchants made repairs.', ref:'NEḤEMYAH 3:1–32', stage:{"set":"walls","time":"day","cam":"pan-r","focus":0.6,"props":[{"k":"basket","x":0.3,"z":0.3,"fruit":"#9ab0c0","at":2},{"k":"horse","x":0.8,"z":0.66,"face":"l","at":5},{"k":"chest","x":0.76,"z":0.2,"gold":1,"at":6}],"cast":[{"id":"kohen","x":0.14,"z":0.14,"face":"r","pose":"bless"},{"id":"hananyah","look":{"name":"Ḥananyah the Perfumer","skin":"#8a6038","hair":"#231409","hairStyle":"short","robe":"#7a5a7a","beard":"#231409"},"x":0.44,"z":0.12,"face":"r","at":3,"pose":"carry","hold":"jar"},{"id":"shallum","look":{"name":"Shallum, Ruler of Half Yerushalayim","skin":"#7a4e29","hair":"#4a341d","hairStyle":"short","robe":"#4a5a6a","collar":"#8a6a1c","beard":"#4a341d"},"x":0.6,"z":0.12,"face":"l","at":4,"pose":"carry","hold":"stone"}],"crowd":[{"kind":"kohanim","n":3,"x":0.22,"w":0.08,"z":0.42,"face":"r","at":1,"pose":"carry"},{"kind":"people","n":4,"x":0.34,"w":0.12,"z":0.46,"face":"r","at":2,"pose":"carry"},{"kind":"women","n":2,"x":0.69,"w":0.05,"z":0.3,"face":"l","at":4,"pose":"carry","hold":"basket"},{"kind":"kohanim","n":3,"x":0.9,"w":0.06,"z":0.56,"face":"l","at":5,"pose":"carry"},{"kind":"nations","n":3,"x":0.84,"w":0.08,"z":0.3,"face":"l","at":6,"pose":"carry"}]}},
   ],
-  complete:'No hero built this wall — everyone did, each one opposite his own house.'
+  complete:'No hero built this wall — everyone did — each opposite his own house.'
 },
 
 { id:'n5', title:'What Are These Feeble Yahuḏim Doing?', ref:'NEḤEMYAH 4:1–9',
   intro:[
-   {art:'corrupt', music:'tense', text:'And when Sanballat heard that we were rebuilding the wall, he was wroth and highly offended, and mocked the Yahuḏim before his brothers and the army of Shomeron…', ref:'NEḤEMYAH 4:1–2'},
+   {art:'corrupt', music:'tense', text:'And it came to be, when Sanballat heard that we were rebuilding the wall, that he was wroth and highly offended and mocked the Yahuḏim. And he spoke before his brothers and the army of Shomeron…', ref:'NEḤEMYAH 4:1–2', stage:{"set":"camp","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"sanballat","x":0.56,"z":0.12,"face":"l","pose":"point","say":1},{"id":"tobiyah","x":0.72,"z":0.16,"face":"l","pose":"stand"}],"crowd":[{"kind":"soldiers","side":"ashshur","n":7,"x":0.25,"w":0.34,"z":0.56,"face":"r","at":1},{"kind":"nations","n":3,"x":0.84,"w":0.1,"z":0.45,"face":"l"}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:6805,
@@ -6144,20 +6291,20 @@ STORY.push(
        {shake:.4},{sfx:'thunder'},{burst:[36,11,'ash',10]},
        {say:['narrator','So they built the wall, and the entire wall was joined together up to the half of it — for the people had a heart to work.']},
        {rays:.5,raysX:36},{sfx:'holy'},{burst:[36,11,'holy',12]},
-       {say:['narrator','But when Sanballat and Toḇiyah, and the Araḇs and the Ammonites and the Ashdoḏites, heard that the broken places began to be filled, they became very wroth — and all of them conspired together to come and fight against Yerushalayim. And we prayed to our Aluahim, and set a watch against them day and night.']},
+       {say:['narrator','And it came to be, when Sanballat and Toḇiyah and the Araḇs and the Ammonites and the Ashdoḏites heard that the walls of Yerushalayim were being repaired and the broken places began to be filled, that they became very wroth — and all of them conspired together to come to fight against Yerushalayim and to do harm to it. But we prayed to our Aluahim and set a watch against them day and night.']},
        {sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'“Can they bring the stones to life from the heaps of rubbish?” “If a fox climbs on it, their wall falls!” But the wall was joined together up to the half of it, for the people had a heart to work — and against the conspiracy, they prayed to their Aluahim, and set a watch day and night.', ref:'NEḤEMYAH 4:2–9'},
+   {art:'corrupt', music:'tense', text:'“Are they going to bring to life the stones from the heaps of rubbish?” … “If a fox should climb on it, he shall break down their stone wall.” So we built the wall and the entire wall was joined together up to the half of it, for the people had a heart to work. … And all of them conspired together … But we prayed to our Aluahim and set a watch against them day and night.', ref:'NEḤEMYAH 4:2–9', stage:{"set":"ruins","time":"day","cam":"push","focus":0.5,"props":[{"k":"stones","x":0.52,"z":0.34,"n":14},{"k":"stones","x":0.68,"z":0.3,"n":10},{"k":"dog","x":0.58,"z":0.24,"face":"l","color":"#b8683a","s":0.8,"at":1},{"k":"wall","x":0.64,"z":0.46,"w":0.5,"h":40,"at":2}],"cast":[{"id":"sanballat","x":0.14,"z":0.12,"face":"r","pose":"point","say":0,"acts":[{"at":3,"pose":"speak"}]},{"id":"tobiyah","x":0.28,"z":0.14,"face":"r","pose":"stand","say":1,"turn":[3,"l"]},{"id":"watchman","x":0.74,"z":0.16,"face":"l","at":4,"pose":"stand","hold":"spear"},{"id":"nehemyah","x":0.86,"z":0.12,"face":"l","at":4,"pose":"pray"}],"crowd":[{"kind":"people","n":6,"x":0.66,"w":0.4,"z":0.58,"face":"l","at":2,"pose":"carry"},{"kind":"nations","n":3,"x":0.1,"w":0.08,"z":0.45,"face":"r","at":3}]}},
   ],
   complete:'Mockery answered with masonry — half a wall, a whole heart, and a watch set day and night.'
 },
 
 { id:'n6', title:'A Sword Girded at His Side', ref:'NEḤEMYAH 4:10–23',
   intro:[
-   {art:'wasteland', music:'tense', text:'And our adversaries said, “Let them not know or see it, until we come into their midst and slay them, and cause the work to cease.” So I set the people according to their clans, at the openings behind the wall, with their swords, their spears, and their bows.', ref:'NEḤEMYAH 4:11–13'},
+   {art:'wasteland', music:'tense', text:'And our adversaries said, “Let them not know or see it until we come into their midst and shall slay them and cause the work to cease.” … So I set men behind the lower parts of the wall, at the openings – I set the people according to their clans, with their swords, their spears and their bows.', ref:'NEḤEMYAH 4:11–13', stage:{"set":"walls","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"raider","x":0.12,"z":0.16,"face":"r","pose":"kneel","hold":"sword"},{"id":"sanballat","x":0.25,"z":0.12,"face":"r","pose":"speak","say":0},{"id":"nehemyah","x":0.8,"z":0.12,"face":"l","at":1,"pose":"point","say":1}],"crowd":[{"kind":"soldiers","side":"yasharal","n":7,"x":0.6,"w":0.4,"z":0.5,"face":"l","at":1},{"kind":"people","n":4,"x":0.56,"w":0.3,"z":0.66,"face":"l","at":1,"hold":"bow"}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:6806,
@@ -6181,7 +6328,7 @@ STORY.push(
       ]},
      {type:'interact',prop:'gap2',text:'Half working, half holding spears',hiddenUntil:1,
       script:[
-       {say:['narrator','From that time on, half of the servants worked in the work, while the other half held the spears, the shields, the bows, and the breastplates. Those bearing burdens worked with one hand — and with the other held a weapon; and each builder had his sword girded at his side as he built.']},
+       {say:['narrator','And it came to be, from that time on, that half of the servants were working in the work, while the other half were holding the spears, the shields and the bows and the breastplates. Those bearing burdens were working with one hand in the work, and with the other holding a weapon. As for the builders, each one had his sword girded at his side as he built.']},
        {prop:['gap2',{type:'wallseg'}]},
        {shake:.4},{sfx:'thunder'},{burst:[36,11,'ash',10]},
        {spawn:{id:'r4',char:'raider',x:44,y:16,wander:false,noTalk:true}},
@@ -6191,19 +6338,19 @@ STORY.push(
        {time:'night'},
        {say:['nehemyah','In whatever place you hear the sound of the ram’s horn — join us there. Our Aluahim fights for us! So we labour in the work, and half of them hold the spears, from the break of day until the stars appear.']},
        {rays:.5,raysX:36},{sfx:'holy'},{burst:[36,11,'holy',14]},
-       {say:['narrator','And neither Neḥemyah, nor his brothers, nor the men of the guard took off their garments — each one kept his weapon, even at the water.']},
+       {say:['narrator','And neither Neḥemyah, nor his brothers, nor the men of the guard took off their garments — each one his weapon even at the water.']},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'tense', text:'Those bearing burdens worked with one hand, and with the other held a weapon; each builder had his sword girded at his side as he built, and the one who sounded the ram’s horn stood beside Neḥemyah. “In whatever place you hear the horn, join us there — our Aluahim fights for us!” And half of them held the spears, from the break of day until the stars appeared.', ref:'NEḤEMYAH 4:16–23'},
+   {art:'wasteland', music:'tense', text:'Those bearing burdens … working with one hand in the work and with the other holding a weapon. As for the builders, each one had his sword girded at his side as he built. And the one who sounded the ram’s horn was beside me. … “In whatever place you hear the sound of the ram’s horn, join us there. Our Aluahim fights for us.” … And half of them held the spears from the break of day until the stars appeared.', ref:'NEḤEMYAH 4:16–23', stage:{"set":"city","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"wall","x":0.5,"z":0.55,"w":0.9,"h":55},{"k":"stones","x":0.52,"z":0.3,"n":8}],"cast":[{"id":"builder","look":{"name":"A Builder of the Wall","skin":"#7a4e29","hair":"#2c1a0c","hairStyle":"short","robe":"#7a6a4a","beard":"#2c1a0c","short":1},"x":0.24,"z":0.14,"face":"r","pose":"carry","hold":"stone","hold2":"spear","acts":[{"at":1,"pose":"hold"}]},{"id":"watchman","x":0.4,"z":0.18,"face":"r","at":2,"pose":"carry","hold":"stone","hold2":"sword"},{"id":"shofarman","look":{"name":"The One Who Sounds the Shofar","skin":"#8a6038","hair":"#231409","hairStyle":"short","robe":"#5a6a4a","beard":"#231409"},"x":0.66,"z":0.14,"face":"l","at":3,"pose":"hold","hold":"shofar","acts":[{"at":4,"pose":"raise"}]},{"id":"nehemyah","x":0.8,"z":0.1,"face":"l","at":3,"pose":"point","say":4,"acts":[{"at":5,"pose":"raise"},{"at":6,"pose":"stand"}]}],"crowd":[{"kind":"people","n":5,"x":0.34,"w":0.3,"z":0.44,"face":"r","pose":"carry","hold":"basket"},{"kind":"soldiers","side":"yasharal","n":6,"x":0.58,"w":0.5,"z":0.7,"face":"l","at":6}],"fx":[{"k":"darkness","amt":0.28,"at":6},{"k":"stars","at":6}]}},
   ],
   complete:'Trowel in one hand, spear in the other — from the break of day until the stars appear.'
 },
 
 { id:'n7', title:'The Outcry of the Poor', ref:'NEḤEMYAH 5:1–19',
   intro:[
-   {art:'coffin', music:'sorrow', text:'And there was a great outcry of the people and their wives against their brothers the Yahuḏim: “We have mortgaged our lands and vineyards and houses to buy grain… we are subjecting our sons and our daughters to be slaves — and there is no power in our hands, for other men have our lands and vineyards.”', ref:'NEḤEMYAH 5:1–5'},
+   {art:'coffin', music:'sorrow', text:'And there was a great outcry of the people and their wives against their brothers, the Yahuḏim. And there were some who were saying, “We have mortgaged our lands and vineyards and houses. Let us buy grain… we are subjecting our sons and our daughters to be slaves… and there is no power in our hands, for other men have our lands and vineyards.”', ref:'NEḤEMYAH 5:1–5', stage:{"set":"vineyard","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"poorwoman","x":0.3,"z":0.12,"face":"r","pose":"raise","acts":[{"at":2,"pose":"weep"}]},{"id":"hebrew","x":0.17,"z":0.18,"face":"r","pose":"speak","say":1,"acts":[{"at":3,"pose":"mourn"}]},{"id":"youth","x":0.42,"z":0.1,"face":"r","pose":"stand","acts":[{"at":2,"to":0.56,"pose":"bound"}]},{"id":"noble","x":0.72,"z":0.12,"face":"l","pose":"stand","hold":"staff","acts":[{"at":3,"pose":"point","face":"r"}]}],"crowd":[{"kind":"people","n":6,"x":0.24,"w":0.3,"z":0.56,"face":"r","pose":"raise"},{"kind":"princes","n":2,"x":0.85,"w":0.06,"z":0.45,"face":"l"}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6807,
@@ -6214,36 +6361,36 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'poorwoman',text:'Hear the outcry',
       script:[
-       {say:['poorwoman','We, our sons and our daughters, are many — let us get grain, and eat, and live! We have mortgaged our lands and our vineyards and our houses. Our daughters are already subjected as slaves — and there is no power in our hands, for other men have our fields.']},
+       {say:['poorwoman','We, our sons and our daughters are many — let us get grain for them, and eat, and live! We have mortgaged our lands and vineyards and houses. See, we are subjecting our sons and our daughters to be slaves, and some of our daughters have already been subjected — and there is no power in our hands, for other men have our lands and vineyards.']},
        {shake:.4},{sfx:'bad'},
        {say:['nehemyah','(And it was very displeasing to me, when I heard their outcry — and my heart ruled over me.)']},
       ]},
      {type:'talk',npc:'noble',text:'Contend with the nobles',hiddenUntil:1,
       script:[
-       {say:['nehemyah','You are exacting interest, each one from his brother! According to our ability we have redeemed our brothers who were sold to the gentiles — and you even sell your brothers! Should you not walk in the fear of our Aluahim, because of the reproach of the gentiles our enemies?']},
+       {say:['nehemyah','You are exacting interest, each one from his brother! According to our ability we have redeemed our brothers, the Yahuḏim, who were sold to the gentiles — and you even sell your brothers! Should you not walk in the fear of our Aluahim because of the reproach of the gentiles, our enemies?']},
        {say:['nehemyah','Please — give back to them, even today, their lands, their vineyards, their olive trees and their houses, also the hundredth part of the silver and the grain, the new wine and the oil, that you have taken from them.']},
        {say:['noble','…Let us give it back, and ask no more from them. We do as you say.']},
       ]},
      {type:'interact',prop:'oath',text:'Shake out the fold of the garment',hiddenUntil:2,
       script:[
-       {say:['narrator','Then he called the kohanim, and made them swear to do according to this word. And he shook out the fold of his garment and said—']},
+       {say:['narrator','Then he called the kohanim and made them swear to do according to this word. He also shook out the fold of his garment and said—']},
        {say:['nehemyah','Let Aluahim in this way shake out each man from his house and from his property, who does not do this word — thus shaken out, and emptied!']},
        {shake:.5},{sfx:'thunder'},{burst:[30,13,'ash',10]},
        {say:['elder','Amĕn! Amĕn!']},
        {rays:.55,raysX:30},{sfx:'holy'},{burst:[30,13,'holy',14]},
-       {say:['narrator','And all the assembly praised YAHUAH — and the people did according to this word. And for twelve years, Neḥemyah the governor did not eat the governor’s food, because the bondage was heavy on this people.']},
+       {say:['narrator','And all the qahal said, “Amĕn!” and praised YAHUAH. And the people did according to this word. Twelve years, neither he nor his brothers ate the governor’s food — he did not seek the governor’s food, because the bondage was heavy on this people.']},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“You are exacting interest, each from his brother — give back their lands, their vineyards, their houses!” And they said, “We do as you say.” And he shook out the fold of his garment: “So may Aluahim shake out every man who does not keep this word.” And all the assembly said “Amĕn!” and praised YAHUAH — and the people did according to this word.', ref:'NEḤEMYAH 5:7–13'},
+   {art:'light', music:'holy', text:'“You are exacting interest, each one from his brother.” … “Please, give back to them, even today, their lands, their vineyards, their olive trees and their houses.” And they said, “… we do as you say.” … I also shook out the fold of my garment and said, “Let Aluahim in this way shake out each man … who does not do this word.” And all the qahal said, “Amĕn!” and praised YAHUAH. And the people did according to this word.', ref:'NEḤEMYAH 5:7–13', stage:{"set":"gate","time":"day","cam":"push","focus":0.45,"cast":[{"id":"nehemyah","x":0.28,"z":0.12,"face":"r","pose":"point","say":0,"acts":[{"at":1,"pose":"speak"},{"at":3,"pose":"raise"},{"at":6,"pose":"bless"}]},{"id":"noble","x":0.66,"z":0.12,"face":"l","pose":"stand","say":2,"acts":[{"at":2,"pose":"bless"}]}],"crowd":[{"kind":"princes","n":4,"x":0.8,"w":0.16,"z":0.45,"face":"l"},{"kind":"people","n":9,"x":0.44,"w":0.6,"z":0.7,"face":"l","from":"stand","at":5,"pose":"raise"}],"fx":[{"k":"rays","x":0.5,"at":6}]}},
   ],
   complete:'The wall is nothing if brother devours brother — the fold shaken out, and the burden lifted.'
 },
 
 { id:'n8', title:'Fifty-Two Days', ref:'NEḤEMYAH 6:1–19',
   intro:[
-   {art:'corrupt', music:'tense', text:'When Sanballat and Toḇiyah and Geshem the Araḇ heard that I had rebuilt the wall and no breaks were left in it, Sanballat and Geshem sent to me, saying, “Come, let us meet together in the villages in the plain of Ono.” But they were planning to do evil to me.', ref:'NEḤEMYAH 6:1–2'},
+   {art:'corrupt', music:'tense', text:'And it came to be when Sanballat and Toḇiyah and Geshem the Araḇ and the rest of our enemies heard that I had rebuilt the wall and that there were no breaks left in it … that Sanballat and Geshem sent to me, saying, “Come, let us meet together in the villages in the plain of Ono.” But they were planning to do evil to me.', ref:'NEḤEMYAH 6:1–2', stage:{"set":"walls","time":"day","cam":"push","focus":0.4,"cast":[{"id":"sanballat","x":0.22,"z":0.12,"face":"r","pose":"look","say":1,"acts":[{"at":1,"pose":"point"}]},{"id":"tobiyah","x":0.1,"z":0.2,"face":"r","pose":"stand","acts":[{"at":2,"pose":"point"}]},{"id":"geshem","x":0.34,"z":0.18,"face":"r","pose":"stand","hold":"sword","acts":[{"at":2,"pose":"fight"}]},{"id":"raider","x":0.44,"z":0.14,"face":"l","pose":"stand","hold":"scroll","acts":[{"at":1,"to":0.68,"face":"r"}]}],"crowd":[{"kind":"nations","n":4,"x":0.14,"w":0.16,"z":0.48,"face":"r","at":2,"hold":"sword"}],"fx":[{"k":"red","amt":0.12,"at":2}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:6808,
@@ -6252,9 +6399,9 @@ STORY.push(
    player:'nehemyah', playerPos:[24,22],
    npcs:[ {id:'geshem',char:'geshem',x:20,y:18,wander:false},{id:'shemayah_f',char:'shemayah_f',x:17,y:16,wander:false} ],
    objectives:[
-     {type:'talk',npc:'geshem',text:'“Come down to the plain of Ono”',
+     {type:'talk',npc:'geshem',text:'“Come, let us meet in the plain of Ono”',
       script:[
-       {say:['geshem','Come, let us meet together in the villages in the plain of Ono. …For the fourth time we ask. And the fifth: an open letter! It is heard among the nations that you and the Yahuḏim plan to rebel — that you would be their sovereign! Come now, and let us take counsel together.']},
+       {say:['geshem','Come, let us meet together in the villages in the plain of Ono. …For the fourth time we ask. And the fifth: an open letter! Among the nations it has been heard: you and the Yahuḏim are planning to rebel — therefore you are rebuilding the wall, and you are to be their sovereign! Therefore come now and let us take counsel together.']},
        {say:['nehemyah','I am doing a great work, and I am unable to come down. Why should the work cease while I leave it and come down to you? There are no such matters done as you are saying — you are inventing them in your own heart.']},
        {say:['nehemyah','(For all of them were making us afraid, saying, “Let their hands slacken from the work.” But now — make my hands strong, O Aluahim!)']},
        {rays:.45,raysX:24},{sfx:'holy'},{burst:[24,9,'holy',10]},
@@ -6262,7 +6409,7 @@ STORY.push(
      {type:'talk',npc:'shemayah_f',text:'The hired word — “should a man like me flee?”',hiddenUntil:1,
       script:[
        {say:['shemayah_f','Let us meet in the House of Aluahim, inside the Hĕḵal, and close the doors — for they are coming to slay you! By night they are coming to slay you!']},
-       {say:['nehemyah','Should a man like me flee? And who is there like me, who would go into the Hĕḵal to save his life? I do not go in! …I perceive that Aluahim has not sent you — Toḇiyah and Sanballat hired you, that I should be afraid, and sin, and they could give me an evil name.']},
+       {say:['nehemyah','Should a man like me flee? And who is there like me who would go into the Hĕḵal to save his life? I do not go in! …I perceive that Aluahim has not sent you, but that you spoke this neḇuah against me because Toḇiyah and Sanballat have hired you — that I should be afraid and do so and sin, and so they could give me an evil name, to reproach me.']},
        {shake:.4},{sfx:'bad'},
       ]},
      {type:'interact',prop:'gates',text:'The wall completed — fifty-two days',hiddenUntil:2,
@@ -6275,7 +6422,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'Four times: “Come down to Ono” — four times: “I am doing a great work, and cannot come down.” A hired prophet said, “Hide in the Hĕḵal” — “Should a man like me flee?” And the wall was completed on the twenty-fifth of Alul, in fifty-two days; and the enemies fell greatly in their own eyes, for they knew this work was done by our Aluahim.', ref:'NEḤEMYAH 6:3–16'},
+   {art:'light', music:'holy', text:'“I am doing a great work and I am unable to come down.” … they sent me the same word four times … he said, “Let us meet together in the House of Aluahim, inside the Hĕḵal” … And I said, “Should a man like me flee?” … Toḇiyah and Sanballat had hired him. … And the wall was completed on the twenty-fifth of the month of Alul, in fifty two days. … They fell greatly in their own eyes and knew that this work was done by our Aluahim.', ref:'NEḤEMYAH 6:3–16', stage:{"set":"gate","time":"day","cam":"push","focus":0.5,"cast":[{"id":"nehemyah","x":0.64,"z":0.1,"face":"l","pose":"carry","hold":"stone","say":0,"acts":[{"at":3,"pose":"point"},{"at":5,"pose":"raise"}]},{"id":"raider","x":0.26,"z":0.14,"face":"r","pose":"hold","hold":"scroll","acts":[{"at":2,"exit":"l"}]},{"id":"shemayah_f","x":0.42,"z":0.18,"face":"r","at":2,"pose":"speak","say":2,"acts":[{"at":6,"pose":"fall"}]},{"id":"sanballat","x":0.14,"z":0.3,"face":"r","at":4,"pose":"point","acts":[{"at":6,"pose":"fall"}]},{"id":"tobiyah","x":0.25,"z":0.34,"face":"r","at":4,"pose":"stand","acts":[{"at":6,"pose":"fall"}]}],"crowd":[{"kind":"worshippers","n":8,"x":0.74,"w":0.36,"z":0.62,"face":"l","at":5}],"fx":[{"k":"rays","x":0.62,"at":5}]}},
   ],
   complete:'Fifty-two days — and even the enemies knew whose work it was.'
 },
@@ -6287,7 +6434,7 @@ STORY.push(
 
 { id:'n9', title:'The Book Opened', ref:'NEḤEMYAH 8:1–12',
   intro:[
-   {art:'reunion', music:'holy', text:'And when the seventh month came, all the people gathered together as one man in the open space in front of the Water Gate — and they spoke to Ezra the scribe to bring the Book of the Torah of Mosheh, which YAHUAH had commanded Yisra’ĕl.', ref:'NEḤEMYAH 8:1'},
+   {art:'reunion', music:'holy', text:'And when the seventh month came, the children of Yasharal were in their cities. And all the people gathered together as one man in the open space that was in front of the Water Gate. And they spoke to Ezra the scribe to bring the Book of the Torah of Mosheh, which YAHUAH had commanded Yasharal.', ref:'NEḤEMYAH 8:1', stage:{"set":"gate","time":"dawn","cam":"pull","focus":0.5,"props":[{"k":"house","x":0.1,"z":0.62,"w":80,"h":55},{"k":"house","x":0.9,"z":0.66,"w":70,"h":50}],"crowd":[{"kind":"people","n":7,"x":0.3,"w":0.36,"z":0.58,"face":"r","enter":"l","at":1},{"kind":"people","n":7,"x":0.7,"w":0.36,"z":0.62,"face":"l","enter":"r","at":1},{"kind":"children","n":3,"x":0.5,"w":0.12,"z":0.45,"face":"r","at":1}],"cast":[{"id":"elder","x":0.34,"z":0.14,"face":"r","at":2,"pose":"speak","say":2},{"id":"ezra","enter":"r","at":2,"to":0.7,"face":"l","pose":"hold","hold":"scroll"}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6809,
@@ -6300,34 +6447,34 @@ STORY.push(
       script:[
        {say:['narrator','And Ezra opened the book in the sight of all the people, for he was above all the people — and when he opened it, all the people stood up.']},
        {rays:.7,raysX:22},{sfx:'holy'},{burst:[22,12,'holy',18]},
-       {say:['ezra','Blessed be YAHUAH, the great Aluahim!']},
+       {say:['ezra','Baruk be YAHUAH, the great Aluahim!']},
        {say:['elder','Amĕn — Amĕn!']},
-       {say:['narrator','And they lifted up their hands, and bowed their heads, and worshipped YAHUAH with faces to the ground. And he read from it, from morning until midday — and the ears of all the people listened to the Book of the Torah, while the Lĕwites caused the people to understand, translating to give the sense.']},
+       {say:['narrator','And they lifted up their hands, and bowed their heads and worshipped YAHUAH with faces to the ground. And he read from it in the open space in front of the Water Gate from morning until midday — and the ears of all the people listened to the Book of the Torah. And the Lĕwites caused the people to understand the Torah — translating to give the sense.']},
       ]},
      {type:'talk',npc:'l1',text:'“The joy of YAHUAH is your strength”',hiddenUntil:1,
       script:[
        {say:['narrator','And all the people wept, when they heard the words of the Torah.']},
-       {say:['nehemyah','This day is set-apart to YAHUAH your Aluahim. Do not mourn or weep! Go, eat the fat, drink the sweet, and send portions to those for whom none is prepared — for this day is set-apart to our Master. Do not be sad, for the joy of YAHUAH is your strength!']},
+       {say:['nehemyah','This day is qadash (Set Apart) to YAHUAH your Aluahim. Do not mourn or weep! Go, eat the fat, drink the sweet and send portions to those for whom none is prepared — for this day is qadash (Set Apart) to our YAHUAH. Do not be sad, for the joy of YAHUAH is your strength!']},
        {rays:.8,raysX:22},{sfx:'holy'},{burst:[22,12,'holy',20]},
-       {say:['levite','Hush — for the day is set-apart; do not be sad.']},
+       {say:['levite','Hush, for the day is qadash (Set Apart) — do not be sad.']},
        {say:['narrator','And all the people went to eat and to drink, and to send portions, and to make a great rejoicing — because they understood the words that were made known to them.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'Ezra opened the book, and all the people stood; he read from morning until midday, and the Lĕwites gave the sense — and all the people wept at the words of the Torah. “Do not mourn — this day is set-apart. Eat the fat, drink the sweet, send portions to those who have none. Do not be sad, for the joy of YAHUAH is your strength!”', ref:'NEḤEMYAH 8:5–12'},
+   {art:'light', music:'holy', text:'And Ezra opened the book … all the people stood up. … And they read in the Book of the Torah of Aluahim, translating to give the sense … “This day is qadash (Set Apart) to YAHUAH your Aluahim. Do not mourn or weep.” For all the people wept when they heard the words of the Torah. … “Eat the fat, drink the sweet and send portions to those for whom none is prepared. … Do not be sad, for the joy of YAHUAH is your strength.”', ref:'NEḤEMYAH 8:5–12', stage:{"set":"city","time":"day","cam":"push","focus":0.5,"props":[{"k":"table","x":0.5,"z":0.2,"s":1.6,"bread":false},{"k":"table","x":0.86,"z":0.3,"cups":1,"at":6},{"k":"basket","x":0.92,"z":0.22,"fruit":"#7a3a5a","at":6}],"cast":[{"id":"ezra","x":0.5,"z":0.21,"dy":-0.1,"face":"r","pose":"hold","hold":"scroll","acts":[{"at":2,"pose":"speak"},{"at":7,"pose":"raise"}]},{"id":"levite","x":0.74,"z":0.12,"face":"l","at":2,"pose":"speak","say":2},{"id":"nehemyah","x":0.22,"z":0.12,"face":"r","at":3,"pose":"point","say":3,"acts":[{"at":6,"pose":"bless"}]}],"crowd":[{"kind":"people","n":7,"x":0.26,"w":0.34,"z":0.6,"face":"r","from":"sitground","at":1,"pose":"stand"},{"kind":"people","n":7,"x":0.74,"w":0.34,"z":0.6,"face":"l","from":"stand","at":5,"pose":"weep"}],"fx":[{"k":"rays","x":0.5,"at":7}]}},
   ],
   complete:'The Book opened, the people standing, the tears turned — the joy of YAHUAH is your strength.'
 },
 
 { id:'n10', title:'Booths Again — As It Is Written', ref:'NEḤEMYAH 8:13–18',
   intro:[
-   {art:'sukkotart', music:'holy', text:'On the second day they gathered to Ezra the scribe, to study the words of the Torah — and they found written that the children of Yisra’ĕl should dwell in booths in the festival of the seventh month: “Go out to the mountain and bring olive branches, branches of oil trees, myrtle, palm, and leafy trees, to make booths, as it is written.”', ref:'NEḤEMYAH 8:13–15'},
+   {art:'sukkotart', music:'holy', text:'And on the second day the heads of the fathers’ houses … were gathered to Ezra the scribe, in order to study the words of the Torah. And they found written in the Torah … that the children of Yasharal should dwell in booths in the festival of the seventh month … “Go out to the mountain and bring olive branches, branches of oil trees and myrtle branches and palm branches and branches of leafy trees, to make booths, as it is written.”', ref:'NEḤEMYAH 8:13–15', stage:{"set":"house","cam":"push","focus":0.45,"cast":[{"id":"ezra","x":0.28,"z":0.12,"face":"r","pose":"sit","hold":"scroll","say":2,"acts":[{"at":2,"pose":"point"}]},{"id":"kohen","x":0.54,"z":0.18,"face":"l","at":1,"pose":"stand"},{"id":"levite","enter":"r","at":4,"to":0.8,"face":"l","pose":"raise","hold":"branch"}],"crowd":[{"kind":"elders","n":5,"x":0.72,"w":0.3,"z":0.45,"face":"l","enter":"r","at":0}],"fx":[{"k":"rays","x":0.3,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6810,
-     features:[ {type:'citygate',x:22,y:8},{type:'house',x:12,y:11,id:'roofhouse',examine:'Booths on the roofs of the houses, in the courtyards, and in the open space of the Water Gate.'},{type:'standard',x:32,y:13,id:'buildspot',examine:'Room for a booth — olive, myrtle, palm, and leafy branches.'},{type:'clearing',x:22,y:20,flat:3} ]},
+     features:[ {type:'citygate',x:22,y:8},{type:'house',x:12,y:11,id:'roofhouse',examine:'Booths — each one on the roof of his house, in their courtyards, and in the open space of the Water Gate.'},{type:'standard',x:32,y:13,id:'buildspot',examine:'Room for a booth — olive, myrtle, palm, and leafy branches.'},{type:'clearing',x:22,y:20,flat:3} ]},
    time:'day', music:'holy',
    player:'nehemyah', playerPos:[22,21],
    npcs:[ {id:'ezra',char:'ezra',x:20,y:15,wander:false},{id:'y1',char:'youth',child:true,x:24,y:17,wander:true},{id:'e1',char:'elder',x:18,y:17,wander:false} ],
@@ -6340,15 +6487,15 @@ STORY.push(
        {addProp:{type:'sukkah',x:28,y:16,id:'s2'}},
        {sfx:'chime'},{burst:[32,12,'holy',12]},
        {say:['narrator','So the people went out, and brought branches, and made themselves booths — each one on the roof of his house, in their courtyards, in the courtyards of the House of Aluahim, and in the open space of the Water Gate.']},
-       {say:['narrator','And the entire assembly of those who had come back from the captivity made booths and sat under the booths — for since the days of Yahusha son of Nun until that day, the children of Yisra’ĕl had not done so. And there was very great rejoicing.']},
+       {say:['narrator','And the entire qahal of those who had come back from the captivity made booths and sat under the booths — for since the days of Yahusha son of Nun until that day, the children of Yasharal had not done so. And there was very great rejoicing.']},
        {rays:.7,raysX:32},{sfx:'holy'},{burst:[28,16,'holy',14]},
-       {say:['ezra','And day by day, from the first day until the last, we read from the Book of the Torah of Aluahim — seven days of the festival, and on the eighth day a gathering, according to the right-ruling.']},
+       {say:['ezra','And day by day, from the first day until the last day, we read from the Book of the Torah of Aluahim. And we performed the festival seven days — and on the eighth day there was a qahal, according to the right-ruling.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'sukkotart', music:'holy', text:'They found it written, and they did it: booths on the roofs, in the courtyards, at the Water Gate and the Gate of Ephrayim — the whole assembly sitting under booths, as had not been done since the days of Yahusha son of Nun. And there was very great rejoicing, and day by day he read from the Book of the Torah.', ref:'NEḤEMYAH 8:16–18'},
+   {art:'sukkotart', music:'holy', text:'So the people … made themselves booths, each one on the roof of his house and in their courtyards … and in the open space of the Water Gate and in the open space of the Gate of Ephrayim. And the entire qahal … sat under the booths, for since the days of Yahusha son of Nun … the children of Yasharal had not done so. And there was very great rejoicing. And day by day … he read from the Book of the Torah.', ref:'NEḤEMYAH 8:16–18', stage:{"set":"court","time":"dusk","cam":"pan-r","focus":0.5,"props":[{"k":"tent","x":0.14,"z":0.34,"color":"#5a7a34","w":80,"h":52},{"k":"tent","x":0.86,"z":0.4,"color":"#6a8a3a","w":80,"h":52},{"k":"tent","x":0.5,"z":0.78,"color":"#5a7a34","w":90,"h":55,"at":1},{"k":"palm","x":0.05,"z":0.5},{"k":"palm","x":0.95,"z":0.55}],"cast":[{"id":"hebrew","x":0.3,"z":0.12,"face":"r","pose":"carry","hold":"branch","acts":[{"at":2,"pose":"sitground"},{"at":4,"pose":"dance"}]},{"id":"hebreww","x":0.44,"z":0.14,"face":"l","pose":"carry","hold":"branch","acts":[{"at":2,"pose":"sitground"},{"at":4,"pose":"raise"}]},{"id":"ezra","x":0.72,"z":0.12,"face":"l","at":5,"pose":"speak","hold":"scroll","say":5}],"crowd":[{"kind":"people","n":6,"x":0.6,"w":0.46,"z":0.58,"face":"l","from":"sitground","at":4,"pose":"raise"},{"kind":"children","n":3,"x":0.56,"w":0.1,"z":0.36,"face":"l","at":4,"pose":"dance"}]}},
   ],
   complete:'Found written — and done. Booths again in Yerushalayim, and very great rejoicing.'
 },
@@ -6360,7 +6507,7 @@ STORY.push(
 
 { id:'n11', title:'Two Great Choirs on the Wall', ref:'NEḤEMYAH 12:27–47',
   intro:[
-   {art:'reunion', music:'holy', text:'At the dedication of the wall of Yerushalayim they sought out the Lĕwites, to perform the dedication with gladness, with thanksgivings and singing, cymbals, harps, and lyres. And the kohanim and Lĕwites cleansed themselves, and cleansed the people, and the gates, and the wall.', ref:'NEḤEMYAH 12:27–30'},
+   {art:'reunion', music:'holy', text:'And at the dedication of the wall of Yerushalayim they sought out the Lĕwites in all their places, to bring them to Yerushalayim to perform the dedication with gladness and with thanksgivings and with singing, cymbals, harps and lyres. … And the kohanim and Lĕwites cleansed themselves and they cleansed the people and the gates and the wall.', ref:'NEḤEMYAH 12:27–30', stage:{"set":"walls","time":"day","cam":"push","focus":0.45,"cast":[{"id":"singer","enter":"r","at":0,"to":0.76,"face":"l","pose":"hold","hold":"lyre"},{"id":"kohen","x":0.3,"z":0.12,"face":"r","at":1,"pose":"bless","hold":"bowl"}],"crowd":[{"kind":"levites","n":6,"x":0.66,"w":0.3,"z":0.5,"face":"l","enter":"r","at":0,"hold":"harp"},{"kind":"kohanim","n":3,"x":0.18,"w":0.08,"z":0.45,"face":"r","at":1,"pose":"bless"},{"kind":"people","n":4,"x":0.44,"w":0.15,"z":0.6,"face":"l","at":1,"pose":"bow"}]}},
   ],
   scene:{
    map:{biome:'city', w:48, h:28, seed:6811,
@@ -6376,7 +6523,7 @@ STORY.push(
       ]},
      {type:'interact',prop:'house',text:'The choirs stand in the House of Aluahim',hiddenUntil:1,
       script:[
-       {say:['narrator','Then the two thanksgiving choirs took their stand in the House of Aluahim — with trumpets, and cymbals, and instruments of the songs of Dawiḏ the man of Aluahim — and the singers sang aloud.']},
+       {say:['narrator','Then the two thanksgiving choirs took their stand in the House of Aluahim, with trumpets and cymbals — with instruments of songs of Dawiḏ the man of Aluahim — and the singers sang aloud.']},
        {rays:.85,raysX:18},{sfx:'holy'},{burst:[18,13,'holy',22]},{burst:[24,8,'holy',14]},
        {say:['narrator','And on that day they brought great offerings and rejoiced, for Aluahim had made them rejoice with great joy — the women and the children also rejoiced, so that the joy of Yerushalayim was heard far away.']},
        {sfx:'chime'},
@@ -6384,14 +6531,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'Two great thanksgiving choirs walked the top of the finished wall in opposite directions — trumpets, cymbals, harps, and lyres — and met, and stood in the House of Aluahim. And Aluahim made them rejoice with great joy; the women and the children rejoiced also — so that the joy of Yerushalayim was heard far away.', ref:'NEḤEMYAH 12:31–43'},
+   {art:'reunion', music:'holy', text:'And I brought the rulers of Yahuḏah up on the wall and appointed two large thanksgiving choirs … And the other thanksgiving choir went over against them … Then the two thanksgiving choirs took their stand in the House of Aluahim … And on that day they brought great offerings and rejoiced, for Aluahim had made them rejoice with great joy. And the women and the children also rejoiced, so that the joy of Yerushalayim was heard far away.', ref:'NEḤEMYAH 12:31–43', stage:{"set":"city","time":"day","cam":"pull","focus":0.5,"props":[{"k":"wall","x":0.5,"z":0.36,"w":1.3,"h":55},{"k":"altar","x":0.5,"z":0.15,"big":1,"sacrifice":1,"w":56,"h":32,"at":3}],"cast":[{"id":"ezra","x":0.4,"z":0.46,"face":"r","pose":"raise","hold":"scroll"},{"id":"nehemyah","x":0.62,"z":0.46,"face":"l","at":1,"pose":"raise"},{"id":"kohen","x":0.36,"z":0.1,"face":"r","at":3,"pose":"bless"}],"crowd":[{"kind":"levites","n":6,"x":0.2,"w":0.26,"z":0.5,"face":"r","enter":"l","at":0,"hold":"lyre"},{"kind":"levites","n":6,"x":0.8,"w":0.26,"z":0.5,"face":"l","enter":"r","at":1,"hold":"harp"},{"kind":"women","n":4,"x":0.76,"w":0.16,"z":0.2,"face":"l","at":4,"pose":"dance"},{"kind":"children","n":3,"x":0.2,"w":0.1,"z":0.18,"face":"r","at":4,"pose":"dance"}],"fx":[{"k":"glory","x":0.5,"y":0.08,"at":2},{"k":"smoke","x":0.5,"at":3}]}},
   ],
   complete:'The wall that was rubble carries two choirs — and the joy of Yerushalayim is heard far away.'
 },
 
 { id:'n12', title:'Remember Me, O My Aluahim', ref:'NEḤEMYAH 13:1–31',
   intro:[
-   {art:'vista_sunset', music:'tense', text:'In those days I saw in Yahuḏah those treading wine presses on the Shabbath, and bringing in sheaves, and loading donkeys — and men of Tsor selling fish and all kinds of goods on the Shabbath to the children of Yahuḏah, and in Yerushalayim.', ref:'NEḤEMYAH 13:15–16'},
+   {art:'vista_sunset', music:'tense', text:'In those days I saw in Yahuḏah those treading wine presses on the Shabbath and bringing in sheaves and loading donkeys … And men of Tsor dwelt there, bringing in fish and all kinds of goods and sold them on the Shabbath to the children of Yahuḏah and in Yerushalayim.', ref:'NEḤEMYAH 13:15–16', stage:{"set":"city","time":"noon","cam":"pan-r","focus":0.5,"props":[{"k":"basket","x":0.28,"z":0.3,"fruit":"#5a2a4a"},{"k":"sheaves","x":0.44,"z":0.34,"n":3},{"k":"donkey","x":0.54,"z":0.22,"face":"r"},{"k":"sacks","x":0.66,"z":0.22,"n":4,"at":1},{"k":"basket","x":0.72,"z":0.18,"fruit":"#9ab0c0","at":1}],"cast":[{"id":"nehemyah","x":0.14,"z":0.1,"face":"r","pose":"stand","acts":[{"at":1,"pose":"point"}]},{"id":"hebrew","x":0.4,"z":0.14,"face":"r","pose":"carry","hold":"basket"},{"id":"merchant","enter":"r","at":1,"to":0.8,"face":"l","pose":"hold","hold":"basket"}],"crowd":[{"kind":"people","n":3,"x":0.26,"w":0.1,"z":0.45,"face":"r","pose":"dance"},{"kind":"nations","n":3,"x":0.88,"w":0.08,"z":0.45,"face":"l","enter":"r","at":1,"pose":"carry"}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6812,
@@ -6402,21 +6549,21 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'noble',text:'Contend for the Shabbath',
       script:[
-       {say:['nehemyah','What evil matter is this that you are doing — profaning the Shabbath day? Did not your fathers do the same, so that our Aluahim brought all this evil on us and on this city? Yet you bring added wrath on Yisra’ĕl by profaning the Shabbath!']},
+       {say:['nehemyah','What evil matter is this that you are doing — profaning the Shabbath day? Did not your fathers do the same, so that our Aluahim brought all this evil on us and on this city? Yet you bring added wrath on Yasharal by profaning the Shabbath!']},
        {shake:.4},{sfx:'bad'},
       ]},
      {type:'interact',prop:'gates',text:'Shut the gates before the Shabbath',hiddenUntil:1,
       script:[
-       {say:['nehemyah','As it grows dark before the Shabbath — shut the gates! And let them not be opened until after the Shabbath. Station servants at the gates, so that no burden comes in on the Shabbath day.']},
+       {say:['nehemyah','As it begins to be dark before the Shabbath — shut the gates! And they should not be opened til after the Shabbath. Station some of my servants at the gates, so that no burdens would be brought in on the Shabbath day.']},
        {sfx:'thunder'},{shake:.4},{burst:[22,9,'ash',10]},
        {say:['merchant','We shall wait outside the wall then — the night is mild, and trade is trade…']},
        {say:['nehemyah','Why do you spend the night around the wall? If you do so again — I lay hands on you!']},
-       {say:['narrator','From that time on, they came no more on the Shabbath. And the Lĕwites cleansed themselves, and came, guarding the gates, to set apart the Shabbath day.']},
+       {say:['narrator','From that time on they came no more on the Shabbath. And he commanded the Lĕwites that they should cleanse themselves and they should come, guarding the gates, to qadash (Set Apart) the Shabbath day.']},
        {time:'night'},{sfx:'chime'},
       ]},
      {type:'interact',prop:'charge',text:'Cleansed from all that is foreign',hiddenUntil:2,
       script:[
-       {say:['nehemyah','And I contended also with those who had married the women of Ashdoḏ, of Ammon, of Mo’aḇ — whose children could not speak the language of Yahuḏah. Did not Shelomoh sovereign of Yisra’ĕl sin because of them? Even him foreign women caused to sin!']},
+       {say:['nehemyah','And I contended also with those who had married the women of Ashdoḏ, of Ammon, of Mo’aḇ — half of whose children spoke the language of Ashdoḏ and could not speak the language of Yahuḏah. Did not Shelomoh sovereign of Yasharal sin because of them? Even him foreign women caused to sin!']},
        {say:['narrator','Thus he cleansed them from all that is foreign, and appointed duties to the kohanim and the Lĕwites, each in his task — and the wood offering at appointed times, and the first-fruits.']},
        {rays:.7,raysX:31},{sfx:'holy'},{burst:[31,13,'holy',16]},
        {say:['nehemyah','Remember me, O my Aluahim — for good!']},
@@ -6425,7 +6572,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'The gates shut before the Shabbath; the merchants warned from the wall; the people cleansed from all that is foreign; the kohanim and Lĕwites set to their tasks — and through it all, one prayer, four times over, sealing the book: “Remember me, O my Aluahim, for good!”', ref:'NEḤEMYAH 13:19–31'},
+   {art:'stars', music:'holy', text:'And it came to be, at the gates of Yerushalayim, as it began to be dark before the Shabbath, that I commanded the gates to be shut … And the merchants … spent the night outside Yerushalayim once or twice, and I warned them … From that time on they came no more on the Shabbath. … Thus I cleansed them from all that is foreign. And I appointed duties to the kohanim and the Lĕwites, each in his task … Remember me, O my Aluahim, for good!', ref:'NEḤEMYAH 13:19–31', stage:{"set":"gate","time":"dusk","cam":"push","focus":0.45,"props":[{"k":"gate","x":0.5,"z":0.824,"s":1.75,"open":false,"at":0}],"cast":[{"id":"nehemyah","x":0.3,"z":0.12,"face":"r","pose":"point","say":0,"acts":[{"at":1,"pose":"point"},{"at":3,"pose":"stand"},{"at":5,"pose":"raise"}]},{"id":"merchant","x":0.78,"z":0.15,"face":"l","at":1,"pose":"stand","acts":[{"at":2,"exit":"r"}]},{"id":"levite","x":0.6,"z":0.16,"face":"l","at":4,"pose":"stand","hold":"staff"}],"crowd":[{"kind":"nations","n":3,"x":0.88,"w":0.08,"z":0.45,"face":"l","at":1,"pose":"sitground","exit":"r","exitAt":2},{"kind":"kohanim","n":3,"x":0.52,"w":0.12,"z":0.45,"face":"l","at":4}],"fx":[{"k":"darkness","amt":0.22,"at":1},{"k":"glory","x":0.3,"y":0.08,"at":5}]}},
   ],
   complete:'The wall stands, the gates keep Shabbath, the charge is kept — remember me, O my Aluahim, for good.'
 },
@@ -6472,7 +6619,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6538,7 +6685,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6599,9 +6749,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6686,5 +6836,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

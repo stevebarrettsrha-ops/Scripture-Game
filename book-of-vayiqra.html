@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main">VAYIQRA</div>
     <div class="title-sub">And He Called</div>
-    <div class="title-verse">“And YAHUAH called to Mosheh, and spoke to him from the Tent of Appointment…” — VAYIQRA 1:1</div>
+    <div class="title-verse">“And YAHUAH called to Mosheh and spoke to him from the Tent of Meeting…” — VAYIQRA 1:1</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -284,7 +316,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of the Service</h2>
-    <div class="hint">Seven acts · the whole of VAYIQRA, with witness of YOḆELIM — from the door of the Tent of Appointment to the covenant on Mount Sinai</div>
+    <div class="hint">Seven acts · the whole of VAYIQRA, with witness of YOḆELIM — from the door of the Tent of Meeting to the berith on Mount Sinai</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -611,8 +643,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -813,7 +845,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1075,6 +1109,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2075,7 +2119,7 @@ function drawProp(g,px,py,p,t){
             g.fillStyle=postCap; g.fillRect(X-3.5,py-3,7,2); }
         }
       }
-      /* ===== the Tent of Appointment ===== */
+      /* ===== the Tent of Meeting ===== */
       /* the covering of rams' skins dyed red, spread over the Tent */
       g.fillStyle='#6a3c28'; g.fillRect(-W9/2-5,-H9-6,W9+10,H9*.36+6);
       g.fillStyle='#7d4830'; g.fillRect(-W9/2-5,-H9-6,W9+10,7);
@@ -2318,6 +2362,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2446,7 +2510,7 @@ function campRing(G,n,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -2544,8 +2608,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3030,6 +3095,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3093,7 +3159,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3137,15 +3207,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3156,6 +3260,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3181,6 +3291,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3209,6 +3320,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3221,7 +3333,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -3362,6 +3474,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -3400,17 +3517,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -3574,22 +3692,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -3602,7 +3724,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -3625,11 +3747,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -4950,7 +5085,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -4992,15 +5127,15 @@ STORY.push(
 { id:'vact1', roman:'I', title:'The Offerings', ref:'VAYIQRA 1–7 · YOḆELIM 21', chapters:[
 { id:'v1', title:'And He Called', ref:'VAYIQRA 1',
   intro:[
-   {art:'mishkanart', music:'holy', text:'And YAHUAH called to Mosheh, and spoke to him from the Tent of Appointment, saying: “Speak to the children of Yasharal, and say to them: When anyone of you brings an offering to YAHUAH, you bring your offering of the livestock, of the herd or of the flock.”', ref:'VAYIQRA 1:1–2'},
-   {art:'mishkanin', music:'holy', text:'From within the Set-apart Place the voice came — past the golden altar of incense, past the lampstand and the table of showbread, from beyond the veil where the Presence dwelt between the keruḇim.', ref:'VAYIQRA 1:1; SHEMOTH 25:22'},
-   {art:'altarfire', music:'holy', text:'WITNESS — And Aḇraham commanded Yahtsḥaq his son concerning the offering: the wood split and seasoned, the blood upon the altar, the salt with every offering — “for so I found it written in the books of my forefathers, in the words of Ḥanoḵ and in the words of Noaḥ.”', ref:'YOḆELIM 21'},
+   {art:'mishkanart', music:'holy', text:'And YAHUAH called to Mosheh and spoke to him from the Tent of Meeting, saying, “Speak to the children of Yasharal and say to them, ‘When anyone of you brings an offering to YAHUAH, you bring your offering of the livestock, of the herd or of the flock.’ ”', ref:'VAYIQRA 1:1–2'},
+   {art:'mishkanin', music:'holy', text:'“And I shall meet with you there and from above the lid of atonement, from between the two keruḇim which are on the ark of the Witness, I shall speak to you all that which I command you concerning the children of Yasharal.”', ref:'VAYIQRA 1:1; SHEMOTH 25:22', stage:{"set":"art","cam":"push","focus":0.5,"props":[{"k":"ark","x":0.54,"z":0.26,"s":1.35}],"fx":[{"k":"glory","x":0.54,"y":0.42},{"k":"rays","x":0.54}],"cast":[{"id":"mosheh_o","x":0.34,"z":0.05,"face":"r","pose":"bow"}]}},
+   {art:'altarfire', music:'holy', text:'WITNESS — Aḇraham called Yahtsḥaq his son, and commanded him… “Pour out its blood on the mizbe’ach… for thus I have found it written in the books of my forefathers, and in the words of Ḥanoḵ, and in the words of Noaḥ. On all your offerings you will scatter salt… Do not lay on it any split or dark wood, but only hard and clean wood.”', ref:'YOḆELIM 21', stage:{"set":"highplace","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"altar","x":0.8,"z":0.3,"sacrifice":1,"s":1.3},{"k":"tent","x":0.1,"z":0.6,"color":"#7a6048"}],"fx":[{"k":"smoke","x":0.8,"at":1}],"cast":[{"id":"avraham","x":0.24,"z":0.08,"face":"r","pose":"speak","hold":"scroll","say":1,"acts":[{"at":2,"pose":"hold"},{"at":3,"pose":"point"},{"at":4,"pose":"speak"}]},{"id":"yitschaq","enter":"r","at":0,"to":0.5,"z":0.12,"face":"l","pose":"stand","hold":"bowl","hold2":"branch","acts":[{"at":3,"face":"r","pose":"hold"},{"at":4,"to":0.62,"pose":"carry"}]}]}},
   ],
   scene:{
    map:{biome:'desert', w:46, h:28, seed:1001,
      features:[
        {type:'mishkan',stage:2,x:24,y:11,solid:true,clear:5,flat:5,id:'mishkan'},
-       {type:'altar',stage:2,x:24,y:16,solid:true,clear:2,id:'altar',examine:'The bronze altar before the door of the Dwelling Place — the fire on it shall never go out.'},
+       {type:'altar',stage:2,x:24,y:16,solid:true,clear:2,id:'altar',examine:'The bronze mizbe’ach before the door of the Dwelling Place — the fire on it is not put out.'},
        {type:'laver',x:21,y:14.5,id:'laver',examine:'The bronze laver, for the washing of hands and feet.'},
        {type:'fold',x:13,y:20,w:4,h:3,id:'pen'},
        {type:'clearing',x:24,y:19,flat:3},
@@ -5025,27 +5160,27 @@ STORY.push(
        {say:['narrator','A male, a perfect one — the eye runs over the herd, and the hand falls on the best of it. The offering of ascent costs the offerer: it goes up, all of it, in smoke and fragrance.']},
        {call:G=>{ const b=G.world.npcs.find(n=>n.id==='bull'); if(b){ b.follow=true; } }},
       ]},
-     {type:'lead',group:'offer',x:24,y:18.5,radius:2.6,need:1,text:'Lead it to the door of the Tent of Appointment',hiddenUntil:1},
-     {type:'interact',prop:'altar',text:'Lay your hand on its head — and it shall be accepted for you',hiddenUntil:2,
+     {type:'lead',group:'offer',x:24,y:18.5,radius:2.6,need:1,text:'Lead it to the door of the Tent of Meeting',hiddenUntil:1},
+     {type:'interact',prop:'altar',text:'Lay your hand on its head — and it shall be accepted on your behalf',hiddenUntil:2,
       script:[
        {call:G=>{ const b=G.world.npcs.find(n=>n.id==='bull'); if(b){ b.follow=false; b.wander=false; b.target=null; } }},
        {say:['narrator','And he shall lay his hand on the head of the ascending offering — and it shall be accepted for him, TO MAKE ATONEMENT FOR HIM. One life laid over another: the weight of the hand is a confession.']},
        {sfx:'bad'},{wait:500},{prop:['altar',{stage:3}]},
        {call:G=>{ const b=G.world.npcs.find(n=>n.id==='bull'); if(b) b.hidden=true; }},
        {burst:[24,16,'spark',18]},
-       {say:['narrator','And the blood was sprinkled on the altar round about; and the pieces, the head and the fat were arranged on the wood, on the fire — an ascending offering, an offering made by fire, A SWEET FRAGRANCE TO YAHUAH.']},
-       {say:['aharon_k','So for the herd; and so for the flock, of the sheep or of the goats; and even the turtledoves of him whose hand cannot reach a lamb — the poor man’s offering rises in the same smoke, and the same favour. None is turned away from this door.']},
+       {say:['narrator','And the sons of Aharon, the kohanim, shall bring the blood and sprinkle the blood all around on the mizbe’ach… and arrange the pieces, with the head and the fat on the wood which is on the fire on the mizbe’ach — a burnt offering, an offering made by fire, A SWEET FRAGRANCE TO YAHUAH.']},
+       {say:['aharon_k','So for the herd; and so for the flock, from the sheep or from the goats; and even the turtledoves of him whose hand cannot reach a lamb — the poor man’s offering rises in the same smoke, and the same chen. None is turned away from this door.']},
       ]},
    ],
   },
   outro:[
-   {art:'altarfire', music:'holy', text:'An ascending offering, a fire offering, a sweet fragrance — the first word from the Tent was an open door: when ANYONE of you brings an offering…', ref:'VAYIQRA 1:9, 14–17'},
+   {art:'altarfire', music:'holy', text:'And the kohen shall burn all of it on the mizbe’ach as a burnt offering, an offering made by fire, a sweet fragrance to YAHUAH… And if the burnt offering of his offering to YAHUAH is of birds, then he shall bring his offering of turtledoves or young pigeons… It is a burnt offering, an offering made by fire, a sweet fragrance to YAHUAH.', ref:'VAYIQRA 1:9, 14–17', stage:{"set":"camp","time":"day","cam":"push","focus":0.55,"props":[{"k":"tabernacle","x":0.3,"z":0.82,"s":1.1},{"k":"altar","x":0.62,"z":0.3,"big":1,"bronze":1,"sacrifice":1}],"fx":[{"k":"dove","x":0.24,"y":0.46,"at":1},{"k":"smoke","x":0.62,"at":2}],"cast":[{"id":"ithamar","x":0.46,"z":0.1,"face":"r","pose":"carry","acts":[{"at":2,"pose":"raise"}]},{"id":"hebrew2","enter":"l","at":1,"to":0.22,"z":0.06,"face":"r","pose":"hold","label":false}],"crowd":[{"kind":"people","n":5,"x":0.84,"w":0.18,"z":0.6,"face":"l"}]}},
   ],
-  complete:'Lay your hand on its head — and it shall be accepted for you, to make atonement.'
+  complete:'He shall lay his hand on the head of the burnt offering — and it shall be accepted on his behalf to make atonement for him.'
 },
 { id:'v2', title:'Fine Flour and Shalom', ref:'VAYIQRA 2–3',
   intro:[
-   {art:'altarfire', music:'eden', text:'“And when anyone brings a grain offering to YAHUAH, his offering is of fine flour — and he shall pour oil on it, and lay frankincense on it… No grain offering which you bring to YAHUAH is made with leaven… And every offering of your grain offering you shall season WITH SALT: the salt of the covenant of your Aluahim is not lacking from your grain offering.”', ref:'VAYIQRA 2:1, 11, 13'},
+   {art:'altarfire', music:'eden', text:'“And when anyone brings a grain offering to YAHUAH, his offering is to be of fine flour. And he shall pour oil on it and put frankincense on it… No grain offering which you bring to YAHUAH is made with leaven… And season WITH SALT every offering of your grain offering and do not allow the salt of the berith of your Aluahim to be lacking from your grain offering.”', ref:'VAYIQRA 2:1, 11, 13', stage:{"set":"camp","time":"dawn","cam":"push","focus":0.55,"props":[{"k":"tabernacle","x":0.3,"z":0.85,"s":1.1},{"k":"altar","x":0.76,"z":0.3,"bronze":1}],"fx":[{"k":"smoke","x":0.76,"at":2}],"cast":[{"id":"hebreww","enter":"l","at":0,"to":0.3,"z":0.08,"face":"r","pose":"carry","hold":"bowl","acts":[{"at":1,"pose":"hold"},{"at":3,"pose":"kneel"}]},{"id":"elazar","x":0.56,"z":0.12,"face":"l","pose":"stand","hold":"oil","acts":[{"at":1,"pose":"hold"},{"at":2,"face":"r","pose":"raise"},{"at":3,"pose":"bless"}]}]}},
   ],
   scene:{
    map:{biome:'desert', w:44, h:26, seed:1005,
@@ -5071,32 +5206,32 @@ STORY.push(
      {call:G=>campLife(G)},
    ],
    objectives:[
-     {type:'collect',item:'wheat',need:2,text:'Fine flour for the minchah — the work of your own hands'},
+     {type:'collect',item:'wheat',need:2,text:'Fine flour for the grain offering — the work of your own hands'},
      {type:'collect',item:'water',need:1,text:'And oil poured on it, and frankincense laid on it',hiddenUntil:1},
-     {type:'interact',prop:'altar',text:'Bring the remembrance portion to the altar — with the salt of the covenant',hiddenUntil:2,
+     {type:'interact',prop:'altar',text:'Bring the remembrance portion to the mizbe’ach — with the salt of the berith',hiddenUntil:2,
       script:[
        {burst:[22,15,'mote',14]},{sfx:'chime'},
-       {say:['aharon_k','No leaven, no honey — nothing that puffs up or sours or flatters; and never without SALT, the salt of the covenant. The remembrance portion goes up in smoke; the rest is most set-apart, food for the kohanim. Even flour from a poor hand is a fire offering to YAHUAH.']},
+       {say:['aharon_k','No leaven, no honey — nothing that puffs up or sours or flatters; and never without SALT — the salt of the berith of your Aluahim. And the kohen shall burn the remembrance portion; and the rest of the grain offering is for Aharon and his sons, most qadash (Set Apart). Even flour from a poor hand is a fire offering to YAHUAH.']},
        {call:G=>{ const s=G.world.npcs.find(n=>n.id==='sheep1'); if(s) s.follow=true; }},
       ]},
-     {type:'lead',group:'shalom',x:22,y:18,radius:2.6,need:1,text:'And a peace offering — bring the lamb, and eat before YAHUAH',hiddenUntil:3,
+     {type:'lead',group:'shalom',x:22,y:18,radius:2.6,need:1,text:'And a shalom offering — bring the lamb, and eat before YAHUAH',hiddenUntil:3,
       script:[
        {call:G=>{ const s=G.world.npcs.find(n=>n.id==='sheep1'); if(s) s.hidden=true; }},
        {burst:[22,15,'spark',14]},
-       {say:['narrator','And the fat was burned on the altar — all the fat belongs to YAHUAH — and the breast and the thigh were the kohen’s, and the rest came back to the offerer’s own fire: a slaughtering of SHALOM, a covenant meal. The one offering in which the bringer himself sits down and eats — at peace with his Aluahim, his kohen, and his house.']},
-       {say:['hebreww','Come, children — tonight we eat before YAHUAH. The fat is His, the wave-portion is the kohen’s, and the table is full because the Maker of the covenant has a seat at it.']},
+       {say:['narrator','And the fat was burned on the mizbe’ach — all the fat belongs to YAHUAH — and the breast and the thigh were the kohen’s, and the rest came back to the offerer’s own fire: a slaughtering of SHALOM, a berith meal. The one offering in which the bringer himself sits down and eats — at peace with his Aluahim, his kohen, and his house.']},
+       {say:['hebreww','Come, children — tonight we eat before YAHUAH. The fat is His, the wave-portion is the kohen’s, and the table is full because the Maker of the berith has a seat at it.']},
        {sfx:'holy'},
       ]},
    ],
   },
   outro:[
-   {art:'altarfire', music:'eden', text:'A statute forever throughout your generations: all the fat belongs to YAHUAH — and the salt of the covenant is never lacking. The minchah and the shalom: the workday and the table, both brought to the door.', ref:'VAYIQRA 2–3'},
+   {art:'altarfire', music:'eden', text:'Do not allow the salt of the berith of your Aluahim to be lacking from your grain offering… And if that which he presents is a shalom offering… he brings a perfect one before YAHUAH… All the fat belongs to YAHUAH. An everlasting law throughout your generations in all your dwellings: you do not eat any fat or any blood.', ref:'VAYIQRA 2–3', stage:{"set":"camp","time":"day","cam":"pan-r","props":[{"k":"tabernacle","x":0.18,"z":0.82,"s":1.1},{"k":"altar","x":0.72,"z":0.32,"bronze":1,"sacrifice":1}],"fx":[{"k":"smoke","x":0.72,"at":3},{"k":"rays","x":0.72,"at":3}],"cast":[{"id":"aharon_k","x":0.86,"z":0.12,"face":"l","pose":"bless","acts":[{"at":1,"pose":"stand"},{"at":3,"pose":"raise"}]},{"id":"hebrew","x":0.3,"at":1,"to":0.48,"z":0.08,"face":"r","pose":"carry","hold":"lamb","label":false,"acts":[{"at":2,"pose":"kneel"}]},{"id":"mosheh_o","enter":"l","at":4,"to":0.24,"z":0.14,"face":"r","pose":"point","say":4}],"crowd":[{"kind":"people","n":4,"x":0.4,"w":0.2,"z":0.6,"face":"r","at":4}]}},
   ],
-  complete:'The salt of the covenant is not lacking — and the peace offering came home to the table.'
+  complete:'The salt of the berith of your Aluahim is not lacking — and the shalom offering came home to the table.'
 },
 { id:'v3', title:'When a Being Sins by Mistake', ref:'VAYIQRA 4–5:13',
   intro:[
-   {art:'altarfire', music:'sorrow', text:'“Speak to the children of Yasharal, saying: When a being sins BY MISTAKE against any of the commands of YAHUAH…” — the anointed kohen, a bull; the whole congregation, a bull; a ruler, a male goat; any being of the people, a female goat or lamb. For the sin you did not see when you did it — there is blood appointed.', ref:'VAYIQRA 4'},
+   {art:'altarfire', music:'sorrow', text:'“Speak to the children of Yasharal, saying, ‘When a being sins BY MISTAKE against any of the commands of YAHUAH… If the anointed kohen sins… a young bull… And if the entire qahal of Yasharal strays by mistake… a young bull… When a ruler sins… a buck of the goats, a male… And if any being of the people of the land sins by mistake… a female goat.’”', ref:'VAYIQRA 4', stage:{"set":"camp","time":"dusk","cam":"pan-r","props":[{"k":"tabernacle","x":0.45,"z":0.9,"s":1.0},{"k":"altar","x":0.45,"z":0.55,"bronze":1},{"k":"bull","x":0.33,"z":0.22,"at":1},{"k":"bull","x":0.58,"z":0.5,"at":2},{"k":"goat","x":0.74,"z":0.22,"face":"l","at":4},{"k":"goat","x":0.86,"z":0.03,"face":"l","color":"#8a7a6a","at":5}],"cast":[{"id":"mosheh_o","x":0.1,"z":0.05,"face":"r","pose":"speak","say":0},{"id":"aharon_k","x":0.22,"z":0.12,"face":"r","pose":"hold","at":1},{"id":"ruler","look":{"name":"A Ruler of Yasharal","skin":"#704a27","hair":"#2c1a0c","robe":"#6a3a5a","beard":"#2c1a0c","mantle":"#b08a3a","headcover":"#c8a048"},"x":0.66,"z":0.14,"face":"l","pose":"stand","at":3},{"id":"hebrew2","enter":"r","at":5,"to":0.9,"z":0.1,"face":"l","pose":"stand","label":false}],"crowd":[{"kind":"elders","n":4,"x":0.62,"w":0.16,"z":0.72,"face":"l","at":2}]}},
   ],
   scene:{
    map:{biome:'desert', w:44, h:26, seed:1009,
@@ -5112,8 +5247,8 @@ STORY.push(
      {id:'mosheh',char:'mosheh_o',x:19.5,y:17,wander:false,
       script:[
        {say:['yahoshua','Mosheh my master — a matter from the rulers of hundreds. A ruler of the tribe set a boundary stone wrongly, in honest error; the matter has now become known to him. He asks: it was a MISTAKE — is there guilt for what a man never meant?']},
-       {say:['mosheh_o','Hear the Torah: WHEN A RULER SINS BY MISTAKE, and it becomes known to him — he himself shall bring his offering: a male goat, a perfect one. Not his servant’s goat, and not in secret: his own hand on its head, before the door, before the people he leads. Error does not stain less for being honest, Yahusha — but see the kindness of it: for the unknowing sin there is a known altar.']},
-       {say:['mosheh_o','And if any being of the people sins by mistake — a female goat or a lamb, and atonement is made for him. And for the being guilty in oath, or in silence, or in the touch of the unclean: if his hand cannot reach a lamb — two turtledoves; and if not even that — a handful of fine flour. The atonement bends down to the poorest hand. NO ONE in Yasharal is too poor to be forgiven.']},
+       {say:['mosheh_o','Hear the Torah: WHEN A RULER SINS AND BY MISTAKE HAS DONE against any of the commands of YAHUAH his Aluahim… or if his sin which he has sinned is made known to him — then he shall bring as his offering a buck of the goats, a male, a perfect one.']},{say:['mosheh_o','Not his servant’s goat, and not in secret: his own hand on its head, before the door, before the people he leads. Error does not stain less for being honest, Yahusha — but see the kindness of it: for the unknowing sin there is a known mizbe’ach.']},
+       {say:['mosheh_o','And if any being of the people of the land sins by mistake — a female goat, a perfect one — or a lamb — and the kohen shall make atonement for him.']},{say:['mosheh_o','And for the being guilty in oath, or in silence, or in the touch of the unclean: if he is unable to bring a lamb — two turtledoves or two young pigeons; and if he is unable to bring two turtle doves — one-tenth of an ĕphah of fine flour. The atonement bends down to the poorest hand. NO ONE in Yasharal is too poor to be forgiven.']},
       ]},
      {id:'ruler',char:'elder',x:28,y:18.5,wander:false,noTalk:true},
      {id:'goat1',animal:'goat',x:30.5,y:19.5,range:1,noTalk:true,group:'sin',follow:false},
@@ -5132,22 +5267,22 @@ STORY.push(
        {call:G=>{ const g2=G.world.npcs.find(n=>n.id==='goat1'); if(g2) g2.follow=true;
          const r=G.world.npcs.find(n=>n.id==='ruler'); if(r) r.follow=true; }},
       ]},
-     {type:'lead',group:'sin',x:22,y:18,radius:2.6,need:1,text:'To the altar — and the kohen shall make atonement for him',hiddenUntil:2,
+     {type:'lead',group:'sin',x:22,y:18,radius:2.6,need:1,text:'To the mizbe’ach — and the kohen shall make atonement for him',hiddenUntil:2,
       script:[
        {call:G=>{ for(const n of G.world.npcs){ if(n.id==='goat1'){ n.hidden=true; } if(n.id==='ruler'){ n.follow=false; n.target=null; } } }},
        {burst:[22,15,'spark',14]},{sfx:'holy'},
-       {say:['narrator','And the kohen made atonement for him concerning his sin — AND IT WAS FORGIVEN HIM. Four words tolling like a bell of mercy at case after case — for the assembly, for the ruler, for the common soul: and-it-was-forgiven-him.']},
+       {say:['narrator','And the kohen made atonement for him for his sin — AND IT WAS FORGIVEN HIM. Four words tolling like a bell of mercy at case after case — for the qahal, for the ruler, for the common soul: and-it-was-forgiven-him.']},
       ]},
    ],
   },
   outro:[
-   {art:'altarfire', music:'holy', text:'For the anointed kohen, the congregation, the ruler, the common soul — for every sin done by mistake, blood is appointed and a door stands open; and over assembly and ruler and commoner the word tolls: “and it shall be forgiven him.”', ref:'VAYIQRA 4:26, 31, 35'},
+   {art:'altarfire', music:'holy', text:'And the kohen shall make atonement for him for his sin and it shall be forgiven him… And the kohen shall make atonement for him and it shall be forgiven him… So the kohen shall make atonement for his sin that he has sinned and it shall be forgiven him.', ref:'VAYIQRA 4:26, 31, 35', stage:{"set":"desert","time":"dusk","cam":"push","focus":0.55,"props":[{"k":"tabernacle","x":0.48,"z":0.9,"s":1.0},{"k":"altar","x":0.2,"z":0.4,"bronze":1,"sacrifice":1},{"k":"basin","x":0.9,"z":0.55,"s":0.8}],"fx":[{"k":"rays","x":0.6,"at":2}],"cast":[{"id":"aharon_k","x":0.36,"z":0.1,"face":"r","pose":"bless"},{"id":"ruler","look":{"name":"A Ruler of Yasharal","skin":"#704a27","hair":"#2c1a0c","robe":"#6a3a5a","beard":"#2c1a0c","mantle":"#b08a3a","headcover":"#c8a048"},"x":0.54,"z":0.12,"face":"l","from":"kneel","pose":"raise","at":0},{"id":"hebrew2","x":0.68,"z":0.16,"face":"l","from":"kneel","pose":"raise","at":1,"label":false},{"id":"hebreww","x":0.82,"z":0.1,"face":"l","from":"kneel","pose":"raise","at":2,"label":false}]}},
   ],
   complete:'And the kohen shall make atonement for him — and it shall be forgiven him.'
 },
 { id:'v4', title:'The Guilt and the Fifth', ref:'VAYIQRA 5:14–6:7 · 6–7',
   intro:[
-   {art:'altarfire', music:'tense', text:'“When a being sins and commits a trespass against YAHUAH, and has lied to his neighbour about a deposit, or about a pledge, or about a robbery… he shall return what he took, and add ONE-FIFTH to it — he gives it to whom it belongs, on the day of his guilt offering. And he shall bring his guilt offering to YAHUAH: a ram, a perfect one.”', ref:'VAYIQRA 6:2–6'},
+   {art:'altarfire', music:'tense', text:'“When any being sins and committed a trespass against YAHUAH and has lied to his neighbour about a deposit, or about a pledge, or about a robbery… he shall return what he took by robbery… He shall repay its total value, add ONE-FIFTH more to it and give it to whom it belongs, on the day of his guilt offering. Then he brings his guilt offering to YAHUAH, a ram, a perfect one.”', ref:'VAYIQRA 6:2–6', stage:{"set":"camp","time":"day","cam":"pan-r","props":[{"k":"tent","x":0.1,"z":0.55},{"k":"sacks","x":0.3,"z":0.02,"n":5,"at":2},{"k":"altar","x":0.9,"z":0.5,"bronze":1},{"k":"ram","x":0.72,"z":0.24,"face":"l","at":3}],"cast":[{"id":"victim","look":{"name":"His Neighbour","skin":"#7a4e29","hair":"#2c1a0c","robe":"#8d8062","beard":"#2c1a0c"},"x":0.18,"z":0.1,"face":"r","pose":"point","say":0,"acts":[{"at":2,"pose":"bless"}]},{"id":"hebrew2","look":{"name":"The Guilty Man"},"x":0.42,"z":0.1,"face":"r","pose":"stand","hold":"basket","acts":[{"at":1,"to":0.32,"face":"l","pose":"carry"},{"at":3,"to":0.62,"face":"r","pose":"hold"}]},{"id":"elazar","x":0.82,"z":0.12,"face":"l","pose":"stand","acts":[{"at":3,"pose":"bless"}]}]}},
   ],
   scene:{
    map:{biome:'desert', w:44, h:26, seed:1013,
@@ -5163,7 +5298,7 @@ STORY.push(
      {id:'neighbour',char:'hebrew2',x:31,y:20.5,wander:false,
       script:[
        {say:['hebrew','Neighbour — hear me. The deposit you left with me before the journey to Sinai: I told you part of it was lost. IT WAS NOT LOST. I kept it back, and I swore falsely. Here it is — all of it, and a fifth part added, as the Torah commands. The guilt was against you — and against YAHUAH.']},
-       {say:['hebrew2','…You could have kept it forever; no man knew but you. The Torah that makes a man walk across the camp with such words in his mouth — that Torah is not like the laws of Mitsrayim. I receive it, brother. Go to the altar in shalom; between us it is finished.']},
+       {say:['hebrew2','…You could have kept it forever; no man knew but you. The Torah that makes a man walk across the camp with such words in his mouth — that Torah is not like the laws of Mitsrayim. I receive it, brother. Go to the mizbe’ach in shalom; between us it is finished.']},
        {sfx:'chime'},{burst:[31,20.5,'mote',12]},
       ]},
      {id:'aharon',char:'aharon_k',x:22,y:16.8,wander:false,noTalk:true},
@@ -5180,7 +5315,7 @@ STORY.push(
    objectives:[
      {type:'collect',item:'silver',need:3,text:'Count out what you wrongly kept — and add the fifth'},
      {type:'talk',npc:'neighbour',text:'Restore it to your neighbour, on the day of your guilt offering',hiddenUntil:1},
-     {type:'goto',x:18.5,y:21,radius:2,text:'Now the ram — restitution first, then the altar',hiddenUntil:2,
+     {type:'goto',x:18.5,y:21,radius:2,text:'Now the ram — restitution first, then the mizbe’ach',hiddenUntil:2,
       script:[
        {call:G=>{ const r=G.world.npcs.find(n=>n.id==='ram1'); if(r) r.follow=true; }},
       ]},
@@ -5188,21 +5323,21 @@ STORY.push(
       script:[
        {call:G=>{ const r=G.world.npcs.find(n=>n.id==='ram1'); if(r) r.hidden=true; }},
        {burst:[22,15,'spark',14]},{sfx:'holy'},
-       {say:['narrator','And the kohen made atonement for him before YAHUAH — and he was forgiven, for whatever he did, by which he was made guilty. Mark the order, Yasharal: first the neighbour made whole, THEN the altar. The fire does not receive what the wronged man has not.']},
+       {say:['narrator','And the kohen made atonement for him before YAHUAH — and he was forgiven for whatever he did that made him guilty. Mark the order, Yasharal: first the neighbour made whole, THEN the mizbe’ach. The fire does not receive what the wronged man has not.']},
       ]},
    ],
   },
   outro:[
-   {art:'altarfire', music:'holy', text:'WITNESS — And this is the Torah of the offerings: the fire on the altar is kept burning, IT IS NOT PUT OUT — a continual fire, never to go out; the kohen in linen lifts the ashes at dawn; the minchah of Aharon morning and evening; the thanksgiving eaten the same day; the fat and the blood never eaten. Every dawn for forty years, the same faithful smoke.', ref:'VAYIQRA 6:8–7:38'},
+   {art:'altarfire', music:'holy', text:'WITNESS — “This is the Torah of the burnt offering… the kohen shall put on his linen garment… and shall take up the ashes… fire is continually kept burning on the mizbe’ach, IT IS NOT PUT OUT… the flesh of the slaughtering of his shalom offering for thanksgiving, it is eaten the same day… Do not eat any fat… do not eat any blood.”', ref:'VAYIQRA 6:8–7:38', stage:{"set":"camp","time":"night","cam":"push","focus":0.5,"wx":"embers","wxAt":3,"props":[{"k":"tabernacle","x":0.2,"z":0.86,"s":1.0},{"k":"altar","x":0.55,"z":0.3,"bronze":1,"big":1,"sacrifice":1},{"k":"table","x":0.84,"z":0.18,"cups":1,"at":4}],"cast":[{"id":"ithamar","x":0.32,"z":0.1,"face":"r","pose":"stand","hold":"bowl","acts":[{"at":1,"pose":"raise"},{"at":2,"to":0.44,"pose":"kneel"},{"at":3,"to":0.3,"pose":"carry"}]},{"id":"hebrew","x":0.76,"z":0.16,"face":"r","pose":"sitground","at":4,"label":false},{"id":"hebreww","x":0.92,"z":0.16,"face":"l","pose":"sitground","at":4,"hold":"bread","label":false}]}},
   ],
-  complete:'First the neighbour made whole, then the altar — and it was forgiven him.'
+  complete:'First the neighbour made whole, then the mizbe’ach — and it was forgiven him.'
 },
 ]},
 /* ============ ACT II — THE KOHENSHIP ============ */
-{ id:'vact2', roman:'II', title:'The Kohenship', ref:'VAYIQRA 8–10', chapters:[
+{ id:'vact2', roman:'II', title:'The Kehunnah', ref:'VAYIQRA 8–10', chapters:[
 { id:'v5', title:'The Ordination', ref:'VAYIQRA 8',
   intro:[
-   {art:'mishkanart', music:'holy', text:'And YAHUAH spoke to Mosheh, saying: “Take Aharon and his sons with him, and the garments, and the anointing oil, and the bull of the sin offering, and the two rams, and the basket of unleavened bread — and assemble all the congregation at the door of the Tent of Appointment.”', ref:'VAYIQRA 8:1–3'},
+   {art:'mishkanart', music:'holy', text:'And YAHUAH spoke to Mosheh, “Take Aharon and his sons and the garments and the anointing oil and the bull of the sin offering and the two rams and the basket of unleavened bread, and assemble all the qahal at the door of the Tent of Meeting.”', ref:'VAYIQRA 8:1–3', stage:{"set":"camp","time":"day","cam":"push","focus":0.45,"props":[{"k":"tabernacle","x":0.55,"z":0.72,"s":1.3},{"k":"bull","x":0.78,"z":0.32},{"k":"ram","x":0.66,"z":0.34,"face":"l"},{"k":"ram","x":0.9,"z":0.36,"face":"l"},{"k":"basket","x":0.56,"z":0.14,"fruit":"#efe2c0"}],"cast":[{"id":"mosheh_o","x":0.13,"z":0.06,"face":"r","pose":"speak","hold":"oil","say":0},{"id":"aharon_k","x":0.3,"z":0.1,"face":"l","pose":"stand"},{"id":"elazar","x":0.39,"z":0.16,"face":"l","pose":"stand"},{"id":"ithamar","x":0.46,"z":0.22,"face":"l","pose":"stand"}],"crowd":[{"kind":"people","n":8,"x":0.78,"w":0.3,"z":0.66,"face":"l","enter":"r","at":0}]}},
   ],
   scene:{
    map:{biome:'desert', w:44, h:26, seed:1017,
@@ -5245,31 +5380,31 @@ STORY.push(
      {type:'interact',prop:'mishkan',text:'Anoint the Dwelling Place and all that is in it',hiddenUntil:2,
       script:[
        {burst:[22,11,'holy',20]},{sfx:'holy'},
-       {say:['narrator','And Mosheh took the anointing oil and anointed the Dwelling Place and all that was in it, and the altar seven times — and poured of it on Aharon’s head, to set him apart.']},
+       {say:['narrator','And Mosheh took the anointing oil and anointed the Dwelling Place and all that was in it, and the mizbe’ach seven times — and poured of it on Aharon’s head, to set him apart.']},
        {say:['narrator','And the bull of the sin offering, and the ram of the ascending offering — and the RAM OF ORDINATION: and Mosheh put of its blood on the tip of Aharon’s RIGHT EAR, and on the thumb of his RIGHT HAND, and on the big toe of his RIGHT FOOT — and so for his sons. The ear that hears, the hand that serves, the foot that walks: claimed, all three, blood-marked for the service.']},
       ]},
-     {type:'goto',x:22,y:13,radius:2,text:'Seven days at the door — keep the charge of YAHUAH',hiddenUntil:3,
+     {type:'goto',x:22,y:13,radius:2,text:'Seven days at the door — guard the duty of YAHUAH',hiddenUntil:3,
       script:[
-       {fade:'out'},{toast:'And you do not go out of the door of the Tent of Appointment for seven days, until the days of your ordination are completed…'},{wait:2000},{fade:'in'},
-       {say:['aharon_k','Seven days within this door — the charge of YAHUAH kept, that we do not die. So Aharon and his sons did all the words which YAHUAH commanded by the hand of Mosheh. Tomorrow: the eighth day.']},
+       {fade:'out'},{toast:'And do not go outside the door of the Tent of Meeting for seven days, until the days of your ordination are completed…'},{wait:2000},{fade:'in'},
+       {say:['aharon_k','Seven days within this door — the duty of YAHUAH guarded, that we do not die. So Aharon and his sons did all the words which YAHUAH commanded by the hand of Mosheh. Tomorrow: the eighth day.']},
        {sfx:'holy'},
       ]},
    ],
   },
   outro:[
-   {art:'mishkanart', music:'holy', text:'Washed, clothed, anointed, blood-marked on ear and thumb and toe, and filled of hand — seven days at the door; for the kohenship is not seized, it is conferred.', ref:'VAYIQRA 8:33–36'},
+   {art:'mishkanart', music:'holy', text:'“And do not go outside the door of the Tent of Meeting for seven days, until the days of your ordination are completed – for he fills your hands for seven days… And you shall guard the duty of YAHUAH and not die, for so I have been commanded.” And Aharon and his sons did all the words that YAHUAH had commanded by the hand of Mosheh.', ref:'VAYIQRA 8:33–36', stage:{"set":"camp","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"tabernacle","x":0.55,"z":0.62,"s":1.35}],"fx":[{"k":"rays","x":0.55,"at":2}],"cast":[{"id":"mosheh_o","x":0.16,"z":0.05,"face":"r","pose":"speak","say":0,"acts":[{"at":1,"pose":"point"},{"at":2,"pose":"stand"}]},{"id":"aharon_k","x":0.42,"z":0.18,"face":"r","pose":"sitground","acts":[{"at":2,"pose":"raise"}]},{"id":"elazar","x":0.6,"z":0.2,"face":"l","pose":"sitground","acts":[{"at":2,"pose":"kneel"}]},{"id":"ithamar","x":0.72,"z":0.22,"face":"l","pose":"sitground","acts":[{"at":2,"pose":"kneel"}]}],"crowd":[{"kind":"people","n":5,"x":0.9,"w":0.14,"z":0.55,"face":"l"}]}},
   ],
-  complete:'And Aharon and his sons did all the words which YAHUAH commanded — seven days at the door.'
+  complete:'And Aharon and his sons did all the words that YAHUAH had commanded — seven days at the door.'
 },
 { id:'v6', title:'The Eighth Day', ref:'VAYIQRA 9',
   intro:[
-   {art:'altarfire', music:'holy', text:'And on the eighth day Mosheh called Aharon and his sons and the elders of Yasharal — “for TODAY YAHUAH appears to you.” And all the congregation came near and stood before YAHUAH.', ref:'VAYIQRA 9:1–5'},
+   {art:'altarfire', music:'holy', text:'And on the eighth day it came to be that Mosheh called Aharon and his sons and the elders of Yasharal — “For TODAY YAHUAH shall appear to you.” … And all the qahal drew near and stood before YAHUAH.', ref:'VAYIQRA 9:1–5', stage:{"set":"camp","time":"dawn","cam":"pull","props":[{"k":"tabernacle","x":0.5,"z":0.78,"s":1.25},{"k":"altar","x":0.72,"z":0.38,"bronze":1,"fire":false,"sacrifice":1}],"cast":[{"id":"mosheh_o","x":0.48,"z":0.08,"face":"l","pose":"speak","say":0,"acts":[{"at":1,"pose":"raise"}]},{"id":"aharon_k","enter":"l","at":0,"to":0.28,"z":0.1,"face":"r","pose":"stand"},{"id":"elazar","enter":"l","at":0,"to":0.16,"z":0.16,"face":"r","pose":"stand"}],"crowd":[{"kind":"elders","n":4,"x":0.22,"w":0.2,"z":0.52,"face":"r","enter":"l","at":0},{"kind":"people","n":9,"x":0.76,"w":0.36,"z":0.6,"face":"l","enter":"r","at":2}]}},
   ],
   scene:{
    map:{biome:'desert', w:44, h:26, seed:1021,
      features:[
        {type:'mishkan',stage:2,x:22,y:10,solid:true,clear:5,flat:5,id:'mishkan'},
-       {type:'altar',stage:2,x:22,y:15,solid:true,clear:2,id:'altar',examine:'The altar, arranged with the offerings of the eighth day.'},
+       {type:'altar',stage:2,x:22,y:15,solid:true,clear:2,id:'altar',examine:'The mizbe’ach, arranged with the offerings of the eighth day.'},
        {type:'clearing',x:22,y:18,flat:3},
      ]},
    time:'morning', music:'holy',
@@ -5292,32 +5427,32 @@ STORY.push(
          wander:true,range:1.1,noTalk:true})); }},
    ],
    objectives:[
-     {type:'interact',prop:'altar',text:'Offer the sin offering and the ascending offering — for yourself and for the people',
+     {type:'interact',prop:'altar',text:'Prepare your sin offering and your burnt offering — for yourself and for the people',
       script:[
        {prop:['altar',{stage:3}]},{burst:[22,15,'spark',16]},
-       {say:['narrator','And Aharon came near to the altar, and offered the calf of the sin offering for himself, and the ascending offering — and the people’s goat and calf and lamb, and the peace offerings — according to all that YAHUAH commanded by the hand of Mosheh.']},
+       {say:['narrator','So Aharon came near to the mizbe’ach and slaughtered the calf of the sin offering, which was for himself… And he slaughtered the burnt offering… And he brought the people’s offering and took the goat, which was the sin offering for the people… And he slaughtered the bull and the ram as shalom offerings, which were for the people — as YAHUAH had commanded Mosheh.']},
       ]},
-     {type:'goto',x:22,y:18,radius:1.8,text:'Lift your hands toward the people — and barak them',hiddenUntil:1,
+     {type:'goto',x:22,y:18,radius:1.8,text:'Lift up your hand toward the people — and baruk them',hiddenUntil:1,
       script:[
-       {say:['aharon_k','YAHUAH barak you and guard you; YAHUAH make His face shine upon you, and show favour to you; YAHUAH lift up His face upon you — and give you SHALOM.']},
-       {say:['narrator','And Mosheh and Aharon went into the Tent of Appointment, and came out and baruk the people—']},
+       {say:['aharon_k','YAHUAH bless you and guard you; YAHUAH make His face shine upon you, and show chen to you; YAHUAH lift up His face upon you — and give you SHALOM.']},
+       {say:['narrator','And Mosheh and Aharon went into the Tent of Meeting, and came out and baruk the people—']},
        {rays:.95,raysX:22},{sfx:'holy'},{shake:1.5},{music:'holy'},
-       {say:['narrator','—AND THE ESTEEM OF YAHUAH APPEARED TO ALL THE PEOPLE: and fire came out from before YAHUAH and consumed the ascending offering and the fat on the altar. And all the people SAW — and SHOUTED — and fell on their faces.']},
+       {say:['narrator','—AND THE ESTEEM OF YAHUAH APPEARED TO ALL THE PEOPLE: and fire came out from before YAHUAH and consumed the burnt offering and the fat on the mizbe’ach. And all the people SAW — and CRIED ALOUD — and fell on their faces.']},
        {burst:[22,15,'holy',36]},
        {call:G=>{ for(const n of G.world.npcs){ if(String(n.id).startsWith('crowd')||String(n.id).startsWith('cong')){ n.wander=false; n.lying=true; n.moving=false; n.target=null; } } }},
        {wait:900},{rays:0},
-       {say:['mosheh_o','This is what YAHUAH spoke: “By those who come near Me, I am set apart — and before all the people I am esteemed.” The fire that fell is His amen on the kohenship. Guard it, brother. Guard it exactly.']},
+       {say:['mosheh_o','This is what YAHUAH spoke, saying: “By those who come near Me let Me be qadash (Set Apart)! And before all the people let Me be esteemed!” The fire that fell is His amen on the kehunnah. Guard it, brother. Guard it exactly.']},
       ]},
    ],
   },
   outro:[
-   {art:'altarfire', music:'holy', text:'Fire from before YAHUAH consumed the offering — and a nation shouted and fell on its faces. The eighth day: the service accepted, the esteem seen.', ref:'VAYIQRA 9:23–24'},
+   {art:'altarfire', music:'holy', text:'And the esteem of YAHUAH appeared to all the people, and fire came out from before YAHUAH and consumed the burnt offering and the fat on the mizbe’ach. And all the people saw and cried aloud and fell on their faces.', ref:'VAYIQRA 9:23–24', stage:{"set":"camp","time":"day","cam":"push","focus":0.5,"props":[{"k":"tabernacle","x":0.5,"z":0.85,"s":1.1},{"k":"altar","x":0.5,"z":0.35,"big":1,"bronze":1,"sacrifice":1,"fire":false}],"fx":[{"k":"glory","x":0.5,"y":0.08},{"k":"firefall","x":0.5,"y":0.6}],"cast":[{"id":"mosheh_o","x":0.27,"z":0.1,"face":"r","pose":"raise","acts":[{"at":1,"pose":"bow"}]},{"id":"aharon_k","x":0.72,"z":0.1,"face":"l","pose":"raise","acts":[{"at":1,"pose":"bow"}]}],"crowd":[{"kind":"people","n":6,"x":0.17,"w":0.24,"z":0.55,"face":"r","from":"raise","pose":"bow","at":1},{"kind":"people","n":6,"x":0.83,"w":0.24,"z":0.55,"face":"l","from":"raise","pose":"bow","at":1}]}},
   ],
-  complete:'And fire came out from before YAHUAH — and all the people saw, and shouted, and fell on their faces.'
+  complete:'And fire came out from before YAHUAH — and all the people saw, and cried aloud, and fell on their faces.'
 },
 { id:'v7', title:'Strange Fire', ref:'VAYIQRA 10',
   intro:[
-   {art:'altarfire', music:'tense', text:'And Naḏaḇ and Aḇihu, the sons of Aharon, each took his fire holder and put fire in it, and laid incense on it — and brought STRANGE FIRE before YAHUAH, which He had not commanded them.', ref:'VAYIQRA 10:1'},
+   {art:'altarfire', music:'tense', text:'And Naḏaḇ and Aḇihu, the sons of Aharon, each took his fire holder and put fire in it and put incense on it and brought STRANGE FIRE before YAHUAH, which He had not commanded them.', ref:'VAYIQRA 10:1', stage:{"set":"camp","time":"dusk","cam":"close","focus":0.5,"props":[{"k":"tabernacle","x":0.74,"z":0.6,"s":1.3}],"fx":[{"k":"smoke","x":0.5},{"k":"red","amt":0.12}],"cast":[{"id":"nadav","x":0.2,"to":0.46,"at":0,"z":0.08,"face":"r","pose":"hold","hold":"censer"},{"id":"avihu","x":0.08,"to":0.34,"at":0,"z":0.16,"face":"r","pose":"hold","hold":"censer"}]}},
   ],
   scene:{
    map:{biome:'desert', w:44, h:26, seed:1025,
@@ -5342,14 +5477,14 @@ STORY.push(
      {call:G=>campLife(G)},
    ],
    objectives:[
-     {type:'goto',x:21,y:17,radius:2.2,text:'Naḏaḇ and Aḇihu come with their fire holders — and the fire is not from the altar',
+     {type:'goto',x:21,y:17,radius:2.2,text:'Naḏaḇ and Aḇihu come with their fire holders — and the fire is not from the mizbe’ach',
       script:[
        {move:['nadav',20.5,13.5,.05,'bg']},{move:['avihu',22,13,.05]},
        {say:['narrator','Flushed with the eighth day, each took his own fire holder, his own fire, his own hour — incense YAHUAH had not commanded, at a time He had not appointed, with fire He had not given.']},
        {sfx:'thunder'},{shake:2.5},{burst:[21,13,'spark',30]},{music:'storm'},
        {call:G=>{ for(const n of G.world.npcs){ if(['nadav','avihu'].includes(n.id)){ n.lying=true; n.moving=false; n.target=null; } } }},
-       {say:['narrator','AND FIRE CAME OUT FROM BEFORE YAHUAH AND CONSUMED THEM — and they died before YAHUAH. The same fire that fell on the offering yesterday, fell on the offerers today: it is one fire, and it is not ours.']},
-       {say:['mosheh_o','Aharon — this is what YAHUAH spoke, saying: “By those who come near Me, I am set apart; and before all the people I am esteemed.”']},
+       {say:['narrator','AND FIRE CAME OUT FROM YAHUAH AND CONSUMED THEM — and they died before YAHUAH. The same fire that fell on the offering yesterday, fell on the offerers today: it is one fire, and it is not ours.']},
+       {say:['mosheh_o','Aharon — this is what YAHUAH spoke, saying: “By those who come near Me let Me be qadash (Set Apart)! And before all the people let Me be esteemed!”']},
        {say:['narrator','AND AHARON WAS SILENT.']},
       ]},
      {type:'goto',x:15,y:21,radius:2.2,text:'Call Misha’al and Altsaphan — carry your brothers outside the camp',hiddenUntil:1,
@@ -5359,26 +5494,26 @@ STORY.push(
        {fade:'out'},
        {call:G=>{ for(const n of G.world.npcs){ if(['nadav','avihu'].includes(n.id)) n.hidden=true; } }},
        {move:['cousin1',2,21,.1,'bg']},{move:['cousin2',2,22,.1,'bg']},
-       {toast:'And they carried them in their long shirts outside the camp, as Mosheh had said.'},{wait:1800},{fade:'in'},
-       {say:['mosheh_o','Aharon, Al‛azar, Ithamar — do not unbind your heads, nor tear your garments, lest you die: the anointing oil of YAHUAH is on you. Let your brothers, all the house of Yasharal, bewail the burning — but you, you carry the service.']},
+       {toast:'So they came near and took them by their long shirts out of the camp, as Mosheh had said.'},{wait:1800},{fade:'in'},
+       {say:['mosheh_o','Aharon, Al‛azar, Ithamar — do not unbind your heads nor tear your garments, lest you die… for the anointing oil of YAHUAH is upon you. Let your brothers, all the house of Yasharal, bewail the burning which YAHUAH has kindled — but you, you carry the service.']},
        {say:['narrator','And YAHUAH spoke to AHARON, saying:']},
-       {say:['voice','DO NOT DRINK WINE NOR STRONG DRINK, you nor your sons with you, when you come into the Tent of Appointment — lest you die. So shall you DISTINGUISH between the set-apart and the profane, between the unclean and the clean.']},
-       {say:['narrator','And Mosheh diligently sought the goat of the sin offering — and saw it was burned, not eaten. And he was wroth with Al‛azar and Ithamar. But Aharon spoke: “See, this day they brought their sin offering… and matters like these have met me. If I had eaten the sin offering today, would it have been good in the eyes of YAHUAH?” — And Mosheh heard, and it was good in his eyes. Even grief has its hearing, at the door of the Tent.']},
+       {say:['voice','DO NOT DRINK WINE OR STRONG DRINK, you, nor your sons with you, when you go into the Tent of Meeting, lest you die — a law forever throughout your generations — so as to make a DISTINCTION between the qadash (Set Apart) and the profane and between the unclean and the clean.']},
+       {say:['narrator','And Mosheh diligently looked for the goat of the sin offering and saw it was burned up. And he was wroth with Al‛azar and Ithamar… “Why have you not eaten the sin offering in a Qodash (Set Apart Place)?”']},{say:['narrator','And Aharon said to Mosheh, “See, today they have brought their sin offering… and matters like these have come to me! If I had eaten the sin offering today, would it have been right in the eyes of YAHUAH?” — And when Mosheh heard that, it was good in his eyes. Even grief has its hearing, at the door of the Tent.']},
        {music:'sorrow'},{sfx:'holy'},
       ]},
    ],
   },
   outro:[
-   {art:'altarfire', music:'sorrow', text:'Strange fire, and the silence of Aharon — the nearer the Presence, the exacter the charge: “By those who come near Me, I am set apart.”', ref:'VAYIQRA 10:1–3'},
+   {art:'altarfire', music:'sorrow', text:'And Naḏaḇ and Aḇihu, the sons of Aharon… brought strange fire before YAHUAH, which He had not commanded them. And fire came out from YAHUAH and consumed them… Then Mosheh said to Aharon, “This is what YAHUAH spoke, saying, ‘By those who come near Me let Me be qadash (Set Apart)! And before all the people let Me be esteemed!’” And Aharon was silent.', ref:'VAYIQRA 10:1–3', stage:{"set":"camp","time":"dusk","cam":"push","focus":0.45,"props":[{"k":"tabernacle","x":0.76,"z":0.58,"s":1.3}],"fx":[{"k":"firefall","x":0.5,"y":0.66,"at":2},{"k":"smoke","x":0.5,"at":2}],"cast":[{"id":"nadav","x":0.2,"z":0.08,"face":"r","pose":"hold","hold":"censer","acts":[{"at":1,"to":0.54},{"at":2,"pose":"dead"}]},{"id":"avihu","x":0.08,"z":0.16,"face":"r","pose":"hold","hold":"censer","acts":[{"at":1,"to":0.42},{"at":2,"pose":"dead"}]},{"id":"mosheh_o","enter":"l","at":3,"to":0.3,"z":0.04,"face":"l","pose":"speak","say":3,"acts":[{"at":4,"pose":"raise"}]},{"id":"aharon_k","enter":"l","at":3,"to":0.14,"z":0.1,"face":"r","pose":"stand","acts":[{"at":5,"pose":"kneel"}]}]}},
   ],
-  complete:'By those who come near Me, I am set apart — and Aharon was silent.'
+  complete:'By those who come near Me let Me be qadash (Set Apart)! And Aharon was silent.'
 },
 ]},
 /* ============ ACT III — CLEAN AND UNCLEAN ============ */
 { id:'vact3', roman:'III', title:'Clean and Unclean', ref:'VAYIQRA 11–15', chapters:[
 { id:'v8', title:'The Creatures', ref:'VAYIQRA 11',
   intro:[
-   {art:'beasts', music:'eden', text:'And YAHUAH spoke to Mosheh and to Aharon, saying to them: “Speak to the children of Yasharal, saying: These are the living creatures which you eat among all the beasts that are on the earth — whatever divides the hoof, having a split hoof, and chewing the cud…”', ref:'VAYIQRA 11:1–3'},
+   {art:'beasts', music:'eden', text:'And YAHUAH spoke to Mosheh and to Aharon, saying to them, “Speak to the children of Yasharal, saying, ‘These are the living creatures which you do eat among all the beasts that are on the earth: Whatever has a split hoof completely divided, chewing the cud, among the beasts, that you do eat.’”', ref:'VAYIQRA 11:1–3', stage:{"set":"field","time":"day","cam":"pan-r","props":[{"k":"oxen","x":0.62,"z":0.35,"n":2},{"k":"sheep","x":0.46,"z":0.42,"n":5,"w":120},{"k":"goat","x":0.86,"z":0.28,"face":"l"}],"cast":[{"id":"mosheh_o","x":0.16,"z":0.06,"face":"r","pose":"point","say":0},{"id":"aharon_k","x":0.3,"z":0.14,"face":"r","pose":"stand"}],"crowd":[{"kind":"people","n":6,"x":0.6,"w":0.4,"z":0.78,"face":"l"}]}},
   ],
   scene:{
    map:{biome:'plains', w:46, h:28, seed:1029,
@@ -5416,32 +5551,32 @@ STORY.push(
       script:[
        {choice:{prompt:'The camel: it chews the cud — but the hoof is not split. Your judgment?',options:[
          {label:'Unclean — one sign is not enough', script:[
-           {say:['mosheh_o','Rightly judged. “The camel, because it chews the cud but does not divide the hoof — it is unclean to you.” Half-signs deceive: the mouth looks right while the walk is wrong. Both, or neither.']},
+           {say:['mosheh_o','Rightly judged. “The camel, because it chews the cud but does not have a split hoof, it is unclean to you.” Half-signs deceive: the mouth looks right while the walk is wrong. Both, or neither.']},
          ]},
          {label:'Clean — it chews the cud', script:[
-           {say:['mosheh_o','No — hear it exactly: “The camel, because it chews the cud but does not divide the hoof, is UNCLEAN to you.” And likewise the pig: the hoof split, but no cud — unclean. One sign without the other is the very picture of deceit.']},
+           {say:['mosheh_o','No — hear it exactly: “The camel, because it chews the cud but does not have a split hoof, it is UNCLEAN to you… and the pig, though it has a split hoof, completely divided, yet does not chew the cud, it is unclean to you.” One sign without the other is the very picture of deceit.']},
          ]},
        ]}},
-       {say:['narrator','And so the hare and the rock badger; and the swarming things, the lizard and its kind; and of the birds: the eagle, the vulture, the raven and its kind — and whatever in the waters has not fins and scales. “Do not make yourselves abominable… FOR I AM YAHUAH YOUR ALUAHIM. You shall set yourselves apart, AND YOU SHALL BE SET-APART, FOR I AM SET-APART.”']},
+       {say:['narrator','So the rabbit… and the hare; and the creeping creatures that creep on the earth: the mouse and the tortoise after its kind; among the birds: the eagle and the vulture… every raven after its kind — and all that have not fins or scales in the waters.']},{say:['narrator','“Do not make yourselves abominable… FOR I AM YAHUAH YOUR ALUAHIM and you shall set yourselves apart, AND YOU SHALL BE QADASH (SET APART), FOR I AM QADASH (SET APART).”']},
        {sfx:'holy'},
       ]},
    ],
   },
   outro:[
-   {art:'beasts', music:'holy', text:'To distinguish between the unclean and the clean, between the creature that is eaten and the creature that is not — “Be set-apart, for I am set-apart”: the table itself made a daily teacher.', ref:'VAYIQRA 11:46–47'},
+   {art:'beasts', music:'holy', text:'This is the Torah of the beasts and the birds and every living creature that moves in the waters and of every creature that creeps on the earth, to make a distinction between the unclean and the clean and between the living creature that is eaten and the living creature that is not eaten.', ref:'VAYIQRA 11:46–47', stage:{"set":"river","time":"day","cam":"push","focus":0.5,"props":[{"k":"fish","x":0.5,"z":0.12,"face":"l"},{"k":"sheep","x":0.8,"z":0.35,"n":3,"w":70}],"fx":[{"k":"dove","x":0.3,"y":0.26},{"k":"ravens","n":3,"x":0.72,"y":0.18}],"cast":[{"id":"aharon_k","x":0.18,"z":0.06,"face":"r","pose":"point","say":0}],"crowd":[{"kind":"people","n":4,"x":0.9,"w":0.12,"z":0.5,"face":"l"}]}},
   ],
-  complete:'Both signs, or neither — be set-apart, for I am set-apart.'
+  complete:'Both signs, or neither — be qadash (Set Apart), for I am qadash.'
 },
-{ id:'v9', title:'The Metsora', ref:'VAYIQRA 12–15',
+{ id:'v9', title:'The Leper', ref:'VAYIQRA 12–15',
   intro:[
-   {art:'wilderness', music:'sorrow', text:'WITNESS — And for the mother newly delivered: the days of her cleansing, and the lamb — or, if her hand cannot reach a lamb, TWO TURTLEDOVES; the offering by which the mother of every poor household in Yasharal, and one mother in Bĕyth Leḥem long after, would come to the door.', ref:'VAYIQRA 12'},
-   {art:'wilderness', music:'sorrow', text:'“When a man has on the skin of his body a swelling, a scab, or a bright spot… he shall be brought to Aharon the kohen, or to one of his sons the kohanim.” — Not to the physician first, nor the judge: to the kohen; for this uncleanness is a parable in the flesh.', ref:'VAYIQRA 13:1–2'},
+   {art:'wilderness', music:'sorrow', text:'WITNESS — “When a woman has conceived and has given birth… And when the days of her cleansing are completed… she brings to the kohen a lamb a year old, as a burnt offering… And if she is not able to bring a lamb, then she shall bring TWO TURTLEDOVES or two young pigeons… And the kohen shall make atonement for her and she shall be clean.”', ref:'VAYIQRA 12', stage:{"set":"camp","time":"day","cam":"pan-r","props":[{"k":"tent","x":0.12,"z":0.4,"color":"#8a7050"},{"k":"tabernacle","x":0.78,"z":0.82,"s":1.1},{"k":"altar","x":0.84,"z":0.4,"bronze":1}],"fx":[{"k":"dove","x":0.44,"y":0.42,"at":3},{"k":"rays","x":0.5,"at":4}],"cast":[{"id":"hebreww","x":0.2,"z":0.1,"face":"r","pose":"sitground","hold":"baby","acts":[{"at":1,"pose":"stand"},{"at":2,"to":0.46}]},{"id":"hebrew","enter":"l","at":2,"to":0.32,"z":0.16,"face":"r","pose":"carry","hold":"lamb","label":false},{"id":"elazar","x":0.66,"z":0.1,"face":"l","pose":"stand","acts":[{"at":4,"pose":"bless"}]}]}},
+   {art:'wilderness', music:'sorrow', text:'And YAHUAH spoke to Mosheh and to Aharon, saying, “When a man has on the skin of his body a swelling, a scab, or a bright spot and it shall become on the skin of his body like a leprous infection, then he shall be brought to Aharon the kohen or to one of his sons the kohanim.”', ref:'VAYIQRA 13:1–2', stage:{"set":"camp","time":"noon","cam":"push","focus":0.55,"props":[{"k":"tent","x":0.1,"z":0.5},{"k":"tent","x":0.92,"z":0.55,"color":"#7a6450"}],"cast":[{"id":"hebrew2","x":0.26,"z":0.14,"face":"r","pose":"speak","label":false},{"id":"metsora","x":0.44,"z":0.08,"face":"r","pose":"stand"},{"id":"aharon_k","x":0.64,"z":0.1,"face":"l","pose":"point"},{"id":"elazar","x":0.77,"z":0.18,"face":"l","pose":"stand"}]}},
   ],
   scene:{
    map:{biome:'desert', w:46, h:28, seed:1033,
      features:[
        {type:'mishkan',stage:2,x:14,y:10,solid:true,clear:5,flat:5,id:'mishkan'},
-       {type:'tent',x:38,y:20,solid:true,clear:2,col:'#8a7a62',id:'outside',examine:'A shelter outside the camp — “He shall dwell alone; outside the camp is his dwelling.”'},
+       {type:'tent',x:38,y:20,solid:true,clear:2,col:'#8a7a62',id:'outside',examine:'A shelter outside the camp — “He dwells alone, his dwelling place is outside the camp.”'},
        {type:'clearing',x:20,y:16,flat:2},
        {type:'clearing',x:37,y:21,flat:2},
      ]},
@@ -5455,22 +5590,22 @@ STORY.push(
    objectives:[
      {type:'goto',x:20.5,y:17,radius:1.8,text:'A man is brought to you with a bright spot — look on it as the Torah commands',
       script:[
-       {choice:{prompt:'You look: the hair in the plague has turned white, and the appearance is deeper than the skin of the body. The judgment of the Torah?',options:[
-         {label:'It is the plague — pronounce him unclean', script:[
-           {say:['elazar','It is deeper than the skin, and the hair is turned white. It is the plague of tsara‛ath. …I am sorry, brother. The Torah is exact because the matter is weighty: you are unclean.']},
+       {choice:{prompt:'You look: the hair on the infection has turned white, and the infection appears to be deeper than the skin of his body. The judgment of the Torah?',options:[
+         {label:'It is a leprous infection — pronounce him unclean', script:[
+           {say:['elazar','The hair on the infection has turned white and the infection appears to be deeper than the skin of his body. It is a leprous infection. …I am sorry, brother. The Torah is exact because the matter is weighty: you are unclean.']},
          ]},
          {label:'Shut him up seven days and look again', script:[
            {say:['elazar','If it were not deeper than the skin, seven days’ waiting would be right — the Torah is patient before it is severe. But see: deeper than the skin, and the hair white. The signs are already full. You are unclean, brother — I may not soften what is written.']},
          ]},
        ]}},
-       {say:['narrator','“His garments shall be torn, and his head uncovered, and he shall cover his upper lip and cry: UNCLEAN! UNCLEAN! He shall dwell ALONE; outside the camp is his dwelling.” — The disease itself was sorrow; the Torah made the sorrow visible, that none should touch it unknowing.']},
+       {say:['narrator','“His garments are torn and his head is uncovered and he has to cover his upper lip and cry, ‘UNCLEAN! UNCLEAN!’ … He is unclean, and he dwells ALONE, his dwelling place is outside the camp.” — The disease itself was sorrow; the Torah made the sorrow visible, that none should touch it unknowing.']},
        {move:['metsora',37,21,.05,'bg']},
       ]},
-     {type:'goto',x:37,y:21.5,radius:2.4,text:'Many days later — word comes: the plague has healed. Go out to him',hiddenUntil:1,
+     {type:'goto',x:37,y:21.5,radius:2.4,text:'Many days later — word comes: the leprosy is healed. Go out to him',hiddenUntil:1,
       script:[
        {fade:'out'},{toast:'And the days passed outside the camp — and YAHUAH healed him.'},{wait:1700},{fade:'in'},
-       {say:['narrator','“This is the Torah of the metsora IN THE DAY OF HIS CLEANSING: he shall be brought to the kohen — and the kohen shall go out OUTSIDE THE CAMP.” Mark it: the clean one goes out to the unclean, for the unclean may not come in. Mercy makes the journey.']},
-       {say:['elazar','Two live clean birds, cedar wood, scarlet, and hyssop. One bird slain over living water in an earthen vessel — and the LIVING bird, dipped with the cedar and scarlet and hyssop in the blood, sprinkled on you seven times… and LET LOOSE over the open field.']},
+       {say:['narrator','“This shall be the Torah of the leper FOR THE DAY OF HIS CLEANSING: He shall be brought to the kohen — and the kohen shall go OUT OF THE CAMP and the kohen shall look and see, if the leprosy is healed in the leper.” Mark it: the clean one goes out to the unclean, for the unclean may not come in. Mercy makes the journey.']},
+       {say:['elazar','Two live and clean birds and cedar wood and scarlet and hyssop. He shall kill one of the birds in an earthen vessel over running water — and take the LIVE bird and the cedar wood and the scarlet and the hyssop and dip them and the live bird in the blood of the bird that was killed…']},{say:['elazar','… and sprinkle it seven times on him who is to be cleansed… and let the LIVE bird LOOSE in the open field.']},
        {spawn:{id:'freebird',animal:'dove',x:37,y:20,flying:true,noTalk:true,wander:false}},
        {move:['freebird',44,12,.08,'bg']},
        {burst:[37,21,'holy',18]},{sfx:'holy'},{music:'holy'},
@@ -5480,22 +5615,22 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wilderness', music:'holy', text:'WITNESS — And the Torah of the issues of the body, and the seventh-day washings: uncleanness is not sin, but it is exile from the Presence — and for every exile, a washing and an evening and a way home. “Thus you shall separate the children of Yasharal from their uncleanness, lest they die… when they defile My Dwelling Place that is in their midst.”', ref:'VAYIQRA 15'},
+   {art:'wilderness', music:'holy', text:'WITNESS — “…he shall wash his garments and shall bathe in water and be unclean until evening… And when he who has a discharge is cleansed of his discharge, then he shall count for himself seven days for his cleansing… and shall bathe his flesh in running water and be clean… Thus you shall separate the children of Yasharal from their uncleanness, lest they die… when they defile My Dwelling Place which is in their midst.”', ref:'VAYIQRA 15', stage:{"set":"river","time":"dusk","cam":"pan-r","props":[{"k":"tent","x":0.1,"z":0.42,"color":"#8a7050"},{"k":"tabernacle","x":0.86,"z":0.8,"s":1.0}],"fx":[{"k":"glory","x":0.86,"y":0.3,"at":4}],"cast":[{"id":"hebrew2","look":{"name":"The Man Who Is Cleansed"},"x":0.4,"z":0.08,"face":"r","pose":"kneel","acts":[{"at":1,"to":0.2,"pose":"sitground"},{"at":2,"to":0.42,"pose":"raise"}]},{"id":"mosheh_o","enter":"r","at":3,"to":0.7,"z":0.12,"face":"l","pose":"speak","say":3,"acts":[{"at":4,"pose":"point"}]}]}},
   ],
-  complete:'The kohen goes out to him — and the living bird is let loose over the open field.'
+  complete:'The kohen goes out to him — and shall let the live bird loose in the open field.'
 },
 ]},
 /* ============ ACT IV — YOM HAKIPPURIM ============ */
 { id:'vact4', roman:'IV', title:'Yom haKippurim', ref:'VAYIQRA 16 · YOḆELIM 34', chapters:[
 { id:'v10', title:'The Two Goats', ref:'VAYIQRA 16',
   intro:[
-   {art:'twogoats', music:'night', text:'And YAHUAH spoke to Mosheh after the death of the two sons of Aharon: “Speak to Aharon your brother, that he does not come in at all times to the Set-apart Place within the veil, lest he die — for I appear in the cloud over the lid of atonement.” Once a year, and not in the garments of esteem, but in plain LINEN — washed, and alone.', ref:'VAYIQRA 16:1–4'},
-   {art:'coat', music:'sorrow', text:'WITNESS — For on the tenth of the seventh month the sons of Ya‘aqoḇ had brought the blood-dipped coat to their father; therefore it was ordained that the children of Yasharal afflict their souls on the tenth of the seventh month — and atone for their sin with a kid of the goats, once a year.', ref:'YOḆELIM 34:12–19'},
+   {art:'twogoats', music:'night', text:'And YAHUAH spoke to Mosheh after the death of the two sons of Aharon… “Speak to Aharon your brother not to come in at all times to the Qodash (Set Apart Place) inside the veil… lest he die, because I appear in the cloud above the lid of atonement… He should put on the qadash (Set Apart) linen long shirt… And he shall bathe his body in water and shall put them on.”', ref:'VAYIQRA 16:1–4', stage:{"set":"camp","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"tabernacle","x":0.44,"z":0.62,"s":1.3},{"k":"basin","x":0.88,"z":0.4,"s":0.8}],"fx":[{"k":"shekinah","x":0.44,"at":2}],"cast":[{"id":"mosheh_o","x":0.16,"z":0.06,"face":"r","pose":"speak","say":1},{"id":"aharon_k","x":0.66,"z":0.12,"face":"l","pose":"stand","acts":[{"at":2,"pose":"bow"},{"at":3,"exit":"r","run":1}]},{"id":"aharon_l","x":0.7,"z":0.12,"face":"l","pose":"stand","at":4,"label":false}]}},
+   {art:'coat', music:'sorrow', text:'WITNESS — The sons of Ya‘aqoḇ slaughtered a kid, and dipped Yosĕph’s coat in the blood and sent it to Ya‘aqoḇ their father on the tenth of the seventh month… For this reason it is ordained for the children of Yasharal that they should remember and mourn… On this day they should make atonement for their sins for themselves with a young goat… once a year.', ref:'YOḆELIM 34:12–19', stage:{"set":"field","time":"dusk","cam":"pan-r","props":[{"k":"goat","x":0.3,"z":0.32,"face":"r"},{"k":"coat","x":0.48,"z":0.12,"blood":1},{"k":"tent","x":0.9,"z":0.5,"color":"#6a5440"}],"cast":[{"id":"reuven","x":0.12,"z":0.18,"face":"r","pose":"stand"},{"id":"shimon","x":0.24,"z":0.1,"face":"r","pose":"kneel"},{"id":"yahudah","x":0.37,"z":0.06,"face":"r","pose":"point","say":0},{"id":"yaaqov_o","x":0.7,"z":0.1,"face":"l","from":"stand","pose":"mourn","at":1}],"crowd":[{"kind":"mourners","n":6,"x":0.5,"w":0.56,"z":0.8,"face":"l","at":2}]}},
   ],
   scene:{
    map:{biome:'desert', w:48, h:28, seed:1037,
      features:[
-       {type:'mishkan',stage:2,x:18,y:10,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Dwelling Place — and within the second veil, the Most Set-apart Place, entered once a year.'},
+       {type:'mishkan',stage:2,x:18,y:10,solid:true,clear:5,flat:5,id:'mishkan',examine:'The Dwelling Place — and within the second veil, the Qodash haQodashim (Most Set Apart Place), entered once a year.'},
        {type:'altar',stage:3,x:18,y:15,solid:true,clear:2,id:'altar'},
        {type:'basket',x:21,y:16.5,id:'lots',examine:'Two lots: one inscribed FOR YAHUAH, and one FOR AZAZĔL.'},
        {type:'clearing',x:18,y:18,flat:3},
@@ -5521,18 +5656,18 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'lots',text:'Take the two goats — and cast lots over them',
       script:[
-       {say:['narrator','In linen, washed, without the gold — for he does not come before the lid of atonement dressed in esteem, but as a servant. And Aharon cast lots over the two goats: ONE LOT FOR YAHUAH, AND ONE LOT FOR AZAZĔL.']},
+       {say:['narrator','In linen, washed, without the gold — for he does not come before the lid of atonement dressed in esteem, but as a servant. And Aharon cast lots for the two goats, ONE LOT FOR YAHUAH AND THE OTHER LOT FOR AZAZĔL.']},
        {sfx:'blip'},{wait:400},{sfx:'chime'},
-       {say:['aharon_l','This one — for YAHUAH, a sin offering. And this one is left standing alive before YAHUAH, to make atonement upon it: the goat for Azazĕl, for the sending away. Two goats, one atonement — the blood that covers, and the burden that departs.']},
-       {say:['narrator','And he slaughtered the BULL of the sin offering which was for himself, making atonement for himself and for his house — and took the fire holder full of burning coals from the altar, and his hands full of sweet incense, to go WITHIN THE VEIL.']},
+       {say:['aharon_l','This one — the goat on which the lot for YAHUAH fell, to prepare it as a sin offering. And this one is caused to stand alive before YAHUAH, to make atonement upon it, to send it into the wilderness to Azazĕl. Two goats, one atonement — the blood that covers, and the burden that departs.']},
+       {say:['narrator','And he brought the BULL of the sin offering, which is for himself, and made atonement for himself and for his house — and took a fire holder filled with burning coals of fire from the mizbe’ach before YAHUAH, with his hands filled with sweet incense beaten fine, and brought it INSIDE THE VEIL.']},
       ]},
-     {type:'interact',prop:'mishkan',text:'Within the veil — and the cloud of incense must cover the lid, that you die not',hiddenUntil:1,
+     {type:'interact',prop:'mishkan',text:'Within the veil — and the cloud of incense must cover the lid, lest you die',hiddenUntil:1,
       script:[
        {music:'night'},{time:'dusk'},
-       {mash:{duration:8000,gain:.15,decay:.00027,text:'Keep the cloud of incense rising over the lid — that he die not!',barA:'THE CLOUD OF INCENSE',barB:'THE SPRINKLING',msg1:'The cloud covers the lid of atonement…',msg2:'Seven times, with the finger — eastward, before the lid…'}},
+       {mash:{duration:8000,gain:.15,decay:.00027,text:'Keep the cloud of incense rising over the lid — lest he die!',barA:'THE CLOUD OF INCENSE',barB:'THE SPRINKLING',msg1:'The cloud covers the lid of atonement…',msg2:'Seven times, with the finger — eastward, before the lid…'}},
        {sfx:'holy'},{burst:[18,11,'holy',22]},{rays:.7,raysX:18},
        {say:['narrator','And the cloud of incense covered the lid of atonement that is on the Witness — and he did not die. And he took of the BULL’S blood and sprinkled it with his finger on the lid eastward, and before the lid seven times — atonement for himself, and for his house.']},
-       {say:['narrator','THEN he slaughtered the goat of the sin offering that is for the PEOPLE, and brought its blood within the veil, and did with its blood as he had done with the blood of the bull — BECAUSE OF THE UNCLEANNESSES OF THE CHILDREN OF YASHARAL, AND BECAUSE OF THEIR TRANSGRESSIONS IN ALL THEIR SINS. So the Dwelling itself was atoned, that dwells with them IN THE MIDST OF THEIR UNCLEANNESS.']},
+       {say:['narrator','THEN he slaughtered the goat of the sin offering, which is for the PEOPLE, and brought its blood INSIDE THE VEIL and did with that blood as he did with the blood of the bull — and made atonement for the Qodash (Set Apart Place), BECAUSE OF THE UNCLEANNESS OF THE CHILDREN OF YASHARAL AND BECAUSE OF THEIR TRANSGRESSIONS IN ALL THEIR SINS.']},{say:['narrator','And so he did for the Tent of Meeting which is dwelling with them IN THE MIDST OF THEIR UNCLEANNESS.']},
        {rays:0},{time:'day'},{music:'holy'},
       ]},
      {type:'goto',x:22,y:19,radius:2,text:'Lay both hands on the head of the live goat — and confess over it',hiddenUntil:2,
@@ -5552,15 +5687,15 @@ STORY.push(
        {call:G=>{ const g2=G.world.npcs.find(n=>n.id==='goat_a'); if(g2) g2.hidden=true; }},
        {sfx:'holy'},{music:'holy'},
        {say:['hebrew','It does not look back. The crookedness of a year walks away from the camp on four small feet — to a land cut off, where no accuser can fetch it home again. As far as the east is from the west…']},
-       {say:['narrator','And Aharon washed, and put on his garments, and offered the ascending offerings; and the one who sent the goat washed also, and came back to the camp. “AND THIS SHALL BE FOR YOU A LAW FOREVER: in the seventh month, on the tenth of the month, you afflict your beings and do no work — FOR ON THAT DAY HE MAKES ATONEMENT FOR YOU, TO CLEANSE YOU: from all your sins, before YAHUAH, you shall be clean. It is a Shabbath of rest for you.” — ONCE A YEAR.']},
+       {say:['narrator','And Aharon put on his garments and came out and prepared his burnt offering and the burnt offering of the people; and he who sent away the goat to Azazĕl washed his garments and bathed his body in water and afterward came into the camp.']},{say:['narrator','“AND THIS SHALL BE FOR YOU A LAW FOREVER, in the seventh month, on the tenth day of the month, you afflict your beings and do no work… FOR ON THAT DAY HE MAKES ATONEMENT FOR YOU, TO CLEANSE YOU, to be clean from all your sins before YAHUAH. It is a Shabbath of rest for you.” — ONCE A YEAR.']},
        {sfx:'holy'},{burst:[43,20,'holy',20]},
       ]},
    ],
   },
   outro:[
-   {art:'twogoats', music:'holy', text:'One goat for YAHUAH, and one bearing all the crookednesses to a land cut off — the blood within the veil, and the burden gone beyond the horizon: once a year, the whole house clean before YAHUAH.', ref:'VAYIQRA 16:21–34'},
+   {art:'twogoats', music:'holy', text:'“And the goat shall bear on itself all their crookednesses, to a land cut off… For on that day he makes atonement for you, to cleanse you, to be clean from all your sins before YAHUAH… And this shall be for you a law forever, to make atonement for the children of Yasharal, for all their sins, once a year.”', ref:'VAYIQRA 16:21–34', stage:{"set":"wilderness","time":"dusk","cam":"push","focus":0.4,"props":[{"k":"goat","x":0.44,"z":0.16,"face":"r"},{"k":"altar","x":0.1,"z":0.5,"bronze":1},{"k":"goat","x":0.86,"z":0.85,"face":"r"}],"fx":[{"k":"glory","x":0.4,"y":0.08,"at":2}],"cast":[{"id":"aharon_l","x":0.32,"z":0.1,"face":"r","pose":"bless","acts":[{"at":1,"pose":"raise"}]}],"crowd":[{"kind":"people","n":8,"x":0.66,"w":0.34,"z":0.55,"face":"l","from":"stand","pose":"kneel","at":1}]}},
   ],
-  complete:'On that day He makes atonement for you, to cleanse you — from all your sins, before YAHUAH, you shall be clean.'
+  complete:'On that day he makes atonement for you, to cleanse you — to be clean from all your sins before YAHUAH.'
 },
 ]},
 );
@@ -5570,7 +5705,7 @@ STORY.push(
 { id:'vact5', roman:'V', title:'Set-apartness', ref:'VAYIQRA 17–22 · YOḆELIM 7', chapters:[
 { id:'v11', title:'The Life Is in the Blood', ref:'VAYIQRA 17 · YOḆELIM 7',
   intro:[
-   {art:'altarfire', music:'tense', text:'“Any man of the house of Yasharal who slaughters a bull or lamb or goat in the camp, or outside the camp, and does not bring it to the door of the Tent of Appointment… blood-guilt is reckoned to that man.” — One door, one altar, one Name; no private religion in the fields, and no offerings to the goat-demons after which they whored.', ref:'VAYIQRA 17:3–7'},
+   {art:'altarfire', music:'tense', text:'“Any man from the house of Yasharal who slaughters a bull or a lamb or a goat in the camp, or who slaughters it outside the camp, and does not bring it to the door of the Tent of Meeting… blood-guilt is reckoned to that man… And let them no longer slaughter their slaughterings to demons, after whom they whored. This is a law forever for them throughout their generations.”', ref:'VAYIQRA 17:3–7', stage:{"set":"highplace","time":"dusk","cam":"push","focus":0.55,"props":[{"k":"goat","x":0.52,"z":0.2,"face":"l"},{"k":"idol","x":0.78,"z":0.34,"h":80,"color":"#6a5a4a","at":2},{"k":"fire","x":0.78,"z":0.3,"at":2}],"fx":[{"k":"red","amt":0.14,"at":1},{"k":"darkness","amt":0.25,"at":2}],"cast":[{"id":"hebrew2","x":0.4,"z":0.08,"face":"r","pose":"kneel","label":false,"acts":[{"at":2,"to":0.6,"pose":"bow"}]},{"id":"mosheh_o","enter":"l","at":3,"to":0.17,"z":0.06,"face":"r","pose":"point","say":3}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:26, seed:1041,
@@ -5585,7 +5720,7 @@ STORY.push(
      {id:'hunter',char:'hebrew2',x:30,y:19.5,wander:false,
       script:[
        {say:['hebrew2','Kohen — I took a deer in the hunt, away in the field. The Torah of the door: does it bind the hunter too, so far from the camp?']},
-       {say:['elazar','Hear it exactly, brother: what is hunted and eaten — you pour out its blood AND COVER IT WITH DUST. For the life of the flesh is in the blood. You do not eat the blood of any flesh: whoever eats it is cut off.']},
+       {say:['elazar','Hear it exactly, brother: any man who hunts and catches any beast or bird which is eaten shall pour out its blood AND COVER IT WITH DUST. For the life of the flesh is in the blood. Do not eat the blood of any flesh: anyone eating it is cut off.']},
        {say:['narrator','And the hunter poured out the blood, and covered it with dust — a small burial for the life that fed him; reverence at the edge of the wilderness, where no kohen sees and Aluahim does.']},
        {burst:[30,19.5,'ash',8]},{sfx:'pickup'},
       ]},
@@ -5598,30 +5733,30 @@ STORY.push(
    ],
    objectives:[
      {type:'talk',npc:'hunter',text:'A hunter asks the Torah of the blood'},
-     {type:'goto',x:16,y:17.5,radius:2.2,text:'Return to the altar — and hear the reason of the law',hiddenUntil:1,
+     {type:'goto',x:16,y:17.5,radius:2.2,text:'Return to the mizbe’ach — and hear the reason of the law',hiddenUntil:1,
       script:[
        {music:'holy'},{rays:.6,raysX:16},
-       {say:['voice','FOR THE LIFE OF THE FLESH IS IN THE BLOOD — and I have given it to you upon the altar, TO MAKE ATONEMENT FOR YOUR LIVES: for it is the blood that makes atonement for the life.']},
+       {say:['voice','FOR THE LIFE OF THE FLESH IS IN THE BLOOD — and I have given it to you upon the mizbe’ach, TO MAKE ATONEMENT FOR YOUR LIVES: for it is the blood that makes atonement for the life.']},
        {rays:0},
-       {say:['narrator','WITNESS — So Noaḥ also commanded his sons after the flood: “Do not eat the life with the flesh; cover the blood of what you slay — for the earth will not be cleansed of the blood shed on it except by the blood of him who shed it.” The oldest food-law on the earth, and the deepest: life belongs to the Giver of it.']},
+       {say:['narrator','WITNESS — So Noaḥ also commanded his sons after the flood: “Cover the blood… Do not permit the nephesh (life) to be eaten with the flesh… For the earth will not be clean from the blood that has been shed on it, for only through the blood of him that shed it will the earth be purified.” The oldest food-law on the earth, and the deepest: life belongs to the Giver of it.']},
       ]},
    ],
   },
   outro:[
-   {art:'altarfire', music:'holy', text:'One door for the offerings, and the blood never on the table — “for the life of the flesh is in the blood, and I have given it to you upon the altar to make atonement.”', ref:'VAYIQRA 17:11 · YOḆELIM 7:30–33'},
+   {art:'altarfire', music:'holy', text:'“For the life of the flesh is in the blood and I have given it to you upon the mizbe’ach to make atonement for your lives, for it is the blood that makes atonement for the life.” — You shall not be like him who eats blood… Do not permit the nephesh (life) to be eaten with the flesh.', ref:'VAYIQRA 17:11 · YOḆELIM 7:30–33', stage:{"set":"mountain","time":"dusk","cam":"push","focus":0.4,"props":[{"k":"noahark","x":0.84,"z":0.85,"s":0.8},{"k":"altar","x":0.48,"z":0.3,"sacrifice":1}],"fx":[{"k":"smoke","x":0.48}],"cast":[{"id":"noach","x":0.32,"z":0.1,"face":"r","pose":"hold","hold":"bowl","acts":[{"at":1,"face":"l","pose":"speak"},{"at":2,"pose":"point"}]},{"id":"shem","x":0.13,"z":0.14,"face":"r","pose":"stand"},{"id":"yepheth","x":0.2,"z":0.24,"face":"r","pose":"stand"},{"id":"cham","x":0.68,"z":0.16,"face":"l","pose":"stand"}]}},
   ],
-  complete:'For the life of the flesh is in the blood — given upon the altar, to make atonement for your lives.'
+  complete:'For the life of the flesh is in the blood — and I have given it to you upon the mizbe’ach to make atonement for your lives.'
 },
 { id:'v12', title:'The Corners of Your Field', ref:'VAYIQRA 19 · 18; 20',
   intro:[
-   {art:'corrupt', music:'tense', text:'WITNESS — “According to the doings of the land of Mitsrayim, where you dwelt, you do not do; and according to the doings of the land of Kena‛an, where I am bringing you, you do not do.” The coverings of nakedness not to be uncovered; the abominations by which the nations defiled themselves — “for the land vomited out its inhabitants.” And none of your seed given to pass through to Moleḵ; nor turning to mediums and spiritists.', ref:'VAYIQRA 18; 20'},
-   {art:'goshen', music:'eden', text:'“Speak to all the congregation of the children of Yasharal, and say to them: BE SET-APART, FOR I, YAHUAH YOUR ALUAHIM, AM SET-APART.”', ref:'VAYIQRA 19:1–2'},
+   {art:'corrupt', music:'tense', text:'WITNESS — “Do not do as they do in the land of Mitsrayim, where you dwelt. And do not do as they do in the land of Kena‛an… No one is to approach anyone of his own flesh to uncover his nakedness… And do not give any of your offspring to pass through to Moleḵ… as it vomited out the nations that were before you.” — “And the being who turns to mediums and to spiritists… I shall set My face against that being.”', ref:'VAYIQRA 18; 20', stage:{"set":"highplace","time":"night","cam":"push","focus":0.55,"props":[{"k":"idol","x":0.74,"z":0.36,"h":95},{"k":"fire","x":0.74,"z":0.3,"at":3}],"fx":[{"k":"smoke","x":0.74,"at":3},{"k":"smoke","x":0.44,"at":5},{"k":"darkness","amt":0.3,"at":6}],"cast":[{"id":"mosheh_o","x":0.14,"z":0.06,"face":"r","pose":"point","say":0,"acts":[{"at":6,"pose":"raise"}]},{"id":"medium","look":{"name":"A Medium","skin":"#7a4e29","hair":"#1d1208","hairStyle":"long","robe":"#3a2a3a","veil":"#2a1a2a"},"x":0.44,"z":0.12,"face":"r","pose":"raise","at":5,"acts":[{"at":6,"pose":"fall"}]}],"crowd":[{"kind":"nations","n":7,"x":0.56,"w":0.3,"z":0.55,"face":"r","pose":"bow","at":1,"exit":"r","exitAt":4}]}},
+   {art:'goshen', music:'eden', text:'“Speak to all the qahal of the children of Yasharal, and say to them: BE QADASH (SET APART), FOR I, YAHUAH YOUR ALUAHIM, AM QADASH (SET APART).”', ref:'VAYIQRA 19:1–2', stage:{"set":"wilderness","time":"dawn","cam":"push","focus":0.35,"props":[{"k":"tabernacle","x":0.82,"z":0.72,"s":1.2},{"k":"rock","x":0.3,"z":0.09,"w":60,"h":22}],"fx":[{"k":"rays","x":0.82}],"cast":[{"id":"mosheh_o","x":0.3,"z":0.1,"dy":-0.06,"face":"r","pose":"raise","say":0}],"crowd":[{"kind":"people","n":10,"x":0.62,"w":0.5,"z":0.55,"face":"l"},{"kind":"elders","n":4,"x":0.12,"w":0.12,"z":0.5,"face":"r"}]}},
   ],
   scene:{
    map:{biome:'plains', w:46, h:28, seed:1045,
      features:[
        {type:'wheat',x:21,y:14},{type:'wheat',x:23,y:15},{type:'wheat',x:22,y:16.5},{type:'wheat',x:25,y:14.5},{type:'wheat',x:24,y:17},
-       {type:'sheaf',x:17,y:13,id:'corner1',examine:'The corner of the field — “you do not completely reap the corners of your field… you leave them for the poor and for the stranger.”'},
+       {type:'sheaf',x:17,y:13,id:'corner1',examine:'The corner of the field — “do not completely reap the corners of your field… leave them for the poor and the stranger.”'},
        {type:'sheaf',x:28,y:18.5,id:'corner2',examine:'The far corner, standing uncut — it belongs to the poor and the sojourner.'},
        {type:'tent',x:13,y:18,solid:true,clear:2,col:'#c8b486'},
        {type:'clearing',x:23,y:19,flat:2},
@@ -5641,14 +5776,14 @@ STORY.push(
      {type:'collect',item:'wheat',need:4,text:'Reap your harvest — the midst of the field is yours'},
      {type:'interact',prop:'corner1',text:'And the corners…?',hiddenUntil:1,
       script:[
-       {say:['mosheh_o','STAY YOUR HAND THERE. “When you reap the harvest of your land, you do not completely reap the corners of your field, nor gather the gleanings — you leave them for the POOR and for the STRANGER. I am YAHUAH your Aluahim.” The corner is not charity, son — it is THEIRS; the Owner of the field wrote them into the deed.']},
+       {say:['mosheh_o','STAY YOUR HAND THERE. “When you reap the harvest of your land, do not completely reap the corners of your field, and do not gather any gleaning from your harvest — leave them for the POOR and for the STRANGER. I am YAHUAH your Aluahim.” The corner is not charity, son — it is THEIRS; the Owner of the field wrote them into the deed.']},
        {show:'poor1'},{show:'stranger'},
        {move:['poor1',28.5,18,.05,'bg']},{move:['stranger',17.5,13.8,.05,'bg']},
        {say:['narrator','And the poor and the sojourner came, and gleaned with dignity — taking what was theirs, asking no man’s leave.']},
        {sayList:[
-        ['mosheh_o','And hear the rest of this chapter of chapters: You do not steal, nor lie to one another. The wages of a hired servant do not stay with you all night until morning.'],
+        ['mosheh_o','And hear the rest of this chapter of chapters: Do not steal, do not lie, do not deceive one another. The wages of him who is hired is not to remain with you all night until morning.'],
         ['mosheh_o','You do not curse the deaf, nor put a stumbling-block before the blind — for he cannot hear your curse, and cannot see your snare, BUT YAHUAH CAN. You shall fear your Aluahim.'],
-        ['mosheh_o','You do no unrighteousness in right-ruling: you do not favour the poor, nor honour the face of the great — in righteousness you rightly rule your neighbour. You do not hate your brother in your heart; you shall certainly rebuke him, and not bear sin because of him. You do not take vengeance, nor bear a grudge — AND YOU SHALL LOVE YOUR NEIGHBOUR AS YOURSELF. I AM YAHUAH.'],
+        ['mosheh_o','Do no unrighteousness in right-ruling: do not be partial to the poor or chen the face of the great, but rightly rule your neighbour in righteousness. Do not hate your brother in your heart; reprove your neighbour, for certain and bear no sin because of him. Do not take vengeance or bear a grudge against the children of your people — AND YOU SHALL LOVE YOUR NEIGHBOUR AS YOURSELF. I AM YAHUAH.'],
         ['mosheh_o','And the stranger who sojourns among you shall be to you as the native among you, and YOU SHALL LOVE HIM AS YOURSELF — for you were strangers in the land of Mitsrayim. Righteous scales, righteous weights. I am YAHUAH your Aluahim, who brought you out.'],
        ]},
        {sfx:'holy'},{burst:[23,16,'mote',16]},
@@ -5656,32 +5791,32 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'goshen', music:'holy', text:'The corner left standing, the wage paid by sundown, the blind man’s path kept clear, the stranger loved as the native — “Be set-apart, for I am set-apart”: holiness measured at the field-edge and the pay-table.', ref:'VAYIQRA 19:9–18, 33–36'},
+   {art:'goshen', music:'holy', text:'“Do not completely reap the corners of your field… The wages of him who is hired is not to remain with you all night until morning. Do not curse the deaf or put a stumbling-block before the blind… Let the stranger who dwells among you be to you as the native among you and you shall love him as yourself.”', ref:'VAYIQRA 19:9–18, 33–36', stage:{"set":"field","time":"day","cam":"pan-r","props":[{"k":"sheaves","x":0.3,"z":0.32,"n":3},{"k":"sheaves","x":0.9,"z":0.3,"n":2}],"cast":[{"id":"hebrew","look":{"name":"The Owner of the Field"},"x":0.3,"z":0.08,"face":"r","pose":"point","hold":"basket","acts":[{"at":1,"pose":"hold"},{"at":3,"face":"l","pose":"bless"}]},{"id":"poorbro","x":0.84,"z":0.14,"face":"l","pose":"kneel"},{"id":"hired","look":{"name":"The Hired Man","skin":"#6e4524","hair":"#1d1208","robe":"#9a8a6a","short":1},"enter":"r","at":1,"to":0.46,"z":0.04,"face":"l","pose":"stand"},{"id":"blind","look":{"name":"A Blind Man","skin":"#6b4828","hair":"#b8b2a4","robe":"#6a665a","beard":"#b8b2a4","old":1},"enter":"r","at":2,"to":0.64,"z":0.12,"face":"l","pose":"stand","hold":"staff"},{"id":"stranger","look":{"name":"The Stranger","skin":"#8a5a30","hair":"#1d1208","robe":"#4a6a8a","headcover":"#c8b890","beard":"#1d1208"},"enter":"l","at":3,"to":0.14,"z":0.1,"face":"r","pose":"stand"}]}},
   ],
   complete:'You shall love your neighbour as yourself — I am YAHUAH.'
 },
-{ id:'v13', title:'Set-apart to Their Aluahim', ref:'VAYIQRA 21–22',
+{ id:'v13', title:'Qadash to Their Aluahim', ref:'VAYIQRA 21–22',
   intro:[
-   {art:'mishkanart', music:'holy', text:'“Speak to the kohanim, the sons of Aharon… they are set-apart to their Aluahim, and do not profane the Name of their Aluahim — for they bring the fire offerings of YAHUAH, the bread of their Aluahim.” For the dead, no defilement but the nearest of kin; for the high kohen, none at all — the crown of the anointing oil of his Aluahim is upon him.', ref:'VAYIQRA 21:1–12'},
-   {art:'mishkanart', music:'holy', text:'And no man of the seed of Aharon in whom there is a defect comes near to offer — yet he EATS the bread of his Aluahim, the most set-apart: barred from the service, never from the table. And no offering with a defect is brought, “for it is not acceptable for you” — the Healer is not honoured with the lame, nor the Giver with the leftover.', ref:'VAYIQRA 21:16–23; 22:17–25'},
-   {art:'stars', music:'holy', text:'“And you do not profane My set-apart Name — and I shall be SET APART among the children of Yasharal. I am YAHUAH, who sets you apart, who brought you out of the land of Mitsrayim, to be your Aluahim. I am YAHUAH.”', ref:'VAYIQRA 22:31–33'},
+   {art:'mishkanart', music:'holy', text:'“Speak to the kohanim, the sons of Aharon… No one is to be defiled for the dead… except for his relatives who are nearest to him… They are qadash (Set Apart) to their Aluahim and do not profane the Name of their Aluahim… And the kohen gadol… nor come near any dead body… for the sign of dedication of the anointing oil of his Aluahim is upon him.”', ref:'VAYIQRA 21:1–12', stage:{"set":"camp","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"tent","x":0.08,"z":0.55}],"fx":[{"k":"rays","x":0.82,"at":5}],"cast":[{"id":"dead","look":{"name":"The Dead","skin":"#6e4a28","hair":"#9a9286","robe":"#d8d0c0","beard":"#9a9286"},"label":false,"x":0.2,"z":0.16,"face":"r","pose":"dead","onbed":1},{"id":"elazar","x":0.5,"z":0.1,"face":"l","pose":"stand","acts":[{"at":1,"face":"r"}]},{"id":"ithamar","x":0.36,"z":0.06,"face":"l","pose":"stand","acts":[{"at":2,"pose":"weep"}]},{"id":"aharon_k","x":0.8,"z":0.12,"face":"l","pose":"stand","hold":"oil","acts":[{"at":3,"pose":"raise"},{"at":4,"face":"r","pose":"stand"},{"at":5,"face":"l","pose":"hold"}]}],"crowd":[{"kind":"women","n":3,"x":0.18,"w":0.2,"z":0.46,"face":"r","pose":"weep"}]}},
+   {art:'mishkanart', music:'holy', text:'“No man among the offspring of Aharon the kohen, who has a defect, is to come near to bring the offerings made by fire to YAHUAH… He does EAT the bread of his Aluahim, both the most qadash (Set Apart) and the qadash (Set Apart), only, he does not go near the veil or approach the mizbe’ach…” — “Whatever has a defect, you do not bring, for it is not acceptable for you.”', ref:'VAYIQRA 21:16–23; 22:17–25', stage:{"set":"camp","time":"day","cam":"push","focus":0.5,"props":[{"k":"tabernacle","x":0.46,"z":0.85,"s":1.1},{"k":"altar","x":0.68,"z":0.38,"bronze":1,"sacrifice":1},{"k":"table","x":0.3,"z":0.12},{"k":"goat","x":0.92,"z":0.2,"face":"l","color":"#7a6a5a","at":2}],"cast":[{"id":"lamekohen","look":{"name":"A Kohen With a Defect","skin":"#704a27","hair":"#33230f","robe":"#e8e2d2","beard":"#33230f","headcover":"#ece8da"},"x":0.16,"z":0.1,"face":"r","pose":"sit","hold":"bread"},{"id":"elazar","x":0.44,"z":0.1,"face":"r","pose":"stand","acts":[{"at":0,"to":0.56},{"at":2,"face":"r","pose":"point"}]},{"id":"hebrew","enter":"r","at":2,"to":0.82,"z":0.1,"face":"l","pose":"stand","label":false}]}},
+   {art:'stars', music:'holy', text:'“And do not profane My qadash (Set Apart) Name and I shall be QADASH (SET APART) among the children of Yasharal. I am YAHUAH, who sets you apart, who brought you out of the land of Mitsrayim, to be your Aluahim. I am YAHUAH.”', ref:'VAYIQRA 22:31–33', stage:{"set":"partedsea","time":"night","cam":"pan-r","fx":[{"k":"firepillar","x":0.12,"at":1}],"cast":[{"id":"mosheh_o","x":0.72,"z":0.08,"face":"l","pose":"raise","hold":"rod","say":0}],"crowd":[{"kind":"people","n":16,"x":0.5,"w":0.3,"at":1,"stream":"away","z0":-0.06,"z1":1.12,"speed":20},{"kind":"elders","n":3,"x":0.84,"w":0.1,"z":0.45,"face":"l"}]}},
   ],
   scene:null,
-  complete:'Barred from the service, never from the table — and the Name kept set-apart in Yasharal.'
+  complete:'Barred from the service, never from the table — and the Name kept qadash (Set Apart) in Yasharal.'
 },
 ]},
 /* ============ ACT VI — THE APPOINTED TIMES ============ */
 { id:'vact6', roman:'VI', title:'The Appointed Times', ref:'VAYIQRA 23–25 · YOḆELIM 6; 50', chapters:[
 { id:'v14', title:'The Mo‛edim', ref:'VAYIQRA 23',
   intro:[
-   {art:'stars', music:'holy', text:'“Speak to the children of Yasharal, and say to them: The appointed times of YAHUAH, which you proclaim as set-apart gatherings — MY appointed times, are these…”', ref:'VAYIQRA 23:1–2'},
+   {art:'stars', music:'holy', text:'“Speak to the children of Yasharal and say to them: The appointed times of YAHUAH, which you are to proclaim as qadash (Set Apart) gatherings, MY appointed times, are these…”', ref:'VAYIQRA 23:1–2', stage:{"set":"night","cam":"up","focus":0.5,"props":[{"k":"rock","x":0.5,"z":0.09,"w":56,"h":22},{"k":"tent","x":0.9,"z":0.8},{"k":"tent","x":0.72,"z":0.86}],"fx":[{"k":"stars"}],"cast":[{"id":"mosheh_o","x":0.24,"z":0.12,"face":"r","pose":"point","say":0},{"id":"levite","x":0.5,"z":0.1,"dy":-0.06,"face":"r","pose":"raise","hold":"shofar"}],"crowd":[{"kind":"people","n":8,"x":0.78,"w":0.3,"z":0.55,"face":"l"}]}},
   ],
   scene:{
    map:{biome:'plains', w:50, h:28, seed:1049,
      features:[
-       {type:'firepit',x:10,y:15,lit:true,id:'shabbat',examine:'The seventh day: a Shabbath of rest, a set-apart gathering — you do no work.'},
+       {type:'firepit',x:10,y:15,lit:true,id:'shabbat',examine:'The seventh day: a Shabbath of rest, a qadash (Set Apart) gathering — you do no work.'},
        {type:'doorway',x:16,y:13.5,id:'pesachdoor',examine:'The fourteenth of the first month, between the evenings: the Pesach to YAHUAH — and seven days of unleavened bread.'},
-       {type:'wheat',x:23,y:14.5,id:'omer',examine:'The sheaf of the first of your harvest — waved before YAHUAH on the morrow of the Shabbath.'},
+       {type:'wheat',x:23,y:14.5,id:'omer',examine:'The sheaf of the first-fruits of your harvest — waved before YAHUAH on the morrow after the Shabbath.'},
        {type:'pot',x:29,y:14.5,id:'loaves',examine:'Count fifty days — and bring a new grain offering: two loaves, baked WITH leaven, the firstfruits to YAHUAH. The Festival of Shaḇu‛oth.'},
        {type:'clearing',x:36,y:15,flat:2},
        {type:'clearing',x:42,y:19,flat:2},
@@ -5704,28 +5839,28 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'shabbat',text:'The first appointed time: the seventh day',
       script:[
-       {say:['mosheh_o','“Six days work is done, and on the SEVENTH day is a Shabbath of rest, a set-apart gathering — you do no work: it is a Shabbath to YAHUAH in all your dwellings.” The week itself is His calendar’s first festival, walking with you wherever you walk.']},
+       {say:['mosheh_o','“Six days work is done, and on the SEVENTH day is a Shabbath of rest, a qadash (Set Apart) gathering — you do no work: it is a Shabbath to YAHUAH in all your dwellings.” The week itself is His calendar’s first festival, walking with you wherever you walk.']},
       ]},
      {type:'interact',prop:'pesachdoor',text:'The Pesach and the Matsoth — in the first month',hiddenUntil:1,
       script:[
-       {say:['mosheh_o','You stood inside such a door, the blood over your head — “In the first month, on the fourteenth day, between the evenings: the PESACH to YAHUAH. And on the fifteenth, the Festival of MATSOTH: seven days you eat unleavened bread.” The night of watches, kept forever.']},
+       {say:['mosheh_o','You stood inside such a door, the blood over your head — “In the first month, on the fourteenth day of the month, between the evenings, is the PESACH to YAHUAH. And on the fifteenth day of this month is the Festival of UNLEAVENED BREAD to YAHUAH – seven days you eat unleavened bread.” The night of watches, kept forever.']},
       ]},
      {type:'interact',prop:'omer',text:'The sheaf of the firstfruits',hiddenUntil:2,
       script:[
-       {say:['mosheh_o','“When you come into the land and reap its harvest, you shall bring a SHEAF of the first of your harvest to the kohen — and he shall WAVE the sheaf before YAHUAH, for your acceptance: on the morrow of the Shabbath.” The first armful of every harvest, lifted up before a grain of it touches your own table.']},
+       {say:['mosheh_o','“When you come into the land which I give you and shall reap its harvest, then you shall bring a SHEAF of the first-fruits of your harvest to the kohen. And he shall WAVE the sheaf before YAHUAH, for your acceptance. On the morrow after the Shabbath the kohen waves it.” The first armful of every harvest, lifted up before a grain of it touches your own table.']},
        {sfx:'chime'},{burst:[23,14.5,'mote',12]},
       ]},
      {type:'interact',prop:'loaves',text:'Count fifty days — Shaḇu‛oth',hiddenUntil:3,
       script:[
        {say:['mosheh_o','“And you shall count for yourselves from the morrow of the Shabbath SEVEN COMPLETED SHABBATHOTH — fifty days — and bring a new grain offering: TWO LOAVES, baked WITH leaven, firstfruits to YAHUAH.” And when you reap — the corner and the gleanings stay for the poor; the festival law carries the field law inside it.']},
-       {say:['narrator','WITNESS — In this month, in the third month, the covenants of the fathers were made and renewed: with Noaḥ after the flood, with Aḇraham between the pieces — and the Festival of Shaḇu‛oth is written in the tablets of the shamayim, to renew the covenant in it year by year.']},
+       {say:['narrator','WITNESS — In this month, in the third month, the berithot of the fathers were made and renewed: with Noaḥ after the flood, with Aḇraham between the pieces — and the Festival of Shaḇu‛oth is written in the tablets of the shamayim, to renew the berith in it year by year.']},
       ]},
      {type:'goto',x:36,y:15,radius:2,text:'The seventh month: Teru‛ah, and the tenth day',hiddenUntil:4,
       script:[
        {sfx:'thunder'},{wait:300},{sfx:'chime'},
-       {say:['mosheh_o','“In the seventh month, on the first of the month: a rest, a remembrance of TERU‛AH — the blowing — a set-apart gathering.” And on the TENTH of the month: YOM HAKIPPURIM — you shall afflict your beings; for whoever does any work on that same day, that being I shall destroy. You have walked that day already, behind a goat going east.']},
+       {say:['mosheh_o','“In the seventh month, on the first day of the month, you have a rest, a remembrance of blowing of trumpets, a qadash (Set Apart) gathering… On the TENTH day of this seventh month is the DAY OF ATONEMENT…”']},{say:['mosheh_o','“… and you shall afflict your beings… And any being who does any work on that same day, that being I shall destroy from the midst of his people.” You have walked that day already, behind a goat going east.']},
       ]},
-     {type:'collect',item:'flower',need:4,text:'And on the fifteenth: take the fruit of goodly trees, palm branches, leafy boughs and willows',hiddenUntil:5},
+     {type:'collect',item:'flower',need:4,text:'And on the fifteenth: take the fruit of good trees, branches of palm trees, twigs of leafy trees and willows',hiddenUntil:5},
      {type:'goto',x:42,y:19.5,radius:2,text:'Build the sukkah — and rejoice before YAHUAH seven days',hiddenUntil:6,
       script:[
        {addProp:{type:'sukkah',x:42,y:18.5,id:'booth'}},
@@ -5737,13 +5872,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'sukkotart', music:'holy', text:'WITNESS — “And the Shabbath, a sign forever” — the appointed times kept in the shamayim and given to Yasharal on earth: one calendar above and below, that the people of YAHUAH might keep time with their Maker.', ref:'VAYIQRA 23:44 · YOḆELIM 6; 50'},
+   {art:'sukkotart', music:'holy', text:'WITNESS — Thus did Mosheh speak of the appointed times of YAHUAH to the children of Yasharal… Command the children of Yasharal that they observe the years according to this counting, three hundred and sixty-four days… on the heavenly tablets the division of days is ordained… Keep Shabbath free from all work on that day… This is a day for Yasharal among all their days forever.', ref:'VAYIQRA 23:44 · YOḆELIM 6; 50', stage:{"set":"mountain","time":"night","cam":"push","focus":0.35,"fx":[{"k":"stars","at":1},{"k":"glory","x":0.2,"y":0.1,"at":2},{"k":"rays","x":0.5,"at":4}],"cast":[{"id":"mosheh_o","x":0.34,"z":0.1,"face":"r","pose":"speak","hold":"tablets","say":0,"turn":[1,"l"],"acts":[{"at":2,"pose":"hold"}]},{"id":"malak","look":{"name":"The Mal’ak of the Presence","angel":1,"skin":"#6e4a28","hair":"#e8c66a","robe":"#f4eee0"},"x":0.14,"z":0.2,"face":"r","pose":"point","at":1,"say":1}],"crowd":[{"kind":"people","n":8,"x":0.72,"w":0.4,"z":0.55,"face":"l","from":"stand","pose":"sitground","at":3}]}},
   ],
   complete:'These are MY appointed times — His calendar, planted in His people, forever.'
 },
 { id:'v15', title:'The Lamp, the Bread, and the Name', ref:'VAYIQRA 24',
   intro:[
-   {art:'menorahart', music:'holy', text:'“Command the children of Yasharal that they bring to you clear oil of pressed olives for the light, to make the lamps burn CONTINUALLY… from evening until morning before YAHUAH continually — a law forever.”', ref:'VAYIQRA 24:1–4'},
+   {art:'menorahart', music:'holy', text:'“Command the children of Yasharal that they bring to you clear oil of pressed olives for the light, to make the lamps burn CONTINUALLY… from evening until morning before YAHUAH continually — a law forever.”', ref:'VAYIQRA 24:1–4', stage:{"set":"art","cam":"push","focus":0.45,"props":[{"k":"table","x":0.2,"z":0.16,"at":1}],"cast":[{"id":"aharon_k","x":0.36,"z":0.04,"face":"r","pose":"hold","hold":"oil","acts":[{"at":1,"pose":"bless"}]},{"id":"ithamar","enter":"l","at":1,"to":0.1,"z":0.2,"face":"r","pose":"carry","hold":"bread"}]}},
   ],
   scene:{
    map:{biome:'interior', w:26, h:16, seed:1053,
@@ -5761,31 +5896,31 @@ STORY.push(
      {type:'interact',prop:'menorah',text:'Trim and fill the lamps — they burn from evening to morning',
       script:[
        {burst:[9,6,'mote',12]},{sfx:'chime'},
-       {say:['elazar','Clear oil of pressed olives — and the flame never out from evening to morning, before YAHUAH continually. While the camp sleeps, the light stands awake before Him. Aharon arranges it; we, his sons, after him; and sons of ours after us — a law forever.']},
+       {say:['elazar','Clear oil of pressed olives for the light, to make the lamps burn continually — from evening until morning before YAHUAH continually. While the camp sleeps, the light stands awake before Him. Aharon arranges it; we, his sons, after him; and sons of ours after us — a law forever.']},
       ]},
      {type:'interact',prop:'shewtable',text:'Set the twelve loaves in two rows — Shabbath by Shabbath',hiddenUntil:1,
       script:[
        {burst:[17,6,'mote',12]},{sfx:'chime'},
-       {say:['elazar','Twelve loaves — a loaf for every tribe — in two rows on the clean table, with frankincense; renewed every Shabbath, taken from the children of Yasharal by an everlasting covenant. The whole nation, week by week, bread on His table, before His face.']},
+       {say:['elazar','Twelve loaves — a loaf for every tribe — in two rows on the clean table, with frankincense; renewed every Shabbath, taken from the children of Yasharal by an everlasting berith. The whole nation, week by week, bread on His table, before His face.']},
       ]},
      {type:'goto',x:13,y:12,radius:1.8,text:'A cry from the camp — a matter is brought to Mosheh',hiddenUntil:2,
       script:[
-       {fade:'out'},{music:'sorrow'},{toast:'And the son of a Yasharalite woman and a Mitsrite man went out among the children of Yasharal — and fought in the camp…'},{wait:1900},{fade:'in'},
-       {say:['narrator','And in the fight he BLASPHEMED THE NAME, and cursed. And they brought him to Mosheh, and put him in under guard, TO DECLARE TO THEM AT THE MOUTH OF YAHUAH — for even judgment waits for the Judge; Mosheh would not guess at so weighty a matter.']},
-       {say:['voice','Bring the blasphemer outside the camp… he who blasphemes the Name of YAHUAH shall certainly be put to death — the stranger as well as the native. And whoever takes a life, it is required of him; fracture for fracture, eye for eye, tooth for tooth — ONE RIGHT-RULING for the stranger and for the native: for I am YAHUAH your Aluahim.']},
+       {fade:'out'},{music:'sorrow'},{toast:'And the son of a Yasharalite woman, whose father was a Mitsrite, went out among the children of Yasharal — and the woman’s son and a man of Yasharal strove in the camp…'},{wait:1900},{fade:'in'},
+       {say:['narrator','And in the fight the woman’s son BLASPHEMED THE NAME and cursed, so they brought him to Mosheh. And they put him in under guard, THAT IT MIGHT BE DECLARED TO THEM AT THE MOUTH OF YAHUAH — for even judgment waits for the Judge; Mosheh would not guess at so weighty a matter.']},
+       {say:['voice','Bring the one who has cursed outside the camp… he who blasphemes the Name of YAHUAH shall certainly be put to death — the stranger as well as the native. And he who smites the life from any man shall certainly be put to death; fracture for fracture, eye for eye, tooth for tooth — you are to have ONE RIGHT-RULING, for the stranger and for the native, for I am YAHUAH your Aluahim.']},
        {fade:'out'},{wait:900},{fade:'in'},{music:'holy'},
        {say:['elazar','And the children of Yasharal did as YAHUAH commanded Mosheh. …The Name over the camp, the lamps before the veil, the loaves on the table: everything in this place stands or falls by the weight of the NAME. Guard it on your lips as we guard this flame.']},
       ]},
    ],
   },
   outro:[
-   {art:'menorahart', music:'holy', text:'The lamp never out, the bread never stale, the Name never light on the tongue — one measure for stranger and native, before the One whose Presence burned at the heart of the camp.', ref:'VAYIQRA 24:1–23'},
+   {art:'menorahart', music:'holy', text:'“Command the children of Yasharal that they bring to you clear oil of pressed olives for the light, to make the lamps burn continually… And you shall take fine flour and bake twelve cakes… On every Shabbath he is to arrange it before YAHUAH continually… And he who blasphemes the Name of YAHUAH shall certainly be put to death… You are to have one right-ruling, for the stranger and for the native.”', ref:'VAYIQRA 24:1–23', stage:{"set":"art","cam":"push","focus":0.45,"props":[{"k":"table","x":0.2,"z":0.16,"at":1}],"cast":[{"id":"aharon_k","x":0.36,"z":0.04,"face":"r","pose":"hold","hold":"oil","acts":[{"at":1,"pose":"bless"}]},{"id":"ithamar","enter":"l","at":1,"to":0.1,"z":0.2,"face":"r","pose":"carry","hold":"bread"}]}},
   ],
   complete:'The lamps from evening to morning, the loaves Shabbath by Shabbath — and the Name guarded above all.'
 },
-{ id:'v16', title:'The Yoḇel', ref:'VAYIQRA 25',
+{ id:'v16', title:'The Yobal', ref:'VAYIQRA 25',
   intro:[
-   {art:'goshen', music:'eden', text:'“When you come into the land which I give you, then the land shall keep a SHABBATH to YAHUAH: six years you sow your field… but in the seventh year the land has a Shabbath of rest. And what grows of its own you shall not reap — it is a year of rest for the land; and its increase is food for you, and your servant, and the stranger, and the beast.”', ref:'VAYIQRA 25:1–7'},
+   {art:'goshen', music:'eden', text:'“When you come into the land which I give you, then the land shall observe a SHABBATH to YAHUAH. Six years you sow your field… but in the seventh year the land is to have a Shabbath of rest… Do not reap what grows of its own of your harvest… And the Shabbath of the land shall be to you for food, for you and your servant… and for the stranger who sojourns with you, and for your livestock.”', ref:'VAYIQRA 25:1–7', stage:{"set":"field","time":"day","cam":"pan-r","props":[{"k":"tree","x":0.14,"z":0.42,"h":130},{"k":"vine","x":0.56,"z":0.4,"at":3},{"k":"sheep","x":0.84,"z":0.42,"n":4,"w":80,"at":5},{"k":"oxen","x":0.64,"z":0.55,"n":2,"at":5}],"fx":[{"k":"rays","x":0.4}],"cast":[{"id":"hebrew","look":{"name":"Man of Yasharal"},"x":0.24,"z":0.08,"face":"r","pose":"stand","hold":"basket","acts":[{"at":1,"to":0.38,"pose":"carry"},{"at":2,"to":0.2,"pose":"sitground","face":"r"}]},{"id":"hebreww","x":0.34,"z":0.14,"face":"l","pose":"hold","hold":"bread","at":4,"label":false},{"id":"servant","look":{"name":"Your Servant","short":1},"x":0.46,"z":0.1,"face":"l","pose":"sitground","at":4},{"id":"stranger","look":{"name":"The Stranger","skin":"#8a5a30","hair":"#1d1208","robe":"#4a6a8a","headcover":"#c8b890","beard":"#1d1208"},"enter":"r","at":5,"to":0.72,"z":0.12,"face":"l","pose":"stand"}]}},
   ],
   scene:{
    map:{biome:'plains', w:46, h:28, seed:1057,
@@ -5801,9 +5936,9 @@ STORY.push(
      {id:'poorbro',char:'poorbro',x:29,y:19.5,wander:false,
       script:[
        {say:['poorbro','Brother… the bad years took the field, and then the tent, and the buyer’s price hangs over me still. I have no hand left to redeem it. The Torah names the nearest kinsman as redeemer — and the nearest is you.']},
-       {say:['hebrew','Then count the years since the sale, and reckon the remainder to the Yoḇel — that is the price, and not a sheqel more, for the buyer bought harvests, not soil. “THE LAND IS NOT SOLD BEYOND RECLAIM — FOR THE LAND IS MINE,” says YAHUAH, “for you are sojourners and settlers WITH ME.” Here is the silver, brother. Your field comes home — and you with it.']},
+       {say:['hebrew','Then count the years since its sale and return the remainder to the man to whom he sold it — that is the price, and not a sheqel more, for the buyer bought harvests, not soil. “THE LAND IS NOT TO BE SOLD BEYOND RECLAIM — FOR THE LAND IS MINE,” says YAHUAH, “for you are sojourners and settlers WITH ME.” Here is the silver, brother. Your field comes home — and you with it.']},
        {sfx:'chime'},{burst:[29,19.5,'mote',14]},
-       {say:['narrator','“And when your brother becomes poor… you shall sustain him — take no interest from him, and fear your Aluahim — and he shall live with you AS A BROTHER. For they are MY servants, whom I brought out of the land of Mitsrayim: they shall not be sold as slaves.”']},
+       {say:['narrator','“And when your brother becomes poor… then you shall sustain him… Take no interest from him, or profit, but you shall fear your Aluahim and YOUR BROTHER SHALL LIVE WITH YOU. For they are MY servants, whom I brought out of the land of Mitsrayim, they are not sold as slaves.”']},
       ]},
      {id:'fam1',char:'hebreww',x:15,y:18.5,wander:true,range:1.4,noTalk:true},
      {id:'sheep1',animal:'sheep',x:12,y:20.5,range:2,noTalk:true},
@@ -5816,10 +5951,10 @@ STORY.push(
      {call:G=>campLife(G)},
    ],
    objectives:[
-     {type:'goto',x:22,y:14.5,radius:2,text:'The Day of Atonement of the fiftieth year — sound the shophar through the land',
+     {type:'goto',x:22,y:14.5,radius:2,text:'The Day of Atonement of the fiftieth year — cause a ram’s horn to pass through the land',
       script:[
        {sfx:'thunder'},{wait:300},{sfx:'holy'},{burst:[22,13,'holy',20]},{music:'holy'},
-       {say:['narrator','“And you shall count seven Shabbathoth of years — forty-nine years — and cause the SHOPHAR to sound on the tenth of the seventh month, on YOM HAKIPPURIM, in ALL your land. And you shall SET APART the fiftieth year — AND PROCLAIM LIBERTY THROUGHOUT ALL THE LAND, TO ALL ITS INHABITANTS. It is a YOḆEL for you: each of you returns to his possession, each of you returns to his clan.”']},
+       {say:['narrator','“And you shall count seven Shabbaths of years for yourself, seven times seven years — forty-nine years. On the tenth day of the seventh month, on the Day of Atonement cause a RAM’S HORN to pass through ALL your land.”']},{say:['narrator','“And you shall SET THE FIFTIETH YEAR APART AND PROCLAIM RELEASE THROUGHOUT ALL THE LAND TO ALL ITS INHABITANTS — it is a YOBAL for you. And each of you shall return to his possession and each of you return to his clan.”']},
        {toast:'LIBERTY PROCLAIMED THROUGHOUT ALL THE LAND, TO ALL ITS INHABITANTS'},
       ]},
      {type:'collect',item:'silver',need:2,text:'Your brother has grown poor — count the redemption silver',hiddenUntil:1},
@@ -5827,16 +5962,16 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'goshen', music:'holy', text:'The land’s own Shabbath, the shophar of the fiftieth year, and the kinsman-redeemer’s silver — “for the land is Mine, and they are My servants”: no loss in Yasharal was ever meant to be forever.', ref:'VAYIQRA 25:10, 23, 42'},
+   {art:'goshen', music:'holy', text:'“And you shall set the fiftieth year apart and proclaim release throughout all the land… it is a Yobal for you. And each of you shall return to his possession… And the land is not to be sold beyond reclaim, for the land is Mine… For they are My servants, whom I brought out of the land of Mitsrayim, they are not sold as slaves.”', ref:'VAYIQRA 25:10, 23, 42', stage:{"set":"vineyard","time":"dawn","cam":"push","focus":0.5,"props":[{"k":"rock","x":0.84,"z":0.1,"w":56,"h":22},{"k":"house","x":0.14,"z":0.6,"color":"#b8a070"}],"cast":[{"id":"levite","x":0.84,"z":0.12,"dy":-0.06,"face":"l","pose":"raise","hold":"shofar"},{"id":"poorbro","enter":"l","at":1,"to":0.22,"z":0.08,"face":"r","pose":"stand","acts":[{"at":2,"pose":"kneel"}]},{"id":"hebreww","enter":"l","at":1,"to":0.1,"z":0.14,"face":"r","pose":"stand","label":false},{"id":"slave","look":{"name":"A Servant Set Free","skin":"#6e4524","hair":"#1d1208","robe":"#8a7a5a","short":1},"x":0.6,"z":0.12,"face":"l","from":"bound","pose":"raise","at":3}]}},
   ],
-  complete:'Proclaim liberty throughout all the land — each one returns to his possession.'
+  complete:'Proclaim release throughout all the land — and each of you shall return to his possession.'
 },
 ]},
 /* ============ ACT VII — THE COVENANT CHOICE ============ */
-{ id:'vact7', roman:'VII', title:'The Covenant Choice', ref:'VAYIQRA 26–27', chapters:[
+{ id:'vact7', roman:'VII', title:'The Berith Choice', ref:'VAYIQRA 26–27', chapters:[
 { id:'v17', title:'If You Walk in My Laws', ref:'VAYIQRA 26',
   intro:[
-   {art:'stars', music:'holy', text:'“You do not make idols for yourselves… My Shabbathoth you guard, and My Set-apart Place you revere. I am YAHUAH.”', ref:'VAYIQRA 26:1–2'},
+   {art:'stars', music:'holy', text:'“Do not make idols for yourselves… Guard My Shabbaths and reverence My Qodash (Set Apart Place). I am YAHUAH.”', ref:'VAYIQRA 26:1–2', stage:{"set":"camp","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"tabernacle","x":0.26,"z":0.72,"s":1.25},{"k":"idol","x":0.86,"z":0.28,"h":75,"horns":false}],"fx":[{"k":"shekinah","x":0.26,"at":1}],"cast":[{"id":"mosheh_o","x":0.6,"z":0.06,"face":"r","pose":"point","say":0,"acts":[{"at":1,"face":"l","pose":"raise"}]}],"crowd":[{"kind":"people","n":8,"x":0.46,"w":0.36,"z":0.5,"face":"l","from":"stand","pose":"bow","at":1}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:26, seed:1061,
@@ -5871,25 +6006,25 @@ STORY.push(
          ]},
        ]}},
        {rays:0},{music:'storm'},{time:'night'},{sfx:'thunder'},{shake:1.5},
-       {say:['voice','BUT IF YOU DO NOT OBEY ME… I shall appoint sudden alarm over you; you shall sow your seed in vain, for your enemies shall eat it. And if after all this you do not listen, I shall punish you SEVEN TIMES MORE for your sins — and break the pride of your power; your land shall not yield, the beast of the field shall bereave you, the sword shall execute the vengeance of the covenant — and I shall scatter you among the nations. THEN the land shall enjoy its Shabbathoth, all the days of the desolation — the rest you would not give it.']},
+       {say:['voice','BUT IF YOU DO NOT OBEY ME… I shall appoint sudden alarm over you… and you shall sow your seed in vain, for your enemies shall eat it.']},{say:['voice','And after all this, if you do not obey Me, then I shall punish you SEVEN TIMES MORE for your sins — and I shall break the pride of your power… and send wild beasts among you, which shall bereave you of your children… a sword executing the vengeance of My berith… And I shall scatter you among the gentiles.']},{say:['voice','THEN THE LAND WOULD REST AND ENJOY ITS SHABBATHS… for the time it did not rest on your Shabbaths when you dwelt in it.']},
        {music:'sorrow'},{wait:500},
-       {say:['voice','BUT IF THEY CONFESS their crookedness and the crookedness of their fathers — if their uncircumcised heart is humbled — THEN I SHALL REMEMBER MY COVENANT WITH YA‛AQOḆ, and also My covenant with Yahtsḥaq, and also My covenant with Aḇraham I remember — AND I REMEMBER THE LAND. For all that, when they are in the land of their enemies, I shall not reject them, nor shall I loathe them so as to destroy them and break My covenant with them — FOR I AM YAHUAH THEIR ALUAHIM.']},
+       {say:['voice','BUT IF THEY CONFESS their crookedness and the crookedness of their fathers — if their uncircumcised heart is then humbled — THEN I SHALL REMEMBER MY BERITH WITH YA‛AQOḆ and also My berith with Yahtsḥaq and also remember My berith with Aḇraham AND REMEMBER THE LAND.']},{say:['voice','And yet for all this, when they are in the land of their enemies, I shall not reject them, nor shall I loathe them so as to destroy them and break My berith with them. FOR I AM YAHUAH THEIR ALUAHIM.']},
        {time:'morning'},{music:'holy'},{rays:.6,raysX:22},{sfx:'holy'},{burst:[22,12,'holy',24]},
-       {say:['mosheh_o','Hear it, Yasharal, and write it on your heart: the curses have a floor, and the floor is the covenant. Scattered — but not unremembered; judged — but never unloved. The last word of the warning is His Name held out to us still.']},
+       {say:['mosheh_o','Hear it, Yasharal, and write it on your heart: the curses have a floor, and the floor is the berith. Scattered — but not unremembered; judged — but never unloved. The last word of the warning is His Name held out to us still.']},
        {rays:0},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'“Then I shall remember My covenant with Ya‛aqoḇ… and I remember the land.” — Blessing and curse, and beneath them both, a covenant that does not break.', ref:'VAYIQRA 26:40–45'},
+   {art:'stars', music:'holy', text:'“Then I shall remember My berith with Ya‛aqoḇ… and remember the land… And yet for all this, when they are in the land of their enemies, I shall not reject them, nor shall I loathe them so as to destroy them and break My berith with them. For I am YAHUAH their Aluahim.”', ref:'VAYIQRA 26:40–45', stage:{"set":"babylon","time":"dusk","cam":"push","focus":0.4,"fx":[{"k":"rays","x":0.36},{"k":"glory","x":0.36,"y":0.1,"at":3}],"cast":[{"id":"hebrew","look":{"name":"Man of Yasharal","sack":1},"x":0.36,"z":0.08,"face":"r","pose":"mourn","acts":[{"at":3,"pose":"pray"}]},{"id":"hebreww","x":0.22,"z":0.14,"face":"r","pose":"mourn","label":false,"acts":[{"at":3,"pose":"pray"}]}],"crowd":[{"kind":"captives","n":6,"x":0.5,"w":0.34,"z":0.55,"face":"r"},{"kind":"soldiers","side":"bavel","n":4,"x":0.84,"w":0.14,"z":0.6,"face":"l","at":2}]}},
   ],
-  complete:'I shall walk in your midst, and be your Aluahim — and the covenant beneath all, unbroken.'
+  complete:'I shall walk in your midst, and be your Aluahim — and the berith beneath all, unbroken.'
 },
 { id:'v18', title:'On Mount Sinai', ref:'VAYIQRA 27',
   intro:[
-   {art:'sinaiart', music:'holy', text:'“When a man separates a vow, by your valuation of beings to YAHUAH…” — the valuations of persons and beasts, of houses and fields; what is set apart may be redeemed with a fifth added; but the devoted thing is most set-apart, and the first-born is His already.', ref:'VAYIQRA 27:1–29'},
-   {art:'goshen', music:'holy', text:'“And all the TITHE of the land — of the seed of the land, of the fruit of the tree — IT IS YAHUAH’S: it is set-apart to YAHUAH. And all the tithe of the herd and the flock, whatever passes under the rod, the TENTH ONE is set-apart to YAHUAH.”', ref:'VAYIQRA 27:30–33'},
-   {art:'sinaiart', music:'holy', text:'“THESE ARE THE COMMANDS WHICH YAHUAH COMMANDED MOSHEH FOR THE CHILDREN OF YASHARAL — ON MOUNT SINAI.” So ends VAYIQRA, the Book of the Service: the open door of the offerings, the fire that fell, the day that cleanses, the calendar of heaven, and a covenant that remembers — that He might dwell in their midst, and walk among them.', ref:'VAYIQRA 27:34 — THE END OF THE BOOK OF THE SERVICE'},
+   {art:'sinaiart', music:'holy', text:'“When a man separates a vow, by your evaluation of lives unto YAHUAH… But if he indeed redeems it, then he shall add one-fifth to your evaluation… However, a first-born of the beasts, which is first-born to YAHUAH, no man sets it apart – whether bull or sheep, it belongs to YAHUAH… Whatever is laid under ban is most qadash (Set Apart) to YAHUAH.”', ref:'VAYIQRA 27:1–29', stage:{"set":"mountain","time":"dawn","cam":"pan-r","props":[{"k":"tabernacle","x":0.18,"z":0.7,"s":1.1},{"k":"sacks","x":0.5,"z":0.04,"n":5,"at":1},{"k":"sheep","x":0.78,"z":0.34,"n":3,"w":60,"at":2},{"k":"bull","x":0.5,"z":0.6,"at":2},{"k":"chest","x":0.28,"z":0.1,"gold":1,"at":3}],"cast":[{"id":"elazar","x":0.38,"z":0.08,"face":"r","pose":"stand","acts":[{"at":1,"pose":"bless"},{"at":3,"pose":"point","face":"l"}]},{"id":"hebrew","look":{"name":"Man Who Vows"},"x":0.6,"z":0.1,"face":"l","pose":"raise","hold":"basket","acts":[{"at":1,"pose":"hold"}]},{"id":"shepherd","enter":"r","at":2,"to":0.84,"z":0.14,"face":"l","pose":"hold","hold":"lamb"}]}},
+   {art:'goshen', music:'holy', text:'“And all the TITHE of the land – of the seed of the land or of the fruit of the tree – BELONGS TO YAHUAH. It is qadash (Set Apart) to YAHUAH. And the entire tithe of the herd and of the flock, all that passes under the rod, the TENTH ONE is qadash (Set Apart) to YAHUAH.”', ref:'VAYIQRA 27:30–33', stage:{"set":"threshing","time":"dusk","cam":"pan-r","props":[{"k":"sheaves","x":0.12,"z":0.34,"n":3},{"k":"basket","x":0.44,"z":0.1,"fruit":"#c86a3a"},{"k":"sheep","x":0.74,"z":0.34,"n":6,"w":150,"at":2}],"cast":[{"id":"hebrew","look":{"name":"Man of Yasharal"},"x":0.3,"z":0.08,"face":"r","pose":"carry","hold":"basket","acts":[{"at":1,"pose":"kneel"}]},{"id":"levite","x":0.56,"z":0.1,"face":"l","pose":"stand","acts":[{"at":1,"pose":"bless"}]},{"id":"shepherd","enter":"r","at":2,"to":0.88,"z":0.16,"face":"l","pose":"point","hold":"rod"}]}},
+   {art:'sinaiart', music:'holy', text:'“THESE ARE THE COMMANDS WHICH YAHUAH COMMANDED MOSHEH FOR THE CHILDREN OF YASHARAL ON MOUNT SINAI.”', ref:'VAYIQRA 27:34 — THE END OF THE BOOK OF THE SERVICE'},
   ],
   scene:null,
   complete:'These are the commands which YAHUAH commanded Mosheh for the children of Yasharal — on Mount Sinai.'
@@ -5935,7 +6070,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6006,7 +6141,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6067,7 +6205,7 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6145,5 +6283,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main">YAHUSHA</div>
     <div class="title-sub">Neḇi’im — The Prophets · Book One</div>
-    <div class="title-verse">“Have I not commanded you? Be strong and brave. Do not be afraid, nor be discouraged, for YAHUAH your Aluahim is with you wherever you go.” — YAHUSHA 1:9</div>
+    <div class="title-verse">“Have I not commanded you? Be strong and courageous. Do not be afraid, nor be discouraged, for YAHUAH your Aluahim is with you wherever you go.” — YAHUSHA 1:9</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -284,7 +316,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Yahusha</h2>
-    <div class="hint">Five acts · the whole of YAHUSHA — the crossing of the Yardĕn, the wall and the trespass, the kings of the land, the inheritance divided at Shiloh, and the covenant at Sheḵem</div>
+    <div class="hint">Five acts · the whole of YAHUSHA — the crossing of the Yardĕn, the wall and the trespass, the sovereigns of the land, the inheritance divided at Shiloh, and the berith at Sheḵem</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -619,8 +651,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -728,7 +760,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -828,7 +860,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1090,6 +1124,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1133,7 +1177,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1395,6 +1441,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2657,6 +2713,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2852,7 +2928,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3057,8 +3133,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3545,6 +3622,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3608,7 +3686,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3660,15 +3742,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3679,6 +3795,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3704,6 +3826,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3732,6 +3855,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3749,7 +3873,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -3889,6 +4013,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -3952,17 +4081,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4126,22 +4256,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4154,7 +4288,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4177,11 +4311,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5542,7 +5689,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5581,11 +5728,11 @@ function drawTitleBg(g,t){
 const STORY=[];
 STORY.push(
 /* ============ ACT I — ARISE, CROSS OVER ============ */
-{ id:'yact1', roman:'I', title:'Arise, Cross Over This Yardĕn', ref:'YAHUSHA 1–5 · YASHAR 88', chapters:[
-{ id:'y1', title:'Be Strong and Very Brave', ref:'YAHUSHA 1',
+{ id:'yact1', roman:'I', title:'Arise, Pass Over This Yardĕn', ref:'YAHUSHA 1–5 · YASHAR 88', chapters:[
+{ id:'y1', title:'Be Strong and Very Courageous', ref:'YAHUSHA 1',
   intro:[
-   {art:'stars', music:'sorrow', text:'And it came to be, after the death of Mosheh the servant of YAHUAH, that YAHUAH spoke to Yahusha son of Nun, the assistant of Mosheh, saying: “Mosheh My servant is dead. And now, arise, pass over this Yardĕn — you and all this people — to the land which I am giving to them, the children of Yasharal.”', ref:'YAHUSHA 1:1–2'},
-   {art:'wilderness', music:'holy', text:'“Every place on which the sole of your foot treads I have given you, as I spoke to Mosheh… As I was with Mosheh, so I am with you. I do not fail you, nor forsake you.”', ref:'YAHUSHA 1:3–5'},
+   {art:'stars', music:'sorrow', text:'And it came to be, after the death of Mosheh the servant of YAHUAH, that YAHUAH spoke to Yahusha son of Nun, the assistant of Mosheh, saying, “Mosheh My servant is dead, so now, arise, pass over this Yardĕn, you and all this people, to the land which I am giving to them, to the children of Yasharal.”', ref:'YAHUSHA 1:1–2', stage:{"set":"river","time":"dawn","cam":"push","focus":0.4,"fx":[{"k":"glory","x":0.74,"y":0.1}],"props":[{"k":"tent","x":0.62,"z":1.0},{"k":"tent","x":0.72,"z":1.0},{"k":"tent","x":0.86,"z":1.0}],"cast":[{"id":"yahoshua","x":0.44,"z":0.06,"face":"r","from":"kneel","pose":"look","at":0,"hold":"staff"}],"crowd":[{"kind":"mourners","n":4,"x":0.18,"w":0.2,"z":0.1,"dz":0.04,"face":"r"}]}},
+   {art:'wilderness', music:'holy', text:'“Every place on which the sole of your foot treads I have given you, as I spoke to Mosheh… As I was with Mosheh, so I am with you. I do not fail you, nor forsake you.”', ref:'YAHUSHA 1:3–5', stage:{"set":"field","time":"dawn","cam":"pan-r","fx":[{"k":"glory","x":0.8,"y":0.08},{"k":"rays","x":0.6,"at":1}],"props":[{"k":"tree","x":0.86,"z":0.5},{"k":"vine","x":0.12,"z":0.55}],"cast":[{"id":"yahoshua","enter":"l","at":0,"to":0.42,"face":"r","pose":"look","hold":"staff","acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"kneel"}]}]}},
   ],
   scene:{
    map:{biome:'plains', w:54, h:38, seed:2101,
@@ -5601,7 +5748,7 @@ STORY.push(
      {id:'elazar',char:'elazar',x:28,y:14.5,wander:false,noTalk:true},
      {id:'officer1',char:'elder',x:23,y:19,wander:false,
       script:[
-       {say:['elder','The thirty days of weeping for Mosheh are completed, Yahusha. The people look now to you — the man on whom Mosheh laid his hands, the man filled with the spirit of wisdom.']},
+       {say:['elder','The days of weeping and mourning for Mosheh are completed, Yahusha. The people look now to you — the man on whom Mosheh laid his hands, the man filled with the ruach of wisdom.']},
        {say:['yahoshua','Then hear the command, officer, and pass through the midst of the camp: “Prepare food for yourselves, for within three days you pass over this Yardĕn, to go in to possess the land which YAHUAH your Aluahim is giving you to possess.”']},
        {say:['elder','Within three days… The river stands in flood, and the city of Yeriḥo stands beyond it. Yet it shall be told through every tent, word for word.']},
        {show:'eastman'},
@@ -5609,9 +5756,9 @@ STORY.push(
      {id:'eastman',char:'hebrew2',x:34,y:21,wander:false,hidden:true,
       script:[
        {say:['hebrew2','We are the men of Re’uḇĕn, of Gaḏ, and the half-tribe of Menashsheh. Mosheh gave us our inheritance beyond the Yardĕn — and we remember what we vowed to him.']},
-       {say:['yahoshua','Remember the word which Mosheh commanded you: YAHUAH your Aluahim is giving you rest, and this land. Your wives, your little ones, and your livestock stay in the land beyond the Yardĕn — but YOU shall pass over armed before your brothers, all your mighty men, and help them, until YAHUAH gives your brothers rest, as He gave you.']},
-       {say:['hebrew2','All that you have commanded us we shall do, and wherever you send us we shall go. As we obeyed Mosheh in all, so we obey you. Only — may YAHUAH your Aluahim be with you, as He was with Mosheh!']},
-       {say:['hebrew2','Whoever rebels against your mouth, and does not obey your words, according to all that you command him, is put to death. ONLY BE STRONG AND BRAVE!']},
+       {say:['yahoshua','Remember the word which Mosheh, servant of YAHUAH, commanded you, saying: YAHUAH your Aluahim is giving you rest and He shall give you this land. Let your wives, your little ones and your livestock stay in the land which Mosheh gave you beyond the Yardĕn. But YOU shall pass before your brothers armed, all your brave fighters and shall help them — until YAHUAH has given your brothers rest, as unto you.']},
+       {say:['hebrew2','All that you have commanded us we do and wherever you send us we go. According to all that we obeyed Mosheh, so we obey you. Only, let YAHUAH your Aluahim be with you, as He was with Mosheh!']},
+       {say:['hebrew2','Whoever rebels against your mouth, and does not obey your words, according to all that you command him, is put to death. ONLY BE STRONG AND COURAGEOUS!']},
        {emote:['eastman','heart']},{sfx:'chime'},
       ]},
    ],
@@ -5627,8 +5774,8 @@ STORY.push(
       script:[
        {rays:.85,raysX:26},{sfx:'holy'},
        {say:['voice','Mosheh My servant is dead. And now, arise, pass over this Yardĕn, you and all this people. No man is going to stand before you all the days of your life. As I was with Mosheh, so I am with you — I do not fail you, nor forsake you.']},
-       {say:['voice','BE STRONG AND BRAVE, for you are to let this people inherit the land which I swore to their fathers to give them. Only be strong and VERY brave, to guard to do according to all the Torah which Mosheh My servant commanded you. Do not turn from it right or left, so that you act wisely wherever you go.']},
-       {say:['voice','Do not let this Book of the Torah depart from your mouth, but you shall meditate on it day and night… For then you shall make your way prosperous, and act wisely. Have I not commanded you? Be strong and brave. Do not be afraid, nor be discouraged, for YAHUAH your Aluahim is with you wherever you go.']},
+       {say:['voice','BE STRONG AND COURAGEOUS, for you are to let this people inherit the land which I swore to their fathers to give them. Only be strong and VERY courageous, to guard to do according to all the Torah which Mosheh My servant commanded you. Do not turn from it right or left, so that you act wisely wherever you go.']},
+       {say:['voice','Do not let this Book of the Torah depart from your mouth, but you shall meditate on it day and night… For then you shall make your way prosperous, and act wisely. Have I not commanded you? Be strong and courageous. Do not be afraid, nor be discouraged, for YAHUAH your Aluahim is with you wherever you go.']},
        {burst:[26,13,'holy',18]},{rays:0},
        {say:['yahoshua','…Wherever I go. Then let the sandal be bound, and the scroll never far from my hand. The Yardĕn waits, and the promise is older than the river.']},
       ]},
@@ -5637,13 +5784,13 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'camp', music:'holy', text:'And the officers went through the midst of the camp, and commanded the people: “Prepare food for yourselves, for within three days you are passing over this Yardĕn, to go in to possess the land which YAHUAH your Aluahim is giving you.” And the answer rose from the tents of the east-bank tribes like one voice: “Only be strong and brave!”', ref:'YAHUSHA 1:10–18'},
+   {art:'camp', music:'holy', text:'And Yahusha commanded the officers of the people, saying, “Pass through the midst of the camp and command the people, saying, ‘Prepare food for yourselves, for within three days you are passing over this Yardĕn, to go in to possess the land which YAHUAH your Aluahim is giving you to possess.’ ” And Yahusha spoke to the Re’uḇĕnites and to the Gaḏites and to half the tribe of Menashsheh … And they answered Yahusha, saying, “… Only be strong and courageous.”', ref:'YAHUSHA 1:10–18', stage:{"set":"camp","time":"day","cam":"push","focus":0.45,"cast":[{"id":"yahoshua","x":0.28,"z":0.08,"face":"r","pose":"point","say":0,"hold2":"staff","acts":[{"at":1,"pose":"speak"},{"at":3,"pose":"stand"}]},{"id":"reuveni","look":{"name":"Man of Re’uḇĕn","skin":"#704a27","hair":"#2c1a0c","robe":"#7a5a3a","beard":"#2c1a0c","sash":"#8a3a2a"},"enter":"r","at":1,"to":0.6,"z":0.08,"face":"l","pose":"stand","say":2,"hold":"spear","acts":[{"at":3,"pose":"raise"}]}],"crowd":[{"kind":"elders","n":3,"x":0.5,"w":0.12,"z":0.3,"face":"l","exit":"r","exitAt":1},{"kind":"soldiers","side":"yasharal","n":8,"x":0.72,"w":0.34,"z":0.62,"face":"l","from":"stand","pose":"raise","at":3}]}},
   ],
-  complete:'Have I not commanded you? Be strong and brave — for YAHUAH your Aluahim is with you wherever you go.'
+  complete:'Have I not commanded you? Be strong and courageous — for YAHUAH your Aluahim is with you wherever you go.'
 },
 { id:'y2', title:'The Scarlet Cord', ref:'YAHUSHA 2',
   intro:[
-   {art:'journey', music:'tense', text:'And Yahusha son of Nun secretly sent two men from Shittim to spy, saying, “Go, see the land — and Yeriḥo.” And they went, and came to the house of a woman, an innkeeper, whose name was Raḥaḇ — a house built upon the wall of the city.', ref:'YAHUSHA 2:1'},
+   {art:'journey', music:'tense', text:'And Yahusha son of Nun secretly sent out two men from Shittim to spy, saying, “Go, see the land and Yeriḥo.” And they went and came to the house of a woman, a whore and her name was Raḥaḇ and they lay down there.', ref:'YAHUSHA 2:1', stage:{"set":"walls","time":"dusk","cam":"pan-r","focus":0.6,"props":[{"k":"house","x":0.84,"z":0.35,"w":90,"h":70,"color":"#b8a07a"}],"cast":[{"id":"yahoshua","x":0.14,"z":0.06,"face":"r","pose":"point","say":0,"hold2":"staff","acts":[{"at":1,"exit":"l"}]},{"id":"spy1","look":{"name":"Spy of Yasharal","skin":"#6e4524","hair":"#1d1208","robe":"#5a5040","beard":"#1d1208","headcover":"#7a6a50"},"x":0.27,"z":0.12,"face":"l","pose":"stand","hold":"staff","acts":[{"at":1,"to":0.6,"face":"r"}]},{"id":"spy2","look":{"name":"Spy of Yasharal","skin":"#7a4e29","hair":"#2c1a0c","robe":"#6a5a44","beard":"#2c1a0c","headcover":"#8a7a5a"},"label":false,"x":0.34,"z":0.16,"face":"l","pose":"stand","acts":[{"at":1,"to":0.66,"face":"r"}]},{"id":"rachav","x":0.8,"z":0.12,"face":"l","at":1,"pose":"bless","hold":"lamp"}]}},
   ],
   scene:{
    map:{biome:'city', w:42, h:32, seed:2102,
@@ -5674,39 +5821,39 @@ STORY.push(
        {say:['rachav','Up to the roof. Lie down among the stalks of flax, and whatever you hear — do not stir.']},
        {show:'guard1'},{show:'guard2'},
        {move:['guard1',32,18.6,.07]},{move:['guard2',34,18.6,.07]},
-       {say:['raider','Open, woman! The word of the sovereign of Yeriḥo: BRING OUT the men who came to you, who entered your house — for they have come to search out all the land!']},
-       {say:['rachav','Two men came to me, it is true — but I did not know from where. And at dark, when the gate was about to be shut, they went out. Where they went I do not know. Pursue them quickly — you shall overtake them! They cannot be far, on the road to the fords of the Yardĕn.']},
+       {say:['raider','Open, woman! The word of the sovereign of Yeriḥo: BRING OUT the men who have come to you, who have entered your house — for they have come to search out all the land!']},
+       {say:['rachav','Two men came to me, it is true — but I did not know where they were from. Then it came to be as the gate was being shut, when it was dark, that the men went out. I do not know where the men went. Pursue them quickly, so that you overtake them! They cannot be far, on the road to the fords of the Yardĕn.']},
        {move:['guard1',21,28,.08,'bg']},{move:['guard2',22,28,.08]},
        {hide:'guard1'},{hide:'guard2'},
-       {say:['narrator','And the men pursued them by the road to the Yardĕn, as far as the fords. And the gate was shut behind the pursuers — and the two spies lay hidden beneath the flax upon the roof.']},
+       {say:['narrator','And the men pursued them by the way to the Yardĕn, to the fords. And they shut the gate afterwards as soon as the pursuers had gone out — and the two spies lay hidden beneath the flax upon the roof.']},
       ]},
      {type:'talk',npc:'rachav',text:'Hear the woman of Yeriḥo, on the roof beneath the stars',hiddenUntil:1,
       script:[
        {music:'holy'},
        {say:['rachav','I know that YAHUAH has given you the land. Fear of you has fallen on us, and all the inhabitants of the land melt away before you.']},
-       {say:['rachav','For we have HEARD how YAHUAH dried up the water of the Sea of Reeds before you when you came out of Mitsrayim — and what you did to the two sovereigns of the Amorites beyond the Yardĕn, Siḥon and Og. And when we heard, our hearts melted; no spirit remained in any man because of you.']},
-       {say:['rachav','For YAHUAH your Aluahim — HE is Aluahim in the heavens above and on the earth beneath. Now please, swear to me by YAHUAH: as I have shown you loving-commitment, so shall you show loving-commitment to my father’s house. Give me a true token, that you shall spare my father and my mother, my brothers and my sisters, and all that they have — and deliver our lives from death.']},
-       {say:['hebrew2','Our lives for yours — if you do not expose this business of ours! And when YAHUAH gives us the land, we shall show loving-commitment and truth to you.']},
+       {say:['rachav','For we have HEARD how YAHUAH dried up the water of the Sea of Reeds before you when you came out of Mitsrayim — and what you did to the two sovereigns of the Amorites beyond the Yardĕn, Siḥon and Og. And when we heard, our hearts melted; no ruach remained in any man because of you.']},
+       {say:['rachav','For YAHUAH your Aluahim, HE is Aluahim in the shamayim above and on earth beneath. And now, please swear to me by YAHUAH, since I have shown you kindness, that you also show kindness to my father’s house and shall give me a true token — and shall spare my father and my mother and my brothers and my sisters and all that they have and shall deliver our lives from death.']},
+       {say:['hebrew2','Our lives for yours — if you do not expose this matter of ours! Then it shall be, when YAHUAH has given us the land, that we shall treat you in kindness and truth.']},
       ]},
      {type:'goto',x:36,y:16,radius:1.6,text:'To the window — down the wall by the cord, before first light',hiddenUntil:2,
       script:[
        {say:['hebrew2','Hear the token, Raḥaḇ: bind THIS SCARLET CORD in the window through which you let us down. Gather your father and mother and brothers into your house — whoever goes out of its doors, his blood is on his own head. But whoever is WITH you in the house — his blood is on our head, if a hand is laid on him.']},
-       {say:['rachav','According to your words, so be it. Go to the mountain, lest the pursuers meet you. Hide there three days, until they return — and afterwards, go your way.']},
+       {say:['rachav','Let it be according to your words. Go to the mountain, lest the pursuers come upon you. And you shall hide there three days, until the pursuers have returned and afterwards go on your way.']},
        {sfx:'chime'},{burst:[36,16,'mote',10]},
        {say:['narrator','And she let them down by a cord through the window, for her house was on the city wall. And she bound the scarlet cord in the window.']},
        {fade:'out'},{teleport:['player',37,10]},{teleport:['spy2',37.9,10.6]},{hide:'rachav'},{time:'morning'},{fade:'in'},
-       {say:['hebrew','Three days in the hollows of the mountain, brother, while the king’s men beat the fords for us. Then back across, to the son of Nun — with a word that will lift the whole camp.']},
+       {say:['hebrew','Three days in the hollows of the mountain, brother, while the sovereign’s men beat the fords for us. Then back across, to the son of Nun — with a word that will lift the whole camp.']},
       ]},
    ],
   },
   outro:[
-   {art:'mountain', music:'holy', text:'And the two men returned and passed over, and came to Yahusha son of Nun, and told him all that had befallen them. And they said to Yahusha, “TRULY YAHUAH has given all the land into our hands — and also, all the inhabitants of the land have melted away before us.”', ref:'YAHUSHA 2:23–24'},
+   {art:'mountain', music:'holy', text:'Then the two men returned and came down from the mountain and passed over. And they came to Yahusha son of Nun and related to him all that had befallen them. And they said to Yahusha, “TRULY YAHUAH has given all the land into our hands and also, all the inhabitants of the land have melted away because of us.”', ref:'YAHUSHA 2:23–24', stage:{"set":"river","time":"dawn","cam":"push","focus":0.45,"props":[{"k":"tent","x":0.12,"z":1.0},{"k":"tent","x":0.24,"z":1.0},{"k":"tent","x":0.36,"z":1.0}],"cast":[{"id":"spy1","look":{"name":"Spy of Yasharal","skin":"#6e4524","hair":"#1d1208","robe":"#5a5040","beard":"#1d1208","headcover":"#7a6a50"},"enter":"r","at":0,"to":0.58,"face":"l","pose":"stand","hold":"staff","say":2,"acts":[{"at":2,"pose":"point"}]},{"id":"spy2","look":{"name":"Spy of Yasharal","skin":"#7a4e29","hair":"#2c1a0c","robe":"#6a5a44","beard":"#2c1a0c","headcover":"#8a7a5a"},"label":false,"enter":"r","at":0,"to":0.7,"face":"l","pose":"stand","acts":[{"at":2,"pose":"raise"}]},{"id":"yahoshua","x":0.34,"z":0.06,"face":"r","at":1,"pose":"stand","hold":"staff","acts":[{"at":2,"pose":"look"}]}],"crowd":[{"kind":"elders","n":3,"x":0.14,"w":0.12,"z":0.12,"dz":0.03,"face":"r","at":1}]}},
   ],
-  complete:'Bind this scarlet cord in the window — and all who are with you in the house shall live.'
+  complete:'Bind this line of scarlet cord in the window — and all who are with you in the house shall live.'
 },
 { id:'y2b', title:'The Land That Devours', ref:'YAHUSHA 2:22 · BAMIḎBAR 13:32–33',
   intro:[
-   {art:'journey', music:'tense', text:'And the two spies went up into the mountain, and stayed there three days, until the pursuers returned empty from the fords. And from the heights they searched out the land — what it was, and the people dwelling in it, whether strong or weak, few or many; and what the land was, whether good or evil.', ref:'YAHUSHA 2:22 · BAMIḎBAR 13:18–20'},
+   {art:'journey', music:'tense', text:'So they left and came to the mountain and stayed there three days until the pursuers returned. And the pursuers sought them in all the way, but did not find them. — “… and see what the land is like and the people who dwell in it, whether strong or weak, whether few or many, and whether the land they dwell in is good or evil …”', ref:'YAHUSHA 2:22 · BAMIḎBAR 13:18–20', stage:{"set":"mountain","time":"dusk","cam":"push","focus":0.3,"props":[{"k":"rock","x":0.2,"z":0.04,"w":100,"h":40},{"k":"bush","x":0.06,"z":0.08}],"cast":[{"id":"spy1","look":{"name":"Spy of Yasharal","skin":"#6e4524","hair":"#1d1208","robe":"#5a5040","beard":"#1d1208","headcover":"#7a6a50"},"x":0.2,"z":0.14,"face":"r","pose":"sitground","acts":[{"at":2,"pose":"look"}]},{"id":"spy2","look":{"name":"Spy of Yasharal","skin":"#7a4e29","hair":"#2c1a0c","robe":"#6a5a44","beard":"#2c1a0c","headcover":"#8a7a5a"},"label":false,"x":0.13,"z":0.2,"face":"r","pose":"sitground","acts":[{"at":2,"pose":"point"}]}],"crowd":[{"kind":"soldiers","side":"aram","n":5,"x":0.62,"w":0.3,"z":0.5,"face":"l","enter":"r","at":1,"exit":"l","exitAt":2,"hold":"torch"}]}},
   ],
   scene:{
    map:{biome:'wild', w:56, h:40, seed:2123,
@@ -5742,7 +5889,7 @@ STORY.push(
       script:[
        {show:'giant1'},{show:'giant2'},{show:'giant3'},{show:'victim'},{show:'prey'},{show:'prey2'},
        {music:'storm'},{sfx:'thunder'},{shake:.8},
-       {say:['narrator','And you saw the Nephilim there, the sons of Anaq, of the giants — a fearsome sight. Beside them a man of the land was as a grasshopper; and so were we in our own eyes.']},
+       {say:['narrator','And you saw there the Nephilim, sons of Anaq, of the Nephilim — a fearsome sight. Beside them a man of the land was as a grasshopper — and we were like grasshoppers in our own eyes, and so we were in their eyes.']},
        {say:['giant','FLESH. The little ones breed well in this valley — and they are sweet.']},
        {move:['giant1',32,23,.05]},
        {burst:[32,23,'ash',18]},{despawn:'victim'},{sfx:'bad'},{shake:1.4},
@@ -5768,25 +5915,25 @@ STORY.push(
       ]},
      {type:'talk',npc:'yahoshua',text:'Cross back to the camp, and report the case to Yahusha son of Nun',hiddenUntil:3,
       script:[
-       {say:['hebrew','It is a good land, Yahusha — flowing with milk and honey, wide on every side. But we will not hide what we saw: the Nephilim are yet in it, the sons of Anaq. With our own eyes we watched them devour a man, uproot the great trees by the roots, and swallow up the flock and the herd. The land itself seems to devour its inhabitants.']},
+       {say:['hebrew','It is a good land, Yahusha — flowing with milk and honey, wide on every side. But we will not hide what we saw: the Nephilim are yet in it, the sons of Anaq. With our own eyes we watched them devour a man, uproot the great trees by the roots, and swallow up the flock and the herd. It is a land eating up its inhabitants.']},
        {say:['yahoshua','…The very words that broke a whole generation at Qaḏĕsh Barnĕa. And what say YOU two — as Kalĕḇ and I once said, alone against ten?']},
-       {say:['hebrew2','That the giants are BREAD for us, and their shade has departed from them! Fear of Yasharal has fallen on all the inhabitants of the land — they melt away before us. TRULY YAHUAH has given ALL the land into our hands.']},
+       {say:['hebrew2','That they are our BREAD, and their defence has turned away from them! TRULY YAHUAH has given ALL the land into our hands, and also, all the inhabitants of the land have melted away because of us.']},
        {say:['yahoshua','Then you have carried back the report of FAITH, and not of fear. Baruk are you both. Tomorrow we break camp for the Yardĕn — and the Aluahim who is greater than the giants passes over before us.']},
        {emote:['yahoshua','heart']},{sfx:'chime'},{burst:[12,33,'holy',18]},
       ]},
    ],
   },
   outro:[
-   {art:'mountain', music:'holy', text:'Two spies saw the very terror that had once turned a whole nation back to die in the wilderness — the giants, and a land that devours — and this time carried back not the tale of grasshoppers, but the report of faith: “Truly YAHUAH has given all the land into our hands, and all its inhabitants melt away before us.” What ten men could not believe standing on that same ground, two now believed — because they had learned at last what the ten never did.', ref:'YAHUSHA 2:24 · BAMIḎBAR 13:32–14:9'},
+   {art:'mountain', music:'holy', text:'And they gave the children of Yasharal an evil report of the land … “a land eating up its inhabitants … men of great size … we were like grasshoppers in our own eyes.” … “Only, do not rebel against YAHUAH, nor fear the people of the land, for they are our bread.” — And they said to Yahusha, “Truly YAHUAH has given all the land into our hands and also, all the inhabitants of the land have melted away because of us.”', ref:'YAHUSHA 2:24 · BAMIḎBAR 13:32–14:9', stage:{"set":"camp","time":"day","cam":"push","focus":0.4,"props":[{"k":"basket","x":0.3,"z":0.1,"fruit":"#6a2a5a"}],"cast":[{"id":"spy10","look":{"name":"One of the Ten Spies","skin":"#6e4524","hair":"#1d1208","robe":"#5a4a3a","beard":"#1d1208"},"x":0.22,"z":0.1,"face":"r","pose":"point","say":1,"acts":[{"at":2,"pose":"weep"},{"at":3,"pose":"stand"}]},{"id":"giant","x":0.86,"z":0.55,"at":2,"face":"l","pose":"stand","hold":"spear"},{"id":"kaleb","enter":"l","at":3,"to":0.5,"z":0.06,"face":"r","pose":"raise","say":3},{"id":"yahoshua","enter":"l","at":3,"to":0.38,"z":0.08,"face":"r","pose":"stand","hold":"staff","acts":[{"at":4,"pose":"point"}]}],"crowd":[{"kind":"people","n":9,"x":0.58,"w":0.5,"z":0.62,"face":"l","from":"stand","pose":"weep","at":2}],"fx":[{"k":"rays","x":0.42,"at":4}]}},
   ],
-  complete:'The giants are bread for us — truly YAHUAH has given all the land into our hands.'
+  complete:'The giants are our bread — truly YAHUAH has given all the land into our hands.'
 },
-{ id:'y3', title:'The Waters Stood Up in a Heap', ref:'YAHUSHA 3–4',
+{ id:'y3', title:'The Waters Rose in a Heap', ref:'YAHUSHA 3–4',
   intro:[
-   {art:'journey', music:'holy', text:'And Yahusha rose early in the morning, and they set out from Shittim and came to the Yardĕn, he and all the children of Yasharal, and stayed there before passing over. Now the Yardĕn overflows all its banks, all the days of harvest.', ref:'YAHUSHA 3:1 · 3:15'},
-   {art:'divide', music:'holy', text:'“And it shall be, as soon as the soles of the feet of the priests bearing the ark of YAHUAH, the Master of all the earth, rest in the waters of the Yardĕn — the waters of the Yardĕn shall be cut off, the waters coming down from upstream, and they shall stand as a heap.”', ref:'YAHUSHA 3:13'},
+   {art:'journey', music:'holy', text:'And Yahusha rose early in the morning and they set out from Shittim and came to the Yardĕn, he and all the children of Yasharal and stayed there before they passed over… Now the Yardĕn overflows all its banks during all the time of harvest.', ref:'YAHUSHA 3:1 · 3:15', stage:{"set":"river","time":"dawn","cam":"pan-r","focus":0.6,"props":[{"k":"sheaves","x":0.9,"z":0.08,"n":5,"at":1},{"k":"reeds","x":0.62,"z":0.4,"at":1},{"k":"reeds","x":0.8,"z":0.5,"at":1},{"k":"tent","x":0.08,"z":0.1}],"cast":[{"id":"yahoshua","enter":"l","at":0,"to":0.5,"face":"r","pose":"stand","hold":"staff","acts":[{"at":1,"pose":"look"}]}],"crowd":[{"kind":"people","n":7,"x":0.28,"w":0.28,"z":0.1,"dz":0.05,"face":"r","enter":"l","at":0}],"wx":"mist","wxAt":1}},
+   {art:'divide', music:'holy', text:'“And it shall be, as soon as the soles of the feet of the kohanim who bear the ark of YAHUAH, the Master of all the earth, come to rest in the waters of the Yardĕn, that the waters of the Yardĕn are cut off, the waters that come down from upstream and stand as a heap.”', ref:'YAHUSHA 3:13', stage:{"set":"partedsea","time":"day","cam":"push","focus":0.5,"fx":[{"k":"rays","x":0.5}],"props":[{"k":"ark","x":0.4,"z":0.5,"dy":-0.115}],"crowd":[{"kind":"kohanim","n":4,"x":0.4,"w":0.08,"z":0.54,"dz":0.015,"face":"b","pose":"carry"},{"kind":"people","stream":"away","n":16,"x":0.58,"w":0.2,"z0":-0.06,"z1":1.12,"speed":18}],"cast":[{"id":"yahoshua","x":0.16,"z":0.04,"face":"r","pose":"point","say":0,"hold2":"staff"}]}},
   ],
-  scene:{
+  scene:{ noSwim:true,   /* the deep stays closed until the waters stand in a heap */
    map:{biome:'plains', w:56, h:40, seed:2103, river:{x:28,width:7,curve:1.1},
      features:[
        {type:'clearing',x:18,y:20,flat:2},
@@ -5797,8 +5944,8 @@ STORY.push(
    npcs:[
      {id:'priest1',char:'levite',x:20,y:19.5,wander:false,
       script:[
-       {say:['levite','The ark of the covenant is on our shoulders, son of Nun, and the river is at flood. Harvest-time — the Yardĕn overflows all its banks. Say the word.']},
-       {say:['yahoshua','Hear the word of YAHUAH: “Take up the ark of the covenant, and pass over BEFORE the people. When you have come to the edge of the water of the Yardĕn — STAND in the Yardĕn.” By this we shall know that the living Ăl is in our midst.']},
+       {say:['levite','The ark of the berith is on our shoulders, son of Nun, and the river is at flood. Harvest-time — the Yardĕn overflows all its banks. Say the word.']},
+       {say:['yahoshua','Hear the word of YAHUAH: “Take up the ark of the berith, and pass over BEFORE the people. When you have come to the edge of the water of the Yardĕn — STAND in the Yardĕn.” By this we shall know that the living Al is in our midst.']},
       ]},
      {id:'priest2',char:'levite',x:21.5,y:20,wander:false,noTalk:true},
      {id:'stoneman',char:'hebrew',x:40,y:21,wander:false,hidden:true,noTalk:true},
@@ -5810,20 +5957,20 @@ STORY.push(
          x:12+(i%8)*1.6+Math.random(),y:23+Math.floor(i/8)*1.7+Math.random(),wander:true,range:.8,noTalk:true})); }},
    ],
    objectives:[
-     {type:'talk',npc:'priest1',text:'Command the priests who bear the ark of the covenant'},
+     {type:'talk',npc:'priest1',text:'Command the kohanim who bear the ark of the berith'},
      {type:'goto',x:24,y:20,radius:2.2,text:'Follow the ark to the edge of the flooded Yardĕn',hiddenUntil:1,
       script:[
-       {say:['yahoshua','Set yourselves apart, for tomorrow YAHUAH does WONDERS in your midst! By this you shall know that the living Ăl is in your midst, and that He certainly drives out from before you the Kena‛anite and the Ḥittite and the Ḥiwwite, the Perizzite and the Girgashite and the Amorite and the Yeḇusite.']},
+       {say:['yahoshua','Set yourselves apart, for tomorrow YAHUAH is doing WONDERS in your midst! By this you shall know that the living Al is in your midst and that He is certainly driving out from before you the Kena‛anites and the Ḥittites and the Ḥiwwites and the Perizzites and the Girgashites and the Amorites and the Yeḇusites.']},
        {move:['priest1',26,20,.05]},{move:['priest2',27.5,20.4,.05]},
        {rays:.85,raysX:27},{sfx:'holy'},
-       {say:['voice','This day I begin to make you GREAT in the eyes of all Yasharal, so that they know that as I was with Mosheh, so I am with you.']},
+       {say:['voice','This day I begin to make you GREAT before the eyes of all Yasharal, so that they know that I am with you as I was with Mosheh.']},
        {addProp:{type:'arkcov',x:27,y:19.4,id:'ark',solid:false}},
-       {say:['narrator','And as the feet of the priests bearing the ark dipped in the edge of the water — the waters which came down from upstream STOOD STILL, and rose in one heap, very far away, at Aḏam, the city beside Tsartan. And the waters going down to the Sea of the Arabah, the Salt Sea, were completely cut off.']},
+       {say:['narrator','And as the feet of the kohanim bearing the ark dipped in the edge of the water — the waters which came down from upstream STOOD STILL, and rose in one heap, very far away, at Aḏam, the city beside Tsartan. And the waters going down to the Sea of the Arabah, the Salt Sea, were completely cut off.']},
        {call:G=>{ const m=G.world.map;
           for(let y=14;y<=26;y++) for(let x=22;x<=35;x++){
             const t9=m.tiles[y*m.w+x]; if(t9===T.WATER||t9===T.DEEP) m.tiles[y*m.w+x]=T.SAND; } }},
        {shake:.8},{sfx:'thunder'},{burst:[28,20,'holy',22]},
-       {say:['narrator','And the priests who bore the ark of the covenant of YAHUAH stood FIRM on dry ground in the midst of the Yardĕn — and all Yasharal passed over on dry ground.']},
+       {say:['narrator','And the kohanim bearing the ark of the berith of YAHUAH stood FIRM on dry ground in the midst of the Yardĕn — and all Yasharal passed over on dry ground.']},
        {rays:0},
       ]},
      {type:'goto',x:40,y:20,radius:2.6,text:'Pass over on dry ground, to the bank of the promise',hiddenUntil:2,
@@ -5835,16 +5982,16 @@ STORY.push(
       ]},
      {type:'interact',prop:'ark',text:'Take up twelve stones from the midst of the Yardĕn',hiddenUntil:3,
       script:[
-       {say:['yahoshua','Twelve men, one man from every tribe — take up each of you a stone from here, out of the midst of the Yardĕn, from where the priests’ feet stood firm, and carry them over with you.']},
+       {say:['yahoshua','Twelve men, one man from every tribe — take for yourselves twelve stones from here, out of the midst of the Yardĕn, from the place where the kohanim’ feet stood firm. And you shall bring them with you.']},
        {move:['stoneman',30,20,.05]},{move:['stoneman2',31.5,20.5,.05]},
        {say:['yahoshua','When your children ask their fathers in time to come, saying, “What are these stones?” — then you shall let your children know: “Yasharal passed over this Yardĕn ON DRY LAND, for YAHUAH your Aluahim dried up the waters of the Yardĕn before you until you had passed over — as YAHUAH your Aluahim did to the Sea of Reeds.”']},
        {move:['stoneman',41,20.5,.05,'bg']},{move:['stoneman2',42,21,.05]},
-       {addProp:{type:'pillar',x:41,y:19.5,id:'gilgalstones',solid:true,examine:'Twelve stones out of the midst of the Yardĕn, set up in Gilgal — so that all the peoples of the earth know the hand of YAHUAH, that it is strong.'}},
+       {addProp:{type:'pillar',x:41,y:19.5,id:'gilgalstones',solid:true,examine:'Twelve stones out of the midst of the Yardĕn, set up in Gilgal — so that all the peoples of the earth shall know the hand of YAHUAH, that it is strong.'}},
        {sfx:'chime'},{burst:[41,19.5,'mote',14]},
        {removeProp:'ark'},
        {move:['priest1',37,19.5,.06,'bg']},{move:['priest2',38,20.2,.06,'bg']},
        {move:['player',38,21,.08]},
-       {say:['narrator','And the priests came up out of the midst of the Yardĕn — and the waters returned to their place, and flowed over all its banks as before. And the people came up from the Yardĕn on the tenth of the first month, and camped in Gilgal on the east border of Yeriḥo.']},
+       {say:['narrator','And the kohanim came up out of the midst of the Yardĕn — and the waters returned to their place, and flowed over all its banks as before. And the people came up from the Yardĕn on the tenth of the first month, and camped in Gilgal on the east border of Yeriḥo.']},
        {call:G=>{ const m=G.world.map;
           for(let y=14;y<=26;y++) for(let x=25;x<=31;x++){
             if(m.tiles[y*m.w+x]===T.SAND) m.tiles[y*m.w+x]=(x>25&&x<31)?T.DEEP:T.WATER; } }},
@@ -5852,14 +5999,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'land', music:'holy', text:'And these twelve stones which they took out of the Yardĕn, Yahusha set up in Gilgal. “So that all the peoples of the earth know the hand of YAHUAH, that it is strong — so that you fear YAHUAH your Aluahim, all the days.”', ref:'YAHUSHA 4:20–24'},
+   {art:'land', music:'holy', text:'And those twelve stones which they took out of the Yardĕn, Yahusha set up in Gilgal. … “So that all the peoples of the earth shall know the hand of YAHUAH, that it is strong, so that you shall fear YAHUAH your Aluahim forever.”', ref:'YAHUSHA 4:20–24', stage:{"set":"wilderness","time":"day","cam":"push","focus":0.5,"props":[{"k":"stones","x":0.52,"z":0.2,"n":12,"s":1.8}],"cast":[{"id":"yahoshua","x":0.26,"z":0.06,"face":"r","pose":"point","hold2":"staff","acts":[{"at":1,"pose":"raise"}],"say":1}],"crowd":[{"kind":"people","n":4,"x":0.76,"w":0.18,"z":0.3,"face":"l","pose":"carry","hold":"stone","enter":"r","at":0},{"kind":"children","n":4,"x":0.42,"w":0.2,"z":0.45,"face":"r","at":1},{"kind":"people","n":6,"x":0.6,"w":0.6,"z":0.72,"face":"l"}],"fx":[{"k":"glory","x":0.52,"y":0.06,"at":1}]}},
   ],
-  complete:'And the waters stood up in one heap — and all Yasharal passed over on dry ground.'
+  complete:'And the waters stood still and rose in a heap — and all Yasharal passed over on dry ground.'
 },
-{ id:'y4', title:'The Commander of the Host', ref:'YAHUSHA 5',
+{ id:'y4', title:'The Captain of the Host', ref:'YAHUSHA 5',
   intro:[
-   {art:'land', music:'holy', text:'And it came to be, when all the sovereigns of the Amorites beyond the Yardĕn westward, and all the sovereigns of the Kena‛anites by the sea, heard that YAHUAH had dried up the waters of the Yardĕn before the children of Yasharal — that their hearts melted, and there was no spirit in them any longer, because of the children of Yasharal.', ref:'YAHUSHA 5:1'},
-   {art:'camp', music:'holy', text:'At Gilgal the reproach of Mitsrayim was rolled away. And the children of Yasharal kept the Pĕsaḥ on the fourteenth day of the month, at evening, in the desert plains of Yeriḥo — and they ate of the stored grain of the land, unleavened bread and roasted grain, on this same day.', ref:'YAHUSHA 5:9–11'},
+   {art:'land', music:'holy', text:'And it came to be, when all the sovereigns of the Amorites who were beyond the Yardĕn westward and all the sovereigns of the Kena‛anites who were by the sea, heard that YAHUAH had dried up the waters of the Yardĕn from before the children of Yasharal until we had passed over, that their heart melted. And there was no ruach in them any longer, because of the children of Yasharal.', ref:'YAHUSHA 5:1', stage:{"set":"palace","time":"night","cam":"push","focus":0.55,"props":[{"k":"throne","x":0.66,"z":0.16}],"cast":[{"id":"kanaanking","x":0.66,"z":0.15,"face":"l","pose":"enthroned","crown":1,"acts":[{"at":1,"pose":"weep"}]},{"id":"runner","look":{"name":"Messenger","skin":"#6e4524","hair":"#1d1208","robe":"#6a5a48","short":1},"enter":"l","at":0,"to":0.38,"face":"r","pose":"kneel","say":0}],"crowd":[{"kind":"kings","n":4,"x":0.3,"w":0.3,"z":0.5,"face":"r","from":"stand","pose":"mourn","at":1},{"kind":"guards","side":"aram","n":2,"x":0.88,"w":0.06,"z":0.45,"face":"l"}],"fx":[{"k":"darkness","amt":0.3,"at":1}]}},
+   {art:'camp', music:'holy', text:'And YAHUAH said to Yahusha, “Today I have rolled away the reproach of Mitsrayim from you.” … And the children of Yasharal camped in Gilgal and performed the Pĕsaḥ on the fourteenth day of the month at evening on the desert plains of Yeriḥo. And they ate of the stored grain of the land on the morrow after the Pĕsaḥ, unleavened bread and roasted grain on this same day.', ref:'YAHUSHA 5:9–11', stage:{"set":"camp","time":"dusk","cam":"push","focus":0.5,"fx":[{"k":"glory","x":0.3,"y":0.06}],"props":[{"k":"fire","x":0.56,"z":0.25,"at":1},{"k":"sheaves","x":0.86,"z":0.2,"n":4,"at":2},{"k":"table","x":0.72,"z":0.12,"at":2}],"cast":[{"id":"yahoshua","x":0.28,"z":0.08,"face":"r","pose":"look","hold":"staff","acts":[{"at":1,"pose":"bless"}]},{"id":"hebrew","x":0.44,"z":0.14,"face":"r","at":1,"pose":"hold","hold":"lamb"},{"id":"hebreww","x":0.64,"z":0.1,"face":"l","at":2,"pose":"hold","hold":"bread"}],"crowd":[{"kind":"people","n":7,"x":0.58,"w":0.46,"z":0.5,"face":"l","at":1,"pose":"sitground","hold":"bread"}]}},
   ],
   scene:{
    map:{biome:'plains', w:48, h:34, seed:2104,
@@ -5886,11 +6033,11 @@ STORY.push(
          x:10+(i%7)*1.9+Math.random(),y:18+Math.floor(i/7)*2+Math.random(),wander:true,range:1,noTalk:true})); }},
    ],
    objectives:[
-     {type:'interact',prop:'gilgal_hill',text:'At Giḇ‛ath ha-‛Araloth, renew the covenant sign on the generation born in the wilderness',
+     {type:'interact',prop:'gilgal_hill',text:'At Giḇ‛ath ha-‛Araloth, renew the berith sign on the generation born in the wilderness',
       script:[
-       {say:['yahoshua','At this time YAHUAH said to me: “Make for yourself knives of flint, and circumcise the sons of Yasharal again, the second time.” For all the men of war who came out of Mitsrayim had died in the wilderness — but the generation born on the way had never received the sign of the covenant.']},
+       {say:['yahoshua','At this time YAHUAH said to me: “Make knives of flint for yourself and circumcise the sons of Yasharal again the second time.” For all the men of battle had died in the wilderness on the way, after they had come out of Mitsrayim — but the generation born on the way had never received the sign of the berith.']},
        {sfx:'chime'},{burst:[22,14,'mote',12]},
-       {say:['narrator','So Yahusha made knives of flint, and circumcised the children of Yasharal at Giḇ‛ath ha-‛Araloth — the Hill of the Foreskins. And when the whole nation had been circumcised, they stayed in their places in the camp until they were healed.']},
+       {say:['narrator','So Yahusha made knives of flint for himself and circumcised the sons of Yasharal at Giḇ‛ath ha-‛Araloth — the Hill of Foreskins. And it came to be, when they had completed circumcising all the nation, that they stayed in their places in the camp til they were healed.']},
        {rays:.6,raysX:22},{sfx:'holy'},
        {say:['voice','This day I have ROLLED AWAY the reproach of Mitsrayim from you.']},
        {say:['narrator','So the name of that place is called GILGAL — the Rolling — to this day: for there the shame of bondage was rolled off the newborn nation, before ever it kept the Pĕsaḥ, or lifted a hand against Yeriḥo.']},
@@ -5898,7 +6045,7 @@ STORY.push(
       ]},
      {type:'interact',prop:'pesach',text:'Keep the Pĕsaḥ at evening, in the plains of Yeriḥo',hiddenUntil:1,
       script:[
-       {say:['elazar','The fourteenth day of the month, at evening — the first Pĕsaḥ in the land itself. Unleavened bread, and roasted grain of the wheat of Kena‛an. The children born in the wilderness eat tonight what their fathers only dreamed.']},
+       {say:['elazar','The fourteenth day of the month, at evening — the first Pĕsaḥ in the land itself. Unleavened bread and roasted grain — the food of the land of Kena‛an. The children born in the wilderness eat tonight what their fathers only dreamed.']},
        {say:['yahoshua','Forty years of manna, morning by morning — bread we did not sow, from a hand we did not see. And now the stored grain of the land is in our mouths. Taste it slowly, Al‛azar. A vow is being kept tonight.']},
        {sfx:'chime'},{burst:[17,17,'mote',12]},
        {say:['narrator','And the manna CEASED the next day, after they had eaten of the stored grain of the land. And the children of Yasharal no longer had manna, but they ate of the yield of the land of Kena‛an that year.']},
@@ -5907,21 +6054,21 @@ STORY.push(
       script:[
        {time:'night'},{music:'tense'},
        {show:'captain'},{sfx:'holy'},{rays:.7,raysX:36},
-       {say:['narrator','And it came to be, when Yahusha was by Yeriḥo, that he lifted his eyes and looked — and see, a MAN stood opposite him, with His drawn sword in His hand.']},
+       {say:['narrator','And it came to be, when Yahusha was by Yeriḥo, that he lifted his eyes and looked — and saw a MAN standing opposite him with His sword drawn in His hand.']},
        {say:['yahoshua','…Are You for us — or for our adversaries?']},
        {say:['captain','NO. For I have now come as CAPTAIN OF THE HOST OF YAHUAH.']},
        {say:['narrator','And Yahusha fell on his face to the earth and bowed himself, and said to Him, “What does my Master say to His servant?”']},
-       {say:['captain','Take your sandal off your foot — for the place on which you stand is SET-APART.']},
+       {say:['captain','Take your sandal off your foot — for the place where you stand is qadash (Set Apart).']},
        {burst:[36,16,'holy',20]},{sfx:'holy'},
-       {say:['narrator','And Yahusha did so. As at the bush that burned and was not consumed, so now at the edge of Yeriḥo: the ground itself made set-apart by the One who stood upon it.']},
+       {say:['narrator','And Yahusha did so. As at the bush that burned and was not consumed, so now at the edge of Yeriḥo: the ground itself made qadash (Set Apart) by the One who stood upon it.']},
        {rays:0},
       ]},
    ],
   },
   outro:[
-   {art:'vista_sunset', music:'night', text:'And Yeriḥo was shut up tight because of the children of Yasharal — no one going out, and no one coming in. And YAHUAH said to Yahusha: “See! I have given Yeriḥo and its sovereign, the mighty brave men, into your hand.”', ref:'YAHUSHA 6:1–2'},
+   {art:'vista_sunset', music:'night', text:'And Yeriḥo was shut up tight because of the presence of the sons of Yasharal — none going out and none coming in. And YAHUAH said to Yahusha, “See! I have given Yeriḥo and its sovereign, mighty brave men, into your hand.”', ref:'YAHUSHA 6:1–2', stage:{"set":"walls","time":"dusk","cam":"push","focus":0.45,"props":[{"k":"gate","x":0.5,"z":1.0,"dy":-0.015,"w":146,"h":140,"open":false}],"cast":[{"id":"yahoshua","x":0.28,"z":0.08,"face":"r","pose":"look","hold":"spear","acts":[{"at":2,"pose":"kneel"},{"at":3,"pose":"bow"}]},{"id":"captain","x":0.6,"z":0.1,"face":"l","at":2,"pose":"stand","hold":"sword","say":3,"acts":[{"at":3,"pose":"point"}]}],"fx":[{"k":"glory","x":0.6,"y":0.18,"at":2}]}},
   ],
-  complete:'Take your sandal off your foot — for the place on which you stand is set-apart.'
+  complete:'Take your sandal off your foot — for the place where you stand is qadash (Set Apart).'
 },
 ]},
 );
@@ -5930,8 +6077,8 @@ STORY.push(
 { id:'yact2', roman:'II', title:'The Wall and the Trespass', ref:'YAHUSHA 6–8 · YASHAR 88', chapters:[
 { id:'y5', title:'The Walls of Yeriḥo', ref:'YAHUSHA 6',
   intro:[
-   {art:'camp', music:'tense', text:'“And you shall go around the city, all the men of battle, going around the city once. Do this for six days. And seven priests shall bear seven shophars of rams’ horns before the ark. And on the seventh day, go around the city seven times, and the priests blow with the shophars.”', ref:'YAHUSHA 6:3–4'},
-   {art:'wilderness', music:'tense', text:'“And it shall be, when they make a long blast with the ram’s horn, when you hear the sound of the shophar, that all the people SHOUT with a great shout. And the wall of the city shall fall down flat, and the people shall go up, every man straight before him.”', ref:'YAHUSHA 6:5'},
+   {art:'camp', music:'tense', text:'“And you shall go around the city, all the men of battle going around the city once. Do this for six days. And let seven kohanim bear seven rams’ horns before the ark and on the seventh day go around the city seven times while the kohanim blow the horns.”', ref:'YAHUSHA 6:3–4', stage:{"set":"walls","time":"day","cam":"pan-r","props":[{"k":"ark","x":0.2,"z":0.3,"dy":-0.07,"at":1}],"cast":[{"id":"yahoshua","x":0.13,"z":0.04,"face":"r","pose":"point","say":0,"hold2":"staff"}],"crowd":[{"kind":"army","side":"yasharal","n":8,"x":0.55,"w":0.6,"z":0.62,"face":"r","enter":"l","at":0},{"kind":"kohanim","n":7,"x":0.58,"w":0.4,"z":0.3,"face":"r","enter":"l","at":1,"hold":"shofar","pose":"raise"},{"kind":"levites","n":2,"x":0.2,"w":0.07,"z":0.3,"dz":0.04,"face":"r","at":1,"pose":"carry"}]}},
+   {art:'wilderness', music:'tense', text:'“And it shall be, when they make a long blast with the ram’s horn and when you hear the sound of the horn, that all the people SHOUT with a great shout. And the wall of the city shall fall down flat and the people shall go up every man straight before him.”', ref:'YAHUSHA 6:5', stage:{"set":"walls","time":"day","cam":"push","wx":"dust","wxAt":1,"props":[{"k":"wall","x":0.5,"z":1.0,"dy":-0.015,"w":1.3,"h":134,"broken":1,"at":1},{"k":"stones","x":0.3,"z":0.85,"n":20,"s":2.2,"at":1},{"k":"stones","x":0.72,"z":0.85,"n":20,"s":2.2,"at":1}],"cast":[{"id":"yahoshua","x":0.18,"z":0.04,"face":"r","pose":"raise","hold":"spear"}],"crowd":[{"kind":"kohanim","n":4,"x":0.4,"w":0.2,"z":0.2,"face":"r","hold":"shofar","pose":"raise"},{"kind":"army","side":"yasharal","n":12,"x":0.58,"w":0.7,"z":0.55,"face":"r","from":"stand","pose":"raise","at":0,"exit":"r","exitAt":1,"run":1}],"fx":[{"k":"smoke","x":0.3,"at":1},{"k":"smoke","x":0.55,"at":1},{"k":"smoke","x":0.8,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:50, h:38, seed:2105,
@@ -5970,10 +6117,10 @@ STORY.push(
         G.world.map.decor.sort((a,b)=>a.y-b.y); }},
    ],
    objectives:[
-     {type:'goto',x:40,y:17,radius:2.4,text:'Go around the city — the armed men, the shophars, the ark. Speak not a word',
+     {type:'goto',x:40,y:17,radius:2.4,text:'Go around the city — the armed men, the rams’ horns, the ark. Speak not a word',
       script:[
-       {say:['yahoshua','You shall not shout, nor let your voice be heard, nor let a word go out of your mouth — UNTIL the day I say to you “Shout!” Then you shall shout. Forward — around the city, once.']},
-       {say:['narrator','And the armed men went before the priests who blew the shophars, and the rear guard came after the ark, while the shophars kept blowing. So they went around the city once — and came back to the camp, and slept.']},
+       {say:['yahoshua','Do not shout or cause your voice to be heard, nor let any word come out of your mouth — UNTIL the day I say to you, “Shout!” Then you shall shout. Forward — around the city, once.']},
+       {say:['narrator','And the armed men went before the kohanim who blew the horns, and the rear guard came after the ark, going on and blowing the horns. And the ark of YAHUAH went around the city, going around once — and they came into the camp and stayed in the camp.']},
       ]},
      {type:'goto',x:10,y:17,radius:2.4,text:'Day after day, in silence — around Yeriḥo again',hiddenUntil:1,
       script:[
@@ -5985,7 +6132,7 @@ STORY.push(
      {type:'goto',x:25,y:28,radius:2.6,text:'The seventh circuit of the seventh day — SHOUT!',hiddenUntil:2,
       script:[
        {sfx:'holy'},{sfx:'thunder'},
-       {say:['yahoshua','SHOUT — for YAHUAH has given you the city! And the city shall be under the ban, it and all that is in it, to YAHUAH. ONLY Raḥaḇ the innkeeper shall live, she and all who are with her in the house, because she hid the messengers we sent. But keep yourselves from that which is under the ban — lest you make the camp of Yasharal a curse, and trouble it. All the silver and gold, the bronze and iron, are SET-APART to YAHUAH.']},
+       {say:['yahoshua','SHOUT — for YAHUAH has given you the city! And the city shall be put under the ban, it and all that is in it belongs to YAHUAH. ONLY Raḥaḇ the whore is to live, she and all who are with her in the house, because she hid the mal’akim that we sent.']},{say:['yahoshua','And you, by all means guard yourselves from that which is under the ban — lest you come under the ban… and make the camp of Yasharal a curse and shall trouble it. But all the silver and gold and the vessels of bronze and iron are qadash (Set Apart) to YAHUAH.']},
        {shake:2.2},{sfx:'thunder'},
        /* the wall falls flat here, on the field the host circled — the assault itself is fought on the battle page */
        {call:G=>{ const ids=['w1','w2','w3','w4','w5','w6','w7','w8','w9','citygate'];
@@ -5994,7 +6141,7 @@ STORY.push(
               G.world.map.decor.push({type:'rock',x:d.x,y:d.y,solid:false}); } }
           G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {burst:[25,17,'ash',26]},{burst:[20,20,'smoke',18]},{burst:[30,15,'smoke',18]},{shake:1.4},
-       {say:['narrator','And the people shouted with a GREAT SHOUT, and the priests blew the shophars — and when the people heard the sound of the shophar, the WALL FELL DOWN FLAT before them.']},
+       {say:['narrator','And the people shouted when the kohanim blew the horns — and it came to be, when the people heard the sound of the horn and the people shouted with a GREAT SHOUT, that the WALL FELL DOWN FLAT.']},
        {say:['narrator','And the people went up into the city, EVERY MAN STRAIGHT BEFORE HIM — the host of Yasharal pouring over the rubble.']},
        {call:G=>Game.toBattle('yeriho',3)},
       ]},
@@ -6003,22 +6150,22 @@ STORY.push(
        {show:'rachav'},{move:['rachav',30,25,.05]},
        {say:['yahoshua','Go into the house, you two who swore to her — bring out the woman and all whom she has, as you swore.']},
        {say:['rachav','The cord held, son of Nun. The wall beneath my window is the one stretch of wall still standing in Yeriḥo — and every soul of my father’s house stood upon it and lives.']},
-       {say:['yahoshua','Then dwell in the midst of Yasharal, Raḥaḇ of Yeriḥo — you who hid the messengers, you who said “YAHUAH your Aluahim, He is Aluahim.” What you sheltered under flax, He has sheltered under wings.']},
+       {say:['yahoshua','Then dwell in the midst of Yasharal, Raḥaḇ of Yeriḥo — you who hid the mal’akim, you who said “YAHUAH your Aluahim, He is Aluahim.” What you sheltered under flax, He has sheltered under wings.']},
        {emote:['rachav','heart']},{sfx:'chime'},
        {burst:[25,17,'spark',20]},{burst:[27,19,'smoke',16]},
-       {say:['narrator','And they burned the city with fire, and all that was in it — only the silver and gold, and the vessels of bronze and iron, they put into the treasury of the House of YAHUAH. And Yahusha swore: “Cursed before YAHUAH is the man who rises up and builds this city Yeriḥo.”']},
+       {say:['narrator','And they burned the city and all that was in it with fire — only the silver and gold and the vessels of bronze and of iron, they put into the treasury of the House of YAHUAH. And Yahusha warned them at that time, saying, “Cursed is the man before YAHUAH who rises up and builds this city Yeriḥo.”']},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'night', text:'And Raḥaḇ the innkeeper, her father’s household, and all she had, dwell in the midst of Yasharal to this day — because she hid the messengers whom Yahusha sent to spy out Yeriḥo. And YAHUAH was with Yahusha, and his fame was in all the land.', ref:'YAHUSHA 6:25–27'},
+   {art:'wasteland', music:'night', text:'Yahusha kept alive Raḥaḇ the whore and her father’s household and all that she had. And she dwelt in the midst of Yasharal to this day, because she hid the mal’akim whom Yahusha sent to spy out Yeriḥo… And YAHUAH was with Yahusha and a report about him was in all the land.', ref:'YAHUSHA 6:25–27', stage:{"set":"camp","time":"day","cam":"push","focus":0.5,"props":[{"k":"banner","x":0.9,"z":0.3,"color":"#b0202a"}],"cast":[{"id":"yahoshua","x":0.26,"z":0.08,"face":"r","pose":"bless","hold2":"staff","acts":[{"at":2,"pose":"raise"}]},{"id":"rachav","enter":"r","at":0,"to":0.56,"face":"l","pose":"bow","acts":[{"at":1,"pose":"stand"}]},{"id":"hebreww","x":0.4,"z":0.2,"at":1,"face":"r","pose":"bless"}],"crowd":[{"kind":"people","n":4,"x":0.74,"w":0.16,"z":0.3,"face":"l","enter":"r","at":0},{"kind":"people","n":7,"x":0.4,"w":0.6,"z":0.7,"face":"r","at":1}],"fx":[{"k":"smoke","x":0.9},{"k":"rays","x":0.26,"at":2}]}},
   ],
-  complete:'The people shouted, the shophars blew — and the wall fell down flat.'
+  complete:'And the people shouted when the kohanim blew the horns — and the wall fell down flat.'
 },
 { id:'y6', title:'Trouble in the Valley', ref:'YAHUSHA 7',
   intro:[
-   {art:'wasteland', music:'sorrow', text:'But the children of Yasharal committed a trespass in that which was under the ban — for Aḵan son of Karmi, son of Zaḇdi, son of Zeraḥ, of the tribe of Yahudah, took of that which was under the ban. And the displeasure of YAHUAH burned against the children of Yasharal.', ref:'YAHUSHA 7:1'},
-   {art:'journey', music:'sorrow', text:'And about three thousand men went up to Ai — and they FLED before the men of Ai. And the men of Ai smote about thirty-six men. And the hearts of the people melted and became like water.', ref:'YAHUSHA 7:4–5'},
+   {art:'wasteland', music:'sorrow', text:'But the children of Yasharal committed a trespass regarding that which is under the ban, for Aḵan son of Karmi, son of Zaḇdi, son of Zeraḥ, of the tribe of Yahudah, took of that which is under the ban. And the displeasure of YAHUAH burned against the children of Yasharal.', ref:'YAHUSHA 7:1', stage:{"set":"ruins","time":"dusk","cam":"close","focus":0.45,"props":[{"k":"chest","x":0.66,"z":0.1,"gold":1},{"k":"tent","x":0.18,"z":0.3}],"cast":[{"id":"achan","x":0.6,"z":0.08,"face":"r","pose":"carry","hold":"girdle","hold2":"cup","acts":[{"at":1,"to":0.34,"pose":"look"}]}],"fx":[{"k":"smoke","x":0.75},{"k":"red","amt":0.22,"at":1}]}},
+   {art:'journey', music:'sorrow', text:'And about three thousand men went up there from the people, but they FLED before the men of Ai. And the men of Ai smote about thirty-six men… So the hearts of the people melted and became like water.', ref:'YAHUSHA 7:4–5', stage:{"set":"valley","time":"day","wx":"dust","cam":"push","focus":0.5,"props":[{"k":"wall","x":0.84,"z":0.95,"w":0.35,"h":70,"color":"#a8906a"},{"k":"gate","x":0.84,"z":0.95,"w":80,"h":80}],"cast":[{"id":"hebrew","x":0.3,"z":0.06,"face":"r","pose":"stand","acts":[{"at":1,"to":0.14,"run":1},{"at":2,"pose":"mourn","face":"r"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":7,"x":0.44,"w":0.34,"z":0.45,"face":"r","exit":"l","exitAt":1,"run":1},{"kind":"soldiers","side":"aram","n":6,"x":0.74,"w":0.24,"z":0.5,"face":"l","enter":"r","at":0,"pose":"fight"},{"kind":"soldiers","side":"yasharal","n":3,"x":0.5,"w":0.24,"z":0.25,"pose":"dead","at":1,"hold":null}],"fx":[{"k":"darkness","amt":0.3,"at":2}]}},
   ],
   scene:{
    map:{biome:'wild', w:48, h:34, seed:2106,
@@ -6035,7 +6182,7 @@ STORY.push(
      {id:'elder1',char:'elder',x:22,y:16,wander:false,
       script:[
        {say:['elder','The tribes stand ready to pass before the ark, Yahusha, as you commanded — tribe by tribe, clan by clan, household by household. He who knows all hearts will single out the heart that sinned.']},
-       {say:['narrator','And Yahusha brought Yasharal near, tribe by tribe — and the tribe of YAHUDAH was taken. Clan by clan — and the clan of ZERAḤ was taken. Household by household — and the household of ZAḆDI was taken. Man by man… and AḴAN SON OF KARMI was taken.']},
+       {say:['narrator','So Yahusha arose early in the morning and brought Yasharal by their tribes — and the tribe of YAHUDAH was taken. And he brought the clan of Yahudah — and he took the clan of the ZARḤITES. And he brought the clan of the Zarḥites by men — and ZAḆDI was taken. And he brought his household by men… and AḴAN SON OF KARMI was taken.']},
        {show:'achan'},
       ]},
      {id:'achan',char:'achan',x:29,y:16,wander:false,hidden:true,
@@ -6055,32 +6202,32 @@ STORY.push(
    objectives:[
      {type:'goto',x:24,y:14,radius:2.2,text:'Fall on your face before the ark of YAHUAH, until evening',
       script:[
-       {say:['yahoshua','Alas, Master YAHUAH — why have You brought this people over the Yardĕn at all, to give us into the hand of the Amorites, to destroy us? O Master, what do I say, after Yasharal has turned its back before its enemies? The Kena‛anites will hear of it, and surround us, and cut off our name from the earth. And what do You do for Your GREAT NAME?']},
+       {say:['yahoshua','Oh Master YAHUAH — why have You brought this people over the Yardĕn at all, to give us into the hand of the Amorites, to destroy us? O YAHUAH, what do I say when Yasharal turns its back before its enemies — and the Kena‛anites and all the inhabitants of the land hear and shall surround us and cut off our name from the earth? What then do You do for Your GREAT NAME?']},
        {rays:.8,raysX:24},{sfx:'thunder'},
-       {say:['voice','ARISE! Why are you fallen on your face? YASHARAL HAS SINNED. They have also transgressed My covenant which I commanded them — they have taken of that which is under the ban, and also stolen, and also deceived, and also put it among their own goods.']},
-       {say:['voice','Therefore the children of Yasharal are unable to stand before their enemies. I am NOT with you any more — unless you destroy that which is under the ban from your midst. Rise up, set the people apart: in the morning you shall be brought near, tribe by tribe.']},
+       {say:['voice','ARISE! Why are you fallen on your face? YASHARAL HAS SINNED. They have also transgressed My berith which I commanded them — they have taken of that which is under the ban, and also stolen, and also deceived, and also put it among their own goods.']},
+       {say:['voice','And the sons of Yasharal shall not be able to stand before their enemies. They are going to turn their backs before their enemies, for they have become accursed. I am NOT with you any more, unless you destroy that which is under the ban from your midst. Rise up, set the people apart: you shall be brought near in the morning, according to your tribes.']},
        {rays:0},
       ]},
      {type:'talk',npc:'elder1',text:'In the morning: bring Yasharal near, tribe by tribe',hiddenUntil:1},
      {type:'talk',npc:'achan',text:'Speak to Aḵan son of Karmi — my son, make confession',hiddenUntil:2},
      {type:'interact',prop:'achantent',text:'Send runners to the tent, and lay the trespass before YAHUAH',hiddenUntil:3,
       script:[
-       {say:['narrator','And Yahusha sent messengers, and they ran to the tent — and see, it was hidden in his tent, and the silver under it. And they brought them to Yahusha and to all the children of Yasharal, and laid them out before YAHUAH.']},
+       {say:['narrator','And Yahusha sent mal’akim, and they ran to the tent — and see, it was hidden in his tent, and the silver under it. And they brought them to Yahusha and to all the children of Yasharal, and laid them out before YAHUAH.']},
        {say:['yahoshua','Why have you TROUBLED us? YAHUAH troubles YOU this day.']},
        {music:'sorrow'},{fade:'out'},{hide:'achan'},{time:'dusk'},{fade:'in'},
-       {say:['narrator','And all Yasharal stoned him with stones in the valley, and raised over him a great heap of stones that remains to this day. So YAHUAH turned from the burning of His displeasure. Therefore the name of that place is called the Valley of AḴOR — Trouble — to this day.']},
+       {say:['narrator','And all Yasharal stoned him with stones in the valley — and they raised over him a great heap of stones, which remains to this day. Then YAHUAH turned from the fierceness of His displeasure. Therefore the name of that place has been called the Valley of AḴOR — Trouble — to this day.']},
        {sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'sorrow', text:'One man coveted, and an army fled. One garment buried in a tent floor, and thirty-six men did not come home. The camp learned in the Valley of Aḵor what it would spend a lifetime remembering: the covenant is one body — and what is hidden in the earth is never hidden from YAHUAH.', ref:'YAHUSHA 7:24–26'},
+   {art:'stars', music:'sorrow', text:'Then Yahusha and all Yasharal with him, took Aḵan son of Zeraḥ and the silver and the garment and the wedge of gold … and all that he had and they brought them to the Valley of Aḵor. And Yahusha said, “Why have you troubled us? YAHUAH does trouble you today!” … And they raised over him a great heap of stones … Then YAHUAH turned from the fierceness of His displeasure.', ref:'YAHUSHA 7:24–26', stage:{"set":"valley","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"chest","x":0.78,"z":0.2,"gold":1},{"k":"tent","x":0.9,"z":0.45},{"k":"stones","x":0.62,"z":0.02,"n":30,"s":1.6,"at":4}],"cast":[{"id":"yahoshua","x":0.3,"z":0.06,"face":"r","pose":"stand","hold":"spear","acts":[{"at":1,"to":0.36},{"at":2,"pose":"speak"},{"at":3,"pose":"point"},{"at":5,"pose":"look"}],"say":2},{"id":"achan","x":0.72,"z":0.1,"face":"l","pose":"bound","acts":[{"at":1,"to":0.6},{"at":3,"pose":"fall"},{"at":4,"pose":"dead"}]}],"crowd":[{"kind":"people","n":10,"x":0.5,"w":0.8,"z":0.62,"face":"r","enter":"l","at":1}],"fx":[{"k":"red","amt":0.18},{"k":"rays","x":0.4,"at":5}]}},
   ],
-  complete:'That which is under the ban is in your midst, O Yasharal — you cannot stand before your enemies until you remove it.'
+  complete:'That which is under the ban is in your midst, O Yasharal — you are not able to stand before your enemies until you put away that which is under the ban out of your midst.'
 },
 { id:'y7', title:'Stretch Out the Spear', ref:'YAHUSHA 8:1–29',
   intro:[
-   {art:'journey', music:'tense', text:'And YAHUAH said to Yahusha: “Do not be afraid, nor be discouraged. Take all the people of battle with you, and arise, go up to Ai. See, I have given into your hand the sovereign of Ai, his people, his city, and his land. Lay an ambush for the city, BEHIND it.”', ref:'YAHUSHA 8:1–2'},
+   {art:'journey', music:'tense', text:'And YAHUAH said to Yahusha, “Do not be afraid, nor be discouraged. Take all the soldiers with you and arise, go up to Ai. See, I have given into your hand the sovereign of Ai and his people and his city and his land. … Set for yourselves an ambush for the city, BEHIND it.”', ref:'YAHUSHA 8:1–2', stage:{"set":"wilderness","time":"night","cam":"push","focus":0.45,"props":[{"k":"wall","x":0.72,"z":0.9,"w":0.3,"h":70,"color":"#8a7a60"},{"k":"gate","x":0.72,"z":0.9,"w":80,"h":80,"open":false}],"cast":[{"id":"yahoshua","x":0.26,"z":0.06,"face":"r","pose":"look","hold":"spear","acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"point"}]}],"crowd":[{"kind":"army","side":"yasharal","n":9,"x":0.4,"w":0.4,"z":0.45,"face":"r","enter":"l","at":1},{"kind":"soldiers","side":"yasharal","n":5,"x":0.72,"w":0.22,"z":1.12,"dz":0.02,"face":"l","at":3}],"fx":[{"k":"glory","x":0.55,"y":0.06}]}},
   ],
   scene:{
    map:{biome:'rocky', w:52, h:36, seed:2107,
@@ -6107,14 +6254,14 @@ STORY.push(
      {call:G=>{ G.world.map.decor.push({type:'firepit',lit:true,x:28,y:8,id:'aifire1'},{type:'firepit',lit:true,x:31,y:8.6,id:'aifire2'});
         G.world.map.decor.sort((a,b)=>a.y-b.y); }},
      {burst:[29,8,'smoke',24]},
-     {say:['narrator','Not one of Ai was left to flee. And Yahusha did not draw back the hand that held the spear until the ban was completed.']},
+     {say:['narrator','Not one of Ai was left to flee. And Yahusha did not draw back his hand, with which he stretched out the spear, until he had put all the inhabitants of Ai under the ban.']},
    ],
    objectives:[
-     {type:'goto',x:13,y:12,radius:2.6,text:'By night: set the ambush behind the city, between Bĕyth Ăl and Ai',
+     {type:'goto',x:13,y:12,radius:2.6,text:'By night: set the ambush behind the city, between Bĕyth Al and Ai',
       script:[
        {show:'amb1'},{show:'amb2'},
-       {say:['yahoshua','See, you are lying in ambush against the city, BEHIND the city. Do not go very far from it, but all of you be ready. We shall draw near — and when they come out against us, we shall FLEE before them. They will pursue, and be drawn away from the city. Then YOU rise from the ambush and seize it — for YAHUAH your Aluahim gives it into your hand. And when you have taken the city, set the city on fire.']},
-       {say:['hebrew','Bĕyth Ăl on one side, Ai on the other, and thirty thousand mighty men lying in the hollow between — not a lamp among us, and not a whisper. Go, son of Nun. When you flee, we shall not be sleeping.']},
+       {say:['yahoshua','See, you are going to lie in ambush against the city, BEHIND the city. Do not go very far from the city, but all of you shall be prepared. And it shall be, when they come out against us, that we shall FLEE before them — and they shall come out after us til we have drawn them from the city.']},{say:['yahoshua','Then YOU shall rise from the ambush and seize the city, and YAHUAH your Aluahim shall give it into your hand. And it shall be, when you capture the city, that you burn the city with fire.']},
+       {say:['hebrew','Bĕyth Al on one side, Ai on the other, and thirty thousand mighty men lying in the hollow between — not a lamp among us, and not a whisper. Go, son of Nun. When you flee, we shall not be sleeping.']},
       ]},
      {type:'goto',x:29,y:17,radius:2.4,text:'At dawn, march openly on the gate of Ai',hiddenUntil:1,
       script:[
@@ -6123,39 +6270,39 @@ STORY.push(
        {say:['narrator','And the sovereign of Ai saw it, and the men of the city hurried and rose early, and went out against Yasharal to battle — for he did not know there was an ambush against him behind the city.']},
        {say:['yahoshua','FALL BACK! Flee before them, toward the wilderness — let every man of Ai be drawn from the gate!']},
        {move:['player',29,24,.09]},
-       {say:['narrator','And all the people who were in Ai were called together to pursue them. And they pursued Yahusha, and were DRAWN AWAY from the city — not a man was left in Ai or Bĕyth Ăl who did not go out after Yasharal. And they left the city OPEN.']},
+       {say:['narrator','And all the people who were in Ai were called together to pursue them. And they pursued Yahusha, and were DRAWN AWAY from the city — not a man was left in Ai or Bĕyth Al who did not go out after Yasharal. And they left the city OPEN.']},
       ]},
      {type:'goto',x:29,y:22,radius:2.2,text:'Turn — and stretch out the spear toward Ai',hiddenUntil:2,
       script:[
        {rays:.75,raysX:29},{sfx:'holy'},
        {say:['voice','STRETCH OUT the spear that is in your hand toward Ai — for I give it into your hand.']},
-       {say:['narrator','And Yahusha stretched out the spear that was in his hand toward the city — and the ambush rose quickly out of their place, and ran as soon as he stretched out his hand. And they entered the city and took it, and hurried to set the city on fire.']},
+       {say:['narrator','And Yahusha stretched out the spear that he had in his hand toward the city — and the ambush rose up quickly from their place, and they ran at the stretching out of his hand. And they entered the city and took it, and hastened to burn the city with fire.']},
        {rays:0},
        {call:G=>{ const m=G.world.map; G.world.fx=(G.world.fx||[]);
           G.world.map.decor.push({type:'firepit',lit:true,x:28,y:8,id:'aifire1'},{type:'firepit',lit:true,x:31,y:8.6,id:'aifire2'});
           G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {burst:[29,8,'smoke',24]},{burst:[27,9,'spark',16]},{burst:[31,9,'spark',16]},
        {move:['amb1',26,11,.08,'bg']},{move:['amb2',31,11,.08,'bg']},
-       {say:['narrator','And the men of Ai looked behind them — and the smoke of the city went up to the heavens, and they had no power to flee this way or that. And the people who had fled to the wilderness TURNED BACK on the pursuers — caught between the two camps.']},
+       {say:['narrator','And the men of Ai looked behind them and saw the smoke of the city rising to the shamayim. And there was no power in them to flee this way or that way, for the people who had fled to the wilderness TURNED BACK on the pursuers — caught between the two camps.']},
        {call:G=>Game.toBattle('ai',3)},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'night', text:'And Yahusha burned Ai and made it a heap forever, a desolation to this day. And the sovereign of Ai he hanged on a tree until evening — and at the going down of the sun they took the body down, and threw it at the entrance of the city gate, and raised over it a great heap of stones.', ref:'YAHUSHA 8:28–29'},
+   {art:'wasteland', music:'night', text:'And Yahusha burned Ai and made it a heap forever, a ruin to this day. And he hanged the sovereign of Ai on a tree until evening. And at sunset Yahusha commanded that they should take his corpse down from the tree and throw it at the entrance of the gate of the city and raise over it a great heap of stones, to this day.', ref:'YAHUSHA 8:28–29', stage:{"set":"ruins","time":"dusk","cam":"push","focus":0.5,"props":[{"k":"fire","x":0.16,"z":0.92,"s":1.6},{"k":"fire","x":0.4,"z":0.95,"s":1.8},{"k":"fire","x":0.9,"z":0.9,"s":1.6},{"k":"gate","x":0.68,"z":0.85,"w":110,"h":100,"color":"#8a7a60"},{"k":"tree","x":0.86,"z":0.3,"h":130,"color":"#3a3a2a","at":1},{"k":"stones","x":0.62,"z":0.04,"n":30,"s":1.6,"at":2}],"cast":[{"id":"yahoshua","x":0.22,"z":0.06,"face":"r","pose":"point","say":0,"hold":"spear","acts":[{"at":1,"pose":"stand"},{"at":2,"pose":"point"}]},{"id":"aiking","look":{"name":"Sovereign of Ai","skin":"#644323","hair":"#1d1208","robe":"#6a3a52","beard":"#1d1208","collar":"#caa23c"},"crown":1,"x":0.64,"z":0.12,"face":"l","at":1,"pose":"bound","acts":[{"at":2,"pose":"dead"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":5,"x":0.4,"w":0.26,"z":0.45,"face":"r"}],"fx":[{"k":"smoke","x":0.4},{"k":"red","amt":0.12}]}},
   ],
   complete:'Stretch out the spear that is in your hand toward Ai — for I give it into your hand.'
 },
-{ id:'y8', title:'The Altar on Mount Ĕyḇal', ref:'YAHUSHA 8:30–35',
+{ id:'y8', title:'The Mizbe’ach on Mount Ĕyḇal', ref:'YAHUSHA 8:30–35',
   intro:[
-   {art:'mountain', music:'holy', text:'Then Yahusha built an altar to YAHUAH, Aluahim of Yasharal, on Mount Ĕyḇal — as Mosheh the servant of YAHUAH had commanded: “an altar of whole stones, over which no man has wielded an iron tool.”', ref:'YAHUSHA 8:30–31'},
+   {art:'mountain', music:'holy', text:'And Yahusha built a mizbe’ach to YAHUAH Aluahim of Yasharal in Mount Ĕyḇal, as Mosheh the servant of YAHUAH had commanded the children of Yasharal, as it is written in the Book of the Torah of Mosheh, “a mizbe’ach of unhewn stones over which no man has wielded iron.”', ref:'YAHUSHA 8:30–31', stage:{"set":"mountain","time":"dawn","cam":"up","focus":0.5,"props":[{"k":"altar","x":0.55,"z":0.28,"w":56,"h":34,"sacrifice":1},{"k":"stones","x":0.8,"z":0.12,"n":9,"s":1.4}],"cast":[{"id":"yahoshua","x":0.32,"z":0.08,"face":"r","pose":"raise","hold2":"scroll"}],"crowd":[{"kind":"people","n":3,"x":0.78,"w":0.14,"z":0.35,"face":"l","pose":"carry","hold":"stone"},{"kind":"kohanim","n":3,"x":0.62,"w":0.14,"z":0.55,"face":"l"},{"kind":"people","n":6,"x":0.35,"w":0.4,"z":0.7,"face":"r","pose":"bow"}],"fx":[{"k":"glory","x":0.5,"y":0.05}]}},
   ],
   scene:{
    map:{biome:'ararat', w:50, h:36, seed:2108,
      features:[
        {type:'rock',x:12,y:8,solid:true,clear:1},{type:'rock',x:16,y:6,solid:true,clear:1},{type:'rock',x:20,y:7,solid:true,clear:1},
        {type:'rock',x:30,y:29,solid:true,clear:1},{type:'rock',x:35,y:30,solid:true,clear:1},{type:'rock',x:26,y:30,solid:true,clear:1},
-       {type:'altar',x:18,y:11,stage:0,solid:true,clear:2,id:'eyval_altar',examine:'A rising of whole stones on Mount Ĕyḇal — no iron tool has touched them.'},
+       {type:'altar',x:18,y:11,stage:0,solid:true,clear:2,id:'eyval_altar',examine:'A rising of unhewn stones on Mount Ĕyḇal — no man has wielded iron over them.'},
        {type:'stone',x:22,y:12,id:'torah_stones',clear:1,examine:'Great stones, whitewashed with lime, waiting for the writing.'},
        {type:'clearing',x:25,y:19,flat:3},
      ]},
@@ -6176,42 +6323,42 @@ STORY.push(
            wander:true,range:.7,noTalk:true})); } }},
    ],
    objectives:[
-     {type:'interact',prop:'eyval_altar',text:'Build the altar of whole stones, and offer on it',
+     {type:'interact',prop:'eyval_altar',text:'Build the mizbe’ach of unhewn stones, and offer on it',
       script:[
        {prop:['eyval_altar',{stage:3}]},{sfx:'holy'},{burst:[18,11,'holy',16]},
-       {say:['yahoshua','Whole stones, as they came from the hill — no chisel, no iron. On the mount of the CURSE we build the altar of peace offerings, for it is the cursed place that most needs the ascending smoke.']},
-       {say:['narrator','And they offered on it ascending offerings to YAHUAH, and slaughtered peace offerings.']},
+       {say:['yahoshua','Unhewn stones, as they came from the hill — no chisel, no iron. On the mount of the CURSE we build the mizbe’ach of shalom offerings, for it is the cursed place that most needs the ascending smoke.']},
+       {say:['narrator','And they offered on it burnt offerings to YAHUAH, and slaughtered shalom offerings.']},
       ]},
      {type:'interact',prop:'torah_stones',text:'Write on the stones a copy of the Torah of Mosheh',hiddenUntil:1,
       script:[
        {sfx:'chime'},{burst:[22,12,'mote',12]},
        {say:['narrator','And he wrote there on the stones a copy of the Torah of Mosheh, which he had written in the presence of the children of Yasharal — the words set in lime and stone, in the open air, on a hill anyone might climb.']},
-       {say:['yahoshua','Let the stranger read it, and the child, and the sojourner who passes on the road below. The Torah of my Aluahim is not a secret kept by priests — it is a boundary-stone set up in daylight.']},
+       {say:['yahoshua','Let the stranger read it, and the child, and the sojourner who passes on the road below. The Torah of my Aluahim is not a secret kept by kohanim — it is a boundary-stone set up in daylight.']},
       ]},
-     {type:'goto',x:25,y:19,radius:2.4,text:'Between Gerizim and Ĕyḇal: read the blessing and the curse',hiddenUntil:2,
+     {type:'goto',x:25,y:19,radius:2.4,text:'Between Gerizim and Ĕyḇal: read the berakoth and the cursings',hiddenUntil:2,
       script:[
-       {say:['narrator','And all Yasharal, its elders and officers and judges, stood on either side of the ark — half of them in front of Mount Gerizim, and half of them in front of Mount Ĕyḇal — the stranger as well as the native, as Mosheh the servant of YAHUAH had commanded at the first, to bless the people.']},
+       {say:['narrator','And all Yasharal – the sojourner as well as the native – with their elders and officers and judges, stood on either side of the ark — half of them in front of Mount Gerizim and half of them in front of Mount Ĕyḇal, as Mosheh the servant of YAHUAH had commanded before, that they should bless the people of Yasharal.']},
        {rays:.7,raysX:25},{sfx:'holy'},
-       {say:['yahoshua','“BLESSED are you in the city, and blessed in the field… blessed when you come in, and blessed when you go out — if you diligently obey the voice of YAHUAH your Aluahim.”']},
-       {say:['yahoshua','“CURSED is the man who makes a carved image… cursed is he who moves his neighbour’s boundary… cursed is he who takes a bribe to slay an innocent being.” And all the people shall say — AMĔN.']},
+       {say:['yahoshua','“BARUK are you in the city, and baruk in the field… baruk when you come in, and baruk when you go out — if you diligently obey the voice of YAHUAH your Aluahim.”']},
+       {say:['yahoshua','“CURSED is the man who makes a carved or moulded image… cursed is he who moves his neighbour’s boundary… cursed is he who takes a bribe to slay an innocent being.” And all the people shall say — AMĔN.']},
        {burst:[25,17,'holy',20]},{rays:0},
-       {say:['narrator','There was NOT A WORD of all that Mosheh had commanded which Yahusha did not read before all the assembly of Yasharal — with the women, and the little ones, and the strangers who walked in their midst.']},
+       {say:['narrator','There was NOT A WORD of all that Mosheh had commanded which Yahusha did not read before all the qahal of Yasharal, with the women and the little ones and the sojourners who accompanied them.']},
       ]},
    ],
   },
   outro:[
-   {art:'sinaiart', music:'holy', text:'The nation stood in two halves upon two mountains, with the ark of the covenant in the valley between — and the words rolled from slope to slope like slow thunder: the blessing answered by Amĕn, the curse answered by Amĕn. A whole people, out loud, agreeing to be measured.', ref:'YAHUSHA 8:33–35'},
+   {art:'sinaiart', music:'holy', text:'And all Yasharal … stood on either side of the ark … Half of them were in front of Mount Gerizim and half of them in front of Mount Ĕyḇal … And afterward he read all the words of the Torah, the berakoth and the cursings … There was not a Word of all that Mosheh had commanded which Yahusha did not read before all the qahal of Yasharal.', ref:'YAHUSHA 8:33–35', stage:{"set":"valley","time":"day","cam":"pull","props":[{"k":"ark","x":0.58,"z":0.5}],"cast":[{"id":"yahoshua","x":0.36,"z":0.1,"face":"r","pose":"stand","hold":"scroll","say":2,"acts":[{"at":2,"pose":"hold"},{"at":3,"pose":"raise"}]}],"crowd":[{"kind":"kohanim","n":3,"x":0.58,"w":0.16,"z":0.62,"dz":0.05,"face":"l"},{"kind":"people","n":7,"x":0.13,"w":0.2,"z":0.55,"face":"r","from":"stand","pose":"raise","at":3},{"kind":"people","n":7,"x":0.87,"w":0.2,"z":0.55,"face":"l","from":"stand","pose":"raise","at":3}],"fx":[{"k":"rays","x":0.5,"at":2}]}},
   ],
-  complete:'Not a word of all that Mosheh commanded which Yahusha did not read — before all the assembly, the women, the little ones, and the stranger.'
+  complete:'There was not a Word of all that Mosheh had commanded which Yahusha did not read — before all the qahal of Yasharal, with the women and the little ones and the sojourners who accompanied them.'
 },
 ]},
 );
 STORY.push(
 /* ============ ACT III — THE KINGS OF THE LAND ============ */
-{ id:'yact3', roman:'III', title:'The Kings of the Land', ref:'YAHUSHA 9–12 · YASHAR 88–89', chapters:[
+{ id:'yact3', roman:'III', title:'The Sovereigns of the Land', ref:'YAHUSHA 9–12 · YASHAR 88–89', chapters:[
 { id:'y9', title:'Worn-Out Sandals', ref:'YAHUSHA 9',
   intro:[
-   {art:'journey', music:'tense', text:'And when all the sovereigns beyond the Yardĕn heard, they gathered together to fight with Yahusha and Yasharal with ONE MOUTH. But the inhabitants of Giḇ‛on had heard what Yahusha had done to Yeriḥo and Ai — and THEY worked slyness: they took old sacks on their donkeys, old wineskins torn and patched, old and patched sandals on their feet, and old garments — and all the bread of their provision was dry and crumbly.', ref:'YAHUSHA 9:1–5'},
+   {art:'journey', music:'tense', text:'When all the sovereigns who were beyond the Yardĕn … heard, they gathered together to fight with Yahusha and Yasharal with ONE ACCORD. And the inhabitants of Giḇ‛on heard what Yahusha had done to Yeriḥo and Ai, and THEY acted slyly … And they took old sacks on their donkeys, old wineskins torn and mended, and old and patched sandals on their feet and old garments on themselves. And all the bread of their provision was dry, it was crumbs.', ref:'YAHUSHA 9:1–5', stage:{"set":"road","time":"day","cam":"pan-l","wx":"dust","props":[{"k":"donkey","x":0.86,"z":0.12,"face":"l","at":3},{"k":"sacks","x":0.86,"z":0.12,"n":2,"dy":-0.07,"at":3}],"cast":[{"id":"givonite","enter":"r","at":2,"to":0.58,"z":0.06,"face":"l","pose":"stand","hold":"staff","acts":[{"at":3,"pose":"point","face":"r"},{"at":4,"pose":"hold","face":"l"}],"hold2":"bread"},{"id":"givon2","look":{"name":"Man of Giḇ‛on","skin":"#6e4524","hair":"#4a4438","robe":"#6a6048","beard":"#4a4438","headcover":"#7a6a50"},"label":false,"enter":"r","at":2,"to":0.7,"z":0.1,"face":"l","pose":"carry","hold":"jar"}],"crowd":[{"kind":"kings","n":5,"x":0.26,"w":0.3,"z":0.5,"face":"r","enter":"l","at":0},{"kind":"army","side":"aram","n":8,"x":0.26,"w":0.4,"z":0.72,"face":"r","enter":"l","at":1}]}},
   ],
   scene:{
    map:{biome:'plains', w:48, h:34, seed:2109,
@@ -6226,9 +6373,9 @@ STORY.push(
    npcs:[
      {id:'envoy',char:'givonite',x:25,y:16.5,wander:false,
       script:[
-       {say:['givonite','From a FAR land your servants have come, because of the Name of YAHUAH your Aluahim — for we have heard the report of Him, all that He did in Mitsrayim. Make a covenant with us!']},
-       {say:['hebrew2','Perhaps you dwell in our midst — how then do we make a covenant with you?']},
-       {say:['givonite','See our bread: it was HOT out of our ovens on the day we came out to travel to you — now see, it is dry and crumbly. And these wineskins, new when we filled them — see, torn and patched. And our garments and our sandals have worn out from the very long journey.']},
+       {say:['givonite','From a FAR land your servants have come, because of the Name of YAHUAH your Aluahim — for we have heard the report of Him, all that He did in Mitsrayim. Make a berith with us!']},
+       {say:['hebrew2','Perhaps you dwell in our midst — how then do we make a berith with you?']},
+       {say:['givonite','This bread of ours we took HOT for our provision from our houses on the day that we left to come to you. But now, see, it is dry and it is crumby. And these wineskins which we filled were new and see, they are torn. And these our garments and our sandals have become old because of the very long journey.']},
       ]},
      {id:'envoy2',char:'givonite',x:26.5,y:17,wander:false,noTalk:true},
      {id:'elder1',char:'elder',x:23,y:18,wander:false,noTalk:true},
@@ -6242,41 +6389,41 @@ STORY.push(
    ],
    objectives:[
      {type:'talk',npc:'envoy',text:'Hear the ragged envoys who stand at the edge of the camp',},
-     {type:'goto',x:24,y:15,radius:2,text:'Weigh the covenant — the bread, the skins, the sandals',hiddenUntil:1,
+     {type:'goto',x:24,y:15,radius:2,text:'Weigh the berith — the bread, the skins, the sandals',hiddenUntil:1,
       script:[
-       {choice:{prompt:'The bread is dry, the skins are patched — and the elders wait on your word.',options:[
+       {choice:{prompt:'The bread is dry, the skins are mended — and the elders wait on your word.',options:[
          {label:'“Take of their provision — the matter is plain enough.”',script:[
-           {say:['narrator','And the men took of their provision — but they did NOT ask the mouth of YAHUAH.']},
+           {say:['narrator','And the men of Yasharal took some of their food, but they did NOT ask the mouth of YAHUAH.']},
          ]},
          {label:'“Should we not first ask the mouth of YAHUAH?”',script:[
            {say:['elder','The bread crumbles in the hand, Yahusha — what oracle is needed? The matter is plain enough.']},
-           {say:['narrator','And the counsel was set aside. And the men took of their provision — but they did NOT ask the mouth of YAHUAH.']},
+           {say:['narrator','And the counsel was set aside. And the men of Yasharal took some of their food, but they did NOT ask the mouth of YAHUAH.']},
          ]},
        ]}},
-       {say:['yahoshua','Then peace between us. I make with you a covenant, to let you live — and let the rulers of the congregation swear to it.']},
+       {say:['yahoshua','Then shalom between us. I make with you a berith, to let you live — and let the rulers of the qahal swear to it.']},
        {sfx:'chime'},
-       {say:['narrator','And Yahusha made peace with them, and made a covenant with them, to let them live. And the rulers of the congregation swore to them.']},
+       {say:['narrator','And Yahusha made shalom with them and made a berith with them to let them live and the rulers of the qahal swore to them.']},
       ]},
      {type:'goto',x:37,y:23,radius:2.6,text:'Three days on: the road bends into Giḇ‛on — their own city',hiddenUntil:2,
       script:[
        {music:'sorrow'},
-       {say:['narrator','And it came to be, at the end of three days, that they heard they were their NEIGHBOURS — dwelling in their very midst: Giḇ‛on, and Kephirah, and Be’ĕroth, and Qiryath-Ye‛arim. And all the congregation grumbled against the rulers.']},
+       {say:['narrator','And it came to be at the end of three days, after they had made a berith with them, that they heard that they were their NEIGHBOURS who dwelt near them. Now their cities were Giḇ‛on and Kephirah and Be’ĕroth and Qiryath-Ye‛arim. And all the qahal grumbled against the rulers.']},
        {say:['yahoshua','Why have you deceived us, saying “We are very far from you” — when you dwell in our midst?']},
-       {say:['givonite','Because it was CLEARLY TOLD your servants that YAHUAH your Aluahim commanded His servant Mosheh to give you all the land, and to destroy all its inhabitants from before you. So we feared greatly for our lives because of you — and did this. And now, see, we are in your hand: as it seems good and right in your eyes to do to us — do.']},
-       {say:['yahoshua','The oath stands. We have sworn to them by YAHUAH Aluahim of Yasharal, and we are not able to touch them — lest wrath be upon us for the oath. This then is your life and your judgment: you are woodcutters and drawers of water, for the congregation, and for the ALTAR of YAHUAH — in the place He chooses.']},
+       {say:['givonite','Because your servants were CLEARLY TOLD that YAHUAH your Aluahim commanded His servant Mosheh to give you all the land and to destroy all the inhabitants of the land from before you. So we were very much afraid for our lives because of you and have done this deed. And now, see, we are in your hands. Do with us as it seems good and right to do to us.']},
+       {say:['yahoshua','The oath stands. We have sworn to them by YAHUAH Aluahim of Yasharal and we are unable to touch them — lest wrath be upon us because of the oath which we swore to them. This then is your life and your judgment: you are woodcutters and drawers of water for the qahal and for the mizbe’ach of YAHUAH — at the place that He should choose.']},
        {emote:['envoy','heart']},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'camp', music:'night', text:'A ruse succeeded where armies were failing — because a covenant sworn in the Name is unbreakable even when it was won by deceit. The men of Giḇ‛on took up the axe and the water-jar for the altar of YAHUAH, to this day. And Yasharal learned the cost of a question never asked.', ref:'YAHUSHA 9:26–27'},
+   {art:'camp', music:'night', text:'And he did so to them and delivered them out of the hand of the children of Yasharal and they did not kill them. And that day Yahusha made them woodcutters and drawers of water for the qahal and for the mizbe’ach of YAHUAH, even to this day, at the place that He should choose.', ref:'YAHUSHA 9:26–27', stage:{"set":"camp","time":"day","cam":"push","focus":0.55,"props":[{"k":"altar","x":0.3,"z":0.45},{"k":"well","x":0.88,"z":0.3,"at":1}],"cast":[{"id":"yahoshua","x":0.46,"z":0.08,"face":"r","pose":"bless","hold2":"staff","say":1,"acts":[{"at":1,"pose":"point"}]},{"id":"givonite","x":0.66,"z":0.1,"face":"l","pose":"bow","acts":[{"at":1,"pose":"carry"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":5,"x":0.18,"w":0.2,"z":0.3,"face":"r"},{"kind":"people","n":4,"x":0.76,"w":0.2,"z":0.45,"face":"l","pose":"carry","hold":"jar","at":1,"look":{"robe":"#6a6048"}}]}},
   ],
-  complete:'The men took of their provision — but they did not ask the mouth of YAHUAH.'
+  complete:'And the men of Yasharal took some of their food, but they did not ask the mouth of YAHUAH.'
 },
 { id:'y10', title:'Sun, Stand Still Over Giḇ‛on', ref:'YAHUSHA 10',
   intro:[
-   {art:'chariots', music:'storm', text:'Then the five sovereigns of the Amorites — of Yerushalayim, of Ḥeḇron, of Yarmuth, of Laḵish, of Eglon — gathered together and went up, they and all their armies, and camped before Giḇ‛on, and fought against it. For it had made peace with Yasharal.', ref:'YAHUSHA 10:5'},
-   {art:'stars', music:'tense', text:'And the men of Giḇ‛on sent to Yahusha at the camp at Gilgal: “Do not abandon your servants! Come up to us quickly, and save us and help us.” And Yahusha went up from Gilgal, he and all the people of battle with him — ALL NIGHT.', ref:'YAHUSHA 10:6–9'},
+   {art:'chariots', music:'storm', text:'So the five sovereigns of the Amorites – the sovereign of Yerushalayim, the sovereign of Ḥeḇron, the sovereign of Yarmuth, the sovereign of Laḵish, the sovereign of Eglon – gathered together and went up, they and all their armies and camped before Giḇ‛on and fought against it.', ref:'YAHUSHA 10:5', stage:{"set":"walls","time":"day","wx":"dust","cam":"push","focus":0.45,"props":[{"k":"tent","x":0.08,"z":0.7},{"k":"tent","x":0.9,"z":0.72,"color":"#6a3a52"},{"k":"chariot","x":0.1,"z":0.35,"face":"r"}],"cast":[{"id":"kanaanking","x":0.22,"z":0.04,"face":"r","pose":"point","crown":1,"say":0}],"crowd":[{"kind":"kings","n":4,"x":0.42,"w":0.2,"z":0.25,"face":"r"},{"kind":"army","side":"aram","n":12,"x":0.66,"w":0.56,"z":0.64,"face":"r","pose":"fight"}]}},
+   {art:'stars', music:'tense', text:'And the men of Giḇ‛on sent to Yahusha at the camp at Gilgal, saying, “Do not withdraw your hand from your servants. Come up to us quickly and save us and help us …” And Yahusha went up from Gilgal, he and all the soldiers with him … So then Yahusha came upon them suddenly, having gone up ALL NIGHT from Gilgal.', ref:'YAHUSHA 10:6–9', stage:{"set":"camp","time":"night","cam":"pan-r","cast":[{"id":"yahoshua","x":0.3,"z":0.08,"face":"r","pose":"stand","hold":"spear","acts":[{"at":2,"pose":"point"},{"at":3,"to":0.82,"run":1}]},{"id":"givonite","enter":"r","at":0,"run":1,"to":0.58,"face":"l","pose":"kneel","say":0,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"stand"}]}],"crowd":[{"kind":"army","side":"yasharal","n":10,"x":0.5,"w":0.7,"z":0.55,"face":"r","enter":"l","at":2,"exit":"r","exitAt":3,"run":1}]}},
   ],
   scene:{
    map:{biome:'plains', w:54, h:38, seed:2110,
@@ -6301,7 +6448,7 @@ STORY.push(
    onResume:[
      /* returning from the field before Giḇ‛on: the coalition is broken and flees north */
      {sfx:'holy'},
-     {say:['narrator','And YAHUAH confused them before Yasharal, and smote them with a great slaughter at Giḇ‛on. The five armies break — and flee north, toward the descent of Bĕyth Ḥoron.']},
+     {say:['narrator','And YAHUAH threw them into confusion before Yasharal and they smote them with a great slaughter at Giḇ‛on. The five armies break — and flee north, toward the descent of Bĕyth Ḥoron.']},
    ],
    objectives:[
      {type:'goto',x:26,y:21,radius:2.4,text:'Fall on the five armies suddenly, out of the all-night march',
@@ -6311,12 +6458,12 @@ STORY.push(
        {rays:0},{sfx:'holy'},{shake:1},
        {call:G=>Game.toBattle('gibon',1)},
       ]},
-     {type:'goto',x:30,y:18,radius:2.4,text:'Pursue by the road of the Bĕyth Ḥoron descent — the heavens fight',hiddenUntil:1,
+     {type:'goto',x:30,y:18,radius:2.4,text:'Pursue by the road of the Bĕyth Ḥoron descent — the shamayim fight',hiddenUntil:1,
       script:[
        {music:'storm'},
        {call:G=>{ G.world.fx=(G.world.fx||[]); G.world.fx.push({kind:'hail',x:30,y:14,r:14,until:G.t+13000}); }},
        {sfx:'thunder'},{shake:1.2},
-       {say:['narrator','And it came to be, as they fled before Yasharal on the descent of Bĕyth Ḥoron, that YAHUAH threw down GREAT STONES from the heavens on them as far as Azĕqah — and they died. More died from the hailstones than the children of Yasharal killed with the sword.']},
+       {say:['narrator','And it came to be, as they fled before Yasharal and were on the descent of Bĕyth Ḥoron, that YAHUAH threw down LARGE HAILSTONES from the shamayim on them as far as Azĕqah and they died. There were more who died from the hailstones than those whom the sons of Yasharal had slain with the sword.']},
        /* the great stones from heaven fall on the fleeing coalition — more slain than by the sword */
        {call:G=>{ const w=G.world; if(w.army) for(const u of w.army){ if(u.team==='def'&&!u.dead){ u.dead=true; u.deadT=G.t; Particles.burst(u.x*TILE,u.y*TILE,'ash',2); } }
           Army.order(w,'atk',{state:'form'}); }},
@@ -6328,7 +6475,7 @@ STORY.push(
        {rays:1,raysX:26},{sfx:'holy'},
        {say:['yahoshua','SUN — STAND STILL over Giḇ‛on! And moon — in the Valley of Ayalon!']},
        {shake:.6},
-       {say:['narrator','And the sun stood still, and the moon stopped, until the nation avenged itself upon its enemies. Is this not written in the Book of Yashar? So the sun stopped in the midst of the heavens, and did not hasten to go down for about a whole day.']},
+       {say:['narrator','So the sun stood still and the moon stopped, til the nation avenged itself upon their enemies. Is this not written in the Book of Yashar? Thus the sun stopped in the midst of the shamayim and did not hasten to go down for an entire day.']},
        {say:['narrator','And there has been NO DAY LIKE THAT, before it or after it, that YAHUAH listened to the voice of a man — for YAHUAH fought for Yasharal.']},
        {rays:.5},
       ]},
@@ -6336,20 +6483,20 @@ STORY.push(
       script:[
        {show:'k1'},{teleport:['k1',40,27.5]},{face:['k1','down']},
        {say:['kanaanking','Five crowns in one cave, son of Nun. Yerushalayim, Ḥeḇron, Yarmuth, Laḵish, Eglon — we came out against one small city that made peace with you. Do with us what you do.']},
-       {say:['yahoshua','Come near — put your feet on the necks of these sovereigns, captains of Yasharal. DO NOT FEAR, nor be discouraged. Be strong and brave — for thus YAHUAH does to ALL your enemies against whom you fight.']},
+       {say:['yahoshua','Come near — put your feet on the necks of these sovereigns, captains of Yasharal. DO NOT BE AFRAID nor be discouraged, be strong and courageous, for this is what YAHUAH is going to do to ALL your enemies whom you are fighting.']},
        {sfx:'chime'},{rays:0},{music:'night'},
-       {say:['narrator','And afterwards they were hanged on five trees until evening; and at sunset they were laid in the cave where they had hidden, and great stones rolled against its mouth — which remain to this very day.']},
+       {say:['narrator','And afterward Yahusha smote them and killed them and hanged them on five trees. And they were hanging on the trees until evening… and they took them down from the trees and threw them into the cave where they had been hidden and laid large stones against the cave’s mouth, to this day.']},
       ]},
    ],
   },
   outro:[
-   {art:'vista_sunset', music:'holy', text:'And Yahusha smote all the land — the mountains and the South and the low country and the slopes, and all their sovereigns — in one campaign; he left none remaining, because YAHUAH, Aluahim of Yasharal, fought for Yasharal. And Yahusha returned, and all Yasharal with him, to the camp at Gilgal.', ref:'YAHUSHA 10:40–43'},
+   {art:'vista_sunset', music:'holy', text:'Yahusha smote all the land: the mountain country and the South and the low country and the wilderness slopes and all their sovereigns. He left no survivor… And Yahusha captured all these sovereigns and their land at one time, because YAHUAH Aluahim of Yasharal fought for Yasharal. And Yahusha returned and all Yasharal with him, to the camp at Gilgal.', ref:'YAHUSHA 10:40–43', stage:{"set":"battle","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"yahoshua","x":0.3,"z":0.06,"face":"r","pose":"fight","hold":"sword","acts":[{"at":1,"pose":"point"},{"at":2,"to":0.16,"face":"l","pose":"stand"}]}],"crowd":[{"kind":"army","side":"yasharal","n":8,"x":0.4,"w":0.4,"z":0.5,"face":"r","pose":"fight","exit":"l","exitAt":2},{"kind":"army","side":"aram","n":6,"x":0.8,"w":0.22,"z":0.55,"face":"l","pose":"fight","exit":"r","exitAt":1},{"kind":"kings","n":5,"x":0.7,"w":0.24,"z":0.2,"face":"l","pose":"bound","at":1}],"fx":[{"k":"glory","x":0.82,"y":0.14},{"k":"hail","at":0}]}},
   ],
   complete:'Sun, stand still over Giḇ‛on — and moon, in the Valley of Ayalon!'
 },
 { id:'y11', title:'The Waters of Merom', ref:'YAHUSHA 11–12',
   intro:[
-   {art:'journey', music:'tense', text:'And when Yaḇin sovereign of Ḥatsor heard, he sent to all the sovereigns of the north — and they went out, they and all their armies with them, as many people as the sand on the seashore, with very many horses and chariots. And they camped together at the waters of Merom, to fight against Yasharal.', ref:'YAHUSHA 11:1–5'},
+   {art:'journey', music:'tense', text:'And it came to be, when Yaḇin sovereign of Ḥatsor heard, that he sent to Yoḇaḇ sovereign of Maḏon … and to the sovereigns who were from the north … And they went out, they and all their armies with them, as many people as numerous as the sand on the seashore, with very many horses and chariots. And all these sovereigns … camped together at the waters of Merom to fight against Yasharal.', ref:'YAHUSHA 11:1–5', stage:{"set":"river","time":"dusk","cam":"pan-r","props":[{"k":"chariot","x":0.5,"z":0.08,"face":"l","at":2},{"k":"horse","x":0.9,"z":0.1,"face":"l","at":2},{"k":"chariot","x":0.4,"z":0.95,"face":"r","at":2},{"k":"chariot","x":0.66,"z":0.95,"face":"l","at":2},{"k":"tent","x":0.2,"z":1.0,"at":4,"color":"#6a3a52"},{"k":"tent","x":0.52,"z":1.0,"at":4,"color":"#5a4a6a"},{"k":"tent","x":0.84,"z":1.0,"at":4,"color":"#6a3a52"}],"cast":[{"id":"yavin","look":{"name":"Yaḇin sovereign of Ḥatsor","skin":"#644323","hair":"#1d1208","robe":"#4a3a6a","beard":"#1d1208","collar":"#caa23c"},"crown":1,"x":0.18,"z":0.04,"face":"r","pose":"point","say":0},{"id":"runner","look":{"name":"Messenger","skin":"#6e4524","hair":"#1d1208","robe":"#6a5a48","short":1},"x":0.3,"z":0.08,"face":"l","pose":"kneel","acts":[{"at":1,"exit":"r","run":1}]}],"crowd":[{"kind":"kings","n":4,"x":0.72,"w":0.2,"z":0.1,"dz":0.04,"face":"l","enter":"r","at":1},{"kind":"army","side":"aram","n":14,"x":0.52,"w":0.9,"z":0.96,"dz":0.06,"face":"l","enter":"r","at":2}]}},
   ],
   scene:{
    map:{biome:'plains', w:52, h:36, seed:2111, lake:{x:13,y:10,rx:9,ry:6},
@@ -6373,13 +6520,13 @@ STORY.push(
    onResume:[
      /* returning from the waters of Merom: the coalition is broken, only the chariots and horses remain */
      {sfx:'holy'},
-     {say:['narrator','And YAHUAH gave them into the hand of Yasharal, who smote them and pursued them to Great Tsiḏon, until none of them remained. Only their chariots and their horses are left upon the field.']},
+     {say:['narrator','And YAHUAH gave them into the hand of Yasharal and they smote them and pursued them to Great Tsiḏon… and they smote them until no survivor was left to them. Only their chariots and their horses are left upon the field.']},
    ],
    objectives:[
      {type:'goto',x:28,y:22,radius:2.2,text:'Come against them suddenly by the waters of Merom',
       script:[
        {rays:.6,raysX:28},
-       {say:['voice','Do not be afraid because of them — for tomorrow, about this time, I am giving all of them up slain before Yasharal. Their horses you shall hamstring, and their chariots you shall burn with fire.']},
+       {say:['voice','Do not be afraid of their presence, for tomorrow about this time I am giving all of them over to Yasharal, slain. Hamstring their horses and burn their chariots with fire.']},
        {rays:0},
        {say:['kaleb','As numerous as the sand on the seashore, with horses enough to shake the ground — and the word says they are already given. Fall on them, Yahusha. The sword of a man moves faster when YAHUAH has gone ahead of it.']},
        {sfx:'holy'},{shake:1},
@@ -6395,15 +6542,15 @@ STORY.push(
       script:[
        {removeProp:'char2'},{addProp:{type:'firepit',lit:true,x:33,y:16,id:'cfire2'}},
        {burst:[33,16,'spark',18]},{burst:[33,15,'smoke',14]},
-       {say:['narrator','And Yahusha did to them as YAHUAH said to him: he hamstrung their horses, and burned their chariots with fire. And he turned back and took Ḥatsor, the head of all those reigns, and burned it — Ḥatsor alone of the cities that stood on their mounds.']},
-       {say:['narrator','As YAHUAH had commanded Mosheh His servant, so Mosheh commanded Yahusha — and so Yahusha DID. He left nothing undone of all that YAHUAH had commanded Mosheh.']},
+       {say:['narrator','And Yahusha did to them as YAHUAH said to him: he hamstrung their horses and burned their chariots with fire. And Yahusha turned back at that time and captured Ḥatsor… for Ḥatsor was formerly the head of all those reigns. However, Yasharal did not burn any cities that stood on their mounds, but Yahusha burned only Ḥatsor.']},
+       {say:['narrator','As YAHUAH had commanded Mosheh His servant, so Mosheh commanded Yahusha — and so Yahusha DID. He did not turn aside a Word of all that YAHUAH had commanded Mosheh.']},
       ]},
    ],
   },
   outro:[
-   {art:'rest', music:'holy', text:'These are the sovereigns of the land whom Yahusha and the children of Yasharal smote beyond the Yardĕn westward — THIRTY-ONE SOVEREIGNS in all, each named, each numbered, each fallen. And the land had REST from war.', ref:'YAHUSHA 12:7–24 · 11:23'},
+   {art:'rest', music:'holy', text:'And these are the sovereigns of the land which Yahusha and the children of Yasharal smote beyond the Yardĕn, on the west … the sovereign of Yeriḥo, one; the sovereign of Ai, which is beside Bĕyth Al, one; the sovereign of Yerushalayim, one … – THIRTY ONE SOVEREIGNS in all. … And the land RESTED from fighting.', ref:'YAHUSHA 12:7–24 · 11:23', stage:{"set":"field","time":"dusk","cam":"pan-r","props":[{"k":"sheep","x":0.3,"z":0.5,"n":6,"w":180,"at":5}],"cast":[{"id":"yahoshua","x":0.16,"z":0.06,"face":"r","pose":"stand","hold":"spear","acts":[{"at":1,"pose":"point"},{"at":5,"pose":"raise"}]},{"id":"k_yeriho","look":{"name":"Sovereign of Yeriḥo","skin":"#644323","hair":"#1d1208","robe":"#6a2a5a","beard":"#1d1208","collar":"#caa23c"},"crown":1,"x":0.4,"z":0.12,"face":"l","at":1,"pose":"bow"},{"id":"k_ai","look":{"name":"Sovereign of Ai","skin":"#6e4524","hair":"#221504","robe":"#2a3a7a","beard":"#221504","collar":"#caa23c"},"crown":1,"x":0.58,"z":0.16,"face":"l","at":2,"pose":"bow"},{"id":"k_yerush","look":{"name":"Sovereign of Yerushalayim","skin":"#7a5636","hair":"#1d1208","robe":"#7a2a2a","beard":"#1d1208","collar":"#caa23c"},"crown":1,"x":0.76,"z":0.12,"face":"l","at":3,"pose":"bow"}],"crowd":[{"kind":"kings","n":12,"x":0.62,"w":0.6,"z":0.62,"face":"l","pose":"bow","at":4}],"fx":[{"k":"rays","x":0.3,"at":5}]}},
   ],
-  complete:'Thirty and one sovereigns — and the land had rest from war.'
+  complete:'Thirty one sovereigns in all — and the land rested from fighting.'
 },
 ]},
 );
@@ -6412,7 +6559,7 @@ STORY.push(
 { id:'yact4', roman:'IV', title:'The Inheritance', ref:'YAHUSHA 13–21 · YASHAR 89–90', chapters:[
 { id:'y11b', title:'The Land That Yet Remains', ref:'YAHUSHA 13',
   intro:[
-   {art:'vista', music:'holy', text:'And Yahusha was old, advanced in years. And YAHUAH said to him: “You are old, advanced in years, and very much of the land still remains to be possessed.” This is the land that yet remained: all the districts of the Philistines, and all the Geshurites, and Leḇanon toward the rising of the sun.', ref:'YAHUSHA 13:1–5'},
+   {art:'vista', music:'holy', text:'And Yahusha was old, advanced in years. And YAHUAH said to him, “You are old, advanced in years and still much of the land remains to be possessed. This is the land that remains: all the districts of the Philistines and all the Geshurites … and all Leḇanon, toward the sunrise …”', ref:'YAHUSHA 13:1–5', stage:{"set":"mountain","time":"dawn","cam":"pan-r","focus":0.6,"props":[{"k":"tree","x":0.74,"z":0.8,"h":150,"color":"#2e4a26","at":3},{"k":"tree","x":0.84,"z":0.85,"h":170,"color":"#2e4a26","at":3},{"k":"tree","x":0.93,"z":0.8,"h":140,"color":"#2e4a26","at":3}],"cast":[{"id":"yahoshua_o","x":0.28,"z":0.06,"face":"r","pose":"stand","hold":"staff","acts":[{"at":1,"pose":"look"},{"at":2,"pose":"point"}]}],"crowd":[{"kind":"soldiers","side":"pelishtim","n":5,"x":0.58,"w":0.2,"z":0.85,"face":"l","at":2}],"fx":[{"k":"glory","x":0.45,"y":0.06,"at":1}]}},
   ],
   scene:{
    map:{biome:'plains', w:52, h:36, seed:2117, river:{x:45,width:5,curve:1.1},
@@ -6431,7 +6578,7 @@ STORY.push(
      {id:'levite1',char:'levite',x:14,y:16,wander:false,
       script:[
        {say:['levite','We are the sons of Lĕwi, Yahusha. As you mark out the land, tribe by tribe — what stone is set for us? Where does the border of our portion run?']},
-       {say:['yahoshua_o','There is none, son of Lĕwi — and that is your honour, not your lack. To the tribe of Lĕwi Mosheh gave NO inheritance of land: the offerings of YAHUAH Aluahim of Yasharal, made by fire, ARE your inheritance. YAHUAH Himself is your portion, as He said to you. No border can hold a portion so wide.']},
+       {say:['yahoshua_o','There is none, son of Lĕwi — and that is your honour, not your lack. To the tribe of Lĕwi Mosheh gave NO inheritance: the offerings made by fire to YAHUAH Aluahim of Yasharal ARE your inheritance. YAHUAH Himself is your portion, as He said to you. No border can hold a portion so wide.']},
        {emote:['levite1','heart']},{sfx:'chime'},
       ]},
    ],
@@ -6446,7 +6593,7 @@ STORY.push(
       script:[
        {rays:.7,raysX:16},{sfx:'holy'},
        {say:['voice','You are old, advanced in years, and very much of the land still remains to be possessed — all the districts of the Philistines, and all the Geshurites, and the land of the Kena‛anites, and Leḇanon toward the rising of the sun.']},
-       {say:['voice','All the inhabitants of the mountains, from Leḇanon to Misrephoth Mayim, all the Tsiḏonians — I MYSELF shall drive them out from before the children of Yasharal. Only divide it by lot to Yasharal as an inheritance, as I have commanded you. Now apportion this land to the nine tribes and the half-tribe of Menashsheh.']},
+       {say:['voice','All the inhabitants of the mountains from Leḇanon as far as Misrephoth Mayim and all the Tsiḏonians — I MYSELF drive them out from before the children of Yasharal. Only, divide it by lot to Yasharal as an inheritance, as I have commanded you. And now, divide this land as an inheritance to the nine tribes and half the tribe of Menashsheh.']},
        {burst:[16,14,'holy',16]},{rays:0},
        {say:['yahoshua_o','Old — and the work not finished. That is the way of every servant of YAHUAH. But the promise does not age. What my hand does not take, HIS hand will. Let the borders be marked — beginning with those already given, beyond the Yardĕn.']},
       ]},
@@ -6464,19 +6611,19 @@ STORY.push(
      {type:'interact',prop:'inh_menashsheh',text:'Mark the inheritance of half Menashsheh, east of the Yardĕn',hiddenUntil:3,
       script:[
        {sfx:'chime'},{burst:[40,14,'mote',10]},
-       {say:['yahoshua_o','And half Menashsheh — all Bashan, the whole reign of Og, and the towns of Yaʼir, sixty cities. These three — Re’uḇĕn, Gaḏ, and half Menashsheh — Mosheh settled beyond the Yardĕn eastward. Their armed men crossed over to fight for their brothers; now the borders are sealed behind them.']},
+       {say:['yahoshua_o','And half Menashsheh — all Bashan, all the reign of Og sovereign of Bashan and all the small towns of Yaʼir which are in Bashan, sixty cities. These three — Re’uḇĕn, Gaḏ, and half Menashsheh — Mosheh gave as an inheritance in the desert plains of Mo’aḇ beyond the Yardĕn, by Yeriḥo eastward. Their armed men crossed over to fight for their brothers; now the borders are sealed behind them.']},
       ]},
      {type:'talk',npc:'levite1',text:'Answer the sons of Lĕwi: where is their portion?',hiddenUntil:4},
    ],
   },
   outro:[
-   {art:'land', music:'holy', text:'So the tally began, tribe by tribe. Two tribes and a half had their portion east of the Yardĕn, from the hand of Mosheh; the tribe of Lĕwi received no land, for YAHUAH is their inheritance; and very much of the west still remained to be possessed. An old man marked out a country not yet fully won — trusting the Hand that had sworn to finish what his own no longer could.', ref:'YAHUSHA 13:8–33'},
+   {art:'land', music:'holy', text:'With them the other half tribe the Re’uḇĕnites and the Gaḏites received their inheritance, which Mosheh had given them, beyond the Yardĕn eastward … However, the children of Yasharal did not drive out the Geshurites nor the Ma‛aḵathites … But to the tribe of Lĕwi Mosheh gave no inheritance. YAHUAH, Aluahim of Yasharal, He was their inheritance, as He had said to them.', ref:'YAHUSHA 13:8–33', stage:{"set":"river","time":"day","cam":"push","props":[{"k":"sheep","x":0.84,"z":0.1,"n":6,"w":160},{"k":"sheep","x":0.5,"z":0.96,"n":8,"w":200}],"cast":[{"id":"reuveni","look":{"name":"Man of Re’uḇĕn","skin":"#704a27","hair":"#2c1a0c","robe":"#7a5a3a","beard":"#2c1a0c","sash":"#8a3a2a"},"x":0.66,"z":0.06,"face":"l","pose":"stand","hold":"staff","acts":[{"at":1,"pose":"point","face":"r"},{"at":2,"pose":"stand","face":"l"}]},{"id":"levite","x":0.3,"z":0.04,"face":"r","at":2,"pose":"stand","acts":[{"at":3,"pose":"raise"}]}],"crowd":[{"kind":"shepherds","n":6,"x":0.4,"w":0.34,"z":0.95,"dz":0.05,"face":"r"},{"kind":"nations","n":3,"x":0.9,"w":0.1,"z":0.98,"dz":0.03,"face":"l","at":1},{"kind":"levites","n":4,"x":0.15,"w":0.14,"z":0.1,"dz":0.04,"face":"r","at":2}],"fx":[{"k":"glory","x":0.3,"y":0.06,"at":3}]}},
   ],
-  complete:'Very much of the land yet remains — only divide it by lot, and YAHUAH Himself shall drive them out.'
+  complete:'Still much of the land remains to be possessed — I Myself drive them out from before the children of Yasharal. Only, divide it by lot to Yasharal as an inheritance.'
 },
 { id:'y12', title:'Give Me This Mountain', ref:'YAHUSHA 14',
   intro:[
-   {art:'vista', music:'holy', text:'And Yahusha was old, advanced in years. And the children of Yahudah came to Yahusha in Gilgal — and Kalĕḇ son of Yephunneh the Qenizzite said to him: “You know the word which YAHUAH said to Mosheh the man of Aluahim, concerning you and me, in Qaḏĕsh Barnĕa.”', ref:'YAHUSHA 14:6'},
+   {art:'vista', music:'holy', text:'And the children of Yahudah came to Yahusha in Gilgal and Kalĕḇ son of Yephunneh the Qenizzite said to him, “You know the word which YAHUAH said to Mosheh the man of Aluahim concerning you and me in Qaḏĕsh Barnĕa.”', ref:'YAHUSHA 14:6', stage:{"set":"camp","time":"day","cam":"push","focus":0.45,"cast":[{"id":"yahoshua_o","x":0.3,"z":0.06,"face":"r","pose":"stand","hold":"staff"},{"id":"kaleb","look":{"hair":"#cfc8b8","beard":"#cfc8b8","old":1},"enter":"r","at":0,"to":0.58,"face":"l","pose":"speak","say":0,"hold2":"staff"}],"crowd":[{"kind":"people","n":7,"x":0.76,"w":0.28,"z":0.45,"face":"l","enter":"r","at":0}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:34, seed:2112,
@@ -6492,9 +6639,9 @@ STORY.push(
      {id:'kaleb',char:'kaleb',x:24,y:21,wander:false,
       script:[
        {say:['kaleb','FORTY YEARS OLD was I when Mosheh the servant of YAHUAH sent me from Qaḏĕsh Barnĕa to spy out the land — and I brought back word to him as it was IN MY HEART. My brothers who went up with me made the heart of the people melt, but I FOLLOWED YAHUAH my Aluahim COMPLETELY.']},
-       {say:['kaleb','And now, see — YAHUAH has kept me alive these forty-five years, as He said. Here I am today, eighty-five years old, and as strong this day as on the day Mosheh sent me: as my strength was then, so my strength is now, for battle, and for going out, and for coming in.']},
+       {say:['kaleb','And now, see, YAHUAH has kept me alive, as He said, these forty-five years. And now, see, I am eighty-five years old today. Yet I am still as strong today as I was on the day that Mosheh sent me. As my strength was then, so my strength is now, for battle and for going out and for coming in.']},
        {say:['kaleb','NOW GIVE ME THIS MOUNTAIN of which YAHUAH spoke in that day. For you heard in that day that the ANAQIM are there, and great walled cities. If YAHUAH is with me, I shall dispossess them, as YAHUAH said.']},
-       {say:['yahoshua','Then be blessed, Kalĕḇ son of Yephunneh. Ḥeḇron is your inheritance — the mountain you have carried in your heart for forty-five years is yours, because you followed YAHUAH Aluahim of Yasharal completely.']},
+       {say:['yahoshua','Then be baruk, Kalĕḇ son of Yephunneh. Ḥeḇron is your inheritance — the mountain you have carried in your heart for forty-five years is yours, because you followed YAHUAH Aluahim of Yasharal completely.']},
        {sfx:'chime'},{emote:['kaleb','heart']},
       ]},
      {id:'g1',char:'giant',x:24,y:14,wander:false,hidden:true,noTalk:true},
@@ -6514,18 +6661,18 @@ STORY.push(
      {type:'interact',prop:'hebron_t',text:'Set the name: Ḥeḇron, inheritance of Kalĕḇ',hiddenUntil:2,
       script:[
        {sfx:'holy'},{burst:[25,12,'holy',16]},
-       {say:['narrator','And Yahusha blessed him, and gave Ḥeḇron to Kalĕḇ son of Yephunneh as an inheritance. Therefore Ḥeḇron became the inheritance of Kalĕḇ son of Yephunneh the Qenizzite to this day — BECAUSE HE FOLLOWED YAHUAH, ALUAHIM OF YASHARAL, COMPLETELY. And the land had rest from war.']},
+       {say:['narrator','And Yahusha baruk him, and gave Ḥeḇron to Kalĕḇ son of Yephunneh as an inheritance. Therefore Ḥeḇron became the inheritance of Kalĕḇ son of Yephunneh the Qenizzite to this day — BECAUSE HE FOLLOWED YAHUAH, ALUAHIM OF YASHARAL, COMPLETELY. And the land had rest from war.']},
       ]},
    ],
   },
   outro:[
-   {art:'vista', music:'holy', text:'Two men had stood alone against six hundred thousand voices in the wilderness. One led the nation across the river; to the other was given the mountain he had never stopped believing for. Faith, it turned out, kept better than strength — and Kalĕḇ at eighty-five had kept both.', ref:'YAHUSHA 14:10–14'},
+   {art:'vista', music:'holy', text:'“And now, see, YAHUAH has kept me alive … And now, see, I am eighty-five years old today. Yet I am still as strong today as I was on the day that Mosheh sent me … And now, give me this mountain of which YAHUAH spoke in that day …” Yahusha then baruk him and gave Ḥeḇron to Kalĕḇ son of Yephunneh as an inheritance … because he followed YAHUAH Aluahim of Yasharal completely.', ref:'YAHUSHA 14:10–14', stage:{"set":"mountain","time":"day","cam":"push","focus":0.5,"cast":[{"id":"yahoshua_o","x":0.3,"z":0.06,"face":"r","pose":"stand","hold":"staff","say":4,"acts":[{"at":4,"pose":"bless"}]},{"id":"kaleb","look":{"hair":"#cfc8b8","beard":"#cfc8b8","old":1},"x":0.6,"z":0.1,"face":"l","pose":"speak","say":0,"hold":"spear","acts":[{"at":2,"pose":"raise"},{"at":3,"pose":"point","face":"r"},{"at":4,"pose":"kneel","face":"l"}]}],"crowd":[{"kind":"people","n":6,"x":0.8,"w":0.24,"z":0.55,"face":"l"}],"fx":[{"k":"rays","x":0.6,"at":5}]}},
   ],
-  complete:'Give me this mountain — for if YAHUAH is with me, I shall dispossess them, as YAHUAH said.'
+  complete:'Give me this mountain — for if YAHUAH is with me, then I shall dispossess them, as YAHUAH said.'
 },
 { id:'y13', title:'The Lots Before YAHUAH', ref:'YAHUSHA 15–19',
   intro:[
-   {art:'mishkanart', music:'holy', text:'And all the congregation of the children of Yasharal assembled at SHILOH, and set up the Tent of Appointment there. And the land was subdued before them — but seven tribes remained who had not yet shared their inheritance.', ref:'YAHUSHA 18:1–2'},
+   {art:'mishkanart', music:'holy', text:'And all the qahal of the children of Yasharal assembled at SHILOH and they let the Tent of Meeting dwell there. And the land was subdued before them. And seven tribes were left among the children of Yasharal who had not yet shared their inheritance.', ref:'YAHUSHA 18:1–2', stage:{"set":"field","time":"dawn","cam":"pull","props":[{"k":"tabernacle","x":0.5,"z":0.78,"s":1.6},{"k":"banner","x":0.08,"z":0.66,"color":"#8a2a2a","at":2},{"k":"banner","x":0.18,"z":0.72,"color":"#2a5a8a","at":2},{"k":"banner","x":0.28,"z":0.68,"color":"#3a7a3a","at":2},{"k":"banner","x":0.72,"z":0.68,"color":"#caa23c","at":2},{"k":"banner","x":0.8,"z":0.72,"color":"#6a3a7a","at":2},{"k":"banner","x":0.88,"z":0.66,"color":"#d8d0c0","at":2},{"k":"banner","x":0.95,"z":0.72,"color":"#2a2a2a","at":2}],"cast":[{"id":"yahoshua_o","x":0.3,"z":0.06,"face":"r","pose":"raise","hold2":"staff"},{"id":"elazar","x":0.66,"z":0.08,"face":"l","pose":"bless"}],"crowd":[{"kind":"people","n":6,"x":0.13,"w":0.2,"z":0.5,"face":"r","enter":"l","at":0},{"kind":"kohanim","n":2,"x":0.58,"w":0.1,"z":0.62,"face":"l"},{"kind":"people","n":5,"x":0.84,"w":0.18,"z":0.5,"face":"l","at":1,"pose":"sitground"}],"fx":[{"k":"glory","x":0.5,"y":0.2}]}},
   ],
   scene:{
    map:{biome:'plains', w:52, h:36, seed:2113,
@@ -6542,9 +6689,9 @@ STORY.push(
      {id:'surv1',char:'hebrew',x:29,y:18,wander:false,
       script:[
        {say:['hebrew','Three men from each tribe, as you commanded — twenty-one of us, with ink-horns and cord. We are ready to walk the land.']},
-       {say:['yahoshua','Then GO — walk through the land, and write a description of it according to their inheritance, in seven portions, and come back to me here. Do not measure with a grudging eye: Yahudah stays in his border in the south, and the house of Yosĕph in their border in the north. Bring me the land in writing — and I shall cast lots for you HERE, before YAHUAH our Aluahim.']},
+       {say:['yahoshua','Then GO — walk through the land and describe it according to their inheritance and come back to me. Do not measure with a grudging eye: Yahudah stays within their border on the south and the house of Yosĕph stays within their border on the north. You shall describe the land in seven portions and shall bring it to me. Then I shall cast lots for you HERE before YAHUAH our Aluahim.']},
        {move:['surv1',44,25,.07,'bg']},
-       {say:['narrator','And the men went, and passed through the land, and wrote it in a book, city by city, in seven portions — and returned to Yahusha at the camp in Shiloh.']},
+       {say:['narrator','So the men went and passed through the land and described it in a book in seven portions by cities — and they came to Yahusha at the camp in Shiloh.']},
        {teleport:['surv1',29,18]},
        {say:['hebrew','It is done, son of Nun — the whole land in seven portions, written city by city. The book is heavier than a sword, and hard-won as one.']},
       ]},
@@ -6556,11 +6703,11 @@ STORY.push(
          x:15+(i%9)*1.9+Math.random(),y:19+Math.floor(i/9)*2+Math.random(),wander:true,range:1,noTalk:true})); }},
    ],
    objectives:[
-     {type:'goto',x:26,y:13,radius:2.4,text:'Set up the Tent of Appointment at Shiloh',
+     {type:'goto',x:26,y:13,radius:2.4,text:'Set up the Tent of Meeting at Shiloh',
       script:[
        {rays:.7,raysX:26},{sfx:'holy'},{burst:[26,12,'holy',18]},
-       {say:['narrator','And all the congregation of the children of Yasharal assembled at Shiloh, and set up the Tent of Appointment there. Forty years the Dwelling had moved when the cloud moved — now, for the first time, its cords were made long and its pegs driven into a land that was HOME.']},
-       {say:['yahoshua','How long shall you fail to go in and possess the land which YAHUAH, Aluahim of your fathers, has given you? Seven tribes still camp on promises. Choose three men from each tribe — I am sending them to walk the land.']},
+       {say:['narrator','And all the qahal of the children of Yasharal assembled at Shiloh and they let the Tent of Meeting dwell there. Forty years the Dwelling had moved when the cloud moved — now, for the first time, its cords were made long and its pegs driven into a land that was HOME.']},
+       {say:['yahoshua','Til when are you going to fail to go in and possess the land which YAHUAH Aluahim of your fathers has given you? Seven tribes still camp on promises. Appoint three men from each tribe and let me send them out to go through the land.']},
        {rays:0},
       ]},
      {type:'talk',npc:'surv1',text:'Send the surveyors through the land, and receive the book',hiddenUntil:1},
@@ -6568,19 +6715,19 @@ STORY.push(
       script:[
        {sfx:'chime'},{burst:[28,15.5,'mote',14]},
        {say:['narrator','And Yahusha cast lots for them in Shiloh, before YAHUAH. BINYAMIN — between Yahudah and Yosĕph. SHIM‛ON — within the inheritance of Yahudah. ZEḆULUN, and YISSASḴAR, and ASHĔR, and NAPHTALI, and DAN — portion by portion, the land passed under the cord.']},
-       {say:['elazar','And when they had finished dividing the land, the children of Yasharal gave an inheritance in their midst to YOU, son of Nun — by the mouth of YAHUAH: the city you asked for, Timnath-Seraḥ in the hills of Ephrayim.']},
+       {say:['elazar','And when they had ended dividing the land as an inheritance according to their borders, the children of Yasharal gave an inheritance to YOU, son of Nun, in their midst. According to the mouth of YAHUAH they gave you the city which you asked for, Timnath-Seraḥ in the mountains of Ephrayim.']},
        {say:['yahoshua','Last of all, and small — a city to build, and a hillside to be buried in. It is more than enough. The Judge of all the earth deals out with a full measure, Al‛azar — to the least tribe, and to the man who waited longest.']},
       ]},
    ],
   },
   outro:[
-   {art:'rest', music:'holy', text:'These are the inheritances which Al‛azar the priest, Yahusha son of Nun, and the heads of the fathers of the tribes divided by lot in Shiloh, before YAHUAH, at the door of the Tent of Appointment. SO THEY FINISHED DIVIDING THE LAND.', ref:'YAHUSHA 19:51'},
+   {art:'rest', music:'holy', text:'These were the inheritances which Al‛azar the kohen and Yahusha son of Nun and the heads of the fathers of the tribes of the children of Yasharal divided as an inheritance by lot in Shiloh before YAHUAH, at the door of the Tent of Meeting. AND THEY ENDED DIVIDING THE COUNTRY.', ref:'YAHUSHA 19:51', stage:{"set":"field","time":"dusk","cam":"close","focus":0.45,"props":[{"k":"tabernacle","x":0.74,"z":0.66,"s":1.3}],"cast":[{"id":"yahoshua_o","x":0.24,"z":0.06,"face":"r","pose":"point","hold2":"staff","say":0},{"id":"elazar","x":0.5,"z":0.1,"face":"l","pose":"hold","hold":"stone","acts":[{"at":1,"pose":"raise"}]}],"crowd":[{"kind":"elders","n":6,"x":0.56,"w":0.48,"z":0.42,"face":"l","from":"stand","pose":"raise","at":1}],"fx":[{"k":"glory","x":0.72,"y":0.22},{"k":"rays","x":0.5,"at":1}]}},
   ],
-  complete:'Cast lots before YAHUAH at Shiloh — and there the land was divided to the children of Yasharal.'
+  complete:'And Yahusha cast lots for them in Shiloh before YAHUAH — and there Yahusha divided the land to the children of Yasharal according to their portions.'
 },
 { id:'y14', title:'Cities of Refuge', ref:'YAHUSHA 20–21',
   intro:[
-   {art:'wilderness', music:'holy', text:'And YAHUAH spoke to Yahusha, saying: “Appoint for yourselves cities of refuge, of which I spoke to you through Mosheh — for the slayer who kills any being by mistake, without intent, to flee there. And they shall be a refuge for you from the avenger of blood.”', ref:'YAHUSHA 20:1–3'},
+   {art:'wilderness', music:'holy', text:'And YAHUAH spoke to Yahusha, saying, “Speak to the children of Yasharal, saying, ‘Appoint for yourselves cities of refuge, of which I spoke to you through Mosheh, for the slayer who kills any being accidentally, unintentionally, to flee there. And they shall be your refuge from the revenger of blood.’”', ref:'YAHUSHA 20:1–3', stage:{"set":"gate","time":"day","cam":"push","focus":0.5,"cast":[{"id":"yahoshua","x":0.12,"z":0.04,"face":"r","pose":"point","say":0,"hold2":"staff"},{"id":"slayer","look":{"name":"The Slayer","skin":"#6e4524","hair":"#1d1208","robe":"#8a7a5a","beard":"#1d1208"},"enter":"l","at":0,"run":1,"to":0.5,"face":"r","pose":"stand","acts":[{"at":1,"to":0.62,"run":1,"pose":"kneel","face":"r"}]},{"id":"avenger","look":{"name":"The Revenger of Blood","skin":"#644323","hair":"#221504","robe":"#5a2a2a","beard":"#221504"},"enter":"l","at":1,"run":1,"to":0.36,"face":"r","pose":"stand","hold":"sword"},{"id":"elder","x":0.76,"z":0.12,"face":"l","pose":"stand","hold2":"staff","at":1,"acts":[{"at":1,"pose":"point"}]}],"crowd":[{"kind":"elders","n":4,"x":0.8,"w":0.16,"z":0.4,"face":"l","at":1}]}},
   ],
   scene:{
    map:{biome:'plains', w:52, h:34, seed:2114,
@@ -6595,53 +6742,53 @@ STORY.push(
    npcs:[
      {id:'levite1',char:'levite',x:28,y:14,wander:false,
       script:[
-       {say:['levite','The heads of the fathers of the Lĕwites came near to Al‛azar and to you at Shiloh, saying: “YAHUAH commanded through Mosheh to give us cities to dwell in, with their open land for our livestock.”']},
+       {say:['levite','The heads of the fathers of the Lĕwites came near to Al‛azar the kohen, to you, son of Nun, and to the heads of the fathers of the tribes of the children of Yasharal. And they spoke at Shiloh in the land of Kena‛an, saying, “YAHUAH commanded through Mosheh to give us cities to dwell in, with their open land for our livestock.”']},
        {say:['yahoshua','And so it is done: FORTY-EIGHT CITIES with their open land, given to the Lĕwites out of every tribe’s inheritance. No border for the tribe of Lĕwi, and no army — their portion is the service of YAHUAH, and their cities are lamps set down in every corner of the land, so that no man of Yasharal lives far from the Torah.']},
        {emote:['levite1','heart']},{sfx:'chime'},
       ]},
      {id:'runner',char:'hebrew2',x:24,y:15,wander:false,hidden:true,noTalk:true},
    ],
    objectives:[
-     {type:'interact',prop:'ct_qedesh',text:'Set apart Qeḏesh in Galil, in the mountains of Naphtali',
+     {type:'interact',prop:'ct_qedesh',text:'Qadash (Set Apart) Qeḏesh in Galil, in the mountains of Naphtali',
       script:[
        {sfx:'chime'},{burst:[12,12,'mote',10]},
-       {say:['yahoshua','Qeḏesh in Galil, for the north. And when a slayer flees there, he shall stand at the entrance of the gate of the city, and declare his matter in the ears of the elders — and they shall take him in, and give him a place, and he shall dwell among them, and NOT be given into the hand of the avenger of blood.']},
+       {say:['yahoshua','Qeḏesh in Galil, in the mountains of Naphtali — for the north. And when a slayer flees there — he shall stand at the entrance of the gate of the city and declare his case in the hearing of the elders of that city.']},{say:['yahoshua','And they shall take him into the city as one of them and give him a place and he shall dwell among them — and when the revenger of blood pursues him, they do NOT give the slayer into his hand.']},
       ]},
-     {type:'interact',prop:'ct_shekem',text:'Set apart Sheḵem, in the mountains of Ephrayim',hiddenUntil:1,
+     {type:'interact',prop:'ct_shekem',text:'Qadash (Set Apart) Sheḵem, in the mountains of Ephrayim',hiddenUntil:1,
       script:[
        {sfx:'chime'},{burst:[26,20,'mote',10]},
        {show:'runner'},{move:['runner',25.4,19,.09]},
        {say:['hebrew2','…I did not hate him, judge — the axe-head flew from the helve as we felled the wood, and my neighbour fell. His brother is on the road behind me with a drawn sword. Where does a man run?!']},
-       {say:['yahoshua','HERE, son. That is the whole meaning of these stones: Sheḵem in the midst of the land, and the road to it kept open and wide. Until you stand before the congregation for judgment, no avenger touches you. Mercy in this land has an ADDRESS.']},
+       {say:['yahoshua','HERE, son. That is the whole meaning of these stones: Sheḵem in the midst of the land, and the road to it kept open and wide. Until you stand before the qahal for judgment, no avenger touches you. Mercy in this land has an ADDRESS.']},
        {emote:['runner','heart']},
       ]},
-     {type:'interact',prop:'ct_hebron',text:'Set apart Ḥeḇron, in the mountains of Yahudah',hiddenUntil:2,
+     {type:'interact',prop:'ct_hebron',text:'Qadash (Set Apart) Ḥeḇron, in the mountains of Yahudah',hiddenUntil:2,
       script:[
        {sfx:'chime'},{burst:[40,26,'mote',10]},
-       {say:['yahoshua','And Ḥeḇron in the south — Kalĕḇ keeps the fields, and the city itself is set apart for refuge and for the priests. Three cities west of the Yardĕn: Qeḏesh, Sheḵem, Ḥeḇron. And beyond the Yardĕn eastward, Mosheh set apart three before we ever crossed: Betser, Ramoth, Golan. Six doors of mercy, and none of Yasharal more than a day’s hard run from one.']},
+       {say:['yahoshua','And Ḥeḇron in the south — Kalĕḇ keeps the fields, and the city itself is set apart for refuge and for the kohanim. Three cities west of the Yardĕn: Qeḏesh, Sheḵem, Ḥeḇron. And beyond the Yardĕn eastward, Mosheh set apart three before we ever crossed: Betser, Ramoth, Golan. Six doors of mercy, and none of Yasharal more than a day’s hard run from one.']},
       ]},
      {type:'talk',npc:'levite1',text:'Give the Lĕwites their cities — forty-eight, with their open land',hiddenUntil:3},
    ],
   },
   outro:[
-   {art:'land', music:'holy', text:'So YAHUAH gave to Yasharal all the land of which He had sworn to give to their fathers… And YAHUAH gave them rest all around, according to all that He had sworn to their fathers. NOT A WORD FAILED of any good word which YAHUAH had spoken to the house of Yasharal — it all came to be.', ref:'YAHUSHA 21:43–45'},
+   {art:'land', music:'holy', text:'Thus YAHUAH gave to Yasharal all the land of which He had sworn to give to their fathers… And YAHUAH gave them rest all around, according to all that He had sworn to their fathers. NOT A WORD FAILED of any good word which YAHUAH had spoken to the house of Yasharal – all came in.', ref:'YAHUSHA 21:43–45', stage:{"set":"field","time":"day","cam":"pan-r","props":[{"k":"house","x":0.12,"z":0.65},{"k":"vine","x":0.9,"z":0.45},{"k":"sheaves","x":0.72,"z":0.25,"n":5},{"k":"sheep","x":0.4,"z":0.6,"n":6,"w":180,"at":1}],"cast":[{"id":"yahoshua_o","x":0.24,"z":0.06,"face":"r","pose":"stand","hold":"staff","acts":[{"at":2,"pose":"raise"}]},{"id":"hebrew","x":0.52,"z":0.12,"face":"l","pose":"carry","hold":"basket","acts":[{"at":1,"pose":"sitground"},{"at":2,"pose":"raise"}]},{"id":"hebreww","x":0.62,"z":0.1,"face":"l","at":1,"pose":"sitground","acts":[{"at":2,"pose":"raise"}]}],"crowd":[{"kind":"people","n":8,"x":0.58,"w":0.6,"z":0.62,"face":"l","from":"stand","pose":"raise","at":2}],"fx":[{"k":"glory","x":0.5,"y":0.05,"at":2}]}},
   ],
-  complete:'Not a word failed of any good word which YAHUAH had spoken — it all came to be.'
+  complete:'Not a word failed of any good word which YAHUAH had spoken — all came in.'
 },
 ]},
 );
 STORY.push(
 /* ============ ACT V — CHOOSE THIS DAY ============ */
 { id:'yact5', roman:'V', title:'Choose You This Day', ref:'YAHUSHA 22–24 · YASHAR 90–91', chapters:[
-{ id:'y15', title:'The Witness Altar', ref:'YAHUSHA 22',
+{ id:'y15', title:'The Witness Mizbe’ach', ref:'YAHUSHA 22',
   intro:[
-   {art:'journey', music:'holy', text:'Then Yahusha called the Re’uḇĕnites, the Gaḏites, and the half-tribe of Menashsheh, and said to them: “You have guarded all that Mosheh commanded you, and have obeyed my voice in all… And now YAHUAH your Aluahim has given rest to your brothers. Return to your tents, to the land of your possession beyond the Yardĕn — with great riches, with very much livestock, with silver and gold and bronze and iron, and with very many garments.”', ref:'YAHUSHA 22:1–8'},
-   {art:'camp', music:'tense', text:'And when they came to the region of the Yardĕn, the east-bank tribes built there an altar by the Yardĕn — a GREAT altar, plain to see. And the children of Yasharal heard of it — and gathered at Shiloh, TO GO UP AGAINST THEM IN BATTLE.', ref:'YAHUSHA 22:10–12'},
+   {art:'journey', music:'holy', text:'Then Yahusha called for the Re’uḇĕnites and the Gaḏites and half the tribe of Menashsheh, and said to them, “You, you have guarded all that Mosheh the servant of YAHUAH commanded you and have obeyed my voice in all that I commanded you… And now YAHUAH your Aluahim has given rest to your brothers… Return to your tents with great riches and with very much livestock and with silver and with gold and with bronze and with iron and with countless garments.”', ref:'YAHUSHA 22:1–8', stage:{"set":"camp","time":"day","cam":"pan-r","props":[{"k":"chest","x":0.66,"z":0.18,"gold":1,"at":2},{"k":"sheep","x":0.76,"z":0.3,"n":7,"w":180,"at":2},{"k":"camel","x":0.84,"z":0.5,"face":"r","load":1,"at":2}],"cast":[{"id":"yahoshua_o","x":0.28,"z":0.06,"face":"r","pose":"bless","say":0,"hold2":"staff","acts":[{"at":2,"pose":"point"}]},{"id":"reuveni","look":{"name":"Man of Re’uḇĕn","skin":"#704a27","hair":"#2c1a0c","robe":"#7a5a3a","beard":"#2c1a0c","sash":"#8a3a2a"},"x":0.52,"z":0.1,"face":"l","pose":"stand","hold":"spear","acts":[{"at":1,"pose":"bow"},{"at":2,"to":0.62,"pose":"stand","face":"r"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":8,"x":0.64,"w":0.34,"z":0.55,"face":"l","exit":"r","exitAt":2}]}},
+   {art:'camp', music:'tense', text:'And they came to the districts of the Yardĕn which is in the land of Kena‛an and the children of Re’uḇĕn and the children of Gaḏ and half the tribe of Menashsheh built a mizbe’ach there by the Yardĕn, a GREAT CONSPICUOUS mizbe’ach… And when the children of Yasharal heard, all the qahal of the children of Yasharal assembled at Shiloh TO GO TO FIGHT AGAINST THEM.', ref:'YAHUSHA 22:10–12', stage:{"set":"river","time":"day","cam":"pan-l","props":[{"k":"altar","x":0.74,"z":0.06,"w":80,"h":60,"fire":false}],"cast":[{"id":"reuveni","look":{"name":"Man of Re’uḇĕn","skin":"#704a27","hair":"#2c1a0c","robe":"#7a5a3a","beard":"#2c1a0c","sash":"#8a3a2a"},"x":0.52,"z":0.08,"face":"r","pose":"carry","hold":"stone","acts":[{"at":1,"pose":"look","face":"l"}]},{"id":"pinchas","enter":"l","at":1,"to":0.22,"face":"r","pose":"point"}],"crowd":[{"kind":"people","n":2,"x":0.92,"w":0.06,"z":0.1,"dz":0.02,"face":"l","pose":"carry","hold":"stone"},{"kind":"army","side":"yasharal","n":12,"x":0.4,"w":0.7,"z":0.95,"dz":0.05,"face":"r","enter":"l","at":1}]}},
   ],
   scene:{
    map:{biome:'plains', w:54, h:36, seed:2115, river:{x:40,width:6,curve:1.2,ford:18},
      features:[
-       {type:'altar',x:35,y:17,stage:3,solid:true,clear:2,id:'ed_altar',examine:'A great altar by the Yardĕn — built to no known order, burning no offering, saying nothing… yet.'},
+       {type:'altar',x:35,y:17,stage:3,solid:true,clear:2,id:'ed_altar',examine:'A great mizbe’ach by the Yardĕn — built to no known order, burning no offering, saying nothing… yet.'},
        {type:'clearing',x:30,y:18,flat:2},
      ]},
    time:'day', music:'tense',
@@ -6655,39 +6802,39 @@ STORY.push(
       ]},
      {id:'eastman',char:'hebrew2',x:31,y:20,wander:false,hidden:true,
       script:[
-       {say:['pinchas','Thus says all the congregation of YAHUAH: what trespass is THIS you have committed, to build yourselves an altar, to turn away this day from following YAHUAH? Is the crookedness of Pe‛or not enough for us, from which we are not cleansed to this day?! If the land of your possession is unclean — come over to the land of YAHUAH’s possession, and take a possession among US. But do not rebel against YAHUAH, nor rebel against us!']},
-       {say:['hebrew2','ĂL ALUAHIM YAHUAH! ĂL ALUAHIM YAHUAH! HE KNOWS — and let Yasharal itself know! If it was in rebellion, or in trespass against YAHUAH — do not save us this day!']},
-       {say:['hebrew2','No — but from FEAR we did it: that in time to come your children might say to our children, “What have you to do with YAHUAH, Aluahim of Yasharal? YAHUAH has made the Yardĕn a border between us and you — you have no portion in YAHUAH!” So your children would make our children cease fearing YAHUAH.']},
-       {say:['hebrew2','Therefore we said: let us build an altar — NOT for ascending offering, NOT for slaughtering — but as a WITNESS between us and you, and our generations after us, that we too perform the service of YAHUAH before Him. Far be it from us to rebel against YAHUAH!']},
+       {say:['pinchas','Thus says all the qahal of YAHUAH: What is THIS trespass you have committed against the Aluahim of Yasharal, to turn away this day from following YAHUAH, in that you have built for yourselves a mizbe’ach? Is the crookedness of Pe‛or not enough for us, from which we have not been cleansed til this day?!']},{say:['pinchas','And indeed, if the land of your possession is unclean — then pass over to the land of the possession of YAHUAH, where the Dwelling Place of YAHUAH dwells, and take possession among US. But do not rebel against YAHUAH, nor rebel against us!']},
+       {say:['hebrew2','AL ALUAHIM YAHUAH! AL ALUAHIM YAHUAH! HE KNOWS — and let Yasharal itself know! If this has been in rebellion or if in trespass against YAHUAH — do not save us this day!']},
+       {say:['hebrew2','No — but truly, from FEAR, for a reason we did this: in time to come your sons might speak to our sons, saying, “What have you to do with YAHUAH Aluahim of Yasharal? For YAHUAH has made the Yardĕn a border between you and us — you have no portion with YAHUAH!” So your sons would make our sons stop fearing YAHUAH.']},
+       {say:['hebrew2','So we said: let us now prepare to build ourselves a mizbe’ach — NOT for burnt offering NOR for slaughtering — but to be a WITNESS between you and us and our generations after us, to do the service of YAHUAH before Him. Far be it from us to rebel against YAHUAH!']},
       ]},
    ],
    objectives:[
      {type:'talk',npc:'pinchas',text:'Send Pineḥas and the ten rulers over — with a question, not a sword'},
      {type:'talk',npc:'eastman',text:'Hear the answer of Re’uḇĕn, Gaḏ, and half Menashsheh',hiddenUntil:1},
-     {type:'interact',prop:'ed_altar',text:'Name the altar that nearly divided the nation',hiddenUntil:2,
+     {type:'interact',prop:'ed_altar',text:'Name the mizbe’ach that nearly divided the nation',hiddenUntil:2,
       script:[
        {music:'holy'},{sfx:'chime'},{burst:[35,17,'mote',14]},
        {say:['pinchas','TODAY we know that YAHUAH is in our midst, because you have not committed this trespass against YAHUAH. Now you have delivered the children of Yasharal out of the hand of YAHUAH.']},
-       {say:['hebrew2','And the Re’uḇĕnites and the Gaḏites called the altar ĔḎ — WITNESS: “For it is a witness between us that YAHUAH is Aluahim.”']},
-       {say:['narrator','And the word was good in the eyes of the children of Yasharal, and the children of Yasharal blessed Aluahim — and spoke no more of going up against them in battle.']},
+       {say:['hebrew2','And the children of Re’uḇĕn and the children of Gaḏ called the mizbe’ach — ĔḎ, WITNESS — “A witness between us that YAHUAH is Aluahim.”']},
+       {say:['narrator','So the matter was good in the eyes of the children of Yasharal and the children of Yasharal baruk Aluahim — and they spoke no more of going against to fight, to destroy the land where the children of Re’uḇĕn and Gaḏ dwelt.']},
       ]},
    ],
   },
   outro:[
-   {art:'camp', music:'holy', text:'A nation marched to the riverbank ready for civil war — and went home blessing Aluahim, because one priest asked a question before anyone drew a sword. The altar stands by the Yardĕn still, offering nothing, saying one thing only: WE TOO HAVE A PORTION IN YAHUAH.', ref:'YAHUSHA 22:30–34'},
+   {art:'camp', music:'holy', text:'And Pineḥas son of Al‛azar the kohen said… “Today we know that YAHUAH is in our midst.” So the matter was good in the eyes of the children of Yasharal and the children of Yasharal baruk Aluahim. And they spoke no more of going against to fight… And the children of Re’uḇĕn and the children of Gaḏ called the mizbe’ach, “A WITNESS between us that YAHUAH is Aluahim.”', ref:'YAHUSHA 22:30–34', stage:{"set":"wilderness","time":"dusk","cam":"push","focus":0.55,"props":[{"k":"altar","x":0.78,"z":0.3,"w":90,"h":70,"fire":false}],"cast":[{"id":"pinchas","x":0.3,"z":0.06,"face":"r","pose":"speak","say":0,"acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"bless"}]},{"id":"reuveni","look":{"name":"Man of Re’uḇĕn","skin":"#704a27","hair":"#2c1a0c","robe":"#7a5a3a","beard":"#2c1a0c","sash":"#8a3a2a"},"x":0.58,"z":0.1,"face":"l","pose":"stand","acts":[{"at":2,"pose":"raise"},{"at":4,"pose":"point","face":"r"}],"say":4}],"crowd":[{"kind":"army","side":"yasharal","n":8,"x":0.2,"w":0.3,"z":0.5,"face":"r","from":"stand","pose":"raise","at":2,"hold":null},{"kind":"people","n":5,"x":0.62,"w":0.2,"z":0.55,"face":"l","from":"stand","pose":"raise","at":2}],"fx":[{"k":"glory","x":0.78,"y":0.1,"at":4}]}},
   ],
   complete:'It is a witness between us — that YAHUAH is Aluahim.'
 },
 { id:'y16', title:'Choose You This Day', ref:'YAHUSHA 23–24',
   intro:[
-   {art:'vista_sunset', music:'holy', text:'And it came to be, a long time after YAHUAH had given rest to Yasharal from all their enemies round about, that Yahusha was old, advanced in years. And he called for all Yasharal — for their elders, their heads, their judges, and their officers — and gathered all the tribes of Yasharal to SHEḴEM. And they presented themselves before Aluahim.', ref:'YAHUSHA 23:1 · 24:1'},
-   {art:'stars', music:'holy', text:'“And you have seen all that YAHUAH your Aluahim has done to all these nations because of you — for YAHUAH your Aluahim is He who was fighting for you. One man of you put a thousand to flight, for YAHUAH your Aluahim is He who fights for you, as He has promised you.”', ref:'YAHUSHA 23:3 · 23:10'},
+   {art:'vista_sunset', music:'holy', text:'And it came to be, a long time after YAHUAH had given rest to Yasharal from all their enemies round about, that Yahusha was old, advanced in years. And Yahusha gathered all the tribes of Yasharal to SHEḴEM and called for the elders of Yasharal and for their heads and for their judges and for their officers. And they presented themselves before Aluahim.', ref:'YAHUSHA 23:1 · 24:1', stage:{"set":"field","time":"dusk","cam":"push","focus":0.45,"props":[{"k":"tree","x":0.14,"z":0.3,"h":150,"color":"#3a5a2a"},{"k":"rock","x":0.24,"z":0.2,"w":30,"h":44}],"cast":[{"id":"yahoshua_o","x":0.34,"z":0.06,"face":"r","pose":"stand","hold":"staff","acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"bless"}],"say":1}],"crowd":[{"kind":"elders","n":6,"x":0.66,"w":0.34,"z":0.4,"face":"l","enter":"r","at":1},{"kind":"people","n":10,"x":0.6,"w":0.7,"z":0.72,"face":"l","from":"stand","pose":"bow","at":2}],"fx":[{"k":"glory","x":0.5,"y":0.04,"at":2}]}},
+   {art:'stars', music:'holy', text:'“And you, you have seen all that YAHUAH your Aluahim has done to all these nations because of you, for YAHUAH your Aluahim is He who was fighting for you… One man of you put a thousand to flight, for YAHUAH your Aluahim is He who is fighting for you, as He has promised you.”', ref:'YAHUSHA 23:3 · 23:10', stage:{"set":"battle","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"yahoshua_o","x":0.16,"z":0.04,"face":"r","pose":"speak","say":0,"hold":"staff","acts":[{"at":1,"pose":"raise"}]},{"id":"oneman","look":{"name":"One Man of Yasharal","skin":"#7a4e29","hair":"#2c1a0c","robe":"#5a6a8a","beard":"#2c1a0c","armor":"#9a8250","helmet":"#8a7a50"},"enter":"l","at":1,"run":1,"to":0.5,"face":"r","pose":"fight","hold":"sword"}],"crowd":[{"kind":"army","side":"aram","n":12,"x":0.72,"w":0.4,"z":0.5,"face":"l","exit":"r","exitAt":1}],"fx":[{"k":"sword","x":0.88,"y":0.06}]}},
   ],
   scene:{
    map:{biome:'plains', w:52, h:36, seed:2116,
      features:[
        {type:'tree',x:26,y:11,solid:true,clear:2,col:'#3f7032',id:'oak',examine:'The great oak at Sheḵem — under it Ya‛aqoḇ once buried the foreign mighty ones his household carried. Old roots, long memory.'},
-       {type:'stone',x:27.5,y:12.5,id:'witness_stone',clear:1,examine:'A great stone, newly raised under the oak by the set-apart place of YAHUAH.'},
+       {type:'stone',x:27.5,y:12.5,id:'witness_stone',clear:1,examine:'A great stone, newly raised under the oak by the Qodash (Set Apart Place) of YAHUAH.'},
        {type:'clearing',x:26,y:17,flat:3},
      ]},
    time:'dusk', music:'holy',
@@ -6708,39 +6855,39 @@ STORY.push(
       script:[
        {rays:.7,raysX:26},{sfx:'holy'},
        {say:['voice','Thus said YAHUAH, Aluahim of Yasharal: long ago your fathers dwelt beyond the River — Teraḥ, the father of Aḇrahim — and they served other mighty ones. And I TOOK your father Aḇrahim from beyond the River, and caused him to walk through all the land of Kena‛an.']},
-       {say:['voice','And I sent Mosheh and Aharon, and plagued Mitsrayim, and afterwards brought you out… And I brought you into the land of the Amorites — and I sent the HORNET before you. NOT by your sword, and NOT by your bow.']},
-       {say:['voice','And I gave you a land for which you did not labour, and cities which you did not build — and you dwell in them. Of vineyards and olive-yards which you did not plant, you eat.']},
+       {say:['voice','Then I sent Mosheh and Aharon and plagued Mitsrayim, as I did in their midst. And afterward I brought you out… And I brought you into the land of the Amorites — and I sent the HORNET before you which drove them out from before you… but NOT with your sword or with your bow.']},
+       {say:['voice','And I gave you a land for which you did not labour and cities which you did not build. And you dwell in them — you eat of the vineyards and olive-trees which you did not plant.']},
        {rays:0},
       ]},
      {type:'goto',x:26,y:13.5,radius:2,text:'Set the choice before them — and answer for your own house',hiddenUntil:1,
       script:[
-       {say:['yahoshua_o','NOW therefore, fear YAHUAH, and serve Him in perfection and in truth. Put away the mighty ones which your fathers served beyond the River and in Mitsrayim — and serve YAHUAH! And if it seems evil in your eyes to serve YAHUAH — CHOOSE for yourselves THIS DAY whom you serve: the mighty ones your fathers served beyond the River, or the mighty ones of the Amorites in whose land you dwell.']},
+       {say:['yahoshua_o','And NOW, fear YAHUAH, serve Him in perfection and in truth, and put away the mighty ones which your fathers served beyond the River and in Mitsrayim — and serve YAHUAH!']},{say:['yahoshua_o','And if it seems evil in your eyes to serve YAHUAH — CHOOSE for yourselves THIS DAY whom you are going to serve, whether the mighty ones which your fathers served that were beyond the River, or the mighty ones of the Amorites, in whose land you dwell.']},
        {say:['yahoshua_o','But as for me and my house — WE SERVE YAHUAH.']},
        {choice:{prompt:'And all the people answered—',options:[
          {label:'“Far be it from us to forsake YAHUAH — we too serve YAHUAH, for He is our Aluahim!”',script:[
-           {say:['yahoshua_o','You are NOT ABLE to serve YAHUAH — for He is a set-apart Aluahim, a jealous Ăl. If you forsake YAHUAH and serve foreign mighty ones, He shall turn and do you evil, after He has been good to you.']},
-           {say:['hebrew','NO — but we shall serve YAHUAH!']},
+           {say:['yahoshua_o','You are NOT ABLE to serve YAHUAH — for He is a qadash (Set Apart) Aluahim, a jealous Al is He. He does not bear with your transgression and with your sins — if you forsake YAHUAH and shall serve mighty ones of a stranger. Then He shall turn back and do you evil and consume you, after He has been good to you.']},
+           {say:['hebrew','NO — but we do serve YAHUAH!']},
          ]},
        ]}},
        {say:['yahoshua_o','You are WITNESSES against yourselves, that you have chosen YAHUAH for yourselves, to serve Him.']},
        {say:['hebrew','WITNESSES!']},
        {sfx:'holy'},{burst:[26,14,'holy',20]},
-       {say:['yahoshua_o','Then put away the foreign mighty ones which are in your midst, and incline your heart to YAHUAH, Aluahim of Yasharal. And I make a covenant with you this day, and set for you a law and a right-ruling in Sheḵem.']},
+       {say:['yahoshua_o','And now, put away the mighty ones of the stranger which are in your midst and incline your heart to YAHUAH Aluahim of Yasharal. And I make a berith with you this day, and lay on you a law and a right-ruling in Sheḵem.']},
       ]},
      {type:'interact',prop:'witness_stone',text:'Raise the great stone under the oak, and write the words',hiddenUntil:2,
       script:[
        {sfx:'chime'},{burst:[27.5,12.5,'mote',14]},
        {say:['yahoshua_o','SEE, THIS STONE is a witness to us — for it has HEARD all the words of YAHUAH which He spoke to us. It shall be a witness against you, lest you lie to your Aluahim.']},
-       {say:['narrator','And Yahusha wrote these words in the Book of the Torah of Aluahim. And he took a great stone, and set it up there under the oak that was by the set-apart place of YAHUAH. And Yahusha sent the people away, each to his own inheritance.']},
+       {say:['narrator','And Yahusha wrote these words in the Book of the Torah of Aluahim. And he took a great stone, and set it up there under the oak that was by the Qodash (Set Apart Place) of YAHUAH. And Yahusha sent the people away, each to his own inheritance.']},
       ]},
    ],
   },
   outro:[
-   {art:'vista_sunset', music:'sorrow', text:'And it came to be, after these events, that Yahusha son of Nun, the servant of YAHUAH, died — one hundred and ten years old. And they buried him within the border of his inheritance, at Timnath-Seraḥ in the mountains of Ephrayim. And the bones of Yosĕph, which the children of Yasharal had brought up out of Mitsrayim, they buried at Sheḵem — the vow to a dying man in Mitsrayim kept at last, four hundred years on.', ref:'YAHUSHA 24:29–32'},
-   {art:'stars', music:'sorrow', text:'ANOTHER WITNESS — Here the Book of Yashar itself comes to its end. It tells the same going-down: that Yahusha called Yasharal and charged them to keep the Torah of Mosheh, and gathered them to Sheḵem, and made a covenant; and that he died, and was gathered to his people. From the same scroll came the word Yahusha spoke at Giḇ‛on — “Sun, stand still” — for is that thing not written in the Book of Yashar? The upright have run their course; the scroll of the Torah is closed, and the Neḇi’im take up the tale.', ref:'YASHAR 90–91 · YAHUSHA 10:13'},
-   {art:'stars', music:'holy', text:'And Yasharal served YAHUAH all the days of Yahusha, and all the days of the elders who outlived Yahusha — who knew all the works of YAHUAH which He had done for Yasharal. The Torah goes on: the Neḇi’im have begun.', ref:'YAHUSHA 24:31'},
+   {art:'vista_sunset', music:'sorrow', text:'And after these events it came to be that Yahusha son of Nun, the servant of YAHUAH, died, one hundred and ten years old. And they buried him within the border of his inheritance at Timnath-Seraḥ, which is in the mountains of Ephrayim… And the bones of Yosĕph, which the children of Yasharal had brought up out of Mitsrayim, they buried at Sheḵem, in the plot of ground which Ya‛aqoḇ had bought.', ref:'YAHUSHA 24:29–32', stage:{"set":"tomb","time":"dusk","cam":"push","focus":0.55,"props":[{"k":"chest","x":0.16,"z":0.2,"dy":-0.08,"gold":1,"at":2}],"cast":[{"id":"yahoshua_o","x":0.46,"z":0.12,"face":"r","pose":"lie","onbed":1}],"crowd":[{"kind":"mourners","n":6,"x":0.56,"w":0.46,"z":0.45},{"kind":"elders","n":3,"x":0.8,"w":0.1,"z":0.3,"face":"l","pose":"weep","at":1,"hold":null},{"kind":"levites","n":2,"x":0.16,"w":0.1,"z":0.2,"dz":0.01,"face":"r","pose":"carry","at":2}]}},
+   {art:'stars', music:'sorrow', text:'ANOTHER WITNESS — And Yahusha called to all Yasharal, to their elders, their judges and officers… Now therefore strengthen yourselves to keep and to do all the words of the law of Mosheh… And Yahusha made a berith with the people on that day… And at the end of two years, Yahusha the son of Nun died, one hundred and ten years old… Baruk be YAHUAH for ever, amen, and amen. — So the sun stood still and the moon stopped… Is this not written in the Book of Yashar?', ref:'YASHAR 90–91 · YAHUSHA 10:13', stage:{"set":"valley","time":"day","cam":"push","focus":0.45,"props":[{"k":"rock","x":0.52,"z":0.3,"w":30,"h":50,"at":2},{"k":"scroll","x":0.2,"z":0.02,"at":6}],"cast":[{"id":"yahoshua_o","x":0.3,"z":0.06,"face":"r","pose":"raise","hold2":"staff","say":0,"acts":[{"at":1,"pose":"hold"},{"at":2,"pose":"bless"},{"at":3,"exit":"l"}]},{"id":"yahoshua","x":0.42,"z":0.1,"face":"r","at":5,"pose":"point","hold2":"spear"}],"crowd":[{"kind":"elders","n":6,"x":0.72,"w":0.34,"z":0.45,"face":"l","from":"stand","pose":"raise","at":4}],"fx":[{"k":"glory","x":0.8,"y":0.12,"at":5},{"k":"bright","amt":0.12,"at":5}]}},
+   {art:'stars', music:'holy', text:'And Yasharal served YAHUAH all the days of Yahusha and all the days of the elders who outlived Yahusha, who had known all the works of YAHUAH which He had done for Yasharal.', ref:'YAHUSHA 24:31', stage:{"set":"field","time":"dawn","cam":"up","props":[{"k":"tabernacle","x":0.72,"z":0.8},{"k":"altar","x":0.48,"z":0.4,"sacrifice":1}],"cast":[{"id":"elder","x":0.22,"z":0.06,"face":"r","pose":"pray"}],"crowd":[{"kind":"kohanim","n":2,"x":0.56,"w":0.1,"z":0.45,"face":"l"},{"kind":"worshippers","n":8,"x":0.42,"w":0.6,"z":0.62,"face":"r"},{"kind":"elders","n":3,"x":0.8,"w":0.14,"z":0.3,"face":"l","pose":"bow"}],"fx":[{"k":"glory","x":0.72,"y":0.06}]}},
   ],
-  complete:'But as for me and my house — we serve YAHUAH.'
+  complete:'But I and my house — we serve YAHUAH.'
 },
 ]},
 );
@@ -6780,7 +6927,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6845,7 +6992,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6906,8 +7056,8 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
     ['YAHUSHA','yahusha'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
@@ -6991,5 +7141,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

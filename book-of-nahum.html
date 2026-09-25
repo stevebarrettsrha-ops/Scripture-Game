@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main">NAḤUM</div>
     <div class="title-sub">Neḇi’im — The Prophets</div>
-    <div class="title-verse">“YAHUAH is good, a stronghold in the day of distress — and He knows those who take refuge in Him.” — NAḤUM 1:7</div>
+    <div class="title-verse">“YAHUAH is good, as a stronghold in the day of distress. And He knows those who take refuge in Him.” — NAḤUM 1:7</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Naḥum</h2>
-    <div class="hint">Three acts · NAḤUM — the vision of Naḥum the Alqoshite, the burden of Ninewĕh: from the jealous and avenging Ěl who is yet a stronghold to those who trust Him, through the breaking of the yoke and the herald of shalom on the mountains, the raging chariots and the opened river gates of the doomed city, to the woe upon the city of blood whose wound has no healing</div>
+    <div class="hint">Three acts · NAḤUM — the vision of Naḥum the Alqoshite, the burden of Ninewĕh: from the jealous and revenging Al who is yet a stronghold to those who trust Him, through the breaking of the yoke and the herald of shalom on the mountains, the raging chariots and the opened river gates of the doomed city, to the woe upon the city of blood whose wound has no healing</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -620,8 +652,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -729,7 +761,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -829,7 +861,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1091,6 +1125,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1134,7 +1178,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1396,6 +1442,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2877,6 +2933,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -3072,7 +3148,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3277,8 +3353,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3765,6 +3842,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3828,7 +3906,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3880,15 +3962,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3899,6 +4015,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3924,6 +4046,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3952,6 +4075,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3969,7 +4093,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4109,6 +4233,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4172,17 +4301,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4346,22 +4476,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4374,7 +4508,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4397,11 +4531,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5762,7 +5909,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5812,29 +5959,29 @@ const STORY=[];
 STORY.push(
 
 /* ============ ACT I — THE JEALOUS AND AVENGING ĚL ============ */
-{ id:'nact1', roman:'I', title:'The Jealous and Avenging Ěl', ref:'NAḤUM 1', chapters:[
+{ id:'nact1', roman:'I', title:'The Jealous and Revenging Al', ref:'NAḤUM 1', chapters:[
 
-{ id:'n1', title:'Slow to Anger, Great in Power', ref:'NAḤUM 1:1–8',
+{ id:'n1', title:'Patient and Great in Power', ref:'NAḤUM 1:1–8',
   intro:[
-   {art:'void', music:'tense', text:'The message concerning Ninewĕh. The book of the vision of Naḥum the Alqoshite. YAHUAH is a jealous and avenging Ěl; YAHUAH is an avenger and a possessor of wrath. YAHUAH takes vengeance on His adversaries, and He watches for His enemies. YAHUAH is patient and great in power, but by no means leaves the guilty unpunished.', ref:'NAḤUM 1:1–3'},
+   {art:'void', music:'tense', text:'The message concerning Ninewĕh. The book of the vision of Naḥum the Alqoshite. YAHUAH is a jealous and revenging Al, YAHUAH is a revenger and a possessor of wrath. YAHUAH takes vengeance on His adversaries and He watches for His enemies. YAHUAH is patient and great in power, but by no means leaves unpunished.', ref:'NAḤUM 1:1–3', stage:{"set":"walls","time":"dusk","cam":"push","focus":0.4,"cast":[{"id":"nahum","x":0.18,"z":0.06,"face":"r","pose":"stand","hold":"scroll","say":2,"acts":[{"at":1,"pose":"look"},{"at":2,"pose":"point"}]},{"id":"ninking","x":0.8,"z":0.14,"face":"l","pose":"stand","crown":1,"at":3,"acts":[{"at":4,"pose":"look"}]}],"crowd":[{"kind":"guards","side":"ashshur","n":6,"x":0.62,"w":0.46,"z":0.8,"face":"l"}],"fx":[{"k":"rays","x":0.18,"at":1},{"k":"glory","x":0.5,"y":0.04,"at":2},{"k":"lightning","at":3},{"k":"sword","x":0.66,"y":0.28,"at":3},{"k":"darkness","amt":0.25,"at":4}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:8101,
-     features:[ {type:'standard',x:22,y:9,id:'storm',examine:'“YAHUAH has His way in the whirlwind and in the storm, and the clouds are the dust of His feet.”'},{type:'rock',x:14,y:12,id:'quake',examine:'The mountains shaken before Him, the hills melted — the earth lifted up at His presence.'},{type:'tower',x:30,y:12,id:'refuge',examine:'“YAHUAH is good, a stronghold in the day of distress — and He knows those who take refuge in Him.”'},{type:'clearing',x:22,y:19,flat:4} ]},
+     features:[ {type:'standard',x:22,y:9,id:'storm',examine:'“YAHUAH has His way in the whirlwind and in the storm, and the clouds are the dust of His feet.”'},{type:'rock',x:14,y:12,id:'quake',examine:'The mountains shaken before Him, the hills melted — the earth lifted up at His presence.'},{type:'tower',x:30,y:12,id:'refuge',examine:'“YAHUAH is good, as a stronghold in the day of distress. And He knows those who take refuge in Him.”'},{type:'clearing',x:22,y:19,flat:4} ]},
    time:'day', music:'tense',
    player:'nahum', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:18,y:13,wander:false},{id:'shepherd',char:'shepherd',x:27,y:15,wander:true} ],
    objectives:[
      {type:'interact',prop:'storm',text:'Behold His power — the sea rebuked, the mountains shaken',
       script:[
-       {say:['nahum','YAHUAH has His way in the whirlwind and in the storm, and the clouds are the dust of His feet. He rebukes the sea and dries it up, and makes all the floods dry — Bashan and Karmel wither, and the flower of Leḇanon languishes.']},
+       {say:['nahum','YAHUAH has His way in the whirlwind and in the storm and the clouds are the dust of His feet. He is rebuking the sea and dries it up. And all the floods He has made dry — Bashan and Karmel are withering and the flower of Leḇanon is languishing.']},
        {shake:1},{sfx:'thunder'},{burst:[22,9,'ash',12]},
        {say:['nahum','The mountains have shaken before Him, and the hills have melted; the earth is lifted up at His presence, the world and all who dwell in it. Who stands before His rage? Who rises up in the heat of His displeasure? His wrath is poured out like fire, and the rocks are broken by Him.']},
        {shake:1},{sfx:'bad'},{burst:[14,12,'ash',14]},
       ]},
      {type:'interact',prop:'refuge',text:'Yet YAHUAH is good — a stronghold to those who trust',hiddenUntil:1,
       script:[
-       {say:['nahum','But YAHUAH is good, a stronghold in the day of distress — and He knows those who take refuge in Him.']},
+       {say:['nahum','But YAHUAH is good, as a stronghold in the day of distress. And He knows those who take refuge in Him.']},
        {rays:.6,raysX:30},{sfx:'holy'},{burst:[30,12,'holy',14]},
        {say:['voice','With an overwhelming flood I make a complete end of the place of Ninewĕh, and darkness pursues My enemies.']},
        {shake:.9},{sfx:'bad'},{burst:[22,10,'ash',12]},
@@ -5842,16 +5989,16 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'void', music:'tense', text:'YAHUAH is a jealous and avenging Ěl; YAHUAH is an avenger and a possessor of wrath — He takes vengeance on His adversaries, and watches for His enemies. YAHUAH is patient and great in power, but by no means leaves the guilty unpunished; His way is in the whirlwind and the storm, and the clouds are the dust of His feet.', ref:'NAḤUM 1:2–3'},
-   {art:'mountain', music:'tense', text:'He rebukes the sea and dries it up, and makes all the floods dry — Bashan and Karmel wither, and the flower of Leḇanon languishes. The mountains have shaken before Him, and the hills have melted; the earth is lifted up at His presence, the world and all who dwell in it. Who stands before His rage? His wrath is poured out like fire, and the rocks are broken by Him.', ref:'NAḤUM 1:4–6'},
-   {art:'garden', music:'holy', text:'YAHUAH is good, a stronghold in the day of distress — and He knows those who take refuge in Him. But with an overwhelming flood He makes a complete end of the place of Ninewĕh, and darkness pursues His enemies.', ref:'NAḤUM 1:7–8'},
+   {art:'void', music:'tense', text:'YAHUAH is a jealous and revenging Al, YAHUAH is a revenger and a possessor of wrath. YAHUAH takes vengeance on His adversaries and He watches for His enemies. YAHUAH is patient and great in power, but by no means leaves unpunished. YAHUAH has His way in the whirlwind and in the storm and the clouds are the dust of His feet.', ref:'NAḤUM 1:2–3', stage:{"set":"wilderness","time":"dusk","wx":"storm","wxAt":3,"cam":"up","cast":[{"id":"nahum_o","x":0.46,"z":0.08,"face":"r","pose":"raise","say":0,"acts":[{"at":1,"pose":"point"},{"at":2,"pose":"raise"},{"at":3,"pose":"bow"}]}],"props":[{"k":"cloud","x":0.25,"z":1,"s":2.6,"dark":1,"at":3},{"k":"cloud","x":0.72,"z":1,"s":3,"dark":1,"at":3}],"fx":[{"k":"glory","x":0.5,"y":0.06,"at":0},{"k":"wind","at":3},{"k":"lightning","at":3}]}},
+   {art:'mountain', music:'tense', text:'He is rebuking the sea and dries it up. All the floods He has made dry, Bashan and Karmel are withering and the flower of Leḇanon is languishing. Mountains have shaken before Him and the hills have melted. The earth is lifted up at His presence and the world and all who dwell in it. Who does stand before His rage? Who rises up in the heat of His displeasure? His wrath is poured out like fire and the rocks have been broken by Him.', ref:'NAḤUM 1:4–6', stage:{"set":"mountain","time":"dusk","wx":"embers","wxAt":6,"cam":"push","focus":0.45,"cast":[{"id":"nahum","x":0.14,"z":0.06,"face":"r","pose":"look","say":4,"acts":[{"at":2,"pose":"fall"},{"at":4,"pose":"raise"},{"at":6,"pose":"bow"}]}],"props":[{"k":"rock","x":0.56,"z":0.2,"w":60,"h":34},{"k":"tree","x":0.74,"z":0.35,"h":110,"color":"#7a6a3a","at":1},{"k":"tree","x":0.88,"z":0.45,"h":100,"color":"#6a5a30","at":1},{"k":"bush","x":0.34,"z":0.3,"color":"#6a5a34","at":1}],"fx":[{"k":"wind","at":0},{"k":"quake"},{"k":"smoke","x":0.5,"at":2},{"k":"red","amt":0.15,"at":4},{"k":"firefall","x":0.56,"y":0.6,"at":6}]}},
+   {art:'garden', music:'holy', text:'YAHUAH is good, as a stronghold in the day of distress. And He knows those who take refuge in Him. With an overwhelming flood He makes a complete end of the place of Ninewĕh and darkness pursues His enemies.', ref:'NAḤUM 1:7–8', stage:{"set":"river","time":"dusk","wx":"rain","wxAt":2,"cam":"pan-r","cast":[{"id":"elder","x":0.2,"z":0.06,"face":"r","pose":"pray","acts":[{"at":1,"pose":"raise"}]},{"id":"poorman","x":0.31,"z":0.1,"face":"r","pose":"kneel","acts":[{"at":1,"pose":"pray"}]},{"id":"nahum","x":0.46,"z":0.06,"face":"r","pose":"stand","say":2,"acts":[{"at":2,"pose":"point"}]}],"crowd":[{"kind":"people","n":4,"x":0.1,"w":0.1,"z":0.2,"dz":0.04,"face":"r","pose":"pray","at":1},{"kind":"soldiers","side":"ashshur","n":6,"x":0.8,"w":0.24,"z":0.9,"dz":0.04,"face":"l","exit":"r","exitAt":2,"run":1}],"props":[{"k":"wall","x":0.84,"z":1,"w":0.34,"h":90,"color":"#9a8a6a"},{"k":"tower","x":0.72,"z":1,"h":150,"tiers":2,"color":"#8a7a5a"},{"k":"cloud","x":0.8,"z":1,"s":3,"dark":1,"at":2}],"fx":[{"k":"glory","x":0.2,"y":0.06,"at":0},{"k":"rays","x":0.22,"at":1}]}},
   ],
-  complete:'YAHUAH is slow to anger and great in power — a stronghold to those who take refuge in Him.'
+  complete:'YAHUAH is patient and great in power — a stronghold in the day of distress, and He knows those who take refuge in Him.'
 },
 
 { id:'n2', title:'An Utter End', ref:'NAḤUM 1:9–15',
   intro:[
-   {art:'corrupt', music:'tense', text:'What do you plot against YAHUAH? He makes a complete end of it — distress does not rise up a second time. Though they are as entangled thorns, and as drunkards with their drink, they shall be consumed like stubble fully dried. From you came forth one who plots evil against YAHUAH, a counsellor of Beliyaʿal.', ref:'NAḤUM 1:9–11'},
+   {art:'corrupt', music:'tense', text:'What do you plot against YAHUAH? He makes a complete end of it — distress does not rise up a second time. Though they are as entangled thorns and as drunkards with their drink, they shall be consumed like stubble thoroughly dried. From you came forth one who plots evil against YAHUAH, a counsellor of Beliyaʿal.', ref:'NAḤUM 1:9–11', stage:{"set":"palace","cam":"push","focus":0.6,"cast":[{"id":"nahum","x":0.14,"z":0.06,"face":"r","pose":"point","say":0,"acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"point"}]},{"id":"asshur","x":0.6,"z":0.16,"face":"r","pose":"stand","say":4,"acts":[{"at":4,"pose":"speak"}]},{"id":"ninking","x":0.76,"z":0.12,"face":"l","pose":"enthroned","crown":1}],"crowd":[{"kind":"princes","n":5,"x":0.4,"w":0.22,"z":0.5,"face":"r","hold":"cup","from":"stand","pose":"fall","at":3}],"fx":[{"k":"darkness","amt":0.2,"at":1},{"k":"red","amt":0.2,"at":3},{"k":"embers","at":3}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:8102,
@@ -5862,7 +6009,7 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'yoke',text:'Break the yoke of Ashshur from Yahuḏah',
       script:[
-       {say:['voice','Thus said YAHUAH: Though they are strong and many, even so they shall be cut off and pass away. Though I have afflicted you, O Yahuḏah, I afflict you no more.']},
+       {say:['voice','Thus said YAHUAH: Though they are strong and many, even so, they shall be cut off and pass away. Though I have afflicted you, I afflict you no more.']},
        {rays:.5,raysX:22},{sfx:'holy'},
        {say:['voice','So now I break his yoke from you, and tear off your shackles. And concerning you, O Ninewĕh, YAHUAH has commanded: “Your name shall no longer be sown. From the house of your mighty ones I cut off the carved and moulded image; I appoint your grave, for you have been of no account.”']},
        {shake:.8},{sfx:'bad'},{burst:[16,11,'ash',12]},
@@ -5877,9 +6024,9 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'What do you plot against YAHUAH? He makes a complete end of it — distress does not rise up a second time. Though they are as entangled thorns and as drunkards with their drink, they shall be consumed like stubble fully dried. From you came forth one who plots evil against YAHUAH, a counsellor of Beliyaʿal.', ref:'NAḤUM 1:9–11'},
-   {art:'wasteland', music:'holy', text:'Thus said YAHUAH: “Though they are strong and many, even so they shall be cut off and pass away. Though I have afflicted you, I afflict you no more. So now I break his yoke from you, and tear off your shackles.” And YAHUAH has commanded concerning Ninewĕh: “Your name shall no longer be sown; from the house of your mighty ones I cut off the carved and moulded image, and appoint your grave, for you have been of no account.”', ref:'NAḤUM 1:12–14'},
-   {art:'garden', music:'holy', text:'See, on the mountains the feet of him who brings the besorah, who proclaims shalom! O Yahuḏah, observe your festivals and perform your vows, for Beliyaʿal shall no more pass through you — he has been cut off completely.', ref:'NAḤUM 1:15'},
+   {art:'corrupt', music:'tense', text:'What do you plot against YAHUAH? He makes a complete end of it — distress does not rise up a second time. Though they are as entangled thorns and as drunkards with their drink, they shall be consumed like stubble thoroughly dried. From you came forth one who plots evil against YAHUAH, a counsellor of Beliyaʿal.', ref:'NAḤUM 1:9–11', stage:{"set":"palace","cam":"push","focus":0.6,"cast":[{"id":"nahum","x":0.14,"z":0.06,"face":"r","pose":"point","say":0,"acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"point"}]},{"id":"asshur","x":0.6,"z":0.16,"face":"r","pose":"stand","say":4,"acts":[{"at":4,"pose":"speak"}]},{"id":"ninking","x":0.76,"z":0.12,"face":"l","pose":"enthroned","crown":1}],"crowd":[{"kind":"princes","n":5,"x":0.4,"w":0.22,"z":0.5,"face":"r","hold":"cup","from":"stand","pose":"fall","at":3}],"fx":[{"k":"darkness","amt":0.2,"at":1},{"k":"red","amt":0.2,"at":3},{"k":"embers","at":3}]}},
+   {art:'wasteland', music:'holy', text:'Thus said YAHUAH, “Though they are strong and many, even so, they shall be cut off and pass away. Though I have afflicted you, I afflict you no more. So now I break his yoke from you and tear off your shackles.” And YAHUAH has commanded concerning you, “Your name shall no longer be sown. From the house of your mighty ones I shall cut off the carved and moulded image and appoint your grave, for you have been of no account.”', ref:'NAḤUM 1:12–14', stage:{"set":"wilderness","time":"day","cam":"push","focus":0.45,"cast":[{"id":"nahum","x":0.1,"z":0.05,"face":"r","pose":"point","say":0},{"id":"poorman","x":0.36,"z":0.1,"face":"r","pose":"bound","acts":[{"at":2,"pose":"raise"}]},{"id":"ninking","x":0.74,"z":0.12,"face":"l","pose":"stand","crown":1,"at":3,"acts":[{"at":4,"pose":"fall"}]}],"crowd":[{"kind":"captives","n":5,"x":0.26,"w":0.2,"z":0.45,"face":"r","from":"bound","pose":"raise","at":2},{"kind":"army","side":"ashshur","n":8,"x":0.72,"w":0.34,"z":0.55,"face":"l","exit":"r","exitAt":1}],"props":[{"k":"idol","x":0.9,"z":0.35,"at":3},{"k":"grave","x":0.6,"z":0.45,"at":4}],"fx":[{"k":"rays","x":0.3,"at":2},{"k":"firefall","x":0.9,"y":0.58,"at":4}]}},
+   {art:'garden', music:'holy', text:'See, on the mountains the feet of him who brings the besorah, who proclaims shalom! O Yahuḏah, observe your festivals and perform your vows, for Beliyaʿal shall no more pass through you — he has been cut off completely.', ref:'NAḤUM 1:15', stage:{"set":"mountain","time":"dawn","cam":"push","focus":0.5,"cast":[{"id":"runner","look":{"name":"Him Who Brings the Besorah","skin":"#8a6038","hair":"#2c1a0c","robe":"#e8e0cc","beard":"#2c1a0c","sash":"#3a6a9a","short":1},"enter":"r","at":0,"to":0.66,"run":1,"face":"l","pose":"raise","say":0},{"id":"elder","x":0.24,"z":0.1,"face":"r","pose":"look","hold":"shofar","acts":[{"at":1,"pose":"raise"}]}],"crowd":[{"kind":"people","n":7,"x":0.3,"w":0.3,"z":0.55,"face":"r","from":"stand","pose":"dance","at":1},{"kind":"kohanim","n":3,"x":0.52,"w":0.1,"z":0.45,"face":"l","at":1}],"props":[{"k":"altar","x":0.45,"z":0.35,"sacrifice":1,"at":1}],"fx":[{"k":"rays","x":0.62,"at":0},{"k":"bright","amt":0.15,"at":2}]}},
   ],
   complete:'He makes a complete end — the yoke is broken, and the herald of shalom stands on the mountains.'
 },
@@ -5891,11 +6038,11 @@ STORY.push(
 
 { id:'n3', title:'The Chariots Rage', ref:'NAḤUM 2:1–13',
   intro:[
-   {art:'fall', music:'tense', text:'He who breaks in pieces has come up before your face. Guard the ramparts! Watch the way! Strengthen your loins, gather all your power! The shields of his mighty men are red, the men of battle in scarlet; the chariots are like flaming torches in the day of his preparation, and the cypress spears are shaken.', ref:'NAḤUM 2:1–3'},
+   {art:'fall', music:'tense', text:'He who breaks in pieces has come up before your face. Guard the ramparts! Watch the way! Strengthen your loins and your power greatly! The shields of his mighty men have become red, the men of battle are in scarlet. The chariots are like flaming torches in the day of his preparation and the cypresses shall be shaken.', ref:'NAḤUM 2:1–3', stage:{"set":"walls","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"breaker","look":{"name":"He Who Breaks in Pieces","skin":"#a07048","hair":"#1d1208","robe":"#8a1a1a","beard":"#1d1208","armor":"#a88a48","helmet":"#9a8040","crest":"#c83a2a","short":1},"enter":"l","at":0,"to":0.3,"face":"r","pose":"stand","hold":"sword","hold2":"shield","acts":[{"at":3,"pose":"raise"}]},{"id":"asshur","x":0.78,"z":0.1,"face":"l","pose":"stand","say":1,"acts":[{"at":1,"pose":"point"},{"at":2,"pose":"raise"},{"at":4,"pose":"fall"}]}],"crowd":[{"kind":"army","side":"bavel","n":8,"x":0.26,"w":0.34,"z":0.5,"face":"r","enter":"l","at":0,"hold":"spear"},{"kind":"guards","side":"ashshur","n":6,"x":0.72,"w":0.3,"z":0.8,"face":"l","from":"stand","pose":"fight","at":2}],"props":[{"k":"chariot","x":0.48,"z":0.3,"face":"r","fire":1,"at":4},{"k":"tree","x":0.93,"z":0.4,"h":140,"color":"#2e4a2a"}],"fx":[{"k":"red","amt":0.15,"at":3},{"k":"wind","at":4}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8103,
-     features:[ {type:'gate',x:22,y:8,id:'ramparts',examine:'“Guard the ramparts! Watch the way!” — yet the chariots rage in the streets and run like lightning.'},{type:'well',x:16,y:14,id:'rivergates',examine:'“The river gates have been opened, and the palace is melted” — Ninewĕh, a pool of water, drains away.'},{type:'tower',x:30,y:12,id:'lions',examine:'“Where is the den of the lions?” — the lair of Ashshur that filled its caves with prey.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'gate',x:22,y:8,id:'ramparts',examine:'“Guard the ramparts! Watch the way!” — yet the chariots dash about in the streets and run like lightning.'},{type:'well',x:16,y:14,id:'rivergates',examine:'“The river gates have been opened, and the palace is melted” — Ninewĕh, a pool of water, drains away.'},{type:'tower',x:30,y:12,id:'lions',examine:'“Where is the den of the lions?” — the lair of Ashshur that filled its caves with prey.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'nahum', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'asshur',char:'asshur',x:18,y:12,wander:false},{id:'poorman',char:'poorman',x:26,y:14,wander:false} ],
@@ -5904,24 +6051,24 @@ STORY.push(
       script:[
        {say:['nahum','The chariots dash about in the streets, they rush one another in the broad ways; they look like flaming torches, they run like lightning. He remembers his noble ones — they stumble in their walk, they hurry to her walls, and the defence is prepared.']},
        {shake:1},{sfx:'thunder'},{burst:[22,9,'ash',12]},
-       {say:['voice','The river gates have been opened, and the palace is melted. It is established: she shall be exiled, she shall be led away, her maidservants moaning like doves, beating on their breasts. Ninewĕh of old was a pool of water — now they flee away. “Stop! Stop!” they cry, but no one turns.']},
+       {say:['voice','The river gates have been opened and the palace is melted. And it is established: she shall be exiled, she shall be led away. And her female servants are moaning as with the voice of doves, beating on their breasts. And Ninewĕh of old was like a pool of water, now they flee away. “Stop! Stop!” they cry, but no one turns back.']},
        {say:['nahum','Plunder the silver! Plunder the gold! There is no limit to the treasure. She is empty, even emptiness and waste! The heart has melted, the knees knock together, and all their faces have grown pale.']},
        {shake:.9},{sfx:'bad'},{burst:[16,14,'ash',14]},
       ]},
      {type:'talk',npc:'asshur',text:'Where now is the den of the lions? — “I am against you”',hiddenUntil:1,
       script:[
-       {say:['asshur','We are the lions of the nations, prophet — the lion tore enough for his cubs and filled his dens with prey. Who shall disturb us?']},
+       {say:['asshur','We are the lions of the nations, naḇi — the lion tore in pieces enough for his cubs … and filled his caves with prey. Who shall disturb us?']},
        {say:['nahum','Where now is the den of the lions, the feeding place of the young lions, where the lion and the lioness and the cub walked, with none to disturb them?']},
-       {say:['voice','“See, I am against you,” declares YAHUAH of hosts, “and I shall burn your chariots in smoke, and the sword devour your young lions. I shall cut off your prey from the earth, and the voice of your messengers shall no longer be heard.”']},
+       {say:['voice','See, I am against you, declares YAHUAH of hosts, and I shall burn your chariots in smoke and the sword devour your young lions. And I shall cut off your prey from the earth and no longer is the voice of your mal’akim heard.']},
        {shake:1},{sfx:'bad'},{burst:[30,12,'ash',16]},
       ]},
    ],
   },
   outro:[
-   {art:'fall', music:'tense', text:'He who breaks in pieces has come up before your face. Guard the ramparts, watch the way, gather all your power! The shields of his mighty men are red, the men of battle in scarlet; the chariots are like flaming torches, the spears are shaken. The chariots dash about in the streets, rushing one another in the broad ways — they look like torches, they run like lightning.', ref:'NAḤUM 2:1–4'},
-   {art:'corrupt', music:'sorrow', text:'The river gates have been opened, and the palace is melted. It is established: she shall be exiled, led away, her maidservants moaning like doves and beating on their breasts. Ninewĕh of old was a pool of water — now they flee away; “Stop! Stop!” they cry, but no one turns back.', ref:'NAḤUM 2:6–8'},
-   {art:'wasteland', music:'sorrow', text:'Plunder the silver! Plunder the gold! There is no limit to the treasure, a wealth of every precious object. She is empty, even emptiness and waste! The heart has melted, the knees knock together, much pain is in all loins, and every face has grown pale.', ref:'NAḤUM 2:9–10'},
-   {art:'void', music:'tense', text:'Where is the den of the lions, the feeding place of the young lions, where the lion tore in pieces for his cubs and filled his caves with prey? “See, I am against you,” declares YAHUAH of hosts, “and I shall burn your chariots in smoke, and the sword devour your young lions; I shall cut off your prey from the earth, and the voice of your messengers shall no longer be heard.”', ref:'NAḤUM 2:11–13'},
+   {art:'fall', music:'tense', text:'He who breaks in pieces has come up before your face. Guard the ramparts! Watch the way! Strengthen your loins and your power greatly! The shields of his mighty men have become red, the men of battle are in scarlet. The chariots are like flaming torches in the day of his preparation and the cypresses shall be shaken. The chariots dash about in the streets, they rush one another in the broad ways. They look like flaming torches, they run like lightning.', ref:'NAḤUM 2:1–4', stage:{"set":"walls","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"breaker","look":{"name":"He Who Breaks in Pieces","skin":"#a07048","hair":"#1d1208","robe":"#8a1a1a","beard":"#1d1208","armor":"#a88a48","helmet":"#9a8040","crest":"#c83a2a","short":1},"enter":"l","at":0,"to":0.3,"face":"r","pose":"stand","hold":"sword","hold2":"shield","acts":[{"at":3,"pose":"raise"}]},{"id":"asshur","x":0.78,"z":0.1,"face":"l","pose":"stand","say":1,"acts":[{"at":1,"pose":"point"},{"at":2,"pose":"raise"},{"at":4,"pose":"fall"}]}],"crowd":[{"kind":"army","side":"bavel","n":8,"x":0.26,"w":0.34,"z":0.5,"face":"r","enter":"l","at":0,"hold":"spear"},{"kind":"guards","side":"ashshur","n":6,"x":0.72,"w":0.3,"z":0.8,"face":"l","from":"stand","pose":"fight","at":2}],"props":[{"k":"chariot","x":0.48,"z":0.3,"face":"r","fire":1,"at":4},{"k":"tree","x":0.93,"z":0.4,"h":140,"color":"#2e4a2a"}],"fx":[{"k":"red","amt":0.15,"at":3},{"k":"wind","at":4}]}},
+   {art:'corrupt', music:'sorrow', text:'The river gates have been opened and the palace is melted. And it is established: she shall be exiled, she shall be led away. And her female servants are moaning as with the voice of doves, beating on their breasts. And Ninewĕh of old was like a pool of water, now they flee away. “Stop! Stop!” they cry, but no one turns back.', ref:'NAḤUM 2:6–8', stage:{"set":"river","time":"dusk","wx":"storm","cam":"pan-l","cast":[{"id":"asshur","x":0.66,"z":0.06,"face":"r","pose":"stand","at":3,"say":4,"acts":[{"at":4,"pose":"raise"}]}],"crowd":[{"kind":"captives","n":6,"x":0.44,"w":0.26,"z":0.9,"dz":0.04,"face":"l","at":1,"exit":"l","exitAt":3},{"kind":"soldiers","side":"bavel","n":3,"x":0.64,"w":0.1,"z":0.92,"dz":0.04,"face":"l","at":1,"exit":"l","exitAt":3},{"kind":"women","n":4,"x":0.22,"w":0.18,"z":0.1,"dz":0.06,"face":"r","pose":"weep","at":2},{"kind":"people","n":4,"x":0.86,"w":0.1,"z":0.12,"dz":0.04,"face":"r","at":3,"exit":"r","exitAt":4,"run":1}],"props":[{"k":"wall","x":0.82,"z":1,"w":0.4,"h":100,"color":"#9a8a6a"},{"k":"gate","x":0.82,"z":1,"w":100,"h":110,"color":"#9a8a6a"}],"fx":[{"k":"dove","x":0.24,"y":0.3,"at":2}]}},
+   {art:'wasteland', music:'sorrow', text:'Plunder the silver! Plunder the gold! There is no limit to the treasure, a wealth of all precious objects. She is empty, even emptiness and waste! And the heart has melted and the knees have knocked together and much pain is in all loins and all their faces have become flushed.', ref:'NAḤUM 2:9–10', stage:{"set":"palace","cam":"push","cast":[{"id":"plunderer","look":{"name":"A Plunderer of Ninewĕh","skin":"#a07048","hair":"#1d1208","robe":"#8a1a1a","beard":"#1d1208","armor":"#a88a48","helmet":"#9a8040","crest":"#c83a2a","short":1},"x":0.5,"z":0.1,"face":"r","pose":"point","hold":"sword","say":0,"acts":[{"at":2,"exit":"l"}]},{"id":"ninking","x":0.66,"z":0.1,"face":"l","pose":"fall","at":3},{"id":"asshur","x":0.82,"z":0.14,"face":"l","pose":"weep","at":3}],"crowd":[{"kind":"soldiers","side":"bavel","n":5,"x":0.34,"w":0.26,"z":0.45,"face":"r","enter":"l","at":0,"hold":"bowl","pose":"carry","exit":"l","exitAt":2},{"kind":"soldiers","side":"bavel","n":3,"x":0.7,"w":0.14,"z":0.55,"face":"l","enter":"r","at":1,"hold":"crown","pose":"carry","exit":"l","exitAt":2}],"props":[{"k":"throne","x":0.84,"z":0.45}],"fx":[{"k":"darkness","amt":0.3,"at":2}]}},
+   {art:'void', music:'tense', text:'Where is the den of the lions and the feeding place of the young lions? … The lion tore in pieces enough for his cubs … and filled his caves with prey. “See, I am against you,” declares YAHUAH of hosts, “and I shall burn your chariots in smoke and the sword devour your young lions. And I shall cut off your prey from the earth and no longer is the voice of your mal’akim heard.”', ref:'NAḤUM 2:11–13', stage:{"set":"cave","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"nahum","x":0.12,"z":0.05,"face":"r","pose":"look","say":3,"acts":[{"at":3,"pose":"point"}]}],"props":[{"k":"lion","x":0.4,"z":0.2,"face":"r","roar":1},{"k":"lion","x":0.56,"z":0.14,"face":"l","s":0.55},{"k":"lion","x":0.63,"z":0.24,"face":"l","s":0.5},{"k":"bones","x":0.3,"z":0.1,"n":10,"w":60,"at":2},{"k":"chariot","x":0.82,"z":0.35,"face":"l","at":3}],"fx":[{"k":"glory","x":0.5,"y":0.04,"at":3},{"k":"smoke","x":0.82,"at":3},{"k":"sword","x":0.5,"y":0.3,"at":3},{"k":"darkness","amt":0.45,"at":4}]}},
   ],
   complete:'The river gates are opened, and Ninewĕh is empty and waste — “I am against you,” says YAHUAH.'
 },
@@ -5933,7 +6080,7 @@ STORY.push(
 
 { id:'n4', title:'The Bloody City', ref:'NAḤUM 3:1–11',
   intro:[
-   {art:'corrupt', music:'tense', text:'Woe to the city of blood! All of it is a lie, filled with plunder — the prey never lacking. The sound of the whip, the rattling wheels, the galloping horses, the jolting chariots; horsemen with bright sword and glittering spear, a mass of the wounded, heaps of the dead, no end of corpses — they stumble over the corpses.', ref:'NAḤUM 3:1–3'},
+   {art:'corrupt', music:'tense', text:'Woe to the city of blood! All of it is a lie, filled with plunder, the prey is not lacking. The sound of a whip and the sound of rattling wheels, of galloping horses, of jolting chariots, mounted horsemen with bright sword and glittering spear and many wounded and a mass of dead bodies and no end of corpses, they stumble over the corpses.', ref:'NAḤUM 3:1–3', stage:{"set":"city","time":"dusk","wx":"dust","cam":"push","focus":0.55,"cast":[{"id":"nahum","x":0.1,"z":0.05,"face":"r","pose":"raise","say":0,"acts":[{"at":1,"pose":"point"},{"at":2,"pose":"weep"}]},{"id":"asshur","x":0.36,"z":0.12,"face":"r","pose":"stand","hold":"rod","at":1,"acts":[{"at":2,"pose":"fight"}]}],"crowd":[{"kind":"captives","n":4,"x":0.5,"w":0.16,"z":0.45,"face":"l","at":1},{"kind":"people","n":4,"x":0.5,"w":0.3,"z":0.3,"pose":"dead","at":2},{"kind":"army","side":"bavel","n":6,"x":0.8,"w":0.24,"z":0.55,"face":"l","pose":"fight","hold":"sword","enter":"r","at":2}],"props":[{"k":"chariot","x":0.68,"z":0.3,"face":"l","at":2},{"k":"horse","x":0.9,"z":0.4,"face":"l","color":"#3a2a1a","at":2}],"fx":[{"k":"smoke","x":0.82,"at":1},{"k":"red","amt":0.18,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8104,
@@ -5951,54 +6098,54 @@ STORY.push(
       ]},
      {type:'talk',npc:'asshur',text:'Ask Ashshur — are you better than No-Amon?',hiddenUntil:1,
       script:[
-       {say:['asshur','No wall is like my wall, prophet; no waters guard a city as ours. What power can bring Ninewĕh down?']},
-       {say:['nahum','Are you better than No-Amon, who dwelt by the Nile-streams, waters all around her, whose rampart was the sea and whose wall was the sea? Kush and Mitsrayim were her boundless strength; Put and the Luḇim were her helpers.']},
-       {say:['nahum','Yet she was exiled, she went into captivity; her little ones were dashed in pieces at the head of every street, lots were cast for her honoured men, and all her great men were bound in chains. You too shall become drunk and go into hiding; you too shall seek refuge from the enemy.']},
+       {say:['asshur','No wall is like my wall, naḇi; no waters guard a city as ours. What power can bring Ninewĕh down?']},
+       {say:['nahum','Are you better than No-Amon, who dwelt by the Nile-streams, with waters around her, whose rampart was like the sea, whose wall was like the sea? Kush and Mitsrayim were her strength, even unlimited. Put and Luḇim were your helpers.']},
+       {say:['nahum','Yet she was exiled, she went into captivity. At the head of every street her young children were dashed to pieces. Lots were cast for her esteemed men and all her great men were bound in chains. You too are to become drunk, you are to go into hiding. You too are to seek refuge from the enemy.']},
        {shake:.8},{sfx:'bad'},{burst:[30,13,'ash',14]},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'Woe to the city of blood! All of it is a lie, filled with plunder — the prey never lacking. The sound of the whip, rattling wheels, galloping horses, jolting chariots, horsemen with bright sword and glittering spear, a mass of wounded and heaps of dead, no end of corpses — because of the many whorings of the well-favoured whore, the mistress of sorceries, who sells nations by her whorings.', ref:'NAḤUM 3:1–4'},
-   {art:'wasteland', music:'sorrow', text:'“See, I am against you,” declares YAHUAH of hosts, “and I shall lift up your skirts over your face, show the nations your nakedness, and the reigns your shame. I shall cast abominations upon you, treat you with contempt, and make a spectacle of you. And all who see you shall flee and say, ‘Ninewĕh is laid waste! Who mourns for her?’ Where shall I seek comforters for you?”', ref:'NAḤUM 3:5–7'},
-   {art:'fall', music:'sorrow', text:'Are you better than No-Amon, who dwelt by the Nile-streams, waters all around her, whose rampart and wall were the sea? Kush and Mitsrayim were her boundless strength; Put and the Luḇim were her helpers. Yet she was exiled, she went into captivity; her little ones were dashed at the head of every street, lots were cast for her honoured men, and her great men bound in chains. You too shall become drunk and go into hiding; you too shall seek refuge from the enemy.', ref:'NAḤUM 3:8–11'},
+   {art:'corrupt', music:'tense', text:'Woe to the city of blood! All of it is a lie, filled with plunder, the prey is not lacking. The sound of a whip and the sound of rattling wheels, of galloping horses, of jolting chariots, mounted horsemen with bright sword and glittering spear … and no end of corpses … because of the many whorings of the well-favoured whore, the mistress of sorceries, who sells nations by her whorings and clans by her sorceries.', ref:'NAḤUM 3:1–4', stage:{"set":"city","time":"dusk","wx":"dust","cam":"push","focus":0.55,"cast":[{"id":"nahum","x":0.1,"z":0.05,"face":"r","pose":"raise","say":0,"acts":[{"at":1,"pose":"point"},{"at":2,"pose":"weep"}]},{"id":"asshur","x":0.36,"z":0.12,"face":"r","pose":"stand","hold":"rod","at":1,"acts":[{"at":2,"pose":"fight"}]}],"crowd":[{"kind":"captives","n":4,"x":0.5,"w":0.16,"z":0.45,"face":"l","at":1},{"kind":"people","n":4,"x":0.5,"w":0.3,"z":0.3,"pose":"dead","at":2},{"kind":"army","side":"bavel","n":6,"x":0.8,"w":0.24,"z":0.55,"face":"l","pose":"fight","hold":"sword","enter":"r","at":2}],"props":[{"k":"chariot","x":0.68,"z":0.3,"face":"l","at":2},{"k":"horse","x":0.9,"z":0.4,"face":"l","color":"#3a2a1a","at":2}],"fx":[{"k":"smoke","x":0.82,"at":1},{"k":"red","amt":0.18,"at":2}]}},
+   {art:'wasteland', music:'sorrow', text:'“See, I am against you,” declares YAHUAH of hosts, “and shall lift up your skirts over your face, shall show nations your nakedness and reigns your shame. I shall cast abominations upon you, treat you as foolish and make a spectacle of you. And it shall be that all who see you flee from you and say, ‘Ninewĕh is laid waste! Who does mourn for her?’ Where do I seek comforters for you?”', ref:'NAḤUM 3:5–7', stage:{"set":"ruins","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"ninewe","look":{"name":"Ninewĕh","skin":"#b08a5a","hair":"#1d1208","hairStyle":"long","robe":"#6a1a3a","veil":"#8a2a5a","collar":"#d8b040","crown":1},"x":0.5,"z":0.1,"face":"r","pose":"weep","acts":[{"at":1,"pose":"fall"},{"at":3,"pose":"mourn"}]}],"crowd":[{"kind":"nations","n":6,"x":0.8,"w":0.2,"z":0.45,"face":"l","pose":"point","exit":"r","exitAt":2},{"kind":"kings","n":4,"x":0.2,"w":0.16,"z":0.5,"face":"r","pose":"point","exit":"l","exitAt":2}],"fx":[{"k":"smoke","x":0.5,"at":2},{"k":"darkness","amt":0.3,"at":4}]}},
+   {art:'fall', music:'sorrow', text:'Are you better than No-Amon, who dwelt by the Nile-streams … whose rampart was like the sea? Kush and Mitsrayim were her strength, even unlimited. Yet she was exiled, she went into captivity. At the head of every street her young children were dashed to pieces. Lots were cast for her esteemed men and all her great men were bound in chains. You too are to become drunk, you are to go into hiding. You too are to seek refuge from the enemy.', ref:'NAḤUM 3:8–11', stage:{"set":"egypt","time":"dusk","cam":"pan-r","cast":[{"id":"kushite","x":0.3,"z":0.12,"face":"r","pose":"stand","hold":"spear","at":2,"acts":[{"at":3,"exit":"l","run":1}]},{"id":"kushite2","x":0.4,"z":0.18,"face":"r","pose":"stand","hold":"spear","at":2,"acts":[{"at":3,"exit":"l","run":1}]},{"id":"asshur","x":0.6,"z":0.1,"face":"l","pose":"kneel","hold":"stone","at":5},{"id":"ninking","x":0.84,"z":0.08,"face":"l","pose":"fall","hold":"cup","crown":1,"at":6,"acts":[{"at":7,"exit":"r","run":1}]}],"crowd":[{"kind":"soldiers","side":"mitsrayim","n":5,"x":0.22,"w":0.2,"z":0.5,"face":"r","at":2,"exit":"l","exitAt":3},{"kind":"army","side":"ashshur","n":6,"x":0.76,"w":0.26,"z":0.6,"face":"l","enter":"r","at":3},{"kind":"captives","n":5,"x":0.46,"w":0.2,"z":0.42,"face":"l","at":3},{"kind":"mourners","n":3,"x":0.18,"w":0.1,"z":0.3,"at":4}],"fx":[{"k":"smoke","x":0.3,"at":3}]}},
   ],
   complete:'Woe to the city of blood — are you better than No-Amon, that also went into captivity?'
 },
 
-{ id:'n5', title:'Your Wound Has No Healing', ref:'NAḤUM 3:12–19',
+{ id:'n5', title:'Your Injury Has No Healing', ref:'NAḤUM 3:12–19',
   intro:[
-   {art:'wasteland', music:'tense', text:'All your strongholds are fig trees with the first-ripe figs: when shaken, they fall into the mouth of the eater. See, your people in your midst are women; the gates of your land are opened wide to your enemies, and fire consumes your gate-bars.', ref:'NAḤUM 3:12–13'},
+   {art:'wasteland', music:'tense', text:'All your strongholds are fig trees with ripened figs: when shaken they shall fall into the mouth of the eater. See, your people in your midst are women! The gates of your land shall be opened wide to your enemies. Fire shall consume your gate bars.', ref:'NAḤUM 3:12–13', stage:{"set":"gate","time":"dusk","wx":"wind","cam":"push","focus":0.5,"cast":[{"id":"asshur","x":0.72,"z":0.08,"face":"l","pose":"stand","acts":[{"at":1,"pose":"weep"},{"at":3,"exit":"r","run":1}]}],"crowd":[{"kind":"soldiers","side":"ashshur","n":5,"x":0.66,"w":0.24,"z":0.4,"face":"l","from":"stand","pose":"weep","at":1},{"kind":"army","side":"bavel","n":7,"x":0.44,"w":0.3,"z":0.72,"face":"r","enter":"l","at":2}],"props":[{"k":"tree","x":0.14,"z":0.25,"h":110,"fruit":"#5a2a4a"},{"k":"basket","x":0.24,"z":0.08,"fruit":"#5a2a4a"}],"fx":[{"k":"firefall","x":0.5,"y":0.52,"at":3},{"k":"smoke","x":0.5,"at":3}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8105,
-     features:[ {type:'tree',x:16,y:12,id:'figs',examine:'Strongholds like fig trees with ripe figs — when shaken, they fall into the mouth of the eater.'},{type:'firepit',x:22,y:9,id:'siege',examine:'“Draw water for the siege, tread the mortar, take hold of the brick mould” — yet fire shall consume you like the locust.'},{type:'standard',x:30,y:13,id:'shepherds',examine:'“Your shepherds slumber, O sovereign of Ashshur; your people are scattered on the mountains, and no one gathers them.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'tree',x:16,y:12,id:'figs',examine:'Strongholds like fig trees with ripe figs — when shaken, they fall into the mouth of the eater.'},{type:'firepit',x:22,y:9,id:'siege',examine:'“Draw water for the siege, tread the mortar, lay hold of the brick mould” — yet fire shall consume you like the locust.'},{type:'standard',x:30,y:13,id:'shepherds',examine:'“Your shepherds slumber, O sovereign of Ashshur; your people are scattered on the mountains, and no one gathers them.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'nahum', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'ninking',char:'ninking',x:18,y:12,wander:false},{id:'elder',char:'elder',x:26,y:15,wander:false} ],
    objectives:[
      {type:'interact',prop:'siege',text:'Prepare the siege in vain — fire consumes like a locust',
       script:[
-       {say:['nahum','Draw water for the siege! Strengthen your defences! Go into the clay and tread the mortar, take hold of the brick mould! There a fire shall consume you, the sword cut you off, and eat you up like the locust.']},
+       {say:['nahum','Draw for yourself water for the siege! Strengthen your defences! Go into the clay and tread the mortar, lay hold of the brick mould! There a fire shall consume you, a sword cut you off, eat you up like a locust.']},
        {shake:.9},{sfx:'bad'},{burst:[22,9,'ash',12]},
-       {say:['nahum','Make yourself as many as the locust, as many as the swarming locust! You have multiplied your merchants beyond the stars of the shamayim — but the locust strips off and flies away.']},
+       {say:['nahum','Make yourself many like the locust and like the swarming locust! You have increased your merchants more than the stars of the shamayim. The locust shall strip off and fly away.']},
        {burst:[16,12,'ash',12]},{sfx:'bad'},
       ]},
-     {type:'talk',npc:'ninking',text:'Answer Ashshur — your wound has no healing',hiddenUntil:1,
+     {type:'talk',npc:'ninking',text:'Answer Ashshur — your injury has no healing',hiddenUntil:1,
       script:[
-       {say:['ninking','My officials are countless, prophet; my marshals cover the land like grasshoppers. Surely Ashshur shall endure.']},
-       {say:['nahum','Your officials are like locusts, your marshals like the great grasshoppers that settle on the hedges in the cold — when the sun rises they flee away, and the place where they were is unknown. Your shepherds slumber, O sovereign of Ashshur; your nobles lie down to rest, your people are scattered on the mountains, and no one gathers them.']},
-       {say:['voice','Your injury has no healing, your wound is grievous. All who hear the news of you shall clap their hands over you — for upon whom has your evil not passed continually?']},
+       {say:['ninking','My officials are countless, naḇi; my marshals cover the land like grasshoppers. Surely Ashshur shall endure.']},
+       {say:['nahum','Your officials are like the locusts and your marshals are like the great grasshoppers, which settle in the hedges on a cold day — when the sun rises they flee away and the place where they are is unknown. Your shepherds have slumbered, O sovereign of Ashshur, your nobles lie down to rest. Your people are scattered on the mountains and no one gathers them.']},
+       {say:['voice','Your injury has no healing, your wound is grievous. All who hear news of you shall clap their hands over you. For over whom did your evil not pass continually?']},
        {shake:1},{sfx:'bad'},{burst:[18,12,'ash',16]},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'tense', text:'All your strongholds are fig trees with first-ripe figs: when shaken, they fall into the mouth of the eater. See, your people in your midst are women; the gates of your land are opened wide to your enemies, and fire consumes your gate-bars. Draw water for the siege, strengthen your defences, tread the mortar, take hold of the brick mould — yet there a fire shall consume you, the sword cut you off, and eat you like the locust.', ref:'NAḤUM 3:12–15'},
-   {art:'swarms', music:'sorrow', text:'You have multiplied your merchants beyond the stars of the shamayim — the locust strips off and flies away. Your officials are like locusts, your marshals like the great grasshoppers that settle on the hedges in the cold; when the sun rises they flee away, and the place where they were is unknown.', ref:'NAḤUM 3:16–17'},
-   {art:'void', music:'sorrow', text:'Your shepherds slumber, O sovereign of Ashshur; your nobles lie down to rest, your people are scattered on the mountains, and no one gathers them. Your injury has no healing, your wound is grievous — all who hear the news of you clap their hands over you, for upon whom has your evil not passed continually?', ref:'NAḤUM 3:18–19'},
+   {art:'wasteland', music:'tense', text:'All your strongholds are fig trees with ripened figs, when shaken they shall fall into the mouth of the eater. See, your people in your midst are women! The gates of your land shall be opened wide to your enemies. Fire shall consume your gate bars. Draw for yourself water for the siege! Strengthen your defences! … Tread the mortar, lay hold of the brick mould! There a fire shall consume you, a sword cut you off, eat you up like a locust.', ref:'NAḤUM 3:12–15', stage:{"set":"walls","time":"day","cam":"pan-r","cast":[{"id":"asshur","x":0.64,"z":0.06,"face":"l","pose":"stand","say":5,"acts":[{"at":1,"pose":"weep"},{"at":5,"pose":"point"},{"at":7,"pose":"fall"}]},{"id":"servant","x":0.36,"z":0.12,"face":"l","pose":"hold","hold":"pitcher","at":4},{"id":"builder2","x":0.78,"z":0.16,"face":"l","pose":"carry","hold":"stone","at":5},{"id":"builder","x":0.9,"z":0.1,"face":"l","pose":"kneel","at":6}],"crowd":[{"kind":"army","side":"bavel","n":6,"x":0.5,"w":0.5,"z":0.85,"face":"l","enter":"r","at":2}],"props":[{"k":"tree","x":0.1,"z":0.3,"h":110,"fruit":"#5a2a4a"},{"k":"well","x":0.28,"z":0.18,"at":4},{"k":"bricks","x":0.86,"z":0.02,"n":15,"mould":1,"at":6}],"fx":[{"k":"firefall","x":0.5,"y":0.52,"at":3},{"k":"locusts","at":7},{"k":"sword","x":0.62,"y":0.28,"at":7},{"k":"red","amt":0.2,"at":7}]}},
+   {art:'swarms', music:'sorrow', text:'You have increased your merchants more than the stars of the shamayim. The locust shall strip off and fly away. Your officials are like the locusts and your marshals are like the great grasshoppers, which settle in the hedges on a cold day — when the sun rises they flee away and the place where they are is unknown.', ref:'NAḤUM 3:16–17', stage:{"set":"field","time":"dawn","cam":"push","cast":[{"id":"merchant","look":{"name":"A Merchant of Ninewĕh","skin":"#a07048","hair":"#1d1208","robe":"#7a5a2a","beard":"#1d1208","headcover":"#c8a060","sash":"#8a2a2a"},"x":0.66,"z":0.1,"face":"l","pose":"hold","hold":"basket","acts":[{"at":1,"exit":"r"}]},{"id":"asshur","x":0.3,"z":0.1,"face":"r","pose":"sitground","at":2,"acts":[{"at":3,"exit":"l","run":1}]}],"crowd":[{"kind":"nations","n":7,"x":0.58,"w":0.5,"z":0.55,"face":"l","hold":"basket","exit":"r","exitAt":1},{"kind":"princes","n":5,"x":0.5,"w":0.3,"z":0.4,"pose":"sitground","at":2,"exit":"l","exitAt":3,"run":1}],"props":[{"k":"bush","x":0.36,"z":0.32,"at":2},{"k":"bush","x":0.52,"z":0.36,"at":2},{"k":"bush","x":0.66,"z":0.32,"at":2}],"fx":[{"k":"stars","at":0},{"k":"locusts","at":1},{"k":"rays","x":0.85,"at":3},{"k":"bright","amt":0.15,"at":3}]}},
+   {art:'void', music:'sorrow', text:'Your shepherds have slumbered, O sovereign of Ashshur, your nobles lie down to rest. Your people are scattered on the mountains and no one gathers them. Your injury has no healing, your wound is grievous. All who hear news of you shall clap their hands over you. For over whom did your evil not pass continually?', ref:'NAḤUM 3:18–19', stage:{"set":"night","cam":"pull","cast":[{"id":"ninking","x":0.5,"z":0.08,"face":"r","pose":"stand","crown":1,"acts":[{"at":2,"pose":"fall"},{"at":3,"pose":"mourn"}]},{"id":"nahum_o","x":0.12,"z":0.04,"face":"r","pose":"point","at":4,"say":4}],"crowd":[{"kind":"shepherds","n":3,"x":0.22,"w":0.14,"z":0.35,"pose":"lie"},{"kind":"princes","n":3,"x":0.78,"w":0.14,"z":0.35,"pose":"lie"},{"kind":"people","n":3,"x":0.38,"w":0.12,"z":0.9,"face":"l","at":1,"exit":"l","exitAt":2},{"kind":"people","n":3,"x":0.62,"w":0.12,"z":0.9,"face":"r","at":1,"exit":"r","exitAt":2},{"kind":"nations","n":5,"x":0.5,"w":0.44,"z":0.62,"face":"r","pose":"raise","at":3}],"fx":[{"k":"darkness","amt":0.25,"at":2}]}},
   ],
-  complete:'Your wound has no healing — all who hear of Ninewĕh clap their hands, for her cruelty passed over all.'
+  complete:'Your injury has no healing, your wound is grievous — all who hear of Ninewĕh clap their hands, for her cruelty passed over all.'
 },
 
 ]}
@@ -6043,7 +6190,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6109,7 +6256,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6170,8 +6320,8 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
     ['YAHUSHA','yahusha'],['NAḤUM','nahum'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
@@ -6257,5 +6407,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main">ḤAGGAI</div>
     <div class="title-sub">Neḇi’im — The Prophets</div>
-    <div class="title-verse">“The latter esteem of this House shall be greater than the former,” said YAHUAH of hosts, “and in this place I give peace.” — ḤAGGAI 2:9</div>
+    <div class="title-verse">“Let the esteem of this latter House be greater than the former,” said YAHUAH of hosts. “And in this place I give shalom.” — ḤAGGAI 2:9</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Ḥaggai</h2>
-    <div class="hint">Two acts · ḤAGGAI — in the second year of Dareyawesh, the naḇi who roused a discouraged remnant to build: from the rebuke of those who dwell in panelled houses while the House of YAHUAH lies in ruins and the call to “Consider your ways” and go up to the mountain for wood, through the stirring of the spirit of Zerubbaḇel and Yahushua the high kohen and the pledge “I am with you,” to the promise that the latter esteem of this House shall be greater than the former, the word on the clean and the unclean, “From this day I shall bless you,” and the signet ring set upon Zerubbaḇel the chosen servant</div>
+    <div class="hint">Two acts · ḤAGGAI — in the second year of Dareyawesh, the naḇi who roused a discouraged remnant to build: from the rebuke of those who dwell in panelled houses while the House of YAHUAH lies in ruins and the call to “Consider your ways” and go up to the mountain for wood, through the stirring of the ruach of Zerubbaḇel and Yahushua the high kohen and the pledge “I am with you,” to the promise that the latter esteem of this House shall be greater than the former, the word on the clean and the unclean, “From this day I shall bless you,” and the signet ring set upon Zerubbaḇel the chosen servant</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -526,8 +558,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -635,7 +667,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -735,7 +767,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -997,6 +1031,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1040,7 +1084,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1302,6 +1348,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2783,6 +2839,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2978,7 +3054,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3183,8 +3259,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3671,6 +3748,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3734,7 +3812,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3786,15 +3868,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3805,6 +3921,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3830,6 +3952,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3858,6 +3981,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3875,7 +3999,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4015,6 +4139,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4078,17 +4207,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4252,22 +4382,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4280,7 +4414,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4303,11 +4437,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5668,7 +5815,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5708,7 +5855,7 @@ function drawTitleBg(g,t){
 Object.assign(CHARS,{
   haggai:{name:'Ḥaggai the Naḇi', skin:'#7a4e29', hair:'#cfc8b8', hairStyle:'short', robe:'#6a5030', beard:'#cfc8b8', old:true},
   zerub:{name:'Zerubbaḇel the Governor', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#3a4a7a', beard:'#2c1a0c', collar:'#caa23c'},
-  yahushua:{name:'Yahushua the High Kohen', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#e6e0d0', beard:'#231409', collar:'#caa23c', headcover:'#dcd6c6'},
+  yahushua:{name:'Yahushua the Kohen Gadol', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#e6e0d0', beard:'#231409', collar:'#caa23c', headcover:'#dcd6c6'},
   builder:{name:'A Builder of the House', skin:'#83552d', hair:'#231409', hairStyle:'short', robe:'#7a6a4a', beard:'#231409'},
   panelled:{name:'One in Panelled Houses', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a4a3a', beard:'#cfc8b8'},
 });
@@ -5721,71 +5868,71 @@ STORY.push(
 
 { id:'h1', title:'Consider Your Ways', ref:'ḤAGGAI 1:1–11',
   intro:[
-   {art:'wasteland', music:'sorrow', text:'In the second year of Dareyawesh the sovereign, in the sixth month, on the first day of the month, the Word of YAHUAH came by Ḥaggai the naḇi to Zerubbaḇel son of She’alti’ĕl, governor of Yahuḏah, and to Yahushua son of Yehotsaḏaq, the high kohen: “This people have said, ‘The time has not come, the time the House of YAHUAH is to be built.’”', ref:'ḤAGGAI 1:1–2'},
+   {art:'wasteland', music:'sorrow', text:'In the second year of Dareyawesh the sovereign, in the sixth month, on the first day of the month, the Word of YAHUAH came by Ḥaggai the naḇi to Zerubbaḇel son of She’alti’ĕl, governor of Yahuḏah, and to Yahushua son of Yehotsaḏaq, the kohen gadol, saying, “Thus spoke YAHUAH of hosts, saying, ‘This people have said, “The time has not come, the time the House of YAHUAH is to be built.” ’ ”', ref:'ḤAGGAI 1:1–2', stage:{"set":"gate","time":"dawn","cam":"push","focus":0.45,"cast":[{"id":"haggai","x":0.18,"z":0.12,"face":"r","pose":"speak","hold":"scroll","say":0},{"id":"zerub","x":0.46,"z":0.12,"face":"l","pose":"stand"},{"id":"yahushua","x":0.6,"z":0.16,"face":"l","pose":"stand"}],"crowd":[{"kind":"people","n":6,"x":0.72,"w":0.26,"z":0.56,"face":"r"}],"props":[{"k":"stones","x":0.86,"z":0.3,"n":12},{"k":"pillar","x":0.94,"z":0.4,"h":60}],"fx":[{"k":"rays","x":0.2}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6101,
-     features:[ {type:'temple',x:16,y:11,id:'ruin',examine:'The House of YAHUAH lies in ruins, while each man runs to his own house.'},{type:'house',x:30,y:12,id:'panel',examine:'“Is it time for you yourselves to dwell in your panelled houses, while this House lies in ruins?”'},{type:'timber',x:22,y:9,id:'wood',examine:'“Go up to the mountain, and bring wood and build the House — and I take pleasure in it, and I am esteemed.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'temple',x:16,y:11,id:'ruin',examine:'The House of YAHUAH lies in ruins, while each man runs to his own house.'},{type:'house',x:30,y:12,id:'panel',examine:'“Is it time for you yourselves to dwell in your panelled houses and this House be in ruins?”'},{type:'timber',x:22,y:9,id:'wood',examine:'“Go up to the mountain and you shall bring wood and build the House. And I will be pleased with it and let Me be esteemed.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'haggai', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'panelled',char:'panelled',x:27,y:14,wander:false},{id:'builder',char:'builder',x:18,y:13,wander:false} ],
    objectives:[
      {type:'talk',npc:'panelled',text:'Answer those who say the time has not come',
       script:[
-       {say:['panelled','The time has not come, prophet — the time the House of YAHUAH is to be built. First our own roofs, our own walls; the House can wait.']},
-       {say:['haggai','Is it time for you yourselves to dwell in your panelled houses, while this House lies in ruins? And now, thus said YAHUAH of hosts: Consider your ways!']},
-       {say:['haggai','You have sown much, but brought in little; you eat, but do not have enough; you drink, but are not filled; you clothe yourselves, but no one is warm; and he who earns wages, earns wages to put into a bag with holes.']},
+       {say:['panelled','The time has not come, naḇi — the time the House of YAHUAH is to be built. First our own roofs, our own walls; the House can wait.']},
+       {say:['haggai','Is it time for you yourselves to dwell in your panelled houses and this House be in ruins? And now, thus said YAHUAH of hosts: Consider your ways!']},
+       {say:['haggai','You have sown much, but brought in little; eat, but do not have enough; drink, but you are not filled with drink; clothe yourselves, but no one is warm; and he who earns wages, earns wages to put into a bag with holes.']},
        {shake:.5},{sfx:'bad'},{burst:[30,12,'ash',10]},
       ]},
      {type:'interact',prop:'wood',text:'Call them up to the mountain to bring wood',hiddenUntil:1,
       script:[
-       {say:['haggai','Thus said YAHUAH of hosts: Consider your ways! Go up to the mountain, and bring wood and build the House. And I take pleasure in it, and I am esteemed, said YAHUAH.']},
+       {say:['haggai','Thus said YAHUAH of hosts: Consider your ways! Go up to the mountain and you shall bring wood and build the House. And I will be pleased with it and let Me be esteemed, said YAHUAH.']},
        {rays:.4,raysX:22},{sfx:'chime'},
-       {say:['voice','You looked for much, but see, it came to little; and when you brought it home, then I blew it away. Why? declares YAHUAH of hosts. Because of My House which lies in ruins, while each of you runs to his own house.']},
-       {say:['voice','Therefore the heavens above you have withheld the dew, and the earth has withheld its fruit. And I called for a drought on the land and the mountains, on the grain and the new wine and the oil, and on all the labour of your hands.']},
+       {say:['voice','When you looked for much, then see, it came to little. And when you brought it home, I would blow on it. Why? declares YAHUAH of hosts. Because of My House which lies in ruins, while each of you runs to his own house.']},
+       {say:['voice','Therefore the shamayim above you have withheld the dew and the earth has withheld its fruit. And I called for a drought on the land and on the mountains and on the grain and on the new wine and on the oil and on whatever the ground brings forth and on man and on livestock and on all the labour of the hands.']},
        {shake:.7},{sfx:'bad'},{burst:[16,11,'ash',12]},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'“Is it time for you yourselves to dwell in your panelled houses, while this House lies in ruins? Consider your ways! You have sown much, but brought in little; you eat, but do not have enough; you drink, but are not filled; you clothe yourselves, but no one is warm; and he who earns wages, earns wages to put into a bag with holes.”', ref:'ḤAGGAI 1:4–6'},
-   {art:'mountain', music:'sorrow', text:'“Go up to the mountain, and bring wood and build the House, and I take pleasure in it, and I am esteemed,” said YAHUAH. “You looked for much, but see, it came to little; and when you brought it home, I blew it away. Why? Because of My House which lies in ruins, while each of you runs to his own house. Therefore the heavens have withheld the dew, and the earth its fruit; and I called for a drought on the land, on grain and wine and oil, and on all the labour of your hands.”', ref:'ḤAGGAI 1:8–11'},
+   {art:'wasteland', music:'sorrow', text:'“Is it time for you yourselves to dwell in your panelled houses and this House be in ruins? … Consider your ways! You have sown much, but brought in little; eat, but do not have enough; drink, but you are not filled with drink; clothe yourselves, but no one is warm; and he who earns wages, earns wages to put into a bag with holes.”', ref:'ḤAGGAI 1:4–6', stage:{"set":"city","time":"dusk","wx":"wind","wxAt":4,"cam":"push","focus":0.55,"cast":[{"id":"haggai","x":0.18,"z":0.12,"face":"r","pose":"point","hold":"scroll","say":0},{"id":"panelled","x":0.66,"z":0.14,"face":"l","pose":"stand","hold":"bowl","acts":[{"at":4,"pose":"weep"},{"at":5,"pose":"hold"}]}],"crowd":[{"kind":"people","n":4,"x":0.4,"w":0.2,"z":0.56,"face":"r","pose":"sitground","hold":"bread","at":2},{"kind":"people","n":3,"x":0.56,"w":0.1,"z":0.62,"face":"l","pose":"hold","hold":"cup","at":3}],"props":[{"k":"house","x":0.8,"z":0.34,"w":100,"h":70,"color":"#9a6a3a"},{"k":"sheaves","x":0.44,"z":0.4,"n":2,"at":1}],"fx":[{"k":"darkness","at":4,"amt":0.2}]}},
+   {art:'mountain', music:'sorrow', text:'“Go up to the mountain and you shall bring wood and build the House. And I will be pleased with it and let Me be esteemed,” said YAHUAH. “When you looked for much, then see, it came to little. And when you brought it home, I would blow on it. Why?” declares YAHUAH of hosts. “Because of My House which lies in ruins, while each of you runs to his own house. Therefore the shamayim above you have withheld the dew and the earth has withheld its fruit. And I called for a drought on the land and on the mountains and on the grain and on the new wine and on the oil… and on all the labour of the hands.”', ref:'ḤAGGAI 1:8–11', stage:{"set":"mountain","time":"day","wx":"dust","wxAt":3,"cam":"push","focus":0.5,"cast":[{"id":"haggai","x":0.14,"z":0.12,"face":"r","pose":"point","say":0,"acts":[{"at":4,"pose":"raise"}]},{"id":"zerub","x":0.4,"z":0.14,"face":"l","pose":"stand","acts":[{"at":5,"pose":"weep"}]}],"crowd":[{"kind":"people","n":6,"x":0.68,"w":0.28,"z":0.5,"face":"l","exit":"r","exitAt":5,"run":1}],"props":[{"k":"tree","x":0.9,"z":0.44,"color":"#7a6a48","h":100},{"k":"sacks","x":0.52,"z":0.3,"n":2,"at":2},{"k":"sheaves","x":0.3,"z":0.48,"n":2,"at":7}],"fx":[{"k":"glory","x":0.62,"y":0.04,"at":1},{"k":"red","at":6,"amt":0.2}]}},
   ],
-  complete:'Consider your ways — go up to the mountain, bring wood, and build the House of YAHUAH.'
+  complete:'Consider your ways! Go up to the mountain and you shall bring wood and build the House.'
 },
 
 { id:'h2', title:'I Am With You', ref:'ḤAGGAI 1:12–15',
   intro:[
-   {art:'journey', music:'sorrow', text:'Then Zerubbaḇel son of She’alti’ĕl, and Yahushua son of Yehotsaḏaq, the high kohen, with all the remnant of the people, obeyed the voice of YAHUAH their Aluahim, and the words of Ḥaggai the naḇi, as YAHUAH their Aluahim had sent him. And the people feared the presence of YAHUAH.', ref:'ḤAGGAI 1:12'},
+   {art:'journey', music:'sorrow', text:'Then Zerubbaḇel son of She’alti’ĕl and Yahushua son of Yehotsaḏaq, the kohen gadol, with all the remnant of the people, obeyed the voice of YAHUAH their Aluahim and the words of Ḥaggai the naḇi, as YAHUAH their Aluahim had sent him. And the people feared the presence of YAHUAH.', ref:'ḤAGGAI 1:12', stage:{"set":"road","time":"dawn","cam":"push","focus":0.6,"cast":[{"id":"haggai","x":0.82,"z":0.12,"face":"l","pose":"speak","hold":"scroll","acts":[{"at":1,"pose":"bless"}]},{"id":"zerub","x":0.2,"z":0.12,"face":"r","to":0.5,"at":0,"acts":[{"at":1,"pose":"bow"}]},{"id":"yahushua","x":0.08,"z":0.14,"face":"r","to":0.36,"at":0,"acts":[{"at":1,"pose":"kneel"}]}],"crowd":[{"kind":"people","n":8,"x":0.34,"w":0.34,"z":0.5,"face":"r","enter":"l","at":0,"pose":"kneel"}],"fx":[{"k":"glory","x":0.66,"y":0.04,"at":1},{"k":"rays","x":0.66,"at":1}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6102,
-     features:[ {type:'temple',x:22,y:10,id:'house',examine:'The House of YAHUAH — the remnant come to work on it, for YAHUAH has stirred their spirit.'},{type:'timber',x:15,y:13,id:'beams',examine:'Beams borne up from the mountain, for the building of the House.'},{type:'standard',x:30,y:12,id:'withyou',examine:'“I am with you, declares YAHUAH.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'temple',x:22,y:10,id:'house',examine:'The House of YAHUAH — the remnant come to work on it, for YAHUAH has stirred their ruach.'},{type:'timber',x:15,y:13,id:'beams',examine:'Beams borne up from the mountain, for the building of the House.'},{type:'standard',x:30,y:12,id:'withyou',examine:'“I am with you, declares YAHUAH.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'haggai', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'zerub',char:'zerub',x:18,y:12,wander:false},{id:'yahushua',char:'yahushua',x:27,y:13,wander:false} ],
    objectives:[
      {type:'interact',prop:'withyou',text:'Speak the message: “I am with you”',
       script:[
-       {say:['haggai','And Ḥaggai, the messenger of YAHUAH, spoke the message of YAHUAH to the people, saying —']},
+       {say:['haggai','And Ḥaggai, the mal’ak of YAHUAH, spoke the message of YAHUAH to the people, saying —']},
        {say:['voice','I am with you, declares YAHUAH.']},
        {rays:.5,raysX:30},{sfx:'holy'},{burst:[30,12,'holy',14]},
       ]},
      {type:'talk',npc:'zerub',text:'Stir up the governor and the kohen to the work',hiddenUntil:1,
       script:[
-       {say:['zerub','We have heard the voice of YAHUAH our Aluahim, and the words He sent by you, prophet. We fear before His presence.']},
-       {say:['haggai','And YAHUAH has stirred up your spirit, Zerubbaḇel governor of Yahuḏah, and the spirit of Yahushua the high kohen, and the spirit of all the remnant of the people.']},
-       {say:['zerub','Then come — let us go in and do the work in the House of YAHUAH of hosts, our Aluahim.']},
+       {say:['zerub','We have heard the voice of YAHUAH our Aluahim, and the words He sent by you, naḇi. We fear before His presence.']},
+       {say:['haggai','And YAHUAH has stirred up your ruach, Zerubbaḇel governor of Yahuḏah, and the ruach of Yahushua the kohen gadol, and the ruach of all the remnant of the people.']},
+       {say:['zerub','Then come — let us go in and work on the House of YAHUAH of hosts, our Aluahim.']},
        {rays:.5,raysX:22},{sfx:'chime'},{burst:[22,10,'holy',12]},
-       {say:['haggai','So they came and did the work in the House of YAHUAH of hosts, their Aluahim, on the twenty-fourth day of the sixth month, in the second year of Dareyawesh the sovereign.']},
+       {say:['haggai','And they came and worked on the House of YAHUAH of hosts, their Aluahim, on the twenty-fourth day of the sixth month, in the second year of Dareyawesh the sovereign.']},
       ]},
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'Then Zerubbaḇel and Yahushua the high kohen, with all the remnant of the people, obeyed the voice of YAHUAH their Aluahim and the words of Ḥaggai the naḇi, and the people feared the presence of YAHUAH. And Ḥaggai, the messenger of YAHUAH, spoke: “I am with you, declares YAHUAH.”', ref:'ḤAGGAI 1:12–13'},
-   {art:'moriah', music:'holy', text:'And YAHUAH stirred up the spirit of Zerubbaḇel governor of Yahuḏah, and the spirit of Yahushua son of Yehotsaḏaq, the high kohen, and the spirit of all the remnant of the people. And they came and did the work in the House of YAHUAH of hosts, their Aluahim, on the twenty-fourth day of the sixth month, in the second year of Dareyawesh the sovereign.', ref:'ḤAGGAI 1:14–15'},
+   {art:'reunion', music:'holy', text:'Then Zerubbaḇel son of She’alti’ĕl and Yahushua son of Yehotsaḏaq, the kohen gadol, with all the remnant of the people, obeyed the voice of YAHUAH their Aluahim and the words of Ḥaggai the naḇi… And the people feared the presence of YAHUAH. And Ḥaggai, the mal’ak of YAHUAH, spoke the message of YAHUAH to the people, saying, “I am with you, declares YAHUAH.”', ref:'ḤAGGAI 1:12–13', stage:{"set":"road","time":"dawn","cam":"push","focus":0.6,"cast":[{"id":"haggai","x":0.82,"z":0.12,"face":"l","pose":"speak","hold":"scroll","acts":[{"at":1,"pose":"bless"}]},{"id":"zerub","x":0.2,"z":0.12,"face":"r","to":0.5,"at":0,"acts":[{"at":1,"pose":"bow"}]},{"id":"yahushua","x":0.08,"z":0.14,"face":"r","to":0.36,"at":0,"acts":[{"at":1,"pose":"kneel"}]}],"crowd":[{"kind":"people","n":8,"x":0.34,"w":0.34,"z":0.5,"face":"r","enter":"l","at":0,"pose":"kneel"}],"fx":[{"k":"glory","x":0.66,"y":0.04,"at":1},{"k":"rays","x":0.66,"at":1}]}},
+   {art:'moriah', music:'holy', text:'And YAHUAH stirred up the ruach of Zerubbaḇel son of She’alti’ĕl, governor of Yahuḏah, and the ruach of Yahushua son of Yehotsaḏaq, the kohen gadol, and the ruach of all the remnant of the people. And they came and worked on the House of YAHUAH of hosts, their Aluahim, on the twenty-fourth day of the sixth month, in the second year of Dareyawesh the sovereign.', ref:'ḤAGGAI 1:14–15', stage:{"set":"ruins","time":"day","cam":"pan-r","focus":0.55,"cast":[{"id":"zerub","x":0.16,"z":0.12,"face":"r","pose":"look","acts":[{"at":1,"pose":"point"}]},{"id":"yahushua","x":0.28,"z":0.16,"face":"r","pose":"raise"},{"id":"builder","x":0.5,"z":0.12,"face":"r","enter":"l","at":1,"pose":"carry","hold":"stone"},{"id":"builder2","x":0.66,"z":0.18,"face":"l","pose":"strike","at":1},{"id":"builder3","x":0.8,"z":0.14,"face":"l","enter":"r","at":1,"pose":"carry","hold":"stone"}],"crowd":[{"kind":"people","n":5,"x":0.6,"w":0.4,"z":0.66,"face":"l","pose":"carry","at":1,"from":"stand"}],"props":[{"k":"wall","x":0.6,"z":0.46,"w":0.36,"h":40},{"k":"stones","x":0.42,"z":0.36,"n":10},{"k":"pillar","x":0.82,"z":0.42,"h":70}],"fx":[{"k":"rays","x":0.3},{"k":"wind"}]}},
   ],
-  complete:'The remnant obeyed and feared — YAHUAH stirred their spirit, and they built His House.'
+  complete:'The remnant obeyed and feared — YAHUAH stirred their ruach, and they built His House.'
 },
 
 ]},
@@ -5795,7 +5942,7 @@ STORY.push(
 
 { id:'h3', title:'The Latter Esteem', ref:'ḤAGGAI 2:1–9',
   intro:[
-   {art:'vista', music:'sorrow', text:'In the seventh month, on the twenty-first of the month, the Word of YAHUAH came by Ḥaggai the naḇi: “Speak now to Zerubbaḇel governor of Yahuḏah, and to Yahushua the high kohen, and to the remnant of the people: Who is left among you who saw this House in its former esteem? And how do you see it now? Is this not in your eyes as nothing in comparison?”', ref:'ḤAGGAI 2:1–3'},
+   {art:'vista', music:'sorrow', text:'In the seventh month, on the twenty-first of the month, the Word of YAHUAH came by Ḥaggai the naḇi, saying, “Speak, please, to Zerubbaḇel son of She’alti’ĕl, governor of Yahuḏah and to Yahushua son of Yehotsaḏaq, the kohen gadol and to the remnant of the people, saying, ‘Who is there left among you who saw this House in its former esteem? And how do you see it now? Is it not in your eyes as naught when compared to it?’ ”', ref:'ḤAGGAI 2:1–3', stage:{"set":"walls","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"haggai","x":0.16,"z":0.12,"face":"r","pose":"speak","hold":"scroll","say":0,"acts":[{"at":1,"pose":"point"}]},{"id":"zerub","x":0.38,"z":0.14,"face":"l","pose":"stand"},{"id":"yahushua","x":0.3,"z":0.18,"face":"l","pose":"stand"}],"crowd":[{"kind":"elders","n":5,"x":0.74,"w":0.26,"z":0.56,"face":"l","pose":"weep","at":2,"hold":null,"from":"look"}],"props":[{"k":"wall","x":0.7,"z":0.4,"w":0.3,"h":30},{"k":"stones","x":0.52,"z":0.34,"n":8}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6103,
@@ -5806,37 +5953,37 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'bestrong',text:'Strengthen the builders — “be strong, and work”',
       script:[
-       {say:['yahushua','This House is as nothing beside the former, prophet. Our hands grow weak; who are we to raise such esteem again?']},
-       {say:['haggai','And now, be strong, Zerubbaḇel, declares YAHUAH; and be strong, Yahushua son of Yehotsaḏaq, the high kohen; and be strong, all you people of the land, declares YAHUAH — and work! For I am with you, declares YAHUAH of hosts.']},
+       {say:['yahushua','This House is as nothing beside the former, naḇi. Our hands grow weak; who are we to raise such esteem again?']},
+       {say:['haggai','And now, be strong, Zerubbaḇel, declares YAHUAH; and be strong, Yahushua son of Yehotsaḏaq, the kohen gadol; and be strong, all you people of the land, declares YAHUAH — and work! For I am with you, declares YAHUAH of hosts.']},
        {rays:.5,raysX:15},{sfx:'holy'},{burst:[15,12,'holy',12]},
-       {say:['voice','The Word that I covenanted with you when you came out of Mitsrayim, and My Spirit, remain in your midst. Do not fear!']},
+       {say:['voice','The Word that I covenanted with you when you came out of Mitsrayim, and My Ruach, remain in your midst. Do not fear!']},
        {sfx:'chime'},
       ]},
      {type:'interact',prop:'esteem',text:'Proclaim the latter esteem of the House',hiddenUntil:1,
       script:[
-       {say:['voice','For thus said YAHUAH of hosts: Once more, in a little while, and I am shaking the heavens and the earth, and the sea and the dry land. And I shall shake all the nations, and they shall come to the Delight of all the nations, and I shall fill this House with esteem.']},
+       {say:['voice','For thus said YAHUAH of hosts: Once more, in a little while and I am shaking the shamayim and earth, the sea and dry land. And I shall shake all the nations and they shall come to the Delight of all the nations and I shall fill this House with esteem.']},
        {shake:.9},{sfx:'thunder'},{burst:[22,10,'holy',14]},
        {say:['voice','The silver is Mine, and the gold is Mine, declares YAHUAH of hosts.']},
        {rays:.7,raysX:30},{sfx:'holy'},{burst:[30,13,'holy',16]},
-       {say:['haggai','The latter esteem of this House shall be greater than the former, said YAHUAH of hosts. And in this place I give peace, declares YAHUAH of hosts.']},
+       {say:['haggai','Let the esteem of this latter House be greater than the former, said YAHUAH of hosts. And in this place I give shalom, declares YAHUAH of hosts.']},
        {burst:[22,10,'holy',20]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'vista', music:'sorrow', text:'“Who is left among you who saw this House in its former esteem? And how do you see it now? Is this not in your eyes as nothing? And now, be strong, Zerubbaḇel; be strong, Yahushua the high kohen; be strong, all you people of the land, and work! For I am with you, declares YAHUAH of hosts. The Word that I covenanted with you when you came out of Mitsrayim, and My Spirit, remain in your midst. Do not fear!”', ref:'ḤAGGAI 2:3–5'},
-   {art:'light', music:'holy', text:'“Once more, in a little while, and I am shaking the heavens and the earth, the sea and the dry land. And I shall shake all the nations, and they shall come to the Delight of all the nations, and I shall fill this House with esteem,” said YAHUAH of hosts. “The silver is Mine, and the gold is Mine. The latter esteem of this House shall be greater than the former, and in this place I give peace,” declares YAHUAH of hosts.', ref:'ḤAGGAI 2:6–9'},
+   {art:'vista', music:'sorrow', text:'“Who is there left among you who saw this House in its former esteem? And how do you see it now? Is it not in your eyes as naught when compared to it? And now, be strong, Zerubbaḇel… And be strong, Yahushua son of Yehotsaḏaq, the kohen gadol. And be strong, all you people of the land… and work. For I am with you, declares YAHUAH of hosts – the Word that I covenanted with you when you came out of Mitsrayim and My Ruach is remaining in your midst, do not fear!”', ref:'ḤAGGAI 2:3–5', stage:{"set":"ruins","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"haggai","x":0.12,"z":0.12,"face":"r","pose":"speak","say":3,"acts":[{"at":3,"pose":"point"}]},{"id":"zerub","x":0.34,"z":0.12,"face":"l","pose":"raise","at":3,"from":"weep"},{"id":"yahushua","x":0.48,"z":0.16,"face":"l","pose":"raise","at":4,"from":"weep"},{"id":"builder","x":0.7,"z":0.12,"face":"l","enter":"r","at":6,"pose":"carry","hold":"stone"}],"crowd":[{"kind":"elders","n":4,"x":0.24,"w":0.14,"z":0.5,"face":"r","pose":"weep","hold":null},{"kind":"people","n":6,"x":0.66,"w":0.3,"z":0.6,"face":"l","pose":"raise","at":5,"from":"stand"}],"props":[{"k":"wall","x":0.62,"z":0.48,"w":0.4,"h":45},{"k":"stones","x":0.86,"z":0.36,"n":10}],"fx":[{"k":"glory","x":0.5,"y":0.04,"at":6},{"k":"rays","x":0.5,"at":6}]}},
+   {art:'light', music:'holy', text:'“Once more, in a little while and I am shaking the shamayim and earth, the sea and dry land. And I shall shake all the nations and they shall come to the Delight of all the nations and I shall fill this House with esteem,” said YAHUAH of hosts. “The silver is Mine and the gold is Mine… Let the esteem of this latter House be greater than the former… And in this place I give shalom,” declares YAHUAH of hosts.', ref:'ḤAGGAI 2:6–9', stage:{"set":"temple","time":"glory","cam":"up","focus":0.5,"cast":[{"id":"haggai","x":0.14,"z":0.12,"face":"r","pose":"raise","say":0,"acts":[{"at":4,"pose":"bless"}]}],"crowd":[{"kind":"nations","n":7,"x":0.72,"w":0.3,"z":0.46,"face":"l","enter":"r","at":1,"pose":"carry","hold":"jar"}],"props":[{"k":"chest","x":0.44,"z":0.26,"gold":1,"at":2},{"k":"sacks","x":0.56,"z":0.3,"n":3,"at":2}],"fx":[{"k":"lightning","at":0},{"k":"glory","x":0.5,"y":0.04,"at":3},{"k":"rays","x":0.5,"at":3},{"k":"dove","x":0.5,"y":0.22,"at":4}]}},
   ],
-  complete:'Be strong and work — the latter esteem of this House shall be greater than the former.'
+  complete:'Be strong and work — let the esteem of this latter House be greater than the former.'
 },
 
 { id:'h4', title:'The Signet Ring', ref:'ḤAGGAI 2:10–23',
   intro:[
-   {art:'wasteland', music:'sorrow', text:'On the twenty-fourth day of the ninth month, in the second year of Dareyawesh, the Word of YAHUAH came to Ḥaggai the naḇi: “Ask the kohanim concerning the Torah: If one bears set-apart meat in the skirt of his garment, and with the edge touches bread or stew, wine or oil, or any food — is it set-apart?” And the kohanim answered, “No.”', ref:'ḤAGGAI 2:10–12'},
+   {art:'wasteland', music:'sorrow', text:'On the twenty-fourth of the ninth month, in the second year of Dareyawesh, the Word of YAHUAH came unto Ḥaggai the naḇi, saying, “Thus said YAHUAH of hosts, ‘Now, ask the kohanim concerning the Torah, saying, “If one bears qadash (Set Apart) meat in the fold of his garment and with the edge he touches bread or stew, or wine or oil, or any food, is it qadash (Set Apart)?” ’ ” And the kohanim answered and said, “No.”', ref:'ḤAGGAI 2:10–12', stage:{"set":"court","time":"day","cam":"push","focus":0.55,"cast":[{"id":"haggai","x":0.14,"z":0.12,"face":"r","pose":"speak","hold":"scroll","say":0},{"id":"yehudi","x":0.33,"z":0.1,"look":{"name":"A Man of Yahuḏah","skin":"#83552d","hair":"#231409","hairStyle":"short","robe":"#6a5a3a","beard":"#231409","headcover":"#c8b890"},"face":"r","pose":"carry","hold":"bowl"},{"id":"yahushua","x":0.68,"z":0.14,"face":"l","pose":"stand","say":1,"acts":[{"at":1,"pose":"point"}]}],"crowd":[{"kind":"kohanim","n":5,"x":0.8,"w":0.2,"z":0.46,"face":"l","pose":"speak","at":1,"from":"stand"}],"props":[{"k":"table","x":0.48,"z":0.26,"cups":1}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:6104,
-     features:[ {type:'altar',x:16,y:11,id:'torah',examine:'The word of the kohanim: what is set-apart does not spread by touch, but what is defiled does — so is every work of unclean hands.'},{type:'temple',x:30,y:11,id:'found',examine:'From the day the foundation of the Hĕḵal of YAHUAH was laid — “From this day I shall bless you.”'},{type:'standard',x:22,y:9,id:'signet',examine:'“I shall make you like a signet ring, for I have chosen you,” declares YAHUAH of hosts.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'altar',x:16,y:11,id:'torah',examine:'The word of the kohanim: what is qadash (Set Apart) does not spread by touch, but what is defiled does — so is every work of unclean hands.'},{type:'temple',x:30,y:11,id:'found',examine:'From the day the foundation of the Hĕḵal of YAHUAH was laid — “From this day on I shall bless you!”'},{type:'standard',x:22,y:9,id:'signet',examine:'“I shall make you as a signet, for I have chosen you,” declares YAHUAH of hosts.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'haggai', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'yahushua',char:'yahushua',x:18,y:13,wander:false},{id:'zerub',char:'zerub',x:27,y:14,wander:false} ],
@@ -5847,31 +5994,31 @@ STORY.push(
        {say:['yahushua','It is defiled.']},
        {say:['haggai','So is this people, and so is this nation before Me, declares YAHUAH, and so is every work of their hands; and what they bring near there is defiled.']},
        {shake:.5},{sfx:'bad'},{burst:[16,11,'ash',10]},
-       {say:['voice','Consider from this day and onward — from before stone was placed on stone in the Hĕḵal of YAHUAH: when one came to a heap for twenty measures, there were but ten; when one came to the wine vat for fifty, there were but twenty. I smote you with blight and mildew and hail, all the work of your hands — yet you did not turn to Me, declares YAHUAH.']},
+       {say:['voice','But now, please consider, from this day onward: Before a stone was laid on a stone in the Hĕḵal of YAHUAH, since those days – one came to a heap of twenty ĕphahs and there were ten;']},{say:['voice','one came to the winepress to draw out fifty baths from the press and there were twenty – I smote you with blight and mildew and hail in all the labours of your hands and there was none of you with Me, declares YAHUAH.']},
        {shake:.6},{sfx:'bad'},{burst:[30,12,'ash',10]},
       ]},
      {type:'interact',prop:'found',text:'From the day the foundation is laid — the blessing',hiddenUntil:1,
       script:[
-       {say:['haggai','Consider now, from this day and onward, from the twenty-fourth day of the ninth month — from the day the foundation of the Hĕḵal of YAHUAH was laid — consider it: Is the seed still in the storehouse? As yet the vine, the fig, the pomegranate, and the olive tree have not yielded.']},
+       {say:['haggai','Consider now from this day forward, from the twenty-fourth day of the ninth month, from the day that the foundation of the Hĕḵal of YAHUAH was laid, consider it: Is the seed yet in the storehouse? And until now the vine and the fig tree and the pomegranate and the olive tree have not yielded fruit!']},
        {say:['voice','But from this day I shall bless you!']},
        {rays:.6,raysX:30},{sfx:'holy'},{burst:[30,11,'holy',16]},
       ]},
      {type:'interact',prop:'signet',text:'Set the signet ring on Zerubbaḇel the chosen',hiddenUntil:2,
       script:[
-       {say:['haggai','And the Word of YAHUAH came a second time, saying: Speak to Zerubbaḇel governor of Yahuḏah —']},
-       {say:['voice','I am shaking the heavens and the earth, and I shall overthrow the throne of reigns, and destroy the strength of the reigns of the gentiles; I shall overthrow the chariots and those who ride them, and the horses and their riders shall come down, each by the sword of his brother.']},
+       {say:['haggai','And a second time the Word of YAHUAH came, saying, Speak to Zerubbaḇel, the governor of Yahuḏah —']},
+       {say:['voice','I am shaking the shamayim and earth. And I shall overturn the throne of reigns. And I shall destroy the might of the gentile reigns, and overturn the chariots and their riders. And the horses and their riders shall come down, each by the sword of his brother.']},
        {shake:1},{sfx:'thunder'},{burst:[22,9,'ash',16]},
-       {say:['voice','On that day, declares YAHUAH of hosts, I shall take you, Zerubbaḇel son of She’alti’ĕl, My servant, declares YAHUAH, and shall make you like a signet ring, for I have chosen you, declares YAHUAH of hosts.']},
+       {say:['voice','On that day, declares YAHUAH of hosts, I shall take you, Zerubbaḇel son of She’alti’ĕl, My servant, declares YAHUAH, and shall make you as a signet, for I have chosen you, declares YAHUAH of hosts.']},
        {rays:.8,raysX:22},{sfx:'holy'},{burst:[22,9,'holy',20]},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'The kohanim answered: what is set-apart does not spread by touch, but what is defiled does. “So is this people, and so is this nation before Me,” declares YAHUAH, “and so is every work of their hands. Consider from this day: before stone was placed on stone in the Hĕḵal, twenty became ten, fifty became twenty; I smote you with blight and mildew and hail — yet you did not turn to Me.”', ref:'ḤAGGAI 2:14–17'},
-   {art:'garden', music:'holy', text:'“Consider now, from this day and onward, from the day the foundation of the Hĕḵal of YAHUAH was laid: Is the seed still in the storehouse? As yet the vine, the fig, the pomegranate, and the olive tree have not yielded. But from this day I shall bless you!”', ref:'ḤAGGAI 2:18–19'},
-   {art:'light', music:'holy', text:'And the Word of YAHUAH came a second time to Ḥaggai on the twenty-fourth day of the month: “Speak to Zerubbaḇel governor of Yahuḏah: I am shaking the heavens and the earth, overthrowing the throne of reigns and the strength of the gentiles, the chariots and their riders. On that day,” declares YAHUAH of hosts, “I shall take you, Zerubbaḇel son of She’alti’ĕl, My servant, and make you like a signet ring, for I have chosen you,” declares YAHUAH of hosts.', ref:'ḤAGGAI 2:20–23'},
+   {art:'wasteland', music:'sorrow', text:'And Ḥaggai answered and said, “So is this people and so is this nation before Me,” declares YAHUAH, “and so is every work of their hands. And whatever they bring near there is defiled. But now, please consider, from this day onward: Before a stone was laid on a stone in the Hĕḵal of YAHUAH… one came to a heap of twenty ĕphahs and there were ten; one came to the winepress to draw out fifty baths… and there were twenty… I smote you with blight and mildew and hail in all the labours of your hands and there was none of you with Me,” declares YAHUAH.', ref:'ḤAGGAI 2:14–17', stage:{"set":"threshing","time":"dusk","cam":"push","focus":0.5,"wx":"storm","wxAt":6,"cast":[{"id":"haggai","x":0.14,"z":0.12,"face":"r","pose":"point","say":0},{"id":"yehudi","x":0.5,"z":0.12,"look":{"name":"A Man of Yahuḏah","skin":"#83552d","hair":"#231409","hairStyle":"short","robe":"#6a5a3a","beard":"#231409","headcover":"#c8b890"},"face":"r","pose":"look","hold":"pitcher","at":3,"acts":[{"at":5,"pose":"weep"}]}],"crowd":[{"kind":"people","n":4,"x":0.78,"w":0.16,"z":0.54,"face":"r","pose":"carry","hold":"basket","at":1}],"props":[{"k":"altar","x":0.88,"z":0.46,"fire":false},{"k":"sheaves","x":0.66,"z":0.3,"n":2,"at":3},{"k":"vine","x":0.34,"z":0.56,"w":100,"at":4}],"fx":[{"k":"smoke","x":0.88,"at":1},{"k":"hail","at":6},{"k":"darkness","at":6,"amt":0.25}]}},
+   {art:'garden', music:'holy', text:'“Consider now from this day forward, from the twenty-fourth day of the ninth month, from the day that the foundation of the Hĕḵal of YAHUAH was laid, consider it: Is the seed yet in the storehouse? And until now the vine and the fig tree and the pomegranate and the olive tree have not yielded fruit! From this day on I shall bless you!”', ref:'ḤAGGAI 2:18–19', stage:{"set":"field","time":"dawn","cam":"push","focus":0.5,"cast":[{"id":"haggai","x":0.1,"z":0.12,"face":"r","pose":"speak","say":0,"acts":[{"at":2,"pose":"raise"}]},{"id":"zerub","x":0.4,"z":0.12,"face":"l","pose":"look","acts":[{"at":2,"pose":"raise"}]},{"id":"builder","x":0.58,"z":0.14,"face":"l","pose":"stand","acts":[{"at":2,"pose":"raise"}]}],"props":[{"k":"stones","x":0.5,"z":0.52,"n":12},{"k":"sacks","x":0.9,"z":0.3,"n":1},{"k":"tree","x":0.2,"z":0.4,"h":110},{"k":"tree","x":0.2,"z":0.4,"h":110,"fruit":"#6a3a5a","at":2},{"k":"tree","x":0.78,"z":0.44,"h":100,"color":"#6a7a4a"},{"k":"tree","x":0.78,"z":0.44,"h":100,"color":"#6a7a4a","fruit":"#c03030","at":2},{"k":"vine","x":0.62,"z":0.58,"w":90},{"k":"vine","x":0.62,"z":0.58,"w":90,"fruit":"#5a2a5a","at":2}],"fx":[{"k":"rays","x":0.5,"at":2},{"k":"glory","x":0.5,"y":0.04,"at":2}]}},
+   {art:'light', music:'holy', text:'And a second time the Word of YAHUAH came to Ḥaggai on the twenty-fourth day of the month, saying, “Speak to Zerubbaḇel, the governor of Yahuḏah, saying, ‘I am shaking the shamayim and earth. And I shall overturn the throne of reigns. And I shall destroy the might of the gentile reigns, and overturn the chariots and their riders… In that day,’ declares YAHUAH of hosts, ‘I shall take you, Zerubbaḇel My servant, son of She’alti’ĕl… and shall make you as a signet, for I have chosen you,’ declares YAHUAH of hosts.”', ref:'ḤAGGAI 2:20–23', stage:{"set":"battle","time":"dusk","cam":"push","focus":0.4,"cast":[{"id":"haggai","x":0.12,"z":0.12,"face":"r","pose":"raise","say":0},{"id":"zerub","x":0.36,"z":0.1,"face":"r","pose":"stand","acts":[{"at":3,"pose":"kneel"},{"at":4,"pose":"raise"}]}],"crowd":[{"kind":"kings","n":3,"x":0.82,"w":0.12,"z":0.5,"face":"l","pose":"fall","at":1,"from":"stand"},{"kind":"army","n":5,"x":0.72,"w":0.28,"z":0.62,"side":"paras","face":"l","pose":"fall","at":2,"from":"stand"}],"props":[{"k":"throne","x":0.9,"z":0.44},{"k":"chariot","x":0.6,"z":0.34,"face":"l"}],"fx":[{"k":"lightning","at":0},{"k":"red","at":2,"amt":0.15},{"k":"glory","x":0.36,"y":0.04,"at":3},{"k":"spotlight","x":0.36,"at":4}]}},
   ],
-  complete:'From this day I shall bless you — and Zerubbaḇel is made a signet ring, the chosen servant of YAHUAH.'
+  complete:'From this day on I shall bless you — and Zerubbaḇel is made a signet ring, the chosen servant of YAHUAH.'
 },
 
 ]}
@@ -5916,7 +6063,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -5982,7 +6129,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6043,9 +6193,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6130,5 +6280,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

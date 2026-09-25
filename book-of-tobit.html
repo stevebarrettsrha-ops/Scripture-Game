@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main">TOḆIYAH</div>
     <div class="title-sub">Tobit — Ethiopic &amp; Eastern Apocrypha</div>
-    <div class="title-verse">“I am Raphaʾĕl, one of the seven set-apart messengers who present the prayers of the qodeshim, and enter before the esteem of the Set-apart One.” — TOḆIYAH 12:15</div>
+    <div class="title-verse">“I am Raphaʾĕl, one of the seven qadash (Set Apart) mal’akim who present the prayers of the qadashiyms (Set Apart Ones) and enter into the presence of the esteem of the Qadash (Set Apart One).” — TOḆIYAH 12:15</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Toḇiyah</h2>
-    <div class="hint">Four acts · TOḆIYAH — the tale of Tobit of Nineveh, who buried the dead of his people by night and was struck blind; and of Sarah of Ecbatana, whose seven husbands the demon Asmodeus had slain — two prayers heard as one in the presence of the great Aluahim. Then the messenger Raphaʾĕl, unknown, guides young Tobias to Media: the great fish of the Tigris and its heart, liver, and gall; the wedding under the shadow of seven graves and the smoke that drove the demon to Mitsrayim bound; the gall that scaled the blindness from Tobit’s eyes; and the guide revealed — “I am Raphaʾĕl” — ascending in light to Him who sent him.</div>
+    <div class="hint">Four acts · TOḆIYAH — the tale of Tobit of Nineveh, who buried the dead of his people by night and was struck blind; and of Sarah of Ecbatana, whose seven husbands the demon Asmodeus had slain — two prayers heard as one in the presence of the great Aluahim. Then the mal’ak Raphaʾĕl, unknown, guides young Tobias to Media: the great fish of the Tigris and its heart, liver, and gall; the wedding under the shadow of seven graves and the smoke that drove the demon to Mitsrayim bound; the gall that scaled the blindness from Tobit’s eyes; and the guide revealed — “I am Raphaʾĕl” — ascending in light to Him who sent him.</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -529,8 +561,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -638,7 +670,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -738,7 +770,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1000,6 +1034,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1043,7 +1087,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1305,6 +1351,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2786,6 +2842,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2981,7 +3057,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3186,8 +3262,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3674,6 +3751,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3737,7 +3815,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3790,15 +3872,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3809,6 +3925,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3834,6 +3956,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     $('slide-ui').classList.remove('show');
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
@@ -3863,6 +3986,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3880,7 +4004,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4020,6 +4144,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4083,17 +4212,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4257,22 +4387,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4285,7 +4419,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4308,11 +4442,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5673,7 +5820,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5997,7 +6144,7 @@ Object.assign(CHARS,{
   anna:{name:'Anna, Wife of Tobit', skin:'#a9764a', hair:'#8a8074', hairStyle:'long', robe:'#6a5a48', headcover:'#a89880'},
   tobias:{name:'Tobias son of Tobit', skin:'#c8956a', hair:'#3a2a18', hairStyle:'short', robe:'#7c6442', beard:'#3a2a18'},
   azarias:{name:'Azarias (Raphaʾĕl)', skin:'#caa46a', hair:'#e8dcae', hairStyle:'short', robe:'#e6e0c8', beard:'#cfc8a8', collar:'#caa23c'},
-  raphael:{name:'Raphaʾĕl the Messenger', angel:true, skin:'#caa46a', hair:'#f0ead2', hairStyle:'short', robe:'#f5f0dd'},
+  raphael:{name:'Raphaʾĕl the Mal’ak', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
   sarah:{name:'Sarah, Daughter of Ragual', skin:'#a9764a', hair:'#23150b', hairStyle:'long', robe:'#7a4a6a', headcover:'#c8b486'},
   ragual:{name:'Ragual of Ecbatana', skin:'#b58650', hair:'#9a9286', hairStyle:'short', robe:'#5a5a3a', beard:'#9a9286'},
   edna:{name:'Edna, Wife of Ragual', skin:'#a9764a', hair:'#8a8074', hairStyle:'long', robe:'#6a5a7a', headcover:'#b8a486'},
@@ -6014,11 +6161,11 @@ STORY.push(
 
 { id:'t1', title:'The Burier of the Dead', ref:'TOḆIYAH 1–2',
   intro:[
-   {art:'corrupt', music:'sorrow', text:'I, Tobit, of the tribe of Naphtali, was carried captive to Nineveh — yet I walked in the ways of truth and righteousness, and did many acts of charity to my kinsmen: I gave my bread to the hungry and my clothing to the naked; and if I saw any of my people dead and cast out behind the wall of Nineveh, I would bury him.', ref:'TOḆIYAH 1:3,17'},
+   {art:'corrupt', music:'sorrow', text:'The book of the acts of Tobit … of the descendants of Asial and the tribe of Naphtali … I, Tobit, walked in the ways of truth and righteousness… and I performed many acts of charity to my brethren and countrymen who went with me into the land of the Assyrians, to Nineveh. … I would give my bread to the hungry and my clothing to the naked; and if I saw any one of my people dead and thrown out behind the wall of Nineveh, I would bury him.', ref:'TOḆIYAH 1:1–3,17', stage:{"set":"walls","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"tobit","x":0.16,"z":0.1,"face":"r","pose":"stand","hold":"bread","say":2,"acts":[{"at":2,"to":0.3,"pose":"raise"},{"at":4,"pose":"hold"},{"at":5,"to":0.6,"pose":"kneel"}]},{"id":"poor","look":{"name":"A Hungry Man of Naphtali","skin":"#8a6038","hair":"#3a2a18","robe":"#6a5a44","beard":"#3a2a18","sack":1},"x":0.42,"z":0.12,"face":"l","pose":"sitground","at":4},{"id":"slain","look":{"name":"One of His People, Slain","skin":"#8a6a4a","hair":"#2c1a0c","robe":"#5a5040","beard":"#2c1a0c"},"x":0.74,"z":0.1,"face":"l","pose":"lie","at":5,"label":false}],"crowd":[{"kind":"captives","n":6,"x":0.57,"w":0.3,"z":0.66,"face":"r","enter":"l","at":3},{"kind":"soldiers","side":"ashshur","n":3,"x":0.86,"w":0.1,"z":0.75,"face":"l"}],"props":[{"k":"pit","x":0.86,"z":0.08,"at":5}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8101,
-     features:[ {type:'house',x:14,y:10,id:'home',feast:true,examine:'The house of Tobit — a good dinner set for the feast of Shaḇuʿoth.'},{type:'stone',x:31,y:12,id:'body',examine:'A man of our people, strangled and cast into the market place — before I taste anything, I must see him buried.'},{type:'firepit',x:24,y:14,id:'wall',examine:'The courtyard wall, where I slept with my face uncovered — and sparrows above.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'house',x:14,y:10,id:'home',feast:true,examine:'The house of Tobit — a good dinner set for the feast of Shaḇuʿoth.'},{type:'stone',x:31,y:12,id:'body',examine:'A man of our people, strangled and thrown into the market place — before I taste anything, I must see him buried.'},{type:'firepit',x:24,y:14,id:'wall',examine:'The courtyard wall, where I slept with my face uncovered — and sparrows above.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'tobit', playerPos:[22,20], playerHold:'staff',
    npcs:[ {id:'tobias',char:'tobias',x:19,y:14,wander:false},{id:'neighbor',char:'neighbor',x:27,y:15,wander:false},
@@ -6027,12 +6174,12 @@ STORY.push(
      {type:'talk',npc:'tobias',text:'Leave the feast — a body lies in the street',
       script:[
        {say:['tobias','Father — one of our people has been strangled, and thrown into the market place.']},
-       {say:['tobit','Before I taste anything — up, and bring him to a place of shelter until sunset. The dead of my people shall not lie uncovered while I have hands to dig.']},
+       {say:['tobit','Before I taste anything — I shall spring up and remove the body to a place of shelter until sunset. The dead of my people shall not lie uncovered while I have hands to dig.']},
       ]},
      {type:'interact',prop:'body',text:'Bury the dead by night',hiddenUntil:1,
       script:[
        {fade:'out'},{time:'night'},{fade:'in'},
-       {say:['narrator','When the sun had set, Tobit went and dug a grave and buried the body. And his neighbours laughed: “He is no longer afraid to be put to death for this — he ran away once, and here he is burying the dead again!”']},
+       {say:['narrator','When the sun had set, Tobit went and dug a grave and buried the body. And his neighbors laughed at him and said, “He is no longer afraid that he will be put to death for doing this; he once ran away, and here he is burying the dead again!”']},
        {say:['neighbor','Fool — the king kills men for this, Tobit, and still you dig!']},
        {say:['tobit','Better a righteous grave than an easy sleep. Let them laugh.']},
        {rays:.4,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',10]},
@@ -6044,20 +6191,20 @@ STORY.push(
        {sfx:'bad'},{shake:.3},{burst:[24,12,'ash',8]},
        {call:G=>{ if(G.world) G.world.flashT=0.6; }},
        {say:['narrator','He did not know there were sparrows on the wall — and their droppings fell warm into his open eyes, and white films formed on them. He went to the physicians, but they did not help him. And Tobit was blind.']},
-       {say:['tobit','Darkness… Where are your charities and righteous deeds now, they will ask. Righteous art Thou, O YAHUAH — yet command my spirit to be taken up, that I may depart and become dust; for it is better for me to die than to live.']},
+       {say:['tobit','Darkness… “Where are your charities and your righteous deeds?” they will ask. Righteous art Thou, O YAHUAH — yet command my ruach to be taken up, that I may depart and become dust; for it is better for me to die than to live.']},
        {music:'sorrow'},{sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'coffin', music:'sorrow', text:'Tobit buried the dead of his people by night, though the king killed men for it — and, sleeping defiled by the wall, the sparrows’ droppings fell into his open eyes, and he was made blind. “Better for me to die than to live,” he prayed. “Command my spirit to be taken up, that I may become dust.”', ref:'TOḆIYAH 2:7–3:6'},
+   {art:'coffin', music:'sorrow', text:'When the sun had set I went and dug a grave and buried the body … because I was defiled I slept by the wall of the courtyard. There were sparrows on the wall and their fresh droppings fell into my open eyes and white films formed on my eyes. … I prayed in anguish … “Command my ruach to be taken up, that I may depart and become dust. For it is better for me to die than to live.”', ref:'TOḆIYAH 2:7–3:6', stage:{"set":"city","time":"night","cam":"push","focus":0.6,"cast":[{"id":"tobit","x":0.3,"z":0.1,"face":"l","pose":"kneel","say":3,"acts":[{"at":1,"to":0.62,"face":"r","pose":"lie"},{"at":2,"pose":"lie"},{"at":3,"pose":"pray"},{"at":4,"pose":"mourn"}]},{"id":"slain","look":{"name":"One of His People, Slain","skin":"#8a6a4a","hair":"#2c1a0c","robe":"#5a5040","beard":"#2c1a0c"},"x":0.17,"z":0.12,"face":"r","pose":"lie","label":false}],"props":[{"k":"pit","x":0.22,"z":0.02},{"k":"wall","x":0.7,"z":0.45,"w":0.5,"h":75}],"fx":[{"k":"ravens","at":2,"n":4,"x":0.68,"y":0.4},{"k":"darkness","at":2,"amt":0.25}]}},
   ],
   complete:'The righteous burier of the dead, struck blind — and in his grief, a prayer to be released.'
 },
 
 { id:'t2', title:'Sarah at the Window', ref:'TOḆIYAH 3:7–17',
   intro:[
-   {art:'stars', music:'sorrow', text:'On that same day, at Ecbatana in Media, Sarah the daughter of Ragual was reproached by her father’s maids — for she had been given to seven husbands, and the evil demon Asmodeus had slain each of them before he had been with her. And she was grieved, even to the thought of death.', ref:'TOḆIYAH 3:7–8'},
+   {art:'stars', music:'sorrow', text:'On the same day, at Ecbatana in Media, it also happened that Sarah, the daughter of Ragual, was reproached by her father’s maids, because she had been given to seven husbands, and the evil demon Asmodeus had slain each of them before he had been with her as his wife. So the maids said to her, “Do you not know that you strangle your husbands?” … When she heard these things she was deeply grieved, even to the thought of hanging herself.', ref:'TOḆIYAH 3:7–10', stage:{"set":"house","cam":"push","focus":0.4,"cast":[{"id":"sarah","x":0.21,"z":0.1,"face":"r","pose":"stand","acts":[{"at":1,"pose":"weep"},{"at":2,"pose":"mourn"}]},{"id":"maid","x":0.58,"z":0.12,"face":"l","pose":"point","say":1},{"id":"maid2","look":{"name":"A Maid of Ragual","skin":"#9a6a40","hair":"#2c1a0c","hairStyle":"long","robe":"#6a7a5a","headcover":"#b8a486"},"x":0.72,"z":0.2,"face":"l","pose":"speak","at":1},{"id":"asmodeus","look":{"name":"Asmodeus the Evil Demon","darkAngel":1,"skin":"#4a3e44","hair":"#0c0a0c","robe":"#1e1a24","mantle":"#2a1a2a"},"x":0.9,"z":0.55,"face":"l","pose":"stand","acts":[{"at":1,"exit":"r"}]}],"props":[{"k":"bed","x":0.1,"z":0.45}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8102,
@@ -6069,34 +6216,34 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'maid',text:'The reproach of the maids',
       script:[
-       {say:['maid','Do you not know that you strangle your husbands? Seven now, and no benefit from any of them! If they are dead, go with them — may we never see a son or daughter of yours!']},
+       {say:['maid','Do you not know that you strangle your husbands? You already have had seven and have had no benefit from any of them. If they are dead, go with them! May we never see a son or daughter of yours!']},
        {shake:.3},{sfx:'bad'},
-       {say:['sarah','I am the only child of my father. If I raise my hand against myself, it will be his disgrace, and bring his old age in sorrow to the grave. No — I shall pray at my window instead.']},
+       {say:['sarah','I am the only child of my father; if I do this, it will be a disgrace to him, and I shall bring his old age down in sorrow to the grave. No — I shall pray at my window instead.']},
       ]},
      {type:'interact',prop:'window',text:'Turn your face toward YAHUAH',hiddenUntil:1,
       script:[
-       {say:['sarah','Blessed art Thou, O YAHUAH my Aluahim, and blessed is Thy set-apart Name forever. To Thee I have turned my eyes and my face. Thou knowest I am innocent of any sin with man, and have not stained my name in the land of my captivity. Command that I be released, and hear reproach no more — or if it please Thee not to take my life, look on me with pity.']},
+       {say:['sarah','Baruk art Thou, O YAHUAH my Aluahim, and baruk is Thy qadash (Set Apart) and esteemed Name for ever. I have turned my eyes and my face toward Thee. Command that I be released from the earth and that I hear reproach no more.']},{say:['sarah','Thou knowest, O YAHUAH, that I am innocent of any sin with man; and that I did not stain my name or the name of my father in the land of my captivity. But if it be not pleasing to Thee to take my life, command that pity be taken upon me.']},
        {rays:.7,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',18]},
-       {say:['voice','The prayer of both was heard in the presence of the esteem of the great Aluahim — of Tobit in Nineveh, and of Sarah in Ecbatana. And Raphaʾĕl was sent to heal them both: to scale the white films from Tobit’s eyes, to give Sarah to Tobias in marriage, and to bind Asmodeus the evil demon.']},
+       {say:['voice','The prayer of both was heard in the presence of the esteem of the great Aluahim — of Tobit in Nineveh, and of Sarah in Ecbatana. And Raphaʾĕl was sent to heal the two of them: to scale away the white films of Tobit’s eyes; to give Sarah the daughter of Ragual in marriage to Tobias the son of Tobit, and to bind Asmodeus the evil demon.']},
        {call:G=>{ const n=G.world.npcs.find(n=>n.id==='asmodeus'); if(n){ n.target={x:-3,y:n.y}; n.speed=.05; n.onArrive=()=>{n.hidden=true;}; } }},
        {burst:[22,10,'holy',20]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“Command that I be released, and hear reproach no more,” prayed Sarah at her window. And the prayer of both — Tobit blind in Nineveh, Sarah grieved in Ecbatana — was heard in the presence of the esteem of the great Aluahim. And Raphaʾĕl was sent to heal the two of them, and to bind Asmodeus the evil demon.', ref:'TOḆIYAH 3:11–17'},
+   {art:'light', music:'holy', text:'So she prayed by her window and said … “Command that I be released from the earth and that I hear reproach no more.” … The prayer of both was heard in the presence of the esteem of the great Aluahim. And Raphaʾĕl was sent to heal the two of them: to scale away the white films of Tobit’s eyes … and to bind Asmodeus the evil demon.', ref:'TOḆIYAH 3:11–17', stage:{"set":"house","time":"night","cam":"up","focus":0.5,"cast":[{"id":"sarah","x":0.7,"z":0.1,"face":"r","pose":"pray","say":1},{"id":"tobit","x":0.14,"z":0.15,"face":"r","pose":"pray","at":2},{"id":"raphael","x":0.44,"z":0.3,"face":"r","pose":"bless","at":3,"acts":[{"at":4,"pose":"point","face":"r"}]},{"id":"asmodeus","look":{"name":"Asmodeus the Evil Demon","darkAngel":1,"skin":"#4a3e44","hair":"#0c0a0c","robe":"#1e1a24","mantle":"#2a1a2a"},"x":0.88,"z":0.45,"face":"l","pose":"bound","at":4}],"fx":[{"k":"glory","at":2,"x":0.5,"y":0.02},{"k":"rays","at":2,"x":0.45}]}},
   ],
-  complete:'Two prayers, one answer — a messenger sent to heal the blind, free the bound, and bind the demon.'
+  complete:'Two prayers, one answer — a mal’ak sent to heal the blind, free the bound, and bind the demon.'
 },
 
 ]},
 
 /* ============ ACT II — THE ANGEL AND THE FISH ============ */
-{ id:'tact2', roman:'II', title:'The Angel and the Fish', ref:'TOḆIYAH 4–6', chapters:[
+{ id:'tact2', roman:'II', title:'The Mal’ak and the Fish', ref:'TOḆIYAH 4–6', chapters:[
 
 { id:'t3', title:'Find a Man to Go With You', ref:'TOḆIYAH 4–5',
   intro:[
-   {art:'vista', music:'holy', text:'Then Tobit remembered the silver he had left in trust with Gabaʾĕl at Rages in Media, and he called his son. “Find a man to go with you, and I will pay him wages, and go and get the money.” So Tobias went to look for a man — and he found Raphaʾĕl, who was a messenger; but Tobias did not know it.', ref:'TOḆIYAH 4:20–5:4'},
+   {art:'vista', music:'holy', text:'“And now let me explain to you about the ten talents of silver which I left in trust with Gabaʾĕl the son of Gabrias at Rages in Media. … Find a man to go with you and I will pay him wages as long as I live; and go and get the money.” So he went to look for a man; and he found Raphaʾĕl, who was a mal’ak.', ref:'TOḆIYAH 4:20–5:4', stage:{"set":"city","time":"day","cam":"pan-r","focus":0.55,"cast":[{"id":"tobit","x":0.22,"z":0.1,"face":"r","pose":"stand","hold":"scroll","hold2":"staff","say":0,"acts":[{"at":1,"pose":"hold"}]},{"id":"anna","x":0.1,"z":0.25,"face":"r","pose":"stand"},{"id":"tobias","x":0.34,"z":0.1,"face":"l","pose":"stand","acts":[{"at":3,"to":0.6,"face":"r","pose":"stand"}]},{"id":"azarias","x":0.8,"z":0.12,"face":"l","pose":"stand","at":4,"hold":"staff"}],"fx":[{"k":"rays","at":4,"x":0.8}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8103,
@@ -6110,13 +6257,13 @@ STORY.push(
       script:[
        {say:['tobias','Can you go with me to Rages in Media? Are you acquainted with that region?']},
        {say:['azarias','I will go with you; I am familiar with the way, and I have stayed with our brother Gabaʾĕl. I am Azarias, of your own kindred.']},
-       {say:['tobias','You are welcome, brother! Come, my father would learn your tribe and family.']},
+       {say:['tobias','You are welcome, my brother! Come, my father would learn your tribe and family.']},
       ]},
      {type:'talk',npc:'tobit',text:'The blessing of the blind father',hiddenUntil:1,
       script:[
-       {say:['tobit','Go with this man, my son. Aluahim who dwells in the shamayim shall prosper your way — and may His messenger attend you.']},
+       {say:['tobit','Go with this man, my son; Aluahim who dwells in shamayim will prosper your way, and may His mal’ak attend you.']},
        {say:['anna','Why have you sent our child away? Is he not the staff of our hands? Do not add silver to silver — count it as rubbish beside our child!']},
-       {say:['tobit','Do not worry, my sister; a good messenger shall go with him. His journey shall be a success, and your eyes shall see him again.']},
+       {say:['tobit','Do not worry, my sister; a good mal’ak shall go with him. His journey shall be a success, and your eyes shall see him again.']},
        {rays:.5,raysX:16},{sfx:'holy'},{burst:[16,14,'holy',12]},
       ]},
      {type:'goto',x:33,y:12,text:'Set out for Media — the dog goes too',radius:2.4,hiddenUntil:2,
@@ -6129,14 +6276,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'Tobias found Raphaʾĕl — who called himself Azarias, of their own kindred — and did not know he was a messenger. His blind father blessed him: “Aluahim shall prosper your way, and His messenger attend you.” And they set out for Media, and the young man’s dog was with them.', ref:'TOḆIYAH 5:4–22'},
+   {art:'journey', music:'holy', text:'He found Raphaʾĕl, who was a mal’ak, but Tobias did not know it. … He replied, “I am Azarias the son of the great Ananias, one of your relatives.” … And his father said to him, “Go with this man; Aluahim who dwells in shamayim will prosper your way, and may his mal’ak attend you.” So they both went out and departed, and the young man’s dog was with them.', ref:'TOḆIYAH 5:4–22', stage:{"set":"gate","time":"day","cam":"push","focus":0.5,"cast":[{"id":"tobias","x":0.42,"z":0.1,"face":"r","pose":"stand","acts":[{"at":4,"to":0.74}]},{"id":"azarias","x":0.58,"z":0.1,"face":"l","pose":"stand","say":1,"hold":"staff","acts":[{"at":4,"to":0.88,"face":"r"}]},{"id":"tobit","x":0.1,"z":0.15,"face":"r","pose":"stand","enter":"l","at":2,"to":0.27,"say":2,"hold2":"staff","acts":[{"at":3,"pose":"bless"}]},{"id":"anna","x":0.11,"z":0.3,"face":"r","pose":"weep","at":2}],"props":[{"k":"dog","x":0.64,"z":0.02,"face":"r","at":4}]}},
   ],
-  complete:'A guide found for the road — a messenger unknown, and a faithful dog at their heels.'
+  complete:'A guide found for the road — a mal’ak unknown, and a faithful dog at their heels.'
 },
 
 { id:'t4', title:'The Fish in the Tigris', ref:'TOḆIYAH 6:1–8',
   intro:[
-   {art:'stars', music:'tense', text:'Now as they proceeded on their way, they came at evening to the Tigris river, and camped there. And the young man went down to wash himself — and a great fish leaped up from the river, and would have swallowed him.', ref:'TOḆIYAH 6:1–2'},
+   {art:'stars', music:'tense', text:'Now as they proceeded on their way, they came at evening to the Tigris river, and camped there. Then the young man went down to wash himself. A fish leaped up from the river and would have swallowed the young man.', ref:'TOḆIYAH 6:1–2', stage:{"set":"river","time":"dusk","cam":"push","focus":0.6,"cast":[{"id":"azarias","x":0.2,"z":0.12,"face":"r","pose":"sitground","hold":"staff"},{"id":"tobias","x":0.46,"z":0.08,"face":"r","pose":"stand","acts":[{"at":1,"to":0.62,"pose":"kneel"},{"at":2,"pose":"fall","face":"r"}]}],"props":[{"k":"fire","x":0.1,"z":0.2},{"k":"dog","x":0.3,"z":0.25,"face":"r"},{"k":"fish","x":0.78,"z":0.35,"face":"l","dy":-0.06,"s":1.3,"at":2}],"fx":[{"k":"stars"}]}},
   ],
   scene:{
    map:{biome:'wild', w:46, h:28, seed:8104, edgeWater:true,
@@ -6158,14 +6305,14 @@ STORY.push(
       script:[
        {say:['azarias','Cut open the fish, and take the heart and the liver and the gall, and put them away safely.']},
        {say:['tobias','What use are the liver and the heart, brother Azarias? And the gall?']},
-       {say:['azarias','As for the heart and liver — if a demon or evil spirit troubles anyone, you make a smoke of these before the man or woman, and that person shall never be troubled again. And as for the gall — anoint with it a man who has white films in his eyes, and he shall be healed.']},
+       {say:['azarias','As for the heart and liver, if a demon or evil ruach gives trouble to any one, you make a smoke from these before the man or woman, and that person will never be troubled again. And as for the gall, anoint with it a man who has white films in his eyes, and he will be cured.']},
        {rays:.5,raysX:22},{sfx:'holy'},{burst:[22,12,'holy',14]},{sfx:'chime'},
        {say:['narrator','So they roasted and ate the fish, and continued on their way, until they came near to Ecbatana.']},
       ]},
    ],
   },
   outro:[
-   {art:'waters', music:'holy', text:'A great fish leaped from the Tigris to swallow Tobias — “Catch it!” said the messenger, and Tobias seized it and hauled it to the land. “Take the heart and liver and gall, and keep them safe: the heart and liver make a smoke that drives off any demon; and the gall heals white films from the eyes.”', ref:'TOḆIYAH 6:2–8'},
+   {art:'waters', music:'holy', text:'A fish leaped up from the river and would have swallowed the young man; and the mal’ak said to him, “Catch the fish.” … “As for the heart and liver, if a demon or evil ruach gives trouble to any one, you make a smoke from these … and that person will never be troubled again. And as for the gall, anoint with it a man who has white films in his eyes, and he will be cured.”', ref:'TOḆIYAH 6:2–8', stage:{"set":"river","time":"night","cam":"close","focus":0.5,"cast":[{"id":"tobias","x":0.55,"z":0.08,"face":"r","pose":"fall","acts":[{"at":1,"pose":"strike"},{"at":2,"pose":"kneel","face":"l"},{"at":4,"pose":"hold"}],"hold2":"jar"},{"id":"azarias","x":0.3,"z":0.1,"face":"r","pose":"point","say":1,"hold2":"staff","acts":[{"at":2,"pose":"speak"}]}],"props":[{"k":"fish","x":0.72,"z":0.28,"face":"l","s":1.2},{"k":"fire","x":0.12,"z":0.25},{"k":"dog","x":0.18,"z":0.3,"face":"r"}],"fx":[{"k":"smoke","at":2,"x":0.14}]}},
   ],
   complete:'A fish that meant to devour becomes the cure — smoke for the demon, gall for the blind.'
 },
@@ -6175,27 +6322,27 @@ STORY.push(
 /* ============ ACT III — THE WEDDING AT ECBATANA ============ */
 { id:'tact3', roman:'III', title:'The Wedding at Ecbatana', ref:'TOḆIYAH 7–9', chapters:[
 
-{ id:'t5', title:'Take Her According to the Torah', ref:'TOḆIYAH 7:1–16',
+{ id:'t5', title:'Take Her According to the Law', ref:'TOḆIYAH 7:1–16',
   intro:[
-   {art:'reunion', music:'holy', text:'When they reached Ecbatana and came to the house of Ragual, Sarah met them and greeted them. And Ragual said to his wife, “How much the young man resembles my cousin Tobit!” And when he learned that Tobias was Tobit’s son, he sprang up and kissed him and wept.', ref:'TOḆIYAH 7:1–7'},
+   {art:'reunion', music:'holy', text:'When they reached Ecbatana and arrived at the house of Ragual, Sarah met them and greeted them. … Then Ragual said to his wife Edna, “How much the young man resembles my cousin Tobit!” … And Tobias said, “He is my father.” Then Ragual sprang up and kissed him and wept.', ref:'TOḆIYAH 7:1–7', stage:{"set":"city","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"tobias","enter":"l","at":0,"to":0.3,"face":"r","pose":"stand","say":2},{"id":"azarias","enter":"l","at":0,"to":0.17,"face":"r","pose":"stand","hold":"staff"},{"id":"sarah","x":0.48,"z":0.25,"face":"l","pose":"bless"},{"id":"ragual","x":0.66,"z":0.12,"face":"l","pose":"stand","say":1,"acts":[{"at":1,"face":"r"},{"at":2,"face":"l"},{"at":3,"to":0.38,"pose":"weep","run":1}]},{"id":"edna","x":0.8,"z":0.18,"face":"l","pose":"stand"}],"props":[{"k":"house","x":0.72,"z":0.6,"w":110,"h":70}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8105,
-     features:[ {type:'house',x:16,y:10,id:'house',feast:true,examine:'The house of Ragual — a ram killed, and large servings of food.'},{type:'standard',x:31,y:12,id:'contract',examine:'The marriage contract, written on a scroll and sealed — “take her according to the Torah of Mosheh.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'house',x:16,y:10,id:'house',feast:true,examine:'The house of Ragual — a ram killed, and large servings of food.'},{type:'standard',x:31,y:12,id:'contract',examine:'The marriage contract, written on a scroll and sealed — “take her according to the law of Mosheh.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'tobias', playerPos:[22,20],
    npcs:[ {id:'ragual',char:'ragual',x:19,y:14,wander:false},{id:'sarah',char:'sarah',x:24,y:14,wander:false},{id:'edna',char:'edna',x:26,y:15,wander:false},{id:'azarias',char:'azarias',x:18,y:16,wander:false} ],
    objectives:[
      {type:'talk',npc:'ragual',text:'Ask for Sarah — and settle the matter',
       script:[
-       {say:['tobias','I will eat nothing here until you make a binding agreement with me. Brother Azarias has told me it is my right to take Sarah, according to the Torah.']},
-       {say:['ragual','It is your right to take my child. But let me tell you the truth: I have given my daughter to seven husbands, and each died in the night. …Yet be merry now.']},
-       {say:['tobias','I will eat nothing until it is settled.']},
+       {say:['tobias','I will eat nothing here until you make a binding agreement with me. Brother Azarias has told me it is my right to take Sarah, according to the law.']},
+       {say:['ragual','It is your right to take my child. But let me explain the true situation to you. I have given my daughter to seven husbands, and when each came to her he died in the night. …But for the present be merry.']},
+       {say:['tobias','I will eat nothing here until you make a binding agreement with me.']},
       ]},
      {type:'interact',prop:'contract',text:'The contract sealed',hiddenUntil:1,
       script:[
-       {say:['ragual','Take her now, in accordance with the Torah. You are her kinsman, and she is yours. The merciful Aluahim guide you both for the best.']},
-       {say:['narrator','And taking his daughter Sarah by the hand, he gave her to Tobias, saying, “Take her according to the Torah of Mosheh.” And he blessed them. Then Edna took a scroll and wrote the contract, and they set their seals to it.']},
+       {say:['ragual','Take her right now, in accordance with the law. You are her relative, and she is yours. The merciful Aluahim will guide you both for the best.']},
+       {say:['narrator','And taking his daughter Sarah by the hand, he gave her to Tobias, saying, “Take her according to the law of Mosheh.” And he baruk them. Then Edna took a scroll and wrote the contract, and they set their seals to it.']},
        {rays:.6,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',16]},
        {say:['edna','Be brave, my child — YAHUAH of the shamayim and earth grant you joy in place of this sorrow. Be brave, my daughter.']},
        {sfx:'chime'},
@@ -6203,14 +6350,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'“It is your right to take my child — but seven husbands died in the night before you.” Yet Tobias would not eat until it was settled; and Ragual gave Sarah by the hand: “Take her according to the Torah of Mosheh.” The contract was written and sealed — and Edna comforted her weeping daughter: “Be brave; YAHUAH grant you joy for this sorrow.”', ref:'TOḆIYAH 7:9–16'},
+   {art:'reunion', music:'holy', text:'“It is your right to take my child. … I have given my daughter to seven husbands, and when each came to her he died in the night.” And Tobias said, “I will eat nothing here until you make a binding agreement with me.” … Taking her by the hand he gave her to Tobias to be his wife, saying, “Here she is; take her according to the law of Mosheh.” … and wrote out the contract; and they set their seals to it.', ref:'TOḆIYAH 7:9–16', stage:{"set":"house","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"tobias","x":0.24,"z":0.1,"face":"r","pose":"stand","say":2,"acts":[{"at":6,"pose":"hold"}]},{"id":"ragual","x":0.46,"z":0.1,"face":"l","pose":"speak","say":0,"acts":[{"at":2,"pose":"stand"},{"at":3,"pose":"bless"},{"at":5,"pose":"hold","face":"r"}],"hold":"scroll"},{"id":"sarah","x":0.64,"z":0.2,"face":"l","pose":"stand","acts":[{"at":3,"to":0.35,"face":"r"}]},{"id":"edna","x":0.82,"z":0.25,"face":"l","pose":"stand"},{"id":"azarias","x":0.1,"z":0.3,"face":"r","pose":"stand","hold":"staff"}],"props":[{"k":"table","x":0.56,"z":0.45,"cups":1,"bread":false},{"k":"scroll","x":0.56,"z":0.44,"dy":-0.066,"s":0.8,"at":5}]}},
   ],
   complete:'The kinsman’s right, the sealed contract — and a bride given, under the shadow of seven graves.'
 },
 
 { id:'t6', title:'The Smoke that Drove the Demon', ref:'TOḆIYAH 8:1–21',
   intro:[
-   {art:'stars', music:'tense', text:'When they had finished eating, they escorted Tobias in to Sarah. And as he went, he remembered the words of Raphaʾĕl — and he took the live ashes of incense, and laid on them the heart and liver of the fish, and made a smoke.', ref:'TOḆIYAH 8:1–2'},
+   {art:'stars', music:'tense', text:'When they had finished eating, they escorted Tobias in to her. As he went he remembered the words of Raphaʾĕl, and he took the live ashes of incense and put the heart and liver of the fish upon them and made a smoke.', ref:'TOḆIYAH 8:1–2', stage:{"set":"house","time":"night","cam":"close","focus":0.55,"cast":[{"id":"tobias","enter":"l","at":0,"to":0.42,"z":0.08,"face":"r","pose":"stand","hold":"censer","acts":[{"at":1,"pose":"kneel"}]},{"id":"edna","enter":"l","at":0,"to":0.2,"z":0.25,"face":"r","pose":"stand","hold":"lamp","acts":[{"at":1,"exit":"l"}]},{"id":"sarah","x":0.72,"z":0.18,"face":"l","pose":"stand"}],"props":[{"k":"bed","x":0.85,"z":0.4},{"k":"fire","x":0.54,"z":0.2,"s":0.45,"at":1}],"fx":[{"k":"smoke","at":1,"x":0.54}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8106,
@@ -6222,26 +6369,26 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'incense',text:'Make the smoke of the heart and liver',
       script:[
-       {say:['tobias','As Raphaʾĕl said — the heart and the liver, upon the live ashes…']},
+       {say:['tobias','As Azarias said — the live ashes of incense, and the heart and liver of the fish upon them…']},
        {call:G=>{ for(let i=0;i<40;i++) Particles.spawn({x:22*TILE+(Math.random()-.5)*TILE*3,y:12*TILE-Math.random()*TILE*3,vx:(Math.random()-.5)*.03,vy:-.04,life:2600,max:2600,type:'smoke'}); }},
        {sfx:'holy'},{shake:.3},
-       {say:['narrator','And when the demon smelled the odour, he fled to the remotest parts of Mitsrayim — and the messenger bound him there.']},
+       {say:['narrator','And when the demon smelled the odour, he fled to the remotest parts of Mitsrayim — and the mal’ak bound him there.']},
        {call:G=>{ const n=G.world.npcs.find(n=>n.id==='asmodeus'); if(n){ n.target={x:-4,y:n.y-3}; n.speed=.11; n.onArrive=()=>{n.hidden=true;}; } }},
        {shake:.5},{sfx:'thunder'},{burst:[16,11,'ash',16]},
        {say:['tobias','Sister — rise, and let us pray that YAHUAH may have mercy on us.']},
       ]},
      {type:'talk',npc:'sarah',text:'Rise and pray together',hiddenUntil:1,
       script:[
-       {say:['tobias','Blessed art Thou, O Aluahim of our fathers. Thou madest Aḏam, and gavest him Ḥawwah as a helper. And now, O YAHUAH, I take this sister of mine not for lust, but in sincerity. Grant that we may find mercy, and grow old together.']},
+       {say:['tobias','Baruk art Thou, O Aluahim of our fathers. Thou madest Aḏam and gavest him Ḥawwah his wife as a helper and support. And now, O YAHUAH, I am not taking this sister of mine because of lust, but with sincerity. Grant that I may find mercy and may grow old together with her.']},
        {say:['sarah','Amĕn.']},
        {rays:.6,raysX:22},{sfx:'holy'},{burst:[22,12,'holy',16]},
-       {say:['narrator','But Ragual had risen and dug a grave, thinking, “Perhaps he too has died.” He sent a maid to the chamber — and she found them both asleep, and alive. And Ragual blessed Aluahim: “Blessed art Thou, for Thou hast made me glad; it has not happened as I feared, but Thou hast dealt with us according to Thy great mercy.” And he filled in the grave, and made a wedding feast of fourteen days.']},
+       {say:['narrator','But Ragual arose and went and dug a grave — with the thought, “Perhaps he too will die.” He sent a maid to the chamber — and she went in, and found them both asleep. And she came out and told them that he was alive.']},{say:['narrator','Then Ragual baruk Aluahim: “Baruk art Thou, because Thou hast made me glad. It has not happened to me as I expected; but Thou hast treated us according to Thy great mercy.” Then he ordered his servants to fill in the grave. He gave a wedding feast for them which lasted fourteen days.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'Tobias made the smoke of the heart and liver, and the demon fled to the remotest parts of Mitsrayim, and the messenger bound him there. Then the two rose and prayed: “I take her not for lust, but in sincerity — grant that we may grow old together.” And Ragual, who had dug a grave in fear, filled it in with joy, and made a feast of fourteen days.', ref:'TOḆIYAH 8:2–21'},
+   {art:'light', music:'holy', text:'And when the demon smelled the odor he fled to the remotest parts of Mitsrayim, and the mal’ak bound him. … “O YAHUAH, I am not taking this sister of mine because of lust, but with sincerity. Grant that I may find mercy and may grow old together with her.” … But Ragual arose and went and dug a grave … Then he ordered his servants to fill in the grave. After this he gave a wedding feast for them which lasted fourteen days.', ref:'TOḆIYAH 8:2–21', stage:{"set":"city","time":"night","cam":"pan-r","focus":0.5,"cast":[{"id":"asmodeus","look":{"name":"Asmodeus the Evil Demon","darkAngel":1,"skin":"#4a3e44","hair":"#0c0a0c","robe":"#1e1a24","mantle":"#2a1a2a"},"x":0.42,"z":0.3,"face":"r","pose":"flee","acts":[{"at":0,"exit":"r"}]},{"id":"tobias","x":0.2,"z":0.1,"face":"r","pose":"stand","say":1,"acts":[{"at":1,"pose":"pray"},{"at":5,"pose":"stand"}]},{"id":"sarah","x":0.32,"z":0.14,"face":"r","pose":"stand","acts":[{"at":1,"pose":"pray"},{"at":5,"pose":"dance"}]},{"id":"ragual","enter":"r","at":3,"to":0.78,"z":0.12,"run":1,"face":"l","pose":"strike","acts":[{"at":4,"pose":"point","face":"r"},{"at":5,"pose":"raise","face":"l"}]}],"crowd":[{"kind":"people","n":3,"x":0.86,"w":0.1,"z":0.35,"face":"l","pose":"strike","enter":"r","at":4,"exit":"r","exitAt":5},{"kind":"people","n":8,"x":0.5,"w":0.6,"z":0.72,"pose":"dance","at":5}],"props":[{"k":"house","x":0.24,"z":0.55,"w":110,"h":70},{"k":"pit","x":0.64,"z":0.3,"at":3},{"k":"table","x":0.5,"z":0.5,"cups":1,"at":5}],"fx":[{"k":"smoke","x":0.26}]}},
   ],
   complete:'The smoke rises, the demon flees to Mitsrayim bound — and the grave dug in fear is filled with joy.'
 },
@@ -6253,7 +6400,7 @@ STORY.push(
 
 { id:'t7', title:'The Gall and the Light', ref:'TOḆIYAH 10–11',
   intro:[
-   {art:'journey', music:'holy', text:'His father Tobit was counting each day; and Anna sat looking down the road for her son, and would not be comforted. And Tobias, with his wife and half of Ragual’s goods, came at last near to Nineveh — and Raphaʾĕl said, “Take the gall of the fish with you, for your father shall open his eyes.”', ref:'TOḆIYAH 10:1–11:8'},
+   {art:'journey', music:'holy', text:'Now his father Tobit was counting each day … So Ragual arose and gave him his wife Sarah and half of his property … So he continued on his way until they came near to Nineveh. Then Raphaʾĕl said to Tobias … “And take the gall of the fish with you.” … Now Anna sat looking intently down the road for her son. … Raphaʾĕl said, “I know, Tobias, that your father will open his eyes.”', ref:'TOḆIYAH 10:1–11:8', stage:{"set":"road","time":"dusk","cam":"pan-r","focus":0.55,"cast":[{"id":"tobit","x":0.9,"z":0.3,"face":"l","pose":"sit"},{"id":"tobias","x":0.32,"z":0.08,"face":"r","pose":"stand","at":1,"hold2":"jar","acts":[{"at":2,"to":0.46,"pose":"stand"},{"at":4,"pose":"hold"}]},{"id":"sarah","x":0.2,"z":0.14,"face":"r","pose":"stand","at":1,"acts":[{"at":2,"to":0.34}]},{"id":"azarias","x":0.44,"z":0.1,"face":"r","pose":"stand","at":1,"hold":"staff","say":3,"acts":[{"at":2,"to":0.6},{"at":3,"face":"l","pose":"speak"},{"at":6,"face":"r","pose":"point"}]},{"id":"anna","x":0.77,"z":0.22,"face":"l","pose":"sitground","at":5}],"props":[{"k":"camel","x":0.13,"z":0.42,"face":"r","load":1,"at":1},{"k":"sheep","x":0.24,"z":0.65,"n":6,"w":150,"at":1},{"k":"house","x":0.86,"z":0.75,"w":90,"h":60}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8107,
@@ -6265,62 +6412,62 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'anna',text:'Anna sees her son on the road',
       script:[
-       {say:['anna','Behold — your son is coming, and the man who went with him! I have seen you, my child; now I am ready to die!']},
+       {say:['anna','Behold, your son is coming, and so is the man who went with him! I have seen you, my child; now I am ready to die.']},
        {rays:.4,raysX:31},{sfx:'holy'},{burst:[31,13,'holy',10]},
       ]},
      {type:'talk',npc:'tobit',text:'Anoint the blind eyes with the gall',hiddenUntil:1,
       script:[
-       {say:['narrator','Tobit started toward the door, and stumbled — but his son ran and took hold of him, and sprinkled the gall upon his father’s eyes.']},
+       {say:['narrator','Tobit started toward the door, and stumbled, but his son ran to him — and took hold of his father, and he sprinkled the gall upon his father’s eyes.']},
        {say:['tobias','Be of good cheer, father!']},
        {call:G=>{ if(G.world) G.world.flashT=0.5; }},{sfx:'holy'},{shake:.3},
        {say:['narrator','And when his eyes began to smart, he rubbed them — and the white films scaled off from the corners of his eyes. And he saw his son.']},
        {rays:.85,raysX:16},{sfx:'holy'},{burst:[16,14,'holy',22]},
-       {say:['tobit','Blessed art Thou, O Aluahim, and blessed is Thy Name forever, and blessed are all Thy set-apart messengers! For Thou hast afflicted me — but Thou hast had mercy upon me. Here I see my son Tobias!']},
-       {say:['narrator','And Tobit went out to the gate of Nineveh to meet his daughter-in-law, rejoicing and praising Aluahim; and those who saw him were amazed, because he could see. And there was rejoicing among all his kinsmen.']},
+       {say:['tobit','Baruk art Thou, O Aluahim, and baruk is Thy Name for ever, and baruk are all Thy qadash (Set Apart) mal’akim. For Thou hast afflicted me, but Thou hast had mercy upon me; here I see my son Tobias!']},
+       {say:['narrator','Then Tobit went out to meet his daughter-in-law at the gate of Nineveh, rejoicing and praising Aluahim. Those who saw him as he went were amazed because he could see. So there was rejoicing among all his brethren in Nineveh.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“Behold, your son is coming!” cried Anna. And Tobias sprinkled the gall of the fish on his blind father’s eyes; the white films scaled away, and Tobit saw his son: “Thou hast afflicted me, but Thou hast had mercy upon me — here I see my son Tobias!” And he went to the gate rejoicing, and all who saw him were amazed, for he could see.', ref:'TOḆIYAH 11:9–17'},
+   {art:'light', music:'holy', text:'He sprinkled the gall upon his father’s eyes … and the white films scaled off from the corners of his eyes. Then he saw his son and embraced him, and he wept and said, “… thou hast afflicted me, but thou hast had mercy upon me; here I see my son Tobias!” … Then Tobit went out to meet his daughter-in-law at the gate of Nineveh, rejoicing and praising Aluahim. Those who saw him as he went were amazed because he could see.', ref:'TOḆIYAH 11:9–17', stage:{"set":"gate","time":"day","cam":"push","focus":0.45,"cast":[{"id":"tobit","x":0.36,"z":0.1,"face":"r","from":"sitground","pose":"look","at":1,"say":3,"acts":[{"at":2,"pose":"weep"},{"at":3,"pose":"raise"},{"at":5,"to":0.58,"pose":"raise"}]},{"id":"tobias","x":0.5,"face":"l","pose":"hold","hold":"jar","z":0.14,"acts":[{"at":2,"to":0.44,"pose":"weep"},{"at":5,"pose":"stand","face":"r"}]},{"id":"anna","x":0.18,"z":0.2,"face":"r","pose":"stand","acts":[{"at":2,"pose":"weep"},{"at":5,"pose":"raise"}]},{"id":"sarah","enter":"r","at":5,"to":0.72,"face":"l","pose":"bless"}],"crowd":[{"kind":"people","n":7,"x":0.55,"w":0.8,"z":0.8,"face":"l","pose":"look","at":6}],"fx":[{"k":"rays","at":1,"x":0.36},{"k":"bright","at":1,"amt":0.12}]}},
   ],
   complete:'The gall of the fish, and the light returns — the blind father sees his son at last.'
 },
 
 { id:'t8', title:'I Am Raphaʾĕl', ref:'TOḆIYAH 12:1–14:15',
   intro:[
-   {art:'reunion', music:'holy', text:'Then Tobit called his son and said, “See to the wages of the man who went with you — and give him more.” So they called the messenger, and would give him half of all they had brought back. But he called the two of them privately, and said…', ref:'TOḆIYAH 12:1–6'},
+   {art:'reunion', music:'holy', text:'Tobit then called his son Tobias and said to him, “My son, see to the wages of the man who went with you; and he must also be given more.” … So he called the mal’ak and said to him, “Take half of all that you two have brought back.” Then the mal’ak called the two of them privately and said to them …', ref:'TOḆIYAH 12:1–6', stage:{"set":"house","time":"day","cam":"push","focus":0.5,"cast":[{"id":"tobit","x":0.2,"z":0.1,"face":"r","pose":"speak","say":0,"acts":[{"at":3,"to":0.36,"pose":"stand"}]},{"id":"tobias","x":0.4,"z":0.1,"face":"l","pose":"stand","say":2,"acts":[{"at":2,"face":"r","pose":"point"},{"at":3,"to":0.5,"pose":"stand"}]},{"id":"azarias","x":0.76,"z":0.12,"face":"l","pose":"stand","hold":"staff","say":3,"acts":[{"at":3,"pose":"speak"}]}],"props":[{"k":"chest","x":0.6,"z":0.2,"gold":1},{"k":"sacks","x":0.62,"z":0.45,"n":5}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8108,
-     features:[ {type:'house',x:14,y:10,id:'home',feast:true},{type:'standard',x:31,y:12,id:'reveal',examine:'“I am Raphaʾĕl, one of the seven set-apart messengers who present the prayers of the qodeshim.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'house',x:14,y:10,id:'home',feast:true},{type:'standard',x:31,y:12,id:'reveal',examine:'“I am Raphaʾĕl, one of the seven qadash (Set Apart) mal’akim who present the prayers of the qadashiyms (Set Apart Ones).”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'tobit', playerPos:[22,20],
    npcs:[ {id:'tobias',char:'tobias',x:19,y:15,wander:false},{id:'azarias',char:'azarias',x:26,y:14,wander:false},{id:'sarah',char:'sarah',x:21,y:16,wander:false},{id:'anna',char:'anna',x:17,y:16,wander:false} ],
    objectives:[
-     {type:'talk',npc:'azarias',text:'Offer the messenger his wages',
+     {type:'talk',npc:'azarias',text:'Offer the mal’ak his wages',
       script:[
        {say:['tobit','Take half of all that you two have brought back — you led my son safely, you cured his wife, you obtained the silver, and you healed me.']},
-       {say:['azarias','Praise Aluahim and give thanks to Him; exalt Him in the presence of all the living for what He has done for you. It is good to guard the secret of a king — but gloriously to reveal the works of Aluahim. Prayer is good with fasting and almsgiving; for almsgiving delivers from death, and purges away every sin.']},
+       {say:['azarias','Praise Aluahim and give thanks to Him; exalt Him and give thanks to Him in the presence of all the living for what He has done for you. It is good to guard the secret of a king, but with esteem to reveal the works of Aluahim. Prayer is good when accompanied by fasting, almsgiving, and righteousness. For almsgiving delivers from death, and it will purge away every sin.']},
       ]},
-     {type:'interact',prop:'reveal',text:'The messenger reveals himself',hiddenUntil:1,
+     {type:'interact',prop:'reveal',text:'The mal’ak reveals himself',hiddenUntil:1,
       script:[
-       {say:['azarias','I will conceal nothing from you. When you and Sarah prayed, I brought the reminder of your prayer before the Set-apart One; and when you buried the dead, Tobit, I was with you. When you did not hesitate to leave your dinner to lay out the dead — I was with you.']},
-       {say:['azarias','I am Raphaʾĕl — one of the seven set-apart messengers who present the prayers of the qodeshim, and enter before the esteem of the Set-apart One.']},
+       {say:['azarias','I will not conceal anything from you. When you and your daughter-in-law Sarah prayed, I brought a reminder of your prayer before the Qadash (Set Apart One); and when you buried the dead, Tobit, I was likewise present with you. When you did not hesitate to rise and leave your dinner in order to go and lay out the dead, your good deed was not hidden from me, but I was with you.']},
+       {say:['azarias','I am Raphaʾĕl — one of the seven qadash (Set Apart) mal’akim who present the prayers of the qadashiyms (Set Apart Ones), and enter before the esteem of the Qadash (Set Apart One).']},
        {charSwap:['azarias','raphael']},
        {rays:.9,raysX:26},{sfx:'holy'},{shake:.4},{burst:[26,14,'holy',24]},
        {say:['narrator','They were both alarmed, and fell on their faces in fear.']},
-       {say:['raphael','Do not be afraid; you shall be safe. Praise Aluahim forever. I did not come by any favour of my own, but by the will of our Aluahim. All these days I merely appeared to you — I did not eat or drink; you were seeing a vision. Now write in a book everything that has happened. And I am ascending to Him who sent me.']},
+       {say:['raphael','Do not be afraid; you will be safe. But praise Aluahim for ever. For I did not come as a chen on my part, but by the will of our Aluahim. All these days I merely appeared to you and did not eat or drink, but you were seeing a vision. And now give thanks to Aluahim, for I am ascending to Him who sent me. Write in a book everything that has happened.']},
        {rays:1,raysX:26},{sfx:'holy'},{burst:[26,14,'holy',26]},
        {call:G=>{ const n=G.world.npcs.find(n=>n.id==='azarias'); if(n){ n.hidden=true; Particles.burst(n.x*TILE,n.y*TILE-14,'holy',22); } }},
-       {say:['narrator','Then they stood up — but they saw him no more. And they confessed the great and wonderful works of Aluahim, and that the messenger of YAHUAH had appeared to them.']},
-       {say:['tobit','Blessed is Aluahim who lives forever, and blessed is His reign! For He afflicts, and He shows mercy; He leads down to the grave, and brings up again. Acknowledge Him before the nations, O sons of Yisra’ĕl — for He has scattered us among them, yet He is our Father forever.']},
+       {say:['narrator','Then they stood up; but they saw him no more. So they confessed the great and wonderful works of Aluahim, and acknowledged that the mal’ak of YAHUAH had appeared to them.']},
+       {say:['tobit','Baruk is Aluahim who lives for ever, and baruk is His kingdom. For He afflicts, and He shows mercy; He leads down to Hades, and brings up again. Acknowledge Him before the nations, O sons of Yasharal; for He has scattered us among them… He is our Father for ever.']},
        {burst:[22,10,'holy',20]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“I am Raphaʾĕl — one of the seven set-apart messengers who present the prayers of the qodeshim. When you buried the dead, and when you prayed, I was with you.” They fell on their faces in fear, but he said, “Do not be afraid; write all that has happened, for I am ascending to Him who sent me.” And they saw him no more; and Tobit blessed the Aluahim who lives forever.', ref:'TOḆIYAH 12:11–13:6'},
+   {art:'light', music:'holy', text:'“When you buried the dead, I was likewise present with you. … I am Raphaʾĕl, one of the seven qadash (Set Apart) mal’akim who present the prayers of the qadashiyms (Set Apart Ones).” They fell upon their faces … But he said to them, “Do not be afraid … for I am ascending to him who sent me. Write in a book everything that has happened.” … But they saw him no more. … Then Tobit wrote a prayer of rejoicing, and said: “Baruk is Aluahim who lives for ever.”', ref:'TOḆIYAH 12:11–13:6', stage:{"set":"city","time":"glory","cam":"up","focus":0.55,"cast":[{"id":"raphael","x":0.66,"z":0.25,"face":"l","pose":"speak","say":1,"dy":-0.02,"acts":[{"at":3,"pose":"bless"},{"at":4,"pose":"raise"},{"at":5,"exit":"r"}]},{"id":"tobit","x":0.28,"z":0.1,"face":"r","pose":"stand","acts":[{"at":2,"pose":"bow"},{"at":5,"pose":"kneel"},{"at":7,"pose":"raise"}],"say":7},{"id":"tobias","x":0.42,"z":0.08,"face":"r","pose":"stand","acts":[{"at":2,"pose":"bow"},{"at":6,"pose":"look"}]}],"props":[{"k":"table","x":0.13,"z":0.3,"bread":false},{"k":"scroll","x":0.13,"z":0.29,"dy":-0.075,"s":0.8,"at":5}],"fx":[{"k":"glory","at":1,"x":0.66,"y":0.1},{"k":"rays","at":4,"x":0.7},{"k":"bright","at":6,"amt":0.25}]}},
   ],
   complete:'The guide revealed — Raphaʾĕl, who carried their prayers to the throne, and now ascends in light.'
 },
@@ -6367,7 +6514,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6433,7 +6580,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6494,9 +6644,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],['TOḆIYAH','apoc-tobit'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],['TOḆIYAH','apoc-tobit'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6581,5 +6731,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

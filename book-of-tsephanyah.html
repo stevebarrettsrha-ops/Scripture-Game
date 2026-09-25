@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Tsephanyah</h2>
-    <div class="hint">Three acts · TSEPHANYAH — a prophet of royal blood in the days of Yoshiyahu, from the great and near day of YAHUAH and the searching of Yerushalayim with lamps, through the call to seek righteousness and meekness and the oracles against the nations and proud Ninewĕh, to the oppressing city rebuked and then the great turning — the Sovereign of Yasharal in her midst, rejoicing over His people with singing</div>
+    <div class="hint">Three acts · TSEPHANYAH — a naḇi of royal blood in the days of Yoshiyahu, from the great and near day of YAHUAH and the searching of Yerushalayim with lamps, through the call to seek righteousness and meekness and the oracles against the nations and proud Ninewĕh, to the oppressing city rebuked and then the great turning — the Sovereign of Yasharal in her midst, rejoicing over His people with singing</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -526,8 +558,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -635,7 +667,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -735,7 +767,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -997,6 +1031,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1040,7 +1084,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1302,6 +1348,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2783,6 +2839,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2978,7 +3054,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3183,8 +3259,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3671,6 +3748,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3734,7 +3812,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3786,15 +3868,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3805,6 +3921,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3830,6 +3952,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3858,6 +3981,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3875,7 +3999,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4015,6 +4139,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4078,17 +4207,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4252,22 +4382,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4280,7 +4414,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4303,11 +4437,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5668,7 +5815,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5722,45 +5869,45 @@ STORY.push(
 
 { id:'z1', title:'I Shall Snatch Away All', ref:'TSEPHANYAH 1:1–13',
   intro:[
-   {art:'corrupt', music:'tense', text:'The Word of YAHUAH which came to Tsephanyah son of Kushi, in the days of Yoshiyahu sovereign of Yahuḏah. “I shall snatch away all from the face of the earth,” declares YAHUAH. “I snatch away man and beast, the birds of the shamayim and the fish of the sea, and the stumbling-blocks with the wrong, when I cut off man from the face of the earth.”', ref:'TSEPHANYAH 1:1–3'},
+   {art:'corrupt', music:'tense', text:'The Word of YAHUAH which came to Tsephanyah son of Kushi… in the days of Yoshiyahu son of Amon, sovereign of Yahuḏah. “I shall snatch away all from the face of the earth,” declares YAHUAH – “I snatch away man and beast, I snatch away the birds of the shamayim and the fish of the sea and the stumbling-blocks, with the wrong, when I shall cut off man from the face of the earth.”', ref:'TSEPHANYAH 1:1–3', stage:{"set":"city","time":"dusk","cam":"push","focus":0.4,"cast":[{"id":"tsephanyah","x":0.28,"z":0.08,"face":"r","pose":"look","acts":[{"at":2,"pose":"point"}],"say":2},{"id":"voice","x":0.42,"at":0},{"id":"yoshiyahu","look":{"name":"Yoshiyahu son of Amon","skin":"#7a4e29","hair":"#2c1a0c","robe":"#5a2a4a","beard":"#2c1a0c","collar":"#caa23c","mantle":"#8a2a3a"},"crown":1,"x":0.72,"z":0.28,"face":"l","pose":"stand","at":1}],"crowd":[{"kind":"guards","side":"yasharal","n":3,"x":0.87,"w":0.1,"z":0.45,"face":"l","at":1}],"props":[{"k":"sheep","x":0.52,"z":0.6,"n":5,"w":110}],"fx":[{"k":"darkness","at":2,"amt":0.3},{"k":"ravens","at":2,"n":4,"x":0.6,"y":0.22},{"k":"smoke","at":2,"x":0.84}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:5101,
-     features:[ {type:'altar',x:16,y:11,id:'baal',examine:'“I shall cut off every trace of Baʿal from this place — the names of the idolatrous kohanim, with the kohanim.”'},{type:'house',x:30,y:12,id:'dregs',examine:'The men settled on their dregs, who say in their heart, “YAHUAH does no good, nor does He evil.”'},{type:'standard',x:22,y:9,id:'lamps',examine:'“At that time I shall search Yerushalayim with lamps” — and punish the complacent.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'altar',x:16,y:11,id:'baal',examine:'“I shall cut off every trace of Baʿal from this place — the names of the idolatrous kohanim, with the kohanim.”'},{type:'house',x:30,y:12,id:'dregs',examine:'The men settled on their dregs, who say in their heart, “YAHUAH does no good, nor does He evil.”'},{type:'standard',x:22,y:9,id:'lamps',examine:'“At that time it shall be, that I search Yerushalayim with lamps” — and punish the complacent.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'tsephanyah', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'idolkohen',char:'idolkohen',x:18,y:12,wander:false},{id:'elder',char:'elder',x:27,y:15,wander:false} ],
    objectives:[
      {type:'talk',npc:'idolkohen',text:'Cut off every trace of Baʿal from the place',
       script:[
-       {say:['idolkohen','We swear by YAHUAH, prophet — and by Malkam also. We bow to the host of the shamayim on our house-tops. Is there harm in that?']},
+       {say:['idolkohen','We swear by YAHUAH, naḇi — and by Malkam also. We bow down to the host of the shamayim on the house-tops. Is there harm in that?']},
        {say:['tsephanyah','Thus said YAHUAH: I shall stretch out My hand against Yahuḏah and all who dwell in Yerushalayim, and cut off every trace of Baʿal from this place, the names of the idolatrous kohanim with the kohanim — and those who bow to the host of the shamayim, and swear both by YAHUAH and by Malkam, and those who turn back from following YAHUAH and do not seek Him.']},
        {shake:.8},{sfx:'bad'},{burst:[16,11,'ash',12]},
       ]},
      {type:'interact',prop:'lamps',text:'Search Yerushalayim with lamps — the complacent punished',hiddenUntil:1,
       script:[
-       {say:['tsephanyah','Hush in the presence of the Master YAHUAH! For the day of YAHUAH is near — He has prepared a slaughter, He has set apart His invited ones. On that day I shall punish the rulers and the sons of the sovereign, and all who fill their masters’ houses with violence and deceit.']},
+       {say:['tsephanyah','Hush! in the presence of the Master YAHUAH. For the day of YAHUAH is near, for YAHUAH has prepared a slaughter, He has qadash (Set Apart) His invited ones. And it shall be, in the day of the slaughter of YAHUAH, that I shall punish the rulers and the sons of the sovereign… who fill their masters’ houses with violence and deceit.']},
        {rays:.4,raysX:22},{sfx:'chime'},
-       {say:['voice','And at that time I shall search Yerushalayim with lamps, and punish the men settled on their dregs, who say in their heart, “YAHUAH does no good, nor does He evil.” Their wealth becomes plunder, their houses laid waste — they build houses but do not dwell in them, plant vineyards but do not drink their wine.']},
+       {say:['voice','And at that time it shall be, that I search Yerushalayim with lamps and punish the men who are settled on their dregs, who say in their heart, “YAHUAH does no good, nor does He evil.” And their wealth shall become plunder and their houses laid waste. And they shall build houses but not inhabit them and they shall plant vineyards but not drink their wine.']},
        {shake:.8},{sfx:'bad'},{burst:[30,12,'ash',12]},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'“I shall snatch away all from the face of the earth,” declares YAHUAH — “man and beast, the birds and the fish, and the stumbling-blocks with the wrong. And I shall stretch out My hand against Yahuḏah and all who dwell in Yerushalayim, and cut off every trace of Baʿal, the names of the idolatrous kohanim, and those who bow to the host of the shamayim and swear both by YAHUAH and by Malkam.”', ref:'TSEPHANYAH 1:2–6'},
-   {art:'void', music:'tense', text:'Hush in the presence of the Master YAHUAH! For the day of YAHUAH is near — He has prepared a slaughter and set apart His invited ones. “I shall punish the rulers and the sons of the sovereign, and all who fill their masters’ houses with violence and deceit.” On that day: a cry from the Fish Gate, a howling from the Second Quarter, a great crashing from the hills. Howl, you inhabitants of the Hollow — all the merchant people are silenced, all who weigh out silver are cut off.', ref:'TSEPHANYAH 1:7–11'},
-   {art:'stars', music:'sorrow', text:'“At that time I shall search Yerushalayim with lamps, and punish the men settled on their dregs, who say in their heart, ‘YAHUAH does no good, nor does He evil.’ Their wealth shall become plunder, their houses laid waste; they shall build houses but not dwell in them, and plant vineyards but not drink their wine.”', ref:'TSEPHANYAH 1:12–13'},
+   {art:'corrupt', music:'tense', text:'“I shall snatch away all from the face of the earth,” declares YAHUAH – “I snatch away man and beast… And I shall stretch out My hand against Yahuḏah and against all the inhabitants of Yerushalayim and cut off every trace of Baʿal from this place, the names of the idolatrous kohanim… and those bowing down to the host of the shamayim on the house-tops and those bowing themselves, swearing by YAHUAH and swearing by Malkam.”', ref:'TSEPHANYAH 1:2–6', stage:{"set":"city","time":"night","cam":"pan-r","cast":[{"id":"tsephanyah","x":0.15,"z":0.06,"face":"r","pose":"point","say":0},{"id":"idolkohen","x":0.42,"z":0.2,"face":"r","pose":"raise","at":1},{"id":"roof1","look":{"name":"One Bowing to the Host","skin":"#83552d","hair":"#231409","robe":"#6a5448","beard":"#231409"},"label":false,"x":0.72,"z":0.41,"dy":-0.17,"face":"r","pose":"bow","at":2},{"id":"roof2","look":{"name":"One Bowing to the Host","skin":"#8a5a34","hair":"#3a2716","robe":"#5a4a6a","veil":"#8a6a5a"},"label":false,"x":0.82,"z":0.41,"dy":-0.17,"face":"l","pose":"raise","at":2}],"props":[{"k":"idol","x":0.53,"z":0.22,"h":84},{"k":"house","x":0.77,"z":0.42,"s":1.4,"w":80}],"fx":[{"k":"red","at":1,"amt":0.12},{"k":"stars","at":2}]}},
+   {art:'void', music:'tense', text:'Hush! in the presence of the Master YAHUAH. For the day of YAHUAH is near, for YAHUAH has prepared a slaughter, He has qadash (Set Apart) His invited ones. “I shall punish the rulers and the sons of the sovereign… who fill their masters’ houses with violence and deceit… the sound of a cry from the Fish Gate and of a howling from the Second Quarter and of a great crashing from the hills. Howl, you inhabitants of Maḵtĕsh, for all the merchant people shall be silenced…”', ref:'TSEPHANYAH 1:7–11', stage:{"set":"gate","time":"dusk","cam":"push","cast":[{"id":"tsephanyah","x":0.15,"z":0.06,"face":"r","pose":"raise","say":0,"acts":[{"at":2,"pose":"point"}]},{"id":"merchant","x":0.8,"z":0.12,"face":"l","pose":"hold","hold":"bowl","acts":[{"at":4,"pose":"fall"},{"at":5,"pose":"weep"}]}],"crowd":[{"kind":"princes","n":4,"x":0.52,"w":0.22,"z":0.45,"face":"l","pose":"carry","hold":"jar","at":2},{"kind":"mourners","n":5,"x":0.3,"w":0.2,"z":0.6,"face":"r","at":4}],"fx":[{"k":"glory","x":0.5,"at":0},{"k":"darkness","at":1,"amt":0.22},{"k":"smoke","x":0.82,"at":4}]}},
+   {art:'stars', music:'sorrow', text:'“At that time it shall be, that I search Yerushalayim with lamps and punish the men who are settled on their dregs, who say in their heart, ‘YAHUAH does no good, nor does He evil.’ And their wealth shall become plunder and their houses laid waste. And they shall build houses but not inhabit them and they shall plant vineyards but not drink their wine.”', ref:'TSEPHANYAH 1:12–13', stage:{"set":"city","time":"night","cam":"close","focus":0.42,"cast":[{"id":"elder","x":0.4,"z":0.12,"face":"r","pose":"sit","hold":"cup","say":0,"acts":[{"at":1,"pose":"fall"},{"at":2,"pose":"mourn"}]}],"crowd":[{"kind":"soldiers","side":"bavel","n":5,"x":0.78,"w":0.22,"z":0.45,"face":"l","enter":"r","at":1}],"props":[{"k":"table","x":0.53,"z":0.1,"cups":1},{"k":"chest","x":0.26,"z":0.14,"gold":1},{"k":"house","x":0.84,"z":0.6,"s":1.2},{"k":"vine","x":0.2,"z":0.55,"at":2},{"k":"house","x":0.1,"z":0.62,"at":2}],"fx":[{"k":"spotlight","x":0.42},{"k":"smoke","x":0.84,"at":1}]}},
   ],
   complete:'The day of YAHUAH is near — He searches Yerushalayim with lamps for those settled on their dregs.'
 },
 
 { id:'z2', title:'The Great Day Is Near', ref:'TSEPHANYAH 1:14–18',
   intro:[
-   {art:'void', music:'tense', text:'Near is the great day of YAHUAH — near and hurrying greatly. The noise of the day of YAHUAH! Let the mighty man then cry out bitterly. That day is a day of wrath, a day of distress and trouble, a day of waste and ruin, a day of darkness and gloom, a day of clouds and thick darkness.', ref:'TSEPHANYAH 1:14–15'},
+   {art:'void', music:'tense', text:'Near is the great day of YAHUAH, near and hurrying greatly, the noise of the day of YAHUAH. Let the mighty man then bitterly cry out! That day is a day of wrath, a day of distress and trouble, a day of waste and ruin, a day of darkness and gloominess, a day of clouds and thick darkness.', ref:'TSEPHANYAH 1:14–15', stage:{"set":"battle","time":"storm","wx":"storm","wxAt":2,"cam":"push","focus":0.55,"cast":[{"id":"tsephanyah","x":0.15,"z":0.06,"face":"r","pose":"raise","say":0},{"id":"mighty","look":{"name":"A Mighty Man of Yahuḏah","skin":"#7a4e29","hair":"#2c1a0c","robe":"#5a6a8a","beard":"#2c1a0c","armor":"#9a8250","helmet":"#8a7a50"},"x":0.55,"z":0.1,"face":"l","pose":"stand","hold":"sword","acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"fall"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":6,"x":0.74,"w":0.3,"z":0.55,"face":"l","from":"stand","pose":"fall","at":2}],"props":[{"k":"cloud","x":0.3,"z":0.9,"dy":-0.36,"s":1.8,"dark":1,"at":2},{"k":"cloud","x":0.75,"z":0.9,"dy":-0.4,"s":2,"dark":1,"at":2}],"fx":[{"k":"darkness","at":2,"amt":0.4},{"k":"lightning","at":2}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:5102,
-     features:[ {type:'tower',x:22,y:9,id:'alarm',examine:'“A day of ramʼs horn and alarm — against the walled cities and against the corner towers.”'},{type:'standard',x:16,y:12,id:'blind',examine:'“They shall walk like blind men, because they have sinned against YAHUAH.”'},{type:'standard',x:30,y:13,id:'silver',examine:'Neither silver nor gold shall be able to deliver them in the day of the wrath of YAHUAH.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'tower',x:22,y:9,id:'alarm',examine:'“A day of ramʼs horn and alarm — against the walled cities and against the corner towers.”'},{type:'standard',x:16,y:12,id:'blind',examine:'“They shall walk like blind men, because they have sinned against YAHUAH.”'},{type:'standard',x:30,y:13,id:'silver',examine:'Neither their silver nor their gold shall be able to deliver them in the day of the wrath of YAHUAH.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'tsephanyah', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'merchant',char:'merchant',x:18,y:13,wander:false},{id:'elder',char:'elder',x:27,y:15,wander:false} ],
@@ -5772,7 +5919,7 @@ STORY.push(
       ]},
      {type:'talk',npc:'merchant',text:'Warn the weigher of silver — gold cannot deliver',hiddenUntil:1,
       script:[
-       {say:['merchant','My silver is weighed and my gold is stored, prophet. Surely my wealth will see me through any day.']},
+       {say:['merchant','My silver is weighed and my gold is stored, naḇi. Surely my wealth will see me through any day.']},
        {say:['voice','I shall bring distress on men, and they shall walk like blind men, because they have sinned against Me; their blood shall be poured out like dust, and their flesh like dung.']},
        {shake:.8},{sfx:'bad'},{burst:[16,12,'ash',12]},
        {say:['tsephanyah','Neither your silver nor your gold shall be able to deliver you in the day of the wrath of YAHUAH — and by the fire of His jealousy all the earth shall be consumed, for He makes a sudden end of all who dwell in the earth.']},
@@ -5781,8 +5928,8 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'void', music:'tense', text:'Near is the great day of YAHUAH — near and hurrying greatly. That day is a day of wrath, distress and trouble, waste and ruin, darkness and gloom, clouds and thick darkness — a day of ramʼs horn and alarm against the walled cities and against the corner towers.', ref:'TSEPHANYAH 1:14–16'},
-   {art:'fall', music:'sorrow', text:'“And I shall bring distress on men, and they shall walk like blind men, because they have sinned against YAHUAH; their blood shall be poured out like dust and their flesh like dung.” Neither their silver nor their gold shall be able to deliver them in the day of the wrath of YAHUAH — and by the fire of His jealousy all the earth shall be consumed, for He makes a sudden end of all who dwell in the earth.', ref:'TSEPHANYAH 1:17–18'},
+   {art:'void', music:'tense', text:'Near is the great day of YAHUAH, near and hurrying greatly… That day is a day of wrath, a day of distress and trouble, a day of waste and ruin, a day of darkness and gloominess, a day of clouds and thick darkness, a day of ram’s horn and alarm – against the walled cities and against the corner towers.', ref:'TSEPHANYAH 1:14–16', stage:{"set":"walls","time":"dusk","cam":"pan-l","cast":[{"id":"watch","look":{"name":"A Watchman on the Wall","skin":"#83552d","hair":"#231409","robe":"#6a5a3a","beard":"#231409","armor":"#8a7a50"},"x":0.62,"z":1,"dy":-0.235,"face":"r","pose":"hold","hold":"shofar","acts":[{"at":1,"pose":"raise"}]},{"id":"tsephanyah","x":0.16,"z":0.06,"face":"r","pose":"point","say":0}],"crowd":[{"kind":"army","side":"bavel","n":8,"x":0.7,"w":0.34,"z":0.5,"face":"l","enter":"r","at":1}],"fx":[{"k":"darkness","at":1,"amt":0.3},{"k":"smoke","x":0.9,"at":1}]}},
+   {art:'fall', music:'sorrow', text:'“And I shall bring distress on men and they shall walk like blind men – because they have sinned against YAHUAH and their blood shall be poured out like dust and their flesh like dung.” Neither their silver nor their gold shall be able to deliver them in the day of the wrath of YAHUAH. And by the fire of His jealousy all the earth shall be consumed, for He makes a sudden end of all those who dwell in the earth.', ref:'TSEPHANYAH 1:17–18', stage:{"set":"ruins","time":"dusk","wx":"embers","wxAt":2,"cam":"push","cast":[{"id":"merchant","x":0.62,"z":0.08,"face":"l","pose":"bless","acts":[{"at":1,"pose":"hold"},{"at":2,"pose":"fall"}],"hold":"bowl"},{"id":"blind","look":{"name":"One Walking Like the Blind","skin":"#7a5230","hair":"#3a2716","robe":"#5e4a3a","beard":"#3a2716"},"label":false,"x":0.14,"z":0.14,"face":"r","pose":"bless","acts":[{"at":0,"to":0.34},{"at":2,"pose":"fall"}]}],"crowd":[{"kind":"people","n":6,"x":0.52,"w":0.5,"z":0.55,"face":"r","pose":"bless","hold":null}],"props":[{"k":"chest","x":0.75,"z":0.05,"gold":1,"at":1},{"k":"fire","x":0.08,"z":0.85,"s":2.8,"at":2},{"k":"fire","x":0.26,"z":0.95,"s":3,"at":2},{"k":"fire","x":0.44,"z":0.88,"s":2.8,"at":2},{"k":"fire","x":0.62,"z":0.95,"s":3,"at":2},{"k":"fire","x":0.8,"z":0.86,"s":2.8,"at":2},{"k":"fire","x":0.95,"z":0.95,"s":3,"at":2}],"fx":[{"k":"red","amt":0.2,"at":2}]}},
   ],
   complete:'The great day of YAHUAH is near — and neither silver nor gold shall deliver in that day.'
 },
@@ -5794,11 +5941,11 @@ STORY.push(
 
 { id:'z3', title:'Gather, O Shameless Nation', ref:'TSEPHANYAH 2:1–7',
   intro:[
-   {art:'wasteland', music:'sorrow', text:'Gather together, gather together, O nation without shame — before the decree is born, before the day passes on like chaff, before the burning wrath of YAHUAH comes upon you. Seek YAHUAH, all you meek of the earth who have done His right-ruling; seek righteousness, seek meekness — if so be you are hidden in the day of the wrath of YAHUAH.', ref:'TSEPHANYAH 2:1–3'},
+   {art:'wasteland', music:'sorrow', text:'Gather together, gather together, O nation without shame, before the decree is born – the day shall pass on like chaff – before the burning wrath of YAHUAH comes upon you … Seek YAHUAH, all you meek ones of the earth, who have done His right-ruling. Seek righteousness, seek meekness, if so be that you are hidden in the day of wrath of YAHUAH.', ref:'TSEPHANYAH 2:1–3', stage:{"set":"threshing","time":"dusk","wx":"wind","cam":"push","focus":0.4,"cast":[{"id":"tsephanyah","x":0.5,"z":0.12,"face":"l","pose":"raise","say":0,"acts":[{"at":1,"pose":"point"}]},{"id":"poorman","x":0.24,"z":0.08,"face":"r","pose":"stand","acts":[{"at":1,"pose":"pray"},{"at":2,"pose":"bow"}]}],"crowd":[{"kind":"people","n":5,"x":0.78,"w":0.24,"z":0.5,"face":"l","enter":"r","at":0},{"kind":"people","n":4,"x":0.16,"w":0.16,"z":0.55,"face":"r","enter":"l","at":0}],"props":[{"k":"sheaves","x":0.66,"z":0.25,"n":3},{"k":"sheaves","x":0.88,"z":0.3,"n":2}],"fx":[{"k":"red","amt":0.12},{"k":"rays","x":0.24,"at":2}]}},
   ],
   scene:{
    map:{biome:'plains', w:44, h:28, seed:5103,
-     features:[ {type:'standard',x:22,y:9,id:'seek',examine:'“Seek righteousness, seek meekness — if so be you are hidden in the day of the wrath of YAHUAH.”'},{type:'rock',x:16,y:12,id:'philistia',examine:'Azzah abandoned, Ashqelon laid waste, Ashdoḏ driven out at noonday, Eqron uprooted — the seacoast of the Kerĕthites.'},{type:'fold',x:30,y:14,id:'coast',examine:'“The seacoast shall be pastures for the remnant of Yahuḏah — for YAHUAH shall visit them and turn back their captivity.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'standard',x:22,y:9,id:'seek',examine:'“Seek righteousness, seek meekness — if so be that you are hidden in the day of wrath of YAHUAH.”'},{type:'rock',x:16,y:12,id:'philistia',examine:'Azzah abandoned, Ashqelon laid waste, Ashdoḏ driven out at noonday, Eqron uprooted — the seacoast of the Kerĕthites.'},{type:'fold',x:30,y:14,id:'coast',examine:'“The seacoast shall be pastures for the remnant of Yahuḏah — for YAHUAH shall visit them and turn back their captivity.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'tsephanyah', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'poorman',char:'poorman',x:18,y:13,wander:false},{id:'elder',char:'elder',x:27,y:15,wander:false} ],
@@ -5812,7 +5959,7 @@ STORY.push(
       ]},
      {type:'interact',prop:'philistia',text:'Pronounce against the Philistine seacoast',hiddenUntil:1,
       script:[
-       {say:['tsephanyah','For Azzah is abandoned and Ashqelon laid waste; Ashdoḏ is driven out at noonday, and Eqron is uprooted. Woe to the inhabitants of the seacoast, the nation of the Kerĕthites — the Word of YAHUAH is against you, O land of the Philistines!']},
+       {say:['tsephanyah','For Azzah is abandoned and Ashqelon laid waste, Ashdoḏ is driven out at noonday and Eqron is uprooted. Woe to the inhabitants of the seacoast, the nation of the Kerĕthites! The Word of YAHUAH is against you, O Kena‛an, land of the Philistines!']},
        {shake:.8},{sfx:'bad'},{burst:[16,12,'ash',12]},
        {say:['voice','And the seacoast shall be pastures, shepherdsʼ meadows, and folds for flocks; the coast shall belong to the remnant of the house of Yahuḏah — they shall feed their flocks on it, and lie down at evening in the houses of Ashqelon, for YAHUAH their Aluahim shall visit them and turn back their captivity.']},
        {rays:.5,raysX:30},{sfx:'holy'},{burst:[30,14,'holy',14]},
@@ -5820,19 +5967,19 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'Gather together, O nation without shame — before the decree is born, before the day passes like chaff, before the burning wrath of YAHUAH comes upon you. Seek YAHUAH, all you meek of the earth who have done His right-ruling; seek righteousness, seek meekness — if so be you are hidden in the day of the wrath of YAHUAH.', ref:'TSEPHANYAH 2:1–3'},
-   {art:'garden', music:'holy', text:'For Azzah is abandoned and Ashqelon laid waste; Ashdoḏ driven out at noonday, and Eqron uprooted. Woe to the inhabitants of the seacoast, the Kerĕthites — the Word of YAHUAH is against you. Yet the seacoast shall be pastures and folds for flocks, for the remnant of the house of Yahuḏah; they shall lie down at evening in the houses of Ashqelon, for YAHUAH their Aluahim shall visit them and turn back their captivity.', ref:'TSEPHANYAH 2:4–7'},
+   {art:'wasteland', music:'sorrow', text:'Gather together, gather together, O nation without shame, before the decree is born – the day shall pass on like chaff – before the burning wrath of YAHUAH comes upon you … Seek YAHUAH, all you meek ones of the earth, who have done His right-ruling. Seek righteousness, seek meekness, if so be that you are hidden in the day of wrath of YAHUAH.', ref:'TSEPHANYAH 2:1–3', stage:{"set":"threshing","time":"dusk","wx":"wind","cam":"push","focus":0.4,"cast":[{"id":"tsephanyah","x":0.5,"z":0.12,"face":"l","pose":"raise","say":0,"acts":[{"at":1,"pose":"point"}]},{"id":"poorman","x":0.24,"z":0.08,"face":"r","pose":"stand","acts":[{"at":1,"pose":"pray"},{"at":2,"pose":"bow"}]}],"crowd":[{"kind":"people","n":5,"x":0.78,"w":0.24,"z":0.5,"face":"l","enter":"r","at":0},{"kind":"people","n":4,"x":0.16,"w":0.16,"z":0.55,"face":"r","enter":"l","at":0}],"props":[{"k":"sheaves","x":0.66,"z":0.25,"n":3},{"k":"sheaves","x":0.88,"z":0.3,"n":2}],"fx":[{"k":"red","amt":0.12},{"k":"rays","x":0.24,"at":2}]}},
+   {art:'garden', music:'holy', text:'For Azzah is abandoned and Ashqelon laid waste, Ashdoḏ is driven out at noonday and Eqron is uprooted. Woe to the inhabitants of the seacoast, the nation of the Kerĕthites! The Word of YAHUAH is against you… And the seacoast shall be pastures, shepherds’ meadows and enclosures for flocks. And the coast shall be for the remnant of the house of Yahuḏah… at evening they lie down in the houses of Ashqelon. For YAHUAH their Aluahim shall visit them and turn back their captivity.', ref:'TSEPHANYAH 2:4–7', stage:{"set":"shore","time":"noon","cam":"pan-r","cast":[{"id":"tsephanyah","x":0.16,"z":0.05,"face":"r","pose":"stand","say":2,"acts":[{"at":2,"pose":"point"}]},{"id":"shepherd","x":0.42,"z":0.16,"face":"r","enter":"l","at":3,"to":0.44,"hold":"staff","acts":[{"at":5,"pose":"lie"}]}],"crowd":[{"kind":"soldiers","side":"pelishtim","n":6,"x":0.68,"w":0.3,"z":0.45,"face":"l","exit":"r","exitAt":1,"run":1},{"kind":"shepherds","n":3,"x":0.3,"w":0.16,"z":0.55,"face":"r","enter":"l","at":4}],"props":[{"k":"house","x":0.86,"z":0.55,"s":1.1},{"k":"house","x":0.72,"z":0.62},{"k":"sheep","x":0.6,"z":0.3,"n":7,"w":160,"at":3}],"fx":[{"k":"smoke","x":0.8,"at":0},{"k":"rays","x":0.5,"at":6}]}},
   ],
   complete:'Seek righteousness, seek meekness — that you may be hidden in the day of wrath.'
 },
 
 { id:'z4', title:'None But Me', ref:'TSEPHANYAH 2:8–15',
   intro:[
-   {art:'corrupt', music:'tense', text:'“I have heard the reproach of Mo’aḇ and the revilings of the children of Ammon, with which they reproached My people and exalted themselves against their borders. Therefore, as I live,” declares YAHUAH of hosts, the Aluahim of Yasharal, “Mo’aḇ shall be like Seḏom, and the children of Ammon like Amorah — a possession for weeds and a pit of salt, and a waste forever.”', ref:'TSEPHANYAH 2:8–9'},
+   {art:'corrupt', music:'tense', text:'“I have heard the reproach of Mo’aḇ and the revilings of the children of Ammon, with which they have reproached My people and exalted themselves against their borders. Therefore, as I live,” declares YAHUAH of hosts, the Aluahim of Yasharal, “Mo’aḇ shall be like Seḏom, and the children of Ammon like Amorah — a possession for weeds and a pit of salt, and a waste forever.”', ref:'TSEPHANYAH 2:8–9', stage:{"set":"desert","time":"dusk","cam":"push","focus":0.6,"cast":[{"id":"moavi","look":{"name":"A Man of Mo’aḇ","skin":"#7a5030","hair":"#1d1208","robe":"#7a3a3a","beard":"#1d1208","headcover":"#c8a060","sash":"#caa23c"},"x":0.62,"z":0.1,"face":"l","pose":"point","say":0,"acts":[{"at":1,"pose":"fall"}]},{"id":"ammoni","look":{"name":"A Man of Ammon","skin":"#6e4524","hair":"#23150b","robe":"#5a4a2a","beard":"#23150b","headcover":"#8a3a2a"},"x":0.78,"z":0.16,"face":"l","pose":"point","acts":[{"at":1,"pose":"flee","face":"r"},{"at":2,"pose":"fall"}]},{"id":"voice","x":0.4,"at":1}],"crowd":[{"kind":"people","n":5,"x":0.2,"w":0.2,"z":0.45,"face":"r","pose":"stand"}],"props":[{"k":"pit","x":0.5,"z":0.05,"at":2},{"k":"bush","x":0.38,"z":0.12,"at":2,"color":"#6a6a3a"},{"k":"bush","x":0.9,"z":0.1,"at":2,"color":"#6a6a3a"}],"fx":[{"k":"firefall","x":0.72,"y":0.62,"at":1},{"k":"red","amt":0.2,"at":1},{"k":"smoke","x":0.75,"at":2}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:5104,
-     features:[ {type:'rock',x:16,y:12,id:'moab',examine:'Moʼaḇ like Seḏom and Ammon like Amorah — a possession for weeds, a pit of salt, a waste forever.'},{type:'standard',x:22,y:9,id:'pride',examine:'“This they get for their pride — YAHUAH shall make all the mighty ones of the earth to shrivel.”'},{type:'tower',x:30,y:12,id:'nineveh',examine:'Ninewĕh made a waste, dry as a wilderness — the exultant city that said, “I am, and there is none but me.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'rock',x:16,y:12,id:'moab',examine:'Moʼaḇ like Seḏom and Ammon like Amorah — a possession for weeds, a pit of salt, a waste forever.'},{type:'standard',x:22,y:9,id:'pride',examine:'“This is what they get for their pride — YAHUAH shall make all the mighty ones of the earth to shrivel.”'},{type:'tower',x:30,y:12,id:'nineveh',examine:'Ninewĕh made a waste, dry as a wilderness — the exultant city that said, “I am it and there is none but me.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'tsephanyah', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:18,y:13,wander:false},{id:'poorman',char:'poorman',x:27,y:15,wander:false} ],
@@ -5843,7 +5990,7 @@ STORY.push(
        {say:['voice','YAHUAH shall be awesome to them, for He shall make all the mighty ones of the earth to shrivel — and all the coastlands of the nations shall bow down to Him, each one from his place. “You too, O Kushites, are to be slain by My sword.”']},
        {shake:.8},{sfx:'bad'},{burst:[22,9,'ash',12]},
       ]},
-     {type:'interact',prop:'nineveh',text:'Lay Ninewĕh waste — “I am, and there is none but me”',hiddenUntil:1,
+     {type:'interact',prop:'nineveh',text:'Lay Ninewĕh waste — “I am it and there is none but me”',hiddenUntil:1,
       script:[
        {say:['tsephanyah','And He shall stretch out His hand against the north and destroy Ashshur, and make Ninewĕh a waste, as dry as a wilderness. Droves shall lie down in her midst, every beast of the nation; both pelican and bittern shall lodge in the tops of her columns — a voice singing at the window, ruin at the threshold, the cedar-work laid bare.']},
        {shake:.9},{sfx:'bad'},{burst:[30,12,'ash',14]},
@@ -5853,10 +6000,10 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland', music:'tense', text:'“I have heard the reproach of Mo’aḇ and the revilings of Ammon, with which they reproached My people. Therefore, as I live,” declares YAHUAH of hosts, “Mo’aḇ shall be like Seḏom and Ammon like Amorah — a possession for weeds, a pit of salt, a waste forever; the remnant of My people shall plunder them.” This they get for their pride. YAHUAH shall make all the mighty ones of the earth to shrivel, while all the coastlands bow down to Him, each from his place.', ref:'TSEPHANYAH 2:8–12'},
-   {art:'wasteland', music:'sorrow', text:'And He shall stretch out His hand against the north and destroy Ashshur, and make Ninewĕh a waste, as dry as a wilderness. Droves shall lie down in her midst; pelican and bittern lodge in the tops of her columns; a voice sings at the window, ruin at the threshold, the cedar-work laid bare. This is the exultant city that said in her heart, “I am, and there is none but me.” How has she become a waste! Everyone who passes by whistles and shakes his fist.', ref:'TSEPHANYAH 2:13–15'},
+   {art:'wasteland', music:'tense', text:'“I have heard the reproach of Mo’aḇ and the revilings of the children of Ammon… Therefore, as I live,” declares YAHUAH of hosts, the Aluahim of Yasharal, “Mo’aḇ shall be like Seḏom and the children of Ammon like Amorah – a possession for weeds and a pit of salt and a waste forever…” This is what they get for their pride… He shall make all the mighty ones of the earth to shrivel, while all the coastlands of the nations bow down to Him, each one from his place.', ref:'TSEPHANYAH 2:8–12', stage:{"set":"highplace","time":"day","cam":"pull","cast":[{"id":"tsephanyah","x":0.15,"z":0.06,"face":"r","pose":"stand","say":2,"acts":[{"at":2,"pose":"point"}]},{"id":"moavi","look":{"name":"A Man of Mo’aḇ","skin":"#7a5030","hair":"#1d1208","robe":"#7a3a3a","beard":"#1d1208","headcover":"#c8a060","sash":"#caa23c"},"x":0.5,"z":0.14,"face":"r","pose":"raise","acts":[{"at":3,"pose":"bow","face":"r"}]},{"id":"ammoni","look":{"name":"A Man of Ammon","skin":"#6e4524","hair":"#23150b","robe":"#5a4a2a","beard":"#23150b","headcover":"#8a3a2a"},"x":0.36,"z":0.2,"face":"r","pose":"raise","acts":[{"at":3,"pose":"bow"}]}],"crowd":[{"kind":"nations","n":8,"x":0.6,"w":0.5,"z":0.62,"face":"l","from":"stand","pose":"bow","at":3}],"props":[{"k":"idol","x":0.8,"z":0.35,"h":90},{"k":"idol","x":0.66,"z":0.45,"h":70,"color":"#9a9aa0"}],"fx":[{"k":"firefall","x":0.78,"y":0.58,"at":3},{"k":"glory","x":0.3,"at":3}]}},
+   {art:'wasteland', music:'sorrow', text:'And He shall stretch out His hand against the north and destroy Ashshur and make Ninewĕh a waste, as dry as a wilderness. And droves shall lie down in her midst… both pelican and bittern lodge in the tops of her columns… This is the exultant city… that said in her heart, “I am it and there is none but me.” How has she become a waste, a place for beasts to lie down! Everyone who passes by her whistles and shakes his fist.', ref:'TSEPHANYAH 2:13–15', stage:{"set":"ruins","time":"dusk","cam":"pan-l","cast":[{"id":"tsephanyah","x":0.15,"z":0.05,"face":"r","pose":"point","say":0},{"id":"ashking","look":{"name":"The Sovereign of Ashshur","skin":"#6a4424","hair":"#14100a","robe":"#5a2a3a","beard":"#14100a","collar":"#caa23c","mantle":"#3a2a3a"},"crown":1,"x":0.6,"z":0.3,"face":"l","pose":"raise","at":3,"say":4,"acts":[{"at":5,"pose":"fall"}]},{"id":"passer","look":{"name":"One Who Passes By","skin":"#83552d","hair":"#3a2716","robe":"#7d6a52","beard":"#3a2716","headcover":"#b8a888"},"enter":"r","at":6,"to":0.8,"z":0.1,"face":"l","pose":"point"}],"props":[{"k":"pillar","x":0.36,"z":0.5,"h":130},{"k":"pillar","x":0.84,"z":0.45,"h":110},{"k":"sheep","x":0.5,"z":0.62,"n":6,"w":130,"at":1,"color":"#8a7a6a"},{"k":"lion","x":0.42,"z":0.42,"face":"r","at":5}],"fx":[{"k":"ravens","n":3,"x":0.4,"y":0.18,"at":2},{"k":"smoke","x":0.7,"at":5}]}},
   ],
-  complete:'The exultant city said, “There is none but me” — and became a waste for beasts to lie down.'
+  complete:'The exultant city said, “There is none but me” — how has she become a waste, a place for beasts to lie down!'
 },
 
 ]},
@@ -5866,19 +6013,19 @@ STORY.push(
 
 { id:'z5', title:'He Rejoices Over You With Singing', ref:'TSEPHANYAH 3:1–20',
   intro:[
-   {art:'corrupt', music:'tense', text:'Woe to her who is rebellious and defiled, the oppressing city! She did not obey the voice, she did not accept instruction, she did not trust in YAHUAH, she did not draw near to her Aluahim. Her rulers are roaring lions, her judges evening wolves; her neḇi’im are reckless, treacherous men; her kohanim have profaned the set-apart place and done violence to the Torah.', ref:'TSEPHANYAH 3:1–4'},
+   {art:'corrupt', music:'tense', text:'Woe to her who is rebellious and defiled, the oppressing city! She did not obey the voice, she did not accept instruction, she did not trust in YAHUAH, she did not draw near to her Aluahim. Her rulers in her midst are roaring lions, her judges are evening wolves … Her naḇi’im are reckless, treacherous men. Her kohanim have profaned the Qodash (Set Apart Place), they have done violence to the Torah.', ref:'TSEPHANYAH 3:1–4', stage:{"set":"city","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"tsephanyah","x":0.15,"z":0.05,"face":"r","pose":"point","say":0},{"id":"judge","look":{"name":"A Judge of the City","skin":"#7a5230","hair":"#4a3420","robe":"#3a3a4a","beard":"#4a3420","headcover":"#8a7a60","collar":"#caa23c"},"x":0.56,"z":0.15,"face":"l","pose":"sit","acts":[{"at":2,"pose":"point"}]},{"id":"poorman","x":0.38,"z":0.1,"face":"r","pose":"kneel","acts":[{"at":2,"pose":"bow"}]},{"id":"falsenavi","look":{"name":"A Reckless Naḇi","skin":"#8a5a34","hair":"#1d1208","robe":"#6a3a2a","beard":"#1d1208","mantle":"#3a2a1a"},"x":0.76,"z":0.18,"face":"l","pose":"raise","at":3},{"id":"idolkohen","x":0.86,"z":0.1,"face":"l","pose":"hold","hold":"scroll","at":4}],"crowd":[{"kind":"princes","n":4,"x":0.6,"w":0.3,"z":0.55,"face":"l","at":2}],"props":[{"k":"lion","x":0.44,"z":0.4,"face":"l","roar":1,"at":2},{"k":"dog","x":0.78,"z":0.42,"face":"l","color":"#6a6a70","at":2}],"fx":[{"k":"red","amt":0.12,"at":2},{"k":"smoke","x":0.9,"at":4}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:5105,
-     features:[ {type:'wall',x:16,y:11,id:'city',examine:'The rebellious, oppressing city — her rulers roaring lions, her judges evening wolves, her kohanim profaning the set-apart place.'},{type:'standard',x:22,y:9,id:'cleanlip',examine:'“Then I shall turn to the peoples a clean lip, that they all call on the Name of YAHUAH, to serve Him with one shoulder.”'},{type:'standard',x:30,y:13,id:'singing',examine:'“YAHUAH your Aluahim in your midst is mighty to save — He rejoices over you with singing.”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'wall',x:16,y:11,id:'city',examine:'The rebellious, oppressing city — her rulers roaring lions, her judges evening wolves, her kohanim profaning the Qodash (Set Apart Place).'},{type:'standard',x:22,y:9,id:'cleanlip',examine:'“Then I shall turn unto the peoples a clean lip, so that they all call on the Name of YAHUAH, to serve Him with one shoulder.”'},{type:'standard',x:30,y:13,id:'singing',examine:'“YAHUAH your Aluahim in your midst is mighty to save — He rejoices over you with singing.”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'tsephanyah', playerPos:[22,20], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:18,y:13,wander:false},{id:'poorman',char:'poorman',x:27,y:15,wander:false} ],
    objectives:[
      {type:'interact',prop:'city',text:'Rebuke the oppressing city — yet wait for YAHUAH',
       script:[
-       {say:['tsephanyah','Woe to the rebellious and defiled, the oppressing city! She did not obey the voice, nor accept instruction; she did not trust in YAHUAH nor draw near to her Aluahim. Yet YAHUAH is righteous in her midst — morning by morning He brings His right-ruling to light; it has not been lacking, yet the unrighteous knows no shame.']},
-       {say:['voice','“Therefore wait for Me,” declares YAHUAH, “until the day I rise up. For My judgment is to gather nations and pour out on them My rage — for by the fire of My jealousy all the earth shall be consumed.”']},
+       {say:['tsephanyah','Woe to her who is rebellious and defiled, the oppressing city! She did not obey the voice, she did not accept instruction, she did not trust in YAHUAH, she did not draw near to her Aluahim. YAHUAH is righteous in her midst, He does no unrighteousness. Morning by morning He brings His right-ruling to light, it has not been lacking, yet the unrighteous one knows no shame.']},
+       {say:['voice','Therefore wait for Me, declares YAHUAH, until the day I rise up for plunder. For My mishpat is to gather nations, to assemble reigns, to pour out on them My rage, all my burning wrath. For by the fire of My jealousy all the earth shall be consumed.']},
        {shake:.8},{sfx:'bad'},{burst:[16,11,'ash',12]},
       ]},
      {type:'interact',prop:'singing',text:'Proclaim the joy — He rejoices over you with singing',hiddenUntil:1,
@@ -5893,10 +6040,10 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt', music:'tense', text:'Woe to the rebellious and defiled, the oppressing city! Her rulers are roaring lions, her judges evening wolves; her neḇi’im are reckless and treacherous, her kohanim have profaned the set-apart place and done violence to the Torah. Yet YAHUAH is righteous in her midst; morning by morning He brings His right-ruling to light, yet the unrighteous knows no shame. “Therefore wait for Me,” declares YAHUAH, “until the day I rise up — for by the fire of My jealousy all the earth shall be consumed.”', ref:'TSEPHANYAH 3:1–8'},
-   {art:'light', music:'holy', text:'“For then I shall turn to the peoples a clean lip, that they all call on the Name of YAHUAH, to serve Him with one shoulder. From beyond the rivers of Kush My worshippers shall bring My offering. I shall leave in your midst an oppressed and poor people, and they shall trust in the Name of YAHUAH — the remnant of Yasharal shall do no unrighteousness and speak no falsehood, and they shall feed their flocks and lie down, with none to frighten them.”', ref:'TSEPHANYAH 3:9–13'},
-   {art:'garden', music:'holy', text:'Shout for joy, O daughter of Tsiyon! Be glad and rejoice with all your heart, O daughter of Yerushalayim! YAHUAH has turned aside your judgments and faced your enemy; the Sovereign of Yasharal, YAHUAH, is in your midst — no longer need you fear evil. YAHUAH your Aluahim in your midst is mighty to save; He rejoices over you with joy, He is silent in His love, He rejoices over you with singing.', ref:'TSEPHANYAH 3:14–17'},
-   {art:'light', music:'holy', text:'“I shall gather those who grieve about the appointed place, to whom its reproach was a burden. See, I am dealing with all who afflict you at that time; I shall save the lame and gather the outcast, and give them for a praise and a name in every land where they were put to shame. At that time I shall bring you in, and gather you, and give you for a name and a praise among all the peoples of the earth, when I turn back your captivity before your eyes,” said YAHUAH.', ref:'TSEPHANYAH 3:18–20'},
+   {art:'corrupt', music:'tense', text:'Woe to her who is rebellious and defiled, the oppressing city! … Her rulers in her midst are roaring lions, her judges are evening wolves… Her naḇi’im are reckless, treacherous men. Her kohanim have profaned the Qodash (Set Apart Place), they have done violence to the Torah. YAHUAH is righteous in her midst… yet the unrighteous one knows no shame. “Therefore wait for Me,” declares YAHUAH, “until the day I rise up… For by the fire of My jealousy all the earth shall be consumed.”', ref:'TSEPHANYAH 3:1–8', stage:{"set":"court","time":"dusk","cam":"push","cast":[{"id":"tsephanyah","x":0.15,"z":0.05,"face":"r","pose":"point","say":0,"acts":[{"at":6,"pose":"raise"}]},{"id":"falsenavi","look":{"name":"A Reckless Naḇi","skin":"#8a5a34","hair":"#1d1208","robe":"#6a3a2a","beard":"#1d1208","mantle":"#3a2a1a"},"x":0.36,"z":0.2,"face":"r","pose":"speak","at":2},{"id":"idolkohen","x":0.6,"z":0.12,"face":"r","pose":"raise","at":3,"acts":[{"at":5,"pose":"bow"}]},{"id":"voice","x":0.5,"at":4}],"crowd":[{"kind":"princes","n":4,"x":0.8,"w":0.2,"z":0.5,"face":"l","at":1}],"props":[{"k":"idol","x":0.74,"z":0.14,"h":80,"at":3},{"k":"altar","x":0.5,"z":0.45,"fire":false},{"k":"fire","x":0.22,"z":0.95,"s":2.6,"at":7},{"k":"fire","x":0.86,"z":0.95,"s":2.6,"at":7},{"k":"fire","x":0.5,"z":1,"s":2.4,"at":7}],"fx":[{"k":"firefall","x":0.74,"y":0.64,"at":7},{"k":"red","amt":0.2,"at":7}]}},
+   {art:'light', music:'holy', text:'“For then I shall turn unto the peoples a clean lip, so that they all call on the Name of YAHUAH, to serve Him with one shoulder. From beyond the rivers of Kush my worshippers… shall bring My offering… But I shall leave in your midst an oppressed and poor people and they shall trust in the Name of YAHUAH. The remnant of Yasharal shall do no unrighteousness and speak no falsehood… they shall feed their flocks and lie down, with none to frighten them.”', ref:'TSEPHANYAH 3:9–13', stage:{"set":"temple","time":"day","cam":"pan-r","cast":[{"id":"kushi","look":{"name":"A Worshipper from Beyond Kush","skin":"#3e2616","hair":"#0e0a06","robe":"#e8d8a8","beard":"#0e0a06","headcover":"#c83a2a","sash":"#caa23c"},"enter":"r","at":1,"to":0.66,"run":1,"z":0.12,"face":"l","pose":"kneel","hold":"basket"},{"id":"poorman","x":0.28,"z":0.08,"face":"r","pose":"pray","at":3},{"id":"shepherd","x":0.2,"z":0.16,"face":"r","pose":"lie","at":5}],"crowd":[{"kind":"worshippers","n":7,"x":0.36,"w":0.4,"z":0.55,"face":"r"},{"kind":"nations","n":6,"x":0.78,"w":0.24,"z":0.45,"face":"l","enter":"r","at":1,"pose":"carry","hold":"basket"}],"props":[{"k":"altar","x":0.5,"z":0.35,"sacrifice":1},{"k":"sheep","x":0.16,"z":0.3,"n":5,"w":110,"at":5}],"fx":[{"k":"rays","x":0.5,"at":0}]}},
+   {art:'garden', music:'holy', text:'Shout for joy, O daughter of Tsiyon! Shout, O Yasharal! Be glad and rejoice with all your heart, O daughter of Yerushalayim! YAHUAH has turned aside your mishpatim. He has faced your enemy. The Sovereign of Yasharal, YAHUAH, is in your midst. No longer need you fear evil… YAHUAH your Aluahim in your midst, is mighty to save. He rejoices over you with joy, He is silent in His love, He rejoices over you with singing.', ref:'TSEPHANYAH 3:14–17', stage:{"set":"city","time":"dawn","cam":"push","cast":[{"id":"daughter","look":{"name":"A Daughter of Tsiyon","skin":"#83552d","hair":"#23150b","hairStyle":"long","robe":"#8a5a6a","veil":"#e8d8b8"},"x":0.42,"z":0.08,"face":"r","pose":"raise","acts":[{"at":1,"pose":"dance"}]},{"id":"tsephanyah_o","x":0.16,"z":0.1,"face":"r","pose":"raise","at":1},{"id":"voice","x":0.52,"at":4}],"crowd":[{"kind":"women","n":5,"x":0.3,"w":0.3,"z":0.5,"face":"r","from":"stand","pose":"dance","at":1},{"kind":"soldiers","side":"bavel","n":5,"x":0.8,"w":0.2,"z":0.45,"face":"l","exit":"r","exitAt":3,"run":1},{"kind":"worshippers","n":6,"x":0.62,"w":0.3,"z":0.6,"face":"l","at":4}],"fx":[{"k":"glory","x":0.52,"at":6},{"k":"rays","x":0.52,"at":7},{"k":"bright","amt":0.15,"at":7}]}},
+   {art:'light', music:'holy', text:'“I shall gather those who grieve about the appointed place, who are among you, to whom its reproach is a burden. See, I am dealing with all those afflicting you at that time. I shall save the lame and gather those who were cast out… At that time I shall bring you in, even at the time I gather you, for I shall give you for a name and for a praise, among all the peoples of the earth, when I turn back your captivity before your eyes,” said YAHUAH.', ref:'TSEPHANYAH 3:18–20', stage:{"set":"gate","time":"dawn","cam":"push","cast":[{"id":"lame","look":{"name":"One Who Was Lame","skin":"#7a5230","hair":"#3a2716","robe":"#6a5a48","beard":"#3a2716","old":1},"enter":"l","at":2,"to":0.34,"z":0.08,"face":"r","pose":"raise","hold":"staff"},{"id":"exile","look":{"name":"A Woman Returning from Exile","skin":"#8a5a34","hair":"#23150b","hairStyle":"long","robe":"#6a5a7a","veil":"#b0a080"},"x":0.15,"z":0.14,"face":"r","pose":"weep","acts":[{"at":3,"pose":"raise"}]},{"id":"tsephanyah_o","x":0.84,"z":0.1,"face":"l","pose":"bless","say":0}],"crowd":[{"kind":"mourners","n":5,"x":0.3,"w":0.26,"z":0.5,"face":"r","from":"mourn","pose":"stand","at":3},{"kind":"soldiers","side":"bavel","n":4,"x":0.68,"w":0.16,"z":0.45,"face":"l","exit":"r","exitAt":1,"run":1},{"kind":"worshippers","n":6,"x":0.55,"w":0.34,"z":0.62,"face":"r","enter":"l","at":3}],"fx":[{"k":"rays","x":0.5,"at":3},{"k":"bright","amt":0.12,"at":3}]}},
   ],
   complete:'The Sovereign of Yasharal is in your midst — He rejoices over you with singing.'
 },
@@ -5943,7 +6090,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6009,7 +6156,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6070,9 +6220,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6157,5 +6307,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

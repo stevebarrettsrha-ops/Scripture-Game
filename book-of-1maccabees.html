@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main" style="font-size:clamp(26px,6vmin,64px)">1 MAQQABIM</div>
     <div class="title-sub">1 Maccabees — Ethiopic &amp; Eastern Apocrypha</div>
-    <div class="title-verse">“In the sight of the shamayim there is no difference between saving by many or by few; for victory does not depend on the size of the army — strength comes from the shamayim.” — 1 MAQQABIM 3:18–19</div>
+    <div class="title-verse">“In the sight of Shamayim there is no difference between saving by many or by few. It is not on the size of the army that victory in battle depends, but strength comes from Shamayim.” — 1 MAQQABIM 3:18–19</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of 1 Maqqabim</h2>
-    <div class="hint">Four acts · 1 MAQQABIM — when Antiochus Epiphanes stripped the House of its gold and set the desolating abomination on the altar, forcing the ways of the nations on Yisra’ĕl on pain of death: from the zeal of Mattityahu the kohen, who tore down the pagan altar at Modeʿin and called the zealous to the hills, and his dying charge to his sons; through Yahuḏah the Maccabee — few against many at the ascent of Beth-Ḥoron, and the night-march outwitted at Emmaus, the camp of the nations aflame at the trumpet-blast; to the desolate sanctuary mourned and made new, the profaned altar torn down and rebuilt of unhewn stones, the eight-day dedication that became a feast for every generation, and Ăl‛azar who ran beneath the royal elephant and gave his life to save his people.</div>
+    <div class="hint">Four acts · 1 MAQQABIM — when Antiochus Epiphanes stripped the House of its gold and set the desolating sacrilege on the mizbe’ach, forcing the ways of the nations on Yasharal on pain of death: from the zeal of Mattityahu the kohen, who tore down the pagan mizbe’ach at Modeʿin and called the zealous to the hills, and his dying charge to his sons; through Yahuḏah the Maccabee — few against many at the ascent of Beth-Ḥoron, and the night-march outwitted at Emmaus, the camp of the nations aflame at the trumpet-blast; to the desolate sanctuary mourned and made new, the profaned mizbe’ach torn down and rebuilt of unhewn stones, the eight-day dedication that became a feast for every generation, and Al‛azar who ran beneath the royal elephant and gave his life to save his people.</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -320,7 +352,7 @@
    A complete journey through 1 Maccabees, on the extended
    set-piece engine, with the Greek war-elephant: the sacrilege,
    the zeal of Mattityahu, the battles of Yahuḏah the Maccabee,
-   the rededication of the House, and Ăl‛azar beneath the beast.
+   the rededication of the House, and Al‛azar beneath the beast.
    Text: The Besorah (Natsarim translation) — condensed for play.
    ============================================================ */
 /* ================= CORE / UTILS ================= */
@@ -529,8 +561,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -638,7 +670,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -738,7 +770,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1000,6 +1034,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1043,7 +1087,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1305,6 +1351,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2786,6 +2842,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2981,7 +3057,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3186,8 +3262,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3674,6 +3751,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3737,7 +3815,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3790,15 +3872,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3809,6 +3925,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3834,6 +3956,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     $('slide-ui').classList.remove('show');
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
@@ -3863,6 +3986,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3880,7 +4004,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4020,6 +4144,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4083,17 +4212,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4257,22 +4387,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4285,7 +4419,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4308,11 +4442,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5673,7 +5820,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5982,14 +6129,14 @@ Object.assign(CHARS,{
   mattityahu:{name:'Mattityahu the Kohen', skin:'#b58650', hair:'#b8b2a0', hairStyle:'short', robe:'#e6e0d0', collar:'#caa23c', beard:'#b8b2a0'},
   yahudah:{name:'Yahuḏah the Maccabee', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#5a5030', collar:'#8a6a1c', beard:'#2c1a0c'},
   shimon:{name:'Shim‛on his Brother', skin:'#a9764a', hair:'#33230f', hairStyle:'short', robe:'#4a5a7a', beard:'#33230f'},
-  eleazar:{name:'Ăl‛azar Awaran', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#6a4a3a', beard:'#2c1a0c'},
+  eleazar:{name:'Al‛azar Awaran', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#6a4a3a', beard:'#2c1a0c'},
   apostate:{name:'A Yahuḏi Who Complied', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#7a6a8a', beard:'#2c1a0c'},
   officer:{name:'The Sovereign’s Officer', skin:'#7a5a36', hair:'#1d1208', hairStyle:'short', robe:'#5a2a2a', collar:'#8a3030', headcover:'#8a3030', beard:'#1d1208'},
   greek:{name:'A Soldier of the Greeks', skin:'#c8956a', hair:'#3a2a18', hairStyle:'short', robe:'#6a3a3a', headcover:'#8a3030', beard:'#3a2a18'},
   kohen:{name:'A Kohen of the House', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#e6e0d0', collar:'#caa23c', headcover:'#dcd6c6', beard:'#231409'},
   warrior:{name:'A Ḥasidean Warrior', skin:'#a9764a', hair:'#2c1a0c', hairStyle:'short', robe:'#79653f', beard:'#2c1a0c'},
-  elder:{name:'An Elder of Yisra’ĕl', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a5030', beard:'#cfc8b8'},
-  woman:{name:'A Mother of Yisra’ĕl', skin:'#a9764a', hair:'#3a2a18', hairStyle:'long', robe:'#7a5a6a', headcover:'#c8b486'},
+  elder:{name:'An Elder of Yasharal', skin:'#8a6038', hair:'#cfc8b8', hairStyle:'short', robe:'#5a5030', beard:'#cfc8b8'},
+  woman:{name:'A Mother of Yasharal', skin:'#a9764a', hair:'#3a2a18', hairStyle:'long', robe:'#7a5a6a', headcover:'#c8b486'},
 });
 
 const STORY=[];
@@ -6000,35 +6147,35 @@ STORY.push(
 
 { id:'k1', title:'The Sacrilege of Antiochus', ref:'1 MAQQABIM 1:20–64',
   intro:[
-   {art:'corrupt', music:'sorrow', text:'From the Greek kings came forth a sinful root: Antiochus Epiphanes. After subduing Mitsrayim, he went up against Yisra’ĕl, and came to Yerushalayim with a strong force — and arrogantly entered the set-apart place.', ref:'1 MAQQABIM 1:10,20–21'},
+   {art:'corrupt', music:'sorrow', text:'From them came forth a sinful root, Antiochus Epiphanes… He began to reign in the one hundred and thirty-seventh year of the kingdom of the Greeks. After subduing Mitsrayim, Antiochus returned… He went up against Yasharal and came to Yerushalayim with a strong force. He arrogantly entered the sanctuary and took the golden mizbe’ach, the lampstand for the light, and all its utensils.', ref:'1 MAQQABIM 1:10,20–21', stage:{"set":"temple","time":"day","cam":"push","focus":0.55,"cast":[{"id":"antiochus","x":0.16,"z":0.1,"face":"r","pose":"stand","crown":1,"say":4,"acts":[{"at":3,"to":0.36},{"at":4,"pose":"point"}]},{"id":"greek","enter":"l","at":3,"to":0.46,"z":0.14,"face":"r","pose":"stand","hold":"bowl","acts":[{"at":4,"to":0.64,"pose":"carry"}]},{"id":"kohen","x":0.86,"z":0.18,"face":"l","pose":"stand","acts":[{"at":3,"pose":"weep"},{"at":4,"exit":"r"}]}],"crowd":[{"kind":"army","side":"yawan","n":8,"x":0.3,"w":0.4,"z":0.66,"face":"r","enter":"l","at":3}],"props":[{"k":"lampstand","x":0.74,"z":0.32},{"k":"altar","x":0.58,"z":0.36,"fire":false,"bronze":1,"w":30,"h":34},{"k":"table","x":0.86,"z":0.45,"bread":false,"cups":1}],"fx":[{"k":"darkness","at":4,"amt":0.2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8301,
-     features:[ {type:'temple',x:22,y:9,id:'temple',examine:'The set-apart House — Antiochus strips its gold: the golden altar, the lampstand, and all its vessels.'},{type:'menorah',x:18,y:13,id:'lampstand',examine:'The lampstand for the light — carried off to a foreign land.'},{type:'idol',x:26,y:13,id:'abomination',examine:'The desolating abomination, erected upon the altar of burnt offering on the fifteenth of Kislĕw.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'temple',x:22,y:9,id:'temple',examine:'The qadash (Set Apart) House — Antiochus strips its gold: the golden mizbe’ach, the lampstand, and all its utensils.'},{type:'menorah',x:18,y:13,id:'lampstand',examine:'The lampstand for the light — carried off to a foreign land.'},{type:'idol',x:26,y:13,id:'abomination',examine:'The desolating sacrilege, erected upon the mizbe’ach of burnt offering on the fifteenth of Kislĕw.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'mattityahu', playerPos:[22,20],
    npcs:[ {id:'antiochus',char:'antiochus',x:20,y:13,wander:false},{id:'g1',char:'greek',x:24,y:14,wander:false},{id:'woman',char:'woman',x:28,y:16,wander:false} ],
    objectives:[
      {type:'interact',prop:'lampstand',text:'Antiochus strips the sanctuary',
       script:[
-       {say:['antiochus','All my kingdom shall be one people — and each shall give up his own customs! The gold of this house is mine: the altar, the lampstand, the vessels, the veil. Strip it all.']},
+       {say:['antiochus','All should be one people — and each should give up his customs! The gold of this house is mine: the golden mizbe’ach, the lampstand for the light, and all its utensils. Strip it all.']},
        {shake:.5},{sfx:'bad'},{burst:[18,13,'ash',12]},
        {say:['mattityahu','He commits deeds of murder, and speaks with great arrogance — and carries off the light of the House to his own land.']},
       ]},
-     {type:'interact',prop:'abomination',text:'The desolating abomination on the altar',hiddenUntil:1,
+     {type:'interact',prop:'abomination',text:'The desolating sacrilege on the mizbe’ach',hiddenUntil:1,
       script:[
-       {say:['narrator','Then the king wrote to his whole kingdom that all should be one people: to profane the Shabbaths, defile the sanctuary, build altars to idols, sacrifice swine, and leave their sons uncircumcised — that they might forget the Torah. And whoever was found with the Book of the Covenant, or adhered to the Torah, the decree condemned to death.']},
+       {say:['narrator','Then the king wrote to his whole kingdom that all should be one people… to profane Shabbaths and feasts… to defile the sanctuary… to build mizbe’achot… and shrines for idols, to sacrifice swine… and to leave their sons uncircumcised… so that they should forget the law.']},{say:['narrator','Where the book of the berith was found in the possession of any one, or if any one adhered to the law, the decree of the king condemned him to death.']},
        {shake:.6},{sfx:'bad'},{burst:[26,13,'ash',16]},
        {say:['woman','They put mothers to death for circumcising their children, and hung the infants from their necks. O YAHUAH — how long?']},
-       {say:['mattityahu','Yet many in Yisra’ĕl stood firm, and resolved in their hearts not to eat unclean food. They chose to die rather than be defiled — and they died. But zeal is not yet dead in Yisra’ĕl.']},
+       {say:['mattityahu','Yet many in Yasharal stood firm, and resolved in their hearts not to eat unclean food. They chose to die rather than be defiled — and they died. But zeal is not yet dead in Yasharal.']},
        {rays:.35,raysX:22},{sfx:'holy'},{burst:[22,9,'holy',8]},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'sorrow', text:'Antiochus stripped the sanctuary of its gold, and set the desolating abomination upon the altar; his decree forced the nations’ ways on Yisra’ĕl on pain of death — mothers slain for circumcising their sons, the Book of the Covenant burned. Yet many stood firm, and chose to die rather than be defiled.', ref:'1 MAQQABIM 1:41–64'},
+   {art:'wasteland', music:'sorrow', text:'Then the king wrote to his whole kingdom that all should be one people… They erected a desolating sacrilege upon the mizbe’ach of burnt offering… The books of the law which they found they tore to pieces and burned with fire… They put to death the women who had their children circumcised… But many in Yasharal stood firm… They chose to die rather than to be defiled… and they did die.', ref:'1 MAQQABIM 1:41–64', stage:{"set":"court","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"officer","x":0.14,"z":0.12,"face":"r","pose":"hold","hold":"scroll","say":0,"acts":[{"at":1,"pose":"point"}]},{"id":"greek","x":0.36,"z":0.1,"face":"r","pose":"stand","hold":"scroll","acts":[{"at":2,"pose":"strike"}]},{"id":"woman","x":0.62,"z":0.12,"face":"l","pose":"weep","hold":"baby","at":3},{"id":"elder","x":0.8,"z":0.1,"face":"l","pose":"stand","hold":"staff","at":4,"acts":[{"at":5,"pose":"fall"}]}],"crowd":[{"kind":"soldiers","side":"yawan","n":5,"x":0.3,"w":0.3,"z":0.7,"face":"r"},{"kind":"people","n":5,"x":0.82,"w":0.2,"z":0.55,"face":"l","pose":"stand","at":4}],"props":[{"k":"altar","x":0.52,"z":0.55,"fire":false,"bronze":1,"w":60,"h":34},{"k":"idol","x":0.52,"z":0.54,"dy":-0.07,"at":1},{"k":"fire","x":0.46,"z":0.14,"at":2},{"k":"scroll","x":0.52,"z":0.12,"at":2,"s":0.7}],"fx":[{"k":"smoke","at":2,"x":0.46},{"k":"darkness","at":5,"amt":0.25}]}},
   ],
-  complete:'The House stripped, the abomination raised, the faithful slain — but zeal is not yet dead in Yisra’ĕl.'
+  complete:'The House stripped, the sacrilege raised, the faithful slain — but zeal is not yet dead in Yasharal.'
 },
 
 ]},
@@ -6036,49 +6183,49 @@ STORY.push(
 /* ============ ACT II — THE ZEAL OF MATTITYAHU ============ */
 { id:'kact2', roman:'II', title:'The Zeal of Mattityahu', ref:'1 MAQQABIM 2', chapters:[
 
-{ id:'k2', title:'The Altar at Modeʿin', ref:'1 MAQQABIM 2:1–48',
+{ id:'k2', title:'The Mizbe’ach at Modeʿin', ref:'1 MAQQABIM 2:1–48',
   intro:[
-   {art:'vista', music:'tense', text:'In those days Mattityahu, a kohen of the sons of Yoyariḇ, moved from Yerushalayim and settled in Modeʿin. And the king’s officers who were enforcing the apostasy came to Modeʿin, to make the people offer sacrifice.', ref:'1 MAQQABIM 2:1,15'},
+   {art:'vista', music:'tense', text:'In those days Mattityahu… a kohen of the sons of Yoyariḇ, moved from Yerushalayim and settled in Modeʿin… Then the king’s officers who were enforcing the apostasy came to the city of Modeʿin to make them offer sacrifice.', ref:'1 MAQQABIM 2:1,15', stage:{"set":"city","time":"day","cam":"push","focus":0.5,"cast":[{"id":"mattityahu","enter":"l","at":1,"to":0.36,"z":0.1,"face":"r","pose":"stand","hold":"staff"},{"id":"yahudah","enter":"l","at":1,"to":0.24,"z":0.16,"face":"r","pose":"stand"},{"id":"shimon","enter":"l","at":1,"to":0.13,"z":0.22,"face":"r","pose":"stand"},{"id":"officer","enter":"r","at":2,"to":0.7,"z":0.12,"face":"l","pose":"point","say":2}],"crowd":[{"kind":"soldiers","side":"yawan","n":5,"x":0.84,"w":0.16,"z":0.45,"face":"l","enter":"r","at":2},{"kind":"people","n":6,"x":0.48,"w":0.32,"z":0.72,"face":"r"}],"props":[{"k":"altar","x":0.56,"z":0.38,"fire":false,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:8302,
-     features:[ {type:'altar',x:22,y:11,id:'altar',stage:2,examine:'A pagan altar set up in Modeʿin — the king’s officer demands a sacrifice upon it.'},{type:'house',x:14,y:10,id:'home'},{type:'standard',x:31,y:13,id:'call',examine:'“Let every one who is zealous for the Torah and supports the covenant come out with me!”'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'altar',x:22,y:11,id:'altar',stage:2,examine:'A pagan mizbe’ach set up in Modeʿin — the king’s officer demands a sacrifice upon it.'},{type:'house',x:14,y:10,id:'home'},{type:'standard',x:31,y:13,id:'call',examine:'“Let every one who is zealous for the law and supports the berith come out with me!”'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'tense',
    player:'mattityahu', playerPos:[22,20], playerHold:'staff',
    npcs:[ {id:'officer',char:'officer',x:20,y:14,wander:false},{id:'apostate',char:'apostate',x:24,y:14,wander:false},{id:'yahudah',char:'yahudah',x:18,y:16,wander:false},{id:'shimon',char:'shimon',x:26,y:16,wander:false} ],
    objectives:[
      {type:'talk',npc:'officer',text:'The officer demands a sacrifice',
       script:[
-       {say:['officer','Mattityahu — you are a leader, honoured and great in this city, supported by sons and brothers. Come, be the first to obey the king’s command, as all the nations have done. Then you and your sons shall be numbered among the friends of the king, and honoured with silver and gold.']},
-       {say:['mattityahu','Even if all the nations obey him, and forsake the religion of their fathers — yet I, and my sons, and my brothers, will live by the covenant of our fathers! Far be it from us to forsake the Torah. We will not obey the king’s words by turning aside, to the right or to the left.']},
+       {say:['officer','Mattityahu — you are a leader, respected and great in this city, and supported by sons and brothers. Now be the first to come and do what the king commands, as all the Gentiles and the men of Yahuḏah and those that are left in Yerushalayim have done.']},{say:['officer','Then you and your sons will be numbered among the friends of the king, and you and your sons will be respected with silver and gold and many gifts.']},
+       {say:['mattityahu','Even if all the nations that live under the rule of the king obey him… departing each one from the religion of his fathers — yet I and my sons and my brothers will live by the berith of our fathers! Far be it from us to desert the law and the ordinances. We will not obey the king’s words by turning aside from our religion to the right hand or to the left.']},
        {shake:.3},{sfx:'bad'},
       ]},
      {type:'interact',prop:'altar',text:'The zeal of Mattityahu, like Pineḥas',hiddenUntil:1,
       script:[
-       {say:['apostate','I will do it — I will sacrifice on the altar in Modeʿin, as the king commands. Better to live…']},
-       {say:['narrator','When Mattityahu saw it, he burned with zeal, and his heart was stirred — and he ran and killed the man upon the altar. At the same time he killed the king’s officer who was forcing them to sacrifice, and he tore down the altar. Thus he burned with zeal for the Torah, as Pineḥas did against Zimri.']},
+       {say:['apostate','I will do it — I will sacrifice on the mizbe’ach in Modeʿin, as the king commands. Better to live…']},
+       {say:['narrator','When Mattityahu saw it, he burned with zeal and his heart was stirred. He gave vent to righteous anger; he ran and killed him upon the mizbe’ach. At the same time he killed the king’s officer who was forcing them to sacrifice, and he tore down the mizbe’ach. Thus he burned with zeal for the law, as Pineḥas did against Zimri the son of Salu.']},
        {call:G=>{ ['apostate','officer'].forEach(id=>{ const n=G.world.npcs.find(n=>n.id===id); if(n){ n.hidden=true; Particles.burst(n.x*TILE,n.y*TILE,'ash',10); } });
                   const p=G.world.map.decor.find(d=>d.id==='altar'); if(p){ p.type='rubble'; } }},
        {shake:.7},{sfx:'thunder'},{burst:[22,11,'ash',16]},
       ]},
-     {type:'interact',prop:'call',text:'“Whoever is zealous, come out with me!”',hiddenUntil:2,
+     {type:'interact',prop:'call',text:'“Let every one who is zealous come out with me!”',hiddenUntil:2,
       script:[
-       {say:['mattityahu','Let every one who is zealous for the Torah and supports the covenant come out with me!']},
+       {say:['mattityahu','Let every one who is zealous for the law and supports the berith come out with me!']},
        {rays:.6,raysX:31},{sfx:'holy'},{burst:[31,13,'holy',16]},
-       {say:['narrator','And he and his sons fled to the hills, and left all they had in the city. Then many who sought righteousness and justice went down to the wilderness — and there united with them the Ḥasideans, mighty warriors of Yisra’ĕl, every one who offered himself willingly for the Torah. And they went about and tore down the pagan altars, and rescued the Torah from the hand of the nations.']},
+       {say:['narrator','And he and his sons fled to the hills, and left all they had in the city. Then many who sought righteousness and justice went down to the wilderness — and there united with them the Ḥasideans, mighty warriors of Yasharal, every one who offered himself willingly for the law. And they went about and tore down the pagan mizbe’achot, and rescued the law from the hand of the Gentiles.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'tense', text:'At Modeʿin, when a Yahuḏi came forward to sacrifice on the pagan altar, Mattityahu burned with zeal like Pineḥas — and killed the man and the king’s officer, and tore down the altar. “Let every one who is zealous for the Torah come out with me!” And he and his sons fled to the hills, and the Ḥasideans joined them, and the revolt was born.', ref:'1 MAQQABIM 2:15–48'},
+   {art:'light', music:'tense', text:'A Yahuḏi came forward… to offer sacrifice upon the mizbe’ach in Modeʿin. When Mattityahu saw it, he burned with zeal and his heart was stirred… he ran and killed him upon the mizbe’ach… he killed the king’s officer… and he tore down the mizbe’ach. “Let every one who is zealous for the law and supports the berith come out with me!” And he and his sons fled to the hills… Then there united with them a company of Ḥasideans.', ref:'1 MAQQABIM 2:15–48', stage:{"set":"highplace","time":"day","cam":"push","focus":0.55,"cast":[{"id":"apostate","x":0.42,"at":0,"to":0.58,"z":0.14,"face":"r","pose":"kneel","acts":[{"at":3,"pose":"dead"}]},{"id":"officer","x":0.82,"z":0.14,"face":"l","pose":"point","acts":[{"at":4,"pose":"dead"}]},{"id":"mattityahu","x":0.24,"z":0.1,"face":"r","pose":"stand","hold":"sword","say":6,"acts":[{"at":2,"pose":"point"},{"at":3,"to":0.48,"pose":"strike","run":1},{"at":4,"to":0.7,"pose":"strike","run":1},{"at":6,"pose":"raise"},{"at":7,"to":0.3,"face":"l","run":1}]},{"id":"yahudah","x":0.12,"z":0.2,"face":"r","pose":"stand","hold":"sword","acts":[{"at":6,"pose":"raise"},{"at":7,"to":0.2,"face":"l"}]},{"id":"shimon","x":0.05,"z":0.28,"face":"r","pose":"stand","acts":[{"at":7,"to":0.1,"face":"l"}]},{"id":"warrior","enter":"l","at":8,"to":0.12,"z":0.1,"face":"r","pose":"raise","hold":"spear"}],"crowd":[{"kind":"soldiers","side":"yawan","n":3,"x":0.9,"w":0.08,"z":0.5,"face":"l","exit":"r","exitAt":4,"run":1},{"kind":"people","n":5,"x":0.5,"w":0.3,"z":0.8,"face":"r","pose":"look"},{"kind":"soldiers","side":"yasharal","n":5,"x":0.24,"w":0.2,"z":0.6,"face":"r","enter":"l","at":8}],"props":[{"k":"altar","x":0.68,"z":0.3,"fire":true},{"k":"idol","x":0.78,"z":0.4}],"fx":[{"k":"smoke","at":5,"x":0.68}]}},
   ],
-  complete:'The first altar torn down, the first blow struck — and a call to the hills that Yisra’ĕl still heeds.'
+  complete:'The first mizbe’ach torn down, the first blow struck — and a call to the hills that Yasharal still heeds.'
 },
 
 { id:'k3', title:'The Charge to the Sons', ref:'1 MAQQABIM 2:49–70',
   intro:[
-   {art:'coffin', music:'sorrow', text:'Now the days drew near for Mattityahu to die, and he said to his sons: “Arrogance and reproach have grown strong; it is a time of ruin and furious anger. Now, my children, show zeal for the Torah, and give your lives for the covenant of our fathers.”', ref:'1 MAQQABIM 2:49–50'},
+   {art:'coffin', music:'sorrow', text:'Now the days drew near for Mattityahu to die, and he said to his sons: “Arrogance and reproach have now become strong; it is a time of ruin and furious anger. Now, my children, show zeal for the law, and give your lives for the berith of our fathers.”', ref:'1 MAQQABIM 2:49–50', stage:{"set":"cave","time":"night","cam":"close","focus":0.45,"cast":[{"id":"mattityahu","x":0.3,"z":0.16,"face":"r","pose":"lie","onbed":1,"say":2},{"id":"yahudah","x":0.52,"z":0.1,"face":"l","pose":"kneel","hold":"sword"},{"id":"shimon","x":0.64,"z":0.14,"face":"l","pose":"kneel","acts":[{"at":1,"pose":"weep"},{"at":2,"pose":"kneel"}]},{"id":"eleazar","x":0.76,"z":0.2,"face":"l","pose":"stand"},{"id":"yonathan","look":{"name":"Yonathan his Brother","skin":"#a9764a","hair":"#2c1a0c","beard":"#2c1a0c","robe":"#5a6a4a"},"x":0.88,"z":0.26,"face":"l","pose":"stand"}],"props":[{"k":"fire","x":0.44,"z":0.36,"s":0.7}]}},
   ],
   scene:{
    map:{biome:'rocky', w:44, h:28, seed:8303,
@@ -6089,20 +6236,20 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'mattityahu',text:'Receive the dying father’s charge',
       script:[
-       {say:['mattityahu','Remember the deeds of the fathers: Aḇraham found faithful in trial; Yosĕph in his distress kept the command; Pineḥas our father, for his zeal, received a covenant of everlasting priesthood; Yahusha, for fulfilling the word, became a judge; Dawiḏ, for his kindness, inherited a throne forever. None who put their trust in Him shall lack strength.']},
-       {say:['mattityahu','My children — show zeal for the Torah, and give your lives for the covenant. Shim‛on your brother is wise in counsel; listen to him, he shall be your father. And Yahuḏah the Maccabee, a mighty warrior from his youth — he shall command the army, and fight the battle against the peoples.']},
+       {say:['mattityahu','Remember the deeds of the fathers… Was not Aḇraham found faithful when tested, and it was reckoned to him as righteousness? Yosĕph in the time of his distress kept the mitsvah… Pineḥas our father, because he was deeply zealous, received the berith of everlasting kehunnah.']},{say:['mattityahu','Yahusha, because he fulfilled the command, became a judge in Yasharal. Dawiḏ, because he was merciful, inherited the throne of the kingdom for ever… None who put their trust in Him will lack strength.']},
+       {say:['mattityahu','My children — show zeal for the law, and give your lives for the berith of our fathers. Shim‛on your brother is wise in counsel; always listen to him; he shall be your father. Yahuḏah the Maccabee has been a mighty warrior from his youth; he shall command the army for you and fight the battle against the peoples.']},
        {rays:.5,raysX:18},{sfx:'holy'},{burst:[18,13,'holy',12]},
       ]},
      {type:'interact',prop:'charge',text:'Take command of the army',hiddenUntil:1,
       script:[
-       {say:['yahudah','Pay back the nations in full, our father said — and heed what the Torah commands. I take up the command. Let the peoples learn that One redeems and saves Yisra’ĕl.']},
-       {say:['narrator','Then Mattityahu blessed them, and was gathered to his fathers, and was buried in the tomb of his fathers at Modeʿin. And all Yisra’ĕl mourned him with great lamentation. And Yahuḏah his son, who was called Maccabee, took command in his place.']},
+       {say:['yahudah','Pay back the Gentiles in full, our father said — and heed what the law commands. I take up the command. Let the peoples learn that One redeems and saves Yasharal.']},
+       {say:['narrator','Then Mattityahu baruk them, and was gathered to his fathers, and was buried in the tomb of his fathers at Modeʿin. And all Yasharal mourned him with great lamentation. And Yahuḏah his son, who was called Maccabee, took command in his place.']},
        {rays:.6,raysX:22},{sfx:'holy'},{burst:[22,13,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'journey', music:'holy', text:'Dying, Mattityahu charged his sons: “Show zeal for the Torah, and give your lives for the covenant. Shim‛on shall be your counsel, and Yahuḏah the Maccabee — a mighty warrior from his youth — shall command the army.” Then he blessed them and was gathered to his fathers; and Yahuḏah took command in his place.', ref:'1 MAQQABIM 2:51–70'},
+   {art:'journey', music:'holy', text:'“Remember the deeds of the fathers, which they did in their generations; and receive great esteem and an everlasting name… Shim‛on your brother is wise in counsel; always listen to him; he shall be your father. Yahuḏah Maccabeus has been a mighty warrior from his youth; he shall command the army for you and fight the battle against the peoples.” Then he baruk them, and was gathered to his fathers… Then Yahuḏah his son, who was called Maccabeus, took command in his place.', ref:'1 MAQQABIM 2:51–3:1', stage:{"set":"camp","time":"dusk","cam":"push","focus":0.4,"cast":[{"id":"mattityahu","x":0.22,"z":0.16,"face":"r","pose":"lie","onbed":1,"say":0,"acts":[{"at":7,"pose":"dead"}]},{"id":"shimon","x":0.44,"z":0.12,"face":"l","pose":"stand","acts":[{"at":2,"pose":"kneel"},{"at":5,"pose":"stand"}]},{"id":"yahudah","x":0.58,"z":0.1,"face":"l","pose":"stand","hold":"sword","acts":[{"at":5,"pose":"kneel"},{"at":7,"pose":"weep"},{"at":8,"to":0.66,"face":"r","pose":"raise"}]},{"id":"yohanan","look":{"name":"Yoḥanan his Brother","skin":"#9a6a40","hair":"#23150b","beard":"#23150b","robe":"#6a5a3a"},"x":0.72,"z":0.2,"face":"l","pose":"stand","acts":[{"at":7,"pose":"weep"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":8,"x":0.66,"w":0.5,"z":0.72,"face":"l","from":"stand","pose":"raise","at":8}],"props":[{"k":"tent","x":0.14,"z":0.6},{"k":"fire","x":0.4,"z":0.5,"s":0.8}],"fx":[{"k":"darkness","at":7,"amt":0.2}]}},
   ],
   complete:'The old kohen gathered to his fathers — and the sword of the revolt passed to Yahuḏah the Maccabee.'
 },
@@ -6114,7 +6261,7 @@ STORY.push(
 
 { id:'k4', title:'Beth-Ḥoron — Few Against Many', ref:'1 MAQQABIM 3:13–24',
   intro:[
-   {art:'vista', music:'tense', text:'Seron, commander of the Syrian army, heard that Yahuḏah had gathered a company: “I will make a name for myself, and win honour in the kingdom — I will make war on Yahuḏah.” And he came up by the ascent of Beth-Ḥoron with a strong army.', ref:'1 MAQQABIM 3:13–16'},
+   {art:'vista', music:'tense', text:'Now when Seron, the commander of the Syrian army, heard that Yahuḏah had gathered a large company… he said, “I will make a name for myself and win esteem in the kingdom. I will make war on Yahuḏah and his companions…” And again a strong army of wicked men went up with him… When he approached the ascent of Beth-Ḥoron, Yahuḏah went out to meet him with a small company.', ref:'1 MAQQABIM 3:13–16', stage:{"set":"valley","time":"day","cam":"pan-l","focus":0.5,"cast":[{"id":"seron","look":{"name":"Seron, Commander of the Syrian Army","skin":"#c8956a","hair":"#3a2a18","beard":"#3a2a18","robe":"#6a2a2a","armor":"#c8a048","helmet":"#c8a048","crest":"#b8202a","short":1},"x":0.7,"z":0.12,"face":"l","pose":"stand","hold":"spear","say":1,"acts":[{"at":1,"pose":"raise"},{"at":2,"pose":"point"},{"at":4,"pose":"stand"}]},{"id":"yahudah","enter":"l","at":4,"to":0.28,"z":0.1,"face":"r","pose":"stand","hold":"sword","hold2":"shield"}],"crowd":[{"kind":"army","side":"yawan","n":13,"x":0.72,"w":0.44,"z":0.7,"face":"l","enter":"r","at":3},{"kind":"soldiers","side":"yasharal","n":4,"x":0.16,"w":0.14,"z":0.42,"face":"r","enter":"l","at":4}],"props":[{"k":"banner","x":0.92,"z":0.5,"color":"#b8202a","at":3}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:8304,
@@ -6126,7 +6273,7 @@ STORY.push(
      {type:'talk',npc:'warrior',text:'“How can we fight so great a multitude?”',
       script:[
        {say:['warrior','How can we, few as we are, fight against so great and strong a multitude? And we are faint, for we have eaten nothing today.']},
-       {say:['yahudah','It is easy for many to be hemmed in by few — for in the sight of the shamayim there is no difference between saving by many or by few. Victory does not depend on the size of the army; strength comes from the shamayim. They come against us in insolence and lawlessness, to destroy us and our wives and children — but we fight for our lives and our Torah. He Himself will crush them before us. Do not fear them!']},
+       {say:['yahudah','It is easy for many to be hemmed in by few, for in the sight of Shamayim there is no difference between saving by many or by few. It is not on the size of the army that victory in battle depends, but strength comes from Shamayim.']},{say:['yahudah','They come against us in great pride and lawlessness to destroy us and our wives and our children, and to despoil us; but we fight for our lives and our laws. He Himself will crush them before us; as for you, do not be afraid of them.']},
        {rays:.5,raysX:24},{sfx:'holy'},{burst:[24,12,'holy',14]},
       ]},
      {type:'goto',x:16,y:13,text:'Charge down the ascent',radius:2.4,hiddenUntil:1,
@@ -6135,56 +6282,56 @@ STORY.push(
        {spawn:{id:'s2',char:'greek',x:6,y:15,wander:false,noTalk:true}},
        {spawn:{id:'s3',char:'greek',x:9,y:18,wander:false,noTalk:true}},
        {sfx:'bad'},{shake:.5},
-       {battle:{foes:['s1','s2','s3'],hits:2,text:'Beth-Ḥoron — charge, and the shamayim fights for you!',won:'Seron’s vanguard is broken!'}},
+       {battle:{foes:['s1','s2','s3'],hits:2,text:'Beth-Ḥoron — charge, and Shamayim fights for you!',won:'Seron’s vanguard is broken!'}},
        {spawn:{id:'s4',char:'greek',x:5,y:13,wander:false,noTalk:true}},
        {spawn:{id:'s5',char:'greek',x:7,y:17,wander:false,noTalk:true}},
        {battle:{foes:['s4','s5'],hits:2,text:'They rally on the ascent — press them!',won:'Eight hundred fall; the rest flee to Philistia.'}},
-       {say:['narrator','Yahuḏah pursued them down from Beth-Ḥoron to the plain; and about eight hundred of them fell, and the rest fled into the land of the Philistines. Then the fear of Yahuḏah began to fall on the nations round about — and his fame reached the king.']},
+       {say:['narrator','Yahuḏah pursued them down from Beth-Ḥoron to the plain; and about eight hundred of them fell, and the rest fled into the land of the Philistines. Then the fear of Yahuḏah began to fall on the Gentiles round about — and his fame reached the king.']},
        {rays:.6,raysX:16},{sfx:'holy'},{burst:[16,12,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“There is no difference before the shamayim between saving by many or by few — strength comes from the shamayim!” And Yahuḏah with his small company charged Seron’s army at the ascent of Beth-Ḥoron; eight hundred fell, and the rest fled to Philistia. And the fear of Yahuḏah began to fall on all the nations round about.', ref:'1 MAQQABIM 3:16–26'},
+   {art:'light', music:'holy', text:'“In the sight of Shamayim there is no difference between saving by many or by few… strength comes from Shamayim.” When he finished speaking, he rushed suddenly against Seron and his army, and they were crushed before him… eight hundred of them fell, and the rest fled into the land of the Philistines. Then Yahuḏah and his brothers began to be feared, and terror fell upon the Gentiles round about them.', ref:'1 MAQQABIM 3:16–26', stage:{"set":"battle","time":"day","wx":"dust","wxAt":2,"cam":"push","focus":0.55,"cast":[{"id":"yahudah","x":0.34,"z":0.1,"face":"l","pose":"speak","hold":"sword","say":0,"acts":[{"at":1,"pose":"raise"},{"at":2,"to":0.56,"face":"r","pose":"fight","run":1},{"at":4,"pose":"raise"}]},{"id":"shimon","x":0.2,"z":0.16,"face":"r","pose":"stand","hold":"spear","acts":[{"at":2,"to":0.42,"pose":"fight","run":1}]},{"id":"seron","look":{"name":"Seron, Commander of the Syrian Army","skin":"#c8956a","hair":"#3a2a18","beard":"#3a2a18","robe":"#6a2a2a","armor":"#c8a048","helmet":"#c8a048","crest":"#b8202a","short":1},"x":0.74,"z":0.12,"face":"l","pose":"fight","hold":"spear","acts":[{"at":3,"pose":"fall"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":5,"x":0.14,"w":0.18,"z":0.5,"face":"r","from":"stand","pose":"fight","at":2},{"kind":"army","side":"yawan","n":10,"x":0.78,"w":0.34,"z":0.62,"face":"l","exit":"r","exitAt":3,"run":1},{"kind":"nations","n":5,"x":0.86,"w":0.16,"z":0.9,"face":"l","pose":"weep","at":4}],"fx":[{"k":"rays","at":1,"x":0.34}]}},
   ],
-  complete:'Few against many at Beth-Ḥoron — and strength from the shamayim scatters the Syrian host.'
+  complete:'Few against many at Beth-Ḥoron — and strength from Shamayim scatters the Syrian host.'
 },
 
 { id:'k5', title:'Emmaus — By the Trumpets', ref:'1 MAQQABIM 3:38–4:25',
   intro:[
-   {art:'stars', music:'tense', text:'Then the regent Lysias sent forty thousand foot and seven thousand horse under Ptolemy, Nikanor, and Gorgias, to destroy Yahuḏah; and they encamped near Emmaus. And Gorgias took five thousand foot and a thousand horse, and moved out by night to fall upon the camp of the Yahuḏim.', ref:'1 MAQQABIM 3:38–4:2'},
+   {art:'stars', music:'tense', text:'Lysias chose Ptolemy… and Nikanor and Gorgias… and sent with them forty thousand infantry and seven thousand cavalry to go into the land of Yahuḏah and destroy it… when they arrived they encamped near Emmaus in the plain. Now Gorgias took five thousand infantry and a thousand picked cavalry, and this division moved out by night to fall upon the camp of the Yahuḏim.', ref:'1 MAQQABIM 3:38–4:2', stage:{"set":"camp","time":"night","cam":"pan-r","focus":0.55,"cast":[{"id":"lysias","look":{"name":"Lysias the Regent","skin":"#d8b48a","hair":"#8a7a5a","beard":"#8a7a5a","robe":"#5a2a5a","collar":"#caa23c","mantle":"#7a2a2a"},"x":0.2,"z":0.12,"face":"r","pose":"point","say":0},{"id":"nikanor","look":{"name":"Nikanor","skin":"#c8956a","hair":"#2c1a0c","beard":"#2c1a0c","robe":"#7a2a2a","armor":"#b8a060","helmet":"#b8a060","crest":"#b8202a","short":1},"x":0.42,"z":0.14,"face":"l","pose":"stand","hold":"spear","at":1},{"id":"gorgias","look":{"name":"Gorgias","skin":"#caa070","hair":"#4a3218","beard":"#4a3218","robe":"#6a3a2a","armor":"#c8a048","helmet":"#c8a048","crest":"#2a2a6a","short":1},"x":0.54,"z":0.12,"face":"l","pose":"stand","hold":"spear","at":1,"acts":[{"at":4,"exit":"r"}]}],"crowd":[{"kind":"army","side":"yawan","n":9,"x":0.4,"w":0.5,"z":0.72,"face":"r","at":2},{"kind":"soldiers","side":"yawan","n":5,"x":0.76,"w":0.2,"z":0.5,"face":"r","at":2,"exit":"r","exitAt":4}],"props":[{"k":"horse","x":0.68,"z":0.4,"face":"r","at":2},{"k":"horse","x":0.9,"z":0.55,"face":"r","color":"#3a2a1a","at":2},{"k":"tent","x":0.1,"z":0.7,"color":"#7a2a2a","at":3},{"k":"tent","x":0.3,"z":0.85,"color":"#7a2a2a","at":3},{"k":"fire","x":0.3,"z":0.4,"at":3}]}},
   ],
   scene:{
    map:{biome:'rocky', w:48, h:28, seed:8305,
-     features:[ {type:'firepit',x:16,y:12,id:'muster',examine:'The muster at Mitspah — “Gird yourselves, be valiant; it is better to die in battle than to see the ruin of our nation and our sanctuary.”'},{type:'clearing',x:24,y:20,flat:3} ]},
+     features:[ {type:'firepit',x:16,y:12,id:'muster',examine:'The muster at Mitspah — “Gird yourselves and be valiant; it is better for us to die in battle than to see the misfortunes of our nation and of the sanctuary.”'},{type:'clearing',x:24,y:20,flat:3} ]},
    time:'night', music:'tense',
    player:'yahudah', playerPos:[24,21], playerHold:'staff',
    npcs:[ {id:'shimon',char:'shimon',x:22,y:16,wander:false},{id:'eleazar',char:'eleazar',x:26,y:16,wander:false},{id:'warrior',char:'warrior',x:20,y:17,wander:false} ],
    objectives:[
      {type:'interact',prop:'muster',text:'Cry to the shamayim before battle',
       script:[
-       {say:['yahudah','Gird yourselves and be valiant. Be ready at dawn to fight these nations that have assembled to destroy us and our sanctuary. It is better for us to die in battle than to see the ruin of our nation. But as His will in the shamayim may be, so shall He do.']},
-       {say:['yahudah','Now let us cry to the shamayim — to see whether He will show us favour, and remember His covenant with our fathers, and crush this army before us today. Then all the nations shall know that there is One who redeems and saves Yisra’ĕl!']},
+       {say:['yahudah','Gird yourselves and be valiant. Be ready early in the morning to fight with these Gentiles who have assembled against us to destroy us and our sanctuary. It is better for us to die in battle than to see the misfortunes of our nation and of the sanctuary. But as His will in Shamayim may be, so He will do.']},
+       {say:['yahudah','Now let us cry to the shamayim — to see whether He will chen us, and remember His berith with our fathers, and crush this army before us today. Then all the Gentiles shall know that there is One who redeems and saves Yasharal!']},
        {rays:.6,raysX:16},{sfx:'holy'},{burst:[16,12,'holy',16]},
       ]},
-     {type:'goto',x:34,y:14,text:'Fall on the empty camp at dawn',radius:2.6,hiddenUntil:1,
+     {type:'goto',x:34,y:14,text:'Fall on the camp at dawn',radius:2.6,hiddenUntil:1,
       script:[
        {fade:'out'},{time:'day'},{fade:'in'},
-       {say:['narrator','At dawn Yahuḏah came into the plain — for Gorgias, seeking the Yahuḏim in the hills by night, found their camp empty. Now three thousand of Yahuḏah’s men had no armour; yet they saw the camp of the nations, strong and armoured, with cavalry all around.']},
+       {say:['narrator','When Gorgias entered the camp of Yahuḏah by night, he found no one there, so he looked for them in the hills. At daybreak Yahuḏah appeared in the plain with three thousand men, but they did not have armor and swords such as they desired. And they saw the camp of the Gentiles, strong and fortified, with cavalry round about it; and these men were trained in war.']},
        {spawn:{id:'g1',char:'greek',x:40,y:13,wander:false,noTalk:true}},
        {spawn:{id:'g2',char:'greek',x:42,y:16,wander:false,noTalk:true}},
        {spawn:{id:'g3',char:'greek',x:39,y:18,wander:false,noTalk:true}},
-       {say:['yahudah','Blow the trumpets! Do not fear their numbers, nor be afraid of their charge. Remember how our fathers were saved at the Red Sea, when Pharaoh pursued them. Cry now to the shamayim, that He crush this army — and all the nations shall know there is One who saves Yisra’ĕl!']},
+       {say:['yahudah','Blow the trumpets! Do not fear their numbers, nor be afraid of their charge. Remember how our fathers were saved at the Red Sea, when Pharaoh pursued them. Cry now to the shamayim, that He crush this army — and all the Gentiles shall know there is One who saves Yasharal!']},
        {sfx:'holy'},{shake:.5},
        {battle:{foes:['g1','g2','g3'],hits:2,text:'The trumpets sound — fall on the camp of the nations!',won:'The Greeks are crushed and flee to the plain!'}},
-       {say:['narrator','The nations were crushed, and fled into the plain, and all in the rear fell by the sword; and Yahuḏah pursued them, and three thousand of them fell. “Do not be greedy for plunder,” he said, “for a battle is before us — Gorgias is near in the hills. Stand and fight; and afterward take the spoil boldly.” And when Gorgias’ men saw their camp in flames, they too fled.']},
+       {say:['narrator','The Gentiles were crushed and fled into the plain — and all those in the rear fell by the sword… and three thousand of them fell.']},{say:['narrator','Then Yahuḏah and his force turned back from pursuing them — and he said to the people, “Do not be greedy for plunder, for there is a battle before us; Gorgias and his force are near us in the hills. But stand now against our enemies and fight them, and afterward seize the plunder boldly.” And when Gorgias’ men saw their camp in flames, they too fled.']},
        {call:G=>{ for(let i=0;i<20;i++) Particles.spawn({x:(38+Math.random()*6)*TILE,y:(12+Math.random()*6)*TILE,vx:0,vy:-.03,life:1600,max:1600,type:'smoke'}); }},
        {rays:.7,raysX:34},{sfx:'holy'},{burst:[34,14,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'Gorgias sought the Yahuḏim in the hills by night — but Yahuḏah slipped into the plain and fell on the camp of the nations at the trumpet-blast: three thousand fell, and the camp went up in flames; and when Gorgias saw the smoke, his men fled too. “All the nations shall know that there is One who redeems and saves Yisra’ĕl!”', ref:'1 MAQQABIM 4:1–25'},
+   {art:'light', music:'holy', text:'When Gorgias entered the camp of Yahuḏah by night, he found no one there, so he looked for them in the hills… At daybreak Yahuḏah appeared in the plain… the men with Yahuḏah blew their trumpets and engaged in battle… and three thousand of them fell… a detachment appeared, coming out of the hills. They saw that their army had been put to flight, and that the Yahuḏim were burning the camp… they all fled into the land of the Philistines.', ref:'1 MAQQABIM 4:1–25', stage:{"set":"camp","time":"dawn","cam":"push","focus":0.5,"cast":[{"id":"gorgias","look":{"name":"Gorgias","skin":"#caa070","hair":"#4a3218","beard":"#4a3218","robe":"#6a3a2a","armor":"#c8a048","helmet":"#c8a048","crest":"#2a2a6a","short":1},"x":0.46,"z":0.14,"face":"l","pose":"look","hold":"spear","acts":[{"at":1,"exit":"r"}]},{"id":"yahudah","enter":"l","at":1,"to":0.3,"z":0.1,"face":"r","pose":"fight","hold":"sword","acts":[{"at":5,"pose":"raise"}]},{"id":"shimon","enter":"l","at":1,"to":0.16,"z":0.14,"face":"r","pose":"raise","hold":"shofar"}],"crowd":[{"kind":"soldiers","side":"yasharal","n":6,"x":0.2,"w":0.24,"z":0.5,"face":"r","enter":"l","at":1,"hold":"trumpet"},{"kind":"army","side":"yawan","n":8,"x":0.72,"w":0.3,"z":0.62,"face":"l","at":1,"exit":"r","exitAt":3,"run":1},{"kind":"soldiers","side":"yawan","n":5,"x":0.86,"w":0.12,"z":0.92,"face":"l","at":4,"exit":"r","exitAt":6,"run":1}],"props":[{"k":"tent","x":0.64,"z":0.55,"color":"#7a2a2a"},{"k":"tent","x":0.9,"z":0.6,"color":"#7a2a2a"}],"fx":[{"k":"smoke","at":5,"x":0.64},{"k":"smoke","at":5,"x":0.9},{"k":"embers","at":5}]}},
   ],
   complete:'The night march outwitted, the camp aflame — and Emmaus won by the trumpets and the shamayim.'
 },
@@ -6196,75 +6343,75 @@ STORY.push(
 
 { id:'k6', title:'The Desolate Sanctuary', ref:'1 MAQQABIM 4:36–51',
   intro:[
-   {art:'wasteland', music:'sorrow', text:'Then Yahuḏah and his brothers said, “Behold, our enemies are crushed; let us go up to cleanse the sanctuary and dedicate it.” And they went up to Mount Tsiyon — and saw the sanctuary desolate, the altar profaned, the gates burned, and bushes grown up in the courts as in a thicket.', ref:'1 MAQQABIM 4:36–38'},
+   {art:'wasteland', music:'sorrow', text:'Then said Yahuḏah and his brothers, “Behold, our enemies are crushed; let us go up to cleanse the sanctuary and dedicate it.” So all the army assembled and they went up to Mount Tsiyon. And they saw the sanctuary desolate, the mizbe’ach profaned, and the gates burned. In the courts they saw bushes sprung up as in a thicket.', ref:'1 MAQQABIM 4:36–38', stage:{"set":"temple","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"yahudah","x":0.22,"z":0.1,"face":"r","pose":"speak","say":1,"acts":[{"at":2,"to":0.36,"pose":"stand"},{"at":3,"pose":"weep"}]},{"id":"shimon","x":0.1,"z":0.16,"face":"r","pose":"stand","acts":[{"at":2,"to":0.22},{"at":4,"pose":"look"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":9,"x":0.34,"w":0.5,"z":0.72,"face":"r","enter":"l","at":2}],"props":[{"k":"altar","x":0.64,"z":0.4,"fire":false,"w":56,"h":30},{"k":"idol","x":0.64,"z":0.39,"dy":-0.07},{"k":"bush","x":0.84,"z":0.3},{"k":"bush","x":0.52,"z":0.2,"at":4},{"k":"bush","x":0.92,"z":0.5,"at":4},{"k":"bush","x":0.74,"z":0.6,"at":4}],"fx":[{"k":"smoke","x":0.8},{"k":"darkness","amt":0.2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8306,
-     features:[ {type:'rubble',x:22,y:9,id:'ruin',examine:'The sanctuary desolate — the chambers of the kohanim in ruins, bushes grown up in the courts.'},{type:'idol',x:27,y:12,id:'profaned',examine:'The altar of burnt offering, profaned by the nations — it must be torn down, its stones stored away.'},{type:'standard',x:16,y:13,id:'newaltar',examine:'Unhewn stones, as the Torah directs — for a new altar, like the former one.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'rubble',x:22,y:9,id:'ruin',examine:'The sanctuary desolate — the chambers of the kohanim in ruins, bushes grown up in the courts.'},{type:'idol',x:27,y:12,id:'profaned',examine:'The mizbe’ach of burnt offering, profaned by the nations — it must be torn down, its stones stored away.'},{type:'standard',x:16,y:13,id:'newaltar',examine:'Unhewn stones, as the law directs — for a new mizbe’ach, like the former one.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'sorrow',
    player:'yahudah', playerPos:[22,20], playerHold:'staff',
    npcs:[ {id:'kohen',char:'kohen',x:19,y:15,wander:false},{id:'shimon',char:'shimon',x:25,y:15,wander:false},{id:'elder',char:'elder',x:27,y:16,wander:false} ],
    objectives:[
-     {type:'interact',prop:'profaned',text:'Mourn, and tear down the profaned altar',
+     {type:'interact',prop:'profaned',text:'Mourn, and tear down the profaned mizbe’ach',
       script:[
-       {say:['narrator','When they saw it, they tore their garments, and mourned with great lamentation, and sprinkled themselves with ashes, and fell face down on the ground; and they sounded the trumpets, and cried out to the shamayim.']},
+       {say:['narrator','When they saw it, they rent their clothes, and mourned with great lamentation, and sprinkled themselves with ashes. They fell face down on the ground, and sounded the signal on the trumpets, and cried out to Shamayim.']},
        {shake:.4},{sfx:'bad'},{burst:[22,9,'ash',12]},
-       {say:['yahudah','The altar has been profaned by the nations — we dare not use it again, lest it be a reproach. Tear it down, and store its stones on the temple hill, until a naḇi shall come to tell what to do with them.']},
+       {say:['yahudah','The mizbe’ach has been profaned by the Gentiles — we dare not use it again, lest it be a reproach. Tear it down, and store its stones on the temple hill, until a naḇi shall come to tell what to do with them.']},
        {call:G=>{ const p=G.world.map.decor.find(d=>d.id==='profaned'); if(p){ p.type='stone'; delete p.examine; } }},
        {sfx:'thunder'},{shake:.4},{burst:[27,12,'ash',12]},
       ]},
-     {type:'interact',prop:'newaltar',text:'Build a new altar of unhewn stones',hiddenUntil:1,
+     {type:'interact',prop:'newaltar',text:'Build a new mizbe’ach of unhewn stones',hiddenUntil:1,
       script:[
-       {say:['kohen','Unhewn stones, as the Torah directs — no iron tool upon them. We build a new altar, like the former one.']},
+       {say:['kohen','Unhewn stones, as the law directs — no iron tool upon them. We build a new mizbe’ach like the former one.']},
        {call:G=>{ const p=G.world.map.decor.find(d=>d.id==='newaltar'); if(p){ p.type='altar'; p.stage=3; } }},
        {shake:.3},{sfx:'thunder'},{burst:[16,13,'holy',10]},
-       {say:['narrator','They rebuilt the sanctuary and the interior of the House, and consecrated the courts. They made new set-apart vessels, and brought the lampstand, the altar of incense, and the table into the House; and they burned incense on the altar, and lit the lamps on the lampstand — and these gave light in the House. They set the bread on the table, and hung up the curtains; and finished all the work they had undertaken.']},
+       {say:['narrator','They also rebuilt the sanctuary and the interior of the heykal, and qadash (Set Apart) the courts. They made new qadash (Set Apart) vessels, and brought the lampstand, the mizbe’ach of incense, and the table into the heykal.']},{say:['narrator','Then they burned incense on the mizbe’ach and lighted the lamps on the lampstand, and these gave light in the heykal. They placed the bread on the table and hung up the curtains. Thus they finished all the work they had undertaken.']},
        {rays:.65,raysX:16},{sfx:'holy'},{burst:[22,9,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'moriah', music:'holy', text:'They found the sanctuary desolate, the altar profaned, the gates burned — and they mourned, and sprinkled ashes. Then they tore down the profaned altar and stored its stones until a naḇi should come; and built a new altar of unhewn stones, rebuilt the House, made new vessels, and lit the lamps of the lampstand, so that light shone again in the House of Aluahim.', ref:'1 MAQQABIM 4:38–51'},
+   {art:'moriah', music:'holy', text:'And they saw the sanctuary desolate, the mizbe’ach profaned, and the gates burned. Then they rent their clothes, and mourned with great lamentation… So they tore down the mizbe’ach, and stored the stones… until there should come a naḇi to tell what to do with them. Then they took unhewn stones, as the law directs, and built a new mizbe’ach… They made new qadash (Set Apart) vessels… and lighted the lamps on the lampstand, and these gave light in the heykal.', ref:'1 MAQQABIM 4:38–51', stage:{"set":"court","time":"day","cam":"push","focus":0.5,"cast":[{"id":"yahudah","x":0.2,"z":0.1,"face":"r","pose":"stand","acts":[{"at":1,"pose":"mourn"},{"at":4,"pose":"stand"},{"at":6,"pose":"raise"}]},{"id":"kohen","x":0.7,"z":0.14,"face":"l","pose":"stand","hold":"censer","acts":[{"at":1,"pose":"mourn"},{"at":5,"pose":"hold"},{"at":6,"to":0.6,"face":"r","pose":"raise"}]}],"crowd":[{"kind":"mourners","n":6,"x":0.42,"w":0.36,"z":0.7,"face":"r","at":1,"exit":"l","exitAt":2},{"kind":"levites","n":4,"x":0.82,"w":0.16,"z":0.5,"face":"l","pose":"carry","hold":"stone","at":2}],"props":[{"k":"stones","x":0.9,"z":0.4,"at":3},{"k":"altar","x":0.46,"z":0.34,"fire":false,"w":52,"h":32,"at":4},{"k":"bush","x":0.08,"z":0.5},{"k":"table","x":0.3,"z":0.55,"cups":1,"at":5},{"k":"lampstand","x":0.72,"z":0.36,"at":6}],"fx":[{"k":"rays","at":6,"x":0.72},{"k":"bright","at":6,"amt":0.12}]}},
   ],
-  complete:'The desolate House mourned and made new — the profaned altar down, and the lamps lit once more.'
+  complete:'The desolate House mourned and made new — the profaned mizbe’ach down, and the lamps lit once more.'
 },
 
 { id:'k7', title:'The Dedication — Eight Days', ref:'1 MAQQABIM 4:52–61',
   intro:[
-   {art:'moriah', music:'holy', text:'Early in the morning, on the twenty-fifth day of the ninth month — the month of Kislĕw — in the hundred and forty-eighth year, they rose and offered sacrifice, as the Torah directs, on the new altar of burnt offering which they had built.', ref:'1 MAQQABIM 4:52–53'},
+   {art:'moriah', music:'holy', text:'Early in the morning on the twenty-fifth day of the ninth month, which is the month of Kislĕw, in the one hundred and forty-eighth year, they rose and offered sacrifice, as the law directs, on the new mizbe’ach of burnt offering which they had built.', ref:'1 MAQQABIM 4:52–53', stage:{"set":"temple","time":"dawn","cam":"up","focus":0.5,"cast":[{"id":"kohen","x":0.36,"z":0.14,"face":"r","pose":"raise"},{"id":"yahudah","x":0.7,"z":0.12,"face":"l","pose":"pray"},{"id":"shimon","x":0.82,"z":0.18,"face":"l","pose":"kneel"}],"crowd":[{"kind":"kohanim","n":6,"x":0.5,"w":0.6,"z":0.7,"face":"r","pose":"raise"}],"props":[{"k":"altar","x":0.52,"z":0.35,"big":1,"sacrifice":1,"w":60,"h":34},{"k":"lampstand","x":0.16,"z":0.4}],"fx":[{"k":"smoke","x":0.52},{"k":"rays","x":0.52}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:28, seed:8307,
-     features:[ {type:'temple',x:22,y:9,id:'house',examine:'The House restored — its front decorated with golden crowns and small shields, the gates and chambers rebuilt.'},{type:'altar',x:22,y:13,id:'altar',stage:3,examine:'The new altar — dedicated with songs and harps and lutes and cymbals, on the very day the nations had profaned it.'},{type:'menorah',x:16,y:13,id:'lamps',examine:'The lampstand, its lamps burning — the light of the House restored.'},{type:'clearing',x:22,y:19,flat:3} ]},
+     features:[ {type:'temple',x:22,y:9,id:'house',examine:'The House restored — its front decorated with golden crowns and small shields, the gates and chambers rebuilt.'},{type:'altar',x:22,y:13,id:'altar',stage:3,examine:'The new mizbe’ach — dedicated with songs and harps and lutes and cymbals, on the very day the Gentiles had profaned it.'},{type:'menorah',x:16,y:13,id:'lamps',examine:'The lampstand, its lamps burning — the light of the House restored.'},{type:'clearing',x:22,y:19,flat:3} ]},
    time:'day', music:'holy',
    player:'yahudah', playerPos:[22,20],
    npcs:[ {id:'kohen',char:'kohen',x:19,y:15,wander:false},{id:'shimon',char:'shimon',x:25,y:15,wander:false},{id:'elder',char:'elder',x:27,y:16,wander:false},{id:'woman',char:'woman',x:18,y:17,wander:false} ],
    objectives:[
-     {type:'interact',prop:'altar',text:'Dedicate the altar with songs',
+     {type:'interact',prop:'altar',text:'Dedicate the mizbe’ach with songs',
       script:[
-       {say:['narrator','On the very day, and in the very season, that the nations had profaned it, it was dedicated — with songs, and harps, and lutes, and cymbals. And all the people fell on their faces, and worshiped, and blessed the shamayim, who had prospered them.']},
+       {say:['narrator','At the very season and on the very day that the Gentiles had profaned it, it was dedicated with songs and harps and lutes and cymbals. All the people fell on their faces and worshiped and baruk Shamayim, who had prospered them.']},
        {rays:.8,raysX:22},{sfx:'holy'},{burst:[22,13,'holy',20]},
-       {say:['yahudah','Praise the shamayim, who is good, whose kindness is everlasting! The reproach of the nations is taken away.']},
+       {say:['yahudah','Praise the shamayim, who is good, whose kindness is everlasting! The reproach of the Gentiles is taken away.']},
       ]},
      {type:'interact',prop:'lamps',text:'Eight days of gladness — and fortify Tsiyon',hiddenUntil:1,
       script:[
-       {say:['narrator','So they kept the dedication of the altar for eight days, and offered burnt offerings with gladness — a sacrifice of deliverance and praise. And Yahuḏah and his brothers and all the assembly of Yisra’ĕl determined that every year, at that season, the days of dedication should be kept with gladness and joy for eight days, beginning on the twenty-fifth of Kislĕw.']},
+       {say:['narrator','So they kept the dedication of the mizbe’ach for eight days, and offered burnt offerings with gladness — a sacrifice of deliverance and praise. And Yahuḏah and his brothers and all the qahal of Yasharal determined that every year, at that season, the days of dedication should be kept with gladness and joy for eight days, beginning on the twenty-fifth of Kislĕw.']},
        {rays:.7,raysX:16},{sfx:'holy'},{burst:[16,13,'holy',18]},{burst:[22,9,'holy',16]},
-       {say:['yahudah','And now — fortify Mount Tsiyon with high walls and strong towers, that the nations may never again come and trample it as they did before.']},
+       {say:['yahudah','And now — fortify Mount Tsiyon with high walls and strong towers round about, to keep the Gentiles from coming and trampling them down as they had done before.']},
        {call:G=>{ G.world.map.decor.push({type:'wallseg',x:12,y:11},{type:'wallseg',x:31,y:11}); G.world.map.decor.sort((a,b)=>a.y-b.y); }},
        {shake:.3},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'On the twenty-fifth of Kislĕw the new altar was dedicated with songs and harps and cymbals — on the very day the nations had profaned it — and all the people worshiped and blessed the shamayim. Eight days of gladness they kept, and made it a yearly feast; and they fortified Mount Tsiyon with high walls and strong towers.', ref:'1 MAQQABIM 4:52–61'},
+   {art:'light', music:'holy', text:'On the twenty-fifth day of the ninth month, which is the month of Kislĕw… At the very season and on the very day that the Gentiles had profaned it, it was dedicated with songs and harps and lutes and cymbals. All the people fell on their faces and worshiped and baruk Shamayim… Then Yahuḏah and his brothers… determined that every year at that season the days of dedication of the mizbe’ach should be observed with gladness and joy for eight days.', ref:'1 MAQQABIM 4:52–61', stage:{"set":"court","time":"night","cam":"push","focus":0.5,"cast":[{"id":"yahudah","enter":"l","at":3,"to":0.36,"z":0.1,"face":"r","pose":"raise","say":4},{"id":"shimon","enter":"l","at":3,"to":0.22,"z":0.14,"face":"r","pose":"stand"},{"id":"kohen","x":0.66,"z":0.12,"face":"l","pose":"hold","hold":"lyre","acts":[{"at":2,"pose":"bow"},{"at":3,"pose":"raise"}]}],"crowd":[{"kind":"levites","n":5,"x":0.3,"w":0.36,"z":0.55,"face":"r","pose":"hold","hold":"harp","at":1},{"kind":"people","n":9,"x":0.56,"w":0.6,"z":0.76,"face":"r","from":"stand","pose":"bow","at":2}],"props":[{"k":"altar","x":0.5,"z":0.45,"w":56,"h":32},{"k":"lampstand","x":0.14,"z":0.35},{"k":"lampstand","x":0.86,"z":0.35}],"fx":[{"k":"glory","at":2,"x":0.5,"y":0.05},{"k":"stars"}]}},
   ],
   complete:'Dedicated on the day it was defiled — eight days of light, and a feast for every generation.'
 },
 
-{ id:'k8', title:'Ăl‛azar and the Elephant', ref:'1 MAQQABIM 6:32–47',
+{ id:'k8', title:'Al‛azar and the Elephant', ref:'1 MAQQABIM 6:32–47',
   intro:[
-   {art:'wasteland', music:'tense', text:'Then Antiochus the young king and Lysias came up against Yisra’ĕl with a great host — a hundred thousand foot, twenty thousand horse, and thirty-two elephants trained for war. And they encamped at Beth-Zeḵaryah, over against the camp of Yahuḏah.', ref:'1 MAQQABIM 6:28–33'},
+   {art:'wasteland', music:'tense', text:'When Lysias learned that the king was dead, he set up Antiochus the king’s son to reign… and he named him Eupator… The king was enraged when he heard this. He assembled all his friends, the commanders of his forces and those in authority… The number of his forces was a hundred thousand foot soldiers, twenty thousand horsemen, and thirty-two elephants accustomed to war… Then Yahuḏah marched away from the citadel and encamped at Beth-Zeḵaryah, opposite the camp of the king.', ref:'1 MAQQABIM 6:17,28–33', stage:{"set":"greek","time":"day","cam":"pan-r","focus":0.55,"cast":[{"id":"lysias","look":{"name":"Lysias the Regent","skin":"#d8b48a","hair":"#8a7a5a","beard":"#8a7a5a","robe":"#5a2a5a","collar":"#caa23c","mantle":"#7a2a2a"},"x":0.42,"z":0.12,"face":"r","pose":"hold","hold":"crown","say":0,"acts":[{"at":3,"pose":"point","face":"r"}]},{"id":"eupator","look":{"name":"Antiochus Eupator","skin":"#d8b48a","hair":"#c8a24a","robe":"#7a2a2a","collar":"#caa23c","child":1},"x":0.56,"z":0.14,"face":"l","pose":"stand","crown":1,"say":2,"acts":[{"at":2,"pose":"point"}]},{"id":"yahudah","enter":"l","at":5,"to":0.16,"z":0.1,"face":"r","pose":"stand","hold":"sword","hold2":"shield"}],"crowd":[{"kind":"princes","n":4,"x":0.68,"w":0.2,"z":0.45,"face":"l","enter":"r","at":3},{"kind":"army","side":"yawan","n":10,"x":0.62,"w":0.56,"z":0.82,"face":"l","at":4},{"kind":"soldiers","side":"yasharal","n":4,"x":0.1,"w":0.1,"z":0.45,"face":"r","enter":"l","at":5}],"props":[{"k":"throne","x":0.58,"z":0.3},{"k":"horse","x":0.86,"z":0.55,"face":"l","at":4},{"k":"horse","x":0.94,"z":0.62,"face":"l","color":"#d8d0c0","at":4},{"k":"pillar","x":0.745,"z":0.75,"at":4,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.85,"z":0.75,"at":4,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.8,"z":0.75,"dy":-0.075,"at":4,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.81,"z":0.75,"dy":-0.075,"at":4,"w":140,"h":56,"color":"#77736e","flip":1},{"k":"pillar","x":0.765,"z":0.75,"dy":0.004,"at":4,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.87,"z":0.75,"dy":0.004,"at":4,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.9,"z":0.75,"dy":-0.12,"at":4,"w":48,"h":52,"color":"#7e7a74","flip":1},{"k":"pillar","x":0.925,"z":0.75,"at":4,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.88,"z":0.75,"dy":-0.13,"at":4,"w":30,"h":40,"color":"#6a6660"},{"k":"tower","x":0.795,"z":0.75,"dy":-0.19,"at":4,"h":34,"tiers":2,"color":"#8a2a2a","s":0.55},{"k":"banner","x":0.79,"z":0.75,"dy":-0.23,"at":4,"color":"#c8a040","s":0.6}]}},
   ],
   scene:{
    map:{biome:'rocky', w:50, h:28, seed:8308,
@@ -6277,28 +6424,28 @@ STORY.push(
    objectives:[
      {type:'talk',npc:'yahudah',text:'The great host at Beth-Zeḵaryah',
       script:[
-       {say:['narrator','To arm the elephants for battle, they showed them the juice of grapes and mulberries; and on each were fastened a wooden tower, and thirty-two mighty men, and a driver. The sun shone on the shields of gold and bronze, and the mountains blazed like flaming torches.']},
+       {say:['narrator','They showed the elephants the juice of grapes and mulberries, to arouse them for battle. And upon the elephants were wooden towers, strong and covered… and upon each were four armed men who fought from there, and also its Indian driver. When the sun shone upon the shields of gold and brass, the hills were ablaze with them and gleamed like flaming torches.']},
        {say:['yahudah','A great host, and beasts of war we have never faced. Yet the battle is the shamayim’s. Stand firm, my brothers.']},
        {rays:.4,raysX:22},{sfx:'holy'},{burst:[22,16,'holy',10]},
       ]},
-     {type:'goto',x:38,y:15,text:'Ăl‛azar sees the royal beast',radius:3,hiddenUntil:1,
+     {type:'goto',x:38,y:15,text:'Al‛azar sees the royal beast',radius:3,hiddenUntil:1,
       script:[
        {say:['eleazar','See — one elephant taller than all the rest, arrayed in royal armour! Surely the king is on it. I will give my life to save my people, and win an everlasting name!']},
        {call:G=>{ const e=G.world.npcs.find(n=>n.id==='ele'); if(e){ e.moving=true; } }},
        {shake:.5},{sfx:'bad'},
-       {say:['narrator','And Ăl‛azar rushed into the midst of the phalanx, killing to the right and the left, so that they parted before him. He got under the great elephant, and stabbed it from beneath — and it fell to the ground upon him, and there he died.']},
+       {say:['narrator','He courageously ran into the midst of the phalanx to reach it; he killed men right and left, and they parted before him on both sides. He got under the elephant, stabbed it from beneath, and killed it; but it fell to the ground upon him and he died.']},
        {call:G=>{ const e=G.world.npcs.find(n=>n.id==='ele'); if(e){ Particles.burst(e.x*TILE,e.y*TILE,'ash',20); e.hidden=true; }
                   const el=G.world.npcs.find(n=>n.id==='eleazar'); }},
        {shake:1},{sfx:'thunder'},{burst:[40,14,'ash',24]},
-       {say:['narrator','He gave his life to save his people, and to win for himself an everlasting name. And though the Maccabee withdrew that day before the vast host, the courage of Ăl‛azar was told in Yisra’ĕl from generation to generation — the man who ran beneath the beast, and did not count his life dear.']},
+       {say:['narrator','He gave his life to save his people, and to win for himself an everlasting name. And though the Maccabee withdrew that day before the vast host, the courage of Al‛azar was told in Yasharal from generation to generation — the man who ran beneath the beast, and did not count his life dear.']},
        {rays:.7,raysX:40},{sfx:'holy'},{burst:[40,14,'holy',18]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'holy', text:'At Beth-Zeḵaryah, Ăl‛azar Awaran saw one elephant arrayed in royal armour, and thought the king was on it. He cut his way through the phalanx, got beneath the great beast, and stabbed it from below — and it fell upon him, and he died. He gave his life to save his people, and won an everlasting name.', ref:'1 MAQQABIM 6:43–47'},
+   {art:'stars', music:'holy', text:'And Al‛azar, called Awaran, saw that one of the beasts was equipped with royal armor… and he supposed that the king was upon it. So he gave his life to save his people and to win for himself an everlasting name. He courageously ran into the midst of the phalanx to reach it… He got under the elephant, stabbed it from beneath, and killed it; but it fell to the ground upon him and he died.', ref:'1 MAQQABIM 6:43–47', stage:{"set":"battle","time":"day","wx":"dust","cam":"push","focus":0.6,"cast":[{"id":"eleazar","x":0.18,"z":0.2,"face":"r","pose":"look","hold":"sword","hold2":"shield","acts":[{"at":1,"pose":"point"},{"at":2,"pose":"raise"},{"at":3,"to":0.56,"pose":"fight","run":1},{"at":4,"to":0.62,"pose":"strike"},{"at":5,"pose":"dead"}]}],"crowd":[{"kind":"army","side":"yawan","n":10,"x":0.66,"w":0.5,"z":0.62,"face":"l","pose":"fight"},{"kind":"soldiers","side":"yasharal","n":4,"x":0.12,"w":0.14,"z":0.5,"face":"r","pose":"look","at":5}],"props":[{"k":"pillar","x":0.565,"z":0.3,"h":42,"w":14,"color":"#77736e"},{"k":"pillar","x":0.67,"z":0.3,"h":42,"w":14,"color":"#77736e"},{"k":"rock","x":0.62,"z":0.3,"dy":-0.075,"w":150,"h":62,"color":"#77736e"},{"k":"rock","x":0.63,"z":0.3,"dy":-0.075,"w":140,"h":56,"color":"#77736e","flip":1},{"k":"pillar","x":0.585,"z":0.3,"dy":0.004,"h":40,"w":14,"color":"#86827c"},{"k":"pillar","x":0.69,"z":0.3,"dy":0.004,"h":40,"w":14,"color":"#86827c"},{"k":"rock","x":0.72,"z":0.3,"dy":-0.12,"w":48,"h":52,"color":"#7e7a74","flip":1},{"k":"pillar","x":0.745,"z":0.3,"h":60,"w":9,"color":"#7e7a74"},{"k":"rock","x":0.7,"z":0.3,"dy":-0.13,"w":30,"h":40,"color":"#6a6660"},{"k":"tower","x":0.615,"z":0.3,"dy":-0.19,"h":34,"tiers":2,"color":"#8a2a2a","s":0.55},{"k":"banner","x":0.61,"z":0.3,"dy":-0.23,"color":"#c8a040","s":0.6}],"fx":[{"k":"darkness","at":5,"amt":0.3},{"k":"smoke","at":5,"x":0.62}]}},
   ],
-  complete:'One man beneath the beast — Ăl‛azar gave his life, and won a name told from generation to generation.'
+  complete:'One man beneath the beast — Al‛azar gave his life, and won a name told from generation to generation.'
 },
 
 ]}
@@ -6343,7 +6490,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6409,7 +6556,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6470,9 +6620,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],['1 MAQQABIM','apoc-1maccabees'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],['MAL’AḴI','malaki'],['IYOḆ','iyob'],['RUTH','ruth'],['ESTĔR','ester'],['EZRA','ezra'],['NEḤEMYAH','nehemyah'],['1 DIḆRĔ HAYAMIM','1dibre-hayamim'],['2 DIḆRĔ HAYAMIM','2dibre-hayamim'],['DIḆRĔ HAYAMIM','1dibre-hayamim'],['1 MAQQABIM','apoc-1maccabees'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6557,5 +6707,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>

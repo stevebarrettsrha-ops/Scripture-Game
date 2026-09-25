@@ -84,13 +84,32 @@
 
   /* ---------- cutscene slide text ---------- */
   #slide-ui{position:absolute;inset:auto 0 0 0;z-index:24;display:none;flex-direction:column;
-            align-items:center;padding:0 4vw 4.5vh;pointer-events:none}
+            align-items:center;padding:9vh 4vw 4.5vh;pointer-events:none;
+            /* a soft backing under the caption, so the words stay legible over bright art
+               and over figures standing low in the frame (small screens especially) */
+            background:linear-gradient(180deg,rgba(5,5,10,0) 0,rgba(5,5,10,.5) 8vh,rgba(5,5,10,.66) 100%)}
   #slide-ui.show{display:flex}
   #slide-text{max-width:78ch;text-align:center;font-size:clamp(15px,2.7vmin,24px);line-height:1.65;
               color:#f5ecd6;text-shadow:0 2px 6px rgba(0,0,0,.9),0 0 22px rgba(0,0,0,.8);
               font-style:italic}
   #slide-ref{margin-top:1.4vh;color:var(--gold);font-size:clamp(11px,1.8vmin,15px);
              letter-spacing:.3em;text-transform:uppercase;text-shadow:0 1px 4px #000}
+  /* a chapter's title card, rising over the opening art as the telling begins */
+  #chapter-card{position:absolute;left:0;right:0;top:24%;z-index:25;text-align:center;pointer-events:none;
+    opacity:0;transform:translateY(8px);transition:opacity .9s ease,transform 1.2s ease;padding:0 6vw}
+  #chapter-card.show{opacity:1;transform:none}
+  #chapter-card .cc-act{color:var(--gold);letter-spacing:.42em;font-size:clamp(10px,1.8vmin,14px);
+    text-transform:uppercase;text-shadow:0 1px 6px #000}
+  #chapter-card .cc-title{margin:1.2vh 0 1vh;color:#fff6de;font-size:clamp(26px,6vmin,56px);letter-spacing:.08em;
+    text-shadow:0 0 28px rgba(232,198,106,.35),0 3px 10px rgba(0,0,0,.9)}
+  #chapter-card .cc-rule{width:min(260px,40vw);height:1px;margin:0 auto;
+    background:linear-gradient(90deg,transparent,rgba(232,198,106,.75),transparent)}
+  #chapter-card .cc-ref{margin-top:1vh;color:rgba(239,227,200,.8);font-style:italic;letter-spacing:.14em;
+    font-size:clamp(11px,1.9vmin,15px);text-shadow:0 1px 5px #000}
+  @media (max-height:520px){ #chapter-card{top:calc(46px + env(safe-area-inset-top,0px))} #chapter-card .cc-title{font-size:clamp(20px,6.5vmin,34px);margin:.6vh 0} }
+  #slide-text.enter{animation:slideTextIn .75s ease-out both}
+  #slide-ref.enter{animation:slideTextIn .75s ease-out .18s both}
+  @keyframes slideTextIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
   #slide-hint{margin-top:2vh;color:rgba(239,227,200,.55);font-size:clamp(10px,1.7vmin,13px);
               letter-spacing:.2em;animation:pulse 2.2s infinite}
   @keyframes pulse{0%,100%{opacity:.35}50%{opacity:.9}}
@@ -172,7 +191,16 @@
     background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
     border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
     letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
-  #slide-back.show{display:inline-block}
+  #slide-back.show,#slide-skip.show{display:inline-block}
+  #slide-nav{display:flex;gap:10px;justify-content:center}
+  #slide-skip{pointer-events:auto;cursor:pointer;font-family:inherit;display:none;
+    background:rgba(10,14,26,.72);border:1px solid rgba(232,198,106,.4);color:var(--gold);
+    border-radius:4px;padding:5px 18px;font-size:clamp(11px,1.8vmin,14px);
+    letter-spacing:.18em;margin-top:1.6vh;text-transform:uppercase;transition:all .2s}
+  #slide-skip:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
+  /* in-scene cutscenes: the objectives step back while the story plays */
+  #hud{transition:opacity .45s}
+  body.cine #hud{opacity:0}
   #slide-back:hover{border-color:var(--gold);color:#fff3cf;box-shadow:0 0 12px rgba(232,198,106,.3)}
   #log-screen{background:rgba(6,8,16,.95);justify-content:flex-start;padding:5vh 5vw 3vh}
   #log-list{width:100%;max-width:860px;overflow-y:auto;flex:1;padding:0 8px;
@@ -245,11 +273,15 @@
     </div>
   </div>
 
+  <div id="chapter-card"><div class="cc-act"></div><div class="cc-title"></div><div class="cc-rule"></div><div class="cc-ref"></div></div>
   <div id="slide-ui">
     <div id="slide-text"></div>
     <div id="slide-ref"></div>
     <div id="slide-hint">— tap or press space —</div>
-    <button id="slide-back">⟨ &nbsp;Previous</button>
+    <div id="slide-nav">
+      <button id="slide-back">⟨ &nbsp;Previous</button>
+      <button id="slide-skip" title="You have walked this chapter before — skip to the scene">Skip &nbsp;⟩⟩</button>
+    </div>
   </div>
 
   <div id="dlg">
@@ -271,7 +303,7 @@
     <div class="title-hebrew">✦ ✦ ✦</div>
     <div class="title-main">ZEḴARYAHU</div>
     <div class="title-sub">Neḇi’im — The Prophets</div>
-    <div class="title-verse">And YAHUAH shall be Sovereign over all the earth — in that day there shall be one YAHUAH, and His Name one. — ZEḴARYAHU 14:9</div>
+    <div class="title-verse">And YAHUAH shall be Sovereign over all the earth. In that day there shall be one YAHUAH and His Name one. — ZEḴARYAHU 14:9</div>
     <div class="menu-buttons">
       <button class="btn" id="btn-continue">Continue</button>
       <button class="btn" id="btn-new">New Journey</button>
@@ -285,7 +317,7 @@
 
   <div class="screen" id="chapter-screen">
     <h2>The Book of Zeḵaryah</h2>
-    <div class="hint">Four acts · ZEḴARYAHU — the naḇi of the return, who saw in the night eight visions: from the call “Return to Me” and the man among the myrtle trees, the horns and craftsmen and the measuring line, the filthy garments of Yahushua the kohen removed and the Branch brought forth, the golden lampstand and the two olive trees — “not by might, nor by power, but by My Spirit” — the flying scroll and the woman in the ephah, the four chariots and the crowning of the Branch; through the question of the fasts and the City of Truth where old ones and children fill the streets; to the King who comes lowly on a donkey, the shepherds and the thirty pieces of silver, the One whom they pierced and the fountain opened, and the great Day of YAHUAH when the Mount of Olives splits and YAHUAH becomes King over all the earth — one YAHUAH, and His Name one</div>
+    <div class="hint">Four acts · ZEḴARYAHU — the naḇi of the return, who saw in the night eight visions: from the call “Return to Me” and the man among the myrtle trees, the horns and craftsmen and the measuring line, the filthy garments of Yahushua the kohen removed and the Branch brought forth, the golden lampstand and the two olive trees — “not by might, nor by power, but by My Ruach” — the flying scroll and the woman in the ephah, the four chariots and the crowning of the Branch; through the question of the fasts and the City of Truth where old ones and children fill the streets; to the Sovereign who comes lowly on a donkey, the shepherds and the thirty pieces of silver, the One whom they pierced and the fountain opened, and the great Day of YAHUAH when the Mount of Olives splits and YAHUAH becomes Sovereign over all the earth — one YAHUAH, and His Name one</div>
     <div id="acts"></div>
     <div class="footer">
       <button class="btn small" id="btn-back-title">← Title</button>
@@ -526,8 +558,8 @@ const CHARS={
   chavvah_c:{name:'Ḥawwah', skin:'#754e29', hair:'#23150b', hairStyle:'long',  robe:'#8d6a45', headcover:'#a08252'},
   serpent: {name:'The Serpent', dragon:true},
   serpent_c:{name:'The Serpent', serpent:true},
-  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f5f0dd'},
-  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda'},
+  cherub:  {name:'Keruḇim', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f5f0dd'},
+  malak:   {name:"Mal'ak of YAHUAH", angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda'},
   qayin:   {name:'Qayin',   skin:'#6e4524', hair:'#1d1208', hairStyle:'short', robe:'#7d5a3a', beard:'#1d1208'},
   hevel:   {name:'Heḇal',   skin:'#7a4e29', hair:'#4a341d', hairStyle:'short', robe:'#c2b189'},
   sheth:   {name:'Shĕth',   skin:'#7a4e29', hair:'#3a2716', hairStyle:'short', robe:'#8a7c5a'},
@@ -635,7 +667,7 @@ const CHARS={
   yahoshua_o:{name:'Yahusha son of Nun', skin:'#7a4e29', hair:'#b8b2a4', hairStyle:'short', robe:'#6a7a8c', beard:'#b8b2a4'},
   rachav:  {name:'Raḥaḇ of Yeriḥo', skin:'#83552d', hair:'#23150b', hairStyle:'long', robe:'#a83a4a', headcover:'#c47a5a'},
   achan:   {name:'Aḵan son of Karmi', skin:'#6e4926', hair:'#221504', hairStyle:'short', robe:'#8a6a45', beard:'#221504'},
-  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#e8c66a', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
+  captain: {name:'Captain of the Host of YAHUAH', angel:true, skin:'#6e4a28', hair:'#1d1208', hairStyle:'short', robe:'#f3eeda', collar:'#caa23c'},
   givonite:{name:'Envoy of Giḇ‛on', skin:'#6e4a28', hair:'#4a4438', hairStyle:'short', robe:'#7a6e55', beard:'#4a4438', headcover:'#8a7a5a'},
   kanaanking:{name:'Sovereign of the Amorites', skin:'#644323', hair:'#1d1208', hairStyle:'short', robe:'#6a3a52', beard:'#1d1208', collar:'#caa23c', headcover:'#caa23c'},
   hur:     {name:'Ḥur', skin:'#704a27', hair:'#8d8074', hairStyle:'short', robe:'#7d6a52', beard:'#8d8074'},
@@ -735,7 +767,9 @@ function drawChar(g,px,py,charId,o){
   }
   if(o.submerged){
     /* waist-deep in water: clip everything below the waterline */
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -997,6 +1031,16 @@ function drawChar(g,px,py,charId,o){
   if(o.submerged){
     /* ripples on the waterline */
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.4*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -1040,7 +1084,9 @@ function drawCharBlock(g,px,py,charId,o){
   if(o.lying){ g.translate(0,Math.round(-2*u)); g.rotate(o.dir==='right'?Math.PI/2:-Math.PI/2); }
   if(o.riding){ g.beginPath(); g.rect(-20*u,-40*u,40*u,34.5*u); g.clip(); }
   if(o.submerged){
-    const wl=Math.round(-8*u)+Math.sin(t/520)*u*.6;
+    const lv=o.submerged===2?2:o.submerged===3?3:1; g._sublv=lv;   /* waist, neck, or swimming */
+    if(lv===3) g.translate(0,Math.round(5*u));
+    const wl=Math.round((lv===1?-8:lv===2?-14.2:-15.4)*u)+Math.sin(t/(lv===3?300:520))*u*(lv===3?.9:.6);
     g.beginPath(); g.rect(-20*u,-40*u,40*u,40*u+wl); g.clip();
     g._waterline=wl;
   }
@@ -1302,6 +1348,16 @@ function drawCharBlock(g,px,py,charId,o){
   }
   if(o.submerged){
     const wl=g._waterline!==undefined?g._waterline:Math.round(-8*u);
+    if(g._sublv===3){                                   /* swimming: the arms reach and pull in turn, the water breaks white */
+      const sw=t/240;
+      for(const sd of [-1,1]){ const k=Math.sin(sw+(sd>0?Math.PI:0)); if(k<=0) continue;
+        const ax=side?flip*(3+k*5)*u:sd*(4.4+k*1.4)*u, ay=wl-k*5.4*u;
+        g.strokeStyle=skin; g.lineWidth=2.1*u; g.lineCap='round'; g.beginPath(); g.moveTo(side?flip*1.4*u:sd*3.2*u,wl+.5*u); g.quadraticCurveTo(ax*.85,ay-1.6*u,ax,ay); g.stroke();
+        g.fillStyle='rgba(240,248,255,.85)'; for(let q=0;q<3;q++) g.fillRect(ax+(q-1)*1.3*u,wl-(.3+q*.6)*u,.9*u,.9*u); } }
+    if(o.moving){                                       /* a wake spreading behind */
+      const d9=o.dir||'down', bx=d9==='left'?1:d9==='right'?-1:0, by=d9==='up'?1:d9==='down'?-1:0;
+      g.strokeStyle='rgba(235,245,255,.45)'; g.lineWidth=Math.max(1,u*.45);
+      for(const sd of [-1,1]){ g.beginPath(); g.moveTo(sd*3*u,wl+.6*u); g.lineTo((bx*11+(by?sd*5:0))*u,wl+(by*5+(bx?sd*2.6:0))*u); g.stroke(); } }
     g.strokeStyle='rgba(225,240,250,.75)'; g.lineWidth=Math.max(1.5,u*.55);
     g.beginPath(); g.ellipse(0,wl,7.8*u,2*u,0,0,Math.PI*2); g.stroke();
     g.strokeStyle='rgba(225,240,250,.32)';
@@ -2783,6 +2839,26 @@ function tileAt(map,x,y){
   if(tx<0||ty<0||tx>=map.w||ty>=map.h) return T.MTN;
   return map.tiles[ty*map.w+tx];
 }
+
+/* ---- water: at the edge one wades in it to the waist, further out it stands to the neck,
+   and in the deep one swims. A scene marked noSwim keeps its deep water closed (the sea
+   before it parts, the Yarděn before the ark stands in it). ---- */
+const Water={
+  lv(map,x,y){ const tx=Math.floor(x), ty=Math.floor(y); if(!map||tx<0||ty<0||tx>=map.w||ty>=map.h) return 0;
+    const t=map.tiles[ty*map.w+tx]; if(t!==T.WATER&&t!==T.DEEP) return 0;
+    let shore=false;
+    for(let dy=-1;dy<=1&&!shore;dy++) for(let dx=-1;dx<=1;dx++){ const xx=tx+dx, yy=ty+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+      const u=map.tiles[yy*map.w+xx]; if(u!==T.WATER&&u!==T.DEEP){ shore=true; break; } }
+    return t===T.WATER?(shore?1:2):(shore?2:3); },
+  closed(){ const sc=typeof Game!=='undefined'&&Game.chapter&&Game.chapter.scene; return !!(sc&&sc.noSwim); },
+  open(map,x,y,fx,fy){ const l=Water.lv(map,x,y); if(!l||(l===3&&Water.closed())) return false;
+    const i=Math.floor(y)*map.w+Math.floor(x), t0=map.tiles[i]; map.tiles[i]=T.SAND; let ok=false;
+    try{ ok=walkable(map,x,y,fx,fy); } finally { map.tiles[i]=t0; } return ok; },   /* its decor, and on stepped ground the height of the step */
+  pace(map,e){ const l=Water.lv(map,e.x,e.y); return l===1?.65:l===2?.5:l===3?.55:1; },
+  mark(map,e){ if(!e||e.submerged===true||e.flying||e.animal||e.mount) return; const l=Water.lv(map,e.x,e.y);
+    e.submerged=l||false; }
+};
+function walkP(map,x,y,fx,fy){ if(walkable(map,x,y,fx,fy)) return true; const p=Game.world&&Game.world.player; return !(p&&p.mount)&&Water.open(map,x,y,fx,fy); }
 function walkable(map,x,y){
   if(SOLID.has(tileAt(map,x,y))) return false;
   for(const d of map.decor){
@@ -2978,7 +3054,7 @@ function campDivisions(G,o){
 }
 
 /* ================= WORLD RENDER ================= */
-const Camera={x:0,y:0,shake:0,
+const Camera={x:0,y:0,shake:0,sway:0,
   follow(tx,ty,map,instant){
     const px=tx*TILE, py=ty*TILE+(this.biasY||0);
     const minX=VW/2, maxX=map.w*TILE-VW/2, minY=VH/2, maxY=map.h*TILE-VH/2;
@@ -3183,8 +3259,9 @@ function shadeC(hex,amt){
 
 function drawWorld(g,world,t){
   const map=world.map;
-  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0);
-  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0);
+  /* shake: a jolt; sway: the slow roll of a vessel riding the waters */
+  const offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
+  const offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-1);
   const x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TILE)+1);
   const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-1);
@@ -3671,6 +3748,7 @@ const Game={
     if(op.rain!==undefined){ w.rain=op.rain; Sound.rain(op.rain); return true; }
     if(op.rays!==undefined){ w.raysTarget=op.rays; if(op.raysX!==undefined)w.raysX=op.raysX; return true; }
     if(op.shake!==undefined){ Camera.shake=op.shake; return true; }
+    if(op.sway!==undefined){ Camera.sway=op.sway; return true; }
     if(op.toast){ toast(op.toast); return true; }
     if(op.prop){ const p=w.map.decor.find(d=>d.id===op.prop[0]);
       if(p) Object.assign(p,op.prop[1]); w.map.decor.sort((a,b)=>a.y-b.y); return true; }
@@ -3734,7 +3812,11 @@ const Game={
     const active=(this.objectives||[]).find(o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
     if(!active) return;
     if(active.type==='goto'||active.type==='lead') w.gotoMark={x:active.x,y:active.y};
-    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc); if(n) n.marker=true; }
+    if(active.type==='talk'){ const n=w.npcs.find(n=>n.id===active.npc);
+      if(n){ n.marker=true;
+        /* the one the story now sends you to must be there to be found: a person still
+           hidden when their conversation becomes the objective steps into the scene */
+        if(n.hidden){ n.hidden=false; Particles.burst(n.x*TILE,n.y*TILE,'ash',8); } } }
     if(active.type==='interact'){ const p=w.map.decor.find(d=>d.id===active.prop);
       if(p) w.gotoMark={x:p.x,y:p.y}; }
   },
@@ -3786,15 +3868,49 @@ const Game={
     $('hud-toast').style.opacity='0';
     this.dlgQueue=[]; this.closeDlg();
     $('dlg-choices').classList.remove('show');
+    this._slideShown=false;      /* the first slide of a telling rises out of the dark */
+    if(phase==='intro'&&this.chapter&&this.chapter.title) this.showChapterCard(this.chapter);
     this.showSlide();
+  },
+  /* the chapter's title card: the act, the name and the reference, over the opening art */
+  showChapterCard(ch){
+    const cc=document.getElementById('chapter-card'); if(!cc) return;
+    const act=(typeof STORY!=='undefined')?STORY.find(a=>a&&a.chapters&&a.chapters.includes(ch)):null;
+    cc.querySelector('.cc-act').textContent=(act&&act.roman&&act.roman!=='✦')?('Act '+act.roman+'  ·  '+act.title):'';
+    cc.querySelector('.cc-title').textContent=ch.title;
+    cc.querySelector('.cc-ref').textContent=ch.ref||'';
+    clearTimeout(this._ccT);
+    cc.classList.remove('show'); void cc.offsetWidth; cc.classList.add('show');
+    this._ccT=setTimeout(()=>cc.classList.remove('show'),3200);
+  },
+  hideChapterCard(){
+    const cc=document.getElementById('chapter-card'); if(cc) cc.classList.remove('show');
+    clearTimeout(this._ccT);
   },
   showSlide(){
     const s=this.slideList[this.slideIdx];
+    /* every later slide dissolves out of the last frame of the one before it,
+       rather than dipping to black between each verse */
+    this._slideXfade=0;
+    if(this._slideShown){
+      const snap=this._slideSnap||(this._slideSnap=document.createElement('canvas'));
+      if(snap.width!==canvas.width||snap.height!==canvas.height){ snap.width=canvas.width; snap.height=canvas.height; }
+      const sg=snap.getContext('2d'); sg.setTransform(1,0,0,1,0,0);
+      sg.clearRect(0,0,snap.width,snap.height); sg.drawImage(canvas,0,0);
+      this._slideXfade=performance.now();
+    }
+    if(this._slideShown) this.hideChapterCard();   /* the card gives way once the telling moves on */
+    this._slideShown=true;
     this.slideT=0;
-    $('slide-text').textContent=s.text||'';
-    $('slide-ref').textContent=s.ref||'';
+    const tx=$('slide-text'), rf=$('slide-ref');
+    tx.textContent=s.text||''; rf.textContent=s.ref||'';
+    /* the words come up gently with each slide */
+    tx.classList.remove('enter'); rf.classList.remove('enter'); void tx.offsetWidth;
+    tx.classList.add('enter'); rf.classList.add('enter');
     $('slide-ui').classList.add('show');
     $('slide-back').classList.toggle('show',this.slideIdx>0);
+    /* a chapter already walked may be skipped straight to its scene */
+    $('slide-skip').classList.toggle('show',!!(this.chapter&&Save.data.done[this.chapter.id])&&this.slideIdx<this.slideList.length-1);
     this.logLine(s.ref||'',s.text||'');
     if(s.music) Sound.ambient(s.music);
     if(s.sfx) Sound.sfx(s.sfx);
@@ -3805,6 +3921,12 @@ const Game={
     if(last&&last.text===text) return;
     this.log.push({who,text});
     if(this.log.length>220) this.log.shift();
+  },
+  skipSlides(){
+    if(this.state!=='slides'||this._slideEnding) return;
+    Sound.sfx('blip');
+    this.slideIdx=this.slideList.length-1;
+    this.advanceSlide();
   },
   prevSlide(){
     if(this.state!=='slides'||this._slideEnding||this.slideIdx<=0) return;
@@ -3830,6 +3952,7 @@ const Game={
   },
   startScene(){
     const ch=this.chapter;
+    if(this.hideChapterCard) this.hideChapterCard();
     this.dlgQueue=[]; this.closeDlg();
     this.script=null; this.scriptBlocked=false; this.mash=null; this.battle=null;
     if(!ch.scene){ this.finishChapter(); return; }
@@ -3858,6 +3981,7 @@ const Game={
       overlook:sc.overlook||null
     };
     if(sc.rain){ this.world.rain=true; Sound.rain(true); } else Sound.rain(false);
+    Camera.sway=sc.sway||0;
     Sound.ambient(sc.music||'eden');
     this.state='play';
     $('hud').style.display='';
@@ -3875,7 +3999,7 @@ const Game={
   },
   endScene(){
     const ch=this.chapter;
-    Sound.rain(false); Camera.shake=0;
+    Sound.rain(false); Camera.shake=0; Camera.sway=0;
     if(ch.outro&&ch.outro.length){
       fadeOut(()=>{ this.world&&($('hud').style.display='none'); this.startSlides(ch.outro,'outro'); fadeIn(); });
     } else this.finishChapter();
@@ -4015,6 +4139,11 @@ const Game={
   update(dt){
     this.t+=dt;
     if(this.state==='slides'){ this.slideT+=dt; }
+    /* an in-scene cutscene (a story script the player watches, not a fight or a struggle):
+       the frame narrows to letterbox and the objectives step aside until it is over */
+    { const cine=this.state==='play'&&!!this.script&&!this.battle&&!this.mash;
+      this._cineK=(this._cineK||0)+((cine?1:0)-(this._cineK||0))*Math.min(1,dt*.006);
+      if(cine!==!!this._cineOn){ this._cineOn=cine; document.body.classList.toggle('cine',cine); } }
     this.updateDlg(dt);
     if(this.state!=='play'||!this.world) return;
     this.updateScript(dt);
@@ -4078,17 +4207,18 @@ const Game={
     if(p&&!blocked&&!p.target){
       const v=Input.moveVec();
       if(v.x||v.y){
-        const ms=p.speed*(p.mount?1.65:1);
+        const ms=p.speed*(p.mount?1.65:1)*Water.pace(w.map,p);
         const nx=p.x+v.x*ms*dt*.06, ny=p.y+v.y*ms*dt*.06;
-        const stuck9=!walkable(w.map,p.x,p.y);
-        if((walkable(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
-        if((walkable(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
+        const stuck9=!walkP(w.map,p.x,p.y);
+        if((walkP(w.map,nx,p.y)||stuck9)&&!npcBlocked(w,nx,p.y,p.x,p.y)) p.x=nx;
+        if((walkP(w.map,p.x,ny)||stuck9)&&!npcBlocked(w,p.x,ny,p.x,p.y)) p.y=ny;
         p.moving=true;
         p.dir=Math.abs(v.x)>Math.abs(v.y)?(v.x<0?'left':'right'):(v.y<0?'up':'down');
       } else p.moving=false;
     }
     // scripted glide movement for all ents
     const ents=[...w.npcs]; if(p)ents.push(p);
+    for(const e9 of ents) Water.mark(w.map,e9);   /* in the water to the waist, the neck, or swimming */
     for(const e of ents){
       if(e.target){
         const dx=e.target.x-e.x, dy=e.target.y-e.y, m=Math.hypot(dx,dy);
@@ -4252,22 +4382,26 @@ const Game={
     // interact target detection
     this.interactTarget=null;
     if(p&&!this.script&&!this.dlgChar){
-      let best=null,bd=1.45;
+      /* what the story is asking for comes first, then the nearest thing (a large prop
+         measured from its edge) — so a cooking pot, a throne or an altar beside a person
+         never steals the conversation the story is waiting on */
+      const live=o=>!o.done&&(!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done);
+      let best=null,bs=1e9;
       for(const n of w.npcs){
         if(n.hidden) continue;
-        const hasObj=(this.objectives||[]).some(o=>!o.done&&o.type==='talk'&&o.npc===n.id&&
-                     (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
+        const hasObj=(this.objectives||[]).some(o=>live(o)&&o.type==='talk'&&o.npc===n.id);
         if(n.noTalk&&!hasObj&&!n.rideable) continue;
         const d4=dist(p.x,p.y,n.x,n.y);
-        if(d4<bd&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){ bd=d4; best={npc:n}; }
+        if(d4<1.45&&(hasObj||n.dlg||n.script||(n.rideable&&!p.mount))){
+          const sc9=d4-(hasObj?5:0); if(sc9<bs){ bs=sc9; best={npc:n}; } }
       }
       for(const d of w.map.decor){
         if(!d.id&&!d.examine) continue;
         const d5=dist(p.x,p.y,d.x,d.y);
         const r=d.type==='ark'?3.4:(d.type==='tower'?3:(d.type==='altar'||d.type==='mishkan'?2.7:1.6));
-        if(d5<Math.max(bd,r)&&(d.examine||(this.objectives||[]).some(o=>!o.done&&o.type==='interact'&&o.prop===d.id))){
-          bd=Math.min(bd,d5); best={prop:d};
-        }
+        const isObj=(this.objectives||[]).some(o=>live(o)&&o.type==='interact'&&o.prop===d.id);
+        if(d5<r&&(d.examine||isObj)){
+          const sc9=d5-(r-1.6)-(isObj?5:0); if(sc9<bs){ bs=sc9; best={prop:d}; } }
       }
       this.interactTarget=best;
     }
@@ -4280,7 +4414,7 @@ const Game={
       else if(bio==='desert'||bio==='city') Particles.spawn({x:px2,y:py2,vx:.05,vy:.004,life:1300,max:1300,type:'ash'});
       else if(bio==='eden'||bio==='plains') Particles.spawn({x:px2,y:py2,vx:.01,vy:.015,life:2000,max:2000,type:'leaf'});
     }
-    if(w.rain){
+    if(w.rain&&w.map.biome!=='interior'){
       for(let i=0;i<4;i++)
         Particles.spawn({x:Math.random()*VW,y:-10,vx:-.02,vy:.45+Math.random()*.2,life:1400,max:1400,type:'rain',screen:true});
     }
@@ -4303,11 +4437,24 @@ const Game={
     if(this.state==='title'||this.state==='chapters'){ drawTitleBg(ctx,this.t); return; }
     if(this.state==='slides'){
       const s=this.slideList[this.slideIdx];
+      const xf=this._slideXfade?Math.min(1,(performance.now()-this._slideXfade)/750):1;
+      Sky._noFade=xf<1;          /* crossfading — the new slide need not also rise from black */
       if(s) drawSlideArt(ctx,s.art||'void',this.slideT,this.t,s);
+      Sky._noFade=false;
+      if(xf<1&&this._slideSnap){
+        ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+        ctx.globalAlpha=1-xf*xf*(3-2*xf);
+        ctx.drawImage(this._slideSnap,0,0);
+        ctx.restore();
+      } else this._slideXfade=0;
       return;
     }
     if((this.state==='play'||this.state==='complete')&&this.world){
       drawWorld(ctx,this.world,this.t);
+      if(this.state==='play'&&(this._cineK||0)>.01){
+        const bh=Math.round(VH*.075*this._cineK);
+        ctx.fillStyle='#000'; ctx.fillRect(0,0,VW,bh); ctx.fillRect(0,VH-bh,VW,bh);
+      }
       if(this.state==='play'&&this.mash) drawMashUI(ctx,this.mash,this.t);
       if(this.state==='play'&&this.battle) drawBattleUI(ctx,this.battle,this.t);
       return;
@@ -5668,7 +5815,7 @@ function drawSlideArt(g,key,st,t,slide){
   bg.addColorStop(0,'rgba(0,0,0,0)'); bg.addColorStop(1,'rgba(0,0,0,.72)');
   g.fillStyle=bg; g.fillRect(0,VH*.6,VW,VH*.4);
   // fade-in of whole slide
-  if(st<600){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
+  if(st<600&&!Sky._noFade){ g.fillStyle=`rgba(0,0,0,${1-st/600})`; g.fillRect(0,0,VW,VH); }
 }
 
 /* ================= TITLE BACKGROUND ================= */
@@ -5707,9 +5854,9 @@ function drawTitleBg(g,t){
 /* new faces for the book of Zeḵaryah (added to the shared CHARS) */
 Object.assign(CHARS,{
   zekaryah:{name:'Zeḵaryah the Naḇi', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#3a5a4a', beard:'#2c1a0c'},
-  messenger:{name:'The Messenger of YAHUAH', skin:'#caa46a', hair:'#e8dcae', hairStyle:'short', robe:'#e6e0c8', beard:'#cfc8a8', collar:'#caa23c', headcover:'#f0ead2'},
+  messenger:{name:'The Mal’ak of YAHUAH', skin:'#caa46a', hair:'#e8dcae', hairStyle:'short', robe:'#e6e0c8', beard:'#cfc8a8', collar:'#caa23c', headcover:'#f0ead2'},
   accuser:{name:'The Accuser', skin:'#6a5540', hair:'#14100a', hairStyle:'short', robe:'#3a2230', beard:'#14100a', collar:'#5a1a22'},
-  yahushua:{name:'Yahushua the High Kohen', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#e6e0d0', beard:'#231409', collar:'#caa23c', headcover:'#dcd6c6'},
+  yahushua:{name:'Yahushua the Kohen Gadol', skin:'#8a6038', hair:'#231409', hairStyle:'short', robe:'#e6e0d0', beard:'#231409', collar:'#caa23c', headcover:'#dcd6c6'},
   zerub:{name:'Zerubbaḇel the Governor', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#3a4a7a', beard:'#2c1a0c', collar:'#caa23c'},
   king:{name:'The Coming Sovereign', skin:'#7a4e29', hair:'#2c1a0c', hairStyle:'short', robe:'#5a3a6a', beard:'#2c1a0c', collar:'#caa23c'},
   shepherd:{name:'The Shepherd of the Flock', skin:'#83552d', hair:'#2c1a0c', hairStyle:'short', robe:'#6a5030', beard:'#2c1a0c'},
@@ -5723,27 +5870,27 @@ STORY.push(
 /* ============ ACT I — THE NIGHT VISIONS ============ */
 { id:'zact1', roman:'I', title:'The Night Visions', ref:'ZEḴARYAHU 1–6', chapters:[
 
-{ id:'z1', title:'Return to Me — The Myrtle Trees', ref:'ZEḴARYAHU 1:1–17',
+{ id:'z1', title:'Turn Back to Me — The Myrtle Trees', ref:'ZEḴARYAHU 1:1–17',
   intro:[
-   {art:'corrupt', music:'sorrow', text:'In the eighth month, in the second year of Dareyawesh, the Word of YAHUAH came to Zeḵaryah son of Bereḵyah, son of Iddo, the naḇi: “YAHUAH was very wroth with your fathers. Say to them: Return to Me, declares YAHUAH of hosts, and I shall return to you. Do not be like your fathers, to whom the former neḇi’im proclaimed — they did not hear. Your fathers, where are they? And the neḇi’im, do they live forever? Yet My words overtook your fathers, and they turned back and said, ‘As YAHUAH purposed to do to us, so He has done.’”', ref:'ZEḴARYAHU 1:1–6'},
+   {art:'corrupt', music:'sorrow', text:'In the eighth month of the second year of Dareyawesh, the Word of YAHUAH came to Zeḵaryah son of Bereḵyah, son of Iddo the naḇi, saying, “YAHUAH was very wroth with your fathers… Turn back to Me,” declares YAHUAH of hosts, “and I shall turn back to you. Do not be like your fathers, to whom the former naḇi’im proclaimed… Your fathers, where are they? … But My words… did they not overtake your fathers?” Then they turned back and said, “As YAHUAH of hosts planned to do to us… so He has done with us.”', ref:'ZEḴARYAHU 1:1–6', stage:{"set":"ruins","time":"dusk","cam":"push","focus":0.45,"cast":[{"id":"zekaryah","x":0.28,"z":0.08,"face":"r","pose":"speak","say":1,"acts":[{"at":3,"pose":"point"},{"at":4,"pose":"speak"}]},{"id":"voice","x":0.3,"at":0},{"id":"elder","x":0.62,"z":0.16,"face":"l","pose":"stand","say":5,"acts":[{"at":5,"pose":"kneel"}]}],"crowd":[{"kind":"people","n":7,"x":0.72,"w":0.36,"z":0.55,"face":"l","from":"stand","pose":"bow","at":5}],"props":[{"k":"grave","x":0.84,"z":0.35,"at":3},{"k":"stones","x":0.1,"z":0.2}]}},
   ],
   scene:{
    map:{biome:'wild', w:46, h:30, seed:6201,
-     features:[ {type:'bush',x:16,y:12,id:'myrtles',examine:'A man riding a red horse, standing among the myrtle trees in the hollow — and behind him red, sorrel, and white horses.'},{type:'bush',x:19,y:11},{type:'bush',x:14,y:14},{type:'standard',x:30,y:11,id:'comfort',examine:'“I am jealous for Yerushalayim with great jealousy — My House shall be built in it.”'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'bush',x:16,y:12,id:'myrtles',examine:'A man riding a red horse, standing among the myrtle trees in the shade — and behind him red, sorrel, and white horses.'},{type:'bush',x:19,y:11},{type:'bush',x:14,y:14},{type:'standard',x:30,y:11,id:'comfort',examine:'“I have been jealous for Yerushalayim with great jealousy — My house shall be built in it.”'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'night', music:'sorrow',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'messenger',char:'messenger',mount:'horse',x:17,y:13,dir:'right',wander:false},{id:'sorrel',animal:'horse',x:14,y:15,dir:'right',wander:false},{id:'white',animal:'horse',x:20,y:14,dir:'left',wander:false} ],
    objectives:[
-     {type:'talk',npc:'messenger',text:'Ask the Messenger: what are these?',
+     {type:'talk',npc:'messenger',text:'Ask the Mal’ak: what are these?',
       script:[
        {say:['zekaryah','My master, what are these?']},
-       {say:['messenger','These are the ones YAHUAH has sent to walk to and fro through the earth.']},
-       {say:['messenger','And they answered the Messenger of YAHUAH standing among the myrtles: We have walked to and fro through the earth, and see, all the earth is at rest and dwelling in peace.']},
+       {say:['messenger','They are the ones YAHUAH has sent to go throughout the earth.']},
+       {say:['messenger','And they answered the mal’ak of YAHUAH, who stood among the myrtle trees and said, “We have gone throughout the earth and see, all the earth is at shalom and rest.”']},
        {sfx:'chime'},
       ]},
      {type:'interact',prop:'comfort',text:'Proclaim YAHUAH’s return to Tsiyon',hiddenUntil:1,
       script:[
-       {say:['messenger','O YAHUAH of hosts, till when shall You have no compassion on Yerushalayim and the cities of Yahuḏah, on which You have been enraged these seventy years?']},
+       {say:['messenger','O YAHUAH of hosts, how long would You have no compassion on Yerushalayim and on the cities of Yahuḏah, against which You were enraged these seventy years?']},
        {say:['voice','I am jealous for Yerushalayim and for Tsiyon with great jealousy, and I am very wroth with the nations at ease — for I was a little wroth, but they added to the affliction.']},
        {rays:.5,raysX:30},{sfx:'holy'},{burst:[30,11,'holy',12]},
        {say:['zekaryah','Thus said YAHUAH: I shall return to Yerushalayim with compassion — My House shall be built in it, and a measuring line stretched out over Yerushalayim. My cities shall again overflow with goodness, and YAHUAH shall again comfort Tsiyon, and shall again choose Yerushalayim.']},
@@ -5752,19 +5899,19 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'“Return to Me, declares YAHUAH of hosts, and I shall return to you.” And in the night the naḇi saw a man riding a red horse, standing among the myrtle trees in the hollow, and behind him red, sorrel, and white horses — those whom YAHUAH sent to walk to and fro through the earth; and see, all the earth was at rest.', ref:'ZEḴARYAHU 1:3–11'},
-   {art:'light', music:'holy', text:'“I am jealous for Yerushalayim and for Tsiyon with great jealousy,” said YAHUAH. “I shall return to Yerushalayim with compassion — My House shall be built in it, and a measuring line stretched out over Yerushalayim. My cities shall again overflow with goodness, and YAHUAH shall again comfort Tsiyon, and again choose Yerushalayim.”', ref:'ZEḴARYAHU 1:14–17'},
+   {art:'reunion', music:'holy', text:'“Turn back to Me,” declares YAHUAH of hosts, “and I shall turn back to you.” … “I looked at night and saw a man riding on a red horse and he was standing among the myrtle trees in the shade. And behind him were horses: red, sorrel and white.” … “They are the ones YAHUAH has sent to go throughout the earth.” … “We have gone throughout the earth and see, all the earth is at shalom and rest.”', ref:'ZEḴARYAHU 1:3–11', stage:{"set":"valley","time":"night","cam":"push","focus":0.6,"cast":[{"id":"zekaryah","x":0.15,"z":0.06,"face":"r","pose":"look"},{"id":"messenger","look":{"angel":1},"x":0.32,"z":0.12,"face":"l","pose":"stand","say":3,"acts":[{"at":4,"face":"r"}]},{"id":"rider","look":{"name":"The Man on the Red Horse","skin":"#caa46a","hair":"#e8dcae","robe":"#8a3a2a","beard":"#cfc8a8","mantle":"#6a2a1a"},"x":0.6,"z":0.19,"dy":-0.075,"face":"l","pose":"sit","noseat":1,"at":1}],"props":[{"k":"tree","x":0.48,"z":0.4,"h":80,"color":"#2e4a2a"},{"k":"tree","x":0.74,"z":0.5,"h":95,"color":"#34502e"},{"k":"tree","x":0.92,"z":0.32,"h":75,"color":"#2e4a2a"},{"k":"horse","x":0.6,"z":0.2,"face":"l","color":"#8a2a1a","at":1},{"k":"horse","x":0.8,"z":0.55,"face":"l","color":"#8a2a1a","at":2},{"k":"horse","x":0.64,"z":0.62,"face":"l","color":"#a8642a","at":2},{"k":"horse","x":0.9,"z":0.66,"face":"l","color":"#e8e4dc","at":2}],"fx":[{"k":"glory","x":0.6,"y":0.2,"at":1}]}},
+   {art:'light', music:'holy', text:'Thus said YAHUAH of hosts, “I have been jealous for Yerushalayim and for Tsiyon with great jealousy… I shall return to Yerushalayim with compassion. My house shall be built in it,” declares YAHUAH of hosts, “and a surveyor’s line be stretched out over Yerushalayim… Again My cities shall overflow with goodness. And YAHUAH shall again comfort Tsiyon and shall again choose Yerushalayim.”', ref:'ZEḴARYAHU 1:14–17', stage:{"set":"city","time":"dawn","cam":"pan-r","cast":[{"id":"zekaryah","x":0.16,"z":0.06,"face":"r","pose":"raise","say":0,"acts":[{"at":2,"pose":"point"}]},{"id":"builder","look":{"name":"A Builder of the House","skin":"#83552d","hair":"#231409","robe":"#7a6040","beard":"#231409","short":1},"x":0.52,"z":0.14,"face":"r","pose":"carry","hold":"stone","at":2},{"id":"survey","look":{"name":"A Man with a Measuring Line","skin":"#caa46a","hair":"#e8dcae","robe":"#d8d0b8","beard":"#cfc8a8","sash":"#caa23c"},"x":0.76,"z":0.12,"face":"l","pose":"hold","hold":"rod","at":2}],"crowd":[{"kind":"people","n":4,"x":0.5,"w":0.3,"z":0.55,"face":"r","pose":"carry","hold":"stone","at":2},{"kind":"people","n":5,"x":0.3,"w":0.3,"z":0.65,"face":"r","at":3}],"props":[{"k":"stones","x":0.64,"z":0.3,"n":14},{"k":"basket","x":0.34,"z":0.2,"fruit":"#c85a3a","at":3},{"k":"sheaves","x":0.88,"z":0.35,"n":3,"at":3}],"fx":[{"k":"glory","x":0.62,"y":0.06,"at":1},{"k":"rays","x":0.6,"at":4}]}},
   ],
-  complete:'Return to Me, and I shall return to you — YAHUAH shall again comfort Tsiyon and choose Yerushalayim.'
+  complete:'Turn back to Me, declares YAHUAH of hosts, and I shall turn back to you — YAHUAH shall again comfort Tsiyon and shall again choose Yerushalayim.'
 },
 
 { id:'z2', title:'The Horns and the Measuring Line', ref:'ZEḴARYAHU 1:18–2:13',
   intro:[
-   {art:'vista', music:'tense', text:'Then the naḇi lifted his eyes and looked, and saw four horns. “What are these?” “These are the horns that scattered Yahuḏah, Yisra’ĕl, and Yerushalayim.” Then YAHUAH showed him four craftsmen. “These come to throw down the horns of the nations that lifted up their horn against the land of Yahuḏah to scatter it.”', ref:'ZEḴARYAHU 1:18–21'},
+   {art:'vista', music:'tense', text:'I lifted up my eyes and looked and saw four horns. And I said to the mal’ak who was speaking to me, “What are these?” … “These are the horns that have scattered Yahuḏah, Yasharal and Yerushalayim.” And YAHUAH showed me four craftsmen. … “These come to trouble them, to throw down the horns of the gentiles that lifted up their horn against the land of Yahuḏah to scatter it.”', ref:'ZEḴARYAHU 1:18–21', stage:{"set":"vision","cam":"push","focus":0.55,"cast":[{"id":"zekaryah","x":0.15,"z":0.06,"face":"r","pose":"look","say":1,"acts":[{"at":1,"pose":"point"}]},{"id":"messenger","look":{"angel":1},"x":0.34,"z":0.12,"face":"l","pose":"stand","say":2,"acts":[{"at":3,"face":"r","pose":"point"}]}],"crowd":[{"kind":"kings","n":4,"x":0.76,"w":0.24,"z":0.45,"face":"l","hold":"horn","from":"stand","pose":"fall","at":4},{"kind":"people","n":4,"x":0.54,"w":0.14,"z":0.38,"face":"r","enter":"l","at":3,"pose":"strike","hold":"rod","look":{"short":1,"robe":"#6a5a48","sash":"#8a6a3a"}}],"fx":[{"k":"red","amt":0.14,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:30, seed:6202,
-     features:[ {type:'pillar',x:15,y:11,id:'horns',examine:'The four horns that scattered Yahuḏah — and four craftsmen come to cast them down.'},{type:'standard',x:23,y:9,id:'line',examine:'A young man with a measuring line, going to measure Yerushalayim, its breadth and its length.'},{type:'firepit',x:31,y:12,id:'wall',examine:'“I shall be to her a wall of fire all around, and the esteem in her midst.”'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'pillar',x:15,y:11,id:'horns',examine:'The four horns that scattered Yahuḏah — and four craftsmen come to throw them down.'},{type:'standard',x:23,y:9,id:'line',examine:'A young man with a measuring line, going to measure Yerushalayim, to see what is its width and what is its length.'},{type:'firepit',x:31,y:12,id:'wall',examine:'“I Myself am to her a wall of fire all around, and for esteem I am in her midst.”'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'messenger',char:'messenger',x:20,y:12,wander:false},{id:'elder',char:'elder',x:27,y:14,wander:false} ],
@@ -5772,34 +5919,34 @@ STORY.push(
      {type:'interact',prop:'horns',text:'The four horns and the four craftsmen',
       script:[
        {say:['zekaryah','What are these four horns, my master?']},
-       {say:['messenger','These are the horns that scattered Yahuḏah, Yisra’ĕl, and Yerushalayim. And these craftsmen come to terrify them, to cast down the horns of the nations that lifted a horn against the land of Yahuḏah to scatter it.']},
+       {say:['messenger','These are the horns that have scattered Yahuḏah, Yasharal and Yerushalayim. But these come to trouble them, to throw down the horns of the gentiles that lifted up their horn against the land of Yahuḏah to scatter it.']},
        {shake:.6},{sfx:'bad'},{burst:[15,11,'ash',12]},
       ]},
      {type:'interact',prop:'line',text:'Measure Yerushalayim — a wall of fire around her',hiddenUntil:1,
       script:[
-       {say:['zekaryah','Where are you going? To measure Yerushalayim, to see its breadth and its length.']},
+       {say:['zekaryah','Where are you going? To measure Yerushalayim, to see what is its width and what is its length.']},
        {say:['messenger','Run, speak to this young man: Yerushalayim is to be inhabited as unwalled villages, for the multitude of men and livestock in her midst.']},
-       {say:['voice','For I, declares YAHUAH, shall be to her a wall of fire all around, and I shall be the esteem in her midst.']},
+       {say:['voice','For I Myself am to her, declares YAHUAH, a wall of fire all around and for esteem I am in her midst.']},
        {rays:.5,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',14]},
-       {say:['voice','Ho! Ho! Flee from the land of the north, declares YAHUAH — escape, O Tsiyon, you who dwell with the daughter of Baḇel. He who touches you touches the apple of His eye. Shout for joy and be glad, O daughter of Tsiyon, for see, I am coming to dwell in your midst. Many nations shall be joined to YAHUAH in that day, and become My people. Be silent, all flesh, before YAHUAH, for He has roused Himself from His set-apart dwelling!']},
+       {say:['voice','Oh, Oh! And flee from the land of the north, declares YAHUAH. Oh, Tsiyon! Escape, you who dwell with the daughter of Baḇel. For he who touches you touches the apple of My eye. Sing and rejoice, O daughter of Tsiyon!']},{say:['voice','For look, I am coming and shall dwell in your midst. And many gentiles shall be joined to YAHUAH in that day and they shall become My people. Hush, all flesh, before YAHUAH, for He has roused Himself out of His qadash (Set Apart) dwelling.']},
        {burst:[23,9,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'wasteland', music:'tense', text:'Four horns had scattered Yahuḏah and Yerushalayim — and four craftsmen came to cast them down, to throw down the horns of the nations that lifted their horn against the land of Yahuḏah. Then a man went out with a measuring line to measure Yerushalayim, its breadth and its length.', ref:'ZEḴARYAHU 1:18–2:2'},
-   {art:'light', music:'holy', text:'“Yerushalayim is to be inhabited as unwalled villages, for the multitude in her midst. For I, declares YAHUAH, shall be to her a wall of fire all around, and the esteem in her midst. Shout for joy, O daughter of Tsiyon, for see, I am coming to dwell in your midst! Many nations shall be joined to YAHUAH in that day. Be silent, all flesh, before YAHUAH, for He has roused Himself from His set-apart dwelling.”', ref:'ZEḴARYAHU 2:4–13'},
+   {art:'wasteland', music:'tense', text:'And I lifted up my eyes and looked and saw four horns… “These are the horns that have scattered Yahuḏah, Yasharal and Yerushalayim.” And YAHUAH showed me four craftsmen… “These come to trouble them, to throw down the horns of the gentiles that lifted up their horn against the land of Yahuḏah.” And I … saw a man with a measuring line in his hand… “To measure Yerushalayim, to see what is its width and what is its length.”', ref:'ZEḴARYAHU 1:18–2:2', stage:{"set":"walls","time":"dawn","cam":"pan-r","cast":[{"id":"zekaryah","x":0.15,"z":0.06,"face":"r","pose":"look","acts":[{"at":4,"pose":"stand"}]},{"id":"survey","look":{"name":"A Man with a Measuring Line","skin":"#caa46a","hair":"#e8dcae","robe":"#d8d0b8","beard":"#cfc8a8","sash":"#caa23c"},"x":0.42,"z":0.12,"face":"l","pose":"hold","hold":"rod","at":4,"say":5,"acts":[{"at":5,"pose":"point","face":"r"}]}],"crowd":[{"kind":"kings","n":4,"x":0.56,"w":0.24,"z":0.5,"face":"l","hold":"horn","exit":"l","exitAt":3,"run":1},{"kind":"people","n":4,"x":0.82,"w":0.14,"z":0.45,"face":"l","enter":"r","at":2,"pose":"strike","hold":"rod","look":{"short":1,"robe":"#6a5a48","sash":"#8a6a3a"}}]}},
+   {art:'light', music:'holy', text:'“Yerushalayim is to remain unwalled, because of the many men and livestock in it. For I Myself am to her,” declares YAHUAH, “a wall of fire all around and for esteem I am in her midst.” … “Sing and rejoice, O daughter of Tsiyon! For look, I am coming and shall dwell in your midst… And many gentiles shall be joined to YAHUAH in that day… Hush, all flesh, before YAHUAH, for He has roused Himself out of His qadash (Set Apart) dwelling.”', ref:'ZEḴARYAHU 2:4–13', stage:{"set":"city","time":"dusk","cam":"pull","cast":[{"id":"zekaryah","x":0.15,"z":0.06,"face":"r","pose":"point","say":0,"acts":[{"at":2,"pose":"raise"}]},{"id":"youth","look":{"child":1},"x":0.36,"z":0.08,"face":"r","pose":"dance","at":2}],"crowd":[{"kind":"people","n":7,"x":0.62,"w":0.5,"z":0.55,"face":"l","from":"stand","pose":"bow","at":5},{"kind":"women","n":4,"x":0.3,"w":0.2,"z":0.45,"face":"r","from":"stand","pose":"dance","at":2},{"kind":"nations","n":5,"x":0.86,"w":0.12,"z":0.4,"face":"l","enter":"r","at":4}],"props":[{"k":"sheep","x":0.5,"z":0.3,"n":5,"w":110},{"k":"oxen","x":0.72,"z":0.28,"n":2},{"k":"fire","x":0.04,"z":1.05,"s":2.6,"at":1},{"k":"fire","x":0.22,"z":1.1,"s":2.6,"at":1},{"k":"fire","x":0.4,"z":1.05,"s":2.6,"at":1},{"k":"fire","x":0.6,"z":1.1,"s":2.6,"at":1},{"k":"fire","x":0.78,"z":1.05,"s":2.6,"at":1},{"k":"fire","x":0.96,"z":1.1,"s":2.6,"at":1}],"fx":[{"k":"glory","x":0.5,"at":1},{"k":"bright","amt":0.1,"at":3}]}},
   ],
-  complete:'A wall of fire around her, and the esteem in her midst — be silent, all flesh, before YAHUAH.'
+  complete:'A wall of fire all around and for esteem I am in her midst — hush, all flesh, before YAHUAH.'
 },
 
 { id:'z3', title:'Filthy Garments Removed', ref:'ZEḴARYAHU 3:1–10',
   intro:[
-   {art:'corrupt', music:'tense', text:'Then he showed me Yahushua the high kohen standing before the Messenger of YAHUAH, and the Accuser standing at his right hand to accuse him. And YAHUAH said to the Accuser, “YAHUAH rebuke you, O Accuser! Is this not a brand plucked from the fire?” Now Yahushua was clothed in filthy garments, and standing before the Messenger.', ref:'ZEḴARYAHU 3:1–3'},
+   {art:'corrupt', music:'tense', text:'And he showed me Yahushua the kohen gadol standing before the mal’ak of YAHUAH and the Accuser standing at his right hand to be an adversary to him. And YAHUAH said to the Accuser, “YAHUAH rebuke you, Accuser! YAHUAH who has chosen Yerushalayim rebuke you! Is this not a brand plucked from the fire?” And Yahushua was dressed in filthy garments and was standing before the mal’ak.', ref:'ZEḴARYAHU 3:1–3', stage:{"set":"vision","cam":"close","focus":0.5,"cast":[{"id":"zekaryah","x":0.15,"z":0.04,"face":"r","pose":"look"},{"id":"accuser","x":0.32,"z":0.16,"face":"r","pose":"point","say":0,"acts":[{"at":2,"pose":"fall"}]},{"id":"yahushua","look":{"robe":"#5a5040","collar":"#4a4032","headcover":"#6a6050","sack":1},"x":0.52,"z":0.12,"face":"r","pose":"stand"},{"id":"messenger","look":{"angel":1},"x":0.74,"z":0.1,"face":"l","pose":"stand"},{"id":"voice","x":0.72,"at":1}],"props":[{"k":"fire","x":0.52,"z":0.6,"s":1.4,"at":3}],"fx":[{"k":"lightning","at":1},{"k":"embers","at":3}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:30, seed:6203,
-     features:[ {type:'temple',x:16,y:10,id:'house',examine:'The House of YAHUAH — Yahushua the kohen stands before the Messenger, the Accuser at his right hand.'},{type:'standard',x:23,y:9,id:'robes',examine:'“Remove the filthy garments from him.” Rich robes and a clean turban are set upon him.'},{type:'stone',x:31,y:12,id:'branch',examine:'A single stone with seven eyes — “I am bringing forth My Servant, the Branch.”'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'temple',x:16,y:10,id:'house',examine:'The House of YAHUAH — Yahushua the kohen stands before the Mal’ak of YAHUAH, the Accuser at his right hand.'},{type:'standard',x:23,y:9,id:'robes',examine:'“Remove the filthy garments from him.” Costly robes and a clean turban are set upon him.'},{type:'stone',x:31,y:12,id:'branch',examine:'A single stone with seven eyes — “I am bringing forth My Servant, the Branch.”'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'yahushua',char:'yahushua',x:20,y:12,wander:false},{id:'accuser',char:'accuser',x:22,y:13,wander:false},{id:'messenger',char:'messenger',x:18,y:11,wander:false} ],
@@ -5810,47 +5957,47 @@ STORY.push(
        {say:['voice','YAHUAH rebuke you, O Accuser! YAHUAH who has chosen Yerushalayim rebuke you! Is this not a brand plucked from the fire?']},
        {shake:.6},{sfx:'bad'},{burst:[22,13,'ash',10]},
        {say:['messenger','Remove the filthy garments from him. See, I have removed your crookedness from you, and shall put costly robes on you.']},
-       {say:['zekaryah','And I said, Let them set a clean turban on his head. So they set a clean turban on his head and clothed him, while the Messenger of YAHUAH stood by.']},
+       {say:['zekaryah','And I said, Let them set a clean turban on his head. So they set a clean turban on his head and clothed him, while the Mal’ak of YAHUAH stood by.']},
        {rays:.6,raysX:23},{sfx:'holy'},{burst:[20,12,'holy',16]},
       ]},
      {type:'interact',prop:'branch',text:'The Branch and the stone of seven eyes',hiddenUntil:1,
       script:[
-       {say:['messenger','Thus said YAHUAH of hosts: If you walk in My ways and guard My charge, then you shall rule My House and guard My courts, and I shall give you access among these standing here.']},
-       {say:['voice','Hear now, O Yahushua the high kohen, you and your companions who sit before you — for they are men of symbol: See, I am bringing forth My Servant, the Branch. For see, the stone I have set before Yahushua — on that one stone are seven eyes. See, I am engraving its inscription, declares YAHUAH of hosts, and I shall remove the crookedness of that land in one day.']},
+       {say:['messenger','Thus said YAHUAH of hosts: If you walk in My ways and if you guard My duty, then you shall also rule My house and also guard My courts. And I shall give you access among these standing here.']},
+       {say:['voice','Now listen, Yahushua the kohen gadol, you and your companions who sit before you, for they are men of symbol. For look, I am bringing forth My Servant – the Branch. See the stone which I have put before Yahushua: on one stone are seven eyes. See, I am engraving its inscription, declares YAHUAH of hosts, and I shall remove the guilt of that land in one day.']},
        {rays:.7,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',18]},
-       {say:['voice','In that day, declares YAHUAH of hosts, each of you shall invite his neighbour under his vine and under his fig tree.']},
+       {say:['voice','In that day, declares YAHUAH of hosts, you shall invite one another, under the vine and under the fig tree.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'light', music:'holy', text:'“YAHUAH rebuke you, O Accuser!” Yahushua stood in filthy garments; and the Messenger said, “Remove the filthy garments — I have removed your crookedness, and shall clothe you with costly robes.” And they set a clean turban on his head and clothed him, while the Messenger of YAHUAH stood by.', ref:'ZEḴARYAHU 3:2–5'},
-   {art:'garden', music:'holy', text:'“See, I am bringing forth My Servant, the Branch. For the stone I have set before Yahushua — on that one stone are seven eyes; I am engraving its inscription, declares YAHUAH of hosts, and I shall remove the crookedness of that land in one day. In that day each of you shall invite his neighbour under his vine and under his fig tree.”', ref:'ZEḴARYAHU 3:8–10'},
+   {art:'light', music:'holy', text:'“YAHUAH rebuke you, Accuser!” And Yahushua was dressed in filthy garments and was standing before the mal’ak. And He answered… saying, “Remove the filthy garments from him.” And to him He said, “See, I have removed your guilt from you and shall put costly robes on you.” … Then they put a clean turban on his head and they put garments on him. And the mal’ak of YAHUAH stood by.', ref:'ZEḴARYAHU 3:2–5', stage:{"set":"heaven","cam":"push","focus":0.55,"cast":[{"id":"zekaryah","x":0.15,"z":0.04,"face":"r","pose":"look","say":4,"acts":[{"at":4,"pose":"raise"}]},{"id":"accuser","x":0.28,"z":0.16,"face":"r","pose":"fall","acts":[{"at":1,"exit":"l","run":1}]},{"id":"yahushua","look":{"robe":"#5a5040","collar":"#4a4032","headcover":"#6a6050","sack":1},"x":0.5,"z":0.14,"face":"r","pose":"kneel","acts":[{"at":4,"pose":"stand"}]},{"id":"yahushua","look":{"robe":"#f6f2e6","collar":"#e0b840","headcover":"#ffffff","sash":"#3a4a8a"},"label":false,"x":0.5,"z":0.13,"face":"r","pose":"stand","at":4},{"id":"messenger","look":{"angel":1},"x":0.76,"z":0.1,"face":"l","pose":"stand","say":2,"acts":[{"at":2,"pose":"point"},{"at":5,"pose":"stand"}]}],"crowd":[{"kind":"angels","n":3,"x":0.5,"w":0.3,"z":0.55,"face":"r","pose":"hold","at":2}],"fx":[{"k":"rays","x":0.5,"at":3},{"k":"bright","amt":0.15,"at":4}]}},
+   {art:'garden', music:'holy', text:'“For look, I am bringing forth My Servant – the Branch. See the stone which I have put before Yahushua: on one stone are seven eyes. See, I am engraving its inscription,” declares YAHUAH of hosts, “and I shall remove the guilt of that land in one day. In that day,” declares YAHUAH of hosts, “you shall invite one another, under the vine and under the fig tree.”', ref:'ZEḴARYAHU 3:8–10', stage:{"set":"vineyard","time":"day","cam":"pan-r","cast":[{"id":"yahushua","x":0.2,"z":0.12,"face":"r","pose":"kneel"},{"id":"voice","x":0.36,"at":0},{"id":"elder","x":0.68,"z":0.18,"face":"r","pose":"sit","at":3,"say":3},{"id":"neighbour","look":{"name":"His Neighbour","skin":"#83552d","hair":"#3a2716","robe":"#7a6a4a","beard":"#3a2716","headcover":"#b8a888"},"enter":"r","at":3,"to":0.86,"z":0.16,"face":"l","pose":"stand"}],"props":[{"k":"tree","x":0.46,"z":0.4,"h":70,"bloom":1,"color":"#5a8a3a"},{"k":"rock","x":0.33,"z":0.1,"w":36,"h":24,"at":1},{"k":"tree","x":0.78,"z":0.3,"h":115,"color":"#3e6a2e","fruit":"#5a2a4a","at":3}],"fx":[{"k":"rays","x":0.33,"at":1},{"k":"glory","x":0.33,"y":0.3,"at":2}]}},
   ],
   complete:'The filthy garments removed, a clean turban set on — and My Servant the Branch brought forth.'
 },
 
 { id:'z4', title:'The Lampstand and the Olive Trees', ref:'ZEḴARYAHU 4:1–14',
   intro:[
-   {art:'menorahart', music:'holy', text:'And the messenger who spoke with me came back and woke me, as a man is wakened from his sleep. He said, “What do you see?” And I said, “I see a lampstand all of gold, with a bowl on top of it, and its seven lamps on it, and seven pipes to the lamps — and two olive trees beside it, one on the right of the bowl and the other on its left.”', ref:'ZEḴARYAHU 4:1–3'},
+   {art:'menorahart', music:'holy', text:'And the mal’ak who was speaking to me came back and woke me up as a man is awakened from sleep. And he said to me, “What do you see?” So I said, “I have looked and see: a lampstand all of gold with a bowl on top of it and on the stand seven lamps with seven spouts to the seven lamps. And two olive trees are by it, one at the right of the bowl and the other at its left.”', ref:'ZEḴARYAHU 4:1–3', stage:{"set":"vision","cam":"push","focus":0.55,"cast":[{"id":"zekaryah","x":0.2,"z":0.08,"face":"r","from":"lie","pose":"sitground","at":1,"acts":[{"at":2,"pose":"look"}]},{"id":"messenger","look":{"angel":1},"x":0.4,"z":0.12,"face":"l","pose":"bless","at":0,"say":1,"acts":[{"at":2,"pose":"point","face":"r"}]}],"props":[{"k":"lampstand","x":0.68,"z":0.35,"s":2.2,"at":2},{"k":"tree","x":0.52,"z":0.45,"h":110,"color":"#5a6a3a","at":3},{"k":"tree","x":0.86,"z":0.45,"h":110,"color":"#5a6a3a","at":3}],"fx":[{"k":"glory","x":0.68,"y":0.3,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:30, seed:6204,
-     features:[ {type:'menorah',x:23,y:11,id:'lamp',examine:'A lampstand all of gold, a bowl on top, seven lamps and seven pipes — “Not by might nor by power, but by My Spirit.”'},{type:'tree',x:18,y:12,id:'olives',examine:'Two olive trees beside the lampstand — the two anointed ones who stand by the Master of all the earth.'},{type:'tree',x:28,y:12},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'menorah',x:23,y:11,id:'lamp',examine:'A lampstand all of gold, a bowl on top, seven lamps and seven spouts — “Not by might nor by power, but by My Ruach.”'},{type:'tree',x:18,y:12,id:'olives',examine:'Two olive trees beside the lampstand — the two anointed ones who stand beside the Master of all the earth.'},{type:'tree',x:28,y:12},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'holy',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'messenger',char:'messenger',x:20,y:13,wander:false},{id:'zerub',char:'zerub',x:27,y:14,wander:false} ],
    objectives:[
-     {type:'interact',prop:'lamp',text:'Not by might, but by My Spirit',
+     {type:'interact',prop:'lamp',text:'Not by might, but by My Ruach',
       script:[
        {say:['zekaryah','What are these, my master?']},
        {say:['messenger','Do you not know what these are? This is the Word of YAHUAH to Zerubbaḇel —']},
-       {say:['voice','Not by might nor by power, but by My Spirit, said YAHUAH of hosts. Who are you, O great mountain? Before Zerubbaḇel you shall become a plain! And he shall bring forth the top stone with shouts of Favour, favour to it!']},
+       {say:['voice','Not by might nor by power, but by My Ruach, said YAHUAH of hosts. Who are you, great mountain, before Zerubbaḇel? A plain! And he shall bring forth the capstone with shouts of “Chen, chen to it!”']},
        {rays:.7,raysX:23},{sfx:'holy'},{burst:[23,11,'holy',18]},
       ]},
-     {type:'interact',prop:'olives',text:'The day of small things — the two anointed ones',hiddenUntil:1,
+     {type:'interact',prop:'olives',text:'The day of small beginnings — the two anointed ones',hiddenUntil:1,
       script:[
-       {say:['voice','The hands of Zerubbaḇel have laid the foundation of this House, and his hands shall complete it. Then you shall know that YAHUAH of hosts has sent Me to you. For who has despised the day of small things? For they shall rejoice and see the plumb-line in the hand of Zerubbaḇel — these seven are the eyes of YAHUAH, which diligently search throughout all the earth.']},
+       {say:['voice','The hands of Zerubbaḇel have laid the foundation of this House, and his hands shall complete it. Then you shall know that YAHUAH of hosts has sent Me to you. For who has despised the day of small beginnings? For they shall rejoice and see the plumb-line in the hand of Zerubbaḇel — these seven are the eyes of YAHUAH, which diligently search throughout all the earth.']},
        {sfx:'chime'},
        {say:['zekaryah','What are these two olive trees, and the two branches beside the two golden pipes that empty the golden oil from themselves?']},
        {say:['messenger','These are the two anointed ones, who stand beside the Master of all the earth.']},
@@ -5859,19 +6006,19 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'menorahart', music:'holy', text:'The naḇi saw a lampstand all of gold, a bowl on top, seven lamps and seven pipes, and two olive trees beside it. And the Word of YAHUAH came to Zerubbaḇel: “Not by might nor by power, but by My Spirit,” said YAHUAH of hosts. “Who are you, O great mountain? Before Zerubbaḇel you shall become a plain! And he shall bring forth the top stone with shouts of ‘Favour, favour to it!’”', ref:'ZEḴARYAHU 4:2–7'},
-   {art:'light', music:'holy', text:'“The hands of Zerubbaḇel have laid the foundation of this House, and his hands shall complete it. For who has despised the day of small things? These seven are the eyes of YAHUAH, which diligently search throughout all the earth.” And the two olive trees are the two anointed ones, who stand beside the Master of all the earth.', ref:'ZEḴARYAHU 4:9–14'},
+   {art:'menorahart', music:'holy', text:'“I have looked and see: a lampstand all of gold with a bowl on top of it and on the stand seven lamps… And two olive trees are by it.” … “This is the Word of YAHUAH to Zerubbaḇel, ‘Not by might nor by power, but by My Ruach,’ said YAHUAH of hosts. ‘Who are you, great mountain, before Zerubbaḇel? A plain! And he shall bring forth the capstone with shouts of “Chen, chen to it!” ’ ”', ref:'ZEḴARYAHU 4:2–7', stage:{"set":"temple","time":"night","cam":"pan-r","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"look"},{"id":"messenger","look":{"angel":1},"x":0.58,"z":0.1,"face":"l","pose":"speak","say":2,"acts":[{"at":3,"pose":"point","face":"r"}]},{"id":"zerub","x":0.8,"z":0.12,"face":"l","pose":"stand","at":2,"acts":[{"at":4,"pose":"carry"}],"hold":"stone"}],"crowd":[{"kind":"people","n":6,"x":0.8,"w":0.3,"z":0.58,"face":"l","from":"stand","pose":"raise","at":4}],"props":[{"k":"lampstand","x":0.34,"z":0.4,"s":1.8},{"k":"tree","x":0.2,"z":0.48,"h":100,"color":"#5a6a3a","at":1},{"k":"tree","x":0.48,"z":0.48,"h":100,"color":"#5a6a3a","at":1},{"k":"rock","x":0.9,"z":0.9,"w":150,"h":110,"at":3},{"k":"stones","x":0.7,"z":0.1,"n":6,"at":4}],"wx":"wind","wxAt":2,"fx":[{"k":"rays","x":0.34,"at":2}]}},
+   {art:'light', music:'holy', text:'“The hands of Zerubbaḇel have laid the foundation of this House and his hands shall complete it… For who has despised the day of small beginnings?… These seven are the eyes of YAHUAH, which diligently search throughout all the earth.” Then I responded and said to him, “What are these two olive trees…?” … And he said, “These are the two anointed ones, who stand beside the Master of all the earth.”', ref:'ZEḴARYAHU 4:9–14', stage:{"set":"temple","time":"day","cam":"push","cast":[{"id":"zerub","x":0.3,"z":0.1,"face":"r","pose":"carry","hold":"stone","acts":[{"at":0,"to":0.42},{"at":1,"pose":"kneel"},{"at":4,"pose":"stand","face":"r"}]},{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"look","say":3,"acts":[{"at":3,"pose":"point"}]},{"id":"messenger","look":{"angel":1},"x":0.86,"z":0.1,"face":"l","pose":"stand","say":4,"acts":[{"at":2,"pose":"raise"},{"at":4,"pose":"bless"}]},{"id":"yahushua","x":0.58,"z":0.12,"face":"l","pose":"stand","at":4}],"crowd":[{"kind":"elders","n":4,"x":0.74,"w":0.18,"z":0.55,"face":"l","pose":"weep","at":1}],"props":[{"k":"stones","x":0.52,"z":0.2,"n":10},{"k":"tree","x":0.04,"z":0.4,"h":110,"color":"#5a6a3a","at":3},{"k":"tree","x":0.96,"z":0.4,"h":110,"color":"#5a6a3a","at":3}],"fx":[{"k":"rays","x":0.5,"at":2},{"k":"glory","x":0.5,"at":4}]}},
   ],
-  complete:'Not by might nor by power, but by My Spirit — nor despise the day of small things.'
+  complete:'Not by might nor by power, but by My Ruach — for who has despised the day of small beginnings?'
 },
 
-{ id:'z5', title:'The Flying Scroll and the Ephah', ref:'ZEḴARYAHU 5:1–11',
+{ id:'z5', title:'The Flying Scroll and the Ĕphah', ref:'ZEḴARYAHU 5:1–11',
   intro:[
-   {art:'void', music:'tense', text:'Then I turned and lifted my eyes and looked, and saw a flying scroll. “What do you see?” “I see a flying scroll, twenty cubits long and ten cubits wide.” And he said, “This is the curse going out over the face of all the earth: everyone who steals shall be cut off, and everyone who swears falsely shall be cut off. I shall send it out, declares YAHUAH of hosts, and it shall enter the house of the thief and the house of him who swears falsely by My Name, and consume it with its timber and stones.”', ref:'ZEḴARYAHU 5:1–4'},
+   {art:'void', music:'tense', text:'And I lifted up my eyes again and looked and saw a flying scroll… “I see a flying scroll, twenty cubits long and ten cubits wide.” … “This is the curse that goes forth over the face of all the earth: ‘everyone who is stealing shall go unpunished’ … and, ‘everyone who has sworn falsely shall go unpunished’ … I shall send it out,” declares YAHUAH of hosts, “and it shall come into the house of the thief and the house of the one who shall swear falsely by My Name… and shall consume it, both its timber and stones.”', ref:'ZEḴARYAHU 5:1–4', stage:{"set":"city","time":"dusk","cam":"up","focus":0.5,"cast":[{"id":"zekaryah","x":0.15,"z":0.06,"face":"r","pose":"look","say":1,"acts":[{"at":1,"pose":"point"}]},{"id":"messenger","look":{"angel":1},"x":0.3,"z":0.12,"face":"r","pose":"stand","say":2},{"id":"thief","look":{"name":"One Who Steals","skin":"#7a5230","hair":"#1d1208","robe":"#4a4038","beard":"#1d1208","headcover":"#3a3028"},"x":0.64,"z":0.16,"face":"r","pose":"carry","hold":"jar","at":2,"acts":[{"at":5,"exit":"r","run":1}]},{"id":"swearer","look":{"name":"One Who Swears Falsely","skin":"#8a5a34","hair":"#2c1a0c","robe":"#6a3a4a","beard":"#2c1a0c","collar":"#caa23c"},"x":0.5,"z":0.2,"face":"l","pose":"raise","at":3,"acts":[{"at":5,"pose":"fall"}]}],"props":[{"k":"scroll","x":0.52,"z":0.9,"dy":-0.3,"s":3.4},{"k":"house","x":0.84,"z":0.45,"s":1.3},{"k":"house","x":0.68,"z":0.55}],"fx":[{"k":"firefall","x":0.84,"y":0.62,"at":4},{"k":"smoke","x":0.84,"at":5},{"k":"red","amt":0.14,"at":5}]}},
   ],
   scene:{
    map:{biome:'wild', w:46, h:30, seed:6205,
-     features:[ {type:'standard',x:16,y:11,id:'scroll',examine:'A flying scroll, twenty cubits by ten — the curse against the thief and the false-swearer.'},{type:'basket',x:31,y:12,id:'ephah',examine:'An ephah going forth — and a woman named Wickedness sitting in it, pressed down under a lead cover.'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'standard',x:16,y:11,id:'scroll',examine:'A flying scroll, twenty cubits by ten — the curse against the thief and the false-swearer.'},{type:'basket',x:31,y:12,id:'ephah',examine:'An ĕphah-measure going forth — and a woman named Wrongness sitting in it, pressed down under a lead cover.'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'messenger',char:'messenger',x:20,y:12,wander:false} ],
@@ -5879,49 +6026,49 @@ STORY.push(
      {type:'interact',prop:'scroll',text:'The flying scroll — the curse over all the earth',
       script:[
        {say:['zekaryah','I see a flying scroll, twenty cubits long and ten cubits wide.']},
-       {say:['messenger','This is the curse going out over the face of all the earth: everyone who steals shall be cut off, and everyone who swears falsely shall be cut off.']},
+       {say:['messenger','This is the curse that goes forth over the face of all the earth: ‘everyone who is stealing shall go unpunished,’ on the one side, according to it, and, ‘everyone who has sworn falsely shall go unpunished,’ on the other side, according to it.']},
        {say:['voice','I shall send it out, declares YAHUAH of hosts, and it shall enter the house of the thief and the house of him who swears falsely by My Name — and it shall remain in the midst of his house and consume it, with its timber and its stones.']},
        {shake:.7},{sfx:'bad'},{burst:[16,11,'ash',12]},
       ]},
-     {type:'interact',prop:'ephah',text:'The woman in the ephah, borne to Shinʿar',hiddenUntil:1,
+     {type:'interact',prop:'ephah',text:'The woman in the ĕphah, borne to Shinʿar',hiddenUntil:1,
       script:[
-       {say:['messenger','Lift up your eyes now, and see what this is that is going forth. This is an ephah going forth — this is their appearance throughout all the earth.']},
-       {say:['messenger','And see, a lead cover was lifted, and a woman was sitting in the midst of the ephah. And he said, This is Wickedness. And he cast her into the ephah, and cast the lead weight over its mouth.']},
+       {say:['messenger','Lift up your eyes now and see what this is that is going forth. It is an ĕphah-measure that is going forth — this is their appearance throughout the earth.']},
+       {say:['messenger','And see, a lead cover lifted up and this: a woman sitting inside the ĕphah-measure! And he said, “This is Wrongness!” And he threw her down into the ĕphah-measure and threw the lead weight over its mouth.']},
        {shake:.6},{sfx:'bad'},{burst:[31,12,'ash',10]},
-       {say:['zekaryah','Then two women came, and the wind was in their wings — wings like the wings of a stork — and they lifted up the ephah between the earth and the shamayim. Where are they taking it? To build a house for it in the land of Shinʿar; and when it is prepared, to set it there on its own base.']},
+       {say:['zekaryah','Then two women came, and the wind was in their wings — wings like the wings of a stork — and they lifted up the ĕphah between the earth and the shamayim. Where are they taking it? To build a house for it in the land of Shinʿar; and when it is prepared, to set it there on its own base.']},
        {sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'stars', music:'tense', text:'The naḇi saw a flying scroll, twenty cubits by ten — “the curse going out over the face of all the earth: everyone who steals shall be cut off, and everyone who swears falsely by My Name. It shall enter the house of the thief and consume it, with its timber and its stones.”', ref:'ZEḴARYAHU 5:1–4'},
-   {art:'wasteland', music:'tense', text:'Then an ephah went forth, and a woman named Wickedness sat in the midst of it, pressed down under a lead weight. And two women, with wings like a stork, lifted the ephah between the earth and the shamayim, to build it a house in the land of Shinʿar, and set it there on its own base.', ref:'ZEḴARYAHU 5:5–11'},
+   {art:'stars', music:'tense', text:'“I see a flying scroll, twenty cubits long and ten cubits wide.” … “This is the curse that goes forth over the face of all the earth… I shall send it out,” declares YAHUAH of hosts, “and it shall come into the house of the thief and the house of the one who shall swear falsely by My Name… and shall consume it, both its timber and stones.”', ref:'ZEḴARYAHU 5:1–4', stage:{"set":"night","cam":"push","focus":0.6,"cast":[{"id":"zekaryah","x":0.18,"z":0.06,"face":"r","pose":"look","say":0},{"id":"messenger","look":{"angel":1},"x":0.34,"z":0.1,"face":"l","pose":"stand","say":1,"acts":[{"at":2,"pose":"point","face":"r"}]},{"id":"thief","look":{"name":"One Who Steals","skin":"#7a5230","hair":"#1d1208","robe":"#4a4038","beard":"#1d1208","headcover":"#3a3028"},"x":0.6,"z":0.22,"face":"r","pose":"carry","hold":"jar","at":2,"acts":[{"at":3,"exit":"r","run":1}]}],"props":[{"k":"scroll","x":0.5,"z":0.9,"dy":-0.28,"s":3.6},{"k":"house","x":0.76,"z":0.35,"s":1.5}],"wx":"embers","wxAt":3,"fx":[{"k":"firefall","x":0.76,"y":0.64,"at":3},{"k":"smoke","x":0.76,"at":3}]}},
+   {art:'wasteland', music:'tense', text:'“It is an ĕphah-measure that is going forth.” … “…a woman sitting inside the ĕphah-measure!” And he said, “This is Wrongness!” And he threw her down into the ĕphah-measure and threw the lead weight over its mouth. And I lifted up my eyes and looked and saw two women… And they had wings like the wings of a stork and they lifted up the ĕphah-measure between earth and the shamayim… “To build a house for it in the land of Shinʿar.”', ref:'ZEḴARYAHU 5:5–11', stage:{"set":"vision","cam":"push","focus":0.55,"cast":[{"id":"zekaryah","x":0.15,"z":0.06,"face":"r","pose":"look"},{"id":"messenger","look":{"angel":1},"x":0.38,"z":0.14,"dy":-0.05,"face":"r","pose":"point","hold":"stone","say":2,"acts":[{"at":3,"pose":"strike"},{"at":4,"pose":"stand"}]},{"id":"wrongness","look":{"name":"Wrongness","skin":"#7a5230","hair":"#14100a","hairStyle":"long","robe":"#6a1a2a","veil":"#3a1a2a"},"x":0.6,"z":0.31,"dy":-0.21,"face":"l","pose":"sitground","at":1,"acts":[{"at":3,"pose":"mourn"}]},{"id":"stork1","look":{"name":"A Woman with Wings Like a Stork","skin":"#8a5a34","hair":"#23150b","hairStyle":"long","robe":"#5a6a7a","veil":"#d8d0c0"},"wings":1,"x":0.49,"z":0.33,"dy":-0.2,"face":"r","pose":"carry","at":4},{"id":"stork2","look":{"name":"A Woman with Wings Like a Stork","skin":"#8a5a34","hair":"#23150b","hairStyle":"long","robe":"#5a6a7a","veil":"#d8d0c0"},"wings":1,"label":false,"x":0.72,"z":0.33,"dy":-0.2,"face":"l","pose":"carry","at":4}],"props":[{"k":"basket","x":0.6,"z":0.3,"dy":-0.16,"s":2.6,"fruit":"#9a7a40"}],"wx":"wind","wxAt":5}},
   ],
-  complete:'The curse consumes the house of the thief, and Wickedness is borne far off to Shinʿar.'
+  complete:'The curse consumes the house of the thief, and Wrongness is borne far off to Shinʿar.'
 },
 
 { id:'z6', title:'The Four Chariots and the Crown', ref:'ZEḴARYAHU 6:1–15',
   intro:[
-   {art:'chariots', music:'tense', text:'Then I turned and lifted my eyes and looked, and saw four chariots coming from between two mountains — and the mountains were mountains of bronze. In the first chariot were red horses, in the second black horses, in the third white horses, and in the fourth dappled horses — all strong ones. “What are these, my master?” “These are the four spirits of the shamayim, going out from standing before the Master of all the earth.”', ref:'ZEḴARYAHU 6:1–5'},
+   {art:'chariots', music:'tense', text:'And I lifted up my eyes again and looked and saw four chariots coming from between two mountains and the mountains were mountains of bronze. With the first chariot were red horses and with the second chariot black horses, and with the third chariot white horses and with the fourth chariot strong speckled horses. … “What are these, my Master?” … “These are four ruchot of the shamayim, coming forth from presenting themselves before the Master of all the earth.”', ref:'ZEḴARYAHU 6:1–5', stage:{"set":"valley","time":"dawn","cam":"push","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"look","say":2,"acts":[{"at":2,"pose":"speak"}]},{"id":"messenger","look":{"angel":1},"x":0.86,"z":0.06,"face":"l","pose":"stand","say":3,"acts":[{"at":3,"pose":"point"}]}],"props":[{"k":"rock","x":0.1,"z":1,"w":230,"h":190,"color":"#a8743a"},{"k":"rock","x":0.9,"z":1,"w":230,"h":190,"color":"#9a6a34","flip":1},{"k":"chariot","x":0.4,"z":0.62,"face":"l","color":"#8a2a1a","s":0.9},{"k":"chariot","x":0.66,"z":0.62,"face":"l","color":"#1c1814","s":0.9},{"k":"chariot","x":0.3,"z":0.42,"face":"l","color":"#e8e4dc","s":0.9},{"k":"chariot","x":0.6,"z":0.42,"face":"l","color":"#8a8078","s":0.9}],"fx":[{"k":"glory","x":0.5,"y":0.06,"at":3}]}},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:30, seed:6206,
-     features:[ {type:'chariot',x:16,y:11,id:'chariots',examine:'Four chariots from between two mountains of bronze — the four winds of the shamayim, going forth over all the earth.'},{type:'throne',x:31,y:11,id:'crown',examine:'A crown of silver and gold — set on the head of Yahushua: “Behold the Man whose name is the Branch.”'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'chariot',x:16,y:11,id:'chariots',examine:'Four chariots from between two mountains of bronze — the four ruchot of the shamayim, going forth over all the earth.'},{type:'throne',x:31,y:11,id:'crown',examine:'A crown of silver and gold — set on the head of Yahushua: “See, the Man whose Name is the Branch!”'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'messenger',char:'messenger',x:20,y:12,wander:false},{id:'yahushua',char:'yahushua',x:29,y:13,wander:false} ],
    objectives:[
-     {type:'interact',prop:'chariots',text:'The four winds go out over the earth',
+     {type:'interact',prop:'chariots',text:'The four ruchot go out over the earth',
       script:[
        {say:['zekaryah','What are these, my master?']},
-       {say:['messenger','These are the four spirits of the shamayim, going out from standing before the Master of all the earth. The black horses go to the north country, the white to the west, and the dappled to the south country.']},
-       {say:['voice','See, those going to the north country have given rest to My Spirit in the north country.']},
+       {say:['messenger','These are four ruchot of the shamayim, coming forth from presenting themselves before the Master of all the earth. The one with the black horses is going out to the land of the north and the white ones have gone out after them and the speckled ones have gone out to the land of the south.']},
+       {say:['voice','See, those going to the north country have given rest to My Ruach in the north country.']},
        {shake:.6},{sfx:'thunder'},{burst:[16,11,'ash',12]},
       ]},
-     {type:'interact',prop:'crown',text:'Crown Yahushua — behold the Branch',hiddenUntil:1,
+     {type:'interact',prop:'crown',text:'Crown Yahushua — see, the Branch',hiddenUntil:1,
       script:[
-       {say:['zekaryah','Take silver and gold from the exiles, and make a crown, and set it on the head of Yahushua son of Yehotsaḏaq, the high kohen.']},
-       {say:['voice','Behold, the Man whose name is the Branch! He shall branch out from His place and build the Hĕḵal of YAHUAH. He shall build the Hĕḵal of YAHUAH, and bear the splendour, and sit and rule on His throne. And He shall be a kohen on His throne, and the counsel of peace shall be between the two of them.']},
+       {say:['zekaryah','Receive the gift from the exiles. Take the silver and gold, make a crown and set it on the head of Yahushua the son of Yehotsaḏaq, the kohen gadol.']},
+       {say:['voice','See, the Man whose Name is the Branch! And from His place He shall branch out and He shall build the Hĕḵal of YAHUAH. It is He who is going to build the Hĕḵal of YAHUAH. It is He who is going to bear the splendour. And He shall sit and rule on His throne and shall be a kohen on His throne and the counsel of shalom shall be between Them both.']},
        {rays:.8,raysX:31},{sfx:'holy'},{burst:[31,11,'holy',20]},
        {say:['zekaryah','And those far off shall come and build the Hĕḵal of YAHUAH, and you shall know that YAHUAH of hosts has sent me to you. This shall be, if you diligently obey the voice of YAHUAH your Aluahim.']},
        {sfx:'chime'},
@@ -5929,158 +6076,158 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'chariots', music:'tense', text:'Four chariots came from between two mountains of bronze — red, black, white, and dappled horses, the four spirits of the shamayim going out from standing before the Master of all the earth; and those going to the north country gave rest to His Spirit in the north.', ref:'ZEḴARYAHU 6:1–8'},
-   {art:'moriah', music:'holy', text:'“Take silver and gold, and make a crown, and set it on the head of Yahushua the high kohen. Behold, the Man whose name is the Branch! He shall build the Hĕḵal of YAHUAH, and bear the splendour, and sit and rule on His throne — and He shall be a kohen on His throne, and the counsel of peace between the two of them.” And those far off shall come and build the Hĕḵal of YAHUAH.', ref:'ZEḴARYAHU 6:11–15'},
+   {art:'chariots', music:'tense', text:'I lifted up my eyes again and looked and saw four chariots coming from between two mountains and the mountains were mountains of bronze… red horses… black horses… white horses… strong speckled horses. … “These are four ruchot of the shamayim, coming forth from presenting themselves before the Master of all the earth.” … “See, those who go toward the land of the north have given rest to My Ruach in the land of the north.”', ref:'ZEḴARYAHU 6:1–8', stage:{"set":"vision","cam":"pan-r","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"look"},{"id":"messenger","look":{"angel":1},"x":0.86,"z":0.08,"face":"l","pose":"stand","say":3,"acts":[{"at":4,"pose":"point","face":"r"}]}],"props":[{"k":"rock","x":0.08,"z":1,"dy":-0.08,"w":230,"h":190,"color":"#a8743a"},{"k":"rock","x":0.92,"z":1,"dy":-0.08,"w":230,"h":190,"color":"#9a6a34","flip":1},{"k":"chariot","x":0.3,"z":0.55,"dy":-0.14,"face":"r","color":"#8a2a1a","s":0.9,"at":1},{"k":"chariot","x":0.58,"z":0.62,"dy":-0.16,"face":"r","color":"#1c1814","s":0.9,"at":1},{"k":"chariot","x":0.38,"z":0.35,"dy":-0.06,"face":"r","color":"#e8e4dc","s":0.9,"at":2},{"k":"chariot","x":0.66,"z":0.4,"dy":-0.08,"face":"r","color":"#8a8078","s":0.9,"at":2}],"wx":"wind","wxAt":4,"fx":[{"k":"rays","x":0.9,"at":4}]}},
+   {art:'moriah', music:'holy', text:'“And you shall take the silver and gold, make a crown and set it on the head of Yahushua… the kohen gadol… See, the Man whose Name is the Branch! … He shall build the Hĕḵal of YAHUAH. It is He who is going to bear the splendour. And He shall sit and rule on His throne and shall be a kohen on His throne and the counsel of shalom shall be between Them both… And those who are far away shall come and build the Hĕḵal of YAHUAH.”', ref:'ZEḴARYAHU 6:11–15', stage:{"set":"temple","time":"day","cam":"push","focus":0.45,"cast":[{"id":"yahushua","x":0.44,"z":0.1,"face":"r","pose":"kneel"},{"id":"zekaryah","x":0.54,"z":0.12,"face":"l","pose":"hold","hold":"crown","say":1,"acts":[{"at":1,"pose":"bless"}]}],"crowd":[{"kind":"people","n":4,"x":0.2,"w":0.2,"z":0.5,"face":"r","pose":"carry","hold":"stone","at":2},{"kind":"nations","n":6,"x":0.8,"w":0.2,"z":0.55,"face":"l","enter":"r","at":5,"pose":"carry","hold":"stone"}],"props":[{"k":"chest","x":0.7,"z":0.08,"gold":1},{"k":"throne","x":0.5,"z":0.62,"at":4}],"fx":[{"k":"glory","x":0.44,"y":0.12,"at":3},{"k":"rays","x":0.5,"at":4}]}},
   ],
-  complete:'Behold the Branch — He builds the Hĕḵal of YAHUAH and is a kohen upon His throne.'
+  complete:'See, the Man whose Name is the Branch! He shall build the Hĕḵal of YAHUAH… and shall be a kohen on His throne.'
 },
 
 ]},
 
 /* ============ ACT II — TRUTH AND PEACE ============ */
-{ id:'zact2', roman:'II', title:'Truth and Peace', ref:'ZEḴARYAHU 7–8', chapters:[
+{ id:'zact2', roman:'II', title:'Truth and Shalom', ref:'ZEḴARYAHU 7–8', chapters:[
 
-{ id:'z7', title:'Was It for Me That You Fasted?', ref:'ZEḴARYAHU 7:1–14',
+{ id:'z7', title:'Did You Truly Fast for Me?', ref:'ZEḴARYAHU 7:1–14',
   intro:[
-   {art:'corrupt', music:'sorrow', text:'In the fourth year of Dareyawesh, the people sent to entreat the favour of YAHUAH, and to ask the kohanim and the neḇi’im, “Should I weep in the fifth month and abstain, as I have done these many years?” Then the Word of YAHUAH of hosts came: “When you fasted and mourned in the fifth and seventh months these seventy years, did you at all fast for Me? And when you eat and drink, do you not eat and drink for yourselves?”', ref:'ZEḴARYAHU 7:1–6'},
+   {art:'corrupt', music:'sorrow', text:'And in the fourth year of Sovereign Dareyawesh… Now Bĕyth Al had sent… to pray before YAHUAH… “Should I weep in the fifth month and fast as I have done for so many years?” Then the Word of YAHUAH of hosts came to me… “When you fasted and lamented in the fifth and seventh months all these seventy years, did you truly fast for Me? And when you ate and when you drank, was it not for those eating and for those drinking?”', ref:'ZEḴARYAHU 7:1–6', stage:{"set":"court","time":"day","cam":"push","cast":[{"id":"zekaryah","x":0.16,"z":0.06,"face":"r","pose":"stand","say":4,"acts":[{"at":3,"pose":"look"},{"at":4,"pose":"point"}]},{"id":"envoy","look":{"name":"An Envoy of Bĕyth Al","skin":"#7a5230","hair":"#3a2716","robe":"#6a5a3a","beard":"#3a2716","headcover":"#b8a888"},"enter":"r","at":1,"to":0.58,"z":0.12,"face":"l","pose":"stand","say":2,"acts":[{"at":4,"pose":"kneel"}]},{"id":"envoy2","look":{"name":"An Envoy of Bĕyth Al","skin":"#6e4524","hair":"#1d1208","robe":"#5a4a6a","beard":"#1d1208","headcover":"#d8ccb0"},"label":false,"enter":"r","at":1,"to":0.72,"z":0.16,"face":"l","pose":"stand","acts":[{"at":4,"pose":"kneel"}]},{"id":"voice","x":0.24,"at":3}],"crowd":[{"kind":"kohanim","n":5,"x":0.42,"w":0.3,"z":0.55,"face":"r"},{"kind":"mourners","n":4,"x":0.86,"w":0.12,"z":0.6,"face":"l","at":4}],"props":[{"k":"table","x":0.4,"z":0.2,"cups":1,"at":5}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:30, seed:6207,
-     features:[ {type:'standard',x:16,y:11,id:'justice',examine:'“Execute true right-ruling, show kindness and compassion, each to his brother.”'},{type:'stone',x:31,y:12,id:'flint',examine:'They made their hearts like flint, lest they hear the Torah and the words YAHUAH sent by His Spirit.'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'standard',x:16,y:11,id:'justice',examine:'“Execute true right-ruling, show kindness and compassion everyone to his brother.”'},{type:'stone',x:31,y:12,id:'flint',examine:'They made their hearts like flint against hearing the Torah and the words YAHUAH sent by His Ruach.'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'sorrow',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:20,y:12,wander:false} ],
    objectives:[
      {type:'interact',prop:'justice',text:'The fast YAHUAH chose — true right-ruling',
       script:[
-       {say:['elder','Should we weep and fast in the fifth month, prophet, as we have done these seventy years?']},
+       {say:['elder','Prophet, should I weep in the fifth month and fast as I have done for so many years?']},
        {say:['zekaryah','Thus spoke YAHUAH of hosts: Execute true right-ruling, show kindness and compassion, each to his brother. Do not oppress the widow or the fatherless, the stranger or the poor. And let none of you plot evil in his heart against his brother.']},
        {rays:.4,raysX:16},{sfx:'holy'},{burst:[16,11,'holy',10]},
       ]},
-     {type:'interact',prop:'flint',text:'Hearts of flint — the land left desolate',hiddenUntil:1,
+     {type:'interact',prop:'flint',text:'Hearts of flint — the land laid waste',hiddenUntil:1,
       script:[
-       {say:['voice','But they refused to heed, and turned a stubborn shoulder, and stopped their ears from hearing. They made their hearts like flint, lest they hear the Torah and the words which YAHUAH of hosts sent by His Spirit through the former neḇi’im.']},
+       {say:['voice','But they refused to listen and they shrugged their shoulders and stopped their ears from hearing. And they made their hearts like flint against hearing the Torah and the words, which YAHUAH of hosts had sent by His Ruach through the former naḇi’im.']},
        {shake:.7},{sfx:'bad'},{burst:[31,12,'ash',12]},
-       {say:['voice','Therefore great wrath came from YAHUAH of hosts. And it came to be: as He called and they did not hear, so they called and I did not hear, said YAHUAH of hosts. And I scattered them with a whirlwind among all the nations they had not known — the pleasant land laid desolate behind them.']},
+       {say:['voice','Therefore great wrath came from YAHUAH of hosts. And it came to be: as He called and they did not hear, so let them call, but I shall not hear, said YAHUAH of hosts. And I scattered them with a storm ruach among all the gentiles which they had not known. And the land was laid waste behind them, no one passing through or returning, for they made the pleasant land a waste.']},
        {shake:.8},{sfx:'bad'},{burst:[23,10,'ash',14]},
       ]},
    ],
   },
   outro:[
-   {art:'corrupt', music:'sorrow', text:'“When you fasted and mourned these seventy years, did you fast for Me? Execute true right-ruling, show kindness and compassion, each to his brother; do not oppress the widow or the fatherless, the stranger or the poor.” But they refused to heed, and made their hearts like flint, lest they hear the Torah and the words YAHUAH of hosts sent by His Spirit through the former neḇi’im.', ref:'ZEḴARYAHU 7:5–12'},
-   {art:'wasteland', music:'sorrow', text:'“Therefore great wrath came from YAHUAH of hosts. And as He called and they did not hear, so they called and I did not hear,” said YAHUAH of hosts. “And I scattered them with a whirlwind among all the nations they had not known” — and the pleasant land was laid desolate behind them.', ref:'ZEḴARYAHU 7:12–14'},
+   {art:'corrupt', music:'sorrow', text:'“When you fasted and lamented… all these seventy years, did you truly fast for Me – for Me? … Execute true right-ruling, show kindness and compassion everyone to his brother. Do not oppress the widow or the fatherless, the stranger or the poor.” But they refused to listen… And they made their hearts like flint against hearing the Torah and the words, which YAHUAH of hosts had sent by His Ruach through the former naḇi’im.', ref:'ZEḴARYAHU 7:5–12', stage:{"set":"gate","time":"day","cam":"push","cast":[{"id":"zekaryah","x":0.15,"z":0.06,"face":"r","pose":"speak","say":2,"acts":[{"at":2,"pose":"bless"},{"at":4,"pose":"point"}]},{"id":"widow","look":{"name":"A Widow","skin":"#83552d","hair":"#4a3420","hairStyle":"long","robe":"#3a342c","veil":"#2e2a24"},"x":0.44,"z":0.12,"face":"l","pose":"weep","at":3},{"id":"orphan","look":{"name":"The Fatherless","skin":"#8a5a34","hair":"#231409","robe":"#7a6a4a","child":1},"x":0.52,"z":0.1,"face":"l","pose":"stand","at":3}],"crowd":[{"kind":"mourners","n":5,"x":0.74,"w":0.26,"z":0.5,"face":"l","exit":"r","exitAt":4},{"kind":"people","n":5,"x":0.82,"w":0.2,"z":0.62,"face":"l","exit":"r","exitAt":4}],"fx":[{"k":"darkness","amt":0.25,"at":5}]}},
+   {art:'wasteland', music:'sorrow', text:'“Therefore great wrath came from YAHUAH of hosts. And it came to be: as He called and they did not hear, so let them call, but I shall not hear,” said YAHUAH of hosts. “And I scattered them with a storm ruach among all the gentiles which they had not known. And the land was laid waste behind them… for they made the pleasant land a waste.”', ref:'ZEḴARYAHU 7:12–14', stage:{"set":"ruins","time":"storm","wx":"wind","wxAt":2,"cam":"pan-l","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"point","say":0},{"id":"elder","x":0.5,"z":0.1,"face":"r","pose":"stand","acts":[{"at":1,"pose":"raise"},{"at":2,"exit":"l","run":1}]}],"crowd":[{"kind":"captives","n":6,"x":0.6,"w":0.36,"z":0.5,"face":"l","exit":"l","exitAt":2},{"kind":"soldiers","side":"bavel","n":4,"x":0.86,"w":0.12,"z":0.45,"face":"l","exit":"l","exitAt":2}],"props":[{"k":"bush","x":0.34,"z":0.25,"color":"#5a4a30","at":3},{"k":"bush","x":0.78,"z":0.3,"color":"#5a4a30","at":4}],"fx":[{"k":"lightning","at":0},{"k":"smoke","x":0.7,"at":3},{"k":"darkness","amt":0.25,"at":4}]}},
   ],
   complete:'The fast was for yourselves — YAHUAH sought true right-ruling and compassion, not flint hearts.'
 },
 
 { id:'z8', title:'I Shall Return to Tsiyon', ref:'ZEḴARYAHU 8:1–23',
   intro:[
-   {art:'reunion', music:'holy', text:'And the Word of YAHUAH of hosts came, saying: “Thus said YAHUAH of hosts: I shall be jealous for Tsiyon with great jealousy. I shall return to Tsiyon and dwell in the midst of Yerushalayim — and Yerushalayim shall be called the City of Truth, and the Mountain of YAHUAH of hosts, the Set-apart Mountain.”', ref:'ZEḴARYAHU 8:1–3'},
+   {art:'reunion', music:'holy', text:'And the Word of YAHUAH of hosts came, saying, “Thus said YAHUAH of hosts, ‘I shall be jealous for Tsiyon with great jealousy, with great wrath I shall be jealous for her.’ Thus said YAHUAH, ‘I shall return to Tsiyon and I shall dwell in the midst of Yerushalayim. And Yerushalayim shall be called: City of the Truth and the Mountain of YAHUAH of hosts, the Qadash (Set Apart) Mountain.’”', ref:'ZEḴARYAHU 8:1–3', stage:{"set":"mountain","time":"dawn","cam":"up","focus":0.5,"cast":[{"id":"zekaryah","x":0.16,"z":0.06,"face":"r","pose":"raise","say":0,"acts":[{"at":2,"pose":"point"}]},{"id":"elder","x":0.8,"z":0.12,"face":"l","pose":"stand","acts":[{"at":2,"pose":"kneel"}]}],"crowd":[{"kind":"people","n":6,"x":0.32,"w":0.3,"z":0.5,"face":"r","from":"stand","pose":"bow","at":2},{"kind":"people","n":4,"x":0.72,"w":0.16,"z":0.55,"face":"l","from":"stand","pose":"bow","at":2}],"props":[{"k":"gate","x":0.5,"z":0.95,"s":0.8},{"k":"house","x":0.3,"z":0.9},{"k":"house","x":0.72,"z":0.9}],"fx":[{"k":"shekinah","x":0.5,"at":1},{"k":"glory","x":0.5,"y":0.08,"at":2},{"k":"bright","amt":0.1,"at":2}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:30, seed:6208,
-     features:[ {type:'standard',x:16,y:11,id:'streets',examine:'Old men and old women shall again sit in the streets, each with staff in hand for age — and the streets full of boys and girls playing.'},{type:'vine',x:31,y:12,id:'seed',examine:'“The seed shall be peaceful — the vine gives its fruit, the ground its increase, the heavens their dew.”'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'standard',x:16,y:11,id:'streets',examine:'Old men and old women shall again dwell in the streets, each with staff in hand because of great age — and the streets full of boys and girls playing.'},{type:'vine',x:31,y:12,id:'seed',examine:'“Because of the sowing of shalom the vine does give its fruit, the ground her increase and the shamayim their dew.”'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'holy',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:20,y:12,wander:false},{id:'youth',char:'youth',child:true,x:26,y:14,wander:false} ],
    objectives:[
      {type:'interact',prop:'streets',text:'The City of Truth — old ones and children in the streets',
       script:[
-       {say:['voice','Thus said YAHUAH of hosts: Old men and old women shall again sit in the streets of Yerushalayim, each with staff in hand because of great age. And the streets of the city shall be filled with boys and girls playing in its streets.']},
+       {say:['voice','Thus said YAHUAH of hosts: Again old men and old women shall dwell in the streets of Yerushalayim, each one with his staff in his hand because of great age — and the streets of the city shall be filled with boys and girls playing in its streets.']},
        {rays:.5,raysX:16},{sfx:'holy'},{burst:[16,11,'holy',12]},
-       {say:['voice','If it is marvellous in the eyes of the remnant of this people in these days, should it also be marvellous in My eyes? declares YAHUAH of hosts. See, I am saving My people from the land of the sunrise and from the land of the sunset. I shall bring them back, and they shall dwell in the midst of Yerushalayim — they shall be My people, and I shall be their Aluahim, in truth and in righteousness.']},
+       {say:['voice','If it is marvellous in the eyes of the remnant of this people in these days, should it also be marvellous in My eyes? declares YAHUAH of hosts. See, I am saving My people from the land of the sunrise and from the land of the sunset.']},{say:['voice','I shall bring them back, and they shall dwell in the midst of Yerushalayim — they shall be My people, and I shall be their Aluahim, in truth and in righteousness.']},
        {sfx:'chime'},
       ]},
-     {type:'interact',prop:'seed',text:'Sow peace — the fasts become feasts',hiddenUntil:1,
+     {type:'interact',prop:'seed',text:'Sow shalom — the fasts become feasts',hiddenUntil:1,
       script:[
-       {say:['zekaryah','Let your hands be strong, you who hear these words. For the seed shall be peaceful — the vine gives its fruit, the ground its increase, the heavens their dew — and I shall give the remnant of this people all these as an inheritance. As you were a curse among the nations, so I shall save you, and you shall be a blessing. Do not fear — let your hands be strong.']},
+       {say:['zekaryah','Let your hands be strong, you who are listening in these days to these words. Because of the sowing of shalom the vine does give its fruit, the ground does give her increase and the shamayim do give their dew.']},{say:['zekaryah','And I shall cause the remnant of this people to inherit all these. As you were a curse among the gentiles, O house of Yahuḏah and house of Yasharal, so I shall save you and you shall be a berakah. Do not fear, let your hands be strong.']},
        {rays:.5,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',12]},
-       {say:['voice','These are the words you are to do: Speak the truth, each to his neighbour; judge with truth and right-ruling for peace in your gates; do not plot evil in your hearts against one another, and do not love a false oath. The fast of the fourth, fifth, seventh, and tenth months shall become joy and gladness and cheerful appointed times for the house of Yahuḏah — only love truth and peace.']},
-       {say:['zekaryah','Thus said YAHUAH of hosts: In those days ten men from all the languages of the nations shall take hold, grasping the sleeve of a Yahuḏi, saying, Let us go with you, for we have heard that Aluahim is with you.']},
+       {say:['voice','These are the words you should do: speak the truth to one another, judge with truth and right-ruling for shalom in your gates. And do not plot evil in your heart against another and do not love a false oath.']},{say:['voice','The fast of the fourth and the fast of the fifth and the fast of the seventh and the fast of the tenth months, are to be joy and gladness and pleasant appointed times for the house of Yahuḏah – and they shall love the truth and the shalom.']},
+       {say:['zekaryah','Thus said YAHUAH of hosts: In those days ten men from all languages of the nations take hold, yea, they shall take hold of the edge of the garment of a man, a Yahuḏi, saying, “Let us go with you, for we have heard that Aluahim is with you.”']},
        {burst:[23,10,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'garden', music:'holy', text:'“I shall return to Tsiyon and dwell in the midst of Yerushalayim — it shall be called the City of Truth. Old men and old women shall again sit in the streets, each with staff for great age, and the streets shall be filled with boys and girls playing.” “Let your hands be strong: the seed shall be peaceful, the vine gives its fruit, the ground its increase, the heavens their dew.”', ref:'ZEḴARYAHU 8:3–12'},
-   {art:'reunion', music:'holy', text:'“Speak the truth, each to his neighbour; judge with truth for peace in your gates. The fasts shall become joy and gladness and cheerful appointed times — only love truth and peace.” “In those days ten men from all the languages of the nations shall grasp the sleeve of a Yahuḏi, saying, ‘Let us go with you, for we have heard that Aluahim is with you.’”', ref:'ZEḴARYAHU 8:16–23'},
+   {art:'garden', music:'holy', text:'“I shall return to Tsiyon and I shall dwell in the midst of Yerushalayim. And Yerushalayim shall be called: City of the Truth… Again old men and old women shall dwell in the streets… each one with his staff… because of great age, and the streets… shall be filled with boys and girls playing… Let your hands be strong… Because of the sowing of shalom the vine does give its fruit, the ground does give her increase and the shamayim do give their dew.”', ref:'ZEḴARYAHU 8:3–12', stage:{"set":"city","time":"day","cam":"pan-r","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"speak","say":0,"acts":[{"at":6,"pose":"raise"}]},{"id":"elder","x":0.3,"z":0.1,"face":"r","pose":"sit","hold":"staff","at":2},{"id":"oldwoman","look":{"name":"An Old Woman of Yerushalayim","skin":"#7a5230","hair":"#cfc8b8","hairStyle":"long","robe":"#6a5a7a","veil":"#d8ccb0","old":1},"x":0.44,"z":0.12,"face":"l","pose":"sit","hold":"staff","at":3},{"id":"youth","look":{"child":1},"x":0.6,"z":0.08,"face":"l","pose":"dance","at":5}],"crowd":[{"kind":"children","n":6,"x":0.7,"w":0.34,"z":0.4,"face":"l","pose":"dance","at":5}],"props":[{"k":"vine","x":0.86,"z":0.3,"at":7},{"k":"tree","x":0.94,"z":0.45,"h":120,"fruit":"#6a2a5a","at":7},{"k":"sheaves","x":0.8,"z":0.12,"n":3,"at":7}],"fx":[{"k":"glory","x":0.5,"at":0},{"k":"rays","x":0.8,"at":7}]}},
+   {art:'reunion', music:'holy', text:'“Speak the truth to one another, judge with truth and right-ruling for shalom in your gates… The fast of the fourth… and the fast of the tenth months, are to be joy and gladness and pleasant appointed times… and they shall love the truth and the shalom.” … “In those days ten men from all languages of the nations… shall take hold of the edge of the garment of a man, a Yahuḏi, saying, ‘Let us go with you, for we have heard that Aluahim is with you.’ ”', ref:'ZEḴARYAHU 8:16–23', stage:{"set":"gate","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"zekaryah","x":0.15,"z":0.06,"face":"r","pose":"speak","say":0},{"id":"yahudi","look":{"name":"A Man, a Yahuḏi","skin":"#7a4e29","hair":"#2c1a0c","robe":"#e8e0cc","beard":"#2c1a0c","mantle":"#3a4a8a","headcover":"#f0ead8"},"x":0.4,"z":0.1,"face":"r","pose":"stand","at":4}],"crowd":[{"kind":"elders","n":4,"x":0.5,"w":0.2,"z":0.55,"face":"l","pose":"sitground"},{"kind":"people","n":5,"x":0.24,"w":0.2,"z":0.6,"face":"r","from":"stand","pose":"dance","at":2},{"kind":"nations","n":10,"x":0.68,"w":0.32,"z":0.3,"face":"l","enter":"r","at":4,"pose":"hold","hold":null}],"fx":[{"k":"rays","x":0.3,"at":2}]}},
   ],
-  complete:'The City of Truth — its fasts turned to feasts, and the nations grasping the sleeve of the Yahuḏi.'
+  complete:'The City of Truth — its fasts turned to feasts, and the nations taking hold of the garment of the Yahuḏi.'
 },
 
 ]},
 
 /* ============ ACT III — THE COMING KING ============ */
-{ id:'zact3', roman:'III', title:'The Coming King', ref:'ZEḴARYAHU 9–11', chapters:[
+{ id:'zact3', roman:'III', title:'The Coming Sovereign', ref:'ZEḴARYAHU 9–11', chapters:[
 
-{ id:'z9', title:'Your King Comes, Riding on a Donkey', ref:'ZEḴARYAHU 9:1–17',
+{ id:'z9', title:'Your Sovereign Comes, Riding on a Donkey', ref:'ZEḴARYAHU 9:1–17',
   intro:[
-   {art:'vista', music:'tense', text:'The burden of the Word of YAHUAH against the land of Ḥaḏraḵ, and Dammeseq its resting place, against Tsor and Tsiḏon, and the coasts of Philistia. “I shall encamp around My House as a guard, so that none passes through — no oppressor shall pass over them again, for now I have seen with My eyes.”', ref:'ZEḴARYAHU 9:1–8'},
+   {art:'vista', music:'tense', text:'The message of the Word of YAHUAH against the land of Ḥaḏraḵ and Dammeseq its resting place … Tsor and Tsiḏon … “So I shall cut off the pride of the Philistines … And I shall encamp around My house … against him who passes by and him who returns, so that no oppressor passes through them again, for now I have seen with My eyes.”', ref:'ZEḴARYAHU 9:1–8', stage:{"set":"walls","time":"dusk","cam":"push","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"point","say":0,"acts":[{"at":2,"pose":"raise"}]}],"crowd":[{"kind":"army","side":"aram","n":6,"x":0.7,"w":0.3,"z":0.45,"face":"l","exit":"r","exitAt":1,"run":1},{"kind":"soldiers","side":"pelishtim","n":4,"x":0.9,"w":0.1,"z":0.55,"face":"l","exit":"r","exitAt":1,"run":1},{"kind":"angels","n":6,"x":0.55,"w":0.62,"z":0.62,"face":"r","hold":"sword","at":2}],"fx":[{"k":"firefall","x":0.84,"y":0.62,"at":1},{"k":"smoke","x":0.86,"at":1},{"k":"glory","x":0.5,"y":0.08,"at":3}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:30, seed:6209,
-     features:[ {type:'citygate',x:23,y:9,id:'gate',examine:'“Rejoice greatly, O daughter of Tsiyon! See, your Sovereign is coming — righteous and victorious, lowly and riding on a donkey.”'},{type:'pit',x:31,y:13,id:'pit',examine:'“Because of the blood of your covenant, I shall release your prisoners from the waterless pit.”'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'citygate',x:23,y:9,id:'gate',examine:'“Rejoice greatly, O daughter of Tsiyon! See, your Sovereign is coming — righteous and endowed with deliverance, humble and riding on a donkey.”'},{type:'pit',x:31,y:13,id:'pit',examine:'“Because of the blood of your berith, I shall send your prisoners out of the pit.”'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'holy',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'king',char:'king',mount:'donkey',x:20,y:12,dir:'right',wander:false},{id:'elder',char:'elder',x:28,y:14,wander:false} ],
    objectives:[
-     {type:'interact',prop:'gate',text:'Rejoice — your King comes lowly on a donkey',
+     {type:'interact',prop:'gate',text:'Rejoice — your Sovereign comes lowly on a donkey',
       script:[
        {say:['zekaryah','Rejoice greatly, O daughter of Tsiyon! Shout, O daughter of Yerushalayim! See, your Sovereign is coming to you — He is righteous and endowed with deliverance, lowly and riding on a donkey, on a colt, the foal of a donkey.']},
        {rays:.7,raysX:23},{sfx:'holy'},{burst:[23,9,'holy',18]},
-       {say:['voice','And I shall cut off the chariot from Ephrayim, and the horse from Yerushalayim; and the battle bow shall be cut off. And He shall speak peace to the nations, and His rule shall be from sea to sea, and from the River to the ends of the earth.']},
+       {say:['voice','And I shall cut off the chariot from Ephrayim, and the horse from Yerushalayim; and the battle bow shall be cut off. And He shall speak shalom to the nations, and His rule shall be from sea to sea, and from the River to the ends of the earth.']},
        {sfx:'chime'},
       ]},
-     {type:'interact',prop:'pit',text:'Prisoners freed from the waterless pit',hiddenUntil:1,
+     {type:'interact',prop:'pit',text:'Prisoners freed from the pit',hiddenUntil:1,
       script:[
-       {say:['voice','As for you also — because of the blood of your covenant, I shall release your prisoners from the waterless pit. Return to the stronghold, you prisoners of hope; even today I declare that I shall restore double to you.']},
+       {say:['voice','Also you, because of the blood of your berith, I shall send your prisoners out of the pit. Return to the stronghold, you prisoners of the expectation. Even today I declare that I return double to you.']},
        {rays:.6,raysX:31},{sfx:'holy'},{burst:[31,13,'holy',14]},
-       {say:['zekaryah','YAHUAH shall appear over them, and His arrow go forth like lightning; the Master YAHUAH shall sound the ram’s horn and go with whirlwinds of the south. YAHUAH of hosts shall shield them; and YAHUAH their Aluahim shall save them in that day, as the flock of His people — for how great is His goodness and His loveliness!']},
+       {say:['zekaryah','And YAHUAH shall appear for them and His arrow go forth like lightning and the Master YAHUAH sound the ram’s horn. And He shall go with whirlwinds from the south. YAHUAH of hosts shall shield them. And YAHUAH their Aluahim shall save them in that day, as the flock of His people — for what goodness is His and what comeliness is His!']},
        {burst:[23,10,'holy',16]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'reunion', music:'holy', text:'“Rejoice greatly, O daughter of Tsiyon! See, your Sovereign is coming to you — righteous and endowed with deliverance, lowly and riding on a donkey, on a colt, the foal of a donkey. And I shall cut off the chariot and the battle bow; He shall speak peace to the nations, and His rule from sea to sea, from the River to the ends of the earth.”', ref:'ZEḴARYAHU 9:9–10'},
-   {art:'light', music:'holy', text:'“Because of the blood of your covenant, I shall release your prisoners from the waterless pit. Return to the stronghold, you prisoners of hope — I shall restore double to you.” YAHUAH of hosts shall shield them, and save them in that day as the flock of His people — for how great is His goodness and His loveliness!', ref:'ZEḴARYAHU 9:11–17'},
+   {art:'reunion', music:'holy', text:'“Rejoice greatly, O daughter of Tsiyon! … See, your Sovereign is coming to you, He is righteous and endowed with deliverance, humble and riding on a donkey, a colt, the foal of a donkey. And I shall cut off the chariot from Ephrayim … And the battle bow shall be cut off. And He shall speak shalom to the nations and His rule is from sea to sea and from the River to the ends of the earth.”', ref:'ZEḴARYAHU 9:9–10', stage:{"set":"gate","time":"day","cam":"push","focus":0.5,"cast":[{"id":"daughter","look":{"name":"The Daughter of Tsiyon","skin":"#83552d","hair":"#23150b","hairStyle":"long","robe":"#8a5a6a","veil":"#e8d8b8"},"x":0.2,"z":0.1,"face":"r","pose":"raise","acts":[{"at":1,"pose":"dance"}]},{"id":"king","x":0.53,"z":0.19,"dy":-0.07,"face":"l","pose":"sit","noseat":1,"at":1},{"id":"zekaryah","x":0.86,"z":0.08,"face":"l","pose":"raise","say":0,"acts":[{"at":1,"pose":"point"}]}],"crowd":[{"kind":"people","n":6,"x":0.24,"w":0.26,"z":0.5,"face":"r","from":"stand","pose":"raise","hold":"branch","at":1},{"kind":"army","side":"yasharal","n":5,"x":0.78,"w":0.2,"z":0.55,"face":"l","hold":"bow","exit":"r","exitAt":2},{"kind":"nations","n":6,"x":0.5,"w":0.5,"z":0.75,"face":"l","pose":"bow","at":4}],"props":[{"k":"donkey","x":0.52,"z":0.2,"s":1.25,"face":"l","at":1}],"fx":[{"k":"rays","x":0.52,"at":4}]}},
+   {art:'light', music:'holy', text:'“Also you, because of the blood of your berith, I shall send your prisoners out of the pit. Return to the stronghold, you prisoners of the expectation. Even today I declare that I return double to you.” … YAHUAH of hosts shall shield them … And YAHUAH their Aluahim shall save them in that day, as the flock of His people … For what goodness is His and what comeliness is His.', ref:'ZEḴARYAHU 9:11–17', stage:{"set":"walls","time":"dawn","cam":"push","cast":[{"id":"prisoner","look":{"name":"A Prisoner of Expectation","skin":"#7a5230","hair":"#3a2716","robe":"#5a4a3a","beard":"#3a2716","sack":1},"x":0.28,"z":0.16,"face":"r","pose":"climb","acts":[{"at":1,"to":0.48,"pose":"stand"},{"at":2,"pose":"raise"}]},{"id":"zekaryah","x":0.86,"z":0.06,"face":"l","pose":"bless","say":2}],"crowd":[{"kind":"captives","n":5,"x":0.2,"w":0.2,"z":0.5,"face":"r","from":"bound","pose":"raise","at":1},{"kind":"people","n":5,"x":0.6,"w":0.3,"z":0.6,"face":"r","at":4}],"props":[{"k":"pit","x":0.28,"z":0.15,"s":1.3},{"k":"sheep","x":0.66,"z":0.32,"n":7,"w":160,"at":4}],"fx":[{"k":"glory","x":0.5,"at":3},{"k":"rays","x":0.6,"at":5}]}},
   ],
-  complete:'Your King comes lowly on a donkey, speaking peace — and the prisoners of hope are set free.'
+  complete:'Your Sovereign comes lowly on a donkey, speaking shalom — and the prisoners of the expectation are set free.'
 },
 
 { id:'z10', title:'The Shepherds and the Flock', ref:'ZEḴARYAHU 10:1–11:17',
   intro:[
-   {art:'wasteland', music:'sorrow', text:'“Ask rain from YAHUAH in the time of the latter rain. YAHUAH makes the storm clouds and gives showers of rain, grass in the field to everyone.” For the household idols have spoken emptiness, the diviners have seen a lie; they comfort in vain — therefore the people wandered like sheep in distress, because there was no shepherd.', ref:'ZEḴARYAHU 10:1–2'},
+   {art:'wasteland', music:'sorrow', text:'Ask YAHUAH for rain in the time of the latter rain, YAHUAH who makes storm clouds. And He gives them showers of rain, the plants in the field to everyone. For the household idols spoke emptiness, the diviners saw falsehood and relate dreams of deceit, they comfort in vain. Therefore they have wandered about like sheep. They are afflicted, for there is no shepherd.', ref:'ZEḴARYAHU 10:1–2', stage:{"set":"field","time":"storm","wx":"rain","wxAt":1,"cam":"push","cast":[{"id":"zekaryah","x":0.18,"z":0.06,"face":"r","pose":"raise","say":0,"acts":[{"at":2,"pose":"point"}]},{"id":"diviner","look":{"name":"A Diviner","skin":"#6e4524","hair":"#14100a","robe":"#3a2a4a","beard":"#14100a","headcover":"#6a2a3a","collar":"#8a6a2a"},"x":0.7,"z":0.14,"face":"l","pose":"raise","at":2,"say":2}],"crowd":[{"kind":"people","n":6,"x":0.5,"w":0.4,"z":0.55,"face":"r","exit":"l","exitAt":4}],"props":[{"k":"bush","x":0.34,"z":0.3,"color":"#4a7a34","at":1},{"k":"bush","x":0.62,"z":0.32,"color":"#4a7a34","at":1},{"k":"idol","x":0.84,"z":0.2,"h":56,"at":2},{"k":"sheep","x":0.45,"z":0.35,"n":6,"w":300,"at":3}],"fx":[{"k":"lightning","at":0}]}},
   ],
   scene:{
    map:{biome:'plains', w:46, h:30, seed:6210,
-     features:[ {type:'fold',x:16,y:12,id:'flock',examine:'The flock in distress for want of a shepherd — yet YAHUAH visits His flock, the house of Yahuḏah.'},{type:'standard',x:31,y:11,id:'staffs',examine:'Two staffs: Favour and Bonds — and thirty pieces of silver cast to the potter in the House of YAHUAH.'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'fold',x:16,y:12,id:'flock',examine:'The flock afflicted, for there is no shepherd — yet YAHUAH visits His flock, the house of Yahuḏah.'},{type:'standard',x:31,y:11,id:'staffs',examine:'Two staffs: Pleasantness and Unity — and thirty pieces of silver thrown to the potter in the House of YAHUAH.'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'sorrow',
    player:'zekaryah', playerPos:[23,21], playerHold:'staff',
    npcs:[ {id:'shepherd',char:'shepherd',x:20,y:13,wander:false},{id:'sheep1',animal:'sheep',x:15,y:14,wander:true},{id:'sheep2',animal:'sheep',x:17,y:13,wander:true},{id:'sheep3',animal:'sheep',x:14,y:12,wander:true} ],
    objectives:[
-     {type:'interact',prop:'flock',text:'YAHUAH visits His flock — the cornerstone from Yahuḏah',
+     {type:'interact',prop:'flock',text:'YAHUAH visits His flock — the corner-stone from Yahuḏah',
       script:[
-       {say:['voice','My wrath burns against the shepherds, and I punish the leaders — for YAHUAH of hosts has visited His flock, the house of Yahuḏah, and made them like His splendid horse in battle.']},
-       {say:['voice','From him comes the cornerstone, from him the tent-peg, from him the battle bow, from him every ruler together. They shall be like mighty men treading down the foe in the mud of the streets in battle — for YAHUAH is with them.']},
+       {say:['voice','My wrath burns against the shepherds and I lay a charge against the leaders. For YAHUAH of hosts shall visit His flock, the house of Yahuḏah and make them like His splendid horse in battle.']},
+       {say:['voice','From him comes the corner-stone, from him the tent peg, from him the battle bow, from him every ruler, together. And they shall be like mighty men, who trample down the mud of the streets in the battle. And they shall fight because YAHUAH is with them and the riders on horses shall be put to shame.']},
        {rays:.5,raysX:16},{sfx:'holy'},{burst:[16,12,'holy',12]},
       ]},
      {type:'interact',prop:'staffs',text:'The two staffs — thirty pieces of silver',hiddenUntil:1,
       script:[
-       {say:['zekaryah','So I shepherded the flock of slaughter. And I took two staffs: the one I called Favour, and the other I called Bonds; and I shepherded the flock. In one month I cut off three shepherds — for my being loathed them, and their being also detested me.']},
+       {say:['zekaryah','So I shepherded the flock meant for slaughter, the truly poor of the flock. And I took for myself two staffs, the one I called Pleasantness and the other I called Unity and I shepherded the flock. Then I sent off the three shepherds in one month, for my being despised them and their being also loathed me.']},
        {shake:.5},{sfx:'bad'},{burst:[31,11,'ash',10]},
-       {say:['zekaryah','Then I cut in two my staff, Favour, breaking the covenant I had made with all the peoples. And I said, If it is good in your eyes, give me my wages; and if not, refrain. So they weighed out my wages — thirty pieces of silver.']},
-       {say:['voice','Throw it to the potter — the splendid price at which I was valued by them. So I took the thirty pieces of silver and threw them to the potter in the House of YAHUAH.']},
+       {say:['zekaryah','And I took my staff, Pleasantness and cut it in two, to break the berith which I had made with all the peoples. And I said to them, “If it is good in your eyes, give me my wages. And if not, refrain.” So they weighed out for my wages thirty pieces of silver.']},
+       {say:['voice','Throw it to the potter — the splendid price at which I was valued by them. And I took the thirty pieces of silver and threw them into the House of YAHUAH for the potter.']},
        {shake:.7},{sfx:'bad'},{burst:[31,11,'ash',12]},
-       {say:['zekaryah','Then I cut in two my other staff, Bonds, breaking the brotherhood between Yahuḏah and Yisra’ĕl. For see, I am raising up a shepherd in the land who does not care for those cut off — woe to the worthless shepherd who deserts the flock!']},
+       {say:['zekaryah','Then I cut in two my other staff, Unity, to break the brotherhood between Yahuḏah and Yasharal. And YAHUAH said to me, “Take again the implements of a foolish shepherd. For look, I am raising up a shepherd in the land who does not visit those straying, nor seek the young, nor heal those that are broken, nor feed those that still stand. Woe to the worthless shepherd forsaking the flock!”']},
        {sfx:'bad'},
       ]},
    ],
   },
   outro:[
-   {art:'journey', music:'sorrow', text:'The people wandered like sheep in distress, for there was no shepherd. “My wrath burns against the shepherds, for YAHUAH of hosts has visited His flock, the house of Yahuḏah. From him the cornerstone, from him the tent-peg, from him the battle bow — they shall be like mighty men, for YAHUAH is with them.”', ref:'ZEḴARYAHU 10:2–5'},
-   {art:'corrupt', music:'sorrow', text:'The naḇi shepherded the flock of slaughter with two staffs, Favour and Bonds. He broke Favour, and they weighed out his wages — thirty pieces of silver, cast to the potter in the House of YAHUAH. Then he broke Bonds, the brotherhood of Yahuḏah and Yisra’ĕl. “Woe to the worthless shepherd who deserts the flock!”', ref:'ZEḴARYAHU 11:7–17'},
+   {art:'journey', music:'sorrow', text:'Therefore they have wandered about like sheep. They are afflicted, for there is no shepherd. “My wrath burns against the shepherds … For YAHUAH of hosts shall visit His flock, the house of Yahuḏah … From him comes the corner-stone, from him the tent peg, from him the battle bow … And they shall be like mighty men … And they shall fight because YAHUAH is with them.”', ref:'ZEḴARYAHU 10:2–5', stage:{"set":"wilderness","time":"dusk","cam":"pan-l","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"speak","say":2},{"id":"badshep","look":{"name":"A Worthless Shepherd","skin":"#7a5230","hair":"#23150b","robe":"#5a4a3a","beard":"#23150b","headcover":"#8a7a60"},"x":0.74,"z":0.12,"face":"l","pose":"sit","hold":"staff","acts":[{"at":2,"pose":"fall"}]},{"id":"mighty","look":{"name":"A Mighty Man of Yahuḏah","skin":"#7a4e29","hair":"#2c1a0c","robe":"#5a6a8a","beard":"#2c1a0c","armor":"#9a8250","helmet":"#8a7a50"},"x":0.4,"z":0.1,"face":"r","pose":"stand","hold":"sword","hold2":"shield","at":4,"acts":[{"at":6,"pose":"fight"}]}],"crowd":[{"kind":"soldiers","side":"yasharal","n":6,"x":0.36,"w":0.3,"z":0.5,"face":"r","enter":"l","at":5,"pose":"fight"}],"props":[{"k":"sheep","x":0.55,"z":0.42,"n":7,"w":320}],"fx":[{"k":"firefall","x":0.74,"y":0.66,"at":2},{"k":"glory","x":0.4,"at":3}]}},
+   {art:'corrupt', music:'sorrow', text:'So I shepherded the flock meant for slaughter … two staffs, the one I called Pleasantness and the other I called Unity … And I took my staff, Pleasantness and cut it in two … So they weighed out for my wages thirty pieces of silver … and threw them into the House of YAHUAH for the potter. Then I cut in two my other staff, Unity, to break the brotherhood between Yahuḏah and Yasharal … “Woe to the worthless shepherd forsaking the flock!”', ref:'ZEḴARYAHU 11:7–17', stage:{"set":"court","time":"dusk","cam":"push","focus":0.5,"cast":[{"id":"badshep","look":{"name":"A Worthless Shepherd","skin":"#7a5230","hair":"#23150b","robe":"#5a4a3a","beard":"#23150b","headcover":"#8a7a60"},"x":0.15,"z":0.14,"face":"l","pose":"stand","hold":"staff","acts":[{"at":6,"exit":"l"}]},{"id":"zekaryah","x":0.42,"z":0.1,"face":"r","pose":"hold","hold":"staff","hold2":"staff","acts":[{"at":2,"pose":"strike"},{"at":3,"pose":"hold"},{"at":4,"pose":"raise"},{"at":5,"pose":"strike"},{"at":6,"pose":"point","face":"l"}]},{"id":"dealer","look":{"name":"A Dealer of the Flock","skin":"#8a6038","hair":"#231409","robe":"#5a5030","beard":"#231409","headcover":"#8a7a4a","collar":"#caa23c"},"x":0.66,"z":0.14,"face":"l","pose":"hold","hold":"bowl","at":3,"say":3},{"id":"potter","look":{"name":"The Potter","skin":"#83552d","hair":"#3a2716","robe":"#8a6a4a","beard":"#3a2716","short":1},"x":0.56,"z":0.5,"face":"r","pose":"sitground","hold":"jar","at":4}],"props":[{"k":"sheep","x":0.26,"z":0.4,"n":6,"w":150}],"fx":[{"k":"red","amt":0.12,"at":6}]}},
   ],
-  complete:'No shepherd for the flock — the thirty pieces of silver cast to the potter, and the staffs broken.'
+  complete:'No shepherd for the flock — the thirty pieces of silver thrown to the potter, and the staffs broken.'
 },
 
 ]},
@@ -6090,26 +6237,26 @@ STORY.push(
 
 { id:'z11', title:'They Look on Me Whom They Pierced', ref:'ZEḴARYAHU 12:1–13:9',
   intro:[
-   {art:'corrupt', music:'tense', text:'The burden of the Word of YAHUAH concerning Yisra’ĕl. Thus declares YAHUAH, who stretches out the heavens and lays the foundation of the earth, and forms the spirit of man within him: “See, I am making Yerushalayim a cup of reeling to all the surrounding peoples. And in that day I shall make Yerushalayim a heavy stone for all peoples — all who lift it shall be gashed, though all the nations of the earth are gathered against her.”', ref:'ZEḴARYAHU 12:1–3'},
+   {art:'corrupt', music:'tense', text:'The message of the Word of YAHUAH against Yasharal. YAHUAH, stretching out the shamayim and laying the foundation of the earth and forming the ruach of man within him, declares, “See, I am making Yerushalayim a cup of reeling to all the people all around … And in that day it shall be that I make Yerushalayim a very heavy stone for all peoples – all lifting it are severely injured. And all the nations of the earth shall be gathered against it.”', ref:'ZEḴARYAHU 12:1–3', stage:{"set":"walls","time":"dusk","cam":"push","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"point","say":0,"acts":[{"at":1,"pose":"raise"},{"at":3,"pose":"point"}]},{"id":"champ","look":{"name":"A Man of the Nations","skin":"#6a4424","hair":"#14100a","robe":"#7a3a2a","beard":"#14100a","armor":"#8a7a58","helmet":"#7a6a48"},"x":0.56,"z":0.14,"face":"l","pose":"carry","at":2,"acts":[{"at":3,"pose":"fall"}]}],"crowd":[{"kind":"nations","n":6,"x":0.74,"w":0.3,"z":0.45,"face":"l","from":"stand","pose":"fall","at":1},{"kind":"army","side":"ashshur","n":8,"x":0.64,"w":0.5,"z":0.65,"face":"l","enter":"r","at":3}],"props":[{"k":"rock","x":0.5,"z":0.1,"w":44,"h":32,"at":2}],"fx":[{"k":"stars","at":1},{"k":"red","amt":0.15,"at":3}]}},
   ],
   scene:{
    map:{biome:'city', w:46, h:30, seed:6211,
-     features:[ {type:'stone',x:16,y:11,id:'stone',examine:'Yerushalayim a heavy stone for all peoples — the feeblest of her shall be like Dawiḏ, and YAHUAH shields her.'},{type:'well',x:23,y:9,id:'fountain',examine:'“A fountain opened for the house of Dawiḏ, for sin and for uncleanness.”'},{type:'sword',x:31,y:12,id:'sword',examine:'“Awake, O sword, against My Shepherd — strike the Shepherd, and the sheep shall be scattered.”'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'stone',x:16,y:11,id:'stone',examine:'Yerushalayim a very heavy stone for all peoples — the feeble among them shall be like Dawiḏ, and YAHUAH shields her.'},{type:'well',x:23,y:9,id:'fountain',examine:'“A fountain shall be opened for the house of Dawiḏ … for sin and for uncleanness.”'},{type:'sword',x:31,y:12,id:'sword',examine:'“O sword, awake against My Shepherd — smite the Shepherd and let the sheep be scattered.”'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:20,y:12,wander:false} ],
    objectives:[
      {type:'interact',prop:'fountain',text:'They look on Me whom they pierced — the fountain opened',
       script:[
-       {say:['voice','I shall shield the inhabitants of Yerushalayim; in that day the feeblest among them shall be like Dawiḏ, and the house of Dawiḏ like Aluahim, like the Messenger of YAHUAH before them.']},
-       {say:['voice','And I shall pour on the house of Dawiḏ and on the inhabitants of Yerushalayim a spirit of favour and prayers. And they shall look on Me whom they pierced, and mourn for Him as one mourns for an only son, and grieve for Him as one grieves for a firstborn.']},
+       {say:['voice','In that day YAHUAH shall shield the inhabitants of Yerushalayim. And the feeble among them in that day shall be like Dawiḏ and the house of Dawiḏ like Aluahim, like the Mal’ak of YAHUAH before them!']},
+       {say:['voice','And I shall pour on the house of Dawiḏ and on the inhabitants of Yerushalayim a ruach of chen and prayers. They shall look on Me whom they pierced and they shall mourn for Him as one mourns for his only son. And they shall be in bitterness over Him as a bitterness over the first-born.']},
        {shake:.6},{sfx:'bad'},{burst:[23,9,'ash',10]},
-       {say:['voice','In that day a fountain shall be opened for the house of Dawiḏ and for the inhabitants of Yerushalayim, for sin and for uncleanness. And I shall cut off the names of the idols from the land, and also remove the false prophets and the unclean spirit.']},
+       {say:['voice','In that day a fountain shall be opened for the house of Dawiḏ and for the inhabitants of Yerushalayim, for sin and for uncleanness. And I shall cut off the names of the idols from the land, and also remove the false naḇi’im and the unclean ruach.']},
        {rays:.6,raysX:23},{sfx:'holy'},{burst:[23,9,'holy',14]},
       ]},
-     {type:'interact',prop:'sword',text:'Strike the Shepherd — the third refined in fire',hiddenUntil:1,
+     {type:'interact',prop:'sword',text:'Smite the Shepherd — the third refined in fire',hiddenUntil:1,
       script:[
-       {say:['voice','Awake, O sword, against My Shepherd, against the Man who is My Companion, declares YAHUAH of hosts. Strike the Shepherd, and the sheep shall be scattered; and I shall turn My hand against the little ones.']},
+       {say:['voice','O sword, awake against My Shepherd, against the Man who is My Companion, declares YAHUAH of hosts. Smite the Shepherd and let the sheep be scattered. But I shall turn My hand upon the little ones.']},
        {shake:.8},{sfx:'bad'},{burst:[31,12,'ash',14]},
        {say:['voice','And it shall be throughout all the land, declares YAHUAH, that two-thirds in it are cut off and die, but one-third is left in it. And I shall bring the third through the fire, and refine them as silver is refined, and try them as gold is tried.']},
        {say:['voice','They shall call on My Name, and I shall answer them. I shall say, This is My people, and they shall say, YAHUAH is my Aluahim.']},
@@ -6118,46 +6265,46 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light', music:'sorrow', text:'“I shall pour on the house of Dawiḏ a spirit of favour and prayers, and they shall look on Me whom they pierced, and mourn for Him as one mourns for an only son. In that day a fountain shall be opened for the house of Dawiḏ, for sin and for uncleanness; and I shall cut off the idols, the false prophets, and the unclean spirit from the land.”', ref:'ZEḴARYAHU 12:10–13:2'},
-   {art:'stars', music:'holy', text:'“Awake, O sword, against My Shepherd — strike the Shepherd, and the sheep shall be scattered.” “I shall bring the third through the fire, and refine them as silver is refined. They shall call on My Name, and I shall answer them: ‘This is My people,’ and they shall say, ‘YAHUAH is my Aluahim.’”', ref:'ZEḴARYAHU 13:7–9'},
+   {art:'light', music:'sorrow', text:'“And I shall pour on the house of Dawiḏ … a ruach of chen and prayers. They shall look on Me whom they pierced and they shall mourn for Him as one mourns for his only son … In that day a fountain shall be opened for the house of Dawiḏ … for sin and for uncleanness … I cut off the names of the idols from the earth … and I shall also remove the naḇi’im and the unclean ruach from the earth.”', ref:'ZEḴARYAHU 12:10–13:2', stage:{"set":"temple","time":"dawn","cam":"push","cast":[{"id":"dawidi","look":{"name":"A Son of the House of Dawiḏ","skin":"#7a4e29","hair":"#2c1a0c","robe":"#5a3a6a","beard":"#2c1a0c","collar":"#caa23c"},"x":0.3,"z":0.1,"face":"r","pose":"stand","acts":[{"at":1,"pose":"pray"},{"at":2,"pose":"weep"},{"at":4,"pose":"kneel"}]},{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"raise","say":0},{"id":"falsenavi","look":{"name":"A False Naḇi","skin":"#8a5a34","hair":"#1d1208","robe":"#6a3a2a","beard":"#1d1208","mantle":"#3a2a1a"},"x":0.86,"z":0.14,"face":"l","pose":"raise","acts":[{"at":6,"exit":"r","run":1}]}],"crowd":[{"kind":"people","n":6,"x":0.6,"w":0.36,"z":0.55,"face":"l","from":"stand","pose":"pray","at":1},{"kind":"mourners","n":5,"x":0.2,"w":0.2,"z":0.6,"face":"r","at":2}],"props":[{"k":"rock","x":0.52,"z":0.22,"w":50,"h":34,"water":1,"at":3},{"k":"idol","x":0.76,"z":0.32,"h":70}],"fx":[{"k":"rays","x":0.4,"at":0},{"k":"firefall","x":0.76,"y":0.62,"at":5}]}},
+   {art:'stars', music:'holy', text:'“O sword, awake against My Shepherd, against the Man who is My Companion,” declares YAHUAH of hosts. “Smite the Shepherd and let the sheep be scattered… I shall bring the third into fire and refine them as silver is refined… They shall call on My Name and I shall answer them. I shall say, ‘This is My people,’ while they say, ‘YAHUAH is my Aluahim.’”', ref:'ZEḴARYAHU 13:7–9', stage:{"set":"night","cam":"push","cast":[{"id":"shepherd","look":{"name":"The Shepherd","skin":"#7a4e29","hair":"#2c1a0c","robe":"#e8e0cc","beard":"#2c1a0c","mantle":"#6a5a3a","headcover":"#d8ccb0"},"x":0.46,"z":0.1,"face":"r","pose":"stand","hold":"staff","acts":[{"at":1,"pose":"fall"}]},{"id":"voice","x":0.3,"at":3}],"crowd":[{"kind":"people","n":6,"x":0.55,"w":0.6,"z":0.62,"face":"l","pose":"raise","at":2}],"props":[{"k":"sheep","x":0.74,"z":0.32,"n":6,"w":260},{"k":"fire","x":0.2,"z":0.85,"s":2.4,"at":2},{"k":"fire","x":0.45,"z":0.9,"s":2.6,"at":2},{"k":"fire","x":0.7,"z":0.85,"s":2.4,"at":2},{"k":"fire","x":0.92,"z":0.9,"s":2.4,"at":2}],"fx":[{"k":"sword","x":0.5,"y":0.28},{"k":"glory","x":0.5,"at":4},{"k":"bright","amt":0.12,"at":4}]}},
   ],
   complete:'They look on Me whom they pierced — the fountain opened, and the third refined as silver.'
 },
 
-{ id:'z12', title:'YAHUAH King Over All the Earth', ref:'ZEḴARYAHU 14:1–21',
+{ id:'z12', title:'YAHUAH Sovereign Over All the Earth', ref:'ZEḴARYAHU 14:1–21',
   intro:[
-   {art:'wasteland', music:'tense', text:'See, a day is coming for YAHUAH. “I shall gather all the nations against Yerushalayim for battle, and the city shall be taken.” Then YAHUAH shall go out and fight against those nations, as He fights in the day of battle. And in that day His feet shall stand on the Mount of Olives, which faces Yerushalayim on the east.', ref:'ZEḴARYAHU 14:1–4'},
+   {art:'wasteland', music:'tense', text:'See, a day shall come for YAHUAH … And I shall gather all the gentiles to battle against Yerushalayim. And the city shall be taken … And YAHUAH shall go forth and He shall fight against those gentiles, as He fights in the day of battle. And in that day His feet shall stand upon the Mount of Olives, which faces Yerushalayim on the east.', ref:'ZEḴARYAHU 14:1–4', stage:{"set":"walls","time":"dusk","cam":"pan-r","cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"point","say":0,"acts":[{"at":3,"pose":"raise"}]},{"id":"commander","look":{"name":"A Commander of the Gentiles","skin":"#6a4424","hair":"#14100a","robe":"#7a2a2a","beard":"#14100a","armor":"#a88a48","helmet":"#9a8040","crest":"#c83a2a"},"enter":"r","at":1,"to":0.66,"run":1,"z":0.12,"face":"l","pose":"point","hold":"sword","acts":[{"at":3,"pose":"fall"}]}],"crowd":[{"kind":"army","side":"bavel","n":8,"x":0.72,"w":0.36,"z":0.45,"face":"l","enter":"r","at":1,"exit":"r","exitAt":4,"run":1},{"kind":"army","side":"aram","n":5,"x":0.4,"w":0.2,"z":0.6,"face":"r","enter":"l","at":1,"exit":"l","exitAt":4,"run":1}],"fx":[{"k":"smoke","x":0.5,"at":2},{"k":"red","amt":0.15,"at":2},{"k":"lightning","at":3},{"k":"firefall","x":0.72,"y":0.62,"at":3},{"k":"glory","x":0.88,"y":0.1,"at":4}]}},
   ],
   scene:{
    map:{biome:'rocky', w:46, h:30, seed:6212,
-     features:[ {type:'mountain',x:23,y:9,id:'olives',examine:'The Mount of Olives splits in two, east and west, a very great valley — and the living waters flow out from Yerushalayim.'},{type:'well',x:16,y:12,id:'waters',examine:'Living waters go out from Yerushalayim, half to the eastern sea and half to the western, in summer and in winter.'},{type:'sukkah',x:31,y:12,id:'sukkot',examine:'All the nations left shall go up year by year to bow to the King, YAHUAH of hosts, and keep the Festival of Sukkot.'},{type:'clearing',x:23,y:20,flat:3} ]},
+     features:[ {type:'mountain',x:23,y:9,id:'olives',examine:'The Mount of Olives splits in two, from east to west, a very great valley — and living waters flow from Yerushalayim.'},{type:'well',x:16,y:12,id:'waters',examine:'Living waters flow from Yerushalayim, half of them toward the eastern sea and half toward the western sea, in summer as well as in winter.'},{type:'sukkah',x:31,y:12,id:'sukkot',examine:'All who are left of the gentiles shall go up from year to year to bow to the Sovereign, YAHUAH of hosts, and observe the Festival of Booths.'},{type:'clearing',x:23,y:20,flat:3} ]},
    time:'day', music:'tense',
    player:'zekaryah', playerPos:[23,21], playerHold:'scroll',
    npcs:[ {id:'elder',char:'elder',x:20,y:13,wander:false} ],
    objectives:[
-     {type:'interact',prop:'olives',text:'The Mount splits — living waters, and YAHUAH King',
+     {type:'interact',prop:'olives',text:'The Mount splits — living waters, and YAHUAH Sovereign',
       script:[
-       {say:['zekaryah','And His feet shall stand in that day on the Mount of Olives, and the mountain shall be split in two, from east to west, a very great valley — half of the mountain moving toward the north, and half toward the south.']},
+       {say:['zekaryah','And in that day His feet shall stand upon the Mount of Olives, which faces Yerushalayim on the east. And the Mount of Olives shall be split in two, from east to west, a very great valley and half of the mountain shall move toward the north and half of it toward the south.']},
        {shake:1},{sfx:'thunder'},{burst:[23,9,'ash',16]},
-       {say:['voice','And in that day living waters shall flow out from Yerushalayim, half of them toward the eastern sea and half toward the western sea — in summer and in winter it shall be.']},
+       {say:['voice','And in that day it shall be that living waters flow from Yerushalayim, half of them toward the eastern sea and half of them toward the western sea, in summer as well as in winter.']},
        {rays:.6,raysX:16},{sfx:'holy'},{burst:[16,12,'holy',14]},
        {say:['voice','And YAHUAH shall be Sovereign over all the earth. In that day there shall be one YAHUAH, and His Name one.']},
        {rays:.9,raysX:23},{sfx:'holy'},{burst:[23,9,'holy',22]},
       ]},
-     {type:'interact',prop:'sukkot',text:'All nations keep Sukkot — Set-apart to YAHUAH',hiddenUntil:1,
+     {type:'interact',prop:'sukkot',text:'All nations keep Booths — Qadash (Set Apart) to YAHUAH',hiddenUntil:1,
       script:[
-       {say:['voice','And it shall be that all who are left of the nations which came against Yerushalayim shall go up from year to year to bow themselves to the King, YAHUAH of hosts, and to observe the Festival of Sukkot.']},
+       {say:['voice','And it shall be that all who are left from all the gentiles which came up against Yerushalayim, shall go up from year to year to bow themselves to the Sovereign, YAHUAH of hosts and to observe the Festival of Booths.']},
        {rays:.6,raysX:31},{sfx:'holy'},{burst:[31,12,'holy',16]},
-       {say:['zekaryah','In that day “SET-APART TO YAHUAH” shall be engraved on the bells of the horses. And the pots in the House of YAHUAH shall be like the bowls before the altar — every pot in Yerushalayim and in Yahuḏah shall be set-apart to YAHUAH of hosts. And in that day there shall no longer be a merchant in the House of YAHUAH of hosts.']},
+       {say:['zekaryah','In that day “Qadash (Set Apart) TO YAHUAH” shall be engraved on the bells of the horses. And the pots in the House of YAHUAH shall be like the bowls before the mizbe’ach. And every pot in Yerushalayim and Yahuḏah shall be qadash (Set Apart) to YAHUAH of hosts. And there shall no longer be a merchant in the House of YAHUAH of hosts, in that day.']},
        {burst:[23,10,'holy',20]},{sfx:'chime'},
       ]},
    ],
   },
   outro:[
-   {art:'mountain', music:'holy', text:'“His feet shall stand on the Mount of Olives, and it shall be split in two, a very great valley. And living waters shall flow out from Yerushalayim, half toward the eastern sea and half toward the western, in summer and in winter. And YAHUAH shall be Sovereign over all the earth — in that day there shall be one YAHUAH, and His Name one.”', ref:'ZEḴARYAHU 14:4–9'},
-   {art:'light', music:'holy', text:'“All who are left of the nations shall go up from year to year to bow to the King, YAHUAH of hosts, and to observe the Festival of Sukkot. In that day ‘SET-APART TO YAHUAH’ shall be on the bells of the horses; every pot in Yerushalayim and Yahuḏah shall be set-apart to YAHUAH of hosts, and there shall no longer be a merchant in the House of YAHUAH.”', ref:'ZEḴARYAHU 14:16–21'},
+   {art:'mountain', music:'holy', text:'And in that day His feet shall stand upon the Mount of Olives … And the Mount of Olives shall be split in two … a very great valley … living waters flow from Yerushalayim, half of them toward the eastern sea and half of them toward the western sea, in summer as well as in winter. And YAHUAH shall be Sovereign over all the earth. In that day there shall be one YAHUAH and His Name one.', ref:'ZEḴARYAHU 14:4–9', stage:{"set":"valley","time":"dawn","cam":"up","focus":0.5,"cast":[{"id":"zekaryah","x":0.15,"z":0.05,"face":"r","pose":"look","say":4,"acts":[{"at":3,"pose":"raise"}]},{"id":"elder","x":0.84,"z":0.12,"face":"l","pose":"stand","acts":[{"at":1,"pose":"fall"},{"at":3,"pose":"kneel"}]}],"crowd":[{"kind":"people","n":6,"x":0.5,"w":0.4,"z":0.5,"face":"l","exit":"l","exitAt":1,"run":1},{"kind":"worshippers","n":8,"x":0.5,"w":0.6,"z":0.65,"face":"r","at":3}],"props":[{"k":"rock","x":0.42,"z":0.3,"w":60,"h":40,"water":1,"at":2,"flip":1},{"k":"rock","x":0.6,"z":0.3,"w":60,"h":40,"water":1,"at":2},{"k":"reeds","x":0.3,"z":0.2,"at":2},{"k":"reeds","x":0.72,"z":0.2,"at":2}],"fx":[{"k":"glory","x":0.5,"y":0.12,"at":0},{"k":"lightning","at":1},{"k":"rays","x":0.5,"at":3},{"k":"bright","amt":0.14,"at":3}]}},
+   {art:'light', music:'holy', text:'… all who are left from all the gentiles … shall go up from year to year to bow themselves to the Sovereign, YAHUAH of hosts and to observe the Festival of Booths … In that day: “Qadash (Set Apart) TO YAHUAH” shall be engraved on the bells of the horses … And every pot in Yerushalayim and Yahuḏah shall be qadash (Set Apart) to YAHUAH of hosts … And there shall no longer be a merchant in the House of YAHUAH of hosts.', ref:'ZEḴARYAHU 14:16–21', stage:{"set":"temple","time":"dusk","cam":"pan-r","cast":[{"id":"zekaryah","x":0.2,"z":0.06,"face":"r","pose":"speak","say":2},{"id":"merchant","look":{"name":"A Merchant","skin":"#8a6038","hair":"#231409","robe":"#5a5030","beard":"#231409","headcover":"#8a7a4a"},"x":0.4,"z":0.14,"face":"r","pose":"hold","hold":"bowl","acts":[{"at":4,"exit":"l"}]}],"crowd":[{"kind":"nations","n":8,"x":0.62,"w":0.44,"z":0.55,"face":"l","enter":"r","at":1,"pose":"bow","hold":"branch"}],"props":[{"k":"tent","x":0.08,"z":0.4,"color":"#6a7a3a"},{"k":"tent","x":0.92,"z":0.45,"color":"#7a6a3a","at":1},{"k":"horse","x":0.8,"z":0.2,"face":"l","color":"#e8e4dc","at":2},{"k":"pot","x":0.54,"z":0.1,"fire":false,"at":3},{"k":"pot","x":0.64,"z":0.12,"fire":false,"at":3}],"fx":[{"k":"glory","x":0.5,"at":1}]}},
   ],
-  complete:'YAHUAH shall be King over all the earth — one YAHUAH, and His Name one.'
+  complete:'YAHUAH shall be Sovereign over all the earth — one YAHUAH, and His Name one.'
 },
 
 ]}
@@ -6202,7 +6349,7 @@ function buildChapterMenu(){
       'background:rgba(232,198,106,.07);line-height:1.5';
     ban.innerHTML='✦ <b style="color:var(--gold)">Continuity:</b> the Books of Aḏam &amp; Ḥawwah are complete — '+
       'the shared chapters of Acts I–III are unlocked, and you may begin at <b>Act IV — The Flood</b> '+
-      '(“Noaḥ Found Favour”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
+      '(“Noaḥ Found Chen”). Beginning there skips additional BERĔSHITH scenes, which remain playable below.';
     box.appendChild(ban);
   }
   STORY.forEach(act=>{
@@ -6268,7 +6415,10 @@ $('btn-back-title').onclick=()=>openTitle();
 $('btn-menu').onclick=()=>{ Sound.init(); openChapters(); };
 $('btn-sound').onclick=()=>{ Sound.init(); Sound.setEnabled(!Sound.enabled); };
 $('slide-back').addEventListener('pointerdown',e=>e.stopPropagation());
-$('slide-back').onclick=e=>{ e.stopPropagation(); Game.prevSlide(); };
+$('slide-skip').addEventListener('pointerdown',e=>e.stopPropagation());
+$('slide-skip').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.skipSlides(); };
+/* a clicked slide button lets go of focus, so Enter afterwards advances the story rather than pressing it again */
+$('slide-back').onclick=e=>{ e.stopPropagation(); e.currentTarget.blur(); Game.prevSlide(); };
 $('btn-log').onclick=()=>{ Sound.init(); Sound.sfx('blip');
   const box=$('log-list'); box.innerHTML='';
   if(!Game.log||!Game.log.length){
@@ -6329,9 +6479,9 @@ function frame(ts){
 (function(){
   const BOOKS=[
     ['1 AḎAM & ḤAWWAH','adam-eve-1'],['2 AḎAM & ḤAWWAH','adam-eve-2'],
-    ['BERĔSHITH','bereshith'],['SHEMOTH','shemoth'],['VAYIQRA','wayyiqra'],
-    ['BAMIḎBAR','bemidbar'],['BEMIDBAR','bemidbar'],['DEḆARIM','debarim'],
-    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyah'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zekaryah'],
+    ['BERĔSHITH','bereshith'],['SHEMOTH','shamoth'],['VAYIQRA','wayyiqra'],
+    ['BAMIḎBAR','bamidbar'],['BEMIDBAR','bamidbar'],['DEḆARIM','dabarim'],
+    ['YAHUSHA','yahusha'],['TSEPHANYAH','tsephanyahu'],['ḤAGGAI','haggai'],['ZEḴARYAHU','zakaryahu'],
     ['ḤANOḴ','chanok'],['YASHAR','yashar'],['YOḆELIM','apoc-jubilees'],
   ];
   function parseRef(ref){
@@ -6416,5 +6566,7 @@ resize();
 requestAnimationFrame(frame);
 setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 </script>
+<script src="cinema.js"></script>
+<script src="gfx.js"></script>
 </body>
 </html>
