@@ -1246,11 +1246,11 @@ const Stage={
     const lay=this._lay, z=p.z||0, s=lay.H0*lay.sc(z)*(p.s||1), x=lay.X(p.x!=null?p.x:.5), y=lay.gy(z)+(p.dy||0)*VH;
     const fn=PROPS[p.k]; if(!fn) return;
     const surf=p.k==='fish'&&(p.dy||0)>=-.03&&this.wetAt(x,y);             /* the great fish breaks the surface */
-    const wade=(surf||WADERS[p.k])&&(p.dy||0)>=-.03&&this.wetAt(x,y), wl=surf?y+s*.04:y-s*.16;
+    const wade=(surf||WADERS[p.k])&&(p.dy||0)>=-.03&&this.wetAt(x,y), wl=surf?y+s*.04:y, yd=wade&&!surf?y+s*.16:y;   /* a beast stands in the water up to its belly */
     g.save(); if(p.at!=null) g.globalAlpha*=ease((st-at)/700);
-    if(wade){ g.beginPath(); g.rect(x-s*3,y-s*4,s*6,wl-(y-s*4)); g.clip(); }
+    if(wade){ g.beginPath(); g.rect(x-s*3,yd-s*4,s*6,wl-(yd-s*4)); g.clip(); }
     if(p.flip){ g.translate(x,0); g.scale(-1,1); g.translate(-x,0); }
-    fn(g,x,y,s,t,p); g.restore();
+    fn(g,x,yd,s,t,p); g.restore();
     if(wade) ripples(g,x,wl,s*.5,t,x);
   },
   /* an actor's timeline.
@@ -1318,7 +1318,8 @@ const Stage={
     const wet=(a.dy||0)>=-.03&&this.wetAt(x,y);
     let wl=0;
     if(wet){ const drown=P.lie||WET_POSE.test(a.pose||''); if(drown) P=animPose(POSES.raise,t+i*777,i*1.7);   /* swept away: only the head and the arms above the water */
-      wl=y-h*(drown?.76:.44)+Math.sin(t/600+i)*h*.01; g.save(); g.beginPath(); g.rect(x-h*1.5,y-h*3,h*3,wl-(y-h*3)); g.clip(); }
+      wl=y+Math.sin(t/600+i)*h*.01; y+=h*(drown?.76:.44);             /* the surface where it stands is the waterline; the body is sunk below it */
+      g.save(); g.beginPath(); g.rect(x-h*1.5,y-h*3,h*3,wl-(y-h*3)); g.clip(); }
     else if((a.dy||0)<-.03){}                                   /* lifted up off the ground: no shadow under it */
     else if(!P.lie) figureShadow(g,x,y,h,P); else { g.fillStyle='rgba(8,6,4,.25)'; ell(g,x,y+h*.005,h*.5,h*.03); g.fill(); }
     if(S1.face==='b') drawFigureBack(g,x,y,h,L,P,t,{hold:a.hold||a.hold2,crown:a.crown,alpha:S1.alpha<1?S1.alpha:null,phase:i*1.7});
@@ -1361,7 +1362,7 @@ const Stage={
   },
   drawExtra(g,it,st,t){
     const cw=it.cw, lay=this._lay;
-    if(it.stream){ const h=lay.H0*lay.sc(it.z)*(cw.s||1)*(it.look.child?.62:1); const y=lay.gy(it.z), X=VW*it.x, wet=this.wetAt(X,y), wl=y-h*.44;
+    if(it.stream){ const h=lay.H0*lay.sc(it.z)*(cw.s||1)*(it.look.child?.62:1); const y0=lay.gy(it.z), X=VW*it.x, wet=this.wetAt(X,y0), wl=y0, y=wet?y0+h*.44:y0;
       if(wet){ g.save(); g.beginPath(); g.rect(X-h*1.5,y-h*3,h*3,wl-(y-h*3)); g.clip(); } else figureShadow(g,X,y,h,POSES.walk);
       const hold=cw.hold!==undefined?cw.hold:CROWD_HOLD[cw.kind];
       drawFigureBack(g,X,y,h,it.look,cw.run?POSES.run:POSES.walk,t,{alpha:it.alpha,phase:it.ph,hold:hold});
@@ -1384,10 +1385,10 @@ const Stage={
       if(P0) P=blendPose(P0,P1,cl((se-it.k*60)/600,0,1)); else { P=P1; if(hasAt) alpha=ease(se/700); } }
     P=animPose(P,t+it.ph*1000,it.ph);
     const face=exitDir?(exitDir==='l'?'l':'r'):walking?(cw.enter==='l'?'r':'l'):(cw.face||(it.k%2?'l':'r'));
-    const y=lay.gy(it.z)+(cw.dy||0)*VH, X=VW*x, wet=(cw.dy||0)>=-.03&&this.wetAt(X,y);
+    let y=lay.gy(it.z)+(cw.dy||0)*VH; const X=VW*x, wet=(cw.dy||0)>=-.03&&this.wetAt(X,y);
     let wl=0;
     if(wet){ const drown=P.lie||WET_POSE.test(cw.pose||''); if(drown) P=animPose(POSES.raise,t+it.ph*1000,it.ph);
-      wl=y-h*(drown?.76:.44)+Math.sin(t/600+it.ph)*h*.01; g.save(); g.beginPath(); g.rect(X-h*1.5,y-h*3,h*3,wl-(y-h*3)); g.clip(); }
+      wl=y+Math.sin(t/600+it.ph)*h*.01; y+=h*(drown?.76:.44); g.save(); g.beginPath(); g.rect(X-h*1.5,y-h*3,h*3,wl-(y-h*3)); g.clip(); }
     else if(!P.lie) figureShadow(g,X,y,h,P);
     const hold=cw.hold!==undefined?cw.hold:CROWD_HOLD[cw.kind];
     if(face==='b') drawFigureBack(g,X,y,h,it.look,P,t,{hold:hold||null,alpha:alpha<1?alpha:null,phase:it.ph});
