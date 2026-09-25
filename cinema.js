@@ -1025,7 +1025,8 @@ const Stage={
     const c=this.cur, dur=c.times[c.parts.length-1];
     g.save();
     g.imageSmoothingEnabled=true;
-    let shake=0; if((S0.fx||[]).some(f=>(f.k||f)==='quake')) shake=Math.sin(t/40)*VH*.006*(1+Math.sin(t/300));
+    let shake=0; const qk=(S0.fx||[]).find(f=>(f.k||f)==='quake');
+    if(qk&&st>=(qk.at!=null?this.beatTime(qk.at):0)) shake=Math.sin(t/40)*VH*.006*(1+Math.sin(t/300));   /* from its part on */
     g.translate(shake,shake*.5);
     this.camera(g,S0.cam,st,dur,S0.focus);
     if(S0.set==='art'){ try{ _drawSlideArt(g,slide.art||'void',st,t,slide); }catch(e){} }
