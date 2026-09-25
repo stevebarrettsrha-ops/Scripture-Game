@@ -972,16 +972,25 @@ prop('behemoth',(g,x,y,s,t,o)=>{
     g.quadraticCurveTo(lx+u*15,u*.5,lx+u*15,-u*5); g.quadraticCurveTo(lx+u*13,belly+(-belly)*.5,lx+u*15,belly-u*32); g.closePath(); g.fill();
     g.fillStyle='rgba(222,212,192,.75)'; for(let k=0;k<3;k++){ ell(g,lx+u*(3+k*4.5),-u*2.2,u*2.1,u*1.5); g.fill(); } };
   pillar(fx-L*.1,dark); pillar(rx+L*.22,dark);
+  pillar(fx-L*.2,base); pillar(rx+L*.12,base);          /* the near legs too: the body covers the tops of all four */
   /* the body: the high dome of the head and the hump at the shoulder, the back falling away to a low rump */
   const P=[[fx+u*14,top+D*.58],[fx+u*2,top+u*8],[fx-L*.16,top-u*2+br],[fx-L*.34,top+D*.12],[0,top+D*.24],[rx+L*.14,top+D*.36],[rx-u*6,top+D*.56],
            [rx-u*4,belly-D*.1],[rx+L*.12,belly+u*6],[0,belly+u*12],[fx-L*.16,belly+u*8],[fx+u*10,belly-D*.18]];
-  /* the short tail, from under the rump, ending in a tuft */
-  g.strokeStyle=dark; g.lineWidth=u*4; g.lineCap='round'; g.beginPath(); g.moveTo(rx+u*4,top+D*.4); g.quadraticCurveTo(rx-u*9,top+D*.5,rx-u*7+sw*u*1.5,top+D*.82); g.stroke();
-  g.fillStyle=dark; ell(g,rx-u*7+sw*u*1.5,top+D*.9,u*3.2,u*7); g.fill();
   g.fillStyle=lin(g,0,top,0,belly+u*10,[[0,mid],[.45,base],[1,dark]]); blob(g,P); g.fill();
+  /* the short tail: grown from the top of the rump (its root lies over the body, so it is
+     one piece with it), hanging down close against the hindquarters to a tuft of long hair */
+  const tw=sw*u*1.2, tipX=rx-u*8+tw, tipY=top+D*.86;
+  g.fillStyle=lin(g,rx-u*10,0,rx+u*4,0,[[0,shd(base,-.28)],[1,base]]);
+  g.beginPath(); g.moveTo(rx+u*5,top+D*.5);
+  g.quadraticCurveTo(rx-u*7,top+D*.5,rx-u*9.5+tw*.5,top+D*.66);         /* the outer edge, arching off the rump */
+  g.quadraticCurveTo(rx-u*10.5+tw,top+D*.76,tipX-u*1.7,tipY);
+  g.lineTo(tipX+u*2.2,tipY);
+  g.quadraticCurveTo(rx-u*4+tw,top+D*.72,rx-u*2,top+D*.64);             /* the inner edge, back into the body */
+  g.quadraticCurveTo(rx+u*1,top+D*.58,rx+u*6,top+D*.6); g.closePath(); g.fill();
+  g.strokeStyle=dark; g.lineCap='round';
+  for(let k=0;k<9;k++){ const q=(k-4)/4, len=u*(9+Math.abs(Math.sin(k*2.3))*6), wv=Math.sin(t/800+k)*u*.8;       /* the tuft */
+    g.lineWidth=u*(1.2+(k%3)*.4); g.beginPath(); g.moveTo(tipX+q*u*1.4,tipY-u*2); g.quadraticCurveTo(tipX+q*u*2.6+wv,tipY+len*.5,tipX+q*u*3.4+wv*1.4,tipY+len); g.stroke(); }
   g.fillStyle=lin(g,0,top+D*.55,0,belly,[[0,base],[1,dark]]); ell(g,fx+u*12,top+D*.8,u*24,u*18); g.fill();     /* the chest under the head */
-  /* the near legs */
-  pillar(fx-L*.2,base); pillar(rx+L*.12,base);
   /* the head: a high dome over the brow, the small ear, the eye, the trunk hanging to the ground */
   const hx=fx+u*14, hy=top-u*16+br;
   g.fillStyle=lin(g,0,hy,0,top+D*.7,[[0,mid],[.6,base],[1,dark]]);
@@ -1008,13 +1017,14 @@ prop('behemoth',(g,x,y,s,t,o)=>{
   fringe(rx+u*2,fx+u*6,belly-u*2,u*26,dark);
   fringe(fx-u*4,fx+u*34,top+D*.62,u*22,dark);
   fringe(rx+u*8,fx-u*2,belly-u*8,u*16,base);
+  g.save(); blob(g,P); g.clip();                                      /* the hair lies on the body, never above its back */
   for(let k=0;k<110;k++){ const q=r(), side=r(); let px, py, len;
     if(side<.6){ px=rx+u*6+q*(L+u*8); py=top+D*(.08+.3*(1-Math.min(1,(px-rx)/L)))+r()*D*.5; len=u*(10+r()*16); }
     else { px=fx-L*.2+q*u*50; py=top+D*.1+r()*D*.5; len=u*(12+r()*16); }
     const wv=Math.sin(t/900+k)*u*1.2, pale2=r()<.14, pc=pale2?pale:(r()<.55?dark:mid);
     g.strokeStyle=pc; g.globalAlpha=pale2?.4:.55; g.lineWidth=u*(1.4+r()*2);
     g.beginPath(); g.moveTo(px,py); g.quadraticCurveTo(px+u*2+wv,py+len*.5,px+u*1+wv*1.5,py+len); g.stroke(); }
-  g.globalAlpha=1;
+  g.restore(); g.globalAlpha=1;
   g.restore();
 });
 
