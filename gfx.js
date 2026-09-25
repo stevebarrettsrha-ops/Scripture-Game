@@ -3,9 +3,11 @@
    Every ground tile keeps the colour the game gives it, but is painted with a texture
    for its kind — blades of grass, rippled sand, pebbled paths, paving with its joints,
    courses of brick, blocks of stone — laid in world space so it stays put as the camera
-   moves and hides the square grid. Over the finished frame goes a soft light: a warm
-   fall from the sky, a gentle vignette, and at night a cool dimming. Without this file
-   the world is drawn exactly as before. */
+   moves and hides the square grid. Rivers run with the current and lakes and the sea
+   drift, with glints on the water and foam at the banks; trees are painted with bark,
+   branches and full crowns of leaves, and sway. Over the finished frame goes a soft
+   light: a warm fall from the sky, a gentle vignette, and at night a cool dimming.
+   Without this file the world is drawn exactly as before. */
 (function(){
 'use strict';
 if(typeof tileColor!=='function'||typeof drawWorld!=='function'||typeof T==='undefined'||typeof Camera==='undefined') return;
@@ -94,8 +96,10 @@ function paint(kind,base){
       for(let i=0;i<6;i++){ g.fillStyle='rgba(150,170,200,.12)'; g.beginPath(); g.ellipse(r()*P,r()*P,8+r()*10,2+r()*3,0,0,Math.PI*2); g.fill(); }
       break; }
     case 'water': {
-      for(let i=0;i<9;i++){ const y=r()*P, x=r()*P, w=8+r()*16; g.strokeStyle=i%3?'rgba(255,255,255,.07)':'rgba(0,20,40,.12)'; g.lineWidth=1;
-        g.beginPath(); g.moveTo(x,y); g.quadraticCurveTo(x+w/2,y-2,x+w,y); g.stroke(); }
+      /* ripples: soft troughs and bright crests, broken into short arcs */
+      for(let i=0;i<70;i++){ const x=r()*P, y=r()*P, w=10+r()*26, k=r();
+        wrap(()=>{ g.strokeStyle=k<.45?'rgba(0,18,40,.16)':(k<.9?'rgba(255,255,255,.1)':'rgba(255,255,255,.22)'); g.lineWidth=k<.45?2:1.2;
+          g.beginPath(); g.moveTo(x,y); g.quadraticCurveTo(x+w/2,y-2.5,x+w,y); g.stroke(); }); }
       break; }
   }
   return cv;
@@ -105,11 +109,194 @@ function patternFor(ctx,kind,color){
   const key=kind+'|'+color;
   let e=cache.get(key);
   if(!e){ if(cache.size>600) cache.clear(); const cv=paint(kind,color); const p=ctx.createPattern(cv,'repeat'); e={p,f:-1}; cache.set(key,e); }
-  if(e.f!==frame){ try{ e.p.setTransform(new DOMMatrix([1/cacheDpr,0,0,1/cacheDpr,offX,offY])); }catch(err){} e.f=frame; }
+  if(e.f!==frame){ const w=kind==='water', k=1/cacheDpr;
+    /* a river running down turns its ripples to lie along the current */
+    const m=w&&flowDown?[0,k,-k,0,offX+flowX,offY+flowY]:[k,0,0,k,offX+(w?flowX:0),offY+(w?flowY:0)];
+    try{ e.p.setTransform(new DOMMatrix(m)); }catch(err){} e.f=frame; }
   return e.p;
 }
 
+
+/* ============================== trees ==============================
+   Each kind of tree is painted once per variety (a few shapes per kind and colour) into
+   its own canvas — a tapered trunk with bark and branches, a crown built of many leaf
+   clusters lit from the upper left with shade beneath, fruit or blossom — and then laid
+   down with a soft shadow and a gentle sway. */
+const treeCache=new Map();
+function mixRGB(a,b,k){ const A=rgbOf(a), B=rgbOf(b); return `rgb(${A[0]+(B[0]-A[0])*k|0},${A[1]+(B[1]-A[1])*k|0},${A[2]+(B[2]-A[2])*k|0})`; }
+function paintTree(kind,H,col,opt,seed){
+  const d=cacheDpr||((typeof DPR!=='undefined')?DPR:1);
+  const W=Math.ceil(H*(kind==='palm'?1.25:1.05)), HH=Math.ceil(H*1.08);
+  const cv=document.createElement('canvas'); cv.width=Math.ceil(W*d); cv.height=Math.ceil(HH*d);
+  const g=cv.getContext('2d'); g.scale(d,d); g.translate(W/2,HH-1);
+  const r=rnd(seed*7919+H*13+kind.length);
+  const bark='#5a4026', barkD='#3a2816', barkL='#7a5a38';
+  const leafD=mixRGB(col,'#0a1206',.45), leafM=col, leafL=mixRGB(col,'#e8f0a0',.2), leafH=mixRGB(col,'#fffbe0',.34);
+  const trunk=(h0,w0,w1,lean)=>{
+    const top=-h0;
+    g.fillStyle=(()=>{ const gr=g.createLinearGradient(-w0,0,w0,0); gr.addColorStop(0,barkL); gr.addColorStop(.45,bark); gr.addColorStop(1,barkD); return gr; })();
+    g.beginPath(); g.moveTo(-w0*1.5,0); g.quadraticCurveTo(-w0*.8,-h0*.12,-w0*.9,-h0*.25);
+    g.quadraticCurveTo(-w1+lean*.5,-h0*.6,-w1+lean,top); g.lineTo(w1+lean,top); g.quadraticCurveTo(w1+lean*.5,-h0*.6,w0*.9,-h0*.25);
+    g.quadraticCurveTo(w0*.8,-h0*.12,w0*1.5,0); g.closePath(); g.fill();
+    g.strokeStyle='rgba(20,12,4,.35)'; g.lineWidth=Math.max(.6,H*.006);
+    for(let i=0;i<5;i++){ const xx=(r()-.5)*w0*1.4; g.beginPath(); g.moveTo(xx,-h0*r()*.2); g.quadraticCurveTo(xx+(r()-.5)*w0*.4,-h0*.5,xx*.6+lean*.7,-h0*(.7+r()*.3)); g.stroke(); }
+  };
+  const blob=(cx,cy,rc,tone)=>{
+    const c1=mixRGB(leafD,leafM,Math.min(1,tone*1.6)), c2=tone>.55?mixRGB(leafM,leafL,(tone-.55)*2.2):c1;
+    for(let k=0;k<7;k++){ const a=r()*6.283, dd=rc*(.15+r()*.5), rr=rc*(.42+r()*.3);
+      g.fillStyle=k<3?c1:c2; g.beginPath(); g.arc(cx+Math.cos(a)*dd,cy+Math.sin(a)*dd*.8,rr,0,6.283); g.fill(); }
+    /* light on the upper left of each cluster */
+    g.fillStyle=mixRGB(c2,leafH,.35); g.globalAlpha=.55;
+    for(let k=0;k<3;k++){ g.beginPath(); g.arc(cx-rc*(.25+r()*.2),cy-rc*(.3+r()*.2),rc*(.22+r()*.12),0,6.283); g.fill(); }
+    g.globalAlpha=1;
+    /* the leaves themselves */
+    for(let k=0;k<Math.round(rc*1.4);k++){ const a=r()*6.283, dd=rc*Math.sqrt(r())*.95; const px=cx+Math.cos(a)*dd, py=cy+Math.sin(a)*dd*.85;
+      g.fillStyle=r()<.55?leafD:(py<cy?leafH:leafL); g.globalAlpha=.45; g.beginPath(); g.ellipse(px,py,Math.max(.7,H*.009),Math.max(.5,H*.006),r()*3,0,6.283); g.fill(); }
+    g.globalAlpha=1;
+  };
+  if(kind==='palm'){
+    const h0=H*.8, lean=(r()-.5)*H*.16;
+    g.strokeStyle=barkD; g.lineCap='round';
+    const tx=lean, ty=-h0;
+    const seg=14; for(let i=0;i<seg;i++){ const k0=i/seg, k1=(i+1)/seg; const x0=lean*k0*k0, y0=-h0*k0, x1=lean*k1*k1, y1=-h0*k1, w=H*(.05-.018*k0);
+      g.fillStyle=i%2?bark:barkL; g.beginPath(); g.moveTo(x0-w,y0); g.lineTo(x1-w*.95,y1); g.lineTo(x1+w*.95,y1); g.lineTo(x0+w,y0); g.closePath(); g.fill();
+      g.strokeStyle='rgba(20,12,4,.45)'; g.lineWidth=Math.max(.6,H*.006); g.beginPath(); g.moveTo(x1-w*.95,y1); g.quadraticCurveTo(x1,y1+H*.01,x1+w*.95,y1); g.stroke(); }
+    if(opt.fruit!==false){ g.fillStyle=opt.fruit||'#b8702a'; for(let i=0;i<9;i++){ g.beginPath(); g.arc(tx+(r()-.5)*H*.08,ty+H*.03+r()*H*.05,H*.013,0,6.283); g.fill(); } }
+    const fr=10;
+    for(let i=0;i<fr;i++){
+      const a=-Math.PI/2+(i/(fr-1)-.5)*Math.PI*1.25+(r()-.5)*.15, len=H*(.34+r()*.1), droop=H*(.12+r()*.1);
+      const ex=tx+Math.cos(a)*len, ey=ty+Math.sin(a)*len*.55+droop, mx=tx+Math.cos(a)*len*.55, my=ty+Math.sin(a)*len*.45-H*.03;
+      const back=Math.sin(a)<-.6, tone=back?leafD:(Math.cos(a)<0?leafL:leafM);
+      g.strokeStyle=tone; g.lineWidth=Math.max(.8,H*.012); g.beginPath(); g.moveTo(tx,ty); g.quadraticCurveTo(mx,my,ex,ey); g.stroke();
+      for(let k=1;k<18;k++){ const q=k/18, bx=(1-q)*(1-q)*tx+2*(1-q)*q*mx+q*q*ex, by=(1-q)*(1-q)*ty+2*(1-q)*q*my+q*q*ey;
+        const dx=2*(1-q)*(mx-tx)+2*q*(ex-mx), dy=2*(1-q)*(my-ty)+2*q*(ey-my), L=Math.hypot(dx,dy)||1, nx=-dy/L, ny=dx/L, ll=H*.075*(1-q*.7);
+        g.lineWidth=Math.max(.6,H*.006);
+        for(const sd of[-1,1]){ g.beginPath(); g.moveTo(bx,by); g.lineTo(bx+(nx*sd+dx/L*.5)*ll,by+(ny*sd+dy/L*.5)*ll+ll*.5); g.stroke(); } }
+    }
+  } else if(kind==='dead'){
+    trunk(H*.5,H*.07,H*.035,0);
+    const branch=(x,y,a,len,w,depth)=>{ if(depth>4||len<H*.03) return; const ex=x+Math.cos(a)*len, ey=y+Math.sin(a)*len;
+      g.strokeStyle=depth<2?bark:barkD; g.lineWidth=Math.max(.6,w); g.lineCap='round'; g.beginPath(); g.moveTo(x,y); g.quadraticCurveTo((x+ex)/2+(r()-.5)*len*.3,(y+ey)/2,ex,ey); g.stroke();
+      const n=depth<1?3:2; for(let i=0;i<n;i++) branch(ex,ey,a+(r()-.5)*1.3,len*(.55+r()*.2),w*.62,depth+1); };
+    for(let i=0;i<3;i++) branch(0,-H*.48,-Math.PI/2+(i-1)*.6+(r()-.5)*.3,H*.22,H*.03,0);
+  } else {
+    const bush=kind==='bush';
+    const cy=bush?-H*.45:-H*.64, Rx=bush?H*.56:H*.5, Ry=bush?H*.42:H*.36;
+    if(!bush){ const lean=(r()-.5)*H*.06; trunk(H*.44,H*.055,H*.03,lean);
+      g.strokeStyle=bark; g.lineCap='round';
+      for(let i=0;i<4;i++){ const a=-Math.PI/2+(i-1.5)*.55+(r()-.5)*.2; g.lineWidth=H*.02; g.beginPath(); g.moveTo(lean,-H*.42); g.quadraticCurveTo(lean+Math.cos(a)*H*.12,-H*.5+Math.sin(a)*H*.06,Math.cos(a)*H*.25,cy+Math.sin(a)*H*.18); g.stroke(); } }
+    /* the shade within the crown, then the clusters from the back and top to the front */
+    g.fillStyle=leafD; g.beginPath(); g.ellipse(0,cy+Ry*.12,Rx*.92,Ry*.88,0,0,6.283); g.fill();
+    const n=bush?14:36, cl=[];
+    for(let i=0;i<n;i++){ const a=r()*6.283, dd=Math.sqrt(r()); const x=Math.cos(a)*dd*Rx*.82, y=cy+Math.sin(a)*dd*Ry*.8; cl.push([x,y,H*(bush?.15:.11)+r()*H*(bush?.1:.07)]); }
+    cl.sort((A,B)=>A[1]-B[1]);
+    for(const [x,y,rc] of cl){ const tone=Math.max(0,Math.min(1,.62-(x/Rx)*.35-((y-cy)/Ry)*.42)); blob(x,y,rc,tone); }
+    if(opt.fruit){ g.fillStyle=opt.fruit; for(let i=0;i<(bush?7:20);i++){ const a=r()*6.283, dd=Math.sqrt(r())*.8; const fx=Math.cos(a)*dd*Rx, fy=cy+Math.sin(a)*dd*Ry+Ry*.1;
+      g.beginPath(); g.arc(fx,fy,Math.max(1.6,H*.022),0,6.283); g.fill(); g.fillStyle='rgba(255,255,255,.35)'; g.beginPath(); g.arc(fx-H*.005,fy-H*.005,Math.max(.5,H*.006),0,6.283); g.fill(); g.fillStyle=opt.fruit; } }
+    if(opt.bloom){ for(let i=0;i<40;i++){ const a=r()*6.283, dd=Math.sqrt(r()); g.fillStyle=r()<.7?'rgba(252,240,246,.95)':'rgba(240,190,210,.9)';
+      g.beginPath(); g.arc(Math.cos(a)*dd*Rx*.9,cy+Math.sin(a)*dd*Ry*.85,Math.max(.8,H*.01),0,6.283); g.fill(); } }
+    if(!bush){ const gr=g.createRadialGradient(0,cy+Ry*.8,0,0,cy+Ry*.8,Rx*.5); gr.addColorStop(0,'rgba(10,14,6,.35)'); gr.addColorStop(1,'rgba(10,14,6,0)'); g.fillStyle=gr; g.fillRect(-Rx,cy,Rx*2,Ry*1.4); }
+  }
+  return {cv,W,HH};
+}
+function drawTree(g,x,y,H,kind,opt,t,seed){
+  opt=opt||{}; H=Math.max(6,H); const col=opt.col||'#4a6a30';
+  const variant=Math.abs(seed|0)%5, Hq=Math.round(H/2)*2;
+  const key=[kind,col,opt.fruit||'',opt.bloom?1:0,variant,Hq,cacheDpr||1].join('|');
+  let e=treeCache.get(key); if(!e){ if(treeCache.size>400) treeCache.clear(); e=paintTree(kind,Hq,col,opt,variant+1); treeCache.set(key,e); }
+  /* shadow on the ground, cast toward the lower right */
+  const sw=kind==='bush'?H*.5:(kind==='palm'?H*.32:H*.4);
+  const sg=g.createRadialGradient(x+sw*.25,y+sw*.06,0,x+sw*.25,y+sw*.06,sw);
+  sg.addColorStop(0,'rgba(8,10,4,.34)'); sg.addColorStop(1,'rgba(8,10,4,0)');
+  g.fillStyle=sg; g.beginPath(); g.ellipse(x+sw*.25,y+sw*.06,sw,sw*.34,0,0,6.283); g.fill();
+  const sway=kind==='dead'?0:Math.sin((t||0)/1500+seed)*(kind==='palm'?.035:.018);
+  g.save(); g.translate(x,y); g.transform(1,0,sway,1,0,0);
+  g.drawImage(e.cv,-e.W/2,-e.HH+1,e.W,e.HH); g.restore();
+}
+GFX.tree=(g,x,y,H,opt,t)=>drawTree(g,x,y,H,opt&&opt.dead?'dead':'broad',opt,t,(opt&&opt.seed)||Math.round(x*7+y*3));
+GFX.palm=(g,x,y,H,opt,t)=>drawTree(g,x,y,H,'palm',opt,t,(opt&&opt.seed)||Math.round(x*7+y*3));
+GFX.bush=(g,x,y,H,opt,t)=>drawTree(g,x,y,H,'bush',opt,t,(opt&&opt.seed)||Math.round(x*7+y*3));
+
+/* the game's own trees, palms and bushes are drawn this way too */
+if(typeof drawProp==='function'){
+  const _drawProp=drawProp;
+  window.drawProp=function(g,px,py,p,t){
+    if(!GFX.on||!p) return _drawProp(g,px,py,p,t);
+    const ty=p.type;
+    if(ty!=='tree'&&ty!=='palm'&&ty!=='bush'&&ty!=='treeLife'&&ty!=='treeKnow') return _drawProp(g,px,py,p,t);
+    const u=2.6*(TILE/40)*((typeof PROP_SCALE!=='undefined'&&PROP_SCALE[ty])||1);
+    const seed=Math.round((p.x||0)*31+(p.y||0)*17);
+    if(ty==='tree') drawTree(g,px,py,26*u,p.dead?'dead':'broad',{col:p.col||'#3f7032',fruit:p.fruit},t,seed);
+    else if(ty==='palm') drawTree(g,px,py,19*u,'palm',{col:p.col||'#4e7a3e'},t,seed);
+    else if(ty==='bush') drawTree(g,px,py,8.5*u,'bush',{col:p.col||'#4e7a3e',fruit:p.berry?'#c8584a':null},t,seed);
+    else if(ty==='treeLife'){ const pulse=.5+Math.sin(t/600)*.5; const gl=g.createRadialGradient(px,py-14*u,2*u,px,py-14*u,24*u);
+      gl.addColorStop(0,`rgba(255,235,150,${.4+pulse*.2})`); gl.addColorStop(1,'rgba(255,235,150,0)'); g.fillStyle=gl; g.beginPath(); g.arc(px,py-14*u,24*u,0,Math.PI*2); g.fill();
+      drawTree(g,px,py,30*u,'broad',{col:'#6fa04a',fruit:'#ffe070'},t,seed); }
+    else drawTree(g,px,py,28*u,'broad',{col:'#4f6e3a',fruit:'#c84a3a'},t,seed);
+  };
+}
 let curCtx=null;
+let flowX=0, flowY=0, flowDown=false;
+function mapFlow(map){
+  if(map._gfxFlow) return map._gfxFlow;
+  /* which way the water runs: a river is long one way and narrow the other and does not
+     lie along the map's side (that is a shore); a lake or the sea only drifts */
+  const W=map.w, H=map.h, isW=(x,y)=>KIND[map.tiles[y*W+x]]==='water';
+  let n=0, hs=0, vs=0, eL=0, eR=0, eT=0, eB=0;
+  for(let y=0;y<H;y++){ let r=0; for(let x=0;x<=W;x++){ if(x<W&&isW(x,y)){ r++; n++; } else if(r){ hs+=r*r; r=0; } } }
+  for(let x=0;x<W;x++){ let r=0; for(let y=0;y<=H;y++){ if(y<H&&isW(x,y)) r++; else if(r){ vs+=r*r; r=0; } } }
+  for(let y=0;y<H;y++){ if(isW(0,y)) eL++; if(isW(W-1,y)) eR++; }
+  for(let x=0;x<W;x++){ if(isW(x,0)) eT++; if(isW(x,H-1)) eB++; }
+  const hr=n?hs/n:0, vr=n?vs/n:0;           /* tile-weighted mean run across and down */
+  let f;
+  if(!n) f=[0,0,0];
+  else if(W*H>12000) f=[.8,.45,7];                               /* the whole land: seas and rivers together */
+  else if(vr>hr*1.8&&eL<H*.25&&eR<H*.25) f=[0,1,22];            /* a river running down */
+  else if(hr>vr*1.8&&eT<W*.25&&eB<W*.25) f=[1,0,22];            /* a river running across */
+  else f=[.8,.45,7];                                              /* a lake or the sea: a slow drift */
+  return (map._gfxFlow=f);
+}
+let glint=null;
+function glintPattern(ctx){
+  if(glint&&glint.d===cacheDpr) return glint.p;
+  const d=cacheDpr, S=Math.round(P*d), cv=document.createElement('canvas'); cv.width=S; cv.height=S; const g=cv.getContext('2d'); g.scale(d,d);
+  const r=rnd(4242);
+  for(let i=0;i<46;i++){ const x=r()*P, y=r()*P, w=3+r()*9; g.strokeStyle='rgba(255,255,255,'+(.25+r()*.45).toFixed(2)+')'; g.lineWidth=1+r()*.8; g.beginPath(); g.moveTo(x,y); g.lineTo(x+w,y); g.stroke(); }
+  for(let i=0;i<30;i++){ g.fillStyle='rgba(255,255,240,.8)'; g.fillRect(r()*P,r()*P,1.5,1.5); }
+  glint={d,p:ctx.createPattern(cv,'repeat')}; return glint.p;
+}
+function waterGlints(){
+  const map=curMap, g=curCtx; if(!map||!g) return;
+  const f=mapFlow(map); if(!f[2]) return;
+  const TL=TILE, sec=curT/1000;
+  const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TL)-1), x1=Math.min(map.w-1,Math.ceil((Camera.x+VW/2)/TL)+1);
+  const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TL)-1), y1=Math.min(map.h-1,Math.ceil((Camera.y+VH/2)/TL)+1);
+  const p=glintPattern(g);
+  const k=1/cacheDpr, gx=offX+f[0]*sec*f[2]*1.8+Math.sin(sec*.9)*4, gy=offY+f[1]*sec*f[2]*1.8+Math.cos(sec*.7)*3;
+  try{ p.setTransform(new DOMMatrix(f[1]===1?[0,k,-k,0,gx,gy]:[k,0,0,k,gx,gy])); }catch(e){}
+  g.save(); g.globalAlpha=.55+Math.sin(sec*1.7)*.15; g.fillStyle=p;
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ if(KIND[map.tiles[y*map.w+x]]!=='water') continue; g.fillRect(x*TL+offX,y*TL+offY,TL+1,TL+1); }
+  g.restore();
+  /* foam lapping at the banks: a broken line that comes and goes along each shore */
+  const isW=(x,y)=>x<0||y<0||x>=map.w||y>=map.h||KIND[map.tiles[y*map.w+x]]==='water';
+  g.save(); g.strokeStyle='rgba(240,248,250,.7)'; g.lineCap='round';
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+    if(KIND[map.tiles[y*map.w+x]]!=='water') continue;
+    for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+      if(isW(x+dx,y+dy)) continue;
+      const ph=sec*1.3+(x*1.7+y*2.3), k=Math.sin(ph); if(k<-.2) continue;
+      const lap=3+k*3;                                      /* the wash comes in and draws back */
+      g.globalAlpha=.25+.35*(k+.2)/1.2; g.lineWidth=1.4;
+      const X=x*TL+offX, Y=y*TL+offY;
+      g.beginPath();
+      for(let s2=0;s2<=4;s2++){ const a=s2/4*TL, w=Math.sin(a*.35+ph*2)*1.4;
+        const px=dx>0?X+TL-lap+w:dx<0?X+lap+w:X+a, py=dy>0?Y+TL-lap+w:dy<0?Y+lap+w:Y+a;
+        s2?g.lineTo(px,py):g.moveTo(px,py); }
+      g.stroke();
+    }
+  }
+  g.restore();
+}
 const _tileColor=tileColor;
 window.tileColor=function(map,id,x,y){
   if(!GFX.on||!curCtx||GFX.noTex) return _tileColor(map,id,x,y);
@@ -158,15 +345,41 @@ function blendEdges(){
           }
         }
       }
+      /* water: the deep and the shallows run into each other, the bank is damp and the
+         shallows pale where they meet it */
+      const base=(id,x,y)=>{ const bk=map._gfxBase||(map._gfxBase={}); if(!bk[id]) window.tileColor(map,id,x,y); return bk[id]; };
+      const rgba=(c,a)=>{ const k=rgbOf(c); return `rgba(${k[0]},${k[1]},${k[2]},${a})`; };
+      const blob=(x,y,rad,c,a)=>{ const gr=g.createRadialGradient(x,y,0,x,y,rad); gr.addColorStop(0,rgba(c,a)); gr.addColorStop(1,rgba(c,0)); g.fillStyle=gr; g.fillRect(x-rad,y-rad,rad*2,rad*2); };
+      for(let y=0;y<map.h;y++) for(let x=0;x<map.w;x++){
+        if(y<=lip) continue;
+        const id=map.tiles[y*map.w+x]; if(KIND[id]!=='water') continue;
+        for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+          const xx=x+dx, yy=y+dy; if(xx<0||yy<0||xx>=map.w||yy>=map.h) continue;
+          const id2=map.tiles[yy*map.w+xx], k2=KIND[id2]; if(id2===id) continue;
+          const r=rnd(x*6151+y*92821+dx*17+dy*29);
+          const ex=dx>0?(x+1)*TL:dx<0?x*TL:null, ey=dy>0?(y+1)*TL:dy<0?y*TL:null;
+          if(k2==='water'){ if(dx<0||dy<0) continue;                      /* deep and shallow: blur the step */
+            const c=mixRGB(base(id,x,y),base(id2,xx,yy),.5);
+            for(let i=0;i<3;i++){ const along=(i+.2+r()*.6)/3*TL, bx=ex!==null?ex+(r()-.5)*8:x*TL+along, by=ey!==null?ey+(r()-.5)*8:y*TL+along; blob(bx,by,14+r()*10,c,.55); }
+            any=true; continue; }
+          if(!SOFT[k2]&&k2!=='rock') continue;
+          const land=base(id2,xx,yy), wat=base(id,x,y);
+          for(let i=0;i<3;i++){ const along=(i+.2+r()*.6)/3*TL;
+            const bx=ex!==null?ex:x*TL+along, by=ey!==null?ey:y*TL+along;
+            if(k2!=='rock') blob(bx+dx*(6+r()*4),by+dy*(6+r()*4),11+r()*7,tone(land,-.3),.5);     /* damp bank */
+            blob(bx-dx*(5+r()*4),by-dy*(5+r()*4),10+r()*6,tone(wat,.35),.4); }                  /* pale shallows */
+          any=true;
+        }
+      }
       L=any?cv:null;
     }
     map._gfxBlend=L;
   }
-  if(!L) return;
-  const g=curCtx; g.save(); g.imageSmoothingEnabled=false;
+  if(L){ const g=curCtx; g.save(); g.imageSmoothingEnabled=false;
   const sx=Math.max(0,-offX), sy=Math.max(0,-offY), sw=Math.min(L.width-sx,VW-Math.max(0,offX)), sh=Math.min(L.height-sy,VH-Math.max(0,offY));
   if(sw>0&&sh>0) g.drawImage(L,sx,sy,sw,sh,sx+offX,sy+offY,sw,sh);
-  g.restore();
+  g.restore(); }
+  waterGlints();
 }
 let curWorld=null;
 function hookDecor(map){
@@ -185,6 +398,7 @@ window.drawWorld=function(g,world,t){
   offX=VW/2-Camera.x+(Camera.shake?Math.sin(t/30)*Camera.shake:0)+(Camera.sway?Math.sin(t/1900)*Camera.sway:0);
   offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   curCtx=g; curMap=world&&world.map; curWorld=world; curT=t; if(curMap) hookDecor(curMap);
+  if(curMap){ const f=mapFlow(curMap); flowX=f[0]*t/1000*f[2]; flowY=f[1]*t/1000*f[2]; flowDown=f[1]===1; }
   try{ _drawWorld(g,world,t); } finally { curCtx=null; curMap=null; curWorld=null; }
   if(!GFX.noLight) light(g,world,t);
 };

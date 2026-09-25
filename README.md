@@ -31,7 +31,7 @@ that any device on the same Wi-Fi/router can open. See that folder's `README.txt
 Not needed for normal solo play.
 
 Each game is a single HTML file and works offline; two shared scripts beside it,
-`cinema.js` (the staged cutscenes) and `gfx.js` (the world's ground and light),
+`cinema.js` (the staged cutscenes) and `gfx.js` (the world's ground, trees, water and light),
 add to every game and should be kept in the same folder:
 
 | File | Game | Unlocked by |
@@ -110,6 +110,8 @@ fight and leave in time with the verse, with crowds, props, weather and effects
 (fire from heaven, the pillar of cloud, rain, glory). The verse is shown beneath
 as a caption that comes up part by part; a tap shows the rest of it, the next tap
 moves on. YAHUAH is never drawn as a person — only as light, cloud and fire. The
+mal'akim are drawn as men, brown like everyone else in the games, with no wings. Crowds
+that go through the sea or the Yarděn are seen from behind as they walk into it. The
 stage for each slide is written in the slide's `stage` field and drawn by
 `cinema.js`; a slide without one (or a copy of a game without the file) shows its
 own painting as before.
