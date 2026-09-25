@@ -5,7 +5,8 @@
    courses of brick, blocks of stone — laid in world space so it stays put as the camera
    moves and hides the square grid. Rivers run with the current and lakes and the sea
    drift, with glints on the water and foam at the banks; trees are painted with bark,
-   branches and full crowns of leaves, and sway. Over the finished frame goes a soft
+   branches and full crowns of leaves, and sway; the mountain tiles are piles of faceted
+   boulders that stand in the depth order with everyone, and loose rocks are stones. Over the finished frame goes a soft
    light: a warm fall from the sky, a gentle vignette, and at night a cool dimming.
    Without this file the world is drawn exactly as before. */
 (function(){
@@ -223,6 +224,10 @@ if(typeof drawProp==='function'){
   window.drawProp=function(g,px,py,p,t){
     if(!GFX.on||!p) return _drawProp(g,px,py,p,t);
     const ty=p.type;
+    if(ty==='gfxrock'){ drawRock(g,px,py,p._w,p._h,p._pal,p._seed); return; }
+    if(ty==='rock'&&!p.color&&!p.col){ const u=2.6*(TILE/40)*((typeof PROP_SCALE!=='undefined'&&PROP_SCALE.rock)||1);
+      const m=curMap, k=m?KIND[m.tiles[Math.floor(p.y||0)*m.w+Math.floor(p.x||0)]]:'dirt';
+      drawRock(g,px,py,10*u,7*u,(k==='grass'||k==='snow')?'grey':'tan',Math.round((p.x||0)*97+(p.y||0)*61)>>>0); return; }
     if(ty!=='tree'&&ty!=='palm'&&ty!=='bush'&&ty!=='treeLife'&&ty!=='treeKnow') return _drawProp(g,px,py,p,t);
     const u=2.6*(TILE/40)*((typeof PROP_SCALE!=='undefined'&&PROP_SCALE[ty])||1);
     const seed=Math.round((p.x||0)*31+(p.y||0)*17);
@@ -234,6 +239,92 @@ if(typeof drawProp==='function'){
       drawTree(g,px,py,30*u,'broad',{col:'#6fa04a',fruit:'#ffe070'},t,seed); }
     else drawTree(g,px,py,28*u,'broad',{col:'#4f6e3a',fruit:'#c84a3a'},t,seed);
   };
+}
+
+/* ============================== rocks ==============================
+   The mountain tiles are laid down as boulders piled together, and loose rocks as stones:
+   each one a chunk of flat planes lit from the upper left — a pale top, mid faces, dark
+   undersides — with fine cracks along its edges and a soft shadow at its foot. Tan-brown
+   on sand and bare earth, grey among the grass. Painted once per shape and kept. */
+const ROCK_PAL={ tan:['#cdb9a0','#b19a80','#957f68','#786552','#5a4b3d'], grey:['#d3d3c3','#b3b3a2','#93937f','#727261','#535349'] };
+const rockCache=new Map();
+function paintRock(W,H,pal,seed){
+  const d=cacheDpr, top=3, bot=Math.ceil(H*.14)+3, side=Math.ceil(W*.18)+3, cw=W+side*2, ch=top+H+bot;
+  const cv=document.createElement('canvas'); cv.width=Math.ceil(cw*d); cv.height=Math.ceil(ch*d);
+  const g=cv.getContext('2d'); g.scale(d,d); g.translate(cw/2,top+H);
+  const r=rnd(seed*7919+13), C=ROCK_PAL[pal]||ROCK_PAL.tan;
+  /* the shadow on the ground, falling to the lower right */
+  const sg=g.createRadialGradient(W*.1,-H*.02,1,W*.1,-H*.02,W*.62); sg.addColorStop(0,'rgba(30,24,16,.34)'); sg.addColorStop(1,'rgba(30,24,16,0)');
+  g.fillStyle=sg; g.beginPath(); g.ellipse(W*.1,-H*.02,W*.62,H*.16+2,0,0,Math.PI*2); g.fill();
+  /* the outline: a chunky polygon with a flat foot */
+  const n=7+Math.floor(r()*4), P=[], cy=-H*.5;
+  for(let i=0;i<n;i++){ const a=-Math.PI/2+(i+(r()-.5)*.55)/n*Math.PI*2;
+    let x=Math.cos(a)*W*.5*(.8+r()*.2), y=cy+Math.sin(a)*H*.5*(.82+r()*.18);
+    if(y<cy) x-=W*.06*(cy-y)/(H*.5);                       /* the crown leans a little to the light */
+    if(y>-H*.07) y=-H*(.01+r()*.05);
+    P.push([x,y]); }
+  const T=[-W*(.04+r()*.14),-H*(.66+r()*.14)], F=[W*(.06+r()*.16),-H*(.3+r()*.12)], S=[-W*(.26+r()*.08),-H*(.34+r()*.1)];
+  const hubs=[T,F,S], hubB=[.44,-.2,.02];
+  const shade=(b)=>b>.55?C[0]:b>.22?C[1]:b>-.14?C[2]:b>-.5?C[3]:C[4];
+  const L=[-.62,-.78];
+  g.fillStyle=C[2]; g.beginPath(); P.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); g.closePath(); g.fill();
+  const own=[];
+  for(let i=0;i<n;i++){ const a=P[i], b=P[(i+1)%n], mx=(a[0]+b[0])/2, my=(a[1]+b[1])/2;
+    let hi=0, bd=1e9; hubs.forEach((h,k)=>{ const dd=Math.hypot(h[0]-mx,h[1]-my); if(dd<bd){ bd=dd; hi=k; } }); own.push(hi);
+    const nx=mx, ny=my-cy, nl=Math.hypot(nx,ny)||1, lit=(nx/nl)*L[0]+(ny/nl)*L[1];
+    g.fillStyle=shade(lit*1.05+hubB[hi]+(r()-.5)*.22);
+    g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(b[0],b[1]); g.lineTo(hubs[hi][0],hubs[hi][1]); g.closePath(); g.fill(); }
+  for(let i=0;i<n;i++){ const j=(i+1)%n; if(own[i]===own[j]) continue; const v=P[j], h1=hubs[own[i]], h2=hubs[own[j]];
+    g.fillStyle=shade((hubB[own[i]]+hubB[own[j]])/2+(v[1]<cy?.25:-.2)+(v[0]<0?.12:-.12));
+    g.beginPath(); g.moveTo(v[0],v[1]); g.lineTo(h1[0],h1[1]); g.lineTo(h2[0],h2[1]); g.closePath(); g.fill(); }
+  g.fillStyle=shade(hubB[0]+.2); g.beginPath(); g.moveTo(T[0],T[1]); g.lineTo(S[0],S[1]); g.lineTo(F[0],F[1]); g.closePath(); g.fill();
+  /* the edges between the planes: pale where the light catches them */
+  g.lineJoin='round'; g.lineWidth=Math.max(.6,W*.012);
+  for(let i=0;i<n;i++){ const a=P[i], h=hubs[own[i]]; g.strokeStyle=a[1]<cy?'rgba(255,250,236,.38)':'rgba(40,30,20,.22)'; g.beginPath(); g.moveTo(a[0],a[1]); g.lineTo(h[0],h[1]); g.stroke(); }
+  g.strokeStyle='rgba(255,250,236,.3)'; g.beginPath(); g.moveTo(T[0],T[1]); g.lineTo(F[0],F[1]); g.moveTo(T[0],T[1]); g.lineTo(S[0],S[1]); g.stroke();
+  /* fine cracks */
+  g.strokeStyle='rgba(255,250,236,.5)'; g.lineWidth=Math.max(.5,W*.009);
+  for(let k=0;k<2+Math.floor(r()*2);k++){ const h=hubs[Math.floor(r()*3)], a=r()*Math.PI*2, l=W*(.08+r()*.14);
+    g.beginPath(); g.moveTo(h[0],h[1]); const x1=h[0]+Math.cos(a)*l*.55, y1=h[1]+Math.sin(a)*l*.4; g.lineTo(x1,y1); g.lineTo(x1+Math.cos(a+.7)*l*.45,y1+Math.sin(a+.7)*l*.3); g.stroke(); }
+  g.fillStyle='rgba(40,30,20,.3)'; for(let k=0;k<2;k++){ const x=(r()-.3)*W*.5, y=-H*(.2+r()*.5); g.beginPath(); g.moveTo(x,y); g.lineTo(x+W*.04,y+H*.02); g.lineTo(x+W*.01,y+H*.06); g.closePath(); g.fill(); }
+  /* the outline */
+  g.strokeStyle='rgba(38,30,22,.45)'; g.lineWidth=Math.max(.8,W*.014); g.beginPath(); P.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); g.closePath(); g.stroke();
+  return {cv,ax:cw/2,ay:top+H,cw,ch};
+}
+function drawRock(g,x,y,W,H,pal,seed){
+  if(!cacheDpr) cacheDpr=typeof DPR!=='undefined'?DPR:1;
+  const q=v=>Math.max(4,Math.round(v/2)*2), Wq=q(W), Hq=q(H), key=[pal,Wq,Hq,seed%29,cacheDpr].join('|');
+  let e=rockCache.get(key); if(!e){ if(rockCache.size>500) rockCache.clear(); e=paintRock(Wq,Hq,pal,seed%29); rockCache.set(key,e); }
+  g.drawImage(e.cv,Math.round(x-e.ax),Math.round(y-e.ay),e.cw,e.ch);
+}
+GFX.rock=drawRock;
+/* the ground a mountain tile stands on: the nearest open ground, found once per map */
+const GROUNDY={grass:1,sand:1,dirt:1,path:1,mud:1,snow:1};
+function rockGround(map){
+  if(map._gfxRockG) return map._gfxRockG;
+  const W=map.w, H=map.h, G=new Int16Array(W*H).fill(-1), q=[];
+  for(let i=0;i<W*H;i++){ const id=map.tiles[i]; if(GROUNDY[KIND[id]]){ G[i]=id; q.push(i); } }
+  for(let h=0;h<q.length;h++){ const i=q[h], x=i%W, y=(i/W)|0;
+    for(const [dx,dy] of [[1,0],[-1,0],[0,1],[0,-1]]){ const xx=x+dx, yy=y+dy; if(xx<0||yy<0||xx>=W||yy>=H) continue; const j=yy*W+xx; if(G[j]>=0) continue; G[j]=G[i]; q.push(j); } }
+  for(let i=0;i<W*H;i++) if(G[i]<0) G[i]=T.DIRT;
+  return (map._gfxRockG=G);
+}
+function hashT(x,y,k){ let h=(x*374761393+y*668265263+k*2246822519)|0; h=(h^(h>>>13))*1274126177|0; return ((h^(h>>>16))>>>0)/4294967296; }
+/* the boulders for the mountain tiles in view, as things standing on the map */
+function rockItems(map,x0,x1,y0,y1){
+  const out=[], G=rockGround(map), MT=T.MTN, W=map.w;
+  for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){
+    if(map.tiles[y*W+x]!==MT) continue;
+    const at=(xx,yy)=>xx<0||yy<0||xx>=W||yy>=map.h||map.tiles[yy*W+xx]===MT;
+    const inner=at(x-1,y)&&at(x+1,y)&&at(x,y-1)&&at(x,y+1);
+    const k=KIND[G[y*W+x]], pal=(k==='grass'||k==='snow')?'grey':'tan';
+    const h1=hashT(x,y,1), h2=hashT(x,y,2), h3=hashT(x,y,3), h4=hashT(x,y,4);
+    const Wm=TILE*(1.3+.45*h1)*(inner?1.18:1), Hm=Wm*(.72+.3*h2);
+    if(inner||h2<.5){ const Wb=TILE*(.95+.35*h4); out.push({type:'gfxrock',x:x+.5+(h1<.5?-.3:.3),y:y+.5,_w:Wb,_h:Wb*(.7+.3*h3),_pal:pal,_seed:(x*29+y*113)>>>0}); }   /* one behind, to fill the pile */
+    out.push({type:'gfxrock',x:x+.5+(h3-.5)*.3,y:y+.97,_w:Wm,_h:Hm,_pal:pal,_seed:(x*131+y*71)>>>0});
+    if(!inner&&h4<.6){ const Ws=TILE*(.3+.22*h3); out.push({type:'gfxrock',x:x+(h4<.3?.14:.86),y:y+.99,_w:Ws,_h:Ws*(.6+.3*h1),_pal:pal,_seed:(x*57+y*193)>>>0}); }
+  }
+  return out;
 }
 let curCtx=null;
 let flowX=0, flowY=0, flowDown=false;
@@ -386,9 +477,16 @@ function hookDecor(map){
   if(!map||!map.decor||map.decor.__gfx) return;
   const arr=map.decor;
   const it=Array.prototype[Symbol.iterator];
-  Object.defineProperty(arr,Symbol.iterator,{configurable:true,value:function(){ if(curCtx) blendEdges(); return it.call(this); }});
+  Object.defineProperty(arr,Symbol.iterator,{configurable:true,value:function(){
+    if(!curCtx) return it.call(this);
+    blendEdges(); decorSeen=frame;
+    const rk=curRocks; if(!rk||!rk.length) return it.call(this);
+    const base=it.call(this); let i=0;
+    return {next(){ const r=base.next(); if(!r.done) return r; return i<rk.length?{value:rk[i++],done:false}:{value:undefined,done:true}; },[Symbol.iterator](){ return this; }};
+  }});
   Object.defineProperty(arr,'__gfx',{value:true});
 }
+let decorSeen=-1, curRocks=null;
 const _drawWorld=drawWorld;
 window.drawWorld=function(g,world,t){
   if(!GFX.on) return _drawWorld(g,world,t);
@@ -399,7 +497,20 @@ window.drawWorld=function(g,world,t){
   offY=VH/2-Camera.y+(Camera.shake?Math.cos(t/36)*Camera.shake*.7:0)+(Camera.sway?Math.sin(t/2600+1)*Camera.sway*.45:0);
   curCtx=g; curMap=world&&world.map; curWorld=world; curT=t; if(curMap) hookDecor(curMap);
   if(curMap){ const f=mapFlow(curMap); flowX=f[0]*t/1000*f[2]; flowY=f[1]*t/1000*f[2]; flowDown=f[1]===1; }
-  try{ _drawWorld(g,world,t); } finally { curCtx=null; curMap=null; curWorld=null; }
+  /* the mountain tiles: once the game is seen to lay its decor in depth order, each is drawn
+     as its ground with boulders piled on it that stand in the depth order with everyone */
+  const sw=[]; curRocks=null;
+  const m=curMap;
+  if(m&&!m.elev&&!GFX.noRocks&&m._gfxRockOK&&T.MTN!=null){
+    const x0=Math.max(0,Math.floor((Camera.x-VW/2)/TILE)-2), x1=Math.min(m.w-1,Math.ceil((Camera.x+VW/2)/TILE)+2);
+    const y0=Math.max(0,Math.floor((Camera.y-VH/2)/TILE)-2), y1=Math.min(m.h-1,Math.ceil((Camera.y+VH/2)/TILE)+3);
+    curRocks=rockItems(m,x0,x1,y0,y1);
+    if(curRocks.length){ const G=rockGround(m); for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++){ const i=y*m.w+x; if(m.tiles[i]===T.MTN){ sw.push(i); m.tiles[i]=G[i]; } } }
+  }
+  try{ _drawWorld(g,world,t); } finally {
+    for(const i of sw) m.tiles[i]=T.MTN;
+    if(m&&m._gfxRockOK===undefined&&m.decor) m._gfxRockOK=decorSeen===frame;
+    curCtx=null; curMap=null; curWorld=null; curRocks=null; }
   if(!GFX.noLight) light(g,world,t);
 };
 

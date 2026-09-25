@@ -31,7 +31,7 @@ that any device on the same Wi-Fi/router can open. See that folder's `README.txt
 Not needed for normal solo play.
 
 Each game is a single HTML file and works offline; two shared scripts beside it,
-`cinema.js` (the staged cutscenes) and `gfx.js` (the world's ground, trees, water and light),
+`cinema.js` (the staged cutscenes) and `gfx.js` (the world's ground, trees, rocks, water and light),
 add to every game and should be kept in the same folder:
 
 | File | Game | Unlocked by |
@@ -78,6 +78,11 @@ Beyond walking and talking, scenes use mechanics fitted to their stories:
 - **Collect / build / lead** — gather pitch for the ark, idols for the
   terebinth, lead the animals two by two, ride camels, lead the bull to the
   altar and the Azazel goat into the wilderness, build the sukkah, and more.
+- **Water** — rivers, lakes and the sea can be entered: at the edge the water
+  comes to the waist, further out to the neck, and in the deep you swim, more
+  slowly than you walk. Where the story itself is the crossing — the Sea of Reeds
+  before it parts, the Yarděn before the ark stands in it, the fords at Shibboleth
+  — the deep stays closed and only the shallows can be waded.
 - **Discern / choose** — judge the creatures clean or unclean by their signs,
   examine the leper as the kohen, cast the lots of Yom haKippurim, and hear
   the blessing and the curse of the covenant.
@@ -110,8 +115,11 @@ fight and leave in time with the verse, with crowds, props, weather and effects
 (fire from heaven, the pillar of cloud, rain, glory). The verse is shown beneath
 as a caption that comes up part by part; a tap shows the rest of it, the next tap
 moves on. YAHUAH is never drawn as a person — only as light, cloud and fire. The
-mal'akim are drawn as men, brown like everyone else in the games, with no wings. Crowds
-that go through the sea or the Yarděn are seen from behind as they walk into it. The
+mal'akim are drawn as men, brown and dark-haired like everyone else in the games, with
+no wings. Crowds that go through the sea or the Yarděn are seen from behind as they walk
+into it. Everyone keeps to the ground the set gives them: no one stands on the walls of
+the parted sea or on open water (those swept away are drawn in it), and the pillar of
+fire and of cloud stands far off in the scene rather than under anyone's feet. The
 stage for each slide is written in the slide's `stage` field and drawn by
 `cinema.js`; a slide without one (or a copy of a game without the file) shows its
 own painting as before.
