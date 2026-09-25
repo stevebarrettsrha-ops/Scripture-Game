@@ -1088,7 +1088,7 @@ const Stage={
       const sp=steps[i]; if(st<sp.T) break;
       const nextT=i+1<steps.length?Math.max(sp.T,steps[i+1].T):Infinity, now=Math.min(st,nextT), e=now-sp.T;
       const dest=sp.exit==='l'?-.15:sp.exit==='r'?1.15:(sp.to!=null?sp.to:x);
-      const moving=Math.abs(dest-x)>.001, walkT=moving?Math.abs(dest-x)*VW/(sp.run?260:115)*1000:0;
+      const moving=Math.abs(dest-x)>.001, walkT=moving?Math.abs(dest-x)*(sp.run?3600:7400):0;   /* the same pace on any screen width */
       const target=sp.pose?(POSES[sp.pose]||POSES.stand):(i===0?(POSES[a.pose]||POSES.stand):(prev||POSES.stand));
       if(moving){ face=dest<x?'l':'r'; }
       if(moving&&e<walkT){ x=lerp(x,dest,e/walkT); pose=sp.run?POSES.run:POSES.walk; walking=true; prev=POSES.stand; if(now===st) break; walking=false; continue; }
