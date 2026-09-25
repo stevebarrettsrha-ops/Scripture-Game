@@ -523,7 +523,7 @@ prop('gate',(g,x,y,s,t,o)=>{ const u=s/100, w=u*(o.w||150), hh=u*(o.h||120), c=o
 prop('wall',(g,x,y,s,t,o)=>{ const u=s/100, w=VW*(o.w||1.2), hh=u*(o.h||90), c=o.color||'#b0a080';
   g.fillStyle=c; g.fillRect(x-w/2,y-hh,w,hh); g.fillStyle=shd(c,-.2); for(let i=0;i*u*12<w;i++) if(i%2===0) g.fillRect(x-w/2+i*u*12,y-hh-u*9,u*12,u*9);
   g.strokeStyle='rgba(40,30,20,.22)'; g.lineWidth=u*.6; for(let r=1;r<7;r++){ g.beginPath(); g.moveTo(x-w/2,y-hh*r/7); g.lineTo(x+w/2,y-hh*r/7); g.stroke(); }
-  if(o.broken){ g.fillStyle=Stage._skyAt||'#888'; for(const bx of[-.2,.15]){ poly(g,[[x+bx*w,y-hh-u*10],[x+bx*w+u*40,y-hh-u*10],[x+bx*w+u*30,y-hh*.4],[x+bx*w+u*12,y-hh*.55]]); g.fill(); } } });
+  if(o.broken){ g.fillStyle=Stage._skyGrad||'#888'; for(const bx of[-.2,.15]){ poly(g,[[x+bx*w,y-hh-u*10],[x+bx*w+u*40,y-hh-u*10],[x+bx*w+u*30,y-hh*.4],[x+bx*w+u*12,y-hh*.55]]); g.fill(); } } });
 prop('tower',(g,x,y,s,t,o)=>{ const u=s/100, hh=u*(o.h||200), c=o.color||'#a89070', tiers=o.tiers||6;
   for(let i=0;i<tiers;i++){ const w=u*(90-i*12), y0=y-hh*i/tiers, y1=y-hh*(i+1)/tiers; g.fillStyle=shd(c,-(i%2)*.1);
     poly(g,[[x-w/2,y0],[x+w/2,y0],[x+w/2-u*5,y1],[x-w/2+u*5,y1]]); g.fill(); g.fillStyle='rgba(20,14,8,.35)'; g.fillRect(x-u*4,y0-u*12,u*8,u*10); }
@@ -680,7 +680,7 @@ function set(name,def){ SETS[name]=def; }
 function skyPaint(g,H,r,o){
   o=o||{};
   const hz=VH*(o.hz||.5);
-  g.fillStyle=lin(g,0,0,0,hz,[[0,H.sky[0]],[.6,H.sky[1]],[1,H.sky[2]]]); g.fillRect(0,0,VW,hz+2);
+  Stage._skyGrad=lin(g,0,0,0,hz,[[0,H.sky[0]],[.6,H.sky[1]],[1,H.sky[2]]]); g.fillStyle=Stage._skyGrad; g.fillRect(0,0,VW,hz+2);
   if(H===HOURS.night){ for(let i=0;i<180;i++){ const x=r()*VW, y=r()*hz*.95, s=r()<.1?1.8:1; g.fillStyle='rgba(235,238,255,'+(.25+r()*.6).toFixed(2)+')'; g.fillRect(x,y,s,s); }
     const mx=VW*(.15+r()*.7), my=hz*(.18+r()*.2); glow(g,mx,my,VH*.12,'#dfe6ff',.28); g.fillStyle='#eef0f8'; g.beginPath(); g.arc(mx,my,VH*.028,0,TAU); g.fill(); }
   else if(H.sun&&!o.noSun){ const sx=VW*(H.lx>0?.78:.22)+(r()-.5)*VW*.1, sy=hz*(H===HOURS.day||H===HOURS.noon?.25:.82);
