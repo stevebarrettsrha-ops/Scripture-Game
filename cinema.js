@@ -280,7 +280,7 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
     const flap=Math.sin(t/520)*.08;
     g.save(); g.translate(J.sh[0]-u*4,J.sh[1]+u*5);
     for(const k of [1,.78]){
-      g.fillStyle=k===1?'rgba(250,247,236,.96)':'rgba(222,216,198,.92)';
+      g.fillStyle=L.darkAngel?(k===1?'rgba(44,34,48,.96)':'rgba(30,24,34,.92)'):(k===1?'rgba(250,247,236,.96)':'rgba(222,216,198,.92)');
       g.beginPath(); g.moveTo(0,0);
       g.bezierCurveTo(-u*28*k,-u*(40+flap*60)*k,-u*60*k,-u*(12+flap*40)*k,-u*52*k,u*36*k);
       g.bezierCurveTo(-u*36*k,u*26*k,-u*22*k,u*32*k,-u*6,u*28);
@@ -290,7 +290,8 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
     }
     g.restore();
   }
-  if(L.robeGlow||L.glow||L.angel) glow(g,J.sh[0],J.sh[1]+u*12,h*.62,L.angel?'#fff6d8':'#fff0c0',.32);
+  if(L.darkAngel) glow(g,J.sh[0],J.sh[1]+u*12,h*.6,'#3a1030',.3);
+  else if(L.robeGlow||L.glow||L.angel) glow(g,J.sh[0],J.sh[1]+u*12,h*.62,L.angel?'#fff6d8':'#fff0c0',.32);
   const armW=u*8.6, legW=u*9.5;
   /* far arm and leg */
   limb(g,[along(J.sh,-u*2,u*3),J.eB,J.hB],armW,robeDark,out,ow);
@@ -369,7 +370,7 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
   if(L.helmet){ g.fillStyle=lin(g,-hr,0,hr,0,[[0,shd(L.helmet,-.3)],[.6,css(rgb(L.helmet))],[1,shd(L.helmet,.2)]]); g.beginPath(); g.arc(0,-hr*.12,hr*1.05,PI*.98,TAU+.05); g.closePath(); g.fill(); g.fillRect(-hr*1.05,-hr*.2,hr*.5,hr*.95);
     g.strokeStyle=out; g.lineWidth=ow; g.stroke();
     if(L.crest){ g.fillStyle=L.crest; smooth(g,[[-hr*1.1,-hr*.9],[-hr*.4,-hr*1.55],[hr*.5,-hr*1.25],[hr*.1,-hr*1.0]]); g.fill(); } }
-  if(L.halo||L.angel){ g.strokeStyle='rgba(255,236,170,.75)'; g.lineWidth=u*1; ell(g,0,-hr*1.35,hr*.9,hr*.26); g.stroke(); }
+  if((L.halo||L.angel)&&!L.darkAngel){ g.strokeStyle='rgba(255,236,170,.75)'; g.lineWidth=u*1; ell(g,0,-hr*1.35,hr*.9,hr*.26); g.stroke(); }
   g.restore();
   /* near arm, sleeve and hand, and what it holds */
   limb(g,[along(J.sh,u*2,u*3),J.eF,J.hF],armW*1.04,robeLit,out,ow);
