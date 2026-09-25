@@ -1575,11 +1575,10 @@ const Stage={
       if(p.fireAt!=null) o.fire=st>=this.beatTime(p.fireAt);
       if(p.riderAt!=null&&st<this.beatTime(p.riderAt)) o.rider=null;
       if(p.liftAt!=null&&st>=this.beatTime(p.liftAt)){ const k=ease((st-this.beatTime(p.liftAt))/4500); y-=k*(p.lift||.45)*VH; o.move=1; } }
-    /* a chariot or horse in the sea goes down: the head above the waves, the rest dim beneath them */
+    /* a chariot or horse in the sea goes down under it: only the horse's head above the waves */
     if((p.k==='chariot'||p.k==='horse'||p.k==='chariotback')&&(p.dy||0)>=-.03&&this.wetAt(x,y)){
       const wl=y+Math.sin(t/700+x)*s*.01, yd=y+s*.62;
       g.save(); if(p.at!=null) g.globalAlpha*=ease((st-at)/700);
-      g.save(); g.beginPath(); g.rect(x-s*3,wl,s*6,s*4); g.clip(); g.globalAlpha*=.32; g.filter='brightness(.45) saturate(.5)'; fn(g,x,yd,s,t,o); g.restore();
       g.beginPath(); g.rect(x-s*3,yd-s*4,s*6,wl-(yd-s*4)); g.clip(); fn(g,x,yd,s,t,o); g.restore();
       ripples(g,x+s*.55*(p.face==='l'?-1:1),wl,s*.4,t,x); ripples(g,x,wl,s*.6,t,x+1); return; }
     const surf=p.k==='fish'&&(p.dy||0)>=-.03&&this.wetAt(x,y);             /* the great fish breaks the surface */
