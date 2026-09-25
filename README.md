@@ -120,6 +120,10 @@ no wings. Crowds that go through the sea or the Yarděn are seen from behind as 
 into it. Everyone keeps to the ground the set gives them: no one stands on the walls of
 the parted sea or on open water (those swept away are drawn in it), and the pillar of
 fire and of cloud stands far off in the scene rather than under anyone's feet. The
+beasts are drawn in profile from their own proportions — horses, donkeys, camels, oxen,
+sheep, goats, rams, lions, leopards, bears, dogs — with jointed legs, hooves or paws,
+manes, horns, humps and wool; Behemoth is a great mammoth and Liwyathan a long-necked
+serpent of the sea, in the cutscenes and in the world alike. The
 stage for each slide is written in the slide's `stage` field and drawn by
 `cinema.js`; a slide without one (or a copy of a game without the file) shows its
 own painting as before.

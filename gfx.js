@@ -225,6 +225,7 @@ if(typeof drawProp==='function'){
     if(!GFX.on||!p) return _drawProp(g,px,py,p,t);
     const ty=p.type;
     if(ty==='gfxrock'){ drawRock(g,px,py,p._w,p._h,p._pal,p._seed); return; }
+    if(ty==='liwyathan'&&window.Stage&&Stage.props&&Stage.props.liwyathan){ Stage.props.liwyathan(g,px,py,PERSON()*1.8,t,{face:p.face||'l',fire:p.fire}); return; }
     if(ty==='rock'&&!p.color&&!p.col){ const u=2.6*(TILE/40)*((typeof PROP_SCALE!=='undefined'&&PROP_SCALE.rock)||1);
       const m=curMap, k=m?KIND[m.tiles[Math.floor(p.y||0)*m.w+Math.floor(p.x||0)]]:'dirt';
       drawRock(g,px,py,10*u,7*u,(k==='grass'||k==='snow')?'grey':'tan',Math.round((p.x||0)*97+(p.y||0)*61)>>>0); return; }
@@ -325,6 +326,18 @@ function rockItems(map,x0,x1,y0,y1){
     if(!inner&&h4<.6){ const Ws=TILE*(.3+.22*h3); out.push({type:'gfxrock',x:x+(h4<.3?.14:.86),y:y+.99,_w:Ws,_h:Ws*(.6+.3*h1),_pal:pal,_seed:(x*57+y*193)>>>0}); }
   }
   return out;
+}
+/* ============================== the great beasts ==============================
+   Behemoth and Liwyathan in the world are the cutscenes' own: the mammoth of the
+   grassland and the long-necked serpent of the deep, at the size of the world's people. */
+const PERSON=()=>TILE*1.55;
+if(typeof drawAnimal==='function'){
+  const _drawAnimal=drawAnimal;
+  window.drawAnimal=function(g,px,py,type,o){
+    const P=window.Stage&&Stage.props;
+    if(type==='behemoth'&&GFX.on&&P&&P.behemoth){ o=o||{}; P.behemoth(g,px,py,PERSON()*1.35,o.t||0,{face:o.dir==='left'?'l':'r'}); return; }
+    return _drawAnimal.apply(this,arguments);
+  };
 }
 let curCtx=null;
 let flowX=0, flowY=0, flowDown=false;
