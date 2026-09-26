@@ -30,9 +30,10 @@ from one machine with **no internet**. Run `host-windows.bat` / `host-mac.comman
 that any device on the same Wi-Fi/router can open. See that folder's `README.txt`.
 Not needed for normal solo play.
 
-Each game is a single HTML file and works offline; two shared scripts beside it,
-`cinema.js` (the staged cutscenes) and `gfx.js` (the world's ground, trees, rocks, water, animals and light),
-add to every game and should be kept in the same folder:
+Each game is a single HTML file and works offline; three shared scripts beside it,
+`cinema.js` (the staged cutscenes), `gfx.js` (the world's ground, trees, rocks, water, animals and light)
+and `play.js` (the fights, the struggles, the dodge and controllers), add to every game and should be kept
+in the same folder:
 
 | File | Game | Unlocked by |
 |---|---|---|
@@ -51,30 +52,40 @@ begin at the Flood.
 | Action | Keyboard | Touch | Controller |
 |---|---|---|---|
 | Move | WASD / Arrow keys | virtual joystick | left stick / d-pad |
-| Interact / advance text | E, Space or Enter | ✦ button, or tap | A / Start |
+| Interact / advance text / strike | E, Space or Enter | ✦ button, or tap | A / Start |
+| Dodge (in a fight or a flight) | Shift, Q or X | ⤳ button | X or RB |
 | Previous slide | Backspace / ← | on-screen button | — |
 | Skip a chapter's opening verses (chapters already finished) | — | Skip ⟩⟩ button | — |
 | Chapter menu | Esc / ☰ | ☰ button | B |
 | Story log (every line so far) | 📜 | 📜 button | — |
 | Fullscreen / sound | ⛶ / ♪ | ⛶ / ♪ | — |
 
-Any Bluetooth or USB gamepad paired to your computer works — the browser
-picks it up automatically through the standard Gamepad API, so there's
-nothing to install or configure. Pair it in your OS, then press a button
-in the game to connect.
+Any Bluetooth or USB gamepad paired to your computer works in every game — the
+browser picks it up automatically through the standard Gamepad API, so there's
+nothing to install or configure. Pair it in your OS, then press a button in the
+game to connect. It rumbles when you are struck.
 
 ## Mechanics
 
 Beyond walking and talking, scenes use mechanics fitted to their stories:
 
-- **Struggle** — press repeatedly to hold on: wrestling the Man at Peni'al
-  until daybreak, digging the wells of Gerar, standing the penance in the sea,
-  staying up the hands of Mosheh against Amaleq.
+- **Struggle** — press repeatedly to hold on (or hold the button down): wrestling
+  the Man at Peni'al until daybreak, digging the wells of Gerar, standing the
+  penance in the sea, staying up the hands of Mosheh against Amaleq.
 - **Battle** — fight groups of foes: Aḇram's night rescue of Lot, Shim'on and
-  Lĕwi at Sheḵem, the Amorite kings, the serpents of Kush, the shepherds of
-  Miḏyan, and the war with Amaleq.
+  Lĕwi at Sheḵem, the Amorite kings, Benayah and the lion, and more. You have
+  five hearts; strike with ✦ / E (a blow swings at the foes before you, and a
+  third blow in a row throws a foe back) and dodge with ⤳ / Shift. Foes circle,
+  guard against idle blows, and gather themselves before they strike — a red
+  warning — so step aside and strike as they recover. If your strength fails
+  you rise and fight on, and the foes grow slower; the fight is always won.
+- **The wars of Yasharal** — the great battles (Yeriḥo, Giḇ‛on, Miḵmash,
+  Gilboa…) are fought on their own field: spur the host with a tap or Space,
+  and give the orders — Charge (1), Arrows (2), Shields (3) — each ready again
+  after a time. The outcome is the scripture's own.
 - **Chase** — flee a pursuer: Potiphar's wife to the door, the serpent to the
-  cave, a giant on Mount Ḥermon, Pharaoh's chariots at the Sea of Reeds.
+  cave, a giant on Mount Ḥermon. The dodge carries you clear; if the pursuer
+  reaches you it throws you forward and must gather itself again.
 - **Collect / build / lead** — gather pitch for the ark, idols for the
   terebinth, lead the animals two by two, ride camels, lead the bull to the
   altar and the Azazel goat into the wilderness, build the sukkah, and more.
