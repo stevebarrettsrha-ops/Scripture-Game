@@ -118,9 +118,11 @@ const GIANT=/\b(giant|nephil\w*|golyath|goliath|anaq\w*|rapha\w*)\b/;
 /* the part a character plays: what sort of voice, and the key that keeps one person one voice
    through every costume and every chapter (Aḏam in the garden, Aḏam in skins) */
 /* the name a person is known by, whatever they are called in a scene: Dawiḏ, Dawiḏ the
-   Sovereign and Dawiḏ son of Yahshai are one man with one voice; Aḇram is Aḇraham */
+   Sovereign and Dawiḏ son of Yahshai are one man with one voice; Aḇram is Aḇraham, and in
+   Berĕshith the old man called Yasharal is Ya‘aqoḇ (in the books after it, Yasharal is his people) */
+const PAGE=((location.pathname||'').split('/').pop()||'index.html').replace(/\.html$/,'');
 const TITLE=new Set(['sovereign','sovereigness','king','queen','prince','princess','prophet','nabi','kohen','priest','lord','captain','commander','general','chief','high']);
-const ALIAS={abram:'abraham',sarai:'sarah'};
+const ALIAS=Object.assign({abram:'abraham',sarai:'sarah'},PAGE==='index'?{yasharal:'yaaqob'}:{});
 const GENERIC=new Set(['his','her','their','my','our','your','one','some','certain','another','young','old','first','second','third','fourth','fifth','sixth','seventh','all','many','shining','voice']);
 function canon(name,id){
   let k=nameKey(String(name||'').replace(/(\S+)[’']s\s+(\S+)/,'$2 of $1'));
@@ -257,10 +259,12 @@ const ROLE_NOUN={ woman:'woman', women:'woman', wife:'woman', mother:'woman', da
   sovereigness:'woman', maid:'woman', widow:'woman', sister:'woman', harlot:'woman', midwife:'woman', midwives:'woman', prophetess:'woman',
   man:'man', servant:'man', servants:'man', king:'man', sovereign:'man', prophet:'man', kohen:'man', priest:'man', shepherd:'man',
   watchman:'man', captain:'man', officer:'man', officers:'man', soldier:'man', steward:'man', elder:'oldman', elders:'crowd',
-  men:'crowd', people:'crowd', sons:'crowd', brothers:'crowd', crowd:'crowd', multitude:'crowd', assembly:'crowd', congregation:'crowd',
+  men:'crowd', people:'crowd', sons:'crowd', children:'crowd', tribes:'crowd', leaders:'crowd', rulers:'crowd', princes:'crowd',
+  house:'crowd', chiefs:'crowd', nobles:'crowd', commanders:'crowd', kohanim:'crowd', priests:'crowd', nabiim:'crowd', qahal:'crowd',
+  commander:'man', herald:'man', nabi:'man', brothers:'crowd', crowd:'crowd', multitude:'crowd', assembly:'crowd', congregation:'crowd',
   serpent:'serpent', boy:'boy', lad:'boy', youth:'boy', girl:'girl', child:'boy' };
 const NOT_NAME=new Set(['at','ease','fair','the','a','an','and','then','now','so','but','when','after','o','i','my','his','her','their','your','our','one','all','this','that','these','those','there','thus','for','yet','behold','see','come','go','let','in','on','to','of','from','he','she','they','it','we','you','who','what','if','as','because','therefore','also','again','not','no','with','by','before','who','which']);
-const SPEECH_V=/^(said|says|say|spoke|speaks|speak|spake|answered|answers|answer|called|calls|cried|cries|cry|asked|asks|replied|replies|declares|declared|commanded|commands|shouted|shouts|prayed|prays|sang|sings|sing|wrote|writes|told|tells|swore|proclaimed|proclaims|lamented|blessed|charged|vowed|exclaimed|whispered|besought|pleaded|saying)$/i;
+const SPEECH_V=/^(said|says|say|wept|inquired|enquired|spoke|speaks|speak|spake|answered|answers|answer|called|calls|cried|cries|cry|asked|asks|replied|replies|declares|declared|commanded|commands|shouted|shouts|prayed|prays|sang|sings|sing|wrote|writes|told|tells|swore|proclaimed|proclaims|lamented|blessed|charged|vowed|exclaimed|whispered|besought|pleaded|saying)$/i;
 let nameIndex=null;
 function names(){
   if(nameIndex) return nameIndex;
@@ -275,8 +279,12 @@ function names(){
   return nameIndex;
 }
 function toks(s){
-  const out=[], re=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+|[,;:—–(]/g; let m;
-  while((m=re.exec(s))){ const raw=m[0]; out.push({raw,k:nameKey(raw),p:/^[,;:—–(]$/.test(raw),poss:/[a-z][’']s$/i.test(raw)}); }
+  const out=[], re=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+|[,;:—–(…]/g; let m;
+  while((m=re.exec(s))){ const raw=m[0];
+    /* "the visions of the night… And Aluahim spoke": the ellipsis ends a clause where a new
+       sentence follows it, but not where it only leaves words out ("bowed … on the pavement") */
+    if(raw==='…'){ const nx=(s.slice(re.lastIndex).match(/[A-Za-zÀ-ɏḀ-ỿ]/)||[''])[0]; if(!nx||nx===nx.toLowerCase()) continue; }
+    out.push({raw,k:nameKey(raw),p:/^[,;:—–(…]$/.test(raw),poss:/[a-z][’']s$/i.test(raw)}); }
   return out;
 }
 function castPick(cast,pred){
@@ -294,24 +302,67 @@ function whoOf(T,i,cast){
   if(DIVINE.has(k)){ if(k==='yah'&&raw!=='Yah') return null; if(k==='voice'&&pk!=='a'&&pk!=='the') return null; return 'voice'; }
   if(ANGEL.has(k)) return castPick(cast,c=>c.angel&&!c.darkAngel)||(C.malak?'malak':{kind:'angel',key:'malak'});
   if(DARK.has(k)) return castPick(cast,c=>c.darkAngel)||{kind:'dark',key:k};
-  if(SUBJ_PRON[k]){ if(raw==='He'&&i>0&&!T[i-1].p) return 'voice'; return {pron:SUBJ_PRON[k]}; }
+  if(SUBJ_PRON[k]){ if(raw==='He'&&i>0&&!T[i-1].p) return 'voice'; return {pron:SUBJ_PRON[k],lower:raw===k}; }
+  /* in the books of the naḇi’im, "you shall say" is the naḇi sent to say it */
+  if(k==='you'&&ORACLES.test(PAGE)&&T[i+1]){
+    if(/^(shall|are)$/.test(T[i+1].k)) return names().get(PAGE.replace(/^book-of-/,''))||null;
+    if(SPEECH_V.test(T[i+1].raw)) return {kind:'crowd',key:'people'};                 /* "yet you say, “Why?”" — the people */
+  }
+  /* "And I said, “O Master YAHUAH …”" — the naḇi telling it */
+  if(raw==='I'&&ORACLES.test(PAGE)&&T[i+1]&&SPEECH_V.test(T[i+1].raw)) return names().get(PAGE.replace(/^book-of-/,''))||null;
+  /* the books told by the one they are about: "I shook out my garment and said" is Neḥemyah */
+  if((raw==='I'||k==='we')&&MEMOIR.test(PAGE)) return names().get(PAGE.replace(/^book-of-/,''))||null;
   if(cap&&!NOT_NAME.has(k)){
     const id=names().get(k);
+    if(id&&k==='yasharal'&&PAGE!=='index') return {kind:'crowd',key:'yasharal'};
     if(id){ const nk=nameKey((C[id]||{}).name); return castPick(cast,c=>nameKey(c.name)===nk)||id; }
     /* a name the story gives no figure: a voice of its own all the same */
+    if(/(ites|ians)$/.test(k)) return {kind:'crowd',key:k};        /* the Ziphites, the Amorites */
     if(/[^\x00-\x7f]/.test(raw)||(T[i+1]&&/^(son|daughter)$/.test(T[i+1].k))) return {kind:'man',key:k};
   }
   const r=ROLE_NOUN[k];
   if(r){
     const nx=T[i+1]&&!T[i+1].p?whoOf(T,i+1,cast):null;     /* a title before a name: Sovereign Dawiḏ */
     if(nx&&typeof nx==='string'&&nx!=='voice') return nx;
-    return castPick(cast,c=>nameKey(c.name).split(/[\s,]+/).includes(k))||(r==='serpent'&&C.serpent_c?'serpent_c':{kind:r,key:k});
+    return castPick(cast,c=>nameKey(c.name).split(/\s+of\s+/)[0].split(/[\s,]+/).includes(k))||(r==='serpent'&&C.serpent_c?'serpent_c':{kind:r,key:k});
   }
   return null;
 }
+/* a name that follows "to", "of", "against" … or is called on ("O children of Yasharal") is not the one speaking: "Mosheh spoke these words
+   to all Yasharal, and he said" — he is Mosheh; "the sovereign of Yasharal … he said" — the
+   sovereign; "after summoning Hermon he said" — not Hermon. His Name after "of" still speaks:
+   "the word of YAHUAH came to Yonah, saying" */
+const MEMOIR=/^book-of-(nehemyah|ezra|yehezqel|zekaryah|daniyal|tobit)$/;
+const PREP=new Set(['o','between','to','unto','of','over','against','from','with','before','upon','into','toward','towards','among','at','in','on','behind','through']);
+const DET=new Set(['all','the','a','an','his','her','their','its','my','our','your','whole','entire','every','this','that']);
+const DEED=new Set(['summoned','summoning','sent','sending','saw','seeing','heard','hearing','took','taking','brought','bringing','told','telling',
+  'blessed','blessing','met','meeting','found','finding','struck','smote','killed','anointed','gathered','gathering','commanded','commanding','charged',
+  'called','name','named']);
+const capT=t=>t.raw[0]!==t.raw[0].toLowerCase();
+const STARTS=new Set(['and','then','so','but','now','when','thus','o','in','the','a','an','after','before','therefore']);
+/* the word that governs the one at i: "to all Yasharal", "summoning Hermon", "against Mosheh and
+   Aharon", "called its name Eḇen Ezer" — or none */
+function govBy(T,i,noAnd){
+  const p=T[i-1];
+  if(p&&!p.p&&capT(p)&&capT(T[i])&&!STARTS.has(p.k)) return govBy(T,i-1,noAnd);      /* the rest of a name */
+  const pro=/^(you|we|i)$/.test(T[i].k);                                               /* "In that you say": no "the" before a "you" */
+  let j=i-1; while(j>=0&&(T[j].raw==='('||(!pro&&!T[j].p&&DET.has(T[j].k)))) j--;     /* O (YAHUAH) HWHY */
+  if(j<0||T[j].p) return null;
+  const g=T[j].k;
+  if(g==='and') return !noAnd&&j>0&&!T[j-1].p&&capT(T[j-1])?govBy(T,j-1):null;
+  return PREP.has(g)||DEED.has(g)?g:null;
+}
+function governed(T,i,w,noAnd){ const g=govBy(T,i,noAnd); return !!g&&!(w==='voice'&&g==='of'); }
 const sexOfWho=w=>{ if(w==='voice') return 'm'; const k=person(w).kind; return /woman|girl/.test(k)?'f':k==='crowd'?'crowd':'m'; };
-function antecedent(T,i,sex,cast){
-  for(let j=i-1;j>=0;j--){ const w=whoOf(T,j,cast); if(!w||w.pron) continue; if(sexOfWho(w)===sex) return w; }
+/* whom "he" means: the last one named who is doing, not done to — and failing that, the last one
+   named ("the Ruach came upon Sha’ul when he heard"); a small "he" is never YAHUAH, whose "He" is
+   written large */
+function antecedent(T,i,sex,cast,lower,loose){
+  for(let j=i-1;j>=0;j--){
+    let w=whoOf(T,j,cast);
+    if(!w&&loose&&T[j].poss){ const raw=T[j].raw.replace(/[’']s$/,''); w=whoOf([{raw,k:nameKey(raw),p:false,poss:false}],0,cast); }   /* "Yonah’s head … he" */
+    if(!w||w.pron||(lower&&w==='voice')||(!loose&&governed(T,j,w))) continue;
+    if(sexOfWho(w)===sex) return w; }
   return null;
 }
 /* the speaker a stretch of narration names: the subject of its verb of speaking — "And Mosheh
@@ -323,23 +374,50 @@ function subjectOf(lead,cast){
      among the nations, saying" — the messenger speaks */
   let v=-1; for(let i=T.length-1;i>=0;i--) if(SPEECH_V.test(T[i].raw)){ v=i; break; }
   if(v<0) return null;
+  const after=()=>{ for(let i=v+1;i<Math.min(T.length,v+4);i++){
+    if(T[i].p||T[i].k==='to'||T[i].k==='unto') break;
+    const w=whoOf(T,i,cast); if(w&&!w.pron) return w; } return null; };
+  if(v>0&&/^(thus|so)$/.test(T[v-1].k)){ const w=after(); if(w) return w; }          /* thus said YAHUAH */
+  /* "Then YAHUAH commanded the mal’ak and he returned his sword … “This is the House”": something
+     was done after the command, so the words that follow are not it */
+  const cap=t=>t.raw[0]!==t.raw[0].toLowerCase();
+  for(let m=v+1;m+2<T.length&&!T[m].p;m++) if(T[m].k==='and'&&!T[m+1].p&&(SUBJ_PRON[T[m+1].k]||cap(T[m+1]))&&!T[m+2].p&&!cap(T[m+2])&&!PREP.has(T[m+2].k)&&!DET.has(T[m+2].k)&&!/^(and|son|daughter|the)$/.test(T[m+2].k)) return null;
+  /* "the rock-holds of Eḏom, who said in his heart" — the one before "who" */
+  if(v>0&&T[v-1].k==='who'){
+    let first=null;
+    for(let j=v-2,n=0;j>=0&&n<6;j--,n++){
+      if(T[j].p&&T[j].raw!=='—'&&T[j].raw!==',') break;
+      const w=whoOf(T,j,cast); if(!w||w.pron) continue;
+      if(first) return w;                                   /* "the sovereign of Baḇel, who": the sovereign */
+      first=w; if(!governed(T,j,w)) return w;
+    }
+    if(first) return first;
+  }
   let end=v;
-  for(let hop=0;hop<3&&end>0;hop++){
+  const pick=(a,b,noAnd)=>{ for(let i=a;i<b;i++){ const w=whoOf(T,i,cast); if(!w||(!w.pron&&governed(T,i,w,noAnd))) continue;
+      if(w.pron) return antecedent(T,i,w.pron,cast,w.lower)||Object.assign({T,at:i},w);
+      return w; } return null; };
+  for(let hop=0;hop<5&&end>0;hop++){
     let st=end-1; while(st>=0&&!T[st].p) st--;
-    for(let i=st+1;i<end;i++){ const w=whoOf(T,i,cast); if(!w) continue;
-      if(w.pron) return antecedent(T,i,w.pron,cast)||w;
-      return w; }
+    /* "the children of Yahuḏah came to Yahusha and Kalĕḇ … said" — the last one to start doing */
+    if(hop===0) for(let m=end-1;m>st+1;m--) if(T[m].k==='and'&&T[m+1]&&!T[m+1].p&&cap(T[m+1])){
+      if(cap(T[m-1])&&!govBy(T,m-1)) break;                     /* "Aḏam and Ḥawwah said": both of them */
+      const w=pick(m+1,end,true); if(w) return w; break; }
+    const w=pick(st+1,end); if(w) return w;
     end=st;
   }
-  for(let i=v+1;i<Math.min(T.length,v+4);i++){
-    if(T[i].p||T[i].k==='to'||T[i].k==='unto') break;
-    const w=whoOf(T,i,cast); if(w&&!w.pron) return w;
-  }
-  return null;
+  return after();
+}
+const TO_HIM=/^[“‘"\s…]*O (Master )?YAHUAH\b|\bmy Aluahim does\b|\bI look to YAHUAH\b/;
+/* the one spoken to: "he said to Ĕlisha" */
+function addressee(lead,cast){
+  const T=toks(lead); let v=-1; for(let i=T.length-1;i>=0;i--) if(SPEECH_V.test(T[i].raw)){ v=i; break; }
+  if(v<0||!T[v+1]||!/^(to|unto)$/.test(T[v+1].k)) return null;
+  let i=v+2; while(T[i]&&DET.has(T[i].k)) i++;
+  const w=whoOf(T,i,cast); return w&&!w.pron?w:null;
 }
 /* whose words a quotation holds when nothing names the speaker: in Wayyiqra and the books of the
    prophets, the words of YAHUAH; in Deḇarim, the words of Mosheh */
-const PAGE=((location.pathname||'').split('/').pop()||'index.html').replace(/\.html$/,'');
 const ORACLES=/^book-of-(vayiqra|yashayahu|yirmeyahu|yehezqel|hoshea|yoal|amos|obadyah|mikah|nahum|habaqquq|tsephanyah|haggai|zekaryah|malaki)$/;
 function bookSpeaker(){ if(ORACLES.test(PAGE)) return 'voice'; if(PAGE==='book-of-devarim') return chars().mosheh_o?'mosheh_o':(chars().mosheh?'mosheh':null); return null; }
 /* a passage cut into what the narrator reads and what each speaker says.
@@ -356,14 +434,15 @@ function passage(text,opts){
     const cut=Math.max(back.lastIndexOf('. '),back.lastIndexOf('! '),back.lastIndexOf('? '),back.lastIndexOf('”'));
     const lead=cut>=0?back.slice(cut+1):back;
     let who=null, s=null;
-    /* “Come,” he said, “let us go” — the same voice goes on */
+    /* “Come,” he said, “let us go” — the same voice goes on; but “Should I smite?” But he said,
+       “Do not smite” — another answers */
     if(lastQ){ const between=text.slice(lastQ.b,sp.a);
-      if(between.length<48&&/\b(said|says|saying|answered|replied|cried|called|declares)\b/i.test(between)){ const b=subjectOf(between,opts.cast); if(!b||b.pron) who=lastQ.who; } }
+      if(between.length<48&&/\b(said|says|saying|answered|replied|cried|called|declares)\b/i.test(between)&&!/^[\s”’"…]*(but|and|then|so|now)\b/i.test(between)){ const b=subjectOf(between,opts.cast); if(!b||(b.pron&&b.pron===sexOfWho(lastQ.who))) who=lastQ.who; } }
     /* a name given, not words spoken: it shall be called “The Way of Set-apartness” */
-    if(!who&&q.length<48&&/\b(called|named|name|call|names|written|inscribed|inscription)\b[^.!?]*$/i.test(lead)&&!/\b(said|saying|answered)\b[^.!?]*$/i.test(lead)) who='narrator';
+    if(!who&&q.length<48&&!/^[“"‘\s]*(for|because)\b/i.test(q)&&/\b(called|named|name|call|names|written|inscribed|inscription)\b[^.!?]*$/i.test(lead)&&!/\b(said|saying|answered)\b[^.!?]*$/i.test(lead)) who='narrator';
     if(!who){ s=subjectOf(lead,opts.cast); if(s&&!s.pron) who=s; }
     /* “I have loved you,” said YAHUAH */
-    if(!who&&!s){ const tail=text.slice(sp.b,sp.b+70).split(/[.!?“]/)[0];
+    if(!who&&!s&&/^[\s”’",]*[a-z]/.test(text.slice(sp.b,sp.b+12))){ const tail=text.slice(sp.b,sp.b+70).split(/[.!?“…]/)[0];
       if(/\b(said|says|answered|replied|declares|declared)\b/i.test(tail)){ const t=subjectOf(tail,opts.cast); if(t&&!t.pron) who=t; } }
     /* His own words, as the Besorah writes them, though the stage shows His naḇi */
     if(!who&&yahuahSpeaks(q)) who='voice';
@@ -376,9 +455,24 @@ function passage(text,opts){
       const sex=s.pron, prev=lastQ&&lastQ.who;
       if(sex==='crowd') who={kind:'crowd',key:'they'};
       else {
-        const cand=spoke.slice().reverse().find(w=>w!==prev&&w!=='voice'&&sexOfWho(w)===sex);
-        const castCand=(opts.cast||[]).map(c=>c&&c.id).find(id=>id&&id!=='voice'&&id!==prev&&chars()[id]&&sexOfWho(id)===sex);
-        who=cand||castCand||(prev&&sexOfWho(prev)===sex?prev:{kind:sex==='f'?'woman':'man',key:'someone'});
+        const same=(a,b)=>!!(a&&b)&&person(a).key===person(b).key, fits=w=>!!w&&w!=='narrator'&&sexOfWho(w)===sex&&!(s.lower&&w==='voice');
+        /* “…” And he said — the same one goes on, and "he said to them" is one speaking to many;
+           but “…?” But he said, And he answered, So she said to her — the other one speaks: the
+           one just spoken to, if the words were said to someone */
+        const L=toks(lead), done=w=>{ for(let j=0;j<L.length;j++){ const x=whoOf(L,j,opts.cast); if(x&&!x.pron&&governed(L,j,x)&&same(x,w)) return true; } return false; };
+        /* "said to her" answers only where no one else is named for "her" to be */
+        const named0=L.some((t,j)=>{ const x=whoOf(L,j,opts.cast); return !!x&&!x.pron; });
+        const reply=/\b(but|answered|answers|replied|replies)\b/i.test(lead)||(!named0&&new RegExp('\\b(to|unto)\\s+'+(sex==='f'?'her':'him')+'\\b','i').test(lead))||done(prev);
+        const near=!!lastQ&&text.slice(lastQ.b,sp.a).length<80;
+        if(fits(prev)&&(/\b(to|unto)\s+them\b/i.test(lead)||(near&&!reply))) who=prev;
+        else {
+          const to=lastQ&&lastQ.to;
+          const cand=(fits(to)&&to!=='voice'&&!same(to,prev)?to:null)||spoke.slice().reverse().find(w=>fits(w)&&w!=='voice'&&!same(w,prev));
+          const castCand=(opts.cast||[]).map(c=>c&&c.id).find(id=>id&&id!=='voice'&&!same(id,prev)&&chars()[id]&&fits(id));
+          /* and failing all, the one the telling last named, though something was done to him */
+          const named=s.T?antecedent(s.T,s.at,sex,opts.cast,s.lower,true):null;
+          who=cand||castCand||named||(fits(prev)?prev:{kind:sex==='f'?'woman':'man',key:'someone'});
+        }
       }
     }
     const bare=!/[A-Za-z]{2}/.test(lead);
@@ -388,7 +482,10 @@ function passage(text,opts){
     if(!who&&bare&&opts.prev) who=opts.prev;
     /* and where nothing tells, the narrator reads them rather than a stranger */
     if(!who) who=lastQ?lastQ.who:(bookSpeaker()||'narrator');
-    out.push({a:sp.a,b:sp.b,who}); lastQ={b:sp.b,who}; spoke.push(who);
+    /* words said to Him are never His: “O Master YAHUAH, please stop!”, “my Aluahim does hear me” */
+    if(who==='voice'&&TO_HIM.test(q)){ const c=(opts.cast||[]).map(c=>c&&c.id).find(id=>id&&id!=='voice'&&chars()[id]);
+      who=c||(ORACLES.test(PAGE)&&names().get(PAGE.replace(/^book-of-/,'')))||'narrator'; }
+    out.push({a:sp.a,b:sp.b,who}); lastQ={b:sp.b,who,to:addressee(lead,opts.cast)}; spoke.push(who);
   }
   return out.map(s=>({text:text.slice(s.a,s.b),who:s.who,a:s.a,b:s.b}));
 }
