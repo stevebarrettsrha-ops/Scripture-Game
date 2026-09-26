@@ -33,7 +33,9 @@ Not needed for normal solo play.
 Each game is a single HTML file and works offline; the shared scripts beside it,
 `cinema.js` (the staged cutscenes), `gfx.js` (the world's ground, trees, rocks, water, animals and light),
 `play.js` (the fights, the struggles, the dodge and controllers), `voice.js` (the
-spoken voices, see [Voices](#voices)) and `face.js` (the faces and speaking mouths), add to every game and should be kept in the same folder, with
+spoken voices, see [Voices](#voices)), `face.js` (the faces and speaking mouths) and `music.js` (the
+music: Mozart for the calm scenes, a smooth minor-key music in his manner for tense and stormy ones),
+add to every game and should be kept in the same folder, with
 the `voices/` folder of recordings:
 
 | File | Game | Unlocked by |
