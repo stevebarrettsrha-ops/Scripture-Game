@@ -1,2 +1,2 @@
 /* the recorded voices of book-of-hanok.html — written by tools/voices/build.py */
-window.VOICE_BANK={base:"voices/",ext:"webm",shard:2,k:{}};
+window.VOICE_BANK={base:"voices/",ext:"webm",shard:2,k:{"32fed90b793c":1564}};
