@@ -178,14 +178,18 @@ def encode(ff, wav, path, pitch=1.0):
 
 
 def durations():
-    """every recording's length, from the merged file and any worker's own"""
+    """every recording's length, from the merged file and any worker's own — the newest last, so
+    a line recorded again keeps its new length"""
     d = {}
-    for f in sorted(os.listdir(OUT)) if os.path.isdir(OUT) else []:
-        if f == 'durations.json' or (f.startswith('.dur-') and f.endswith('.json')):
-            try:
-                d.update(json.load(open(os.path.join(OUT, f))))
-            except Exception:
-                pass
+    if not os.path.isdir(OUT):
+        return d
+    runs = sorted((f for f in os.listdir(OUT) if f.startswith('.dur-') and f.endswith('.json')),
+                  key=lambda f: os.path.getmtime(os.path.join(OUT, f)))
+    for f in ['durations.json'] + runs:
+        try:
+            d.update(json.load(open(os.path.join(OUT, f))))
+        except Exception:
+            pass
     return d
 
 
