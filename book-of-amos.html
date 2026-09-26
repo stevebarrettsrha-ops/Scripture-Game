@@ -6456,9 +6456,10 @@ document.querySelectorAll('.screen,.btn,#dlg,#sys-buttons').forEach(el=>{
 
 /* ================= MAIN LOOP ================= */
 function frame(ts){
-  const dt=Math.min(50,ts-(Game.lastTime||ts));
+  /* the world keeps real time: a slow frame is made up in steps of at most 50ms, not lost */
+  let left=Math.min(250,ts-(Game.lastTime||ts));
   Game.lastTime=ts;
-  Game.update(dt);
+  do{ const dt=Math.min(50,left); Game.update(dt); left-=dt; }while(left>0);
   Game.render();
   requestAnimationFrame(frame);
 }
