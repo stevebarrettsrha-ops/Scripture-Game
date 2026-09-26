@@ -195,7 +195,7 @@ V.role=role; V.person=person;
 /* ------------------------------------------------------------ what is said */
 /* the reader's pronunciation, with the pauses and the rise of a question kept for the ear */
 const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+/g;
-const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/g;
+const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/gi;
 /* "(YAHUAH) HWHY": the Name is said once; the glyph beside it is for the eye, as in the reader */
 const HWHY=/\(\s*(YAHU[ĂA]H)\s*\)\s*HWHY/g;
 function speakable(text){
@@ -389,11 +389,15 @@ function passage(text,opts){
 }
 V.passage=passage;
 /* a line of dialogue: the one speaking says it all — a naḇi's "Thus said YAHUAH" is the naḇi
-   speaking; the narrator's lines are read like a verse */
+   speaking; the narrator's lines are read like a verse. The telling written in brackets before
+   a person's words — "(a voice in the dark)", "(Longing —)" — is the narrator's to say. */
+const ASIDE=/^\s*\([^)]*\)\s*/;
 function lineItems(id,text){
   text=String(text||''); const p=person(id);
-  if(p.kind==='divine') return [{text,who:'voice'}];
   if(p.kind==='narrator') return passage(text).map(s=>({text:s.text,who:s.who}));
+  const m=ASIDE.exec(text);
+  if(m){ const rest=text.slice(m[0].length); return [{text:m[0],who:'narrator'}].concat(rest.trim()?[{text:rest,who:p.kind==='divine'?'voice':id}]:[]); }
+  if(p.kind==='divine') return [{text,who:'voice'}];
   return [{text,who:id}];
 }
 V.lineItems=lineItems;
