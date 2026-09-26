@@ -176,8 +176,8 @@ The voices are recordings in `voices/` (Opus audio, one small bank script per bo
 them), made with [Kokoro](https://github.com/hexgrad/kokoro), an open, Apache-licensed
 speech model, so they sound the same on every device and need no internet. Every word is
 said in plain English: a name is read as its letters, without the marks of the Hebrew vowels
-(Ĕḏen is said "Eden"), and His Name is said "Yah-oo-Wah", with a light catch after "Yah" so that
-no voice slides into an r. A line that has no recording
+(Ĕḏen is said "Eden"), and His Name is said "Yah-oo-Wah", the h of its spelling breathed between "Yah" and "oo"
+so that no voice slides into an r ("Yaruah") or stops into a t ("Yatuah"). A line that has no recording
 (one put together while the game runs) is spoken with the device's own voices instead, as
 the Besorah reader does. `tools/voices/` rebuilds the recordings when the text changes:
 `extract.js` lists every line with its speaker, `build.py` casts and records them (see the

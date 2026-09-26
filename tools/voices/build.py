@@ -165,10 +165,12 @@ RESPELLED = re.compile(r"\b[a-z]+(?:-[a-z]+)+s?\b")    # a name as the lexicon r
 
 # a word written all in capitals for emphasis is still a word, not letters to be spelled
 CAPS = re.compile(r'\b(?!YAHUAHS?\b)([A-Z]{2,})\b')
-# His Name, as extract.js leaves it in the words to be said, and its own sounds: Yah-oo-Wah, with a
-# catch after Yah so that no voice glides from "ah" into "oo" through an r
+# His Name, as extract.js leaves it in the words to be said, and its own sounds: Yah-oo-Wah, the h of
+# its spelling breathed between "Yah" and "oo". Measured in every voice: run straight on, "ah" glides
+# into "oo" through an r ("Yaruah"); stopped with a catch, it is heard as a t ("Yatuah"); breathed,
+# it is neither
 NAME = re.compile(r'\bYAHUAH(S?)\b')
-NAME_SOUNDS = 'jˈɑːʔuːwˈɑː'
+NAME_SOUNDS = 'jˈɑːhuːwˈɑː'
 
 
 def prepare(kk):

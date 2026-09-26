@@ -202,7 +202,8 @@ V.role=role; V.person=person;
 /* ------------------------------------------------------------ what is said */
 /* how the words are said: in plain English. A name is read as its letters, the marks of the Hebrew
    vowels and the ayin and aleph left unsaid (Ĕḏen is Eden, Ya‘aqoḇ is Yaaqob, Aḇraham is Abraham);
-   only His Name has its own sounds — Yah-oo-Wah — so no voice runs "Yah" into "oo" with an r */
+   only His Name has its own sounds — Yah-oo-Wah, the h of its spelling breathed between "Yah" and
+   "oo" — so that no voice runs "Yah" into "oo" with an r, or stops it into a t */
 const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´ʿʾ]+/g;
 const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/gi;
 /* "(YAHUAH) HWHY": the Name is said once; the glyph beside it is for the eye, as in the reader */
