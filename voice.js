@@ -729,8 +729,9 @@ function tickDriver(G){
   const st=G.slideT||0, n=c.parts.length;
   if(d.speaking&&!V.busy) d.speaking=false;
   if(d.speaking){ hold(c,d.k+1,st); return; }
-  /* the part has been heard: the next comes on after a breath, not the whole reading time */
-  if(d.heard){ d.heard=false; pull(c,d.k+1,st+380); }
+  /* the part has been heard: the next comes on after a breath (the recording's own silence at its
+     end and start makes up the rest), not the whole reading time */
+  if(d.heard){ d.heard=false; pull(c,d.k+1,st+150); }
   const k=d.k+1; if(k>=n) return;
   if(c.allAt!=null||st>=c.times[k]){
     d.k=k; hold(c,k+1,st);
