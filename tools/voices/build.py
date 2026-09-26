@@ -119,14 +119,20 @@ class Voices:
     def phonemes(self, text, lang):
         """the words as sounds. The respelled names (al-oo-ah-heem, yah-ah-kohv) are read by the
         American rules even in a British voice, which would otherwise join their syllables
-        with an r that is not there ("yar-ah-kohv")"""
-        tk = self.k.tokenizer
+        with an r that is not there ("yar-ah-kohv"), or run the name into a word after it that
+        begins with a vowel ("yah-oo-ahr al-oo-ah-heem")"""
+        return self.sounds(self.k.tokenizer, text, lang)
+
+    @staticmethod
+    def sounds(tk, text, lang):
         ph = tk.phonemize(text, lang)
         if lang == 'en-gb':
             for w in sorted(set(RESPELLED.findall(text)), key=len, reverse=True):
                 gb, us = tk.phonemize(w, 'en-gb').strip(), tk.phonemize(w, 'en-us').strip()
                 if gb and gb != us:
                     ph = ph.replace(gb, us)
+                if us and not us.endswith('ɹ'):
+                    ph = ph.replace(us + 'ɹ', us)
         return ph
 
     def say(self, text, spec, speed):
