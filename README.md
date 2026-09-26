@@ -31,7 +31,7 @@ that any device on the same Wi-Fi/router can open. See that folder's `README.txt
 Not needed for normal solo play.
 
 Each game is a single HTML file and works offline; two shared scripts beside it,
-`cinema.js` (the staged cutscenes) and `gfx.js` (the world's ground, trees, rocks, water and light),
+`cinema.js` (the staged cutscenes) and `gfx.js` (the world's ground, trees, rocks, water, animals and light),
 add to every game and should be kept in the same folder:
 
 | File | Game | Unlocked by |
