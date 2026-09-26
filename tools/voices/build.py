@@ -21,7 +21,7 @@ import argparse, json, os, subprocess, sys, time, re
 import numpy as np
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
-OUT = os.path.join(ROOT, 'voices')
+OUT = os.environ.get('VOICES_OUT') or os.path.join(ROOT, 'voices')   # where recordings are made
 SR = 24000
 
 # ---------------------------------------------------------------- the cast
