@@ -32,8 +32,8 @@ Not needed for normal solo play.
 
 Each game is a single HTML file and works offline; the shared scripts beside it,
 `cinema.js` (the staged cutscenes), `gfx.js` (the world's ground, trees, rocks, water, animals and light),
-`play.js` (the fights, the struggles, the dodge and controllers) and `voice.js` with `pron.js` (the
-spoken voices, see [Voices](#voices)), add to every game and should be kept in the same folder, with
+`play.js` (the fights, the struggles, the dodge and controllers), `voice.js` with `pron.js` (the
+spoken voices, see [Voices](#voices)) and `face.js` (the faces and speaking mouths), add to every game and should be kept in the same folder, with
 the `voices/` folder of recordings:
 
 | File | Game | Unlocked by |
@@ -160,6 +160,15 @@ every telling is read aloud:
 - The reading books (Tehillim, Mishlĕ, Qoheleth, Shir haShirim, Ĕḵah, Baruḵ) have a 🔊 button
   that reads the chapter aloud, verse by verse, and goes on into the next.
 - On the field of battle the commander cries each order aloud, and the ending is read.
+- The one speaking moves their mouth with the voice, vowel by vowel — on the stage, in the
+  world and in the portrait of the dialogue box — and the words of a line come up in step
+  with what is heard, never lagging behind it.
+
+Faces show what the moment asks for, not a fixed smile: calm, stern, sorrowful, weeping (with
+tears), afraid, angry, joyful, in awe, or with eyes closed in prayer, sleep or death. On the stage
+the pose the verse gives decides it (weeping, praying, fighting, fleeing), else the words being
+said or read; in the world, the words of the one speaking, the fury of a battle, or the mood of
+the scene. Only joy turns a mouth up. (`face.js`)
 
 The voices are recordings in `voices/` (Opus audio, one small bank script per book listing
 them), made with [Kokoro](https://github.com/hexgrad/kokoro), an open, Apache-licensed

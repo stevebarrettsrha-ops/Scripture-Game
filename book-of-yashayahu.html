@@ -926,7 +926,7 @@ function drawChar(g,px,py,charId,o){
     R(4.3,-9.6+B+k*0.9,2,1.7,handC);
     /* head */
     R(-5,-24.4+B,10,9.6,skin);
-    if(dir==='down'){
+    if(dir==='down'&&!window.Face){            /* face.js draws the face when it is here */
       R(-2.9,-20.8+B,1.8,2,'#160e08');
       R(1.1,-20.8+B,1.8,2,'#160e08');
       R(-2.4,-20.4+B,.8,.8,'#fff6ee');
@@ -970,6 +970,7 @@ function drawChar(g,px,py,charId,o){
       R(-5,-19.4+B,10,1,shade(c.veil,-14));
     }
     if(c.hairy&&dir!=='up'){ R(-5,-17+B,1.4,2.6,hairC); R(3.6,-17+B,1.4,2.6,hairC); }
+    if(dir==='down'&&window.Face) Face.spriteFront(R,c,B,o,skin);   /* eyes, brows and mouth, as the moment feels */
   } else {
     /* ---------- SIDE PROFILE (faces right; flip for left) ---------- */
     /* back arm behind torso */
@@ -1014,9 +1015,11 @@ function drawChar(g,px,py,charId,o){
     /* head */
     R(-4.6,-24.4+B,9.6,9.6,skin);
     R(5,-21+B,1.2,1.8,skin);                       /* nose */
-    R(1.6,-20.8+B,1.8,2,'#160e08');                /* eye */
-    R(2.2,-20.4+B,.8,.8,'#fff6ee');
-    if(!c.beard) R(2.6,-17+B,1.8,.9,shade(skin,-26));
+    if(!window.Face){
+      R(1.6,-20.8+B,1.8,2,'#160e08');                /* eye */
+      R(2.2,-20.4+B,.8,.8,'#fff6ee');
+      if(!c.beard) R(2.6,-17+B,1.8,.9,shade(skin,-26));
+    }
     /* hair: top + back of head */
     if(c.hairStyle==='egypt'){
       R(-5,-25.4+B,10.4,3.2,'#11100e');
@@ -1041,6 +1044,7 @@ function drawChar(g,px,py,charId,o){
     if(c.beard){ R(0.4,-16.6+B,4.4,2.8,c.beard); R(1.4,-14+B,3,1.4,c.beard); }
     if(c.veil){ R(-4.6,-19.4+B,10.4,4.6,c.veil); }
     if(c.hairy){ R(-4.6,-17+B,1.4,2.6,hairC); }
+    if(window.Face) Face.spriteSide(R,c,B,o,skin);
     /* front arm swings */
     R(-0.6+k*1.5,-14.4+B,2.2,5.4,armC);
     R(-0.6+k*1.5,-9.2+B,2.2,1.7,handC);
@@ -6374,7 +6378,7 @@ STORY.push(
 
 { id:'i_babelfall', title:'Baḇel Is Fallen; the Valley of Vision; Tsor', ref:'YASHAYAHU 21–23',
   intro:[
-   {art:'wasteland', music:'tense', text:'The message concerning the Wilderness of the Sea… “Go, set a watchman, let him declare what he sees.” Then he cried, “A lion, O YAHUAH! I stand continually on the watchtower in the daytime and I have sat at my post every night. And see this, a chariot of men coming with a pair of horsemen!” And he spoke up and said, “Baḇel is fallen, is fallen! And all the carved images of her mighty ones He has broken to the ground.”', ref:'YASHAYAHU 21:1–9', stage:{"set":"desert","time":"dusk","wx":"dust","cam":"push","focus":0.45,"cast":[{"id":"yashayahu","x":0.12,"z":0.08,"face":"r","pose":"point","say":1},{"id":"watchman","x":0.34,"z":0.3,"dy":-0.2,"face":"r","pose":"look","at":1,"say":5,"acts":[{"at":2,"pose":"point"},{"at":3,"pose":"stand"},{"at":4,"pose":"point"},{"at":5,"pose":"raise"}]}],"props":[{"k":"tower","x":0.34,"z":0.3,"h":70,"tiers":3,"at":1},{"k":"lion","x":0.62,"z":0.45,"face":"l","roar":1,"at":2},{"k":"chariot","x":0.8,"z":0.4,"face":"l","at":4},{"k":"horse","x":0.68,"z":0.55,"face":"l","at":4},{"k":"idol","x":0.88,"z":0.6,"at":5}],"fx":[{"k":"smoke","x":0.88,"at":5},{"k":"red","amt":0.12,"at":6}]}},
+   {art:'wasteland', music:'tense', text:'The message concerning the Wilderness of the Sea… “Go, set a watchman, let him declare what he sees.” Then he cried, “A lion, O YAHUAH! I stand continually on the watchtower in the daytime and I have sat at my post every night. And see this, a chariot of men coming with a pair of horsemen!” And he spoke up and said, “Baḇel is fallen, is fallen! And all the carved images of her mighty ones He has broken to the ground.”', ref:'YASHAYAHU 21:1–9', stage:{"set":"desert","time":"dusk","wx":"dust","cam":"push","focus":0.45,"cast":[{"id":"yashayahu","x":0.12,"z":0.08,"face":"r","pose":"point","say":1},{"id":"watchman","x":0.34,"z":0.3,"dy":-0.2,"face":"r","pose":"look","at":1,"say":2,"acts":[{"at":2,"pose":"point"},{"at":3,"pose":"stand"},{"at":4,"pose":"point"},{"at":5,"pose":"raise"}]}],"props":[{"k":"tower","x":0.34,"z":0.3,"h":70,"tiers":3,"at":1},{"k":"lion","x":0.62,"z":0.45,"face":"l","roar":1,"at":2},{"k":"chariot","x":0.8,"z":0.4,"face":"l","at":4},{"k":"horse","x":0.68,"z":0.55,"face":"l","at":4},{"k":"idol","x":0.88,"z":0.6,"at":5}],"fx":[{"k":"smoke","x":0.88,"at":5},{"k":"red","amt":0.12,"at":6}]}},
   ],
   scene:{
    map:{biome:'city', w:44, h:28, seed:5124,
@@ -7439,6 +7443,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="play.js"></script>
 <script src="pron.js"></script>
 <script src="voice.js"></script>
+<script src="face.js"></script>
 <script src="voices/book-of-yashayahu.js"></script>
 </body>
 </html>

@@ -26,7 +26,7 @@
 //                 characteristic endings (-yahu, -im, -oth, -ĕl) spelled the
 //                 way an English voice reads them correctly.
 //
-// Syllables are hyphenated ("yah-oo-wah"): every major engine treats a
+// Syllables are hyphenated ("yah-oo-ah"): every major engine treats a
 // hyphen as a syllable boundary inside a word, which is what stops
 // "Yahuah" from coming out as "yahooah" or "Ya-HOO-a".
 (function (global) {
@@ -36,7 +36,7 @@
   // Keys: lower-case, diacritics and ayin/apostrophe marks removed.
   // Values: hyphen-separated syllables for the speech engine.
   var LEXICON = {
-    "yahuah": "yah-oo-wah",
+    "yahuah": "yah-oo-ah",          // Yah-uu-ah: three syllables, no w
     "yah": "yah",
     "yahu": "yah-hoo",
     "yahusha": "yah-hoo-shoo-ah",
@@ -608,7 +608,7 @@
   // is what a listener hears as the end of a sentence.
   //
   // A hyphen becomes a space rather than vanishing: it is what separates
-  // the syllables of a respelling ("yah-oo-wah"), and a space keeps that
+  // the syllables of a respelling ("yah-oo-ah"), and a space keeps that
   // separation without any voice announcing "dash".
   var HYPHENS = /[-‐‑‒–—―−]/g;
   var DROP_MARKS = /["'`´“”‘’«»‹›„‚(){}\[\]<>|\\\/_~^*%#@$&+=§¶†‡•·…,.;:!?¡¿]/g;

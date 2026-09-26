@@ -331,13 +331,16 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
   g.fillStyle='rgba(255,255,255,.08)'; ell(g,hr*.35,-hr*.4,hr*.35,hr*.25); g.fill();
   g.fillStyle=skinF; ell(g,-hr*.12,hr*.02,hr*.17,hr*.25); g.fill();                                                           /* ear */
   const eyeOpen=!(P.lie&&o.dead)&&!(P===POSES.pray||P.head>20);
-  if(eyeOpen){ g.fillStyle='#f4ece0'; ell(g,hr*.5,-hr*.13,hr*.16,hr*.1); g.fill(); g.fillStyle='#1a120a'; ell(g,hr*.58,-hr*.12,hr*.08,hr*.1); g.fill(); }
-  else { g.strokeStyle='#1a120a'; g.lineWidth=ow; g.beginPath(); g.moveTo(hr*.38,-hr*.1); g.lineTo(hr*.66,-hr*.08); g.stroke(); }
-  g.strokeStyle=L.beard||hair; g.lineWidth=hr*.13; g.lineCap='round'; g.beginPath(); g.moveTo(hr*.32,-hr*.36); g.lineTo(hr*.72,-hr*.33); g.stroke();   /* brow */
-  if(!L.beard){ g.strokeStyle='rgba(90,40,30,.7)'; g.lineWidth=ow; g.beginPath(); g.moveTo(hr*.62,hr*.52); g.lineTo(hr*.82,hr*.5); g.stroke(); }
   if(L.beard){ g.fillStyle=L.beard; const ln=L.old?1.75:1.3;
-    smooth(g,[[-hr*.15,hr*.05],[hr*.2,hr*.42],[hr*.55,hr*.38],[hr*.98,hr*.45],[hr*.85,hr*ln*.95],[hr*.35,hr*ln],[-hr*.25,hr*.75]]); g.fill();
-    g.strokeStyle='rgba(0,0,0,.25)'; g.lineWidth=ow*.8; g.beginPath(); g.moveTo(hr*.55,hr*.5); g.lineTo(hr*.85,hr*.48); g.stroke(); }
+    smooth(g,[[-hr*.15,hr*.05],[hr*.2,hr*.42],[hr*.55,hr*.38],[hr*.98,hr*.45],[hr*.85,hr*ln*.95],[hr*.35,hr*ln],[-hr*.25,hr*.75]]); g.fill(); }
+  if(window.Face){ Face.profile(g,hr,L,o.expr||'calm',o.mouth,ow,skinN,t,eyeOpen); }   /* the eyes, brow and mouth the moment asks for */
+  else {
+    if(eyeOpen){ g.fillStyle='#f4ece0'; ell(g,hr*.5,-hr*.13,hr*.16,hr*.1); g.fill(); g.fillStyle='#1a120a'; ell(g,hr*.58,-hr*.12,hr*.08,hr*.1); g.fill(); }
+    else { g.strokeStyle='#1a120a'; g.lineWidth=ow; g.beginPath(); g.moveTo(hr*.38,-hr*.1); g.lineTo(hr*.66,-hr*.08); g.stroke(); }
+    g.strokeStyle=L.beard||hair; g.lineWidth=hr*.13; g.lineCap='round'; g.beginPath(); g.moveTo(hr*.32,-hr*.36); g.lineTo(hr*.72,-hr*.33); g.stroke();   /* brow */
+    if(!L.beard){ g.strokeStyle='rgba(90,40,30,.7)'; g.lineWidth=ow; g.beginPath(); g.moveTo(hr*.62,hr*.52); g.lineTo(hr*.84,hr*.52); g.stroke(); }
+    else { g.strokeStyle='rgba(0,0,0,.25)'; g.lineWidth=ow*.8; g.beginPath(); g.moveTo(hr*.55,hr*.5); g.lineTo(hr*.85,hr*.48); g.stroke(); }
+  }
   if(L.hairStyle==='pharaoh'||L.hairStyle==='egypt'){
     const ph=L.hairStyle==='pharaoh';
     g.fillStyle=ph?'#2a4a8a':'#e8e0cc';
@@ -1809,6 +1812,24 @@ const Stage={
     if(z>1.25) return {visible:false};
     return {visible:true,x,z,pose,face,alpha:alpha*(z>1.05?cl((1.25-z)/.2,0,1):1),walking,shown};
   },
+  /* the face of one on the stage: the pose the verse gives them first (weeping, praying,
+     fighting), else the words they are saying, else the words of the part being read when those
+     name them, else the mood of the telling. The mouth moves only while they are heard. */
+  poseAt(a,st){ let n=a.pose||'stand'; for(const q of (a.acts||[])) if(q.pose&&st>=this.beatTime(q.at||0)) n=q.pose; return n; },
+  faceOf(a,id,L,st,t,speaking){
+    const F=window.Face, V=window.Voice; if(!F) return {};
+    let mouth=null;
+    if(V&&V.canSpeak&&V.canSpeak()) mouth=V.mouth(id);
+    else if(speaking) mouth=.45+.45*Math.sin(t/85)*Math.sin(t/37);
+    let expr=F.POSE[this.poseAt(a,st)]||null;
+    if(!expr){ const said=V&&V.saying?V.saying(id):null; if(said) expr=F.ofText(said); }
+    if(!expr){ const c=this.cur;
+      if(c&&c.parts){ let k=0; for(let j=0;j<c.parts.length;j++) if(c.allAt!=null||st>=c.times[j]) k=j;
+        const part=c.parts[k]||'', nm=String(L.name||'').split(/[\s,—]+/)[0];
+        if(nm&&nm.length>2&&part.indexOf(nm)>=0) expr=F.ofText(part); } }
+    if(!expr) expr=F.ofMood(this.cur&&this.cur.slide&&this.cur.slide.music)||'calm';
+    return {expr,mouth};
+  },
   drawActor(g,a,i,st,t,S0){
     const S1=S0||this.actorState(a,st); if(!S1.visible) return;
     const lay=this._lay, z=S1.z!=null?S1.z:(a.z||0), x=lay.X(S1.x);
@@ -1823,6 +1844,7 @@ const Stage={
     let P=S1.pose;
     const c=this.cur;
     const speaking=a.say!=null&&c&&st>=this.beatTime(a.say)&&(a.say>=c.parts.length-1||st<this.beatTime(a.say+1));
+    const fc=this.faceOf(a,id,L,st,t,speaking);
     if(speaking&&!S1.walking&&!P.lie&&!P.low&&P!==POSES.raise&&P!==POSES.fight&&!P.throne) P=blendPose(P,POSES.speak,.8);
     P=animPose(P,t+i*777,i*1.7);
     if(P.throne){ PROPS.throne(g,x,y,h,t,{}); y-=h*.12; }
@@ -1836,7 +1858,7 @@ const Stage={
     else if((a.dy||0)<-.03){}                                   /* lifted up off the ground: no shadow under it */
     else if(!P.lie) figureShadow(g,x,y,h,P); else { g.fillStyle='rgba(8,6,4,.25)'; ell(g,x,y+h*.005,h*.5,h*.03); g.fill(); }
     if(S1.face==='b') drawFigureBack(g,x,y,h,L,P,t,{hold:a.hold||a.hold2,crown:a.crown,alpha:S1.alpha<1?S1.alpha:null,phase:i*1.7});
-    else drawFigure(g,x,y,h,L,P,S1.face,t,{hold:a.hold,hold2:a.hold2,crown:a.crown,wings:a.wings,alpha:S1.alpha<1?S1.alpha:null,dead:a.pose==='dead',blanket:(a.onbed&&P.lie)?(a.blanket||'#9a7a5a'):null});
+    else drawFigure(g,x,y,h,L,P,S1.face,t,{hold:a.hold,hold2:a.hold2,crown:a.crown,wings:a.wings,alpha:S1.alpha<1?S1.alpha:null,dead:a.pose==='dead',blanket:(a.onbed&&P.lie)?(a.blanket||'#9a7a5a'):null,expr:fc.expr,mouth:fc.mouth});
     if(wet){ g.restore(); ripples(g,x,wl,h*.32,t,i); }
     /* a name, the first time a figure is seen (once the chapter's title card has gone) */
     if(a.label!==false&&L.name&&!S1.walking&&st>S1.shown+300){
@@ -1905,11 +1927,12 @@ const Stage={
     else if(!P.lie) figureShadow(g,X,y,h,P);
     const hold=cw.hold!==undefined?cw.hold:CROWD_HOLD[cw.kind];
     if(face==='b') drawFigureBack(g,X,y,h,it.look,P,t,{hold:hold||null,alpha:alpha<1?alpha:null,phase:it.ph});
-    else drawFigure(g,X,y,h,it.look,P,face,t,{hold:hold||null,hold2:(cw.kind==='soldiers'||cw.kind==='army')&&it.k%3===0?'shield':null,alpha:alpha<1?alpha:null});
+    else drawFigure(g,X,y,h,it.look,P,face,t,{hold:hold||null,hold2:(cw.kind==='soldiers'||cw.kind==='army')&&it.k%3===0?'shield':null,alpha:alpha<1?alpha:null,
+      expr:window.Face?(Face.POSE[cw.pose]||Face.ofMood(this.cur&&this.cur.slide&&this.cur.slide.music)||'calm'):null});
     if(wet){ g.restore(); ripples(g,X,wl,h*.32,t,it.ph); }
   }
 };
-window.Stage=Stage; Stage.props=PROPS; Stage.beast=beast; Stage.beastFB=beastFB; Stage.elephant=elephant; Stage.BEASTS=BEASTS;
+window.Stage=Stage; Stage.drawFigure=drawFigure; Stage.lookOf=lookOf; Stage.props=PROPS; Stage.beast=beast; Stage.beastFB=beastFB; Stage.elephant=elephant; Stage.BEASTS=BEASTS;
 
 /* ============================== hooks into the game ============================== */
 const _drawSlideArt=drawSlideArt;
