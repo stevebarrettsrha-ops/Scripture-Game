@@ -53,6 +53,9 @@ const games=process.argv.slice(2);
         /* lines written straight into the code */
         const re=/\.say\(\s*(['"])([a-z_0-9]+)\1\s*,\s*(['"])((?:(?!\3)[^\\]|\\.)*)\3\s*[,)]/g; let m;
         while((m=re.exec(src))){ let t=m[4]; try{ t=JSON.parse('"'+t.replace(/\\'/g,"'").replace(/"/g,'\\"')+'"'); }catch(e){} line(m[2],t,'code'); }
+        /* and lines handed out as the game runs: n.dlg=[['builder2','Velu shana kithra?!']] */
+        const pair=/\[\s*(['"])([a-z_0-9]+)\1\s*,\s*(['"])((?:(?!\3)[^\\]|\\.)*)\3\s*\]/g;
+        while((m=pair.exec(src))){ if(!CHARS[m[2]]||!/[A-Za-z]{2}/.test(m[4])||!/\s/.test(m[4])||m[4].length<10) continue; let t=m[4]; try{ t=JSON.parse('"'+t.replace(/\\'/g,"'").replace(/"/g,'\\"')+'"'); }catch(e){} line(m[2],t,'code'); }
       }
       /* the field of battle: the commander's cries, and each battle's end */
       if(typeof BATTLES!=='undefined'){
