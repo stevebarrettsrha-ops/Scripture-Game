@@ -735,7 +735,54 @@ prop('cherub',(g,x,y,s,t,o)=>{ const u=s/100; const L={skin:'#6e4a28',robe:'#f0e
 prop('crown',(g,x,y,s,t,o)=>{ drawHeld(g,'crown',x,y,s*2,'r',t); });
 prop('sword',(g,x,y,s,t,o)=>{ const u=s/100; g.save(); g.translate(x,y); g.rotate(o.a||-.8); glow(g,0,-u*40,u*50,'#ffb050',.35); g.fillStyle='#e8eef0'; poly(g,[[-u*3,0],[u*3,0],[u*1.5,-u*80],[0,-u*88],[-u*1.5,-u*80]]); g.fill(); g.fillStyle='#caa040'; g.fillRect(-u*10,-u*2,u*20,u*4); g.fillRect(-u*2,0,u*4,u*16); g.restore(); });
 
-prop('serpent',(g,x,y,s,t,o)=>{ const u=s/100, c=o.color||'#4a6a2a';
+/* the serpent before the curse — "more crafty than any beast of the field", not yet on its belly:
+   a slender creature standing on four clawed legs, its long neck lifted, its tail trailing behind */
+function leggedSerpent(g,x,y,s,t,o){
+  const u=s/100, c=o.color||'#4f7a2c', dark=shd(c,-.38), lite=shd(c,.22), belly='#c9b56a', d=o.face==='l'?-1:1;
+  const br=Math.sin(t/900)*u*.8, sway=Math.sin(t/700)*u*2.2, up=o.rise===false?0:1;
+  const out='rgba(20,26,10,.55)', ow=Math.max(.8,u*.5);
+  g.save(); g.translate(x,y); g.scale(d,1);
+  g.fillStyle='rgba(0,0,0,.18)'; ell(g,-u*8,0,u*52,u*4.5); g.fill();
+  const by=-u*24+br;
+  /* a stroke that thins along its length */
+  const taper=(pts,w0,w1,col)=>{ g.lineCap='round'; g.lineJoin='round';
+    for(let pass=0;pass<2;pass++) for(let i=0;i<pts.length-1;i++){ const k=i/(pts.length-1), w=w0+(w1-w0)*k;
+      g.strokeStyle=pass?col:out; g.lineWidth=pass?w:w+ow*2; g.beginPath(); g.moveTo(pts[i][0],pts[i][1]); g.lineTo(pts[i+1][0],pts[i+1][1]); g.stroke(); } };
+  const curve=(a,b,c2,n)=>{ n=n||8; const r=[]; for(let i=0;i<=n;i++){ const k=i/n, m=1-k; r.push([m*m*a[0]+2*m*k*b[0]+k*k*c2[0],m*m*a[1]+2*m*k*b[1]+k*k*c2[1]]); } return r; };
+  const cubic=(a,b,c2,e,n)=>{ const r=[]; for(let i=0;i<=n;i++){ const k=i/n, m=1-k; r.push([m*m*m*a[0]+3*m*m*k*b[0]+3*m*k*k*c2[0]+k*k*k*e[0],m*m*m*a[1]+3*m*m*k*b[1]+3*m*k*k*c2[1]+k*k*k*e[1]]); } return r; };
+  /* legs: far pair first, darker; each bends at the knee and sets three claws on the ground */
+  /* legs: set wide like a lizard's, the elbow and knee bent out, the foot planted forward */
+  const leg=(hx,far,ph)=>{ const step=Math.sin(t/520+ph)*u*1.2, back=hx<0, kx=hx+(back?-u*9:u*9), ky=by+u*(back?4:5), fx=hx+(back?-u*5:u*6)+step;
+    const col=far?dark:c; taper([[hx,by+u*3],[kx,ky],[fx,-u*1.6]],u*(back?8:7),u*3.4,col);
+    g.strokeStyle=far?shd(dark,-.2):dark; g.lineWidth=u*1.1; g.lineCap='round';
+    for(const a of[-.5,0,.5]){ g.beginPath(); g.moveTo(fx,-u*1.4); g.lineTo(fx+Math.cos(a)*u*4.2,-u*.4+Math.sin(a)*u*.8); g.stroke(); } };
+  leg(-u*20,true,1.6); leg(u*14,true,0);
+  /* tail, trailing and curling on the ground */
+  taper(curve([-u*22,by+u*1],[-u*54,by+u*16],[-u*70,-u*4]).concat(curve([-u*70,-u*4],[-u*84,-u*2+sway*.4],[-u*88,-u*12+sway]).slice(1)),u*11,u*1.5,c);
+  /* body */
+  const bodyPts=[[-u*26,by-u*1],[-u*10,by-u*8],[u*10,by-u*9],[u*22,by-u*5],[u*24,by+u*4],[u*8,by+u*8],[-u*12,by+u*8],[-u*28,by+u*5]];
+  g.fillStyle=lin(g,0,by-u*9,0,by+u*8,[[0,lite],[.55,c],[1,belly]]); smooth(g,bodyPts); g.fill(); g.strokeStyle=out; g.lineWidth=ow; g.stroke();
+  /* neck, lifted in an S toward the one it speaks to */
+  const hx=u*34+sway*.4, hy=up?-u*52:-u*28;
+  const neck=up?cubic([u*18,by-u*3],[u*8,by-u*20],[u*36,by-u*18],[hx-u*3,hy+u*6],10):curve([u*18,by-u*3],[u*28,by-u*6],[hx-u*3,hy+u*4],10);
+  taper(neck,u*10,u*6.5,c);
+  /* scales along the back */
+  g.strokeStyle='rgba(20,40,10,.35)'; g.lineWidth=u*.8;
+  for(let i=0;i<9;i++){ const px=-u*22+i*u*5, py=by-u*7+Math.abs(i-4)*u*.4; g.beginPath(); g.arc(px,py,u*2.2,PI*1.1,PI*1.9); g.stroke(); }
+  for(let i=1;i<9;i+=2){ const [px,py]=neck[i]; g.beginPath(); g.arc(px,py,u*1.8,PI*1.1,PI*1.9); g.stroke(); }
+  /* head: long and narrow, a golden eye, the tongue flickering */
+  g.save(); g.translate(hx,hy); g.rotate(up?.18:0);
+  g.fillStyle=lin(g,0,-u*5,0,u*5,[[0,lite],[.6,c],[1,belly]]);
+  smooth(g,[[-u*5,-u*5],[u*5,-u*5.5],[u*13,-u*2.5],[u*14.5,u*.8],[u*7,u*4.2],[-u*4,u*4.8]]); g.fill(); g.strokeStyle=out; g.lineWidth=ow; g.stroke();
+  g.strokeStyle='rgba(20,40,10,.4)'; g.lineWidth=u*.9; g.beginPath(); g.moveTo(u*.5,-u*4.2); g.quadraticCurveTo(u*3.5,-u*5.4,u*6.5,-u*3.8); g.stroke();   /* the brow */
+  g.fillStyle='#e8c850'; ell(g,u*3,-u*2,u*1.8,u*1.4); g.fill(); g.fillStyle='#101008'; ell(g,u*3.3,-u*2,u*.5,u*1.2); g.fill();
+  g.strokeStyle='rgba(20,30,10,.6)'; g.lineWidth=u*.7; g.beginPath(); g.moveTo(u*6,u*1.2); g.lineTo(u*15,u*.6); g.stroke();
+  if(Math.sin(t/260)>.55){ g.strokeStyle='#b8303a'; g.lineWidth=u*.8; g.beginPath(); g.moveTo(u*15.5,u*.3); g.lineTo(u*20,u*.6); g.lineTo(u*22,-u*.8); g.moveTo(u*20,u*.6); g.lineTo(u*22,u*1.8); g.stroke(); }
+  g.restore();
+  leg(-u*20,false,0); leg(u*14,false,1.6);
+  g.restore();
+}
+prop('serpent',(g,x,y,s,t,o)=>{ if(o.legs) return leggedSerpent(g,x,y,s,t,o); const u=s/100, c=o.color||'#4a6a2a';
   if(o.pole){ g.strokeStyle='#6a4a28'; g.lineWidth=u*3; g.beginPath(); g.moveTo(x,y); g.lineTo(x,y-u*120); g.moveTo(x-u*16,y-u*104); g.lineTo(x+u*16,y-u*104); g.stroke(); }
   const bx=x, by=o.pole?y-u*100:y-u*2, amp=o.pole?u*10:u*8, len=o.pole?u*70:u*90;
   g.strokeStyle=o.pole?'#c89040':c; g.lineWidth=u*(o.pole?4:6); g.lineCap='round'; g.beginPath();
@@ -1876,7 +1923,7 @@ const Stage={
     const id=a.id||'';
     if((CHARS[id]&&CHARS[id].divine)||id==='voice'||id==='divine'){ g.save(); g.globalAlpha*=S1.alpha; FX.glory(g,t,{x:S1.x,y:.14}); g.restore(); return; }
     const L=lookOf(id,a.look);
-    if(L.serpent||(CHARS[id]&&CHARS[id].serpent)){ g.save(); g.globalAlpha*=S1.alpha; PROPS.serpent(g,x,y,h*.6,t,{tree:a.pose==='raise',rise:a.pose!=='lie',color:'#5a7a2a'}); g.restore(); return; }
+    if(L.serpent||(CHARS[id]&&CHARS[id].serpent)){ g.save(); g.globalAlpha*=S1.alpha; PROPS.serpent(g,x,y,h*(a.legs?.62:.6),t,{tree:a.pose==='raise',rise:a.pose!=='lie',color:a.legs?'#4f7a2c':'#5a7a2a',legs:!!a.legs,face:S1.face}); g.restore(); return; }
     if(L.giant||/giant|nephil|anaq|golyath|goliath/i.test(id)) h*=1.55;
     if(L.darkAngel) { L.robe=L.robe||'#2a2230'; }
     if(L.child||a.child) h*=.62;
