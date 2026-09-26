@@ -368,8 +368,8 @@ if(typeof drawMashUI==='function'){
     const dg=g.createLinearGradient(bx0,0,bx0+bw,0); dg.addColorStop(0,'#46608a'); dg.addColorStop(1,'#f6d690'); g.fillStyle=dg; g.fillRect(bx0,y+4,bw*cl(m.prog,0,1),10);
     g.strokeStyle='rgba(170,200,255,.35)'; g.strokeRect(bx0+.5,y+4.5,bw,10);
     for(const q of [.34,.7]){ g.fillStyle='rgba(255,255,255,.5)'; g.fillRect(bx0+bw*q,y+2,1.5,14); }
-    g.font='11px Georgia'; g.textAlign='left'; g.fillStyle='#9d987f'; g.fillText(m.barA||'YOUR GRIP',bx0,y+30);
-    g.textAlign='right'; g.fillText(m.barB||'UNTIL DAY BREAKS',bx0+bw,y+30);
+    g.font='10px Georgia'; g.textAlign='center'; g.fillStyle='#9d987f'; g.fillText(m.barA||'YOUR GRIP',bx,by+R+15);     /* the ring is the grip */
+    g.font='11px Georgia'; g.textAlign='right'; g.fillText(m.barB||'UNTIL DAY BREAKS',bx0+bw,y+30);
     const pul=.5+Math.sin(tt/220)*.5; g.textAlign='center'; g.fillStyle=`rgba(255,243,207,${(.45+pul*.5).toFixed(3)})`; g.font='12px Georgia';
     g.fillText(grip<.3?'Your grip is slipping — press faster!':`Press ${promptKey()} again and again — or hold it down`,bx0+bw/2,y+50);
     g.restore();
