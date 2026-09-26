@@ -198,7 +198,8 @@ const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+/g;
 const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/g;
 function speakable(text){
   const P=W.BesorahPron;
-  let s=String(text||'').replace(GLOSS,'');
+  /* ʿ and ʾ are the ayin and aleph the lexicon knows as ’ */
+  let s=String(text||'').replace(GLOSS,'').replace(/[ʿʾ]/g,'’');
   if(P&&P.wordFor) s=s.replace(WORD_RE,w=>P.wordFor(w));
   return s.replace(/[-‐‑‒–—―−]+/g,' ').replace(/…/g,', ').replace(/[;:]/g,',')
           .replace(/["'`´“”‘’«»‹›„‚(){}\[\]<>|\\\/_~^*%#@$&+=§¶†‡•·✦]/g,' ')
