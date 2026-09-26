@@ -26,7 +26,7 @@ const games=process.argv.slice(2);
          syllables held together by hyphens so each name is one word, evenly stressed */
       const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+/g;
       const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/g;
-      const kk=t=>String(t).replace(GLOSS,'').replace(/[ʿʾ]/g,'’').replace(WORD_RE,w=>BesorahPron.wordFor(w))
+      const kk=t=>String(t).replace(GLOSS,'').replace(/\(\s*(YAHU[ĂA]H)\s*\)\s*HWHY/g,'$1').replace(/\bO?HWHY\b/gi,m=>m.length===5?'O YAHUAH':'YAHUAH').replace(/[ʿʾ]/g,'’').replace(WORD_RE,w=>BesorahPron.wordFor(w))
         .replace(/\s*[—–―]+\s*/g,', ').replace(/…/g,', ').replace(/[;:]/g,',')
         .replace(/["`´“”‘’«»‹›„‚(){}\[\]<>|\\\/_~^*%#@$&+=§¶†‡•·✦]/g,' ')
         .replace(/\s+([,.!?])/g,'$1').replace(/([,.!?])(?:\s*[,.])+/g,'$1').replace(/^[\s,.]+/,'').replace(/\s{2,}/g,' ').trim();

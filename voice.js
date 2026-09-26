@@ -196,10 +196,12 @@ V.role=role; V.person=person;
 /* the reader's pronunciation, with the pauses and the rise of a question kept for the ear */
 const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+/g;
 const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/g;
+/* "(YAHUAH) HWHY": the Name is said once; the glyph beside it is for the eye, as in the reader */
+const HWHY=/\(\s*(YAHU[ĂA]H)\s*\)\s*HWHY/g;
 function speakable(text){
   const P=W.BesorahPron;
   /* ʿ and ʾ are the ayin and aleph the lexicon knows as ’ */
-  let s=String(text||'').replace(GLOSS,'').replace(/[ʿʾ]/g,'’');
+  let s=String(text||'').replace(GLOSS,'').replace(HWHY,'$1').replace(/\bO?HWHY\b/gi,m=>m.length===5?'O YAHUAH':'YAHUAH').replace(/[ʿʾ]/g,'’');
   if(P&&P.wordFor) s=s.replace(WORD_RE,w=>P.wordFor(w));
   return s.replace(/[-‐‑‒–—―−]+/g,' ').replace(/…/g,', ').replace(/[;:]/g,',')
           .replace(/["'`´“”‘’«»‹›„‚(){}\[\]<>|\\\/_~^*%#@$&+=§¶†‡•·✦]/g,' ')
