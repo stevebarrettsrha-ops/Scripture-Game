@@ -28,9 +28,9 @@ SR = 24000
 # Kokoro's English voices, the fullest and steadiest first; a blend of two is a new voice of its
 # own, which gives the many people of the stories more voices than the model has.
 NARRATOR = 'bm_george'
-# the Voice of YAHUAH: the deepest of the voices, aged, slow, lowered a little further; the deep
-# voices it is made of are kept from everyone else
-DIVINE = {'voice': 'am_onyx:.55+am_santa:.45', 'speed': .84, 'pitch': .93}
+# the Voice of YAHUAH: the deepest of the voices, alone, slow and lowered a little further; it is
+# kept from everyone else
+DIVINE = {'voice': 'am_onyx', 'speed': .84, 'pitch': .9}
 MALE = ['am_michael', 'am_fenrir', 'am_puck', 'bm_fable',
         'am_michael:.5+bm_george:.5', 'am_fenrir:.6+am_echo:.4', 'am_puck:.6+bm_lewis:.4',
         'bm_lewis', 'am_echo', 'am_eric', 'am_liam', 'bm_daniel',

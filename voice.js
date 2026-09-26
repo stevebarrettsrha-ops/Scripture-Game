@@ -7,7 +7,7 @@
    voice, so what is seen keeps pace with what is heard. The reading books are read verse by
    verse; on the field of battle the commander's orders are cried aloud.
 
-   YAHUAH speaks in a voice of His own: deep, slow and old, given to no one else.
+   YAHUAH speaks in a voice of His own: the deepest there is, slow and low, given to no one else.
 
    The voices are recordings made for every line (voices/, one bank per book, loaded by its own
    script so it works from the files on disk with no server). A line with no recording — one

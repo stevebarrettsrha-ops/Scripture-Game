@@ -152,7 +152,7 @@ every telling is read aloud:
   every age: Aḇram is Aḇraham, and Dawiḏ sounds the same as a shepherd and as sovereign. Women,
   elders, children, mal'akim, the serpent, the giants and the crowds are each given a voice
   of their kind, and those who talk to one another never share one.
-- **YAHUAH** speaks in a voice given to no one else: deep, aged and slow.
+- **YAHUAH** speaks in a voice given to no one else: the deepest of the voices, slow and low.
 - In a verse, the narrator reads the telling and the words inside its quotation marks are
   spoken by the one the verse says spoke them ("And Mosheh said to YAHUAH", "the Mal’ak of
   YAHUAH said", "“I have loved you,” said YAHUAH"). The verse's parts on screen wait for the
