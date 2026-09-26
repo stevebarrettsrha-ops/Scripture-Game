@@ -12,8 +12,8 @@
    The voices are recordings made for every line (voices/, one bank per book, loaded by its own
    script so it works from the files on disk with no server). A line with no recording — one
    put together as the game runs — is spoken by the device's own voices (the Web Speech API, as
-   the Besorah reader does), the most natural the device has. Names are said as the reader says
-   them (pron.js, the reader's own lexicon); the speed is the reader's speed.
+   the Besorah reader does), the most natural the device has. Every word is said in plain English —
+   a name as its letters read, without the marks of the vowels — and His Name as Yah-oo-Wah.
 
    V or the 🗣 button turns the voices off and on; the ♪ button silences them with the rest. */
 (function(){
@@ -200,18 +200,50 @@ function role(who){
 V.role=role; V.person=person;
 
 /* ------------------------------------------------------------ what is said */
-/* the reader's pronunciation, with the pauses and the rise of a question kept for the ear */
-const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+/g;
+/* how the words are said: in plain English. A name is read as its letters, the marks of the Hebrew
+   vowels and the ayin and aleph left unsaid (Ĕḏen is Eden, Ya‘aqoḇ is Yaaqob, Aḇraham is Abraham);
+   only His Name has its own sounds — Yah-oo-Wah — so no voice runs "Yah" into "oo" with an r */
+const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´ʿʾ]+/g;
 const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/gi;
 /* "(YAHUAH) HWHY": the Name is said once; the glyph beside it is for the eye, as in the reader */
 const HWHY=/\(\s*(YAHU[ĂA]H)\s*\)\s*HWHY/g;
+const MARKS=/[‘’‚‛ʻʼʹ׳'`´ʿʾ]/g;
+function sayWord(w,device){
+  const key=nameKey(w.replace(/[’'`´]s$/,''));
+  if(key==='yahuah'){ const s=/[’'`´]s$/.test(w); return device?(s?"Yah-hoo-wah's":'Yah-hoo-wah'):(s?'YAHUAHS':'YAHUAH'); }
+  /* don't, it's, the man’s: English, the apostrophe kept */
+  if(/^[A-Za-z]+[’'](s|t|re|ll|ve|d|m)$/i.test(w)) return w.replace(/[’`´]/,"'");
+  let o=w.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(MARKS,'');
+  if(o.length>1&&o===o.toUpperCase()&&/[A-Z]/.test(o)) o=o.toLowerCase();          /* NOT, ONE HUNDRED: words, not letters */
+  return o||w;
+}
+/* the words English spells alike and says two ways, as these verses mean them: "live forever",
+   "as YAHUAH lives", "and he read in the book", "let it separate the waters" — and "a live coal",
+   "their lives", "a separate place" */
+const LIVING=/^(coals?|goats?|birds?|animals?|beasts?|creatures?|ox|oxen|sheep|lambs?|ones?|sacrifice)$/i;
+const OWNER=/^(my|your|his|her|its|our|their|whose|the|for|of|thy|men's|our)$/i;
+function twoWays(s){
+  return s.replace(/\b(live|lives|read|separate)\b(?=(\s+([A-Za-z]+))?)/gi,(m,w,_,next,off,all)=>{
+    const pm=all.slice(Math.max(0,off-24),off).match(/([A-Za-z']+)[^A-Za-z']*$/), prev=pm?pm[1]:'', lp=prev.toLowerCase(), lw=w.toLowerCase();
+    const as=(t)=>w[0]===w[0].toUpperCase()?t[0].toUpperCase()+t.slice(1):t;
+    if(lw==='live') return (lp==='a'||lp==='the'||(next&&LIVING.test(next)))?w:as('liv');
+    if(lw==='lives') return OWNER.test(lp)?w:as('livs');
+    if(lw==='separate') return /^(a|an|the|each|every|in|into|two|three|seven)$/.test(lp)?w:as('seperate');    /* "let it separate the waters" */
+    if(/^(he|she|they|it|had|has|have|was|were|been)$/.test(lp)||(/^[A-Z][a-z]/.test(prev)&&!/[.!?]\s*$/.test(all.slice(0,off).replace(/[A-Za-z']+[^A-Za-z']*$/,'')))) return as('red');
+    return w; });
+}
+/* the words as a voice should read them: device — for the speech the device makes itself;
+   otherwise for the recordings, where the Name is left as YAHUAH for its own sounds */
+function readable(text,device){
+  let s=String(text||'').replace(GLOSS,'').replace(HWHY,'$1').replace(/\bO?HWHY\b/gi,m=>m.length===5?'O YAHUAH':'YAHUAH');
+  s=s.replace(WORD_RE,w=>sayWord(w,device));
+  return twoWays(s);
+}
+V.readable=readable;
 function speakable(text){
-  const P=W.BesorahPron;
-  /* ʿ and ʾ are the ayin and aleph the lexicon knows as ’ */
-  let s=String(text||'').replace(GLOSS,'').replace(HWHY,'$1').replace(/\bO?HWHY\b/gi,m=>m.length===5?'O YAHUAH':'YAHUAH').replace(/[ʿʾ]/g,'’');
-  if(P&&P.wordFor) s=s.replace(WORD_RE,w=>P.wordFor(w));
-  return s.replace(/[-‐‑‒–—―−]+/g,' ').replace(/…/g,', ').replace(/[;:]/g,',')
-          .replace(/["'`´“”‘’«»‹›„‚(){}\[\]<>|\\\/_~^*%#@$&+=§¶†‡•·✦]/g,' ')
+  return readable(text,true).replace(/[-‐‑‒–—―−]+/g,' ').replace(/…/g,', ').replace(/[;:]/g,',')
+          .replace(/(^|[^A-Za-z])'|'(?![A-Za-z])/g,'$1 ')
+          .replace(/["`´“”‘’«»‹›„‚(){}\[\]<>|\\\/_~^*%#@$&+=§¶†‡•·✦]/g,' ')
           .replace(/\s+([,.!?])/g,'$1').replace(/([,.!?])(?:\s*[,.])+/g,'$1').replace(/^[\s,.]+/,'')
           .replace(/\s{2,}/g,' ').trim();
 }

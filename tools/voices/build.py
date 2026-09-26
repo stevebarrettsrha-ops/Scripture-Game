@@ -125,7 +125,24 @@ class Voices:
 
     @staticmethod
     def sounds(tk, text, lang):
-        ph = tk.phonemize(text, lang)
+        out, at = [], 0
+        for m in NAME.finditer(text):
+            out.append(Voices.words(tk, text[at:m.start()], lang))
+            out.append(NAME_SOUNDS + ('z' if m.group(1) else ''))
+            at = m.end()
+        out.append(Voices.words(tk, text[at:], lang))
+        ph = ''
+        for piece in out:
+            if not piece:
+                continue
+            ph = ph + (' ' if ph and not piece[0] in ',.!?;:' else '') + piece
+        return ph.strip()
+
+    @staticmethod
+    def words(tk, text, lang):
+        if not text.strip():
+            return ''
+        ph = tk.phonemize(text.strip(), lang)
         if lang == 'en-gb':
             for w in sorted(set(RESPELLED.findall(text)), key=len, reverse=True):
                 gb, us = tk.phonemize(w, 'en-gb').strip(), tk.phonemize(w, 'en-us').strip()
@@ -133,6 +150,8 @@ class Voices:
                     ph = ph.replace(gb, us)
                 if us and not us.endswith('ɹ'):
                     ph = ph.replace(us + 'ɹ', us)
+            # nor any r a British voice slips between words ("Noah-r and"): said, it is heard as an r
+            ph = re.sub(r'ɹ(?=\s)', '', ph)
         return ph
 
     def say(self, text, spec, speed):
@@ -145,7 +164,11 @@ class Voices:
 RESPELLED = re.compile(r"\b[a-z]+(?:-[a-z]+)+s?\b")    # a name as the lexicon respells it: yah-oo-ah, moh-sheh
 
 # a word written all in capitals for emphasis is still a word, not letters to be spelled
-CAPS = re.compile(r'\b([A-Z]{2,})\b')
+CAPS = re.compile(r'\b(?!YAHUAHS?\b)([A-Z]{2,})\b')
+# His Name, as extract.js leaves it in the words to be said, and its own sounds: Yah-oo-Wah, with a
+# catch after Yah so that no voice glides from "ah" into "oo" through an r
+NAME = re.compile(r'\bYAHUAH(S?)\b')
+NAME_SOUNDS = 'jˈɑːʔuːwˈɑː'
 
 
 def prepare(kk):
