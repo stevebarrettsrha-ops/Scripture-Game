@@ -225,6 +225,7 @@ if(typeof drawProp==='function'){
     if(!GFX.on||!p) return _drawProp(g,px,py,p,t);
     const ty=p.type;
     if(ty==='gfxrock'){ drawRock(g,px,py,p._w,p._h,p._pal,p._seed); return; }
+    if(ty==='liwyathan'&&window.Stage&&Stage.props&&Stage.props.liwyathan){ Stage.props.liwyathan(g,px,py,PERSON()*1.8,t,{face:p.face||'l',fire:p.fire}); return; }
     if(ty==='rock'&&!p.color&&!p.col){ const u=2.6*(TILE/40)*((typeof PROP_SCALE!=='undefined'&&PROP_SCALE.rock)||1);
       const m=curMap, k=m?KIND[m.tiles[Math.floor(p.y||0)*m.w+Math.floor(p.x||0)]]:'dirt';
       drawRock(g,px,py,10*u,7*u,(k==='grass'||k==='snow')?'grey':'tan',Math.round((p.x||0)*97+(p.y||0)*61)>>>0); return; }
@@ -325,6 +326,115 @@ function rockItems(map,x0,x1,y0,y1){
     if(!inner&&h4<.6){ const Ws=TILE*(.3+.22*h3); out.push({type:'gfxrock',x:x+(h4<.3?.14:.86),y:y+.99,_w:Ws,_h:Ws*(.6+.3*h1),_pal:pal,_seed:(x*57+y*193)>>>0}); }
   }
   return out;
+}
+/* ============================== the great beasts ==============================
+   Behemoth and Liwyathan in the world are the cutscenes' own: the mammoth of the
+   grassland and the long-necked serpent of the deep, at the size of the world's people. */
+const PERSON=()=>TILE*1.55;
+/* ---- the beasts of the field in the world: painted like the cutscenes' own, from the
+   side, from the front as they come toward us and from behind as they go away, walking
+   when they move; a rider sits on the back. The small creatures — birds, fish, frogs,
+   lizards, beetles — are painted too. ---- */
+const BEAST_KIND={sheep:'sheep',ram:'ram',goat:'goat',cow:'cow',ox:'ox',bull:'ox',donkey:'donkey',camel:'camel',horse:'horse',deer:'deer',lion:'lion',leopard:'leopard',bear:'bear',dog:'dog'};
+function riderOn(g,px,py,backY,o,dir){
+  if(!o.rider||typeof drawChar!=='function') return;
+  const rc=(typeof CHARS!=='undefined'&&CHARS[o.rider])||{}, lu=(o.riderScale||1)*(rc.child?1.9:(rc.angel?3.3:2.6))*(TILE/40);
+  const ry=Math.round(py+backY+6*lu);
+  drawChar(g,px,ry,o.rider,{t:o.t||0,dir,moving:o.moving,riding:true,scale:o.riderScale||1,hold:o.riderHold});
+  if(dir==='left'||dir==='right'){                        /* the near leg hangs over the flank */
+    const robe=rc.robe||rc.skin||'#7a4e29', skin=rc.skin||'#7a4e29', ly=ry-5.5*lu, lx=px-1.4*lu;
+    g.fillStyle='rgba(26,15,9,.9)'; g.fillRect(lx-1,ly-1,2.8*lu+2,6.4*lu+2);
+    g.fillStyle=robe; g.fillRect(lx,ly,2.8*lu,3.6*lu); g.fillStyle=skin; g.fillRect(lx+.2*lu,ly+3.6*lu,2.4*lu,1.5*lu);
+    g.fillStyle='#3a2616'; g.fillRect(lx,ly+5*lu,2.8*lu,1.4*lu);
+  }
+}
+function smallCreature(g,px,py,type,o){
+  const t=o.t||0, k=2.2*(TILE/40)*(o.scale||1), face=o.dir==='right'?-1:1, moving=o.moving;
+  const ell=(x,y,rx,ry,r)=>{ g.beginPath(); g.ellipse(x,y,Math.max(.1,rx),Math.max(.1,ry),r||0,0,Math.PI*2); };
+  g.save(); g.translate(Math.round(px),Math.round(py)); if(o.alpha!==undefined) g.globalAlpha=o.alpha;
+  const shadow=(w)=>{ g.fillStyle='rgba(0,0,0,.2)'; ell(0,1,w*k,w*.34*k); g.fill(); };
+  if(type==='bird'||type==='dove'||type==='raven'){
+    const col=type==='dove'?'#f0ece0':(type==='raven'?'#262a32':(o.col||'#c8743e')), dk=tone(col,-.3), lt=tone(col,.25), fly=o.flying;
+    if(!fly) shadow(3.2);
+    g.scale(face,1);
+    const hop=!fly&&moving?-Math.abs(Math.sin(t/120))*k*1.2:0, by=(fly?-6*k:-3.4*k)+hop;
+    g.fillStyle=dk; g.beginPath(); g.moveTo(2*k,by-.4*k); g.lineTo(5.4*k,by-1.4*k); g.lineTo(5.6*k,by+.6*k); g.lineTo(2*k,by+.8*k); g.closePath(); g.fill();       /* the tail */
+    if(fly){ const f=Math.sin(t/70); g.fillStyle=tone(col,.1);
+      g.beginPath(); g.moveTo(-1*k,by-.4*k); g.quadraticCurveTo(1*k,by-(1+f*4)*k,3.6*k,by-f*5.2*k); g.quadraticCurveTo(1.6*k,by-f*1.6*k,1.4*k,by+.4*k); g.closePath(); g.fill(); }
+    const gr=g.createLinearGradient(0,by-2*k,0,by+1.8*k); gr.addColorStop(0,lt); gr.addColorStop(1,dk); g.fillStyle=gr;
+    ell(0,by,3*k,1.8*k); g.fill();                                              /* the body */
+    ell(-3*k,by-1.3*k,1.5*k,1.4*k); g.fill();                                  /* the head */
+    g.fillStyle='#d8a838'; g.beginPath(); g.moveTo(-4.3*k,by-1.5*k); g.lineTo(-5.8*k,by-1.1*k); g.lineTo(-4.3*k,by-.8*k); g.closePath(); g.fill();
+    g.fillStyle='#120a06'; ell(-3.4*k,by-1.6*k,.42*k,.42*k); g.fill();
+    if(!fly){ g.fillStyle=tone(col,-.15); ell(.6*k,by-.2*k,1.9*k,1.1*k,-.2); g.fill();          /* the folded wing */
+      g.strokeStyle='#b07a3a'; g.lineWidth=Math.max(1,.4*k); g.beginPath(); g.moveTo(-.6*k,by+1.4*k); g.lineTo(-.9*k,-.1*k); g.moveTo(.6*k,by+1.4*k); g.lineTo(.4*k,-.1*k); g.stroke(); }
+    else { const f=Math.sin(t/70); g.fillStyle=lt;
+      g.beginPath(); g.moveTo(-1.4*k,by-.2*k); g.quadraticCurveTo(0,by-(1+f*4.4)*k,2.6*k,by-f*6*k); g.quadraticCurveTo(1*k,by-f*2*k,.8*k,by+.6*k); g.closePath(); g.fill(); }
+    if(o.leaf){ g.fillStyle='#5d7a35'; ell(-6.2*k,by-1*k,1.3*k,.55*k,.3); g.fill(); }
+  } else if(type==='fish'){
+    const col=o.col||'#7aa8c8', w=Math.sin(t/160); g.scale(face,1);
+    const gr=g.createLinearGradient(0,-4*k,0,0); gr.addColorStop(0,tone(col,-.25)); gr.addColorStop(.5,col); gr.addColorStop(1,tone(col,.35));
+    g.fillStyle=tone(col,-.2); g.beginPath(); g.moveTo(3*k,-1.6*k); g.lineTo(5.6*k,-3.2*k+w*.6*k); g.lineTo(5.2*k,-1.6*k); g.lineTo(5.6*k,0+w*.6*k); g.closePath(); g.fill();   /* the tail fin */
+    g.beginPath(); g.moveTo(-1.2*k,-2.9*k); g.quadraticCurveTo(.4*k,-4.6*k,1.8*k,-2.8*k); g.closePath(); g.fill();                                                         /* the dorsal fin */
+    g.fillStyle=gr; g.beginPath(); g.moveTo(-3.8*k,-1.5*k); g.quadraticCurveTo(-2*k,-3.4*k,1*k,-3*k); g.quadraticCurveTo(3.4*k,-2.2*k,3.4*k,-1.6*k); g.quadraticCurveTo(3.4*k,-.8*k,1*k,-.2*k); g.quadraticCurveTo(-2*k,.2*k,-3.8*k,-1.5*k); g.closePath(); g.fill();
+    g.strokeStyle='rgba(255,255,255,.35)'; g.lineWidth=Math.max(.6,.25*k); g.beginPath(); g.moveTo(-2.2*k,-1.4*k); g.quadraticCurveTo(-2.6*k,-2*k,-2.1*k,-2.6*k); g.stroke();
+    g.fillStyle='#fff'; ell(-2.9*k,-1.8*k,.5*k,.5*k); g.fill(); g.fillStyle='#120a06'; ell(-3*k,-1.8*k,.28*k,.28*k); g.fill();
+  } else if(type==='frog'){
+    shadow(2.6); const hop=moving?-Math.abs(Math.sin(t/140))*k*1.6:0; g.translate(0,hop); g.scale(face,1);
+    const col='#5d8a4a'; g.fillStyle=tone(col,-.2); ell(1.6*k,-.8*k,1.6*k,.9*k); g.fill(); ell(-1.4*k,-.5*k,1*k,.6*k); g.fill();          /* the legs folded */
+    const gr=g.createLinearGradient(0,-3*k,0,0); gr.addColorStop(0,tone(col,.25)); gr.addColorStop(1,tone(col,-.2)); g.fillStyle=gr;
+    ell(0,-1.5*k,2.6*k,1.6*k); g.fill(); ell(-1.1*k,-2.9*k,.9*k,.8*k); g.fill(); ell(.9*k,-2.9*k,.9*k,.8*k); g.fill();
+    g.fillStyle='#e8d060'; ell(-1.1*k,-3*k,.5*k,.5*k); g.fill(); ell(.9*k,-3*k,.5*k,.5*k); g.fill();
+    g.fillStyle='#120a06'; ell(-1.1*k,-3*k,.25*k,.35*k); g.fill(); ell(.9*k,-3*k,.25*k,.35*k); g.fill();
+    g.fillStyle='rgba(40,60,20,.5)'; ell(.6*k,-1.4*k,.4*k,.3*k); g.fill(); ell(-.6*k,-1*k,.3*k,.25*k); g.fill();
+  } else if(type==='lizard'){
+    shadow(3); g.scale(face,1); const w=moving?Math.sin(t/90):0, col='#6e8a3e';
+    g.strokeStyle=tone(col,-.15); g.lineCap='round';
+    for(let i=0;i<8;i++){ const q=i/8; g.lineWidth=(1.2-q*1)*k; g.beginPath(); g.moveTo((2+q*4)*k,-.9*k+Math.sin(q*3+w)*q*.8*k); g.lineTo((2.5+q*4)*k,-.9*k+Math.sin(q*3+.4+w)*q*.8*k); g.stroke(); }   /* the tail */
+    g.strokeStyle=tone(col,-.25); g.lineWidth=Math.max(1,.4*k);
+    for(const [lx,d] of [[-1.4,1],[1.2,-1]]){ g.beginPath(); g.moveTo(lx*k,-.9*k); g.lineTo((lx-.6+w*d*.4)*k,.1*k); g.moveTo(lx*k,-.9*k); g.lineTo((lx+.4-w*d*.4)*k,-.2*k); g.stroke(); }
+    const gr=g.createLinearGradient(0,-2*k,0,0); gr.addColorStop(0,tone(col,.2)); gr.addColorStop(1,tone(col,-.2)); g.fillStyle=gr;
+    ell(0,-1*k,2.4*k,.8*k); g.fill(); ell(-2.8*k,-1.2*k,1*k,.7*k); g.fill();
+    g.fillStyle='#120a06'; ell(-3.1*k,-1.4*k,.22*k,.22*k); g.fill();
+  } else if(type==='beetle'){
+    shadow(2.2); g.scale(face,1); const w=moving?Math.sin(t/60):0;
+    g.strokeStyle='#241e16'; g.lineWidth=Math.max(.8,.3*k);
+    for(let i=0;i<3;i++){ const lx=(-1+i)*k; g.beginPath(); g.moveTo(lx,-1*k); g.lineTo(lx+(i%2?w:-w)*.5*k,.1*k); g.stroke(); }
+    g.beginPath(); g.moveTo(-2.6*k,-1.6*k); g.lineTo(-3.4*k,-2.6*k); g.moveTo(-2.6*k,-1.3*k); g.lineTo(-3.6*k,-1.1*k); g.stroke();
+    const gr=g.createRadialGradient(-.4*k,-1.8*k,.2*k,0,-1.2*k,2.2*k); gr.addColorStop(0,'#7a6a52'); gr.addColorStop(1,'#241e16'); g.fillStyle=gr;
+    ell(0,-1.2*k,1.9*k,1.2*k); g.fill(); g.fillStyle='#1a140e'; ell(-2.1*k,-1.2*k,.8*k,.7*k); g.fill();
+    g.strokeStyle='rgba(0,0,0,.5)'; g.beginPath(); g.moveTo(-1.2*k,-1.2*k); g.lineTo(1.8*k,-1.2*k); g.stroke();
+  }
+  g.restore();
+}
+if(typeof drawAnimal==='function'){
+  const _drawAnimal=drawAnimal;
+  window.drawAnimal=function(g,px,py,type,o){
+    const ST=window.Stage, P=ST&&ST.props; o=o||{};
+    if(!GFX.on||!ST||!ST.beast) return _drawAnimal.apply(this,arguments);
+    const t=o.t||0, sc=o.scale||1;
+    if(type==='behemoth'&&P.behemoth){ P.behemoth(g,px,py,PERSON()*1.35,t,{face:o.dir==='left'?'l':'r'}); return; }
+    if(type==='elephant'){ g.save(); if(o.alpha!==undefined) g.globalAlpha=o.alpha;
+      ST.elephant(g,px,py,PERSON()*.78*sc,t,{face:o.dir==='right'?'r':'l',walk:o.moving,tower:true}); g.restore(); return; }
+    if(type==='bird'||type==='dove'||type==='raven'||type==='fish'||type==='frog'||type==='lizard'||type==='beetle'){ smallCreature(g,px,py,type,o); return; }
+    const kind=BEAST_KIND[type]; if(!kind||!ST.BEASTS[kind]) return _drawAnimal.apply(this,arguments);
+    const s=PERSON()*sc*1.12, S=ST.BEASTS[kind], us=s/100;          /* a little fuller, to stand beside the world's people */
+    const backY=-(S.hump?S.W+S.hump[1]*.72:S.W-3)*us;
+    const opt={walk:o.moving,spotted:o.spotted,color:type==='bull'?'#3e2c22':undefined};
+    g.save(); if(o.alpha!==undefined) g.globalAlpha=o.alpha;
+    if(o.dir==='up'||o.dir==='down'){
+      const front=o.dir==='down';
+      if(front) riderOn(g,px,py,backY,o,o.dir);                 /* coming toward us, the beast is in front of its rider */
+      ST.beastFB(g,px,py,s,t,opt,kind,front);
+      if(!front) riderOn(g,px,py,backY,o,o.dir);
+    } else {
+      const right=o.dir==='right'||(!o.dir&&type==='dog');
+      opt.face=right?'r':'l';
+      ST.beast(g,px,py,s,t,opt,kind);
+      riderOn(g,px,py,backY,o,right?'right':'left');
+    }
+    g.restore();
+  };
 }
 let curCtx=null;
 let flowX=0, flowY=0, flowDown=false;

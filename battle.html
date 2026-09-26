@@ -53,6 +53,21 @@
         z-index:15;color:rgba(239,227,200,.6);font-style:italic;font-size:clamp(11px,1.8vmin,14px);letter-spacing:.12em;
         text-shadow:0 1px 4px #000;animation:pulse 2.4s infinite}
   @keyframes pulse{0%,100%{opacity:.4}50%{opacity:.95}}
+  /* the commander's orders */
+  #orders{position:absolute;bottom:calc(6.5vh + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:16;display:flex;gap:12px}
+  .ord{position:relative;width:86px;height:74px;border-radius:12px;cursor:pointer;user-select:none;-webkit-user-select:none;
+       background:rgba(10,14,26,.78);border:1px solid rgba(232,198,106,.55);color:#efe3c8;display:flex;flex-direction:column;align-items:center;justify-content:center;
+       box-shadow:0 4px 18px rgba(0,0,0,.5);overflow:hidden;font-family:inherit;touch-action:manipulation}
+  .ord .ic{font-size:24px;line-height:1}
+  .ord .lb{font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+  .ord .ky{position:absolute;top:4px;left:7px;font-size:10px;color:var(--gold);opacity:.85}
+  .ord .cdv{position:absolute;inset:0;background:conic-gradient(rgba(6,8,14,.72) calc(var(--cd,0)*1turn),transparent 0);pointer-events:none}
+  .ord.ready{border-color:var(--gold);box-shadow:0 0 16px rgba(232,198,106,.35),0 4px 18px rgba(0,0,0,.5)}
+  .ord.fired{animation:fired .4s ease}
+  @keyframes fired{0%{transform:scale(1.12)}100%{transform:scale(1)}}
+  #call{position:absolute;top:22vh;left:50%;transform:translateX(-50%);z-index:16;font-size:clamp(20px,4.4vmin,40px);letter-spacing:.2em;
+        color:#fff3cf;text-shadow:0 0 18px rgba(232,198,106,.7),0 3px 0 #2b2008;opacity:0;transition:opacity .25s;pointer-events:none;text-transform:uppercase}
+  #call.show{opacity:1}
   .hidden{display:none!important}
 </style>
 </head>
@@ -64,7 +79,13 @@
   <div style="color:#8d8770;font-style:italic">against</div>
   <div class="side"><span class="cnt" id="b-def"></span><span class="nm" id="b-def-nm"></span><span class="dot" id="b-def-dot"></span></div>
 </div>
-<div id="hint" class="hidden">tap, or press Space, to spur the host forward</div>
+<div id="hint" class="hidden">tap or Space to spur the host · give the orders below</div>
+<div id="orders" class="hidden">
+  <div class="ord" id="o-charge"><span class="ky">1</span><span class="ic">⚔</span><span class="lb">Charge</span><span class="cdv"></span></div>
+  <div class="ord" id="o-volley"><span class="ky">2</span><span class="ic">➶</span><span class="lb">Arrows</span><span class="cdv"></span></div>
+  <div class="ord" id="o-shield"><span class="ky">3</span><span class="ic">⛨</span><span class="lb">Shields</span><span class="cdv"></span></div>
+</div>
+<div id="call"></div>
 
 <div id="titleOv" class="overlay">
   <div class="ov-ref" id="t-ref"></div>
@@ -408,6 +429,9 @@ function drawSoldier(g,sx,sy,u,t){
   g.fillStyle=c.trim; g.fillRect(sx-C*.17,y0-C*.55,C*.34,C*.09);
   if(u.shield){ g.fillStyle=c.trim; g.beginPath(); g.ellipse(sx-dir*C*.2,y0-C*.3,C*.11,C*.19,0,0,Math.PI*2); g.fill();
     g.strokeStyle='rgba(0,0,0,.3)'; g.lineWidth=1; g.stroke(); }
+  if(u.team==='atk'&&u.kind==='foot'&&gt<shieldUntil){ const k=Math.min(1,(shieldUntil-gt)/400);      /* shields raised, locked toward the foe */
+    g.globalAlpha=k; g.fillStyle='#a8895a'; g.strokeStyle='#5a4428'; g.lineWidth=1.5; g.beginPath(); g.ellipse(sx,y0-C*.42,C*.26,C*.3,0,0,Math.PI*2); g.fill(); g.stroke();
+    g.fillStyle='#d8c070'; g.beginPath(); g.arc(sx,y0-C*.42,C*.06,0,Math.PI*2); g.fill(); g.globalAlpha=1; }
   /* head */
   g.fillStyle=c.skin; g.beginPath(); g.arc(sx,y0-C*.66,C*.15,0,Math.PI*2); g.fill();
   g.fillStyle=c.hair; g.beginPath(); g.arc(sx,y0-C*.7,C*.15,Math.PI*1.05,Math.PI*1.95); g.fill();
@@ -680,7 +704,7 @@ function updateUnits(dt,t){
         if(d>reach){ mvx=dx/d; mvy=dy/d; u.moving=true; }
         else { u.moving=false; u.cd-=dt;
           if(u.cd<=0){ u.cd=(u.kind==='horse'?600:800)+Math.random()*700;
-            if(Math.random()<.22&&!u.foe.dead){ u.foe.hp-=1;
+            if(Math.random()<(u.team==='def'&&gt<shieldUntil?.07:.22)&&!u.foe.dead){ u.foe.hp-=1;
               if(u.foe.hp<=0){ u.foe.dead=true; u.foe.deadT=t; burst(u.foe.x,u.foe.y,'spark',3); u.foe=null; } } }
           mvx=(Math.random()-.5)*.4; mvy=(Math.random()-.5)*.4; }
       } else { /* no foe near — advance the line toward the enemy side, holding frontage (x) */
@@ -791,7 +815,7 @@ function beginBattle(){
   if(state!=='title') return;
   if(document.activeElement&&document.activeElement.blur) document.activeElement.blur();
   $('titleOv').classList.remove('show');
-  $('banner').classList.remove('hidden'); $('hint').classList.remove('hidden');
+  $('banner').classList.remove('hidden'); $('hint').classList.remove('hidden'); $('orders').classList.remove('hidden');
   state='charge'; battleT=0;
   order('atk',{state:'fight'}); order('def',{state:'fight'});
   /* the chariots and cavalry break into a charge ahead of the foot */
@@ -799,7 +823,7 @@ function beginBattle(){
 }
 function endBattle(){
   state='over'; overShown=true;
-  $('banner').classList.add('hidden'); $('hint').classList.add('hidden');
+  $('banner').classList.add('hidden'); $('hint').classList.add('hidden'); $('orders').classList.add('hidden');
   $('o-ref').textContent=CFG.ref;
   $('o-title').textContent = CFG.defeat ? (CFG.overTitle||'Defeat') : 'Victory';
   $('o-sub').textContent=CFG.win;
@@ -898,7 +922,7 @@ function updateBanner(){ $('b-atk').textContent=count('atk'); $('b-def').textCon
 function frame(ts){
   const dt=Math.min(50,ts-(tPrev||ts)); tPrev=ts; gt+=dt;
   if(state==='charge'){ battleT+=dt;
-    updateUnits(dt,gt); siegeTick(); ramTick(dt); skyTick(dt); cityFireTick(); updateBanner();
+    updateUnits(dt,gt); siegeTick(); ramTick(dt); skyTick(dt); cityFireTick(); updateBanner(); ordersTick();
     /* the battle is decided when one host is broken */
     if(!overShown && (count('def')<=2 || count('atk')<=2 || battleT>26000)){
       /* finish: the loser falls, the victor holds — some story-battles end in defeat for Yasharal */
@@ -914,6 +938,41 @@ function frame(ts){
   render();
   requestAnimationFrame(frame);
 }
+
+/* ---------- the commander's orders: each can be given again once its time has come round ---------- */
+const ORD={ charge:{cd:9000,t:-1e9,call:'Charge!'}, volley:{cd:11000,t:-1e9,call:'Loose!'}, shield:{cd:13000,t:-1e9,call:'Shields up!'} };
+let shieldUntil=0; const VOLLEYS=[]; let callT=0;
+function giveOrder(k){
+  if(state!=='charge') return; const o=ORD[k]; if(!o||gt-o.t<o.cd) return; o.t=gt;
+  const el=$('o-'+k); el.classList.remove('fired'); void el.offsetWidth; el.classList.add('fired');
+  const c=$('call'); c.textContent=o.call; c.classList.add('show'); callT=gt;
+  if(k==='charge'){
+    /* the whole line surges forward together */
+    for(const u of A){ if(u.team!=='atk'||u.dead||u.kind==='archer') continue; u.state='charge'; u.chargeT=800+Math.random()*500; u.foe=null; }
+    burst(CW/2,CH-4,'dust',24);
+  } else if(k==='volley'){
+    /* the archers loose together at the thick of the enemy; where the arrows fall, men fall */
+    const tgt=CEN.def||{x:CW/2,y:CH*.3};
+    for(let v=0;v<3;v++){ const ix=tgt.x+(v-1)*2.6+(Math.random()-.5), iy=tgt.y+(Math.random()-.5)*1.4;
+      VOLLEYS.push({x:ix,y:iy,at:gt+950+v*120}); }
+    const shooters=A.filter(u=>u.team==='atk'&&!u.dead&&u.kind==='archer');
+    const from=shooters.length?shooters:A.filter(u=>u.team==='atk'&&!u.dead).slice(-12);
+    for(const u of from){ const v=VOLLEYS[VOLLEYS.length-1-((Math.random()*3)|0)]; const dx=v.x-u.x, dy=v.y-u.y, l=Math.hypot(dx,dy)||1;
+      spawn({x:u.x,y:u.y-.4,vx:dx/950,vy:dy/950-.22,grav:.00046,life:950,max:950,kind:'arrow'}); }
+  } else if(k==='shield'){ shieldUntil=gt+4500; }
+}
+function ordersTick(){
+  for(const k in ORD){ const o=ORD[k], el=$('o-'+k), left=cl01(1-(gt-o.t)/o.cd); el.style.setProperty('--cd',left.toFixed(3)); el.classList.toggle('ready',left<=0); }
+  if(callT&&gt-callT>900){ $('call').classList.remove('show'); callT=0; }
+  for(let i=VOLLEYS.length-1;i>=0;i--){ const v=VOLLEYS[i]; if(gt<v.at) continue; VOLLEYS.splice(i,1);
+    burst(v.x,v.y,'dust',10);
+    for(const u of A){ if(u.dead||u.team!=='def') continue; if(Math.hypot(u.x-v.x,u.y-v.y)>1.9) continue;
+      if(Math.random()<.42){ u.hp-=1; if(u.hp<=0){ u.dead=true; u.deadT=gt; burst(u.x,u.y,'spark',3); } } } }
+}
+function cl01(v){ return v<0?0:(v>1?1:v); }
+for(const k of ['charge','volley','shield']){ const el=$('o-'+k);
+  el.addEventListener('pointerdown',e=>{ e.stopPropagation(); e.preventDefault(); giveOrder(k); }); }
+addEventListener('keydown',e=>{ if(e.repeat) return; if(e.key==='1') giveOrder('charge'); else if(e.key==='2') giveOrder('volley'); else if(e.key==='3') giveOrder('shield'); });
 
 /* ---------- interaction: a tap spurs the host a step forward ---------- */
 function spur(){
@@ -942,6 +1001,9 @@ function pollGamepad(){
   const act=()=>{ if(state==='title') beginBattle(); else if(state==='over') location.href=RETURN; else spur(); };
   edge(0,act);   // A / Cross
   edge(9,act);   // Start
+  edge(2,()=>giveOrder('charge'));   // X / Square
+  edge(3,()=>giveOrder('volley'));   // Y / Triangle
+  edge(5,()=>giveOrder('shield'));   // RB
 }
 
 /* ---------- boot ---------- */
@@ -950,5 +1012,8 @@ $('o-return').onclick=()=>{ location.href=RETURN; };
 fit(); build(); setupUI();
 requestAnimationFrame(frame);
 </script>
+<script src="pron.js"></script>
+<script src="voice.js"></script>
+<script src="voices/battle.js"></script>
 </body>
 </html>
