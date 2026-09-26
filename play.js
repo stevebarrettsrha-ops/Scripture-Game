@@ -100,7 +100,7 @@ function pollPads(){
 }
 
 /* ---------------------------------------------------------------- the skirmish */
-const C={active:false,hp:5,max:5,inv:0,falls:0,swingT:-9e9,swingA:0,combo:0,lastSwing:-9e9,buffer:false,
+const C={active:false,stats:{frames:0,swings:0,landed:0,guarded:0,taken:0},hp:5,max:5,inv:0,falls:0,swingT:-9e9,swingA:0,combo:0,lastSwing:-9e9,buffer:false,
          dashT:-9e9,dashCD:0,dashV:[0,0],hitstop:0,redT:-9e9,p0:null,foes:[],fallT:-9e9,tokens:2};
 PLAY.combat=C;
 const fighting=()=>{ const b=Game.battle; return !!(PLAY.on&&b&&b.phase!=='rally'&&Game.state==='play'&&Game.world&&Game.world.player&&!Game.dlgChar); };
@@ -271,7 +271,7 @@ Game.update=function(dt){
 };
 const _onAction=Game.onAction;
 Game.onAction=function(){
-  if(fighting()&&!this.mash){ if(typeof Sound!=='undefined'&&Sound.init) Sound.init(); PLAY.attack(this); return; }
+  if(fighting()&&!this.mash){ if(typeof Sound!=='undefined'&&Sound.init) Sound.init(); if(!C.active) begin(this); PLAY.attack(this); return; }   /* a blow in the very first moment of a fight */
   if(this.mash&&this.state==='play'&&!this.dlgChar) C.mashPress=now();
   return _onAction.apply(this,arguments);
 };
