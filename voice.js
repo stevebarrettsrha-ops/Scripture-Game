@@ -132,8 +132,13 @@ function canon(name,id){
   if(ROLE_NOUN[first]||GENERIC.has(first)||TITLE.has(first)||F_WORD.test(first)||M_WORD.test(first)) return k;
   return ALIAS[first]||first;
 }
+const people=new Map();
 function person(id){
   if(id&&typeof id==='object') return id;
+  let r=people.get(id); if(r) return r;
+  r=person0(id); if(chars()[id]) people.set(id,r); return r;
+}
+function person0(id){
   const C=chars(), c=C[id]||{}, name=c.name||'';
   if(!id||id==='narrator'||c.narrator) return {kind:'narrator',key:'narrator'};
   if(c.divine||id==='voice') return {kind:'divine',key:'divine'};
@@ -447,25 +452,30 @@ function clipEl(url){
   return a;
 }
 let playing=null;
+/* who is speaking this moment, and how far into the words: the mouths move with it, and a
+   line's text comes up in step with it */
+V.talk=null; V.prog=null;
 function stop(){
-  gen++; queue=[]; onDone=null; clearTimeout(dog);
+  gen++; queue=[]; onDone=null; clearTimeout(dog); V.talk=null; V.prog=null;
   if(playing){ try{ playing.pause(); playing.onended=playing.onerror=null; }catch(e){} playing=null; }
   if(V.supported&&(synth.speaking||synth.pending)){ try{ synth.cancel(); }catch(e){} lastCancel=now(); }
   V.busy=false; talking(false);
 }
-/* items: [{text, who}] heard one after another; done() when the last is over */
-function play(items,done){
+/* items: [{text, who}] heard one after another; done() when the last is over. tag: what the
+   words belong to (a line of dialogue), so its text can keep pace with them */
+function play(items,done,tag){
   stop();
   if(!V.canSpeak()) return false;
   const my=gen;
   for(const it of (items||[])){
     if(!it||!norm(it.text)) continue;
     const clip=clipFor(it.who,it.text);
-    if(clip){ queue.push({clip,text:it.text,who:it.who}); continue; }
+    if(clip){ queue.push({clip,text:it.text,who:it.who,ms:clip.ms/V.rate}); continue; }
     if(!V.supported||V.broken) continue;
-    const r=role(it.who); for(const c of chunks(it.text,r.rate*V.rate)) queue.push({text:c,who:it.who});
+    const r=role(it.who); for(const c of chunks(it.text,r.rate*V.rate)) queue.push({text:c,who:it.who,ms:speakable(c).length/(13.5*cl(r.rate*V.rate,.5,2))*1000});
   }
   if(!queue.length) return false;
+  V.prog={tag:tag||null,total:queue.reduce((a,q)=>a+q.ms,0)||1,done:0,cur:null};
   onDone=done||null; V.busy=true;
   for(const q of queue) if(q.clip){ clipEl(q.clip.url); break; }
   next(my);
@@ -475,10 +485,20 @@ function record(q,kind,voice){
   V.heard.push({text:q.text||'',who:typeof q.who==='object'?q.who.kind+':'+q.who.key:(q.who||''),kind,voice:voice||''});
   if(V.heard.length>600) V.heard.splice(0,200);
 }
+/* how far through the words now playing, 0 to 1 */
+V.progress=function(){ const P=V.prog; if(!P) return null;
+  const c=P.cur?Math.min(P.cur.ms,Math.max(0,now()-P.cur.t0)):0; return cl((P.done+c)/P.total,0,1); };
+function begin(q,delay,ms){
+  const p=person(q.who);
+  V.talk={key:p.key,kind:p.kind,text:q.text,said:speakable(q.text),t0:now()+delay,dur:Math.max(250,ms)};
+}
 function next(my){
   if(my!==gen) return;
+  V.talk=null;
+  if(V.prog&&V.prog.cur){ V.prog.done+=V.prog.cur.ms; V.prog.cur=null; }
   const q=queue.shift();
-  if(!q){ V.busy=false; talking(false); const d=onDone; onDone=null; if(d) d(); return; }
+  if(!q){ V.busy=false; talking(false); const d=onDone; onDone=null; V.prog=null; if(d) d(); return; }
+  if(V.prog) V.prog.cur={ms:q.ms,t0:now()};
   if(q.clip) return playClip(q,my);
   speak(q,my);
 }
@@ -492,6 +512,7 @@ function playClip(q,my){
   a.onended=()=>fin(true); a.onerror=()=>fin(false);
   try{ a.playbackRate=V.rate; a.currentTime=0; }catch(e){}
   talking(true); record(q,'clip',q.clip.url);
+  begin(q,60/V.rate,(q.clip.ms-220)/V.rate);                     /* the recording's words lie between its short silences */
   for(const n of queue) if(n.clip){ clipEl(n.clip.url); break; }     /* the next one, ready */
   dog=setTimeout(()=>fin(true),q.clip.ms/V.rate+4000);
   let p; try{ p=a.play(); }catch(e){ fin(false); return; }
@@ -510,7 +531,8 @@ function speak(q,my){
   let started=false, ended=false;
   const est=s.length/(13.5*u.rate)*1000;
   const fin=()=>{ if(ended) return; ended=true; clearTimeout(dog); if(my===gen) next(my); };
-  u.onstart=()=>{ started=true; V.fails=0; clearTimeout(dog); dog=setTimeout(fin,est*1.8+2500); };
+  u.onstart=()=>{ started=true; V.fails=0; clearTimeout(dog); dog=setTimeout(fin,est*1.8+2500); begin(q,0,est);
+    if(V.prog&&V.prog.cur) V.prog.cur.t0=now(); };
   u.onend=fin;
   u.onerror=e=>{ const er=e&&e.error;
     if(er==='interrupted'||er==='canceled') return;
@@ -534,7 +556,19 @@ addEventListener('visibilitychange',()=>{ if(document.hidden) stop(); });
 addEventListener('pagehide',()=>stop());
 
 V.play=play; V.stop=stop;
-V.line=function(id,text){ return play(lineItems(id,text)); };
+V.line=function(id,text){ return play(lineItems(id,text),null,text); };
+/* how open the mouth of one who is speaking is, this moment (0 shut … 1 wide), or null if that
+   one is not speaking: the vowels of the words being said, laid over the time they take */
+V.mouth=function(id){
+  const T=V.talk; if(!T||id==null) return null;
+  const P=person(id); if(P.key!==T.key||P.kind==='narrator') return null;
+  const f=(now()-T.t0)/T.dur; if(f<0||f>1) return 0;
+  const s=T.said, pos=f*s.length, i=Math.floor(pos), ch=s[i]||' ', fr=pos-i;
+  const v=/[aoAO]/.test(ch)?1:/[eE]/.test(ch)?.78:/[iIyY]/.test(ch)?.58:/[uUwW]/.test(ch)?.46:/[mbpMBP]/.test(ch)?0:/[fvFV]/.test(ch)?.16:/[a-zA-Z]/.test(ch)?.32:0;
+  return v*(.45+.55*Math.sin(Math.PI*fr));
+};
+/* the words a person is saying now, for the face to fit them */
+V.saying=function(id){ const T=V.talk; if(!T||id==null) return null; return person(id).key===T.key?T.text:null; };
 V.setOn=function(on){
   V.on=!!on; store.set(KEY_ON,V.on?'1':'0'); if(!V.on) stop(); driver=null;
   if(V.on){ V.broken=false; V.fails=0; }
@@ -554,6 +588,10 @@ function hold(c,j,st){
   const need=st+120; if(c.times[j]>=need) return;
   const d=need-c.times[j]; for(let m=j;m<=n;m++) c.times[m]+=d;
 }
+function pull(c,j,at){
+  const n=c.parts.length; if(j>n||c.times[j]<=at) return;
+  const d=c.times[j]-at; for(let m=j;m<=n;m++) c.times[m]-=d;
+}
 function tickDriver(G){
   const d=driver; if(!d) return;
   if(G.state!=='slides'){ driver=null; return; }
@@ -561,10 +599,12 @@ function tickDriver(G){
   const st=G.slideT||0, n=c.parts.length;
   if(d.speaking&&!V.busy) d.speaking=false;
   if(d.speaking){ hold(c,d.k+1,st); return; }
+  /* the part has been heard: the next comes on after a breath, not the whole reading time */
+  if(d.heard){ d.heard=false; pull(c,d.k+1,st+380); }
   const k=d.k+1; if(k>=n) return;
   if(c.allAt!=null||st>=c.times[k]){
     d.k=k; hold(c,k+1,st);
-    d.speaking=play(d.byPart[k]||[],()=>{ if(driver===d) d.speaking=false; });
+    d.speaking=play(d.byPart[k]||[],()=>{ if(driver===d){ d.speaking=false; d.heard=true; } });
   }
 }
 V.slide=function(list,i){
@@ -586,6 +626,12 @@ function gameHooks(){
     return r; };
   const _ask=G.askChoice;
   if(_ask) G.askChoice=function(prompt){ const r=_ask.apply(this,arguments); V.again=null; V.line('narrator',prompt); return r; };
+  if(G.updateDlg){ const _ud=G.updateDlg;
+    G.updateDlg=function(dt){
+      const f=this.dlgChar&&!this.dlgDone&&V.prog&&V.prog.tag===this.dlgText?V.progress():null;
+      /* never behind the voice (the words keep up with what is heard); a tap still shows all */
+      if(f!=null){ const L=this.dlgText.length, want=Math.min(L,f*L*1.06+1); if(want>this.dlgShown) this.dlgShown=want-(dt||0)*.026; }
+      return _ud.apply(this,arguments); }; }
   const _close=G.closeDlg;
   G.closeDlg=function(){ if(this.dlgChar) stop(); return _close.apply(this,arguments); };
   const _show=G.showSlide;

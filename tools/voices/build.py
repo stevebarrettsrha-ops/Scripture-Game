@@ -116,12 +116,27 @@ class Voices:
             self.cache[spec] = sum(self.k.get_voice_style(n) * (w / tot) for n, w in parts).astype(np.float32)
         return self.cache[spec]
 
+    def phonemes(self, text, lang):
+        """the words as sounds. The respelled names (al-oo-ah-heem, yah-ah-kohv) are read by the
+        American rules even in a British voice, which would otherwise join their syllables
+        with an r that is not there ("yar-ah-kohv")"""
+        tk = self.k.tokenizer
+        ph = tk.phonemize(text, lang)
+        if lang == 'en-gb':
+            for w in sorted(set(RESPELLED.findall(text)), key=len, reverse=True):
+                gb, us = tk.phonemize(w, 'en-gb').strip(), tk.phonemize(w, 'en-us').strip()
+                if gb and gb != us:
+                    ph = ph.replace(gb, us)
+        return ph
+
     def say(self, text, spec, speed):
         lang = 'en-gb' if spec.split(':')[0].startswith('b') else 'en-us'
-        wav, sr = self.k.create(text, voice=self.style(spec), speed=speed, lang=lang)
+        wav, sr = self.k.create(self.phonemes(text, lang), voice=self.style(spec), speed=speed, lang=lang, is_phonemes=True)
         assert sr == SR
         return wav
 
+
+RESPELLED = re.compile(r"\b[a-z]+(?:-[a-z]+)+s?\b")    # a name as the lexicon respells it: yah-oo-ah, moh-sheh
 
 # a word written all in capitals for emphasis is still a word, not letters to be spelled
 CAPS = re.compile(r'\b([A-Z]{2,})\b')
@@ -196,6 +211,7 @@ def main():
     ap.add_argument('--threads', type=int, default=0)
     ap.add_argument('--banks', action='store_true', help='only write the banks')
     ap.add_argument('--limit', type=int, default=0)
+    ap.add_argument('--redo', default='', help='a file of keys to record again even though recorded')
     ap.add_argument('--tag', default='', help='a name for this run\'s progress file, when runs overlap')
     a = ap.parse_args()
     lines = json.load(open(a.lines))
@@ -215,6 +231,7 @@ def main():
         vo = Voices(a.models)
     ff = ffmpeg()
     have = durations()
+    redo = set(open(a.redo).read().split()) if a.redo else set()
     mine_path = os.path.join(OUT, '.dur-%d%s.json' % (a.worker, a.tag))
     mine = json.load(open(mine_path)) if os.path.exists(mine_path) else {}
     todo, seen = [], set()
@@ -229,7 +246,9 @@ def main():
             if group not in a.who.split(','):
                 continue
             seen.add(key)
-            if key in have and os.path.exists(os.path.join(OUT, key[:2], key + '.webm')):
+            if key in redo:
+                pass
+            elif key in have and os.path.exists(os.path.join(OUT, key[:2], key + '.webm')):
                 continue
             todo.append(it)
     print('worker %d: %d lines to record' % (a.worker, len(todo)), flush=True)
