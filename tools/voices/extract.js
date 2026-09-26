@@ -25,7 +25,7 @@ const games=process.argv.slice(2);
       /* the words as the recording engine should read them: the reader's respellings, their
          syllables held together by hyphens so each name is one word, evenly stressed */
       const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+/g;
-      const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/g;
+      const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/gi;
       const kk=t=>String(t).replace(GLOSS,'').replace(/\(\s*(YAHU[ĂA]H)\s*\)\s*HWHY/g,'$1').replace(/\bO?HWHY\b/gi,m=>m.length===5?'O YAHUAH':'YAHUAH').replace(/[ʿʾ]/g,'’').replace(WORD_RE,w=>BesorahPron.wordFor(w))
         .replace(/\s*[—–―]+\s*/g,', ').replace(/…/g,', ').replace(/[;:]/g,',')
         .replace(/["`´“”‘’«»‹›„‚(){}\[\]<>|\\\/_~^*%#@$&+=§¶†‡•·✦]/g,' ')
