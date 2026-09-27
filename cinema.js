@@ -237,6 +237,14 @@ function drawHeld(g,k,hx,hy,h,face,t,J){
     case 'branch': case 'almond':
       g.strokeStyle='#6a4a30'; g.lineWidth=u*1.4; g.beginPath(); g.moveTo(0,0); g.lineTo(-u*4,-u*22); g.moveTo(-u*2,-u*10); g.lineTo(u*4,-u*16); g.stroke();
       g.fillStyle='#f4e8f0'; for(const[px,py]of[[-u*4,-u*22],[u*4,-u*16],[-u*3,-u*16],[-u*1,-u*6]]){ ell(g,px,py,u*2,u*2); g.fill(); } break;
+    case 'wood': case 'sticks':
+      // an armful of cut wood and dry grass
+      g.lineCap='round';
+      for(let i=0;i<7;i++){ const o=(i-3)*u*1.4; g.strokeStyle=i%2?'#6e4a2a':'#8a6238'; g.lineWidth=u*(1.6+(i%3)*.4);
+        g.beginPath(); g.moveTo(-u*15+o*.3,-u*2+o); g.lineTo(u*15-o*.2,-u*9+o*.8); g.stroke(); }
+      g.strokeStyle='#d6c070'; g.lineWidth=u*.7;
+      for(let i=0;i<9;i++){ const x=-u*16+i*u*.6, y=-u*1+(i%3)*u*1.2; g.beginPath(); g.moveTo(x,y); g.lineTo(x-u*4,y+u*(i%2?2:-2)); g.stroke(); }
+      g.strokeStyle='#4a3420'; g.lineWidth=u*1; g.beginPath(); g.moveTo(-u*2,-u*9); g.lineTo(u*1,u*1); g.stroke(); break;
     case 'yoke':
       g.fillStyle='#6a4a28'; g.fillRect(-u*14,-u*3,u*28,u*3); g.fillRect(-u*11,-u*3,u*1.5,u*8); g.fillRect(u*9.5,-u*3,u*1.5,u*8); break;
     case 'girdle': case 'belt':
@@ -2062,7 +2070,7 @@ const Stage={
     else if((a.dy||0)<-.03){}                                   /* lifted up off the ground: no shadow under it */
     else if(!P.lie) figureShadow(g,x,y,h,P); else { g.fillStyle='rgba(8,6,4,.25)'; ell(g,x,y+h*.005,h*.5,h*.03); g.fill(); }
     if(S1.face==='b') drawFigureBack(g,x,y,h,L,P,t,{hold:a.hold||a.hold2,crown:a.crown,alpha:S1.alpha<1?S1.alpha:null,phase:i*1.7});
-    else drawFigure(g,x,y,h,L,P,S1.face,t,{hold:(a.holdAt!=null&&st<this.beatTime(a.holdAt))?null:a.hold,hold2:a.hold2,crown:a.crown,wings:a.wings,alpha:S1.alpha<1?S1.alpha:null,dead:a.pose==='dead',blanket:(a.onbed&&P.lie)?(a.blanket||'#9a7a5a'):null,expr:fc.expr,mouth:fc.mouth});
+    else drawFigure(g,x,y,h,L,P,S1.face,t,{hold:((a.holdAt!=null&&st<this.beatTime(a.holdAt))||(a.dropAt!=null&&st>=this.beatTime(a.dropAt)))?null:a.hold,hold2:a.hold2,crown:a.crown,wings:a.wings,alpha:S1.alpha<1?S1.alpha:null,dead:a.pose==='dead',blanket:(a.onbed&&P.lie)?(a.blanket||'#9a7a5a'):null,expr:fc.expr,mouth:fc.mouth});
     if(wet){ g.restore(); ripples(g,x,wl,h*.32,t,i); }
     /* a name, the first time a figure is seen (once the chapter's title card has gone) */
     if(a.label!==false&&L.name&&!S1.walking&&st>S1.shown+300){
