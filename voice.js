@@ -209,9 +209,26 @@ const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart
 /* "(YAHUAH) HWHY": the Name is said once; the glyph beside it is for the eye, as in the reader */
 const HWHY=/\(\s*(YAHU[ĂA]H)\s*\)\s*HWHY/g;
 const MARKS=/[‘’‚‛ʻʼʹ׳'`´ʿʾ]/g;
+/* the Hebrew letters as they are said: ḥ, and the ch of ruach and mizbe’ach, is a K — never an
+   English h, never the ch of "church". A word that ends in it keeps its last vowel: No-ahk, Pesahk */
+const HEB_CH={ruach:'ruahk',ruchot:'roo-kote',mizbeach:'miz-beh-ahk',mizbeachot:'miz-beh-ah-kote',pesach:'pesahk',
+  mashiach:'mashi-ahk',chen:'khen',baruch:'baruk',chittim:'kittim',achior:'akior',hermon:'kermon'};
+const HEB_SAY={'ḥawwah':'kah-wah','ḥiram':'kee-ram','ḥirah':'kee-rah','ḥur':'kour'};
+function hebrewK(w){
+  const low=w.toLowerCase(), cap=s=>/^[A-ZÀ-ÞḀ-ỿ]/.test(w)&&w[0]!==w[0].toLowerCase()?s[0].toUpperCase()+s.slice(1):s;
+  const bare=low.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(MARKS,'');
+  if(HEB_CH[bare]) return cap(HEB_CH[bare]);
+  if(!/ḥ/.test(low)) return null;
+  if(HEB_SAY[low]) return cap(HEB_SAY[low]);
+  if(w===w.toUpperCase()) w=w.toLowerCase();
+  return w.replace(/([^\s-])[’'ʼ]?([aA])[ḥḤ]$/,'$1-$2hk').replace(/ḥ/g,'k').replace(/Ḥ/g,'K');
+}
 function sayWord(w,device){
   const key=nameKey(w.replace(/[’'`´]s$/,''));
   if(key==='yahuah'){ const s=/[’'`´]s$/.test(w); return device?(s?"Yah-hoo-wah's":'Yah-hoo-wah'):(s?'YAHUAHS':'YAHUAH'); }
+  { const m=w.match(/^(.*?)([’'`´]s)?$/), k=hebrewK(m[1].normalize('NFC'));
+    if(k!=null){ let o=k.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(MARKS,'');
+      if(o===o.toUpperCase()) o=o.toLowerCase(); return o+(m[2]?"'s":''); } }
   /* don't, it's, the man’s: English, the apostrophe kept */
   if(/^[A-Za-z]+[’'](s|t|re|ll|ve|d|m)$/i.test(w)) return w.replace(/[’`´]/,"'");
   let o=w.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(MARKS,'');
