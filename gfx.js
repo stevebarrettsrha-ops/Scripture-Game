@@ -365,7 +365,7 @@ if(typeof drawProp==='function'){
         if(ty==='incense'){ g.strokeStyle='rgba(240,236,228,.35)'; g.lineWidth=2*u; g.beginPath(); for(let k=0;k<14;k++){ const yy=py-12*u-k*2.2*u; g.lineTo(px+Math.sin(t/500+k*.6)*4*u,yy); } g.stroke(); } }
       return; }
     if((ty==='fig'||ty==='slab'||ty==='dome'||ty==='keruv')&&window.Stage&&Stage.props&&Stage.props[ty]){
-      Stage.props[ty](g,px,py,TILE*(ty==='fig'?2.8:ty==='keruv'?2.1:2.7),t,Object.assign({},p,{face:p.face||'l'})); return; }
+      Stage.props[ty](g,px,py,TILE*(ty==='fig'?2.8:ty==='keruv'?2.1:ty==='dome'?3.6:2.7),t,Object.assign({},p,{face:p.face||'l'})); return; }
     if(ty==='liwyathan'&&window.Stage&&Stage.props&&Stage.props.liwyathan){ Stage.props.liwyathan(g,px,py,PERSON()*1.8,t,{face:p.face||'l',fire:p.fire}); return; }
     /* a mountain is drawn as a mountain, not as a stone: a feature named a mountain, or a rock the
        telling calls one ("the mountains shaken before Him", "the cave on Ḥorĕḇ, the mountain") */
