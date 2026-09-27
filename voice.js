@@ -567,6 +567,8 @@ function slideSegs(list,i,depth){
   const text=String(s.text||''), parts=partsOf(s);
   let partOf=null;
   if(parts){ const st=[]; let o=0; for(const p of parts){ st.push(o); o+=p.length; } partOf=x=>{ let k=0; while(k+1<st.length&&st[k+1]<=x) k++; return k; }; }
+  /* the whole of it one speaker's words, though no mark opens them: a letter read by the one who wrote it */
+  if(s.by) return [{text,who:s.by,a:0,b:text.length}];
   /* the verse says who speaks: each quotation in it is given, in order, to the one named */
   if(s.who!=null){ const w=Array.isArray(s.who)?s.who:[s.who]; let k=0;
     return quoteSpans(text).map(sp=>({text:text.slice(sp.a,sp.b),who:sp.q?w[Math.min(k++,w.length-1)]:'narrator',a:sp.a,b:sp.b})); }
