@@ -2483,7 +2483,17 @@ function generateMap(cfg){
   // river: vertical or horizontal band with curve
   if(cfg.river){
     const r=cfg.river;
-    for(let y=0;y<h;y++){
+    /* a river that springs up from under a tree (the tree of life): from its source it runs to the
+       river's course and joins it, and the river flows on from there — none of it above */
+    const y0=r.from&&r.join!=null?Math.floor(r.join):0;
+    if(r.from&&r.join!=null){
+      const [sx,sy]=r.from, jx=r.x+Math.sin(r.join*.22+(cfg.seed||1))*r.curve, jy=r.join, n=Math.ceil(Math.hypot(jx-sx,jy-sy)*3), cw=Math.max(1.6,r.width*.6);
+      for(let i=0;i<=n;i++){ const k=i/n, cx=sx+(jx-sx)*k+Math.sin(k*Math.PI*2)*.9, cy=sy+(jy-sy)*k;
+        for(let y=Math.floor(cy-cw-1.4);y<=Math.ceil(cy+cw+1.4);y++) for(let x=Math.floor(cx-cw-1.4);x<=Math.ceil(cx+cw+1.4);x++){
+          if(x<0||y<0||x>=w||y>=h) continue; const d=Math.hypot(x+.5-cx,y+.5-cy), ti=y*w+x;
+          if(d<cw*.55) tiles[ti]=T.WATER; else if(d<cw*.55+1.1&&tiles[ti]!==T.WATER&&tiles[ti]!==T.DEEP&&tiles[ti]!==T.MTN) tiles[ti]=T.SAND; } }
+    }
+    for(let y=y0;y<h;y++){
       const cx=r.x+Math.sin(y*.22+(cfg.seed||1))*r.curve;
       for(let x=0;x<w;x++){
         if(Math.abs(x-cx)<r.width/2) tiles[y*w+x]=Math.abs(x-cx)<r.width/2-1?T.DEEP:T.WATER;
@@ -6299,10 +6309,10 @@ const STORY=[
 { id:'c2', title:'The Garden in Ĕḏen', ref:'BERĔSHITH 2',
   intro:[
    {art:'mankind', music:'eden', text:'And YAHUAH Aluahim formed the man out of dust from the ground and breathed into his nostrils breath of life. And the man became a living being.', ref:'BERĔSHITH 2:7', stage:{"set":"wilderness","time":"dawn","cam":"close","focus":0.5,"cast":[{"id":"voice","x":0.5},{"id":"adam","x":0.5,"z":0.1,"face":"r","from":"lie","pose":"look","at":1}],"fx":[{"k":"rays","x":0.5,"at":0},{"k":"wind","at":0}]}},
-   {art:'garden', text:'And YAHUAH Aluahim planted a garden in Ĕḏen, to the east, and there He put the man whom He had formed. And YAHUAH Aluahim took the man and put him in the garden of Ĕḏen, to work it and to guard it.', ref:'BERĔSHITH 2:8,15', stage:{"set":"garden","time":"dawn","cam":"pan-r","cast":[{"id":"voice","x":0.74},{"id":"adam","enter":"l","at":0,"to":0.32,"z":0.12,"face":"r","pose":"look","acts":[{"at":1,"to":0.52,"pose":"kneel"}]}],"props":[{"k":"tree","x":0.74,"z":0.35,"h":160,"fruit":"#f0c040"},{"k":"tree","x":0.9,"z":0.5,"fruit":"#d85a3a"},{"k":"bush","x":0.6,"z":0.14,"color":"#4a7a3a"},{"k":"sheep","x":0.18,"z":0.55,"n":3}]}},
+   {art:'garden', text:'And YAHUAH Aluahim planted a garden in Ĕḏen, to the east, and there He put the man whom He had formed. And YAHUAH Aluahim took the man and put him in the garden of Ĕḏen, to work it and to guard it.', ref:'BERĔSHITH 2:8,15', stage:{"set":"garden","time":"dawn","cam":"pan-r","cast":[{"id":"voice","x":0.74},{"id":"adam","enter":"l","at":0,"to":0.32,"z":0.12,"face":"r","pose":"look","acts":[{"at":1,"to":0.52,"pose":"kneel"}]}],"props":[{"k":"treelife","x":0.74,"z":0.35,"h":175},{"k":"treeknow","x":0.9,"z":0.5,"h":150},{"k":"bush","x":0.6,"z":0.14,"color":"#4a7a3a"},{"k":"sheep","x":0.18,"z":0.55,"n":3}]}},
   ],
   scene:{
-   map:{biome:'eden', w:48, h:36, seed:7, river:{x:38,width:4,curve:2,ford:18},
+   map:{biome:'eden', w:48, h:36, seed:7, river:{x:38,width:4,curve:2,ford:18,from:[22,12.2],join:6},
      features:[
        {type:'treeLife',x:22,y:13,solid:true,clear:3,flat:2,id:'treelife',examine:'The tree of life, in the midst of the garden. Its fruit glows with warm light.'},
        {type:'treeKnow',x:27,y:13,solid:true,clear:3,id:'treeknow',examine:'The tree of the knowledge of good and evil. Something about it stirs the heart.'},
@@ -6382,21 +6392,24 @@ const STORY=[
 { id:'act2', roman:'II', title:'The Fall', ref:'BERĔSHITH 3', chapters:[
 { id:'c3', title:'The Serpent’s Cunning', ref:'BERĔSHITH 3:1–13',
   intro:[
-   {art:'garden', music:'tense', text:'And the serpent was more crafty than any beast of the field which YAHUAH Aluahim had made…', ref:'BERĔSHITH 3:1', stage:{"set":"garden","time":"day","cam":"push","focus":0.45,"cast":[{"id":"serpent_c","x":0.38,"z":0.18,"pose":"raise","s":1.6,"legs":1},{"id":"chavvah","x":0.6,"z":0.12,"face":"l","pose":"look"},{"id":"adam","x":0.84,"z":0.35,"face":"l","pose":"stand"}],"props":[{"k":"tree","x":0.36,"z":0.3,"h":160,"fruit":"#d85a3a"},{"k":"lion","x":0.12,"z":0.3,"face":"r"},{"k":"goat","x":0.7,"z":0.55,"face":"l"},{"k":"sheep","x":0.16,"z":0.55,"n":3}]}},
+   {art:'garden', music:'tense', text:'And the serpent was more crafty than any beast of the field which YAHUAH Aluahim had made…', ref:'BERĔSHITH 3:1', stage:{"set":"garden","time":"day","cam":"push","focus":0.45,"cast":[{"id":"serpent_c","x":0.38,"z":0.18,"pose":"raise","s":1.6,"legs":1},{"id":"chavvah","x":0.6,"z":0.12,"face":"l","pose":"look"},{"id":"adam","x":0.84,"z":0.35,"face":"l","pose":"stand"}],"props":[{"k":"treeknow","x":0.36,"z":0.3,"h":160},{"k":"lion","x":0.12,"z":0.3,"face":"r"},{"k":"goat","x":0.7,"z":0.55,"face":"l"},{"k":"sheep","x":0.16,"z":0.55,"n":3}]}},
   ],
   scene:{
-   map:{biome:'eden', w:48, h:36, seed:7, river:{x:38,width:4,curve:2,ford:18},
+   map:{biome:'eden', w:48, h:36, seed:7, river:{x:38,width:4,curve:2,ford:18,from:[22,12.2],join:6},
      features:[
        {type:'treeLife',x:22,y:13,solid:true,clear:3,flat:2,id:'treelife'},
        {type:'treeKnow',x:27,y:13,solid:true,clear:3,id:'treeknow'},
        {type:'clearing',x:24,y:18,flat:3},
+       /* the trees of the garden among which they hid themselves */
+       {type:'tree',x:11.4,y:24.2,solid:true,clear:0,id:'hide1',col:'#3a7a32'},{type:'tree',x:13.2,y:24.8,solid:true,clear:0,id:'hide2',col:'#2e6a2a'},
+       {type:'tree',x:15,y:24.3,solid:true,clear:0,id:'hide3',col:'#3a7a32',fruit:'#e8a23c'},{type:'tree',x:12.3,y:22.6,solid:true,clear:0,id:'hide4',col:'#2e6a2a'},
      ]},
    time:'day', music:'tense',
    playerLight:true,
    peace:true,         /* still Ĕḏen: the beasts do not flee — until the fruit is eaten and fear enters */
    player:'chavvah', playerPos:[18,22],
    npcs:[
-     {id:'adam',char:'adam',x:14,y:26,wander:true,range:2,lightBody:true,dlg:[['adam','The garden is wide and good. I shall be near the river, beloved.']]},
+     {id:'adam',char:'adam',x:14,y:26,wander:true,range:2,lightBody:true,noTalk:true},
      {id:'serpent',char:'serpent',x:28,y:15,wander:false,
       script:[
        {say:['serpent','Is it true that Aluahim has said, “Do not eat of every tree of the garden”?']},
@@ -6430,28 +6443,38 @@ const STORY=[
        {charSwap:['player','chavvah_f']},{charSwap:['adam','adam_f']},
        {burst:[25,16,'leaf',16]},{sfx:'blip'},
       ]},
-     {type:'goto',x:16,y:25,radius:3,text:'Hide among the trees of the garden',hiddenUntil:2},
    ],
    onComplete:[
-     {time:'dusk'},{rays:.9,raysX:18},{sfx:'holy'},{music:'sorrow'},
-     {say:['narrator','And they heard the sound of YAHUAH Aluahim walking about in the garden in the cool of the day. And Aḏam and his wife hid themselves from the presence of YAHUAH Aluahim among the trees of the garden.']},
+     {time:'dusk'},{music:'sorrow'},
+     /* the sound of Him walking in the garden: His light comes on through the trees */
+     {rays:.45,raysX:36},{sfx:'holy'},{wait:700},{rays:.55,raysX:31},{wait:700},{rays:.65,raysX:26},{wait:500},
+     {say:['narrator','And they heard the sound of YAHUAH Aluahim walking about in the garden in the cool of the day.']},
+     /* they run, and hide themselves among the trees */
+     {move:['adam',12.7,23.6,.13,'bg']},{move:['player',14.2,23.6,.13]},{face:['player','down']},{face:['adam','down']},
+     {call:g=>{ const w=g.world; w.player.alpha=.72; const a=w.npcs.find(n=>n.id==='adam'); if(a){ a.alpha=.72; a.wander=false; a.target=null; } }},
+     {say:['narrator','And Aḏam and his wife hid themselves from the presence of YAHUAH Aluahim among the trees of the garden.']},
+     {rays:.9,raysX:19},{sfx:'holy'},{wait:500},
      {say:['narrator','And YAHUAH Aluahim called unto Aḏam and said to him,']},
      {say:['voice','Where are you?']},
+     /* and all three come out, and stand in a line before Him */
+     {call:g=>{ const w=g.world; w.player.alpha=undefined; const a=w.npcs.find(n=>n.id==='adam'); if(a) a.alpha=undefined; }},
+     {move:['serpent',21,19.6,.06,'bg']},{move:['adam',17,19.6,.05,'bg']},{move:['player',19,19.6,.05]},{wait:500},
+     {face:['player','up']},{face:['adam','up']},{face:['serpent','up']},
      {say:['adam','I heard Your voice in the garden and I was afraid because I was naked, so I hid myself.']},
      {say:['voice','Who made you know that you were naked? Have you eaten of the tree of which I commanded you that you should not eat?']},
      {say:['adam','The woman whom You gave to be with me, she gave me of the tree and I ate.']},
      {say:['voice','What is this you have done?']},
      {say:['chavvah','The serpent deceived me and I ate.']},
      {say:['voice','Because you have done this, you are cursed more than all livestock and more than every beast of the field. On your belly you are to go and eat dust all the days of your life.']},
-     {sfx:'thunder'},{shake:2},{burst:[28,15,'ash',24]},
+     {sfx:'thunder'},{shake:2},{burst:[21,19.6,'ash',24]},
      {charSwap:['serpent','serpent_c']},{wait:700},
-     {move:['serpent',44,15,.05,'bg']},
+     {move:['serpent',44,21,.05,'bg']},
      {say:['voice','And I put enmity between you and the woman and between your seed and her Seed. He shall crush your head and you shall crush His heel.']},
      {rays:0},
    ],
   },
   outro:[
-   {art:'fall', music:'sorrow', text:'“Because you have done this, you are cursed more than all livestock… And I put enmity between you and the woman, and between your seed and her Seed. He shall crush your head, and you shall crush His heel.”', ref:'BERĔSHITH 3:14–15', stage:{"set":"garden","time":"dusk","cam":"push","cast":[{"id":"voice","x":0.74,"say":0},{"id":"chavvah_f","x":0.56,"z":0.12,"face":"l","pose":"kneel","acts":[{"at":1,"pose":"point"}]},{"id":"adam_f","x":0.7,"z":0.2,"face":"l","pose":"kneel"}],"props":[{"k":"tree","x":0.18,"z":0.45,"h":150,"fruit":"#d85a3a"},{"k":"serpent","x":0.34,"z":0.08,"s":2,"color":"#2e3a1c"}],"fx":[{"k":"rays","x":0.4,"at":2}]}},
+   {art:'fall', music:'sorrow', text:'“Because you have done this, you are cursed more than all livestock… And I put enmity between you and the woman, and between your seed and her Seed. He shall crush your head, and you shall crush His heel.”', ref:'BERĔSHITH 3:14–15', stage:{"set":"garden","time":"dusk","cam":"push","cast":[{"id":"voice","x":0.74,"say":0},{"id":"chavvah_f","x":0.56,"z":0.12,"face":"l","pose":"kneel","acts":[{"at":1,"pose":"point"}]},{"id":"adam_f","x":0.7,"z":0.2,"face":"l","pose":"kneel"}],"props":[{"k":"treeknow","x":0.18,"z":0.45,"h":150},{"k":"serpent","x":0.34,"z":0.08,"s":2,"color":"#2e3a1c"}],"fx":[{"k":"rays","x":0.4,"at":2}]}},
    {art:'fall', text:'“By the sweat of your face you are to eat bread, until you return to the ground. For dust you are, and to dust you return.” And the man called his wife’s name Ḥawwah, because she became the mother of all living.', ref:'BERĔSHITH 3:19–20', stage:{"set":"garden","time":"dusk","wx":"dust","wxAt":1,"cam":"push","cast":[{"id":"voice","x":0.2,"say":0},{"id":"adam_f","x":0.45,"z":0.12,"face":"l","pose":"kneel","say":2,"acts":[{"at":1,"pose":"mourn"},{"at":2,"pose":"stand","face":"r"}]},{"id":"chavvah_f","x":0.6,"z":0.12,"face":"l","pose":"kneel","acts":[{"at":2,"pose":"stand"}]}],"props":[{"k":"bush","x":0.8,"z":0.2,"color":"#4a4a2a"},{"k":"bush","x":0.9,"z":0.35,"color":"#4a4a2a"}]}},
    {art:'fall', music:'holy', text:'And YAHUAH Aluahim made coats of skin for the man and his wife and dressed them.', ref:'BERĔSHITH 3:21', stage:{"set":"garden","time":"dusk","cam":"close","focus":0.5,"cast":[{"id":"voice","x":0.5},{"id":"adam_c","x":0.42,"z":0.12,"face":"r","pose":"kneel"},{"id":"chavvah_c","x":0.58,"z":0.12,"face":"l","pose":"kneel"}],"props":[{"k":"tree","x":0.2,"z":0.5,"h":150,"fruit":"#d85a3a"},{"k":"tree","x":0.82,"z":0.55,"h":140}],"fx":[{"k":"rays","x":0.5}]}},
   ],
@@ -6459,7 +6482,7 @@ const STORY=[
 },
 { id:'c4', title:'East of the Garden', ref:'BERĔSHITH 3:22–24',
   intro:[
-   {art:'expulsion', music:'sorrow', text:'And YAHUAH Aluahim said, “See, the man has become like one of Us, to know good and evil. And now, lest he put out his hand and take also of the tree of life and eat and live forever…”', ref:'BERĔSHITH 3:22', stage:{"set":"garden","time":"dusk","cam":"pan-r","focus":0.6,"cast":[{"id":"voice","x":0.74,"say":0},{"id":"adam_c","x":0.5,"z":0.12,"face":"r","pose":"look","acts":[{"at":1,"pose":"hold"}]},{"id":"chavvah_c","x":0.34,"z":0.16,"face":"r","pose":"stand"}],"props":[{"k":"tree","x":0.72,"z":0.3,"h":170,"fruit":"#f0c040"}],"fx":[{"k":"rays","x":0.72}]}},
+   {art:'expulsion', music:'sorrow', text:'And YAHUAH Aluahim said, “See, the man has become like one of Us, to know good and evil. And now, lest he put out his hand and take also of the tree of life and eat and live forever…”', ref:'BERĔSHITH 3:22', stage:{"set":"garden","time":"dusk","cam":"pan-r","focus":0.6,"cast":[{"id":"voice","x":0.74,"say":0},{"id":"adam_c","x":0.5,"z":0.12,"face":"r","pose":"look","acts":[{"at":1,"pose":"hold"}]},{"id":"chavvah_c","x":0.34,"z":0.16,"face":"r","pose":"stand"}],"props":[{"k":"treelife","x":0.72,"z":0.3,"h":180}],"fx":[{"k":"rays","x":0.72}]}},
   ],
   scene:{
    map:{biome:'eden', w:64, h:32, seed:11,
@@ -6505,7 +6528,7 @@ const STORY=[
    ],
   },
   outro:[
-   {art:'expulsion', music:'sorrow', text:'He drove the man out. And He placed keruḇim at the east of the garden of Ĕḏen, and a flaming sword which turned every way, to guard the way to the tree of life.', ref:'BERĔSHITH 3:24', stage:{"set":"garden","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"cherub","x":0.66,"z":0.12,"face":"l","pose":"stand","hold":"sword"},{"id":"adam_c","x":0.42,"z":0.15,"face":"l","acts":[{"at":0,"exit":"l"}]},{"id":"chavvah_c","x":0.32,"z":0.18,"face":"l","acts":[{"at":0,"exit":"l"}]}],"props":[{"k":"tree","x":0.84,"z":0.45,"h":170,"fruit":"#f0c040"},{"k":"cherub","x":0.52,"z":0.4,"face":"l","sword":1}],"fx":[{"k":"sword","x":0.6,"y":0.3}]}},
+   {art:'expulsion', music:'sorrow', text:'He drove the man out. And He placed keruḇim at the east of the garden of Ĕḏen, and a flaming sword which turned every way, to guard the way to the tree of life.', ref:'BERĔSHITH 3:24', stage:{"set":"garden","time":"dusk","cam":"push","focus":0.55,"cast":[{"id":"cherub","x":0.66,"z":0.12,"face":"l","pose":"stand","hold":"sword"},{"id":"adam_c","x":0.42,"z":0.15,"face":"l","acts":[{"at":0,"exit":"l"}]},{"id":"chavvah_c","x":0.32,"z":0.18,"face":"l","acts":[{"at":0,"exit":"l"}]}],"props":[{"k":"edengate","x":0.62,"z":0.45,"two":1}]}},
    {art:'expulsion', music:'holy', text:'On that day on which Aḏam went out from the Garden, he offered as a sweet odor an offering, frankincense, incense, and sweet spice, and spices in the morning with the rising of the sun from the day when he covered his shame.', ref:'YOḆELIM 3:27', stage:{"set":"wilderness","time":"dawn","cam":"push","cast":[{"id":"adam_c","x":0.46,"z":0.12,"face":"r","pose":"kneel","hold":"censer"},{"id":"chavvah_c","x":0.32,"z":0.16,"face":"r","pose":"kneel"}],"props":[{"k":"altar","x":0.64,"z":0.18},{"k":"tree","x":0.84,"z":0.85,"fruit":"#d85a3a"},{"k":"tree","x":0.93,"z":0.9}],"fx":[{"k":"smoke","x":0.64},{"k":"rays","x":0.25}]}},
    {art:'beasts', music:'sorrow', text:'On that day was closed the mouth of all beasts, and of cattle, and of birds, and of whatever walks, and of whatever moves, so that they could no longer speak, for they had all spoken one with another with one dialect and with one language.', ref:'YOḆELIM 3:28', stage:{"set":"field","time":"dusk","cam":"pan-l","cast":[{"id":"adam_c","x":0.62,"z":0.6,"face":"r","acts":[{"at":0,"exit":"r"}]},{"id":"chavvah_c","x":0.55,"z":0.6,"face":"r","acts":[{"at":0,"exit":"r"}]}],"props":[{"k":"lion","x":0.18,"z":0.15,"face":"r"},{"k":"bear","x":0.36,"z":0.3,"face":"r"},{"k":"sheep","x":0.6,"z":0.2,"n":4,"w":90},{"k":"oxen","x":0.76,"z":0.3,"n":2},{"k":"goat","x":0.9,"z":0.15,"face":"l"},{"k":"dog","x":0.46,"z":0.06,"face":"l"}],"fx":[{"k":"ravens","n":3,"x":0.5,"y":0.2}]}},
   ],

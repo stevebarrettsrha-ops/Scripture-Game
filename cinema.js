@@ -233,6 +233,7 @@ function drawHeld(g,k,hx,hy,h,face,t,J){
     case 'bowl': case 'censer':
       g.fillStyle='#c8a048'; ell(g,0,-u*2,u*6,u*3); g.fill();
       if(k==='censer'){ for(let i=0;i<3;i++){ g.fillStyle='rgba(220,220,230,'+(.25-i*.07)+')'; ell(g,Math.sin(t/500+i)*u*3,-u*(8+i*7),u*(3+i*2),u*(3+i*2)); g.fill(); } } break;
+    case 'fig': bigFig(g,0,-u*8,u*9); break;
     case 'branch': case 'almond':
       g.strokeStyle='#6a4a30'; g.lineWidth=u*1.4; g.beginPath(); g.moveTo(0,0); g.lineTo(-u*4,-u*22); g.moveTo(-u*2,-u*10); g.lineTo(u*4,-u*16); g.stroke();
       g.fillStyle='#f4e8f0'; for(const[px,py]of[[-u*4,-u*22],[u*4,-u*16],[-u*3,-u*16],[-u*1,-u*6]]){ ell(g,px,py,u*2,u*2); g.fill(); } break;
@@ -732,6 +733,115 @@ prop('cloud',(g,x,y,s,t,o)=>{ const u=s/100, d=Math.sin(t/3000+x)*u*6; g.fillSty
 prop('wheel',(g,x,y,s,t,o)=>{ const u=s/100, r=u*(o.r||50), a=t/1500; glow(g,x,y,r*1.8,'#c0e0ff',.3); g.strokeStyle='#e8f0ff'; g.lineWidth=u*2.5; g.beginPath(); g.arc(x,y,r,0,TAU); g.stroke(); g.beginPath(); g.ellipse(x,y,r,r*.35,a,0,TAU); g.stroke();
   g.fillStyle='rgba(255,255,255,.9)'; for(let i=0;i<10;i++){ const b=a+i*TAU/10; ell(g,x+Math.cos(b)*r,y+Math.sin(b)*r,u*2.2,u*2.2); g.fill(); } });
 prop('cherub',(g,x,y,s,t,o)=>{ const u=s/100; const L={skin:'#6e4a28',robe:'#f0e8d8',angel:1,hair:'#1d1208',hairStyle:'short'}; drawFigure(g,x,y,s*1.1,L,POSES.stand,o.face||'r',t,{hold:o.sword?'sword':null}); if(o.sword){ glow(g,x+u*20,y-u*110,u*40,'#ff9030',.4); } });
+
+/* ---- the garden, after the fall ----
+   The keruḇ: a figure of fire and light, wings spread above it, and in its hand "the flaming sword
+   which turned every way, to guard the way to the tree of life" */
+function cherubWings(g,x,y,u,t){
+  for(const d of[-1,1]) for(let k=0;k<2;k++){
+    const bx=x+d*u*3, by=y-u*(66-k*16), a0=k?-.25:-1.05, a1=k?.55:-.2, n=8, flap=Math.sin(t/1100+k*1.3)*.07;
+    for(let f=n-1;f>=0;f--){ const q=f/(n-1), a=a0+(a1-a0)*q+flap, len=u*(k?34:46)*(1-q*.35);
+      const ang=d>0?a:Math.PI-a, cx=bx+Math.cos(ang)*len*.5, cy=by+Math.sin(ang)*len*.5;
+      g.fillStyle=rad(g,cx,cy,0,len*.6,[[0,'rgba(255,252,236,.95)'],[.6,'rgba(255,230,160,.85)'],[1,'rgba(240,190,90,.55)']]);
+      g.save(); g.translate(cx,cy); g.rotate(ang); ell(g,0,0,len*.52,u*(k?4:5)); g.fill(); g.restore(); } }
+}
+function flamingSword(g,x,y,u,t){
+  const a=t/520;                                                     /* it turns every way */
+  for(let i=5;i>=1;i--){ const aa=a-i*.16; g.strokeStyle='rgba(255,150,50,'+(.12*(6-i)/5).toFixed(3)+')'; g.lineWidth=u*6; g.lineCap='round';
+    g.beginPath(); g.moveTo(x,y); g.lineTo(x+Math.cos(aa)*u*34,y+Math.sin(aa)*u*34); g.stroke(); }
+  glow(g,x,y,u*44,'#ffa040',.4);
+  g.save(); g.translate(x,y); g.rotate(a+Math.PI/2);
+  fireAt(g,0,-u*8,u*9,u*34,t); g.fillStyle='#fff4d0'; poly(g,[[-u*1.6,0],[u*1.6,0],[u*.8,-u*30],[0,-u*34],[-u*.8,-u*30]]); g.fill();
+  g.fillStyle='#e0b040'; g.fillRect(-u*6,-u*1,u*12,u*2.4); g.fillRect(-u*1.2,0,u*2.4,u*8); g.restore();
+}
+function keruv(g,x,y,s,t,o){
+  const u=s/100; o=o||{};
+  glow(g,x,y-u*50,u*110,'#ffd890',.35);
+  cherubWings(g,x,y,u,t);
+  drawFigure(g,x,y,s,{skin:'#6e4a28',robe:'#fbf2dc',robeGlow:1,angel:1,glory:1,hair:'#1d1208',hairStyle:'short'},POSES[o.pose||'stand'],o.face||'l',t,{});
+  if(o.sword!==false) flamingSword(g,x+(o.face==='r'?1:-1)*u*16,y-u*52,u,t);
+}
+prop('keruv',(g,x,y,s,t,o)=>keruv(g,x,y,s,t,o));
+/* the gate of the garden: no wall of a city and no tower — the living edge of the garden, great
+   trees and vine grown close on either side, and the way in between two trunks bowed together over
+   it; the light of the garden beyond; the keruḇ above the gate */
+prop('edengate',(g,x,y,s,t,o)=>{
+  const u=s/100, hh=u*(o.h||150), gw=u*(o.gw||46), W=VW*(o.w||1.3), r=rng(strHash('eg'+Math.round(x)));
+  /* the garden's edge, running away on both sides */
+  for(let i=0;i<46;i++){ const px=x-W/2+r()*W; if(Math.abs(px-x)<gw*.9) continue;
+    const ph=hh*(.7+r()*.45), col=['#2e5a2a','#3a6a30','#2a4e26','#45753a'][i%4];
+    g.fillStyle='#4a3420'; g.fillRect(px-u*2.5,y-ph*.45,u*5,ph*.45);
+    g.fillStyle=col; ell(g,px,y-ph*.62,u*(18+r()*12),ph*.32); g.fill(); g.fillStyle=shd(col,.18); ell(g,px-u*5,y-ph*.7,u*10,ph*.16); g.fill(); }
+  g.fillStyle='#24461f'; g.fillRect(x-W/2,y-hh*.3,W,hh*.3);
+  for(let i=0;i<40;i++){ const px=x-W/2+(i+.5)*W/40; if(Math.abs(px-x)<gw*.7) continue; g.fillStyle=i%2?'#2a5022':'#325a28'; ell(g,px,y-hh*.3,W/40*.9,hh*(.06+(i*7%5)*.012)); g.fill(); }
+  for(let i=0;i<60;i++){ const px=x-W/2+r()*W; if(Math.abs(px-x)<gw*.8) continue; g.fillStyle=['#e8d060','#f0a0b8','#ffffff'][i%3]; ell(g,px,y-r()*hh*.34,u*1.4,u*1.4); g.fill(); }
+  /* the light of the garden through the way in */
+  g.save(); g.beginPath(); g.moveTo(x-gw/2,y); g.lineTo(x-gw/2,y-hh*.62); g.quadraticCurveTo(x,y-hh*.98,x+gw/2,y-hh*.62); g.lineTo(x+gw/2,y); g.closePath(); g.clip();
+  g.fillStyle=lin(g,0,y-hh,0,y,[[0,'#fff6d0'],[.5,'#d8f0a0'],[1,'#7ab860']]); g.fillRect(x-gw,y-hh,gw*2,hh);
+  if(window.GFX&&GFX.treeLife&&o.life!==false) GFX.treeLife(g,x,y-hh*.12,hh*.5,t,{spring:false});
+  g.restore(); glow(g,x,y-hh*.4,gw*1.4,'#fff4c0',.35);
+  /* the two trunks, bowed together over the way */
+  for(const d of[-1,1]){ const bx=x+d*gw*.62;
+    g.fillStyle=lin(g,bx-u*8,0,bx+u*8,0,[[0,'#7a5a38'],[.5,'#5a4026'],[1,'#3a2816']]);
+    g.beginPath(); g.moveTo(bx-u*9,y); g.bezierCurveTo(bx-u*6,y-hh*.4,bx-d*u*2,y-hh*.7,x-d*u*4,y-hh*1.0); g.lineTo(x+d*u*6,y-hh*.94); g.bezierCurveTo(bx+d*u*4,y-hh*.66,bx+u*7,y-hh*.36,bx+u*9,y); g.closePath(); g.fill();
+    for(let k=0;k<9;k++){ const q=k/8, vx=lerp(bx,x,q*q), vy=y-hh*(.2+q*.72); g.fillStyle=k%2?'#3e6e30':'#5a8a3e'; ell(g,vx+d*u*5,vy,u*7,u*4.5); g.fill();
+      if(k%3===1){ g.fillStyle='#f4e0f0'; ell(g,vx+d*u*7,vy-u*2,u*1.6,u*1.6); g.fill(); } } }
+  if(o.open===false){ g.fillStyle='rgba(20,40,16,.85)'; g.fillRect(x-gw/2,y-hh*.6,gw,hh*.6); }
+  /* the keruḇ above the gate */
+  if(o.keruv!==false){ const ky=y-hh*.98;
+    if(o.two){ keruv(g,x-gw*.55,ky,s*.72,t,{face:'r',sword:false}); keruv(g,x+gw*.55,ky,s*.72,t,{face:'l',sword:false}); flamingSword(g,x,ky-u*30,u*.9,t); }
+    else keruv(g,x,ky,s*.8,t,{face:o.face||'l'}); }
+});
+/* the mouth of a cave in a hill of rock — the Cave of Treasures from without */
+prop('cavemouth',(g,x,y,s,t,o)=>{ const u=s/100, w=u*(o.w||200), hh=u*(o.h||130);
+  if(window.GFX&&GFX.rock) GFX.rock(g,x,y,w,hh,o.pal||'tan',o.seed||31); else { g.fillStyle='#8a7a62'; ell(g,x,y-hh*.5,w/2,hh*.55); g.fill(); }
+  const mw=u*(o.mw||44), mh=u*(o.mh||52);
+  g.fillStyle=lin(g,0,y-mh,0,y,[[0,'#1a120c'],[1,'#2e2216']]); g.beginPath(); g.moveTo(x-mw/2,y); g.lineTo(x-mw/2,y-mh*.55); g.quadraticCurveTo(x-mw*.45,y-mh,x,y-mh); g.quadraticCurveTo(x+mw*.45,y-mh,x+mw/2,y-mh*.55); g.lineTo(x+mw/2,y); g.closePath(); g.fill();
+  if(o.glow) glow(g,x,y-mh*.4,mw*.8,'#ffcf80',.3);
+  g.strokeStyle='rgba(40,30,20,.5)'; g.lineWidth=u*1.4; g.stroke(); });
+/* the rock that became a dome over them: broad and even, bowed over them like a tent */
+function rockDome(g,x,y,u,w,hh){
+  g.fillStyle=lin(g,0,y-hh,0,y,[[0,'#1c1812'],[1,'#2e281e']]);                 /* the shade beneath it */
+  g.beginPath(); g.moveTo(x-w*.4,y); g.bezierCurveTo(x-w*.38,y-hh*1.02,x+w*.38,y-hh*1.02,x+w*.4,y); g.closePath(); g.fill();
+  g.fillStyle=lin(g,0,y-hh,0,y,[[0,'#b4ab98'],[.6,'#8e8574'],[1,'#6a6252']]);
+  g.beginPath(); g.moveTo(x-w/2,y); g.bezierCurveTo(x-w/2,y-hh*1.25,x+w/2,y-hh*1.25,x+w/2,y); g.lineTo(x+w*.4,y); g.bezierCurveTo(x+w*.38,y-hh*1.02,x-w*.38,y-hh*1.02,x-w*.4,y); g.closePath(); g.fill();
+  g.strokeStyle='rgba(50,44,34,.55)'; g.lineWidth=u*1.2; g.stroke();
+  const r=rng(77); g.strokeStyle='rgba(60,52,40,.4)'; g.lineWidth=u*.8; for(let i=0;i<9;i++){ const a=Math.PI*(.12+r()*.76), rr2=.44+r()*.06; g.beginPath(); g.moveTo(x-Math.cos(a)*w*rr2,y-Math.sin(a)*hh*1.1*rr2*2); g.lineTo(x-Math.cos(a+.08)*w*(rr2+.04),y-Math.sin(a+.08)*hh*1.1*(rr2+.04)*2); g.stroke(); }
+  g.fillStyle='rgba(255,250,235,.18)'; g.beginPath(); g.moveTo(x-w*.4,y-hh*.5); g.bezierCurveTo(x-w*.3,y-hh*.92,x,y-hh*.95,x+w*.1,y-hh*.9); g.lineTo(x,y-hh*.82); g.bezierCurveTo(x-w*.2,y-hh*.84,x-w*.3,y-hh*.7,x-w*.36,y-hh*.46); g.closePath(); g.fill();
+  g.fillStyle='rgba(20,16,10,.35)'; ell(g,x,y-u*1,w*.34,u*4); g.fill();
+}
+prop('dome',(g,x,y,s,t,o)=>{ const u=s/100; rockDome(g,x,y,u,u*(o.w||150),u*(o.h||95)); });
+/* the huge rock, broad and even, hurled down the mountain: it falls, and as it reaches them it is
+   made a dome over them (o._k: 0…1 its fall; 1 and after, the dome) */
+prop('rockfall',(g,x,y,s,t,o)=>{ const u=s/100, w=u*(o.w||150), hh=u*(o.h||95), k=o._k;
+  if(k==null||k<0){ if(o.held){ g.fillStyle='#9a917e'; rr(g,VW*(o.fx!=null?o.fx:.18)-w*.5,VH*(o.fy!=null?o.fy:.26)-hh*.2,w,hh*.34,u*6); g.fill(); } return; }
+  if(k<1){ const e=k*k, sx=VW*(o.fx!=null?o.fx:.18), sy=VH*(o.fy!=null?o.fy:.26), cx=lerp(sx,x,e), cy=lerp(sy,y-hh*.55,e);
+    g.save(); g.translate(cx,cy); g.rotate((1-k)*.5);
+    g.fillStyle=lin(g,0,-hh*.25,0,hh*.25,[[0,'#bdb4a0'],[1,'#77705f']]); rr(g,-w*.52,-hh*.18,w*1.04,hh*.36,u*8); g.fill();
+    g.strokeStyle='rgba(50,44,34,.55)'; g.lineWidth=u*1.2; g.stroke(); g.restore();
+    g.fillStyle='rgba(20,16,10,'+(.1+e*.3).toFixed(3)+')'; ell(g,x,y,w*.5*(.4+e*.6),u*6); g.fill(); return; }
+  rockDome(g,x,y,u,w,hh);
+  const since=o._since-2600; if(since<1400){ g.fillStyle='rgba(170,150,120,'+(.45*(1-since/1400)).toFixed(3)+')'; for(let i=0;i<9;i++){ ell(g,x+(i-4)*w*.14,y-u*6-since*u*.02,u*(16+since*.02),u*(8+since*.01)); g.fill(); } }
+});
+/* the same rock, broad and even, as it is carried and hurled (in play) */
+prop('slab',(g,x,y,s,t,o)=>{ const u=s/100, w=u*(o.w||150), hh=u*(o.h||95);
+  g.fillStyle='rgba(20,16,10,.28)'; ell(g,x,y,w*.45,u*5); g.fill();
+  g.save(); g.translate(x,y-hh*.28); g.rotate(o.tilt||-.08);
+  g.fillStyle=lin(g,0,-hh*.2,0,hh*.2,[[0,'#bdb4a0'],[1,'#77705f']]); rr(g,-w*.52,-hh*.17,w*1.04,hh*.34,u*8); g.fill();
+  g.strokeStyle='rgba(50,44,34,.55)'; g.lineWidth=u*1.2; g.stroke(); g.restore(); });
+/* a fig of the garden, on its twig, hanging to its leaf — as large as a water-melon */
+function bigFig(g,x,y,r){
+  g.fillStyle=rad(g,x-r*.3,y-r*.3,0,r*1.4,[[0,'#8a6a8a'],[.55,'#5a3a5e'],[1,'#3a2440']]);
+  g.beginPath(); g.moveTo(x,y-r*1.25); g.bezierCurveTo(x+r*.35,y-r*1.1,x+r*1.05,y-r*.4,x+r*.9,y+r*.35); g.bezierCurveTo(x+r*.7,y+r*.95,x-r*.7,y+r*.95,x-r*.9,y+r*.35); g.bezierCurveTo(x-r*1.05,y-r*.4,x-r*.35,y-r*1.1,x,y-r*1.25); g.fill();
+  g.fillStyle='rgba(255,255,255,.18)'; ell(g,x-r*.35,y-r*.2,r*.18,r*.35); g.fill();
+  g.strokeStyle='#5a4028'; g.lineWidth=Math.max(1,r*.12); g.beginPath(); g.moveTo(x,y-r*1.2); g.lineTo(x+r*.2,y-r*1.7); g.stroke();
+  g.fillStyle='#4a7a34'; g.save(); g.translate(x+r*.2,y-r*1.6); g.rotate(.5); g.beginPath();
+  for(let k=0;k<5;k++){ const a=-Math.PI/2+(k-2)*.6, rr2=r*(k%2?.8:1.15); g.lineTo(Math.cos(a)*rr2+r*.4,Math.sin(a)*rr2*.8); g.lineTo(Math.cos(a+.3)*r*.45+r*.4,Math.sin(a+.3)*r*.35); }
+  g.closePath(); g.fill(); g.restore();
+}
+prop('fig',(g,x,y,s,t,o)=>{ const u=s/100; bigFig(g,x,y-u*8,u*8); });
+prop('treelife',(g,x,y,s,t,o)=>{ if(window.GFX&&GFX.treeLife) GFX.treeLife(g,x,y,s*(o.h||170)/100,t,{spring:o.spring}); });
+prop('treeknow',(g,x,y,s,t,o)=>{ if(window.GFX&&GFX.treeKnow) GFX.treeKnow(g,x,y,s*(o.h||160)/100,t); });
 prop('crown',(g,x,y,s,t,o)=>{ drawHeld(g,'crown',x,y,s*2,'r',t); });
 prop('sword',(g,x,y,s,t,o)=>{ const u=s/100; g.save(); g.translate(x,y); g.rotate(o.a||-.8); glow(g,0,-u*40,u*50,'#ffb050',.35); g.fillStyle='#e8eef0'; poly(g,[[-u*3,0],[u*3,0],[u*1.5,-u*80],[0,-u*88],[-u*1.5,-u*80]]); g.fill(); g.fillStyle='#caa040'; g.fillRect(-u*10,-u*2,u*20,u*4); g.fillRect(-u*2,0,u*4,u*16); g.restore(); });
 
@@ -1790,6 +1900,7 @@ const Stage={
     g.imageSmoothingEnabled=true;
     let shake=0; const qk=(S0.fx||[]).find(f=>(f.k||f)==='quake');
     if(qk&&st>=(qk.at!=null?this.beatTime(qk.at):0)) shake=Math.sin(t/40)*VH*.006*(1+Math.sin(t/300));   /* from its part on */
+    for(const p of (S0.props||[])) if(p.fallAt!=null){ const e=st-this.beatTime(p.fallAt)-2600; if(e>=0&&e<1600) shake+=Math.sin(t/35)*VH*.012*(1-e/1600); }   /* the earth quakes as the rock falls */
     g.translate(shake,shake*.5);
     this.camera(g,S0.cam,st,dur,S0.focus);
     if(S0.set==='art'){ try{ _drawSlideArt(g,slide.art||'void',st,t,slide); }catch(e){} }
@@ -1831,12 +1942,19 @@ const Stage={
   },
   drawProp(g,p,st,t){
     const at=p.at!=null?this.beatTime(p.at):0; if(st<at) return;
-    const lay=this._lay, z=p.z||0, s=lay.H0*lay.sc(z)*(p.s||1), x=lay.X(p.x!=null?p.x:.5);
+    const lay=this._lay, z=p.z||0, s=lay.H0*lay.sc(z)*(p.s||1); let x=lay.X(p.x!=null?p.x:.5);
     let y=lay.gy(z)+(p.dy||0)*VH;
     const fn=PROPS[p.k]; if(!fn) return;
     /* timed changes: taking fire, a rider mounting, being lifted up into the heavens */
     let o=p;
-    if(p.fireAt!=null||p.riderAt!=null||p.liftAt!=null){ o=Object.assign({},p);
+    if(p.until!=null&&st>=this.beatTime(p.until)) return;                 /* taken up, carried off */
+    /* the hurled rock: its fall from the moment it is thrown, and the dome it becomes */
+    if(p.fallAt!=null){ o=Object.assign({},p); const T=this.beatTime(p.fallAt); o._since=st-T; o._k=st<T?-1:cl((st-T)/2600,0,1); }
+    /* a thing thrown: from one place, over the air, to where it lies */
+    if(p.throwAt!=null&&p.from){ const T=this.beatTime(p.throwAt); if(st<T) return;
+      const k=cl((st-T)/1300,0,1), sx=lay.X(p.from[0]), sy=lay.gy(p.from[1]||0)-s*(p.fromH!=null?p.fromH:1.1);
+      const ex=x, ey=y; x=lerp(sx,ex,k); y=lerp(sy,ey,k*k)-Math.sin(k*Math.PI)*VH*.1; }
+    if(p.fireAt!=null||p.riderAt!=null||p.liftAt!=null){ o=Object.assign({},o);
       if(p.fireAt!=null) o.fire=st>=this.beatTime(p.fireAt);
       if(p.riderAt!=null&&st<this.beatTime(p.riderAt)) o.rider=null;
       if(p.liftAt!=null&&st>=this.beatTime(p.liftAt)){ const k=ease((st-this.beatTime(p.liftAt))/4500); y-=k*(p.lift||.45)*VH; o.move=1; } }
@@ -1944,7 +2062,7 @@ const Stage={
     else if((a.dy||0)<-.03){}                                   /* lifted up off the ground: no shadow under it */
     else if(!P.lie) figureShadow(g,x,y,h,P); else { g.fillStyle='rgba(8,6,4,.25)'; ell(g,x,y+h*.005,h*.5,h*.03); g.fill(); }
     if(S1.face==='b') drawFigureBack(g,x,y,h,L,P,t,{hold:a.hold||a.hold2,crown:a.crown,alpha:S1.alpha<1?S1.alpha:null,phase:i*1.7});
-    else drawFigure(g,x,y,h,L,P,S1.face,t,{hold:a.hold,hold2:a.hold2,crown:a.crown,wings:a.wings,alpha:S1.alpha<1?S1.alpha:null,dead:a.pose==='dead',blanket:(a.onbed&&P.lie)?(a.blanket||'#9a7a5a'):null,expr:fc.expr,mouth:fc.mouth});
+    else drawFigure(g,x,y,h,L,P,S1.face,t,{hold:(a.holdAt!=null&&st<this.beatTime(a.holdAt))?null:a.hold,hold2:a.hold2,crown:a.crown,wings:a.wings,alpha:S1.alpha<1?S1.alpha:null,dead:a.pose==='dead',blanket:(a.onbed&&P.lie)?(a.blanket||'#9a7a5a'):null,expr:fc.expr,mouth:fc.mouth});
     if(wet){ g.restore(); ripples(g,x,wl,h*.32,t,i); }
     /* a name, the first time a figure is seen (once the chapter's title card has gone) */
     if(a.label!==false&&L.name&&!S1.walking&&st>S1.shown+300){

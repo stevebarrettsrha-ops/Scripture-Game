@@ -214,6 +214,128 @@ function drawTree(g,x,y,H,kind,opt,t,seed){
   g.save(); g.translate(x,y); g.transform(1,0,sway,1,0,0);
   g.drawImage(e.cv,-e.W/2,-e.HH+1,e.W,e.HH); g.restore();
 }
+/* ============================== the two trees in the midst of the garden ==============================
+   The tree of life: the fairest of all trees, pleasant to see — a tall crown of bright leaf full of
+   blossom and golden fruit, light about it, and at its root the water welling up that goes out to
+   water the garden ("the water that flowed from under the Tree of Life"). The tree of the knowledge
+   of good and evil: a vine upon a strong stem that holds it up, hung with clusters like grapes
+   ("its fruit resembles the clusters of the vine") — and about it a darkness, where the other has light. */
+const gardenCache=new Map();
+function gardenCanvas(key,W,HH,paint){
+  const d=cacheDpr||((typeof DPR!=='undefined')?DPR:1), k=key+'|'+Math.round(W)+'|'+d;
+  let e=gardenCache.get(k); if(e) return e;
+  const cv=document.createElement('canvas'); cv.width=Math.ceil(W*d); cv.height=Math.ceil(HH*d);
+  const g=cv.getContext('2d'); g.scale(d,d); g.translate(W/2,HH-1); paint(g);
+  e={cv,W,HH}; if(gardenCache.size>40) gardenCache.clear(); gardenCache.set(k,e); return e;
+}
+function leafMass(g,r,cx,cy,rc,dark,mid,light,high,n){
+  for(let k=0;k<7;k++){ const a=r()*6.283, dd=rc*(.15+r()*.5), rr=rc*(.42+r()*.3);
+    g.fillStyle=k<3?dark:mid; g.beginPath(); g.arc(cx+Math.cos(a)*dd,cy+Math.sin(a)*dd*.8,rr,0,6.283); g.fill(); }
+  g.fillStyle=light; g.globalAlpha=.6;
+  for(let k=0;k<3;k++){ g.beginPath(); g.arc(cx-rc*(.25+r()*.2),cy-rc*(.3+r()*.2),rc*(.22+r()*.12),0,6.283); g.fill(); }
+  g.globalAlpha=.5;
+  for(let k=0;k<(n||Math.round(rc*1.2));k++){ const a=r()*6.283, dd=rc*Math.sqrt(r())*.95, px=cx+Math.cos(a)*dd, py=cy+Math.sin(a)*dd*.85;
+    g.fillStyle=r()<.5?dark:(py<cy?high:light); g.beginPath(); g.ellipse(px,py,Math.max(.8,rc*.09),Math.max(.5,rc*.055),r()*3,0,6.283); g.fill(); }
+  g.globalAlpha=1;
+}
+function paintLife(H){
+  return gardenCanvas('life',H*1.4,H*1.1,g=>{
+    const r=rnd(7717);
+    /* the roots, spread wide over the spring */
+    g.strokeStyle='#8a6a44'; g.lineCap='round';
+    for(let i=0;i<7;i++){ const a=(i/6-.5)*2.6; g.lineWidth=H*(.028-Math.abs(a)*.006); g.beginPath(); g.moveTo(0,-H*.05);
+      g.quadraticCurveTo(Math.sin(a)*H*.08,-H*.01,Math.sin(a)*H*.2,H*.005); g.stroke(); }
+    /* the trunk: pale and smooth, turning a little as it rises */
+    const tg=g.createLinearGradient(-H*.07,0,H*.07,0); tg.addColorStop(0,'#e0cca4'); tg.addColorStop(.4,'#b39668'); tg.addColorStop(1,'#6e5434');
+    g.fillStyle=tg; g.beginPath(); g.moveTo(-H*.085,0); g.bezierCurveTo(-H*.05,-H*.14,-H*.06,-H*.3,-H*.03,-H*.46);
+    g.lineTo(H*.035,-H*.46); g.bezierCurveTo(H*.05,-H*.3,H*.04,-H*.14,H*.085,0); g.closePath(); g.fill();
+    g.strokeStyle='rgba(255,246,210,.35)'; g.lineWidth=Math.max(.6,H*.006);
+    for(let i=0;i<4;i++){ g.beginPath(); g.moveTo(-H*.04+i*H*.02,-H*.02); g.bezierCurveTo(-H*.02+i*H*.02,-H*.2,-H*.04+i*H*.015,-H*.3,-H*.01+i*H*.012,-H*.45); g.stroke(); }
+    /* the limbs, reaching up and out */
+    g.strokeStyle='#a4865a';
+    for(let i=0;i<6;i++){ const a=-Math.PI/2+(i-2.5)*.42; g.lineWidth=H*.022; g.beginPath(); g.moveTo(0,-H*.44);
+      g.quadraticCurveTo(Math.cos(a)*H*.14,-H*.5+Math.sin(a)*H*.08,Math.cos(a)*H*.36,-H*.66+Math.sin(a)*H*.2); g.stroke(); }
+    /* the crown: bright leaf, layer on layer, from the back to the front */
+    const cy=-H*.7, Rx=H*.6, Ry=H*.36;
+    g.fillStyle='#2f6e34'; g.beginPath(); g.ellipse(0,cy+Ry*.1,Rx*.95,Ry*.9,0,0,6.283); g.fill();
+    const cl=[]; for(let i=0;i<54;i++){ const a=r()*6.283, dd=Math.sqrt(r()); cl.push([Math.cos(a)*dd*Rx*.86,cy+Math.sin(a)*dd*Ry*.84,H*.1+r()*H*.07]); }
+    cl.sort((A,B)=>A[1]-B[1]);
+    for(const [x,y,rc] of cl){ const tone=Math.max(0,Math.min(1,.7-(x/Rx)*.3-((y-cy)/Ry)*.4));
+      leafMass(g,r,x,y,rc,tone>.5?'#3f8c40':'#2e6e34',tone>.5?'#6cb656':'#4a9446','#a6dc78','#e6f8b8'); }
+    /* blossom, white and rose, all through the crown */
+    for(let i=0;i<90;i++){ const a=r()*6.283, dd=Math.sqrt(r()); const bx=Math.cos(a)*dd*Rx*.9, by=cy+Math.sin(a)*dd*Ry*.86;
+      g.fillStyle=r()<.7?'rgba(255,252,244,.95)':'rgba(250,206,222,.95)'; g.beginPath(); g.arc(bx,by,Math.max(.9,H*.009),0,6.283); g.fill(); }
+    /* the fruit: golden, in clusters, bright as though lit from within */
+    for(let i=0;i<16;i++){ const a=r()*6.283, dd=Math.sqrt(r())*.78; const fx=Math.cos(a)*dd*Rx, fy=cy+Math.sin(a)*dd*Ry+Ry*.18;
+      for(let k=0;k<5;k++){ const ox=(k%3-1)*H*.014, oy=Math.floor(k/3)*H*.016+(k%2)*H*.006;
+        const fg=g.createRadialGradient(fx+ox-H*.004,fy+oy-H*.005,0,fx+ox,fy+oy,H*.014); fg.addColorStop(0,'#fff6c0'); fg.addColorStop(.5,'#ffd24a'); fg.addColorStop(1,'#d89a1c');
+        g.fillStyle=fg; g.beginPath(); g.ellipse(fx+ox,fy+oy,H*.011,H*.014,0,0,6.283); g.fill(); } }
+  });
+}
+function paintKnow(H){
+  return gardenCanvas('know',H*1.5,H*1.05,g=>{
+    const r=rnd(4409);
+    /* the strong stem that holds the vine up: thick, twisted, ridged */
+    const tg=g.createLinearGradient(-H*.1,0,H*.1,0); tg.addColorStop(0,'#6a5236'); tg.addColorStop(.45,'#4a3622'); tg.addColorStop(1,'#241a10');
+    g.fillStyle=tg; g.beginPath(); g.moveTo(-H*.12,0); g.bezierCurveTo(-H*.07,-H*.1,-H*.1,-H*.3,-H*.06,-H*.5);
+    g.lineTo(H*.06,-H*.5); g.bezierCurveTo(H*.1,-H*.3,H*.07,-H*.1,H*.12,0); g.closePath(); g.fill();
+    g.strokeStyle='rgba(16,10,4,.55)'; g.lineWidth=Math.max(.8,H*.008);
+    for(let i=0;i<6;i++){ const x0=-H*.08+i*H*.032; g.beginPath(); g.moveTo(x0,0); g.bezierCurveTo(x0+H*.03,-H*.15,x0-H*.03,-H*.32,x0*.6,-H*.5); g.stroke(); }
+    /* its arms, bearing the vine out wide on every side */
+    const arms=[]; g.strokeStyle='#3e2e1c'; g.lineCap='round';
+    for(let i=0;i<5;i++){ const s=(i-2)/2, ex=s*H*.6, ey=-H*.62-(1-Math.abs(s))*H*.14;
+      g.lineWidth=H*.034; g.beginPath(); g.moveTo(0,-H*.48); g.quadraticCurveTo(s*H*.3,-H*.72,ex,ey); g.stroke(); arms.push([ex,ey,s]); }
+    /* the vine: canes arching over the arms and hanging down, broad leaves along them */
+    const leaves=[];
+    for(const [ex,ey,s] of arms){ for(let c=0;c<3;c++){ const sx=ex*(.35+c*.3), sy=-H*.62+(ey+H*.62)*(.35+c*.3)-H*.04;
+      const hx=sx+(r()-.5)*H*.1+s*H*.06, hy=sy+H*(.16+r()*.12);
+      g.strokeStyle='#4a3a1e'; g.lineWidth=Math.max(.8,H*.009); g.beginPath(); g.moveTo(sx,sy); g.quadraticCurveTo(sx+s*H*.08,sy-H*.05,hx,hy); g.stroke();
+      for(let k=0;k<6;k++){ const q=k/5; leaves.push([sx+(hx-sx)*q+(r()-.5)*H*.05,sy+(hy-sy)*q-H*.02+(r()-.5)*H*.04,H*(.05+r()*.03)]); } } }
+    const cy=-H*.66, Rx=H*.64, Ry=H*.24;
+    g.fillStyle='#1c2e16'; g.beginPath(); g.ellipse(0,cy+Ry*.2,Rx*.9,Ry*1.1,0,0,6.283); g.fill();
+    for(let i=0;i<46;i++){ const a=r()*6.283, dd=Math.sqrt(r()), lx=Math.cos(a)*dd*Rx*.92; leaves.push([lx,cy+Math.sin(a)*dd*Ry+Math.abs(lx/Rx)*H*.1,H*(.045+r()*.03)]); }
+    leaves.sort((A,B)=>A[1]-B[1]);
+    /* a vine leaf: broad, of three rounded lobes */
+    const vineLeaf=(x,y,s,col)=>{ g.fillStyle=col;
+      for(const [dx,dy,rr] of [[0,-s*.22,s*.42],[-s*.3,0,s*.34],[s*.3,0,s*.34],[0,s*.08,s*.36]]){ g.beginPath(); g.arc(x+dx,y+dy,rr,0,6.283); g.fill(); } };
+    for(const [x,y,s] of leaves){ const tone=.5-(x/Rx)*.3-((y-cy)/Ry)*.2+r()*.3;
+      vineLeaf(x,y,s,tone>.55?'#56703a':tone>.3?'#3e5a2c':'#2a4220');
+      g.strokeStyle='rgba(20,30,10,.4)'; g.lineWidth=Math.max(.5,s*.05); g.beginPath(); g.moveTo(x,y+s*.45); g.lineTo(x,y-s*.3); g.stroke(); }
+    /* the clusters, heavy and dark, hanging beneath the leaves */
+    for(let i=0;i<18;i++){ const a=r()*6.283, dd=Math.sqrt(r())*.9; const cx=Math.cos(a)*dd*Rx, top=cy+Math.sin(a)*dd*Ry+Ry*.5+r()*H*.08;
+      const rows=5, br=H*.012;
+      for(let row=0;row<rows;row++){ const n=rows-row; for(let k=0;k<n;k++){ const bx=cx+(k-(n-1)/2)*br*1.7+(r()-.5)*br*.4, by=top+row*br*1.5;
+        const bg=g.createRadialGradient(bx-br*.3,by-br*.3,0,bx,by,br); bg.addColorStop(0,'#a8689a'); bg.addColorStop(.5,'#5a2452'); bg.addColorStop(1,'#2a0e28');
+        g.fillStyle=bg; g.beginPath(); g.arc(bx,by,br,0,6.283); g.fill(); } }
+      g.strokeStyle='#3a2a14'; g.lineWidth=Math.max(.5,H*.004); g.beginPath(); g.moveTo(cx,top-br); g.lineTo(cx,top-br*3); g.stroke(); }
+  });
+}
+/* the light about the tree of life, the spring at its root; the darkness about the other */
+function drawTreeLife(g,x,y,H,t,o){
+  o=o||{}; const e=paintLife(Math.round(H/2)*2), pulse=.5+Math.sin((t||0)/700)*.5, cy=y-H*.66;
+  const gl=g.createRadialGradient(x,cy,H*.05,x,cy,H*.95); gl.addColorStop(0,`rgba(255,244,180,${(.62+pulse*.16).toFixed(3)})`); gl.addColorStop(.5,`rgba(255,228,130,${(.28+pulse*.08).toFixed(3)})`); gl.addColorStop(1,'rgba(255,220,120,0)');
+  g.fillStyle=gl; g.beginPath(); g.arc(x,cy,H*.95,0,6.283); g.fill();
+  if(o.spring!==false){ /* the water welling up from under it */
+    const pg=g.createRadialGradient(x,y+H*.02,0,x,y+H*.02,H*.26); pg.addColorStop(0,'rgba(190,236,255,.95)'); pg.addColorStop(.6,'rgba(90,170,220,.85)'); pg.addColorStop(1,'rgba(60,130,190,0)');
+    g.fillStyle=pg; g.beginPath(); g.ellipse(x,y+H*.02,H*.26,H*.07,0,0,6.283); g.fill();
+    for(let i=0;i<3;i++){ const k=((t||0)/1600+i/3)%1; g.strokeStyle=`rgba(240,252,255,${(.5*(1-k)).toFixed(3)})`; g.lineWidth=Math.max(.6,H*.005);
+      g.beginPath(); g.ellipse(x,y+H*.02,H*.05+k*H*.18,H*.014+k*H*.05,0,0,6.283); g.stroke(); } }
+  g.drawImage(e.cv,x-e.W/2,y-e.HH+1,e.W,e.HH);
+  for(let i=0;i<12;i++){ const k=((t||0)/5200+i/12)%1, mx=x+Math.sin(i*2.3+(t||0)/2400)*H*.55, my=cy+H*.4-k*H*.9;
+    g.fillStyle=`rgba(255,248,200,${(.8*Math.sin(k*Math.PI)).toFixed(3)})`; g.beginPath(); g.arc(mx,my,Math.max(1,H*.008),0,6.283); g.fill(); }
+}
+function drawTreeKnow(g,x,y,H,t){
+  const e=paintKnow(Math.round(H/2)*2), pulse=.5+Math.sin((t||0)/1100)*.5, cy=y-H*.62;
+  const gl=g.createRadialGradient(x,cy,H*.05,x,cy,H*.95); gl.addColorStop(0,`rgba(18,6,24,${(.62+pulse*.12).toFixed(3)})`); gl.addColorStop(.55,`rgba(28,8,34,${(.34+pulse*.08).toFixed(3)})`); gl.addColorStop(1,'rgba(20,6,26,0)');
+  g.fillStyle=gl; g.beginPath(); g.arc(x,cy,H*.95,0,6.283); g.fill();
+  const sg=g.createRadialGradient(x+H*.08,y+H*.02,0,x+H*.08,y+H*.02,H*.5); sg.addColorStop(0,'rgba(10,4,12,.45)'); sg.addColorStop(1,'rgba(10,4,12,0)');
+  g.fillStyle=sg; g.beginPath(); g.ellipse(x+H*.08,y+H*.02,H*.5,H*.14,0,0,6.283); g.fill();
+  g.drawImage(e.cv,x-e.W/2,y-e.HH+1,e.W,e.HH);
+  /* the darkness about it: shadow that clings to it and curls up from the leaves */
+  for(let i=0;i<10;i++){ const k=((t||0)/5200+i/10)%1, wx=x+Math.sin(i*1.9+(t||0)/3000)*H*.55*(1-k*.4), wy=cy+H*.12-k*H*.42;
+    g.fillStyle=`rgba(20,6,26,${(.3*Math.sin(k*Math.PI)).toFixed(3)})`; g.beginPath(); g.ellipse(wx,wy,H*(.07+k*.06),H*(.04+k*.03),0,0,6.283); g.fill(); }
+}
+GFX.treeLife=drawTreeLife; GFX.treeKnow=drawTreeKnow;
 GFX.tree=(g,x,y,H,opt,t)=>drawTree(g,x,y,H,opt&&opt.dead?'dead':'broad',opt,t,(opt&&opt.seed)||Math.round(x*7+y*3));
 GFX.palm=(g,x,y,H,opt,t)=>drawTree(g,x,y,H,'palm',opt,t,(opt&&opt.seed)||Math.round(x*7+y*3));
 GFX.bush=(g,x,y,H,opt,t)=>drawTree(g,x,y,H,'bush',opt,t,(opt&&opt.seed)||Math.round(x*7+y*3));
@@ -225,6 +347,25 @@ if(typeof drawProp==='function'){
     if(!GFX.on||!p) return _drawProp(g,px,py,p,t);
     const ty=p.type;
     if(ty==='gfxrock'){ drawRock(g,px,py,p._w,p._h,p._pal,p._seed); return; }
+    /* the garden's things in play, drawn as the cutscenes draw them: a fig of the garden, the rock
+       hurled down the mountain, the dome it became, the keruḇ at the gate */
+    /* skins of sheep, left on the shore */
+    if(ty==='skin'){ const u=TILE/40; g.fillStyle='rgba(0,0,0,.22)'; g.beginPath(); g.ellipse(px,py+2*u,20*u,6*u,0,0,6.283); g.fill();
+      for(const [dx,dy,c] of [[-6,-2,'#d8ccb0'],[6,-4,'#e6dcc4'],[0,-7,'#cfc2a4']]){ g.fillStyle=c; g.beginPath(); g.ellipse(px+dx*u,py+dy*u,13*u,6*u,dx*.02,0,6.283); g.fill();
+        g.fillStyle='rgba(255,255,255,.35)'; for(let i=0;i<7;i++){ g.beginPath(); g.arc(px+dx*u-8*u+i*2.6*u,py+dy*u-2*u+(i%2)*2*u,1.6*u,0,6.283); g.fill(); } g.fillStyle=c; }
+      return; }
+    /* the three tokens from the garden, kept in the Cave of Treasures */
+    if(ty==='goldrods'||ty==='incense'||ty==='myrrh'){ const u=TILE/40;
+      g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(px,py+2*u,16*u,5*u,0,0,6.283); g.fill();
+      if(ty==='goldrods'){ for(let i=0;i<5;i++){ const x=px-10*u+i*5*u; const gr=g.createLinearGradient(x-2*u,0,x+2*u,0); gr.addColorStop(0,'#fff0a0'); gr.addColorStop(1,'#b8861c');
+          g.fillStyle=gr; g.save(); g.translate(x,py); g.rotate((i-2)*.08); g.fillRect(-1.6*u,-30*u,3.2*u,30*u); g.restore(); }
+        const gl=g.createRadialGradient(px,py-16*u,0,px,py-16*u,26*u); gl.addColorStop(0,'rgba(255,220,120,.35)'); gl.addColorStop(1,'rgba(255,220,120,0)'); g.fillStyle=gl; g.fillRect(px-26*u,py-42*u,52*u,52*u); }
+      else { g.fillStyle=ty==='incense'?'#8a6a3a':'#6a3a2a'; g.beginPath(); g.ellipse(px,py-4*u,13*u,7*u,0,0,6.283); g.fill();
+        g.fillStyle=ty==='incense'?'#e8dcc0':'#8a3a28'; for(let i=0;i<9;i++){ g.beginPath(); g.arc(px-8*u+(i%5)*4*u,py-8*u-Math.floor(i/5)*3*u,2.4*u,0,6.283); g.fill(); }
+        if(ty==='incense'){ g.strokeStyle='rgba(240,236,228,.35)'; g.lineWidth=2*u; g.beginPath(); for(let k=0;k<14;k++){ const yy=py-12*u-k*2.2*u; g.lineTo(px+Math.sin(t/500+k*.6)*4*u,yy); } g.stroke(); } }
+      return; }
+    if((ty==='fig'||ty==='slab'||ty==='dome'||ty==='keruv')&&window.Stage&&Stage.props&&Stage.props[ty]){
+      Stage.props[ty](g,px,py,TILE*(ty==='fig'?2.8:ty==='keruv'?2.1:2.7),t,Object.assign({},p,{face:p.face||'l'})); return; }
     if(ty==='liwyathan'&&window.Stage&&Stage.props&&Stage.props.liwyathan){ Stage.props.liwyathan(g,px,py,PERSON()*1.8,t,{face:p.face||'l',fire:p.fire}); return; }
     /* a mountain is drawn as a mountain, not as a stone: a feature named a mountain, or a rock the
        telling calls one ("the mountains shaken before Him", "the cave on Ḥorĕḇ, the mountain") */
@@ -238,10 +379,8 @@ if(typeof drawProp==='function'){
     if(ty==='tree') drawTree(g,px,py,26*u,p.dead?'dead':'broad',{col:p.col||'#3f7032',fruit:p.fruit},t,seed);
     else if(ty==='palm') drawTree(g,px,py,19*u,'palm',{col:p.col||'#4e7a3e'},t,seed);
     else if(ty==='bush') drawTree(g,px,py,8.5*u,'bush',{col:p.col||'#4e7a3e',fruit:p.berry?'#c8584a':null},t,seed);
-    else if(ty==='treeLife'){ const pulse=.5+Math.sin(t/600)*.5; const gl=g.createRadialGradient(px,py-14*u,2*u,px,py-14*u,24*u);
-      gl.addColorStop(0,`rgba(255,235,150,${.4+pulse*.2})`); gl.addColorStop(1,'rgba(255,235,150,0)'); g.fillStyle=gl; g.beginPath(); g.arc(px,py-14*u,24*u,0,Math.PI*2); g.fill();
-      drawTree(g,px,py,30*u,'broad',{col:'#6fa04a',fruit:'#ffe070'},t,seed); }
-    else drawTree(g,px,py,28*u,'broad',{col:'#4f6e3a',fruit:'#c84a3a'},t,seed);
+    else if(ty==='treeLife') drawTreeLife(g,px,py,34*u,t,{spring:p.spring});
+    else drawTreeKnow(g,px,py,30*u,t);
   };
 }
 
