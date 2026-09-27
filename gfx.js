@@ -226,6 +226,9 @@ if(typeof drawProp==='function'){
     const ty=p.type;
     if(ty==='gfxrock'){ drawRock(g,px,py,p._w,p._h,p._pal,p._seed); return; }
     if(ty==='liwyathan'&&window.Stage&&Stage.props&&Stage.props.liwyathan){ Stage.props.liwyathan(g,px,py,PERSON()*1.8,t,{face:p.face||'l',fire:p.fire}); return; }
+    /* a mountain is drawn as a mountain, not as a stone: a feature named a mountain, or a rock the
+       telling calls one ("the mountains shaken before Him", "the cave on Ḥorĕḇ, the mountain") */
+    if(ty==='mountain'||(ty==='rock'&&p.id!=='deep'&&/\bmount(ain)?s?\b/i.test((p.examine||'')+' '+(p.id||'')))){ drawMountain(g,px,py,p); return; }
     if(ty==='rock'&&!p.color&&!p.col){ const u=2.6*(TILE/40)*((typeof PROP_SCALE!=='undefined'&&PROP_SCALE.rock)||1);
       const m=curMap, k=m?KIND[m.tiles[Math.floor(p.y||0)*m.w+Math.floor(p.x||0)]]:'dirt';
       drawRock(g,px,py,10*u,7*u,(k==='grass'||k==='snow')?'grey':'tan',Math.round((p.x||0)*97+(p.y||0)*61)>>>0); return; }
@@ -292,6 +295,21 @@ function paintRock(W,H,pal,seed){
   g.strokeStyle='rgba(38,30,22,.45)'; g.lineWidth=Math.max(.8,W*.014); g.beginPath(); P.forEach((q,i)=>i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1])); g.closePath(); g.stroke();
   return {cv,ax:cw/2,ay:top+H,cw,ch};
 }
+/* a mountain: crags piled into a peak with shoulders on either side, a scatter of stones at its
+   foot, and a cave's mouth where the telling puts one */
+function drawMountain(g,px,py,p){
+  const m=curMap, k=m?KIND[m.tiles[Math.floor(p.y||0)*m.w+Math.floor(p.x||0)]]:'dirt';
+  const pal=(k==='grass'||k==='snow')?'grey':'tan', seed=Math.round((p.x||0)*97+(p.y||0)*61)>>>0;
+  const W=TILE*7.2, H=TILE*6.2;
+  drawRock(g,px-W*.34,py-TILE*.35,W*.5,H*.55,pal,seed+3);
+  drawRock(g,px+W*.33,py-TILE*.25,W*.46,H*.5,pal,seed+7);
+  drawRock(g,px,py,W*.6,H,pal,seed);
+  if(/cave|cleft/i.test((p.id||'')+' '+(p.examine||''))){
+    g.fillStyle='rgba(18,12,8,.88)'; g.beginPath(); g.moveTo(px-TILE*.55,py-TILE*.05); g.lineTo(px-TILE*.5,py-TILE*.75);
+    g.quadraticCurveTo(px,py-TILE*1.25,px+TILE*.5,py-TILE*.75); g.lineTo(px+TILE*.55,py-TILE*.05); g.closePath(); g.fill(); }
+  drawRock(g,px-W*.28,py+TILE*.1,TILE*.7,TILE*.5,pal,seed+11); drawRock(g,px+W*.24,py+TILE*.15,TILE*.55,TILE*.4,pal,seed+13);
+}
+GFX.mountain=drawMountain;
 function drawRock(g,x,y,W,H,pal,seed){
   if(!cacheDpr) cacheDpr=typeof DPR!=='undefined'?DPR:1;
   const q=v=>Math.max(4,Math.round(v/2)*2), Wq=q(W), Hq=q(H), key=[pal,Wq,Hq,seed%29,cacheDpr].join('|');

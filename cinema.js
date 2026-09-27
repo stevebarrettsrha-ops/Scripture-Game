@@ -121,7 +121,9 @@ function lookOf(id,extra){
   const L=Object.assign({skin:'#7a5230',hair:'#2c1a0c',hairStyle:'short',robe:'#8a6a45'},c||{},extra||{});
   if((L.angel||L.malak)&&L.skin&&lum(L.skin)>.55) L.skin='#6e4a28';
   if((L.angel||L.malak)&&!L.darkAngel&&!L.glory&&L.hair&&lum(L.hair)>.45) L.hair='#1d1208';   /* dark-haired like everyone else */
-  if(c&&c.robe===null&&!L.robeGlow){ L.robe='#f4ecd8'; L.robeGlow=true; }
+  /* before the fall Aḏam and Ḥawwah wear no garment: their covering is light itself */
+  if(c&&c.robe===null&&c.glory) L.lightBody=true;
+  else if(c&&c.robe===null&&!L.robeGlow){ L.robe='#f4ecd8'; L.robeGlow=true; }
   return L;
 }
 
@@ -260,9 +262,38 @@ function limb(g,pts,w,col,out,ow){          /* a limb as one round-jointed strok
   if(out){ g.strokeStyle=out; g.lineWidth=w+ow*2; g.stroke(); }
   g.strokeStyle=col; g.lineWidth=w; g.stroke();
 }
+/* a body of light: the figure drawn unclothed on a canvas of its own, then filled with radiance
+   and set in a halo — the garment of light of the two in the garden, as the world draws them */
+let lbCanvas=null;
+function lightFigure(g,x,y,h,L,P,t,o,draw){
+  const S=Math.ceil(h*2.3), fx=S/2, fy=S*.82;
+  if(!lbCanvas) lbCanvas=document.createElement('canvas');
+  if(lbCanvas.width<S||lbCanvas.height<S){ lbCanvas.width=lbCanvas.height=S; }
+  const og=lbCanvas.getContext('2d'); og.setTransform(1,0,0,1,0,0); og.clearRect(0,0,lbCanvas.width,lbCanvas.height);
+  const J=draw(og,fx,fy,Object.assign({},L,{lightBody:false,body:true,robe:L.skin,robeGlow:false}),Object.assign({},o,{alpha:null}));
+  const pul=.85+Math.sin(t/420+x*.01)*.15;
+  /* filled with light: brightest at the head and heart, warm gold toward the feet */
+  og.globalCompositeOperation='source-atop';
+  const lg=og.createLinearGradient(0,fy-h*1.05,0,fy);
+  lg.addColorStop(0,'rgba(255,252,232,'+(.78*pul).toFixed(3)+')'); lg.addColorStop(.45,'rgba(255,238,178,'+(.7*pul).toFixed(3)+')'); lg.addColorStop(1,'rgba(250,208,112,'+(.62*pul).toFixed(3)+')');
+  og.fillStyle=lg; og.fillRect(0,0,S,S);
+  og.globalCompositeOperation='source-over';
+  g.save(); if(o.alpha!=null) g.globalAlpha*=o.alpha;
+  const cy=P.lie?y-h*.08:y-h*.55, R=h*(P.lie?.8:.75);
+  const gl=g.createRadialGradient(x,cy,h*.04,x,cy,R);
+  gl.addColorStop(0,'rgba(255,244,196,'+(.55*pul).toFixed(3)+')'); gl.addColorStop(.4,'rgba(255,226,140,'+(.26*pul).toFixed(3)+')'); gl.addColorStop(1,'rgba(255,210,110,0)');
+  g.fillStyle=gl; g.beginPath(); g.arc(x,cy,R,0,TAU); g.fill();
+  /* the edge of the body glows into the air around it */
+  g.shadowColor='rgba(255,236,160,'+(.95*pul).toFixed(3)+')'; g.shadowBlur=Math.max(6,h*.07);
+  g.drawImage(lbCanvas,0,0,S,S,x-fx,y-fy,S,S);
+  g.shadowBlur=Math.max(3,h*.025); g.drawImage(lbCanvas,0,0,S,S,x-fx,y-fy,S,S);
+  g.restore();
+  return J;
+}
 /* one figure, feet at (x,y), height h */
 function drawFigure(g,x,y,h,L,P,face,t,o){
   o=o||{};
+  if(L.lightBody) return lightFigure(g,x,y,h,L,P,t,o,(og,X,Y,L2,o2)=>drawFigure(og,X,Y,h,L2,P,face,t,o2));
   const hour=Stage._hour||HOURS.day, lx=hour.lx||1;
   const dir=face==='l'?-1:1, u=h/100;
   const J=fk(P,h);
@@ -272,7 +303,7 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
   const robe=L.robe||'#8a6a45', skin=L.skin||'#7a5230';
   const robeLit=shd(robe,.16), robeDark=shd(robe,-.34), robeMid=css(rgb(robe));
   const skinN=shd(skin,lit?.1:-.02), skinF=shd(skin,-.28);
-  const out='rgba(14,9,6,.72)', ow=Math.max(.8,u*.55);
+  const out=L.body?'rgba(150,100,30,.28)':'rgba(14,9,6,.72)', ow=Math.max(.8,u*.55);
   g.save();
   g.translate(x,y);
   if(P.lie){ g.translate(dir*h*.48,-h*.085); g.rotate(dir>0?-PI/2:PI/2); }
@@ -285,8 +316,8 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
   limb(g,[along(J.sh,-u*2,u*3),J.eB,J.hB],armW,robeDark,out,ow);
   g.fillStyle=skinF; ell(g,J.hB[0],J.hB[1],u*3.1,u*3.3); g.fill();
   if(o.hold2) drawHeld(g,o.hold2,J.hB[0],J.hB[1],h,face,t,J);
-  if(L.short){ limb(g,[J.hip,J.kB,J.anB],legW*.8,skinF,out,ow); }
-  g.fillStyle='#2e1e12'; ell(g,J.anB[0]+u*2.6,J.anB[1]+u*.3,u*4.6,u*1.9); g.fill();
+  if(L.short||L.body){ limb(g,[J.hip,J.kB,J.anB],legW*.8,skinF,out,ow); }
+  g.fillStyle=L.body?skinF:'#2e1e12'; ell(g,J.anB[0]+u*2.6,J.anB[1]+u*.3,u*4.6,u*1.9); g.fill();
   /* the robe, one silhouette from the shoulders to the hem, following the legs */
   const hemK=L.short?.45:.9;
   const hemF=[lerp(J.kF[0],J.anF[0],hemK),lerp(J.kF[1],J.anF[1],hemK)], hemB=[lerp(J.kB[0],J.anB[0],hemK),lerp(J.kB[1],J.anB[1],hemK)];
@@ -294,9 +325,11 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
   const shF=along(J.sh,u*10.5,u*1.5), shB=along(J.sh,-u*11.5,u*1.5), neckF=along(J.sh,u*4.5,-u*1), neckB=along(J.sh,-u*5,-u*1);
   const chest=along(J.sh,u*13,u*10), waistF=along(J.hip,u*11,-u*4), waistB=along(J.hip,-u*11.5,-u*4), back=along(J.sh,-u*13,u*11);
   const kneeF=[J.kF[0]+u*8,J.kF[1]], kneeB=[J.kB[0]-u*8,J.kB[1]];
-  const pts=[neckB,neckF,shF,chest,waistF,kneeF,[hemF[0]+flare,hemF[1]+u*.5],[hemF[0]+flare*.3,hemF[1]+u*1.8],[hemB[0]-flare*.3,hemB[1]+u*1.8],[hemB[0]-flare,hemB[1]+u*.5],kneeB,waistB,back,shB];
+  const pts=L.body?[neckB,neckF,shF,chest,along(J.hip,u*8.5,-u*6),along(J.hip,u*(L.hairStyle==='long'?10.5:9),u*3),along(J.hip,-u*(L.hairStyle==='long'?11:9.5),u*3),along(J.hip,-u*9,-u*6),back,shB]
+                 :[neckB,neckF,shF,chest,waistF,kneeF,[hemF[0]+flare,hemF[1]+u*.5],[hemF[0]+flare*.3,hemF[1]+u*1.8],[hemB[0]-flare*.3,hemB[1]+u*1.8],[hemB[0]-flare,hemB[1]+u*.5],kneeB,waistB,back,shB];
   g.fillStyle=lin(g,-u*14,0,u*14,0,[[0,robeDark],[.5,robeMid],[.85,robeLit],[1,robeMid]]);
   smooth(g,pts); g.fill(); g.strokeStyle=out; g.lineWidth=ow; g.stroke();
+  if(!L.body){
   /* folds */
   g.save(); smooth(g,pts); g.clip();
   g.strokeStyle='rgba(0,0,0,.16)'; g.lineWidth=u*1.1;
@@ -314,9 +347,10 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
   if(L.collar&&!L.armor){ g.strokeStyle=L.collar; g.lineWidth=u*2; g.beginPath(); g.moveTo(neckB[0],neckB[1]+u*1); g.quadraticCurveTo(J.sh[0],J.sh[1]+u*5,neckF[0]+u*1,neckF[1]+u*1.5); g.stroke(); }
   if(L.sack){ g.strokeStyle='rgba(20,14,8,.4)'; g.lineWidth=u*.6; for(let i=0;i<7;i++){ g.beginPath(); g.moveTo(waistB[0]+i*u*3,waistB[1]); g.lineTo(hemB[0]+i*u*4,hemB[1]); g.stroke(); } }
   g.restore();
+  }
   /* near leg's foot */
-  if(L.short){ limb(g,[J.hip,J.kF,J.anF],legW*.8,skinN,out,ow); }
-  g.fillStyle='#2e1e12'; ell(g,J.anF[0]+u*2.6,J.anF[1]+u*.3,u*4.8,u*2); g.fill();
+  if(L.short||L.body){ limb(g,[J.hip,J.kF,J.anF],legW*.8,skinN,out,ow); }
+  g.fillStyle=L.body?skinN:'#2e1e12'; ell(g,J.anF[0]+u*2.6,J.anF[1]+u*.3,u*4.8,u*2); g.fill();
   g.fillStyle=skinN; ell(g,J.anF[0]+u*3.4,J.anF[1]-u*1.1,u*2.8,u*1.3); g.fill();
   /* the head */
   const hx=J.hd[0], hy=J.hd[1], hr=J.hr*1.18, H=J.H;
@@ -376,15 +410,16 @@ function drawFigure(g,x,y,h,L,P,face,t,o){
 /* one figure seen from behind, feet at (x,y), height h — for those who walk away from us */
 function drawFigureBack(g,x,y,h,L,P,t,o){
   o=o||{};
+  if(L.lightBody) return lightFigure(g,x,y,h,L,P,t,o,(og,X,Y,L2,o2)=>drawFigureBack(og,X,Y,h,L2,P,t,o2));
   const u=h/100, hour=Stage._hour||HOURS.day, lx=hour.lx||1;
   const robe=L.robe||'#8a6a45', skin=L.skin||'#7a5230', hair=L.hair||'#2c1a0c';
-  const out='rgba(14,9,6,.72)', ow=Math.max(.8,u*.55);
+  const out=L.body?'rgba(150,100,30,.28)':'rgba(14,9,6,.72)', ow=Math.max(.8,u*.55);
   const ph=o.phase||0, wk=P.walk?Math.sin(t/(170/P.walk)+ph):0;
   const bob=P.walk?Math.abs(wk)*u*1.3:Math.sin(t/700+ph)*u*.3;
   g.save(); g.translate(x,y);
   if(o.alpha!=null) g.globalAlpha*=o.alpha;
   /* heels under the hem, one lifted as it steps */
-  g.fillStyle='#2e1e12';
+  g.fillStyle=L.body?shd(skin,-.1):'#2e1e12';
   for(const [sx,k] of [[-1,wk],[1,-wk]]){ const lift=P.walk?Math.max(0,k)*u*2.2:0; ell(g,sx*u*5,-lift,u*3.6,u*1.7); g.fill(); }
   g.translate(0,-bob);
   const sway=wk*u*1.6;
@@ -400,9 +435,12 @@ function drawFigureBack(g,x,y,h,L,P,t,o){
   const up=P===POSES.raise||P.aF[0]>140;
   if(up){ arm(-1); arm(1); }
   /* the robe from behind: shoulders, waist, a hem that swings as it walks */
-  const hem=L.short?-u*30:-u*3;
+  const hem=L.body?-u*46:L.short?-u*30:-u*3;
+  if(L.body){ const lk=(sx,k)=>limb(g,[[sx*u*6,-u*48],[sx*u*6.5+k*u*2,-u*24],[sx*u*5,-u*2-Math.max(0,k)*u*2.2]],u*8,shd(skin,-.08),out,ow);   /* legs, unclothed */
+    lk(-1,wk); lk(1,-wk); }
   smooth(g,[[-u*5,-u*81],[u*5,-u*81],[u*12.5,-u*78],[u*14,-u*66],[u*11.5,-u*49],[u*15+sway,hem],[u*6+sway*.5,hem+u*1.5],[-u*6+sway*.5,hem+u*1.5],[-u*15+sway,hem],[-u*11.5,-u*49],[-u*14,-u*66],[-u*12.5,-u*78]]);
   g.fillStyle=gr; g.fill(); g.strokeStyle=out; g.lineWidth=ow; g.stroke();
+  if(!L.body){
   g.save(); g.clip();
   g.strokeStyle='rgba(0,0,0,.15)'; g.lineWidth=u*1.1;
   for(const k of [-.55,0,.55]){ g.beginPath(); g.moveTo(k*u*9,-u*48); g.quadraticCurveTo(k*u*11+sway*.5,-u*26,k*u*13+sway,hem); g.stroke(); }
@@ -412,6 +450,7 @@ function drawFigureBack(g,x,y,h,L,P,t,o){
   if(L.sack){ g.strokeStyle='rgba(20,14,8,.35)'; g.lineWidth=u*.6; for(let i=-4;i<=4;i++){ g.beginPath(); g.moveTo(i*u*3,-u*48); g.lineTo(i*u*3.6,hem); g.stroke(); } }
   g.fillStyle=L.robeLine||L.sash||(L.collar&&!L.armor?L.collar:null)||shd(robe,-.4); g.fillRect(-u*12,-u*51,u*24,u*3.5);
   g.restore();
+  }
   if(L.short){ g.fillStyle=shd(skin,-.1); g.fillRect(-u*8,hem,u*4.5,-hem-u*1); g.fillRect(u*3.5,hem,u*4.5,-hem-u*1); }
   if(!up){ arm(-1); arm(1); }
   /* the head from behind */
@@ -696,7 +735,54 @@ prop('cherub',(g,x,y,s,t,o)=>{ const u=s/100; const L={skin:'#6e4a28',robe:'#f0e
 prop('crown',(g,x,y,s,t,o)=>{ drawHeld(g,'crown',x,y,s*2,'r',t); });
 prop('sword',(g,x,y,s,t,o)=>{ const u=s/100; g.save(); g.translate(x,y); g.rotate(o.a||-.8); glow(g,0,-u*40,u*50,'#ffb050',.35); g.fillStyle='#e8eef0'; poly(g,[[-u*3,0],[u*3,0],[u*1.5,-u*80],[0,-u*88],[-u*1.5,-u*80]]); g.fill(); g.fillStyle='#caa040'; g.fillRect(-u*10,-u*2,u*20,u*4); g.fillRect(-u*2,0,u*4,u*16); g.restore(); });
 
-prop('serpent',(g,x,y,s,t,o)=>{ const u=s/100, c=o.color||'#4a6a2a';
+/* the serpent before the curse — "more crafty than any beast of the field", not yet on its belly:
+   a slender creature standing on four clawed legs, its long neck lifted, its tail trailing behind */
+function leggedSerpent(g,x,y,s,t,o){
+  const u=s/100, c=o.color||'#4f7a2c', dark=shd(c,-.38), lite=shd(c,.22), belly='#c9b56a', d=o.face==='l'?-1:1;
+  const br=Math.sin(t/900)*u*.8, sway=Math.sin(t/700)*u*2.2, up=o.rise===false?0:1;
+  const out='rgba(20,26,10,.55)', ow=Math.max(.8,u*.5);
+  g.save(); g.translate(x,y); g.scale(d,1);
+  g.fillStyle='rgba(0,0,0,.18)'; ell(g,-u*8,0,u*52,u*4.5); g.fill();
+  const by=-u*24+br;
+  /* a stroke that thins along its length */
+  const taper=(pts,w0,w1,col)=>{ g.lineCap='round'; g.lineJoin='round';
+    for(let pass=0;pass<2;pass++) for(let i=0;i<pts.length-1;i++){ const k=i/(pts.length-1), w=w0+(w1-w0)*k;
+      g.strokeStyle=pass?col:out; g.lineWidth=pass?w:w+ow*2; g.beginPath(); g.moveTo(pts[i][0],pts[i][1]); g.lineTo(pts[i+1][0],pts[i+1][1]); g.stroke(); } };
+  const curve=(a,b,c2,n)=>{ n=n||8; const r=[]; for(let i=0;i<=n;i++){ const k=i/n, m=1-k; r.push([m*m*a[0]+2*m*k*b[0]+k*k*c2[0],m*m*a[1]+2*m*k*b[1]+k*k*c2[1]]); } return r; };
+  const cubic=(a,b,c2,e,n)=>{ const r=[]; for(let i=0;i<=n;i++){ const k=i/n, m=1-k; r.push([m*m*m*a[0]+3*m*m*k*b[0]+3*m*k*k*c2[0]+k*k*k*e[0],m*m*m*a[1]+3*m*m*k*b[1]+3*m*k*k*c2[1]+k*k*k*e[1]]); } return r; };
+  /* legs: far pair first, darker; each bends at the knee and sets three claws on the ground */
+  /* legs: set wide like a lizard's, the elbow and knee bent out, the foot planted forward */
+  const leg=(hx,far,ph)=>{ const step=Math.sin(t/520+ph)*u*1.2, back=hx<0, kx=hx+(back?-u*9:u*9), ky=by+u*(back?4:5), fx=hx+(back?-u*5:u*6)+step;
+    const col=far?dark:c; taper([[hx,by+u*3],[kx,ky],[fx,-u*1.6]],u*(back?8:7),u*3.4,col);
+    g.strokeStyle=far?shd(dark,-.2):dark; g.lineWidth=u*1.1; g.lineCap='round';
+    for(const a of[-.5,0,.5]){ g.beginPath(); g.moveTo(fx,-u*1.4); g.lineTo(fx+Math.cos(a)*u*4.2,-u*.4+Math.sin(a)*u*.8); g.stroke(); } };
+  leg(-u*20,true,1.6); leg(u*14,true,0);
+  /* tail, trailing and curling on the ground */
+  taper(curve([-u*22,by+u*1],[-u*54,by+u*16],[-u*70,-u*4]).concat(curve([-u*70,-u*4],[-u*84,-u*2+sway*.4],[-u*88,-u*12+sway]).slice(1)),u*11,u*1.5,c);
+  /* body */
+  const bodyPts=[[-u*26,by-u*1],[-u*10,by-u*8],[u*10,by-u*9],[u*22,by-u*5],[u*24,by+u*4],[u*8,by+u*8],[-u*12,by+u*8],[-u*28,by+u*5]];
+  g.fillStyle=lin(g,0,by-u*9,0,by+u*8,[[0,lite],[.55,c],[1,belly]]); smooth(g,bodyPts); g.fill(); g.strokeStyle=out; g.lineWidth=ow; g.stroke();
+  /* neck, lifted in an S toward the one it speaks to */
+  const hx=u*34+sway*.4, hy=up?-u*52:-u*28;
+  const neck=up?cubic([u*18,by-u*3],[u*8,by-u*20],[u*36,by-u*18],[hx-u*3,hy+u*6],10):curve([u*18,by-u*3],[u*28,by-u*6],[hx-u*3,hy+u*4],10);
+  taper(neck,u*10,u*6.5,c);
+  /* scales along the back */
+  g.strokeStyle='rgba(20,40,10,.35)'; g.lineWidth=u*.8;
+  for(let i=0;i<9;i++){ const px=-u*22+i*u*5, py=by-u*7+Math.abs(i-4)*u*.4; g.beginPath(); g.arc(px,py,u*2.2,PI*1.1,PI*1.9); g.stroke(); }
+  for(let i=1;i<9;i+=2){ const [px,py]=neck[i]; g.beginPath(); g.arc(px,py,u*1.8,PI*1.1,PI*1.9); g.stroke(); }
+  /* head: long and narrow, a golden eye, the tongue flickering */
+  g.save(); g.translate(hx,hy); g.rotate(up?.18:0);
+  g.fillStyle=lin(g,0,-u*5,0,u*5,[[0,lite],[.6,c],[1,belly]]);
+  smooth(g,[[-u*5,-u*5],[u*5,-u*5.5],[u*13,-u*2.5],[u*14.5,u*.8],[u*7,u*4.2],[-u*4,u*4.8]]); g.fill(); g.strokeStyle=out; g.lineWidth=ow; g.stroke();
+  g.strokeStyle='rgba(20,40,10,.4)'; g.lineWidth=u*.9; g.beginPath(); g.moveTo(u*.5,-u*4.2); g.quadraticCurveTo(u*3.5,-u*5.4,u*6.5,-u*3.8); g.stroke();   /* the brow */
+  g.fillStyle='#e8c850'; ell(g,u*3,-u*2,u*1.8,u*1.4); g.fill(); g.fillStyle='#101008'; ell(g,u*3.3,-u*2,u*.5,u*1.2); g.fill();
+  g.strokeStyle='rgba(20,30,10,.6)'; g.lineWidth=u*.7; g.beginPath(); g.moveTo(u*6,u*1.2); g.lineTo(u*15,u*.6); g.stroke();
+  if(Math.sin(t/260)>.55){ g.strokeStyle='#b8303a'; g.lineWidth=u*.8; g.beginPath(); g.moveTo(u*15.5,u*.3); g.lineTo(u*20,u*.6); g.lineTo(u*22,-u*.8); g.moveTo(u*20,u*.6); g.lineTo(u*22,u*1.8); g.stroke(); }
+  g.restore();
+  leg(-u*20,false,0); leg(u*14,false,1.6);
+  g.restore();
+}
+prop('serpent',(g,x,y,s,t,o)=>{ if(o.legs) return leggedSerpent(g,x,y,s,t,o); const u=s/100, c=o.color||'#4a6a2a';
   if(o.pole){ g.strokeStyle='#6a4a28'; g.lineWidth=u*3; g.beginPath(); g.moveTo(x,y); g.lineTo(x,y-u*120); g.moveTo(x-u*16,y-u*104); g.lineTo(x+u*16,y-u*104); g.stroke(); }
   const bx=x, by=o.pole?y-u*100:y-u*2, amp=o.pole?u*10:u*8, len=o.pole?u*70:u*90;
   g.strokeStyle=o.pole?'#c89040':c; g.lineWidth=u*(o.pole?4:6); g.lineCap='round'; g.beginPath();
@@ -1837,7 +1923,7 @@ const Stage={
     const id=a.id||'';
     if((CHARS[id]&&CHARS[id].divine)||id==='voice'||id==='divine'){ g.save(); g.globalAlpha*=S1.alpha; FX.glory(g,t,{x:S1.x,y:.14}); g.restore(); return; }
     const L=lookOf(id,a.look);
-    if(L.serpent||(CHARS[id]&&CHARS[id].serpent)){ g.save(); g.globalAlpha*=S1.alpha; PROPS.serpent(g,x,y,h*.6,t,{tree:a.pose==='raise',rise:a.pose!=='lie',color:'#5a7a2a'}); g.restore(); return; }
+    if(L.serpent||(CHARS[id]&&CHARS[id].serpent)){ g.save(); g.globalAlpha*=S1.alpha; PROPS.serpent(g,x,y,h*(a.legs?.62:.6),t,{tree:a.pose==='raise',rise:a.pose!=='lie',color:a.legs?'#4f7a2c':'#5a7a2a',legs:!!a.legs,face:S1.face}); g.restore(); return; }
     if(L.giant||/giant|nephil|anaq|golyath|goliath/i.test(id)) h*=1.55;
     if(L.darkAngel) { L.robe=L.robe||'#2a2230'; }
     if(L.child||a.child) h*=.62;

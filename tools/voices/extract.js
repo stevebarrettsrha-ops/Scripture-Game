@@ -22,11 +22,9 @@ const games=process.argv.slice(2);
     const src=await (await fetch(BASE+g)).text();
     out[g]=await p.evaluate((src)=>{
       const items=new Map(); let silentChars=0;
-      /* the words as the recording engine should read them: the reader's respellings, their
-         syllables held together by hyphens so each name is one word, evenly stressed */
-      const WORD_RE=/[A-Za-zÀ-ɏḀ-ỿ‘’‚‛ʻʼʹ׳'`´]+/g;
-      const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart Place|Set Apart|Faithful|Sheol)\)/gi;
-      const kk=t=>String(t).replace(GLOSS,'').replace(/\(\s*(YAHU[ĂA]H)\s*\)\s*HWHY/g,'$1').replace(/\bO?HWHY\b/gi,m=>m.length===5?'O YAHUAH':'YAHUAH').replace(/[ʿʾ]/g,'’').replace(WORD_RE,w=>BesorahPron.wordFor(w))
+      /* the words as the recording engine should read them: plain English, as voice.js reads them,
+         with His Name left as YAHUAH for build.py to give its own sounds */
+      const kk=t=>Voice.readable(t,false)
         .replace(/\s*[—–―]+\s*/g,', ').replace(/…/g,', ').replace(/[;:]/g,',')
         .replace(/["`´“”‘’«»‹›„‚(){}\[\]<>|\\\/_~^*%#@$&+=§¶†‡•·✦]/g,' ')
         .replace(/\s+([,.!?])/g,'$1').replace(/([,.!?])(?:\s*[,.])+/g,'$1').replace(/^[\s,.]+/,'').replace(/\s{2,}/g,' ').trim();

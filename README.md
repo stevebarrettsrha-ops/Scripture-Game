@@ -32,8 +32,10 @@ Not needed for normal solo play.
 
 Each game is a single HTML file and works offline; the shared scripts beside it,
 `cinema.js` (the staged cutscenes), `gfx.js` (the world's ground, trees, rocks, water, animals and light),
-`play.js` (the fights, the struggles, the dodge and controllers), `voice.js` with `pron.js` (the
-spoken voices, see [Voices](#voices)) and `face.js` (the faces and speaking mouths), add to every game and should be kept in the same folder, with
+`play.js` (the fights, the struggles, the dodge and controllers), `voice.js` (the
+spoken voices, see [Voices](#voices)), `face.js` (the faces and speaking mouths) and `music.js` (the
+music: Mozart for the calm scenes, a smooth minor-key music in his manner for tense and stormy ones),
+add to every game and should be kept in the same folder, with
 the `voices/` folder of recordings:
 
 | File | Game | Unlocked by |
@@ -172,8 +174,10 @@ the scene. Only joy turns a mouth up. (`face.js`)
 
 The voices are recordings in `voices/` (Opus audio, one small bank script per book listing
 them), made with [Kokoro](https://github.com/hexgrad/kokoro), an open, Apache-licensed
-speech model, so they sound the same on every device and need no internet. Names are
-pronounced with the Besorah reader's own lexicon (`pron.js`). A line that has no recording
+speech model, so they sound the same on every device and need no internet. Every word is
+said in plain English: a name is read as its letters, without the marks of the Hebrew vowels
+(Ĕḏen is said "Eden"), and His Name is said "Yah-oo-Wah", the h of its spelling breathed between "Yah" and "oo"
+so that no voice slides into an r ("Yaruah") or stops into a t ("Yatuah"). A line that has no recording
 (one put together while the game runs) is spoken with the device's own voices instead, as
 the Besorah reader does. `tools/voices/` rebuilds the recordings when the text changes:
 `extract.js` lists every line with its speaker, `build.py` casts and records them (see the
