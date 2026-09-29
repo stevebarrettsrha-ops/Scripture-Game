@@ -44,7 +44,6 @@ const games=process.argv.slice(2);
           if(Array.isArray(o.sayList)) for(const d of o.sayList) if(Array.isArray(d)) line(d[0],d[1],'sayList:'+ch);
           if(Array.isArray(o.dlg)){ if(Array.isArray(o.dlg[0])){ for(const d of o.dlg) line(d[0],d[1],'dlg:'+ch); } else for(const t of o.dlg) line(o.id,t,'dlg:'+ch); }
           if(o.choice&&typeof o.choice.prompt==='string') line('narrator',o.choice.prompt,'choice:'+ch);
-          if(typeof o.needText==='string') line('narrator',o.needText,'need:'+ch);
           if(typeof o.examine==='string') line('narrator',o.examine,'examine:'+ch);
           for(const k in o){ if(k==='intro'||k==='outro') continue; walk(o[k],ch); } };
         for(const a of STORY) for(const ch of (a.chapters||[])) walk(ch,ch.id);
