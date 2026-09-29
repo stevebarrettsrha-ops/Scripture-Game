@@ -55,12 +55,9 @@ const games=process.argv.slice(2);
         const pair=/\[\s*(['"])([a-z_0-9]+)\1\s*,\s*(['"])((?:(?!\3)[^\\]|\\.)*)\3\s*\]/g;
         while((m=pair.exec(src))){ if(!CHARS[m[2]]||!/[A-Za-z]{2}/.test(m[4])||!/\s/.test(m[4])||m[4].length<10) continue; let t=m[4]; try{ t=JSON.parse('"'+t.replace(/\\'/g,"'").replace(/"/g,'\\"')+'"'); }catch(e){} line(m[2],t,'code'); }
       }
-      /* the field of battle: the commander's cries, and each battle's end */
+      /* the field of battle: the verse read at each battle's end (the orders and the title are only shown) */
       if(typeof BATTLES!=='undefined'){
-        for(const k in BATTLES){ const B=BATTLES[k];
-          add({text:B.defeat?(B.overTitle||'Defeat'):'Victory',who:'narrator'},'battle:'+k);
-          line('narrator',B.win,'battle:'+k); }
-        if(typeof ORD!=='undefined') for(const k in ORD) add({text:ORD[k].call,who:{kind:'captain',key:'captain'}},'order:'+k);
+        for(const k in BATTLES) line('narrator',BATTLES[k].win,'battle:'+k);
       }
       if(typeof BOOK!=='undefined'&&BOOK.chapters){
         for(const k in BOOK.chapters) for(const v of BOOK.chapters[k]) line('narrator',v.t,'verse:'+k+':'+v.v);

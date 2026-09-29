@@ -5,7 +5,7 @@
    quotation marks by the one the Besorah says spoke them (a messenger, a sovereign, a mother, a
    child) and the rest by the narrator. On a staged telling each part of the verse waits on the
    voice, so what is seen keeps pace with what is heard. The reading books are read verse by
-   verse; on the field of battle the commander's orders are cried aloud.
+   verse; on the field of battle the verse that tells how it went is read when it is over.
 
    YAHUAH speaks in a voice of His own: the deepest there is, slow and low, given to no one else.
 
@@ -863,17 +863,12 @@ function readerHooks(){
 /* ------------------------------------------------------------ the field of battle */
 function battleHooks(){
   if(typeof W.giveOrder!=='function'||typeof W.endBattle!=='function') return false;
-  const _give=W.giveOrder;
-  const ord=()=>typeof ORD!=='undefined'?ORD:{};
-  W.giveOrder=function(k){
-    const o=ord()[k], before=o&&o.t;
-    const r=_give.apply(this,arguments);
-    if(o&&o.t!==before&&o.call) play([{text:o.call,who:{kind:'captain',key:'captain'}}]);
-    return r; };
+  /* only scripture is heard: the orders and the title stay on the screen, and the verse that tells how the
+     battle went is read when it is over */
   const _end=W.endBattle;
   W.endBattle=function(){ const r=_end.apply(this,arguments);
-    const t=document.getElementById('o-title'), s=document.getElementById('o-sub');
-    play([{text:(t&&t.textContent)||'',who:'narrator'}].concat(lineItems('narrator',(s&&s.textContent)||''))); return r; };
+    const s=document.getElementById('o-sub');
+    play(lineItems('narrator',(s&&s.textContent)||'')); return r; };
   const begin=document.getElementById('t-begin');
   if(begin) begin.addEventListener('click',()=>stop());
   addEventListener('keydown',e=>{ if(e.code==='KeyV'&&!e.repeat) V.toggle(); });
