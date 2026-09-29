@@ -209,9 +209,26 @@ const GLOSS=/\s*\((?:Most Set Apart Place|Set Apart Ones|Set Apart One|Set Apart
 /* "(YAHUAH) HWHY": the Name is said once; the glyph beside it is for the eye, as in the reader */
 const HWHY=/\(\s*(YAHU[ĂA]H)\s*\)\s*HWHY/g;
 const MARKS=/[‘’‚‛ʻʼʹ׳'`´ʿʾ]/g;
+/* the Hebrew letters as they are said: ḥ, and the ch of ruach and mizbe’ach, is a K — never an
+   English h, never the ch of "church". A word that ends in it keeps its last vowel: No-ahk, Pesahk */
+const HEB_CH={ruach:'ruahk',ruchot:'roo-kote',mizbeach:'miz-beh-ahk',mizbeachot:'miz-beh-ah-kote',pesach:'pesahk',
+  mashiach:'mashi-ahk',chen:'khen',baruch:'baruk',chittim:'kittim',achior:'akior',hermon:'kermon'};
+const HEB_SAY={'ḥawwah':'kah-wah','ḥiram':'kee-ram','ḥirah':'kee-rah','ḥur':'kour'};
+function hebrewK(w){
+  const low=w.toLowerCase(), cap=s=>/^[A-ZÀ-ÞḀ-ỿ]/.test(w)&&w[0]!==w[0].toLowerCase()?s[0].toUpperCase()+s.slice(1):s;
+  const bare=low.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(MARKS,'');
+  if(HEB_CH[bare]) return cap(HEB_CH[bare]);
+  if(!/ḥ/.test(low)) return null;
+  if(HEB_SAY[low]) return cap(HEB_SAY[low]);
+  if(w===w.toUpperCase()) w=w.toLowerCase();
+  return w.replace(/([^\s-])[’'ʼ]?([aA])[ḥḤ]$/,'$1-$2hk').replace(/ḥ/g,'k').replace(/Ḥ/g,'K');
+}
 function sayWord(w,device){
   const key=nameKey(w.replace(/[’'`´]s$/,''));
   if(key==='yahuah'){ const s=/[’'`´]s$/.test(w); return device?(s?"Yah-hoo-wah's":'Yah-hoo-wah'):(s?'YAHUAHS':'YAHUAH'); }
+  { const m=w.match(/^(.*?)([’'`´]s)?$/), k=hebrewK(m[1].normalize('NFC'));
+    if(k!=null){ let o=k.normalize('NFD').replace(/[̀-ͯ]/g,'').replace(MARKS,'');
+      if(o===o.toUpperCase()) o=o.toLowerCase(); return o+(m[2]?"'s":''); } }
   /* don't, it's, the man’s: English, the apostrophe kept */
   if(/^[A-Za-z]+[’'](s|t|re|ll|ve|d|m)$/i.test(w)) return w.replace(/[’`´]/,"'");
   let o=w.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(MARKS,'');
@@ -269,7 +286,13 @@ function quoteSpans(text){
   const out=[]; let depth=0, start=0;
   for(let i=0;i<text.length;i++){
     const ch=text[i];
-    if(ch==='“'||(ch==='"'&&depth===0)){ if(depth===0){ if(i>start) out.push({a:start,b:i,q:false}); start=i; } depth++; }
+    if(ch==='“'||(ch==='"'&&depth===0)){
+      if(depth===0){ if(i>start) out.push({a:start,b:i,q:false}); start=i; }
+      /* a speech that runs on over verses opens each verse with its mark again: that is the same
+         speech going on, not one spoken inside it — unless a ‘…’ quotation is still open there */
+      else if(depth===1&&ch==='“'){ const mid=text.slice(start+1,i);
+        if((mid.match(/‘/g)||[]).length<=(mid.match(/’(?![A-Za-zÀ-ɏḀ-ỿ])/g)||[]).length) continue; }
+      depth++; }
     else if(ch==='”'||(ch==='"'&&depth>0)){ if(depth>0&&--depth===0){ out.push({a:start,b:i+1,q:true}); start=i+1; } }
   }
   if(start<text.length) out.push({a:start,b:text.length,q:depth>0});
@@ -544,10 +567,24 @@ function slideSegs(list,i,depth){
   const text=String(s.text||''), parts=partsOf(s);
   let partOf=null;
   if(parts){ const st=[]; let o=0; for(const p of parts){ st.push(o); o+=p.length; } partOf=x=>{ let k=0; while(k+1<st.length&&st[k+1]<=x) k++; return k; }; }
+  /* the whole of it one speaker's words, though no mark opens them: a letter read by the one who wrote it */
+  if(s.by) return [{text,who:s.by,a:0,b:text.length}];
+  /* the verse says who speaks: each quotation in it is given, in order, to the one named */
+  if(s.who!=null){ const w=Array.isArray(s.who)?s.who:[s.who]; let k=0;
+    return quoteSpans(text).map(sp=>({text:text.slice(sp.a,sp.b),who:sp.q?w[Math.min(k++,w.length-1)]:'narrator',a:sp.a,b:sp.b})); }
   let prev=null;
   if(depth<2) for(let j=i-1;j>=Math.max(0,i-2)&&!prev;j--) prev=lastSpeaker(slideSegs(list,j,depth+1));
+  /* a speech the slide before left open goes on here, though no mark opens it again */
+  const before=list[i-1]&&String(list[i-1].text||''), c=text.indexOf('”'), o=text.indexOf('“');
+  if(before&&endsOpen(before)&&c>=0&&(o<0||c<o)){
+    const po=partOf?(x=>partOf(Math.max(0,x-1))):null;
+    const segs=passage('“'+text,{cast:s.stage&&s.stage.cast,partOf:po,prev});
+    return segs.map((g,k)=>{ const a=Math.max(0,g.a-1), b=g.b-1;
+      return {text:text.slice(a,b),who:(k===0&&g.who==='narrator'&&prev)?prev:g.who,a,b}; }).filter(g=>g.b>g.a);
+  }
   return passage(text,{cast:s.stage&&s.stage.cast,partOf,prev});
 }
+function endsOpen(t){ const sp=quoteSpans(t), l=sp[sp.length-1]; return !!l&&l.q&&l.b===t.length&&!/”[\s’]*$/.test(t); }
 function slideItems(list,i){
   const s=list[i], text=String(s.text||''), segs=slideSegs(list,i,0), parts=partsOf(s);
   if(!parts) return {flat:segs.map(g=>({text:g.text,who:g.who}))};
