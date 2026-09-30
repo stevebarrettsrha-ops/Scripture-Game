@@ -44,7 +44,6 @@ const games=process.argv.slice(2);
           if(Array.isArray(o.sayList)) for(const d of o.sayList) if(Array.isArray(d)) line(d[0],d[1],'sayList:'+ch);
           if(Array.isArray(o.dlg)){ if(Array.isArray(o.dlg[0])){ for(const d of o.dlg) line(d[0],d[1],'dlg:'+ch); } else for(const t of o.dlg) line(o.id,t,'dlg:'+ch); }
           if(o.choice&&typeof o.choice.prompt==='string') line('narrator',o.choice.prompt,'choice:'+ch);
-          if(typeof o.needText==='string') line('narrator',o.needText,'need:'+ch);
           if(typeof o.examine==='string') line('narrator',o.examine,'examine:'+ch);
           for(const k in o){ if(k==='intro'||k==='outro') continue; walk(o[k],ch); } };
         for(const a of STORY) for(const ch of (a.chapters||[])) walk(ch,ch.id);
@@ -55,12 +54,9 @@ const games=process.argv.slice(2);
         const pair=/\[\s*(['"])([a-z_0-9]+)\1\s*,\s*(['"])((?:(?!\3)[^\\]|\\.)*)\3\s*\]/g;
         while((m=pair.exec(src))){ if(!CHARS[m[2]]||!/[A-Za-z]{2}/.test(m[4])||!/\s/.test(m[4])||m[4].length<10) continue; let t=m[4]; try{ t=JSON.parse('"'+t.replace(/\\'/g,"'").replace(/"/g,'\\"')+'"'); }catch(e){} line(m[2],t,'code'); }
       }
-      /* the field of battle: the commander's cries, and each battle's end */
+      /* the field of battle: the verse read at each battle's end (the orders and the title are only shown) */
       if(typeof BATTLES!=='undefined'){
-        for(const k in BATTLES){ const B=BATTLES[k];
-          add({text:B.defeat?(B.overTitle||'Defeat'):'Victory',who:'narrator'},'battle:'+k);
-          line('narrator',B.win,'battle:'+k); }
-        if(typeof ORD!=='undefined') for(const k in ORD) add({text:ORD[k].call,who:{kind:'captain',key:'captain'}},'order:'+k);
+        for(const k in BATTLES) line('narrator',BATTLES[k].win,'battle:'+k);
       }
       if(typeof BOOK!=='undefined'&&BOOK.chapters){
         for(const k in BOOK.chapters) for(const v of BOOK.chapters[k]) line('narrator',v.t,'verse:'+k+':'+v.v);

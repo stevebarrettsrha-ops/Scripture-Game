@@ -4180,7 +4180,7 @@ const Game={
   /* seamless world: reaching a story's waypoint begins it (no doorways) */
   enterSite(id){
     const ch=allChapters().find(c=>c.id===id);
-    if(!ch){ this.say('narrator','(The way here is not yet opened.)'); return; }
+    if(!ch){ toast('The way here is not yet opened.'); return; }
     this._returnWorld={pos:[this.world.player.x,this.world.player.y]};
     /* the living world is kept: staged stories play upon it, entered ones return to it */
     if(this.world&&this.world.map&&this.world.map.world){
@@ -4582,7 +4582,7 @@ const Game={
               (!o.hiddenUntil||this.objectives[o.hiddenUntil-1].done));
       if(o){
         if(o.need&&(this.inv[o.item]||0)<o.need){
-          this.say('narrator',o.needText||`You need more. (${this.inv[o.item]||0}/${o.need})`);
+          toast(o.needText||`You need more. (${this.inv[o.item]||0}/${o.need})`);
           return;
         }
         if(o.script){ this.runScript(o.script.slice(),()=>this.completeObjective(o.idx)); }
@@ -6193,17 +6193,10 @@ STORY.push(
 
 { id:'freeroam', title:'The World', ref:'walk where you will',
   scene:{
-   map:{world:true, w:360, h:200, seed:7777,
-     features:[
-       /* the sealed gate of the Garden — the garden is walled about, and the way
-          back is kept by the flaming sword which turns every way (BERĔSHITH 3:24) */
-       {type:'gate',side:true,x:306.6,y:92.6,solid:true,clear:1.5,
-        examine:'The gate is shut, and the way is kept — keruḇim, and a flaming sword turning every way.'},
-       {type:'sword',x:305.3,y:92.4,clear:0},
-     ]},
-   player:'adam_c', playerPos:[303,94],
+   map:{world:true,w:360,h:200,seed:7777,features:[{type:'gate',side:true,x:306.6,y:92.6,solid:true,clear:1.5},{type:'sword',x:305.3,y:92.4,clear:0}]},
+   player:'adam_c',
+   playerPos:[303,94],
    npcs:[
-     /* at the first there are only the two — Aḏam (you) and Ḥawwah */
      {id:'chavvah',char:'chavvah_c',x:301,y:95,wander:false,follow:true,noTalk:true},
    ],
    objectives:[
@@ -6272,26 +6265,21 @@ STORY.push(
        }
      }},
    ],
-  },
+  }
 },
 
 { id:'interior', title:'Inside', ref:'',
   scene:{
-   map:{biome:'interior', floorCol:'#a89272', w:16, h:11, seed:7,
-     features:[
-       {type:'pot',x:4,y:4,id:'jar',examine:'A jar of oil and grain.'},
-       {type:'basket',x:6,y:4,full:true},
-       {type:'firepit',x:11,y:4,lit:true},
-       {type:'pot',x:12,y:7},
-       {type:'doorway',x:8,y:10,id:'exit',examine:'The way out.'},
-     ]},
-   player:'adam_c', playerPos:[8,8],
-   npcs:[],
-   objectives:[
-     {type:'goto',x:8,y:9.4,radius:1.2,text:'Step back outside',
-      script:[{say:['narrator','You step back out into the light of day.']}]},
+   map:{biome:'interior',floorCol:'#a89272',w:16,h:11,seed:7,features:[{type:'pot',x:4,y:4,id:'jar'},{type:'basket',x:6,y:4,full:true},{type:'firepit',x:11,y:4,lit:true},{type:'pot',x:12,y:7},{type:'doorway',x:8,y:10,id:'exit'}]},
+   player:'adam_c',
+   playerPos:[8,8],
+   npcs:[
    ],
-  },
+   objectives:[
+     {type:'goto',x:8,y:9.4,radius:1.2,text:'Step back outside', script:[
+     ]},
+   ],
+  }
 }
 
 ]},
@@ -6332,7 +6320,7 @@ STORY.push(
    {art:'mankind',music:'eden',text:'but a mist went up from the earth and watered the entire surface of the ground. And YAHUAH Aluahim formed the man out of dust from the ground and breathed into his nostrils breath of life. And the man became a living being.',ref:'BERĔSHITH 2:6–7',stage:{set:'wilderness',time:'dawn',cam:'close',focus:0.5,cast:[{id:'voice',x:0.5},{id:'adam',x:0.5,z:0.1,face:'r',from:'lie',pose:'look',at:1}],fx:[{k:'rays',x:0.5,at:0},{k:'wind',at:0}]}},
   ],
   scene:{
-   map:{biome:'eden',w:48,h:36,seed:7,river:{x:38,width:4,curve:2,ford:18,from:[22,12.2],join:6},features:[{type:'treeLife',x:22,y:13,solid:true,clear:3,flat:2,id:'treelife',examine:'The tree of life, in the midst of the garden. Its fruit glows with warm light.'},{type:'treeKnow',x:27,y:13,solid:true,clear:3,id:'treeknow',examine:'The tree of the knowledge of good and evil. Something about it stirs the heart.'},{type:'clearing',x:24,y:18,flat:3}]},
+   map:{biome:'eden',w:48,h:36,seed:7,river:{x:38,width:4,curve:2,ford:18,from:[22,12.2],join:6},features:[{type:'treeLife',x:22,y:13,solid:true,clear:3,flat:2,id:'treelife'},{type:'treeKnow',x:27,y:13,solid:true,clear:3,id:'treeknow'},{type:'clearing',x:24,y:18,flat:3}]},
    time:'day',
    music:'eden',
    playerLight:true,
@@ -6348,7 +6336,6 @@ STORY.push(
        {toast:'And whatever the man called each living creature, that was its name. — BERĔSHITH 2:19'},
      ]},
      {id:'lion1',animal:'lion',x:30,y:24,range:3, script:[
-       {say:['narrator','The great golden beast pads close and bows its heavy head, waiting to be called.']},
        {say:['adam','Lion.']},
        {toast:'And whatever the man called each living creature, that was its name. — BERĔSHITH 2:19'},
      ]},
@@ -6356,7 +6343,6 @@ STORY.push(
      {id:'btl1',animal:'beetle',x:28,y:22,range:4,noTalk:true},
      {id:'frog1',animal:'frog',x:36,y:20,range:3,noTalk:true},
      {id:'deer1',animal:'deer',x:14,y:12,range:3, script:[
-       {say:['narrator','The slender swift one stands still before you, waiting to be called.']},
        {say:['adam','Deer.']},
        {toast:'And whatever the man called each living creature, that was its name. — BERĔSHITH 2:19'},
      ]},
@@ -6383,13 +6369,13 @@ STORY.push(
        {sfx:'holy'},
        {music:'holy'},
        {say:['voice','Eat of every tree of the garden.']},
-       {say:['voice','But of the tree of the knowledge of good and evil you shall not eat, for in the day that you eat of it you shall certainly die.']},
+       {say:['voice','But do not eat of the tree of the knowledge of good and evil, for in the day that you eat of it you shall certainly die.']},
        {rays:0},
        {music:'eden'},
      ]},
    ],
    onStart:[
-     {say:['narrator','The garden lies before you. Walk with the arrow keys or WASD — gather, tend, and see all that YAHUAH Aluahim has made. Press E to draw near to His creatures.']},
+     {toast:'Walk with the arrow keys or WASD. Press E beside a creature.'},
    ],
    onComplete:[
      {say:['narrator','So YAHUAH Aluahim caused a deep sleep to fall on the man and he slept. And He took one of his ribs and closed up the flesh in its place. And the rib which YAHUAH Aluahim had taken from the man He made into a woman and He brought her to the man.']},
@@ -6548,7 +6534,7 @@ STORY.push(
      {say:['narrator','And YAHUAH Aluahim said,']},
      {say:['voice','See, the man has become like one of Us, to know good and evil. And now, lest he put out his hand and take also of the tree of life and eat and live forever.']},
      {say:['narrator','so YAHUAH Aluahim sent him out of the garden of Ĕḏen to til the ground from which he was taken,']},
-     {say:['narrator','Therefore YAHUAH Aluahim sent him out of the garden of Ĕḏen, to till the ground from which he was taken.']},
+     {say:['narrator','So YAHUAH Aluahim sent him out of the garden of Ĕḏen to til the ground from which he was taken,']},
    ],
    onComplete:[
      {call:g=>{ g.world.camFollow=null; g.world.camTarget=[48,15]; }},
@@ -6593,7 +6579,7 @@ STORY.push(
          if(!SOLID.has(m.tiles[y*m.w+x])) m.tiles[y*m.w+x]=10; }},
    ],
    npcs:[
-     {id:'hevel',char:'hevel',x:33,y:22,wander:true,range:2,dlg:[['hevel','I am bringing the first-born of my flock to YAHUAH, brother — the best of them, and of their fat. What will you bring from your field?']]},
+     {id:'hevel',char:'hevel',x:33,y:22,wander:true,range:2},
      {id:'sheep1',animal:'sheep',x:34.4,y:24,range:1.1,noTalk:true},
      {id:'sheep2',animal:'sheep',x:35.8,y:24.4,range:1.1,noTalk:true},
      {id:'sheep3',animal:'sheep',x:34.2,y:25.3,range:1.1,noTalk:true},
@@ -6631,7 +6617,6 @@ STORY.push(
        {emote:['player','angry']},
        {rays:0.5,raysX:23},
        {rays:0},
-       {choice:{prompt:'Sin is crouching at the door. Its desire is for you…',options:[{label:'Hear the warning',script:[{say:['qayin','…I hear. And yet the anger does not go out of me. It only hides.']}]},{label:'Nurse the burning grudge',script:[{say:['qayin','Words for me — and favour for him.']}]}]}},
      ]},
    ],
    onComplete:[
@@ -6666,7 +6651,6 @@ STORY.push(
      {type:'goto',x:28,y:16,radius:2,text:'Walk out to your brother in the field', script:[
        {say:['narrator','They were both in the field, Qayin tilling and ploughing his ground, and Heḇal feeding his flock — and the flock passed that part which Qayin had ploughed in the ground, and it sorely grieved Qayin on this account.']},
        {say:['narrator','And Qayin told Heḇal his brother. And it came to be when they were in the field, that Qayin rose up against Heḇal his brother and killed him.']},
-       {say:['narrator','And when Qayin heard the words which Heḇal his brother had spoken, behold — the anger of Qayin was kindled against his brother Heḇal. And he took up a stone of the field…']},
        {fade:'out'},
        {sfx:'thunder'},
        {music:'sorrow'},
@@ -6771,7 +6755,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'city',w:48,h:32,seed:66,features:[{type:'tower',stage:2,scaffold:true,x:38,y:10,solid:true,clear:4,flat:4,id:'forgeworks',examine:'A tower of burnt brick, hung with scaffolds — the works of the teaching of Azazal.'},{type:'firepit',big:true,x:35,y:14,lit:true},{type:'firepit',x:40,y:15,lit:true},{type:'idol',x:42,y:12,col:'#caa23c',solid:true},{type:'throne',x:12,y:9,solid:true,id:'darkthrone'},{type:'tent',x:22,y:22,solid:true,clear:2,col:'#8a7a62'},{type:'basket',full:true,x:24,y:23,id:'goods'},{type:'clearing',x:24,y:16,flat:3},{type:'clearing',x:12,y:12,flat:2}]},
+   map:{biome:'city',w:48,h:32,seed:66,features:[{type:'tower',stage:2,scaffold:true,x:38,y:10,solid:true,clear:4,flat:4,id:'forgeworks'},{type:'firepit',big:true,x:35,y:14,lit:true},{type:'firepit',x:40,y:15,lit:true},{type:'idol',x:42,y:12,col:'#caa23c',solid:true},{type:'throne',x:12,y:9,solid:true,id:'darkthrone'},{type:'tent',x:22,y:22,solid:true,clear:2,col:'#8a7a62'},{type:'basket',full:true,x:24,y:23,id:'goods'},{type:'clearing',x:24,y:16,flat:3},{type:'clearing',x:12,y:12,flat:2}]},
    time:'night',
    music:'tense',
    player:'noach',
@@ -6847,9 +6831,9 @@ STORY.push(
      {id:'amb_sheep1',animal:'sheep',x:14,y:22,range:2,noTalk:true},
      {id:'amb_sheep2',animal:'sheep',x:15.4,y:23.2,range:2,noTalk:true},
      {id:'amb_bird1',animal:'bird',x:20,y:20,range:4,noTalk:true},
-     {id:'shem',char:'shem',x:20,y:18,wander:true,range:2,dlg:[['shem','Father, the beams are heavy — but your hands do not tremble. Tell us again what He said: a window above, the door in the side…']]},
-     {id:'cham',char:'cham',x:30,y:18,wander:true,range:2,dlg:[['cham','A hundred and twenty years YAHUAH has given them, father — and day after day you and Methushelaḥ proclaim it: “Return from your evil ways!” And still they will not hearken.']]},
-     {id:'yepheth',char:'yepheth',x:25,y:20,wander:true,range:2,dlg:[['yepheth','Tar inside and outside, you said. I have set the kettles boiling.']]},
+     {id:'shem',char:'shem',x:20,y:18,wander:true,range:2},
+     {id:'cham',char:'cham',x:30,y:18,wander:true,range:2},
+     {id:'yepheth',char:'yepheth',x:25,y:20,wander:true,range:2},
    ],
    items:[
      {kind:'timber',x:14,y:14},
@@ -6873,11 +6857,9 @@ STORY.push(
      {type:'interact',prop:'ark',text:'Raise the ark',hiddenUntil:2, script:[
        {prop:['ark',{rise:{rate:0.0004,max:1}}]},
        {wait:3400},
-       {toast:'Seasons pass. The hull rises…'},
        {wait:900},
        {prop:['ark',{rise:{rate:0.0004,max:2}}]},
        {wait:3400},
-       {toast:'The work of years is finished.'},
        {sfx:'chime'},
        {wait:700},
        {say:['voice','And of all the living creatures of all flesh, two of each, you are to bring into the ark, to keep them alive with you – a male and a female.']},
@@ -6920,7 +6902,7 @@ STORY.push(
      {id:'a6',animal:'lion',x:44,y:11,follow:false,group:'pairs',noTalk:true},
      {id:'a7',animal:'goat',x:8,y:10,follow:false,group:'pairs',noTalk:true},
      {id:'a8',animal:'goat',x:9,y:9,follow:false,group:'pairs',noTalk:true},
-     {id:'shem',char:'shem',x:27,y:17,wander:false,dlg:[['shem','The stalls are ready, father. Walk near the creatures and they shall follow you — He has made them willing.']]},
+     {id:'shem',char:'shem',x:27,y:17,wander:false},
      {id:'cham',char:'cham',x:21,y:18,wander:true,range:1.6,noTalk:true},
      {id:'yepheth',char:'yepheth',x:29,y:19,wander:true,range:1.6,noTalk:true},
      {id:'wife',char:'noach_w',x:23,y:18.5,wander:true,range:1.4,noTalk:true},
@@ -6934,7 +6916,7 @@ STORY.push(
      ]},
    ],
    onStart:[
-     {say:['narrator','Walk close to each pair of animals and they will follow you. Bring them to the door of the ark.']},
+     {toast:'Walk close to each pair of animals and they will follow you. Bring them to the door of the ark.'},
      {call:g=>{ g.world.npcs.forEach(n=>{ if(n.group==='pairs') n.follow=true; }); }},
    ],
    onComplete:[
@@ -6981,7 +6963,7 @@ STORY.push(
    {art:'flood',music:'storm',text:'And the flood was on the earth forty days and the waters increased and lifted up the ark and it rose high above the earth. And the waters were mighty and greatly increased on the earth and the ark moved about on the surface of the waters. And the waters were exceedingly mighty on the earth and all the high mountains under all the shamayim were covered.',ref:'BERĔSHITH 7:17–19'},
   ],
   scene:{
-   map:{biome:'interior',floorCol:'#6e5638',w:26,h:16,seed:41,features:[{type:'firepit',x:6,y:9,lit:true},{type:'doorway',closed:true,x:13,y:1.9,id:'arkdoor',examine:'The door of the ark — shut from the outside, by the hand of YAHUAH.'},{type:'stone',x:20,y:6,id:'window',examine:'The window of the ark, which Noaḥ had made.'},{type:'fold',x:4.2,y:5.2,w:3.4,h:2.4,examine:'“Make rooms in the ark” — and they went into the ark to Noaḥ, two by two, of all flesh in which is the breath of life.'},{type:'fold',x:8.6,y:5.2,w:3.4,h:2.4},{type:'fold',x:17.2,y:14.2,w:3.6,h:2.6},{type:'fold',x:22,y:14.2,w:3.6,h:2.6},{type:'trough',x:12.4,y:13.6},{type:'basket',x:15,y:9.6,full:true,examine:'“Take of all food that is eaten and gather it to yourself. And it shall be food for you and for them.” And Noaḥ did according to all that Aluahim commanded him.'},{type:'pot',x:3.4,y:9.4}]},
+   map:{biome:'interior',floorCol:'#6e5638',w:26,h:16,seed:41,features:[{type:'firepit',x:6,y:9,lit:true},{type:'doorway',closed:true,x:13,y:1.9,id:'arkdoor'},{type:'stone',x:20,y:6,id:'window'},{type:'fold',x:4.2,y:5.2,w:3.4,h:2.4,examine:'“Make rooms in the ark” — and they went into the ark to Noaḥ, two by two, of all flesh in which is the breath of life.'},{type:'fold',x:8.6,y:5.2,w:3.4,h:2.4},{type:'fold',x:17.2,y:14.2,w:3.6,h:2.6},{type:'fold',x:22,y:14.2,w:3.6,h:2.6},{type:'trough',x:12.4,y:13.6},{type:'basket',x:15,y:9.6,full:true,examine:'“Take of all food that is eaten and gather it to yourself. And it shall be food for you and for them.” And Noaḥ did according to all that Aluahim commanded him.'},{type:'pot',x:3.4,y:9.4}]},
    time:'night',
    music:'night',
    rain:true,
@@ -6999,8 +6981,8 @@ STORY.push(
      {id:'ark_deer2',animal:'deer',x:22.8,y:13.3,wander:true,range:0.6,tame:true,noTalk:true},
      {id:'ark_donkey1',animal:'donkey',x:11.2,y:13,wander:false,dir:'right',tame:true,noTalk:true},
      {id:'ark_donkey2',animal:'donkey',x:13.7,y:13.2,wander:false,dir:'left',tame:true,noTalk:true},
-     {id:'wife',char:'noach_w',x:5,y:10,wander:true,range:1.5,dlg:[['noach_w','One hundred and fifty days the waters prevailed… and now, listen — the rain has ceased, and the deep is stopped. The waters are going down. He remembers us.']]},
-     {id:'shem',char:'shem',x:12,y:8,wander:true,range:2,dlg:[['shem','We came to rest with a great groan of timber — on the mountains of Ararat, father, I am sure of it.']]},
+     {id:'wife',char:'noach_w',x:5,y:10,wander:true,range:1.5},
+     {id:'shem',char:'shem',x:12,y:8,wander:true,range:2},
      {id:'dove',animal:'dove',x:21,y:8,wander:false,noTalk:true},
      {id:'raven',animal:'raven',x:22,y:9,wander:false,noTalk:true},
    ],
@@ -7028,7 +7010,7 @@ STORY.push(
    {art:'flood',music:'holy',text:'And in the seventh month, the seventeenth day of the month, the ark rested on the mountains of Ararat.',ref:'BERĔSHITH 8:4',stage:{set:'flood',wx:'wind',cam:'push',props:[{k:'rock',x:0.14,z:0.75,w:150,h:50,color:'#55564e'},{k:'rock',x:0.86,z:0.8,w:120,h:40,color:'#55564e'},{k:'rock',x:0.5,z:0.5,w:300,h:110,color:'#5e5c52'},{k:'noahark',x:0.5,z:0.5,s:0.75,dy:-0.24}],fx:[{k:'rays',x:0.5,at:1},{k:'bright',amt:0.1,at:2}]}},
   ],
   scene:{
-   map:{biome:'ararat',w:30,h:28,seed:46,features:[{type:'ark',stage:2,x:9,y:21,solid:true,clear:5,flat:4,id:'ark',examine:'The ark, come to rest with a groan of timber on the mountains of Ararat.'},{type:'clearing',x:16,y:18,flat:3},{type:'rock',x:22,y:22,solid:true,clear:1}]},
+   map:{biome:'ararat',w:30,h:28,seed:46,features:[{type:'ark',stage:2,x:9,y:21,solid:true,clear:5,flat:4,id:'ark'},{type:'clearing',x:16,y:18,flat:3},{type:'rock',x:22,y:22,solid:true,clear:1}]},
    worldStage:true,
    overlook:{kind:'flood',cliffY:13,drop:0.62},
    time:'morning',
@@ -7068,8 +7050,8 @@ STORY.push(
    player:'noach',
    playerPos:[31,15],
    npcs:[
-     {id:'wife',char:'noach_w',x:33,y:16,wander:true,range:2,dlg:[['noach_w','Solid ground, Noaḥ. I had almost forgotten how it holds you up.']]},
-     {id:'shem',char:'shem',x:35,y:17,wander:true,range:2,dlg:[['shem','The whole earth, washed and empty — and given to us to fill again.']]},
+     {id:'wife',char:'noach_w',x:33,y:16,wander:true,range:2},
+     {id:'shem',char:'shem',x:35,y:17,wander:true,range:2},
      {id:'s1',animal:'sheep',x:36,y:14,range:3,noTalk:true},
      {id:'s2',animal:'sheep',x:37,y:15,range:3,noTalk:true},
      {id:'c1',animal:'cow',x:38,y:16,range:3,noTalk:true},
@@ -7125,7 +7107,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'plains',w:46,h:32,seed:76,features:[{type:'tent',x:29,y:11,solid:true,clear:2,col:'#b3a07f',id:'tent',examine:'The tent of Noaḥ.'},{type:'vine',x:13,y:14},{type:'vine',x:15.5,y:14.2},{type:'vine',x:18,y:14},{type:'vine',x:13,y:16.4},{type:'vine',x:15.5,y:16.6},{type:'vine',x:18,y:16.4},{type:'vine',x:13,y:18.8},{type:'vine',x:15.5,y:19},{type:'vine',x:18,y:18.8},{type:'basket',full:true,x:20,y:16,id:'vintage',examine:'The first vintage of the washed world.'},{type:'firepit',x:25,y:18,lit:true},{type:'clearing',x:25,y:19,flat:2}]},
+   map:{biome:'plains',w:46,h:32,seed:76,features:[{type:'tent',x:29,y:11,solid:true,clear:2,col:'#b3a07f',id:'tent'},{type:'vine',x:13,y:14},{type:'vine',x:15.5,y:14.2},{type:'vine',x:18,y:14},{type:'vine',x:13,y:16.4},{type:'vine',x:15.5,y:16.6},{type:'vine',x:18,y:16.4},{type:'vine',x:13,y:18.8},{type:'vine',x:15.5,y:19},{type:'vine',x:18,y:18.8},{type:'basket',full:true,x:20,y:16,id:'vintage'},{type:'firepit',x:25,y:18,lit:true},{type:'clearing',x:25,y:19,flat:2}]},
    time:'day',
    music:'eden',
    player:'shem',
@@ -7178,7 +7160,6 @@ STORY.push(
          const c=g.world.npcs.find(n=>n.id==='cham'); if(c){c.wander=false; c.target={x:g.ox+26.2,y:g.oy+19.6};}
          const y=g.world.npcs.find(n=>n.id==='yepheth'); if(y){y.wander=false; y.target={x:g.ox+23.6,y:g.oy+20};} }},
        {wait:1400},
-       {say:['narrator','And Noaḥ called his sons, and they drew close to him, they and their children — and he divided the earth into the lots which his three sons were to take in possession, and a mal’ak of the presence was with them.']},
        {say:['narrator','And he said,']},
        {say:['noach','Baruk be YAHUAH, the Aluahim of Shĕm and let Kena‛an become his servant. Let Aluahim enlarge Yahpheth and let him dwell in the tents of Shĕm. And let Kena‛an become his servant.']},
        {rays:0.6,raysX:25},
@@ -7256,10 +7237,10 @@ STORY.push(
      {id:'amb_hauler3',char:'builder3',route:[[14,14],[22,13.6],[15,17]],routeSpeed:0.03,noTalk:true,x:14,y:14,hold:'brick'},
      {id:'amb_mason1',char:'builder',x:21.6,y:13.2,wander:false,dir:'up',noTalk:true},
      {id:'amb_mason2',char:'builder2',x:24.4,y:13.3,wander:false,dir:'up',noTalk:true},
-     {id:'nimrod',char:'nimrod',x:23,y:17,wander:false,dlg:[['nimrod','Burn the bricks thoroughly! Brick for stone, and bitumen for mortar. We shall reach the shamayim itself and make a name for ourselves — one people, one tongue, one tower!']]},
-     {id:'b2',char:'builder2',x:18,y:20,wander:true,range:2,dlg:[['builder2','Come, let us make bricks and burn them thoroughly! Our company says: we will ascend to the shamayim and set up our own Aluahims there, and serve them in the height!']]},
-     {id:'b3',char:'builder3',x:28,y:21,wander:true,range:2,dlg:[['builder3','Why should we be scattered abroad? Our company says: we will ascend and make WAR upon Him who dwells above. Steps of brick, all the way up!']]},
-     {id:'b4',char:'builder',x:23,y:22,wander:true,range:2,dlg:[['builder','Look at my bow! Our company says: we will smite the shamayim with arrows. Yesterday we shot from the top — and every arrow fell back to us dripping with blood! Surely we have slain all those that dwell in the shamayim!']]},
+     {id:'nimrod',char:'nimrod',x:23,y:17,wander:false},
+     {id:'b2',char:'builder2',x:18,y:20,wander:true,range:2},
+     {id:'b3',char:'builder3',x:28,y:21,wander:true,range:2},
+     {id:'b4',char:'builder',x:23,y:22,wander:true,range:2},
      {id:'w1',char:'builder2',x:16,y:15,wander:true,range:2,group:'crowd',noTalk:true},
      {id:'w2',char:'builder3',x:30,y:16,wander:true,range:2,group:'crowd',noTalk:true},
      {id:'w3',char:'builder',x:19,y:23,wander:true,range:2,group:'crowd',noTalk:true},
@@ -7277,14 +7258,11 @@ STORY.push(
        {fade:'out'},
        {prop:['tower',{stage:2}]},
        {fade:'in'},
-       {toast:'The tower rises…'},
        {wait:800},
        {fade:'out'},
        {prop:['tower',{stage:3}]},
        {fade:'in'},
-       {toast:'Its head reaches toward the clouds.'},
        {wait:800},
-       {say:['narrator','And from the top they cast the arrows toward the shamayim — and all the arrows fell upon them filled with blood. And they said to each other, “Surely we have slain all those that are in shamayim.” For this was from YAHUAH in order to cause them to err, whose every thought was rebellion.']},
        {rays:0.9,raysX:23},
        {sfx:'holy'},
        {music:'tense'},
@@ -7294,14 +7272,6 @@ STORY.push(
        {burst:[23,12,'holy',26]},
        {rays:0},
        {wait:900},
-       {call:g=>{ const w=g.world;
-         const n1=w.npcs.find(n=>n.id==='b2');
-         if(n1) n1.dlg=[['builder2','Velu shana kithra?! Bal-bal anaku tisme… tisme-KA?!']];
-         const n2=w.npcs.find(n=>n.id==='b3');
-         if(n2) n2.dlg=[['builder3','Ishkun ana? ANA?! Manu atta — manu ATTA?!']];
-         const n3=w.npcs.find(n=>n.id==='nimrod');
-         if(n3) n3.dlg=[['nimrod','Epesh! EPESH-ma!! …Ul ishemme. Ul ishemme!']];
-       }},
      ]},
      {type:'talk',npc:'b2',text:'Try to speak with the brickmaker',hiddenUntil:2, script:[
        {say:['narrator','And YAHUAH said,']},
@@ -7362,20 +7332,16 @@ STORY.push(
 
 { id:'c11a', title:'The Ravens of Mastema', ref:'YOḆELIM 11',
   intro:[
-   {art:'corrupt', music:'tense', text:'Prince Mastema sent ravens and birds to devour the seed that was sown in the land, in order to destroy the land, and rob the children of men of their labors. Before they could plow in the seed, the ravens picked it from the surface of the ground.', ref:'YOḆELIM 11:11', stage:{"set":"field","time":"day","cam":"push","cast":[{"id":"mastema","look":{"name":"Prince Mastema","skin":"#4a3a34","hair":"#140f14","hairStyle":"long","robe":"#2a2230","collar":"#7a2a2a","angel":1,"darkAngel":1},"x":0.14,"z":0.16,"face":"r","pose":"point"}],"crowd":[{"kind":"people","n":4,"x":0.6,"w":0.3,"z":0.3,"face":"l","from":"hold","pose":"weep","at":1,"hold":"basket"}],"props":[{"k":"oxen","x":0.86,"z":0.22,"n":2}],"fx":[{"k":"ravens","n":8,"x":0.55,"y":0.25,"at":0},{"k":"ravens","n":8,"x":0.6,"y":0.55,"at":1}]}},
-   {art:'journey', music:'sorrow', text:'The years began to be barren, because of the birds, and they devoured all the fruit of the trees… it was only with great effort that they could harvest a little fruit from the earth in their days.', ref:'YOḆELIM 11:13', stage:{"set":"wilderness","time":"dusk","wx":"dust","cam":"pan-l","props":[{"k":"tree","x":0.16,"z":0.3,"color":"#6a5a3a"},{"k":"tree","x":0.74,"z":0.36,"color":"#6a5a3a"},{"k":"tree","x":0.9,"z":0.5,"color":"#5a5030"}],"crowd":[{"kind":"people","n":3,"x":0.4,"w":0.12,"z":0.45,"face":"l","pose":"weep"},{"kind":"people","n":4,"x":0.64,"w":0.26,"z":0.28,"face":"l","pose":"kneel","at":1,"hold":"basket"}],"fx":[{"k":"ravens","n":6,"x":0.5,"y":0.25}]}},
+   {art:'corrupt',music:'tense',text:'Prince Mastema sent ravens and birds to devour the seed that was sown in the land, in order to destroy the land, and rob the children of men of their labors. Before they could plow in the seed, the ravens picked it from the surface of the ground.',ref:'YOḆELIM 11:11',stage:{set:'field',time:'day',cam:'push',cast:[{id:'mastema',look:{name:'Prince Mastema',skin:'#4a3a34',hair:'#140f14',hairStyle:'long',robe:'#2a2230',collar:'#7a2a2a',angel:1,darkAngel:1},x:0.14,z:0.16,face:'r',pose:'point'}],crowd:[{kind:'people',n:4,x:0.6,w:0.3,z:0.3,face:'l',from:'hold',pose:'weep',at:1,hold:'basket'}],props:[{k:'oxen',x:0.86,z:0.22,n:2}],fx:[{k:'ravens',n:8,x:0.55,y:0.25,at:0},{k:'ravens',n:8,x:0.6,y:0.55,at:1}]}},
+   {art:'journey',music:'sorrow',text:'The years began to be barren, because of the birds, and they devoured all the fruit of the trees… it was only with great effort that they could harvest a little fruit from the earth in their days.',ref:'YOḆELIM 11:13',stage:{set:'wilderness',time:'dusk',wx:'dust',cam:'pan-l',props:[{k:'tree',x:0.16,z:0.3,color:'#6a5a3a'},{k:'tree',x:0.74,z:0.36,color:'#6a5a3a'},{k:'tree',x:0.9,z:0.5,color:'#5a5030'}],crowd:[{kind:'people',n:3,x:0.4,w:0.12,z:0.45,face:'l',pose:'weep'},{kind:'people',n:4,x:0.64,w:0.26,z:0.28,face:'l',pose:'kneel',at:1,hold:'basket'}],fx:[{k:'ravens',n:6,x:0.5,y:0.25}]}},
   ],
-  scene:{ worldStage:true,   /* plays on the open world */
-   map:{biome:'plains', w:46, h:32, seed:621,
-     features:[
-       {type:'tent',x:10,y:12,solid:true,clear:2,col:'#b3a07f'},
-       {type:'wheat',x:19,y:14,thin:true},{type:'wheat',x:21,y:14.4,thin:true},{type:'wheat',x:20,y:15.6,thin:true},
-       {type:'wheat',x:28,y:19.6,thin:true},{type:'wheat',x:30,y:20,thin:true},{type:'wheat',x:29,y:21.3,thin:true},
-       {type:'wheat',x:22.5,y:23.6,thin:true},{type:'wheat',x:24,y:24,thin:true},{type:'wheat',x:23,y:25.2,thin:true},
-       {type:'clearing',x:24,y:18,flat:3},
-     ]},
-   time:'day', music:'tense',
-   player:'avram_y', playerPos:[12,16],
+  scene:{
+   worldStage:true,
+   map:{biome:'plains',w:46,h:32,seed:621,features:[{type:'tent',x:10,y:12,solid:true,clear:2,col:'#b3a07f'},{type:'wheat',x:19,y:14,thin:true},{type:'wheat',x:21,y:14.4,thin:true},{type:'wheat',x:20,y:15.6,thin:true},{type:'wheat',x:28,y:19.6,thin:true},{type:'wheat',x:30,y:20,thin:true},{type:'wheat',x:29,y:21.3,thin:true},{type:'wheat',x:22.5,y:23.6,thin:true},{type:'wheat',x:24,y:24,thin:true},{type:'wheat',x:23,y:25.2,thin:true},{type:'clearing',x:24,y:18,flat:3}]},
+   time:'day',
+   music:'tense',
+   player:'avram_y',
+   playerPos:[12,16],
    npcs:[
      {id:'r1',animal:'raven',x:20,y:16,group:'ravens',wander:true,range:1.2,noTalk:true},
      {id:'r2',animal:'raven',x:27,y:14,group:'ravens',wander:true,range:1.2,noTalk:true},
@@ -7412,15 +7378,12 @@ STORY.push(
    ],
    onComplete:[
      {say:['narrator','And he caused the clouds of ravens to turn back that day seventy times — and of all the ravens throughout all the land where Aḇram was, there settled not so much as one.']},
-     {say:['terah','All who were with him saw him cry out and saw all the ravens turn back — and the boy’s name became great in all the land of the Chaldees.']},
-     {say:['avram_y','The birds are driven, but they will return with every sowing. Better to hide the seed from them altogether: a vessel set above the ground, facing the frame of the plow — let the seed fall from it down upon the share, and be buried in the very stroke of plowing.']},
-     {say:['narrator','And Aḇram taught those who made implements for oxen, the artificers in wood, and they made a vessel above the ground, facing the frame of the plow — and they sowed, and were no longer afraid of the ravens.']},
    ],
   },
   outro:[
-   {art:'journey', music:'eden', text:'All who were with him throughout all the land saw him cry out, and all the ravens turn back, and his name became great in all the land of the Chaldees… And they sowed their land, and that year they brought enough grain home to eat and they were satisfied.', ref:'YOḆELIM 11:21–24', stage:{"set":"field","time":"day","cam":"push","cast":[{"id":"avram_y","x":0.46,"z":0.1,"face":"r","pose":"raise","say":0}],"crowd":[{"kind":"people","n":6,"x":0.18,"w":0.22,"z":0.45,"face":"r","from":"look","pose":"raise","at":1}],"props":[{"k":"sheaves","x":0.7,"z":0.3,"at":1},{"k":"sheaves","x":0.86,"z":0.42,"at":1},{"k":"sacks","x":0.62,"z":0.14,"n":5,"at":1}],"fx":[{"k":"ravens","n":8,"x":0.82,"y":0.16}]}},
+   {art:'journey',music:'eden',text:'All who were with him throughout all the land saw him cry out, and all the ravens turn back, and his name became great in all the land of the Chaldees… And they sowed their land, and that year they brought enough grain home to eat and they were satisfied.',ref:'YOḆELIM 11:21–24',stage:{set:'field',time:'day',cam:'push',cast:[{id:'avram_y',x:0.46,z:0.1,face:'r',pose:'raise',say:0}],crowd:[{kind:'people',n:6,x:0.18,w:0.22,z:0.45,face:'r',from:'look',pose:'raise',at:1}],props:[{k:'sheaves',x:0.7,z:0.3,at:1},{k:'sheaves',x:0.86,z:0.42,at:1},{k:'sacks',x:0.62,z:0.14,n:5,at:1}],fx:[{k:'ravens',n:8,x:0.82,y:0.16}]}},
   ],
-  complete:'Seventy times the ravens turned back — and not one settled where Aḇram stood.'
+  complete:'Of all the ravens throughout all the land where Aḇram was, there settled not so much as one.'
 },
 
 { id:'c11y', title:'One Very Large Star', ref:'YASHAR 8',
@@ -7717,7 +7680,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'desert',w:50,h:34,seed:71,features:[{type:'tent',x:14,y:14,solid:true,clear:2,col:'#c8b486',id:'tent',examine:'Your tent in Ḥaran, pitched these many years.'},{type:'tent',x:19,y:16,solid:true,clear:2,col:'#b3a07f'},{type:'well',x:11,y:19,solid:true,clear:2},{type:'firepit',x:16,y:18,lit:true},{type:'clearing',x:44,y:28,flat:2}],path:[[18,18,44,28]]},
+   map:{biome:'desert',w:50,h:34,seed:71,features:[{type:'tent',x:14,y:14,solid:true,clear:2,col:'#c8b486',id:'tent'},{type:'tent',x:19,y:16,solid:true,clear:2,col:'#b3a07f'},{type:'well',x:11,y:19,solid:true,clear:2},{type:'firepit',x:16,y:18,lit:true},{type:'clearing',x:44,y:28,flat:2}],path:[[18,18,44,28]]},
    time:'morning',
    music:'desert',
    player:'avram',
@@ -7751,7 +7714,6 @@ STORY.push(
        {call:g=>{ const s=g.world.npcs.find(n=>n.id==='sarah'); const l=g.world.npcs.find(n=>n.id==='lot');
          if(s){s.wander=false;s.follow=true;} if(l){l.wander=false;l.follow=true;} }},
        {fade:'out'},
-       {toast:'Through Sheḵem, to the terebinth tree of Morĕh…'},
        {wait:600},
        {time:'dusk'},
        {fade:'in'},
@@ -7781,7 +7743,7 @@ STORY.push(
    {art:'journey',music:'tense',text:'And yet with all these orders Aḇram did not put confidence in them, but he took Sarai and placed her in a chest and concealed it amongst their vessels… And the king’s servants approached Aḇram, saying… “Now open thou the chest and give tithe to the king of all that it contains.” … Aḇram said, “All that you desire I will give, but you must not open the chest.”',ref:'YASHAR 15:7–13',stage:{set:'egypt',time:'day',cam:'push',cast:[{id:'avram',x:0.3,z:0.1,face:'r',say:3,acts:[{at:3,pose:'bless'}]},{id:'kingserv',look:{name:'The King’s Servants',skin:'#5f3e20',hair:'#000000',hairStyle:'egypt',robe:'#e0d8c0',collar:'#caa23c'},x:0.9,at:1,to:0.64,z:0.12,face:'l',pose:'point'}],props:[{k:'chest',x:0.46,z:0.12,s:1.5},{k:'sacks',x:0.18,z:0.3,n:5},{k:'camel',x:0.1,z:0.45,face:'r',load:1}],crowd:[{kind:'guards',side:'mitsrayim',n:3,x:0.82,w:0.14,z:0.45,face:'l',enter:'r',at:1}]}},
   ],
   scene:{
-   map:{biome:'interior',w:28,h:17,seed:117,features:[{type:'throne',x:14,y:5.4,solid:true,id:'throne'},{type:'doorway',x:23,y:1.9,id:'halldoor',examine:'The doorway of Pharaoh’s hall.'},{type:'basket',full:true,x:8,y:6,id:'gifts',examine:'Gifts of Pharaoh — given for Sarai’s sake.'}]},
+   map:{biome:'interior',w:28,h:17,seed:117,features:[{type:'throne',x:14,y:5.4,solid:true,id:'throne'},{type:'doorway',x:23,y:1.9,id:'halldoor'},{type:'basket',full:true,x:8,y:6,id:'gifts'}]},
    time:'morning',
    music:'tense',
    player:'avram',
@@ -7794,7 +7756,6 @@ STORY.push(
    ],
    objectives:[
      {type:'goto',x:14,y:9.5,radius:1.8,text:'You are summoned before Pharaoh at first light', script:[
-       {say:['narrator','For in the night, YAHUAH plagued Pharaoh and his house with great plagues because of Sarai, Aḇram’s wife. And when the king came near to Sarai, the mal’ak smote him to the ground, and acted thus to him the whole night, and the king was terrified — and the mal’ak smote heavily all the servants of the king, and his whole household.']},
        {shake:1.5},
        {sfx:'thunder'},
        {wait:500},
@@ -7828,7 +7789,6 @@ STORY.push(
        {say:['avram','Please let there be no strife between you and me and between my herdsmen and your herdsmen, for we are brothers. Is not all the land before you? Please separate from me. If you take the left, then I go to the right; or, if you go to the right, then I go to the left.']},
        {say:['narrator','And Lot lifted his eyes and saw all the plain of the Yardĕn, that it was well watered everywhere – before YAHUAH destroyed Seḏom and Amorah – like the garden of YAHUAH, like the land of Mitsrayim as you go toward Tso‛ar. So Lot chose for himself all the plain of the Yardĕn and Lot moved east.']},
        {say:['narrator','Thus they separated from each other, Aḇram dwelling in the land of Kena‛an and Lot dwelling in the cities of the plain and pitched his tent as far as Seḏom. But the men of Seḏom were evil and sinned before YAHUAH, exceedingly so.']},
-       {choice:{prompt:'Strife between brothers, in the land of promise…',options:[{label:'“Let there be no strife — you choose first.”',script:[]},{label:'Claim the best land for yourself',script:[{say:['avram','I am the elder. By right the choice is mine, and yet—']},{say:['narrator','But the word would not leave his mouth. The man whom YAHUAH had called to be a berakah breathed once, and chose the better way.']}]}]}},
        {move:['lot',46,30,0.06,'bg']},
      ]},
      {id:'sheep1',animal:'sheep',x:14,y:20,range:3,noTalk:true},
@@ -7877,7 +7837,7 @@ STORY.push(
        {sfx:'thunder'},
        {shake:2},
        {music:'storm'},
-       {battle:{foes:['foe1','foe2','foe3','foe4','foe5','foe6','foe7'],hits:2,rally:[22,21],text:'By night — smite the army of the four sovereigns and free Lot!',won:'The camp of the kings is broken'}},
+       {battle:{foes:['foe1','foe2','foe3','foe4','foe5','foe6','foe7'],hits:2,rally:[22,21]}},
        {music:'night'},
        {move:['lotc',24,27,0.06]},
        {fade:'out'},
@@ -7996,7 +7956,7 @@ STORY.push(
    {art:'journey',music:'sorrow',text:'And Aḇram said to Sarai, “See, your female servant is in your hand, do to her what is good in your eyes.” And Sarai treated her harshly and she fled from her presence.',ref:'BERĔSHITH 16:6',stage:{set:'camp',time:'day',cam:'push',focus:0.4,props:[{k:'tent',x:0.1,z:0.45},{k:'palm',x:0.9,z:0.55}],cast:[{id:'avram',x:0.18,z:0.12,face:'r',pose:'sit',acts:[{at:2,pose:'stand'}]},{id:'sarah',look:{name:'Sarai'},x:0.42,z:0.08,face:'l',pose:'weep',say:1,acts:[{at:1,pose:'speak'},{at:3,pose:'weep'},{at:4,pose:'point',face:'r'}]},{id:'hagar',x:0.66,z:0.18,face:'l',pose:'stand',acts:[{at:1,to:0.3,face:'l'},{at:3,face:'r',pose:'look'},{at:4,exit:'r',run:1}]}]}},
   ],
   scene:{
-   map:{biome:'desert',w:46,h:30,seed:86,features:[{type:'well',x:30,y:16,solid:true,clear:2,id:'spring',examine:'A spring of water in the wilderness, on the way to Shur.'},{type:'palm',x:32,y:17,solid:true},{type:'clearing',x:28,y:17,flat:2}]},
+   map:{biome:'desert',w:46,h:30,seed:86,features:[{type:'well',x:30,y:16,solid:true,clear:2,id:'spring'},{type:'palm',x:32,y:17,solid:true},{type:'clearing',x:28,y:17,flat:2}]},
    time:'day',
    music:'desert',
    player:'hagar',
@@ -8082,7 +8042,7 @@ STORY.push(
    {art:'journey',music:'desert',text:'And YAHUAH appeared to him by the terebinth trees of Mamrĕ, while he was sitting in the tent door in the heat of the day. So he lifted his eyes and looked and saw three men standing opposite him. And when he saw them, he ran from the tent door to meet them and bowed himself to the ground,',ref:'BERĔSHITH 18:1–2',stage:{set:'camp',time:'noon',wx:'haze',cam:'push',focus:0.45,props:[{k:'tree',x:0.3,z:0.45,h:160},{k:'tree',x:0.46,z:0.62,h:130},{k:'tent',x:0.14,z:0.3}],fx:[{k:'rays',x:0.72,at:1}],cast:[{id:'avraham',x:0.24,z:0.1,face:'r',pose:'sit',acts:[{at:1,pose:'look'}]},{id:'man1',look:{name:'The Visitors',skin:'#7a5a3a',hair:'#3a2a18',robe:'#ece6d6',headcover:'#f4f0e4',beard:'#3a2a18',glow:1},x:0.64,z:0.18,face:'l',pose:'stand',at:1},{id:'voice',x:0.74,at:1},{id:'man2',look:{name:'The Visitors',skin:'#7a5a3a',hair:'#3a2a18',robe:'#ece6d6',headcover:'#f4f0e4',beard:'#3a2a18',glow:1},x:0.84,z:0.18,face:'l',pose:'stand',at:1,label:false}]}},
   ],
   scene:{
-   map:{biome:'desert',w:46,h:32,seed:91,features:[{type:'tent',x:14,y:15,solid:true,clear:2,col:'#c8b486',id:'tent2',examine:'The tent of Sarah. Fine flour waits inside, and quick hands.'},{type:'tree',x:18,y:12,solid:true,col:'#5d7a35'},{type:'tree',x:11,y:13,solid:true,col:'#5d7a35'},{type:'firepit',x:16,y:17,lit:true},{type:'clearing',x:26,y:18,flat:3}]},
+   map:{biome:'desert',w:46,h:32,seed:91,features:[{type:'tent',x:14,y:15,solid:true,clear:2,col:'#c8b486',id:'tent2'},{type:'tree',x:18,y:12,solid:true,col:'#5d7a35'},{type:'tree',x:11,y:13,solid:true,col:'#5d7a35'},{type:'firepit',x:16,y:17,lit:true},{type:'clearing',x:26,y:18,flat:3}]},
    time:'day',
    music:'desert',
    player:'avraham',
@@ -8111,7 +8071,6 @@ STORY.push(
        {despawn:'calf'},
        {give:['meal',1]},
        {sfx:'pickup'},
-       {toast:'A tender and good calf, given to a young man to prepare.'},
      ]},
      {type:'goto',x:28,y:18.6,radius:2.6,id:'serve',text:'Set the meal before them',hiddenUntil:3, script:[
        {say:['narrator','And he took curds and milk and the calf which he had prepared and set it before them and he stood by them under the tree as they ate. And they said to him, “Where is Sarah your wife?” And he said, “See, in the tent.” And He said,']},
@@ -8148,7 +8107,6 @@ STORY.push(
        {wait:500},
        {move:['m2',44,28,0.06,'bg']},
        {move:['m3',44,29,0.06,'bg']},
-       {choice:{prompt:'Aḇraham stands yet before YAHUAH. Dare he speak again?',options:[{label:'“Suppose there are forty-five… forty… thirty…”',script:[]},{label:'Cease pleading',script:[{say:['narrator','But the cities in the plain held the sons of his brother’s house — and love made him bold once more.']}]}]}},
        {despawn:'m1'},
        {despawn:'m2'},
        {despawn:'m3'},
@@ -8169,7 +8127,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'city',w:50,h:30,seed:119,features:[{type:'doorway',x:24.5,y:14.05,id:'lotdoor',examine:'The door of Lot’s house in Seḏom.'},{type:'firepit',x:21,y:16,lit:true},{type:'pot',x:22.4,y:16,id:'lotpot',examine:'Flour and a fire — enough for unleavened bread.'},{type:'idol',x:34,y:10,col:'#9a9488',solid:true},{type:'clearing',x:24,y:21,flat:2},{type:'clearing',x:24.5,y:16,flat:2}]},
+   map:{biome:'city',w:50,h:30,seed:119,features:[{type:'doorway',x:24.5,y:14.05,id:'lotdoor'},{type:'firepit',x:21,y:16,lit:true},{type:'pot',x:22.4,y:16,id:'lotpot'},{type:'idol',x:34,y:10,col:'#9a9488',solid:true},{type:'clearing',x:24,y:21,flat:2},{type:'clearing',x:24.5,y:16,flat:2}]},
    time:'dusk',
    music:'tense',
    player:'lot',
@@ -8294,7 +8252,7 @@ STORY.push(
    {art:'sodom',music:'storm',text:'And Aḇrahim arose early in the morning and went to the place where he had stood before YAHUAH,',ref:'BERĔSHITH 19:27',stage:{set:'art',cam:'push',fx:[{k:'firefall',x:0.6,y:0.55},{k:'quake'},{k:'smoke',x:0.7,at:1}],cast:[{id:'avraham',enter:'l',at:1,to:0.22,face:'r',pose:'look',hold2:'staff'}]}},
   ],
   scene:{
-   map:{biome:'rocky',w:30,h:28,seed:101,features:[{type:'altar',stage:3,x:11,y:22,solid:true,clear:2,id:'altar',examine:'The place where Aḇraham had stood before YAHUAH.'},{type:'clearing',x:15,y:16,flat:3}]},
+   map:{biome:'rocky',w:30,h:28,seed:101,features:[{type:'altar',stage:3,x:11,y:22,solid:true,clear:2,id:'altar'},{type:'clearing',x:15,y:16,flat:3}]},
    worldStage:true,
    overlook:{kind:'sodom',cliffY:13,drop:0.66},
    time:'morning',
@@ -8324,7 +8282,7 @@ STORY.push(
    {art:'sodom',music:'sorrow',text:'And Lot went up out of Tso‛ar and dwelt in the mountains and his two daughters were with him, for he was afraid to dwell in Tso‛ar. And he and his two daughters dwelt in a cave.',ref:'BERĔSHITH 19:30',stage:{set:'cave',cam:'push',focus:0.45,props:[{k:'fire',x:0.42,z:0.3,at:1}],cast:[{id:'lot',x:0.7,z:0.1,to:0.32,face:'l',pose:'look',acts:[{at:1,pose:'sitground',face:'r'}]},{id:'lotd1',x:0.84,z:0.14,to:0.52,face:'l',pose:'stand',acts:[{at:1,pose:'sitground'}]},{id:'lotd2',x:0.95,z:0.18,to:0.64,face:'l',pose:'stand',label:false,acts:[{at:1,pose:'sitground'}]}]}},
   ],
   scene:{
-   map:{biome:'rocky',w:30,h:28,seed:191,features:[{type:'rock',x:9,y:22,solid:true,clear:2,id:'cave',examine:'The cave in the mountain where Lot and his daughters dwelt, afraid to remain in Tso‛ar.'},{type:'rock',x:11,y:21.4,solid:true},{type:'firepit',x:12.5,y:23,lit:true},{type:'clearing',x:16,y:17,flat:3}]},
+   map:{biome:'rocky',w:30,h:28,seed:191,features:[{type:'rock',x:9,y:22,solid:true,clear:2,id:'cave'},{type:'rock',x:11,y:21.4,solid:true},{type:'firepit',x:12.5,y:23,lit:true},{type:'clearing',x:16,y:17,flat:3}]},
    worldStage:true,
    overlook:{kind:'embers',cliffY:13,drop:0.62},
    time:'dusk',
@@ -8408,7 +8366,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'desert',w:46,h:32,seed:111,features:[{type:'tent',x:16,y:14,solid:true,clear:2,col:'#c8b486'},{type:'tent',x:22,y:13,solid:true,clear:2,col:'#b3a07f'},{type:'firepit',x:19,y:17,lit:true},{type:'well',x:36,y:24,solid:true,clear:2,id:'well',examine:'A well of water in the wilderness of Be’ĕrsheḇa.'}]},
+   map:{biome:'desert',w:46,h:32,seed:111,features:[{type:'tent',x:16,y:14,solid:true,clear:2,col:'#c8b486'},{type:'tent',x:22,y:13,solid:true,clear:2,col:'#b3a07f'},{type:'firepit',x:19,y:17,lit:true},{type:'well',x:36,y:24,solid:true,clear:2,id:'well'}]},
    time:'day',
    music:'eden',
    player:'avraham',
@@ -8424,7 +8382,7 @@ STORY.push(
        {say:['sarah','Who would have said to Aḇrahim that Sarah would nurse children? For I have borne him a son in his old age.']},
        {say:['narrator','And the child grew and was weaned and Aḇrahim made a great feast on the day that Yahtsḥaq was weaned.']},
      ]},
-     {id:'yitschaq',char:'yitschaq',x:19,y:16,child:true,wander:true,range:1.5,dlg:[['yitschaq','Father! Watch me run to the well and back!']]},
+     {id:'yitschaq',char:'yitschaq',x:19,y:16,child:true,wander:true,range:1.5},
      {id:'hagar',char:'hagar',x:30,y:22,wander:false, script:[
        {say:['narrator','And Aḇrahim rose early in the morning and took bread and a skin of water, which he gave to Haḡar, putting it on her shoulder, also the boy and sent her away. And she left and wandered in the Wilderness of Be’ĕrsheḇa.']},
        {say:['narrator','And the water in the skin was used up and she placed the boy under one of the shrubs. And she went and sat down about a bowshot away, for she said,']},
@@ -8497,7 +8455,7 @@ STORY.push(
        {say:['narrator','And he said,']},
        {say:['yitschaq','See, the fire and the wood! But where is the lamb for a burnt offering?']},
        {say:['narrator','And Aḇrahim said, “My son, Aluahim does provide for Himself the lamb for a burnt offering.” And the two of them went together.']},
-       {say:['narrator','And Aḇraham took the wood of the burnt offering and laid it on Yahtsḥaq his son, and he took the fire in his hand, and a knife — and the two of them went together.']},
+       {say:['narrator','And Aḇrahim took the wood of the burnt offering and laid it on Yahtsḥaq his son. And he took the fire in his hand and a knife and the two of them went together.']},
        {hold:['player','torch']},
      ]},
      {type:'goto',x:22,y:17,radius:2,text:'Go on, higher up the mountain',hiddenUntil:1, script:[
@@ -8505,7 +8463,6 @@ STORY.push(
        {despawn:'oldman'},
        {sfx:'bad'},
        {burst:[22,15,'ash',14]},
-       {say:['narrator','And seeing he could not prevail over them he hid himself from them — and he went and passed before them in the road; and he transformed himself to a large brook of water, where no brook had ever run.']},
        {call:g=>{ const m=g.world.map; g._brookTiles=[];
          for(let y=12+g.oy;y<=14+g.oy;y++)for(let x=17+g.ox;x<=27+g.ox;x++){
            if(!SOLID.has(m.tiles[y*m.w+x])){ g._brookTiles.push([x,y,m.tiles[y*m.w+x]]); m.tiles[y*m.w+x]=(y===13+g.oy)?6:5; } } }},
@@ -8614,7 +8571,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'city',w:46,h:30,seed:96,features:[{type:'well',x:24,y:14,solid:true,clear:2,id:'well',examine:'The well outside the city of Naḥor, at evening — the time when women go out to draw water.'},{type:'palm',x:26,y:15,solid:true},{type:'tent',x:38,y:12,solid:true,clear:2,col:'#b3906a'},{type:'clearing',x:24,y:16,flat:2}]},
+   map:{biome:'city',w:46,h:30,seed:96,features:[{type:'well',x:24,y:14,solid:true,clear:2,id:'well'},{type:'palm',x:26,y:15,solid:true},{type:'tent',x:38,y:12,solid:true,clear:2,col:'#b3906a'},{type:'clearing',x:24,y:16,flat:2}]},
    time:'dusk',
    music:'desert',
    player:'abservant',
@@ -8709,7 +8666,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'plains',w:48,h:30,seed:98,features:[{type:'tent',x:13,y:12,solid:true,clear:3,col:'#c8b486',id:'sarahtent',examine:'The tent of Sarah his mother — quiet since her death.'},{type:'tent',x:19,y:13,solid:true,clear:2,col:'#b3a07f'},{type:'firepit',x:16,y:15,lit:true},{type:'clearing',x:30,y:19,flat:3}]},
+   map:{biome:'plains',w:48,h:30,seed:98,features:[{type:'tent',x:13,y:12,solid:true,clear:3,col:'#c8b486',id:'sarahtent'},{type:'tent',x:19,y:13,solid:true,clear:2,col:'#b3a07f'},{type:'firepit',x:16,y:15,lit:true},{type:'clearing',x:30,y:19,flat:3}]},
    time:'dusk',
    music:'sorrow',
    player:'yitschaq',
@@ -8725,7 +8682,6 @@ STORY.push(
        {wait:600},
        {show:'rivqah'},
        {show:'servant'},
-       {say:['narrator','And he lifted his eyes and looked — and saw: camels coming.']},
        {move:['rivqah',34,18.5,0.04,'bg']},
        {move:['servant',35,20.5,0.04]},
        {call:g=>{ const r=g.world.npcs.find(n=>n.id==='rivqah');
@@ -8763,7 +8719,7 @@ STORY.push(
    {art:'rest',music:'sorrow',text:'Yahtsḥaq and Yahshma‛Al came… to celebrate the feast of weeks… to Aḇraham, their father… “I am one hundred three score and fifteen years, an old man and full of days…” He called Ya‘aqoḇ and said, “My son Ya‘aqoḇ, may the Aluahim of all bless you… and may He choose you and your offspring that you may become a people for His inheritance…”',ref:'YOḆELIM 22:1–10',stage:{set:'camp',time:'day',cam:'push',focus:0.35,props:[{k:'tent',x:0.08,z:0.4},{k:'sheaves',x:0.48,z:0.4,n:3,at:1},{k:'table',x:0.5,z:0.25,at:1}],cast:[{id:'avraham',look:{old:1},x:0.2,z:0.1,face:'r',pose:'sit',say:3,acts:[{at:4,pose:'bless'}]},{id:'yaaqov',x:0.56,z:0.32,face:'l',pose:'stand',acts:[{at:4,to:0.36,pose:'kneel'}]},{id:'yitschaq',look:{beard:'#4a341d'},enter:'r',at:0,to:0.66,face:'l',pose:'stand'},{id:'yishmael',enter:'r',at:0,to:0.8,face:'l',pose:'stand'}]}},
   ],
   scene:{
-   map:{biome:'interior',floorCol:'#a89272',w:24,h:15,seed:108,features:[{type:'doorway',x:12,y:1.9,id:'tentdoor',examine:'The door of Aḇraham’s tent, open to the night.'},{type:'firepit',x:6,y:9,lit:true}]},
+   map:{biome:'interior',floorCol:'#a89272',w:24,h:15,seed:108,features:[{type:'doorway',x:12,y:1.9,id:'tentdoor'},{type:'firepit',x:6,y:9,lit:true}]},
    time:'night',
    music:'sorrow',
    player:'yaaqov',
@@ -8775,20 +8731,19 @@ STORY.push(
        {call:g=>{ const p=g.world.player; p.x=13.4; p.y=6.8; p.lying=true; p.moving=false; p.dir='right';
          const a=g.world.npcs.find(n=>n.id==='avraham'); if(a) a.dir='down'; }},
        {wait:1200},
-       {say:['narrator','And he placed Ya‘aqoḇ’s two fingers on his eyes, and he baruk the Aluahim of Aluahims — and he covered his face and stretched out his feet and slept the sleep of eternity, and was gathered to his fathers.']},
+       {say:['narrator','He placed Ya\'aqoḇ\'s two fingers on his eyes, and he baruk the Aluahim of Aluahims, and he covered his face and stretched out his feet and slept the sleep of eternity, and was gathered to his fathers.']},
        {fade:'out'},
        {music:'night'},
        {wait:1300},
        {fade:'in'},
-       {say:['narrator','And in spite of all this, Ya‘aqoḇ was lying in his embracing arms — and knew not that Aḇraham, his father’s father, was dead.']},
+       {say:['narrator','In spite of all this, Ya\'aqoḇ was lying in his embracing arms, and knew not that Aḇraham, his father\'s father, was dead.']},
        {call:g=>{ g.world.player.lying=false; }},
        {say:['narrator','But there was no answer. He arose from his embracing arms and ran and told Riḇqah, his mother.']},
        {spawn:{id:'rivqah',char:'rivqah',x:12,y:13,wander:false,noTalk:true}},
        {spawn:{id:'yitschaq',char:'yitschaq_o',x:10.5,y:13.5,wander:false,noTalk:true}},
        {move:['rivqah',13,8,0.05,'bg']},
        {move:['yitschaq',15,8.5,0.05]},
-       {say:['narrator','And Riḇqah went to Yahtsḥaq in the night, and told him — and they went together, and Ya‘aqoḇ with them, and a lamp was in his hand. And they found Aḇraham lying dead.']},
-       {say:['narrator','And Yahtsḥaq fell on the face of his father and wept and kissed him.']},
+       {say:['narrator','Yahtsḥaq fell on the face of his father and wept and kissed him.']},
        {wait:700},
        {spawn:{id:'yishmael',char:'yishmael',x:12,y:13.5,wander:false,noTalk:true}},
        {move:['yishmael',17,8.5,0.05]},
@@ -8822,7 +8777,7 @@ STORY.push(
    {art:'journey',music:'desert',text:'And when the days were filled for her to give birth and see, twins were in her womb! And the first came out red all over, like a hairy garment, so they called his name Ĕsaw. And afterward his brother came out, with his hand holding on to Ĕsaw’s heel, so his name was called Ya‛aqoḇ. And Yahtsḥaq was sixty years old when she bore them.',ref:'BERĔSHITH 25:24–26',stage:{set:'night',time:'night',cam:'push',fx:[{k:'stars',at:1},{k:'rays',x:0.52,at:2}],cast:[{id:'yitschaq',look:{beard:'#4a341d'},x:0.26,z:0.1,face:'r',pose:'pray'},{id:'rivqah',x:0.46,z:0.12,face:'l',pose:'weep',acts:[{at:1,pose:'raise'},{at:2,pose:'kneel',face:'r'}]},{id:'voice',x:0.62,at:2}],crowd:[{kind:'nations',n:5,x:0.72,w:0.2,z:0.8,face:'l',at:2,look:{robe:'#8a5436',hair:'#7a3318'}},{kind:'people',n:5,x:0.9,w:0.14,z:0.72,face:'l',at:3}]}},
   ],
   scene:{
-   map:{biome:'plains',w:46,h:32,seed:131,features:[{type:'tent',x:18,y:13,solid:true,clear:2,col:'#c8b486'},{type:'pot',x:22,y:17,id:'pot',examine:'A pot for stew. The lentils want cooking.'},{type:'firepit',x:22,y:18,lit:true}]},
+   map:{biome:'plains',w:46,h:32,seed:131,features:[{type:'tent',x:18,y:13,solid:true,clear:2,col:'#c8b486'},{type:'pot',x:22,y:17,id:'pot'},{type:'firepit',x:22,y:18,lit:true}]},
    time:'dusk',
    music:'desert',
    player:'yaaqov',
@@ -8831,7 +8786,7 @@ STORY.push(
      {id:'amb_deer1',animal:'deer',x:30,y:18,range:3,noTalk:true},
      {id:'amb_deer2',animal:'deer',x:33,y:20,range:3,noTalk:true},
      {id:'amb_sheep1',animal:'sheep',x:14,y:18,range:2,noTalk:true},
-     {id:'rivqah',char:'rivqah',x:17,y:15,wander:true,range:1.5,dlg:[['rivqah','Two nations wrestled in my womb, Ya‘aqoḇ — and YAHUAH said the older shall serve the younger. Do not forget who spoke it.']]},
+     {id:'rivqah',char:'rivqah',x:17,y:15,wander:true,range:1.5},
    ],
    items:[
      {kind:'lentils',x:14,y:22},
@@ -8846,7 +8801,6 @@ STORY.push(
      {type:'interact',prop:'pot',text:'Cook a pot of stew',hiddenUntil:1,item:'lentils',need:4, script:[
        {prop:['pot',{fire:true}]},
        {sfx:'pickup'},
-       {toast:'The red stew simmers…'},
        {wait:700},
        {spawn:{id:'esav',char:'esav',x:42,y:22,wander:false,noTalk:true}},
        {move:['esav',24,18,0.06]},
@@ -8859,10 +8813,7 @@ STORY.push(
        {say:['narrator','Then Ya‛aqoḇ said,']},
        {say:['yaaqov','Swear to me today.']},
        {say:['narrator','And he swore to him and sold his birthright to Ya‛aqoḇ. Ya‛aqoḇ then gave Ĕsaw bread and stew of lentils. And he ate and drank and rose up and left. Thus Ĕsaw despised his birthright.']},
-       {choice:{prompt:'Ĕsaw the firstborn stands swaying with hunger. The words rise to your lips…',options:[{label:'“Sell me your birthright today.”',script:[]},{label:'Simply feed your brother',script:[{say:['yaaqov','Sit, brother, eat—']},{say:['narrator','But the heel-holder’s heart had been reaching for the birthright since the womb. The words came out of him as if they had been waiting all his life.']}]}]}},
        {move:['esav',42,22,0.06,'bg']},
-     ]},
-     {type:'talk',npc:'rivqah',text:'Hear your mother Riḇqah',hiddenUntil:2, script:[
      ]},
    ],
   },
@@ -8882,7 +8833,7 @@ STORY.push(
    {art:'journey',music:'tense',text:'And Aḇimeleḵ commanded all his people, saying, “He who touches this man or his wife shall certainly be put to death.”',ref:'BERĔSHITH 26:11',stage:{set:'city',time:'day',cam:'push',cast:[{id:'yitschaq',look:{beard:'#4a341d'},x:0.3,z:0.1,face:'r',pose:'stand',say:1,acts:[{at:2,pose:'hold'},{at:3,pose:'stand'}]},{id:'rivqah',x:0.42,z:0.12,face:'l',pose:'stand',acts:[{at:2,pose:'dance'},{at:3,pose:'stand'}]},{id:'gerarman',x:0.56,z:0.14,face:'l',pose:'speak',at:1,acts:[{at:2,exit:'r'}]},{id:'abimelek',x:0.82,z:0.3,face:'l',pose:'speak',at:2,crown:1,say:3,acts:[{at:3,to:0.6,pose:'point'},{at:4,face:'r',pose:'raise'}]}],crowd:[{kind:'people',n:6,x:0.8,w:0.3,z:0.62,face:'l',enter:'r',at:4}]}},
   ],
   scene:{
-   map:{biome:'desert',w:50,h:30,seed:148,features:[{type:'tent',x:9,y:15,solid:true,clear:2,col:'#c8b486'},{type:'firepit',x:11,y:16.5,lit:true},{type:'wheat',x:14,y:13},{type:'wheat',x:15.2,y:13.8},{type:'wheat',x:14.6,y:14.8},{type:'wheat',x:16,y:12.8},{type:'wheat',x:13.2,y:13.9},{type:'sheaf',x:15,y:14,id:'field',examine:'The field Yahtsḥaq sowed in the land of Gerar.'},{type:'clearing',x:22,y:18,flat:2},{type:'clearing',x:30,y:14,flat:2},{type:'clearing',x:39,y:20,flat:2}]},
+   map:{biome:'desert',w:50,h:30,seed:148,features:[{type:'tent',x:9,y:15,solid:true,clear:2,col:'#c8b486'},{type:'firepit',x:11,y:16.5,lit:true},{type:'wheat',x:14,y:13},{type:'wheat',x:15.2,y:13.8},{type:'wheat',x:14.6,y:14.8},{type:'wheat',x:16,y:12.8},{type:'wheat',x:13.2,y:13.9},{type:'sheaf',x:15,y:14,id:'field'},{type:'clearing',x:22,y:18,flat:2},{type:'clearing',x:30,y:14,flat:2},{type:'clearing',x:39,y:20,flat:2}]},
    time:'day',
    music:'desert',
    player:'yitschaq',
@@ -8939,7 +8890,7 @@ STORY.push(
        {music:'night'},
        {rays:0.7,raysX:39},
        {sfx:'holy'},
-       {say:['voice','I am the Aluahim of your father Aḇraham. Do not fear, for I am with you and shall bless you and increase your seed for My servant Aḇraham’s sake.']},
+       {say:['voice','I am the Aluahim of your father Aḇrahim. Do not fear, for I am with you and shall bless you and increase your seed for My servant Aḇraham’s sake.']},
        {rays:0},
        {addProp:{type:'altar',stage:3,x:41,y:18.6,solid:true,id:'bsaltar'}},
        {time:'day'},
@@ -8973,7 +8924,7 @@ STORY.push(
    {art:'rest',music:'tense',text:'“Now then, please take your weapons, your quiver and your bow and go out to the field and hunt wild game for me. “And make me a tasty dish, such as I love and bring it to me to eat, in order that my being does bless you before I die.”',ref:'BERĔSHITH 27:3–4',stage:{set:'tentin',cam:'push',focus:0.45,cast:[{id:'yitschaq_o',x:0.28,z:0.1,face:'r',pose:'sit',say:1},{id:'esav',x:0.5,z:0.1,face:'l',pose:'kneel',hold2:'bow',acts:[{at:2,pose:'stand'},{at:4,exit:'r'}]},{id:'rivqah',x:0.1,z:0.3,face:'r',pose:'look',at:4}]}},
   ],
   scene:{
-   map:{biome:'interior',floorCol:'#a89272',w:26,h:16,seed:106,features:[{type:'doorway',x:6,y:15.05,id:'tentdoor',examine:'The door of the tent. Somewhere beyond it, Ĕsaw is hunting.'},{type:'doorway',x:13.5,y:9.95,id:'innerdoor',examine:'The curtained doorway of your father’s chamber.'},{type:'firepit',x:6,y:12,lit:true},{type:'pot',x:7.4,y:12,id:'pot',examine:'Riḇqah’s cooking pot.'}]},
+   map:{biome:'interior',floorCol:'#a89272',w:26,h:16,seed:106,features:[{type:'doorway',x:6,y:15.05,id:'tentdoor'},{type:'doorway',x:13.5,y:9.95,id:'innerdoor'},{type:'firepit',x:6,y:12,lit:true},{type:'pot',x:7.4,y:12,id:'pot'}]},
    time:'day',
    music:'tense',
    player:'yaaqov',
@@ -9003,7 +8954,6 @@ STORY.push(
        {despawn:'goat1'},
        {despawn:'goat2'},
        {sfx:'pickup'},
-       {toast:'Two choice young goats, taken to Riḇqah.'},
      ]},
      {type:'interact',prop:'pot',text:'Riḇqah prepares the dish — and the disguise',hiddenUntil:2, script:[
        {prop:['pot',{fire:true}]},
@@ -9063,7 +9013,6 @@ STORY.push(
        {say:['narrator','And Ĕsaw lifted up his voice and wept. And Yahtsḥaq his father answered and said to him,']},
        {say:['yitschaq_o','See, your dwelling is of the fatness of the earth and of the dew of the shamayim from above. And by your sword you are to live and serve your brother. And it shall be, when you grow restless, that you shall break his yoke from your neck.']},
        {wait:700},
-       {say:['narrator','And he ate, and drank, and smelled the smell of his garments — and he baruk him.']},
        {rays:0.6,raysX:18},
        {sfx:'holy'},
        {music:'holy'},
@@ -9129,7 +9078,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'night_camp',w:44,h:30,seed:141,features:[{type:'stone',x:24,y:14,id:'stone',examine:'A stone of the place. It will do for a pillow, for a man with nowhere softer to be.'},{type:'clearing',x:24,y:15,flat:2}]},
+   map:{biome:'night_camp',w:44,h:30,seed:141,features:[{type:'stone',x:24,y:14,id:'stone'},{type:'clearing',x:24,y:15,flat:2}]},
    time:'deepnight',
    music:'night',
    player:'yaaqov',
@@ -9189,7 +9138,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'plains',w:46,h:32,seed:151,features:[{type:'well',x:24,y:15,solid:true,clear:2,id:'well',examine:'A great stone lies over the mouth of the well.'},{type:'tent',x:10,y:11,solid:true,clear:3,col:'#b3a07f'},{type:'tent',x:15,y:9,solid:true,clear:2,col:'#c8b486'},{type:'fold',x:9,y:18,clear:3,flat:3,id:'fold'},{type:'firepit',x:13,y:14,lit:true,id:'feastfire'},{type:'clearing',x:13,y:16,flat:2}]},
+   map:{biome:'plains',w:46,h:32,seed:151,features:[{type:'well',x:24,y:15,solid:true,clear:2,id:'well'},{type:'tent',x:10,y:11,solid:true,clear:3,col:'#b3a07f'},{type:'tent',x:15,y:9,solid:true,clear:2,col:'#c8b486'},{type:'fold',x:9,y:18,clear:3,flat:3,id:'fold'},{type:'firepit',x:13,y:14,lit:true,id:'feastfire'},{type:'clearing',x:13,y:16,flat:2}]},
    time:'day',
    music:'desert',
    player:'yaaqov',
@@ -9259,7 +9208,6 @@ STORY.push(
        {say:['lavan','It is not done this way in our place, to give the younger before the first-born. Complete the week of this one, then we give you this one too, for the service which you shall serve with me still another seven years.']},
        {say:['narrator','And Ya‛aqoḇ did so and completed her week. Then he gave him his daughter Raḥal too, as wife. And Laḇan gave his female servant Bilhah to his daughter Raḥal as a female servant. And he also went in to Raḥal and he also loved Raḥal more than Lĕ’ah. And he served with Laḇan still another seven years.']},
        {fade:'out'},
-       {toast:'And Ya‘aqoḇ served seven years for Raḥal…'},
        {wait:1400},
        {toast:'…and they seemed to him but a few days, because of the love he had for her.'},
        {wait:1600},
@@ -9410,9 +9358,7 @@ STORY.push(
        {prop:['trough2',{rods:true}]},
        {sfx:'pickup'},
        {fade:'out'},
-       {toast:'And the flocks conceived before the rods…'},
        {wait:1500},
-       {toast:'…season after season, in the strength of the flock.'},
        {wait:1500},
        {fade:'in'},
        {spawn:{id:'sp1',animal:'goat',x:36,y:18,spotted:true,range:1.2,noTalk:true,wander:true}},
@@ -9688,7 +9634,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'city',w:46,h:30,seed:163,features:[{type:'doorway',x:30.5,y:12.05,id:'shekemhouse',examine:'The house of Sheḵem, son of Ḥamor — Dinah is held within.'},{type:'idol',x:36,y:11,col:'#9a9488',solid:true},{type:'well',x:26,y:17,solid:true,clear:2},{type:'tent',x:8,y:22,solid:true,clear:2,col:'#c8b486'},{type:'tent',x:12,y:24,solid:true,clear:2,col:'#b3a07f'},{type:'firepit',x:10,y:23,lit:true},{type:'clearing',x:24,y:20,flat:2},{type:'clearing',x:30.5,y:13.5,flat:2}]},
+   map:{biome:'city',w:46,h:30,seed:163,features:[{type:'doorway',x:30.5,y:12.05,id:'shekemhouse'},{type:'idol',x:36,y:11,col:'#9a9488',solid:true},{type:'well',x:26,y:17,solid:true,clear:2},{type:'tent',x:8,y:22,solid:true,clear:2,col:'#c8b486'},{type:'tent',x:12,y:24,solid:true,clear:2,col:'#b3a07f'},{type:'firepit',x:10,y:23,lit:true},{type:'clearing',x:24,y:20,flat:2},{type:'clearing',x:30.5,y:13.5,flat:2}]},
    time:'day',
    music:'tense',
    player:'shimon',
@@ -9750,7 +9696,7 @@ STORY.push(
        {spawn:{id:'gd6',char:'builder3',x:26,y:14,wander:false,noTalk:true,foeSpeed:0.035}},
        {sfx:'thunder'},
        {shake:2},
-       {battle:{foes:['gd1','gd2','gd3','gd4','gd5','gd6'],hits:2,rally:[22,20],text:'Shim‛on and Lĕwi, Dinah’s brothers — take the city with the sword!',won:'The city that defiled Dinah is fallen'}},
+       {battle:{foes:['gd1','gd2','gd3','gd4','gd5','gd6'],hits:2,rally:[22,20]}},
      ]},
      {type:'goto',x:30.5,y:13.2,radius:1.7,text:'Take Dinah out of Sheḵem’s house',hiddenUntil:2, script:[
        {teleport:['dinah',30.5,12.4]},
@@ -9791,7 +9737,7 @@ STORY.push(
      {sfx:'thunder'},
      {shake:2},
      {music:'storm'},
-     {battle:{foes:['am1','am2','am3','am4','am5','am6','am7','am8'],hits:2,rally:[17,16],text:'Stand with your brothers — drive back the armies of the Amorite kings!',won:'The Amorites break before the sons of Ya‘aqoḇ'}},
+     {battle:{foes:['am1','am2','am3','am4','am5','am6','am7','am8'],hits:2,rally:[17,16]}},
      {music:'eden'},
    ],
   },
@@ -9807,7 +9753,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'plains',w:52,h:32,seed:167,features:[{type:'tree',x:14,y:13,solid:true,clear:2,col:'#3f7032',id:'terebinth',examine:'The terebinth tree which is near Sheḵem.'},{type:'tent',x:9,y:16,solid:true,clear:2,col:'#c8b486'},{type:'tent',x:12,y:18.5,solid:true,clear:2,col:'#b3a07f'},{type:'firepit',x:11,y:17,lit:true},{type:'altar',stage:0,x:24,y:12,solid:true,clear:2,flat:2,id:'altar'},{type:'clearing',x:38,y:19.5,flat:2},{type:'clearing',x:46,y:23,flat:2}]},
+   map:{biome:'plains',w:52,h:32,seed:167,features:[{type:'tree',x:14,y:13,solid:true,clear:2,col:'#3f7032',id:'terebinth'},{type:'tent',x:9,y:16,solid:true,clear:2,col:'#c8b486'},{type:'tent',x:12,y:18.5,solid:true,clear:2,col:'#b3a07f'},{type:'firepit',x:11,y:17,lit:true},{type:'altar',stage:0,x:24,y:12,solid:true,clear:2,flat:2,id:'altar'},{type:'clearing',x:38,y:19.5,flat:2},{type:'clearing',x:46,y:23,flat:2}]},
    time:'morning',
    music:'eden',
    player:'yaaqov_o',
@@ -9861,7 +9807,6 @@ STORY.push(
      {type:'goto',x:38,y:20,radius:2.2,text:'Set out from Bĕyth Al, toward Ephrath',hiddenUntil:3, script:[
        {fade:'out'},
        {music:'sorrow'},
-       {toast:'Then they set out from Bĕyth Al — and there was but a little distance to go to Ephrath…'},
        {wait:1600},
        {addProp:{type:'tent',x:38,y:18,solid:true,clear:2,col:'#b3a07f',id:'birthtent'}},
        {teleport:['rachel',38.4,19.3]},
@@ -9891,7 +9836,6 @@ STORY.push(
      ]},
      {type:'goto',x:46,y:23,radius:2.2,text:'Come to Yahtsḥaq your father at Mamrĕ',hiddenUntil:4, script:[
        {fade:'out'},
-       {toast:'And Ya‘aqoḇ came to his father Yahtsḥaq at Mamrĕ, where Aḇraham and Yahtsḥaq had dwelt.'},
        {wait:1600},
        {show:'yitschaq'},
        {time:'day'},
@@ -10015,7 +9959,6 @@ STORY.push(
        {teleport:['player',33,14]},
        {charSwap:['player','yoseph_s']},
        {call:G=>{ G.world.player.hidden=true; }},
-       {toast:'They stripped Yosĕph of his robe and threw him into a pit. And the pit was empty, there was no water in it.'},
        {fade:'in'},
        {wait:900},
        {spawn:{id:'trader1',char:'yishmael',mount:'camel',x:48,y:20,noTalk:true,wander:false}},
@@ -10093,7 +10036,6 @@ STORY.push(
        {hide:'tamar'},
        {toast:'And Yahuḏah sent the young goat by the hand of his friend the Aḏullamite, to receive his pledge from the woman’s hand — but he did not find her.'},
        {wait:1900},
-       {toast:'“There was no cult prostitute in this place,” said the men of Ĕnayim. And Yahuḏah said, “Let her take them for herself, lest we become despised.”'},
        {wait:2000},
        {time:'dusk'},
        {fade:'in'},
@@ -10127,7 +10069,7 @@ STORY.push(
    {art:'egypt',music:'tense',text:'And Yosĕph had been taken down to Mitsrayim. And Potiphar, an officer of Pharaoh, captain of the guard, a Mitsrite, bought him from the Yahshma‛Alites who had taken him down there.',ref:'BERĔSHITH 39:1',stage:{set:'egypt',time:'day',cam:'pan-r',props:[{k:'camel',x:0.1,z:0.4,face:'r',load:1}],fx:[{k:'rays',x:0.56,at:2}],cast:[{id:'trader',look:{name:'The Yishma‛Alites',skin:'#5c3a1f',hair:'#170e06',robe:'#8a6a3a',beard:'#170e06',headcover:'#c8a870'},x:0.04,z:0.12,to:0.24,face:'r',pose:'stand',acts:[{at:1,pose:'hold'}]},{id:'yoseph_s',x:0.14,z:0.08,to:0.4,face:'r',pose:'bound',acts:[{at:2,to:0.56,pose:'kneel'}]},{id:'potiphar',x:0.74,z:0.12,face:'l',pose:'point',at:1,say:1,acts:[{at:2,pose:'bless'}]}],crowd:[{kind:'guards',side:'mitsrayim',n:3,x:0.86,w:0.12,z:0.5,face:'l',at:1}]}},
   ],
   scene:{
-   map:{biome:'interior',w:26,h:16,seed:176,features:[{type:'doorway',x:13,y:1.9,id:'housedoor',examine:'The door of the house, open to the courtyard.'},{type:'basket',x:6,y:5,full:true},{type:'basket',x:20,y:5,full:true},{type:'pot',x:22,y:9}]},
+   map:{biome:'interior',w:26,h:16,seed:176,features:[{type:'doorway',x:13,y:1.9,id:'housedoor'},{type:'basket',x:6,y:5,full:true},{type:'basket',x:20,y:5,full:true},{type:'pot',x:22,y:9}]},
    time:'day',
    music:'tense',
    player:'yoseph_s',
@@ -10201,7 +10143,7 @@ STORY.push(
    {art:'egypt',music:'tense',text:'And the captain of the guard put Yosĕph in charge of them and he served them. So they were in confinement for some time.',ref:'BERĔSHITH 40:4',stage:{set:'prison',cam:'push',focus:0.5,fx:[{k:'red',at:2,amt:0.25}],cast:[{id:'yoseph_s',x:0.3,z:0.1,face:'r',pose:'bow',acts:[{at:1,pose:'stand'},{at:4,pose:'bless'}]},{id:'warden',look:{name:'The Prison Warden',skin:'#5f3e20',hair:'#000000',hairStyle:'egypt',robe:'#b8ab8a',sash:'#8a6a3a'},x:0.5,z:0.16,face:'l',pose:'hold',acts:[{at:2,to:0.14,face:'r',pose:'stand'}]},{id:'butler',enter:'r',at:3,to:0.56,face:'l',pose:'bound'},{id:'baker',enter:'r',at:3,to:0.7,face:'l',pose:'bound'}],crowd:[{kind:'guards',side:'mitsrayim',n:2,x:0.86,w:0.08,z:0.45,face:'l',enter:'r',at:3},{kind:'captives',n:3,x:0.4,w:0.3,z:0.62,face:'r',pose:'sitground'}]}},
   ],
   scene:{
-   map:{biome:'interior',w:26,h:18,seed:181,features:[{type:'firepit',x:7,y:9,lit:true},{type:'doorway',bars:true,x:13,y:1.9,id:'prisondoor',examine:'The barred door of the prison of the sovereign’s prisoners.'},{type:'basket',x:19,y:6,full:true}]},
+   map:{biome:'interior',w:26,h:18,seed:181,features:[{type:'firepit',x:7,y:9,lit:true},{type:'doorway',bars:true,x:13,y:1.9,id:'prisondoor'},{type:'basket',x:19,y:6,full:true}]},
    time:'night',
    music:'sorrow',
    player:'yoseph_s',
@@ -10439,7 +10381,7 @@ STORY.push(
   intro:[
   ],
   scene:{
-   map:{biome:'interior',w:30,h:18,seed:191,features:[{type:'throne',x:15,y:5.4,solid:true,id:'throne'},{type:'doorway',x:24,y:1.9,id:'halldoor',examine:'The great doorway of the hall, open to the courts of Pharaoh.'},{type:'basket',x:7,y:6,full:true},{type:'basket',x:23,y:6,full:true}]},
+   map:{biome:'interior',w:30,h:18,seed:191,features:[{type:'throne',x:15,y:5.4,solid:true,id:'throne'},{type:'doorway',x:24,y:1.9,id:'halldoor'},{type:'basket',x:7,y:6,full:true},{type:'basket',x:23,y:6,full:true}]},
    time:'day',
    music:'tense',
    player:'yoseph_r',
@@ -10472,7 +10414,6 @@ STORY.push(
      {face:['yahudah','up']},
      {face:['reuven','up']},
      {face:['shimon','up']},
-     {say:['yoseph_r','No — you are spies! You have come to see the nakedness of the land!']},
      {fade:'out'},
      {hide:'yahudah'},
      {hide:'reuven'},
@@ -10484,9 +10425,7 @@ STORY.push(
      {hide:'br5'},
      {hide:'br6'},
      {hide:'br7'},
-     {toast:'And their silver was returned, each man’s in the mouth of his sack — and their hearts sank.'},
      {wait:1900},
-     {toast:'And the scarcity of food was severe. And Yasharal said at last: “Take your brother — and Al Shaddai give to you compassion before the man.”'},
      {wait:2100},
      {fade:'in'},
      {show:'yahudah'},
@@ -10581,7 +10520,7 @@ STORY.push(
   ],
   scene:{
    worldStage:true,
-   map:{biome:'plains',w:46,h:32,seed:201,features:[{type:'tent',x:14,y:13,solid:true,clear:2,col:'#c8b486'},{type:'tent',x:20,y:11,solid:true,clear:2,col:'#b3a07f'},{type:'tent',x:26,y:13,solid:true,clear:2,col:'#bda884'},{type:'firepit',x:20,y:15,lit:true},{type:'chariot',horses:true,x:35,y:25,id:'chariot',examine:'Yosĕph’s chariot, harnessed for the road to Goshen to meet his father (BERĔSHITH 46:29).'},{type:'clearing',x:20,y:18,flat:3}]},
+   map:{biome:'plains',w:46,h:32,seed:201,features:[{type:'tent',x:14,y:13,solid:true,clear:2,col:'#c8b486'},{type:'tent',x:20,y:11,solid:true,clear:2,col:'#b3a07f'},{type:'tent',x:26,y:13,solid:true,clear:2,col:'#bda884'},{type:'firepit',x:20,y:15,lit:true},{type:'chariot',horses:true,x:35,y:25,id:'chariot'},{type:'clearing',x:20,y:18,flat:3}]},
    time:'morning',
    music:'eden',
    player:'yoseph_r',
