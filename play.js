@@ -130,7 +130,6 @@ function hurtPlayer(G,from){
 function fall(G){
   const w=G.world, p=w.player;
   C.falls++; C.hp=C.max; C.inv=now()+1800; C.fallT=now(); sfx('fall');
-  if(typeof toast==='function') toast(C.falls===1?'You fall — but rise, and fight on!':'Rise again — the foes grow weary.');
   if(C.p0){ p.x=C.p0[0]; p.y=C.p0[1]; }
   for(const n of C.foes){ if(n.lying) continue; const c=n._c; n.hp=c.hpMax; n.x=c.x0; n.y=c.y0; c.st='approach'; c.cd=now()+900; c.kb=[0,0]; }
 }
@@ -140,11 +139,11 @@ function killFoe(G,n){
   if(b.left>0){}                                          /* the panel keeps the count */
   else if(b.rally){
     b.phase='rally'; b.deadUntil=G.t+800;
-    if(typeof toast==='function') toast(b.won||'The foes are fallen'); if(typeof Sound!=='undefined') Sound.sfx('chime');
+    if(b.won&&typeof toast==='function') toast(b.won); if(typeof Sound!=='undefined') Sound.sfx('chime');
     G.world.gotoMark={x:b.rally[0],y:b.rally[1]}; end();
   } else {
     const cb=b.onDone, won=b.won; G.battle=null;
-    if(typeof toast==='function') toast(won||'The foes are fallen'); if(typeof Sound!=='undefined') Sound.sfx('chime');
+    if(won&&typeof toast==='function') toast(won); if(typeof Sound!=='undefined') Sound.sfx('chime');
     if(G.endSkirmish) G.endSkirmish(); end();
     if(cb) cb();
   }
@@ -257,7 +256,7 @@ Game.update=function(dt){
           for(let k=0;k<8;k++) push(this.world.map,p,Math.cos(a)*.14,Math.sin(a)*.14);
           C.inv=now()+1400; C.redT=now(); Camera.shake=Math.max(Camera.shake||0,3); sfx('hurt'); rumble(.7,.4,200);
           n._paused=now()+1100; n._spd=n.chaseSpeed; n.chaseSpeed=.001; n.target=null;
-          if(typeof toast==='function') toast('It is upon you — run!'); break; } }
+          break; } }
       for(const n of this.world.npcs){ if(n._paused&&now()>n._paused){ n.chaseSpeed=n._spd; n._paused=0; } }
     }
     blink(p,now()); }
