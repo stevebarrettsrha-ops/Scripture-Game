@@ -90,7 +90,7 @@ const POSES={
   run:   {lean:14, head:-4, aF:[0,70],   aB:[0,70],   lF:[0,0],    lB:[0,0], walk:1.9},
   kneel: {lean:2,  head:4,  aF:[38,95],  aB:[30,100], lF:[88,88],  lB:[-4,92], low:1},
   pray:  {lean:0,  head:-8, aF:[150,20], aB:[140,20], lF:[88,88],  lB:[-4,92], low:1},
-  bow:   {lean:66, head:34, aF:[52,52],  aB:[44,58],  lF:[88,88],  lB:[-4,92],  low:1},   /* on the knees, bent low, the face toward the ground */
+  bow:   {lean:66, head:30, aF:[-6,22],  aB:[-14,26], lF:[88,88],  lB:[-4,92],  low:1},   /* on the knees, bent low, the face toward the ground */
   sit:   {lean:-2, head:0,  aF:[25,70],  aB:[18,65],  lF:[90,88],  lB:[86,84]},
   sitground:{lean:6,head:10,aF:[40,70],  aB:[30,80],  lF:[80,150], lB:[70,160], low:1},
   mourn: {lean:22, head:30, aF:[60,150], aB:[55,150], lF:[80,150], lB:[70,160], low:1},
@@ -527,7 +527,7 @@ function crowdLook(kind,side,r){
     case 'elders': L.robe=pick(['#4a3a2a','#3a3a4a','#5a4a3a','#6a5a48']); L.beard=pick(['#cfc8b8','#b8b0a0','#8a8478']); L.hair=L.beard; L.old=1; L.headcover=r()<.6?pick(['#d8ccb0','#b8a888','#8a7a60']):null; break;
     case 'women': L.veil=pick(PAL.veils); L.robe=pick(['#8a5a6a','#6a5a8a','#9a7a5a','#7a4a4a','#5a6a7a','#a08868']); L.beard=null; L.hairStyle='long'; break;
     case 'children': L.beard=null; L.child=1; break;
-    case 'mourners': L.robe=pick(['#3a342c','#2e2a24','#4a4034']); L.sack=1; if(r()<.5){ L.veil='#3a342c'; L.beard=null; } break;
+    case 'mourners': L.robe=pick(['#5e4e3a','#544634','#685840']); L.sack=1; if(r()<.5){ L.veil='#5a4a38'; L.beard=null; } break;   /* sackcloth: dark goat-hair brown, not black */
     case 'captives': L.robe=pick(['#6a5a48','#5a4a3a','#4e4438']); L.beard=L.hair; break;
     case 'kings': case 'princes': L.robe=pick(['#6a2a5a','#2a3a7a','#7a2a2a']); L.collar='#d8b040'; L.crown=kind==='kings'; break;
     case 'nations': L.robe=pick(['#7a3a5a','#3a5a7a','#8a5a2a','#5a2a2a','#2a5a4a']); L.headcover=r()<.5?pick(['#d8c8a0','#a8584a','#4a6a8a']):null; break;
@@ -1471,12 +1471,14 @@ function fireAt(g,x,y,w,h,t){
 function oneEach(st){
   st._one=true;
   const nm=c=>(c.look&&c.look.name)||(CHARS&&CHARS[c.id]&&CHARS[c.id].name)||'';
-  const many=c=>/^(A|An|The|One|Two|Some)\s|Mal'ak|mal'ak|Shining|Seraph/i.test(nm(c))||c.id==='voice'||c.id==='divine';
+  const many=c=>/^(A|An|The|One|Two|Some)\s|Mal['’]ak|Shining|Seraph/i.test(nm(c))||c.id==='voice'||c.id==='divine';
+  /* a name that tells what one is, not who (Daughter of Lot, Man of Yasharal, Servant): two such are two people */
+  const role=c=>/^(Daughter|Son|Wife|Man|Woman|Men|Women|Servant|Maid|Handmaid|Soldier|Guard|Elder|Kohen|Lĕwite|Levite|Builder|Watcher|Spy|Shepherd|Herdsman|Prince|Chief|Officer|Captain|Messenger|Young|Old|Child|Boy|Girl|Lad|Youth|Brother|Sister|Giant|Mighty|Worker|Slave|Captive|Stranger|Elder|Singer|Gatekeeper|Scribe|Sage|Wise)\b/i.test(nm(c));
   const base=id=>String(id).replace(/_(k|r|o|c|p)$/,'');
   const added=c=>!c.acts&&!c.at&&!c.enter&&c.z===.12&&c.face==='l'&&(c.pose==='speak'||c.pose==='stand');
   const cast=st.cast, out=[];
   for(const c of cast){
-    const o=out.find(q=>!many(q)&&!many(c)&&(q.id===c.id||base(q.id)===base(c.id)||(nm(q)&&nm(q)===nm(c))));
+    const o=out.find(q=>!many(q)&&!many(c)&&(q.id===c.id||base(q.id)===base(c.id)||(nm(q)&&nm(q)===nm(c)&&!role(q))));
     if(!o){ out.push(c); continue; }
     /* keep the one placed for the scene; between two placed, the chosen look (the sovereign, the old) */
     let keep=o, drop=c;
@@ -1621,7 +1623,16 @@ set('house',{horizon:.42,interior:1,paint(g,H,r){
   g.fillStyle=lin(g,0,0,0,VH*.42,[[0,'#3a2a1c'],[1,'#6a5236']]); g.fillRect(0,0,VW,VH*.42);
   g.strokeStyle='rgba(30,20,12,.25)'; g.lineWidth=1; for(let i=0;i<30;i++){ const y=r()*VH*.4; g.beginPath(); g.moveTo(r()*VW,y); g.lineTo(r()*VW,y); g.stroke(); }
   g.fillStyle='#2a1c10'; for(let i=0;i<5;i++) g.fillRect(0,VH*(.02+i*.004)+i*VH*.01,VW,VH*.012);
-  g.fillStyle='#1a120a'; rr(g,VW*.7,VH*.1,VW*.08,VH*.12,6); g.fill(); g.fillStyle=css(rgb(H.sky[1]),.9); rr(g,VW*.708,VH*.11,VW*.064,VH*.1,4); g.fill();
+  /* a small window opening in the mud wall: a deep square recess, a wooden lintel above, a lattice of crossed
+     laths over the light, a stone sill below — as an ancient house had, no glass */
+  { const wx=VW*.7, wy=VH*.1, ww=VW*.07, wh=VH*.11;
+    g.fillStyle='#2a1d12'; g.fillRect(wx-ww*.08,wy-wh*.06,ww*1.16,wh*1.12);                 /* the recess in the wall */
+    g.fillStyle=mixc(rgb(H.sky[1]),'#6a5236',.35); g.fillRect(wx,wy,ww,wh);                  /* the daylight beyond */
+    g.strokeStyle='#3a2614'; g.lineWidth=Math.max(2,VW*.004);
+    for(let i=1;i<4;i++){ g.beginPath(); g.moveTo(wx+ww*i/4,wy); g.lineTo(wx+ww*i/4,wy+wh); g.stroke(); }
+    for(let i=1;i<3;i++){ g.beginPath(); g.moveTo(wx,wy+wh*i/3); g.lineTo(wx+ww,wy+wh*i/3); g.stroke(); }
+    g.fillStyle='#4a3018'; g.fillRect(wx-ww*.22,wy-wh*.2,ww*1.44,wh*.13);                    /* the lintel beam */
+    g.fillStyle='#7a6448'; g.fillRect(wx-ww*.14,wy+wh*1.02,ww*1.28,wh*.08); }                /* the sill */
   g.fillStyle=lin(g,0,VH*.42,0,VH,[[0,'#6a563e'],[1,'#3a2e20']]); g.fillRect(0,VH*.42,VW,VH*.58);
   for(let i=0;i<5;i++){ g.fillStyle=['#7a3a2a','#3a4a6a','#6a5a2a'][i%3]; ell(g,VW*(.1+r()*.8),VH*(.7+r()*.2),VW*.07,VH*.02); g.fill(); } },
   anim(g,H,t){ const x=VW*.3, y=VH*.36; g.fillStyle='#8a5a2a'; g.fillRect(x-4,y,8,VH*.06); drawHeld(g,'lamp',x,y,VH*.3,'r',t); glow(g,x,y-10,VH*.3,'#ffb060',.18); }});
