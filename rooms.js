@@ -226,7 +226,7 @@ window.walkable=function(map,x,y,fx,fy){
 
 /* ------------------------------------------------------------------ painting */
 const baseDraw=drawProp;
-const LOOSE=new Set(['bed','couch','table','seat','lampstand','harp','sacks','brazier','stocks','incense','jars','quern','loom','mat','cushion','rug','chest','arms','oven','hearth','chains','straw']);
+const LOOSE=new Set(['bones','bed','couch','table','seat','lampstand','harp','sacks','brazier','stocks','incense','jars','quern','loom','mat','cushion','rug','chest','arms','oven','hearth','chains','straw']);
 const COL={
   house:{floor:'#8c6c4a', wall:'#a5825a', top:'#5e4528', face:'#cdb48a', faceLo:'#b39a70'},
   tent:{floor:'#9b8462', wall:'#3e3128', top:'#2a211a', face:'#4a3b2f', faceLo:'#3a2e24'},
@@ -416,6 +416,16 @@ function drawFurn(g,R,f,x,y,t,ox,oy){
       g.fillStyle='#7a5a3a'; g.beginPath(); g.ellipse(x,y-7*u,6*u,3*u,0,0,Math.PI); g.fill(); g.fillStyle='#5a4028'; g.beginPath(); g.ellipse(x,y-7*u,6*u,1.6*u,0,0,Math.PI*2); g.fill();
       const fl=.6+.4*Math.sin(t/110+R.ax); g.fillStyle=`rgba(255,${130+fl*90|0},40,.95)`; g.beginPath(); g.moveTo(x-3.4*u,y-7*u); g.quadraticCurveTo(x,y-(15+fl*3)*u,x+3.4*u,y-7*u); g.closePath(); g.fill();
       glow(g,x,y-9*u,34*u,.24*fl); break; }
+    case 'bones': { /* dry bones lying on the ground: long bones and skulls, scattered */
+      const r=rnd(Math.round(x*7+y*13)), n=f.n||9;
+      for(let i=0;i<n;i++){ const bx=x+(r()-.5)*30*u, by=y+(r()-.5)*12*u, a=r()*Math.PI;
+        g.fillStyle='rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(bx,by+1*u,5*u,1.6*u,a*.2,0,Math.PI*2); g.fill();
+        if(r()<.22){ g.fillStyle='#ddd4bc'; g.beginPath(); g.ellipse(bx,by-2.2*u,2.6*u,2.2*u,0,0,Math.PI*2); g.fill();
+          g.fillStyle='#4a3e2e'; g.fillRect(bx-1.4*u,by-2.6*u,.9*u,.9*u); g.fillRect(bx+.5*u,by-2.6*u,.9*u,.9*u); }
+        else { const dx=Math.cos(a)*4.6*u, dy=Math.sin(a)*1.6*u; g.strokeStyle='#d8cfb4'; g.lineWidth=Math.max(1.5,1.3*u); g.lineCap='round';
+          g.beginPath(); g.moveTo(bx-dx,by-dy); g.lineTo(bx+dx,by+dy); g.stroke(); g.lineCap='butt';
+          g.fillStyle='#e4dcc4'; g.beginPath(); g.arc(bx-dx,by-dy,1.1*u,0,Math.PI*2); g.arc(bx+dx,by+dy,1.1*u,0,Math.PI*2); g.fill(); } }
+      break; }
     case 'drips': { /* the cave's roof hangs down in drips of stone over the back */
       g.fillStyle='#4a433a'; for(let i=0;i<7;i++){ const dx=x+(i-3)*TILE*.45, len=(6+((i*37)%9))*u;
         g.beginPath(); g.moveTo(dx-2.4*u,y-R.bw*TILE*.9); g.lineTo(dx+2.4*u,y-R.bw*TILE*.9); g.lineTo(dx,y-R.bw*TILE*.9+len); g.closePath(); g.fill(); } break; }
@@ -456,6 +466,69 @@ window.drawProp=function(g,px,py,p,t){
     try{ if(R.drawn) OWN[R.kind].draw(g,px,py,p); else baseDraw.apply(this,arguments); } finally{ g.globalAlpha=a; } }
   if(R.k>.01) drawFront(g,R,ox,oy,t,R.k);
 };
+
+/* ------------------------------------------------------------------ a cave of rock (an interior map marked cave: true)
+   An interior map is a hall of dressed stone; a cave is not: its floor and walls are rock, boulders lie along its
+   walls and its way out is a rough dark mouth, not an arched door. */
+const caveOf=map=>!!(map&&map.cfg&&map.cfg.cave);
+if(typeof window.tileColor==='function'){
+  const _tc=window.tileColor;
+  window.tileColor=function(map,id,x,y){
+    if(caveOf(map)&&typeof T!=='undefined'&&(id===T.FLOOR||id===T.WALL)){
+      const n=(hash2(x*7,y*13)*.25+hash2(x>>1,y>>1)*.35+hash2(x>>2,y>>2)*.4), v=(n-.5)*(id===T.WALL?16:9);
+      return shadeC(id===T.WALL?'#332c25':((map.cfg.floorCol&&map.cfg.floorCol!=='#6e5d48')?map.cfg.floorCol:'#5e554a'),v);
+    }
+    return _tc.apply(this,arguments);
+  };
+}
+if(typeof window.generateMap==='function'){
+  const _gm=window.generateMap;
+  window.generateMap=function(cfg){
+    const m=_gm.apply(this,arguments);
+    if(cfg&&cfg.cave&&m&&m.decor){
+      const r=rnd((cfg.seed||1)*31+7), w=m.w, h=m.h;
+      const doors=m.decor.filter(d=>d.type==='doorway').map(d=>d.x);
+      const ok=(x,y)=>!doors.some(dx=>Math.abs(dx-x)<1.8&&y<3)&&!m.decor.some(d=>d.id&&Math.hypot(d.x-x,d.y-y)<1.3);
+      const put=(x,y,s,side)=>{ if(ok(x,y)) m.decor.push({type:'__caverock',x,y,s,side,seed:(r()*1e6)|0}); };
+      for(let x=.6;x<w-.4;x+=1.3+r()*1.1) put(x,1.05+r()*.2,1.1+r()*.9,'top');
+      for(let y=1.8;y<h-1;y+=1.2+r()*1.1){ put(.55+r()*.2,y,.9+r()*.7,'left'); put(w-.55-r()*.2,y,.9+r()*.7,'right'); }
+      for(let x=.8;x<w-.6;x+=1.6+r()*1.4) put(x,h-.35,.8+r()*.5,'bottom');
+      m.decor.sort((a,b)=>a.y-b.y);
+    }
+    return m;
+  };
+}
+{ const _dp=window.drawProp;
+  window.drawProp=function(g,px,py,p,t){
+    const map=Game.world&&Game.world.map;
+    if(p&&p.type==='__caverock'){
+      /* a mass of rock leaning out from the cave's wall */
+      const r=rnd(p.seed||1), u=TILE, s=p.s||1, W=u*(1.1+r()*.6)*s, H=u*(p.side==='top'?1.3+r()*.7:p.side==='bottom'?.55:1+r()*.6)*s;
+      const pts=[]; for(let i=0;i<9;i++){ const a=Math.PI+i/8*Math.PI, rr=1-.18*r(); pts.push([Math.cos(a)*W*.5*rr,Math.sin(a)*H*rr]); }
+      g.save(); g.translate(px,py);
+      g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(0,1,W*.55,u*.2,0,0,Math.PI*2); g.fill();
+      const gr=g.createLinearGradient(0,-H,0,0); gr.addColorStop(0,'#6a6155'); gr.addColorStop(1,'#3e372f'); g.fillStyle=gr;
+      g.beginPath(); g.moveTo(-W*.5,0); for(const [x,y] of pts) g.lineTo(x,y); g.lineTo(W*.5,0); g.closePath(); g.fill();
+      g.fillStyle='rgba(255,240,210,.08)'; g.beginPath(); g.moveTo(pts[2][0],pts[2][1]); g.lineTo(pts[4][0],pts[4][1]); g.lineTo(pts[5][0]*.4,pts[5][1]*.55); g.closePath(); g.fill();
+      g.strokeStyle='rgba(0,0,0,.22)'; g.lineWidth=Math.max(1,u*.03); g.beginPath(); g.moveTo(pts[3][0]*.6,pts[3][1]*.7); g.lineTo(pts[6][0]*.3,pts[6][1]*.2); g.stroke();
+      g.restore(); return;
+    }
+    if(p&&p.type==='doorway'&&caveOf(map)){
+      /* the mouth of the cave: a ragged dark opening in the rock, the daylight beyond it */
+      const u=TILE/40, dw=TILE*1.5, dh=TILE*1.9;
+      g.save(); g.translate(px,py);
+      g.fillStyle='#4a4239'; g.beginPath(); g.moveTo(-dw*.95,2); g.lineTo(-dw*.9,-dh*.55); g.lineTo(-dw*.55,-dh*1.05); g.lineTo(0,-dh*1.2);
+      g.lineTo(dw*.6,-dh*1.02); g.lineTo(dw*.95,-dh*.5); g.lineTo(dw,2); g.closePath(); g.fill();
+      g.fillStyle='#0e0a06'; g.beginPath(); g.moveTo(-dw*.5,0); g.lineTo(-dw*.52,-dh*.45); g.lineTo(-dw*.3,-dh*.82); g.lineTo(dw*.05,-dh*.92);
+      g.lineTo(dw*.36,-dh*.74); g.lineTo(dw*.5,-dh*.4); g.lineTo(dw*.48,0); g.closePath(); g.fill();
+      const gl=g.createRadialGradient(0,-dh*.4,2,0,-dh*.4,dw*.6); gl.addColorStop(0,'rgba(255,236,190,.28)'); gl.addColorStop(1,'rgba(255,236,190,0)');
+      g.fillStyle=gl; g.fillRect(-dw*.6,-dh,dw*1.2,dh);
+      g.fillStyle='rgba(0,0,0,.16)'; for(let i=0;i<5;i++){ g.fillRect(-dw*.85+i*dw*.38,-dh*(.3+((i*37)%5)*.12),dw*.2,2*u); }
+      g.restore(); return;
+    }
+    return _dp.apply(this,arguments);
+  };
+}
 
 /* ------------------------------------------------------------------ each frame: which room is the player in */
 let lastT=0;
