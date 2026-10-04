@@ -2953,6 +2953,7 @@ function campRing(G,n,o){
         const xx=ccx+((i%3)-1)*2.0+hash2(tIdx*9+i,3)*0.7;
         const yy=ccy+(Math.floor(i/3)-1)*1.8+hash2(tIdx*5+i,11)*0.6;
         if(!tentOk(xx,yy)) continue;
+        if(yy<4.4||xx<3.3||xx>m.w-3.3||yy>m.h-2.6){ placedT++; clusterPlaced++; continue; }   /* not in the rocks of the edge */
         m.decor.push({type:'tent',solid:true,x:xx,y:yy,col:tcols[placedT%5]});
         placedT++; clusterPlaced++;
       }
@@ -2977,6 +2978,7 @@ function campRing(G,n,o){
     if(!bad) for(const k of keep){ if(xx>k[0]&&xx<k[2]&&yy>k[1]&&yy<k[3]){bad=true;break;} }
     if(!bad) for(const a of avoid){ if(Math.abs(a[0]-xx)<a[2]&&Math.abs(a[1]-yy)<a[2]){bad=true;break;} }
     if(bad) continue;
+    if((yy<(houses?5.0:4.4)||xx<3.3||xx>m.w-3.3||yy>m.h-2.6)){ placed++; continue; }   /* not in the rocks of the edge */
     m.decor.push(houses?{type:'house',solid:true,x:xx,y:yy,col:hcols[placed%3]}
                        :{type:'tent',solid:true,x:xx,y:yy,col:tcols[placed%5]});
     if(o.tribal){
@@ -3019,7 +3021,7 @@ function campDivisions(G,o){
     for(const a of avoid){ if(Math.abs(a[0]-xx)<a[2]&&Math.abs(a[1]-yy)<a[2]) return false; }
     return true;
   };
-  const tent=(xx,yy,col)=>{ if(!ok(xx,yy)) return false;
+  const tent=(xx,yy,col)=>{ if(!ok(xx,yy)) return false; if(yy<4.4||xx<3.3||xx>m.w-3.3||yy>m.h-2.6) return true;   /* not in the rocks of the edge */
     m.decor.push({type:'tent',solid:true,x:xx,y:yy,col:col||tcols[0]}); return true; };
   /* Each camp is sized to the room between the court edge and the map edge, so
      the arrangement spreads to fill whatever map it is dropped into. */
@@ -5899,7 +5901,7 @@ STORY.push(
    ],
    objectives:[
      {type:'talk',npc:'messenger',text:'Ask the Mal’ak: what are these?', script:[
-       {say:['zekaryah','YAHUAH was very wroth with your fathers. And you shall say to them, ‘Thus said YAHUAH of hosts, “Turn back to Me,” declares YAHUAH of hosts, “and I shall turn back to you,” declares YAHUAH of hosts.']},
+       {say:['voice','YAHUAH was very wroth with your fathers. And you shall say to them, ‘Thus said YAHUAH of hosts, “Turn back to Me,” declares YAHUAH of hosts, “and I shall turn back to you,” declares YAHUAH of hosts.']},
        {say:['zekaryah','Do not be like your fathers, to whom the former naḇi\'im proclaimed, saying, ‘Thus said YAHUAH of hosts, “Turn back now from your evil ways and your evil deeds.” ’ But they did not obey or give heed to Me,” declares YAHUAH. Your fathers, where are they? And the naḇi\'im, do they live forever?']},
        {say:['zekaryah','But My words and My laws, which I commanded My servants the naḇi\'im, did they not overtake your fathers?” “Then they turned back and said, ‘As YAHUAH of hosts planned to do to us, according to our ways and according to our deeds, so He has done with us.’ ” ’']},
        {say:['narrator','On the twenty-fourth day of the eleventh month, which is the month Sheḇat, in the second year of Dareyawesh, the Word of YAHUAH came to Zaḵaryahu son of Bereḵyahu, son of Iddo the naḇi, saying,']},
@@ -6063,7 +6065,7 @@ STORY.push(
        {say:['narrator','And I said,']},
        {say:['zekaryah','No, my Master.']},
        {say:['narrator','And he answered and said to me,']},
-       {say:['voice','This is the Word of YAHUAH to Zerubbaḇal, ‘Not by might nor by power, but by My Ruach,’ said YAHUAH of hosts. ‘Who are you, great mountain, before Zerubbaḇal? A plain! And he shall bring forth the capstone with shouts of “Chen, chen to it!” ’']},
+       {say:['messenger','This is the Word of YAHUAH to Zerubbaḇal, ‘Not by might nor by power, but by My Ruach,’ said YAHUAH of hosts. ‘Who are you, great mountain, before Zerubbaḇal? A plain! And he shall bring forth the capstone with shouts of “Chen, chen to it!” ’']},
        {say:['narrator','And the Word of YAHUAH came to me, saying,']},
        {say:['voice','The hands of Zerubbaḇal have laid the foundation of this House and his hands shall complete it. And you shall know that YAHUAH of hosts has sent Me to you.']},
        {rays:0.7,raysX:23},
@@ -6219,7 +6221,7 @@ STORY.push(
    objectives:[
      {type:'interact',prop:'justice',text:'The fast YAHUAH chose — true right-ruling', script:[
        {say:['narrator','speaking to the kohanim who belonged to the House of YAHUAH of hosts and to the naḇi\'im, saying,']},
-       {say:['voice','Should I weep in the fifth month and fast as I have done for so many years?']},
+       {say:['narrator','Should I weep in the fifth month and fast as I have done for so many years?']},
        {say:['narrator','Then the Word of YAHUAH of hosts came to me, saying,']},
        {say:['voice','Speak to all the people of the land and to the kohanim, saying, ‘When you fasted and lamented in the fifth and seventh months all these seventy years, did you truly fast for Me – for Me? ‘And when you ate and when you drank, was it not for those eating and for those drinking?']},
        {say:['voice','‘Are these not the words which YAHUAH proclaimed through the former naḇi\'im when Yahrushalayim and the cities around it were inhabited and in safety and the South and the low country were inhabited?’']},
@@ -6230,8 +6232,8 @@ STORY.push(
        {burst:[16,11,'holy',10]},
      ]},
      {type:'interact',prop:'flint',text:'Hearts of flint — the land laid waste',hiddenUntil:1, script:[
-       {say:['voice','But they refused to listen and they shrugged their shoulders and stopped their ears from hearing. And they made their hearts like flint against hearing the Torah and the words, which YAHUAH of hosts had sent by His Ruach through the former naḇi\'im. Therefore great wrath came from YAHUAH of hosts.']},
-       {say:['voice','And it came to be: as He called and they did not hear, so let them call, but I shall not hear,” said YAHUAH of hosts.']},
+       {say:['narrator','But they refused to listen and they shrugged their shoulders and stopped their ears from hearing. And they made their hearts like flint against hearing the Torah and the words, which YAHUAH of hosts had sent by His Ruach through the former naḇi\'im. Therefore great wrath came from YAHUAH of hosts.']},
+       {say:['narrator','And it came to be: as He called and they did not hear, so let them call, but I shall not hear,” said YAHUAH of hosts.']},
        {shake:0.7},
        {sfx:'bad'},
        {burst:[31,12,'ash',12]},
@@ -6515,7 +6517,7 @@ STORY.push(
        {say:['narrator','And it shall be that all who are left from all the gentiles which came up against Yahrushalayim, shall go up from year to year to bow themselves to the Sovereign, YAHUAH of hosts and to observe the Festival of Booths.']},
        {say:['narrator','And it shall be, that if anyone of the clans of the earth does not come up to Yahrushalayim to bow himself to the Sovereign, YAHUAH of hosts, on them there is to be no rain. And if the clan of Mitsrayim does not come up and enter in, then there is no rain.']},
        {say:['narrator','On them is the plague with which YAHUAH plagues the gentiles who do not come up to observe the Festival of Booths. This is the punishment of Mitsrayim and the punishment of all the gentiles that do not come up to observe the Festival of Booths. In that day:']},
-       {say:['voice','Qadash (Set Apart) TO YAHUAH']},
+       {say:['narrator','Qadash (Set Apart) TO YAHUAH']},
        {say:['narrator','shall be engraved on the bells of the horses. And the pots in the House of YAHUAH shall be like the bowls before the mizbe\'ach.']},
        {rays:0.6,raysX:31},
        {sfx:'holy'},
