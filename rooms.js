@@ -41,6 +41,10 @@ function drawHouse(g,px,py,p){
   g.fillStyle='#7a5a34'; g.fillRect(-.62*TILE,-1.82*TILE,1.24*TILE,.16*TILE);
   g.fillRect(-.62*TILE,-1.7*TILE,.12*TILE,1.7*TILE); g.fillRect(.5*TILE,-1.7*TILE,.12*TILE,1.7*TILE);
   g.fillStyle='#21180e'; g.fillRect(w*.22,-h*.72,.42*TILE,.32*TILE);         /* a small window */
+  if(p.blood){ /* the blood of the lamb on the two doorposts and on the lintel (SHEMOTH 12:7, 22) */
+    g.fillStyle='#8e1a14'; g.fillRect(-.62*TILE,-1.82*TILE,1.24*TILE,.16*TILE);
+    g.fillRect(-.62*TILE,-1.66*TILE,.12*TILE,.9*TILE); g.fillRect(.5*TILE,-1.66*TILE,.12*TILE,.9*TILE);
+    g.fillStyle='rgba(142,26,20,.6)'; g.fillRect(-.6*TILE,-.76*TILE,.08*TILE,.2*TILE); g.fillRect(.52*TILE,-.7*TILE,.08*TILE,.16*TILE); }
   g.restore();
 }
 
@@ -92,6 +96,9 @@ function size(p){
 function makeRoom(d){
   const kind=KIND[d.type]; if(!kind||d.room===false||d.hidden||d.fallen) return null;
   let s=size(d);
+  /* a house the story goes into (room: true) where the engine draws only a small hut: the house of mud brick is
+     drawn for it instead, big enough to stand in */
+  if(s&&d.room===true&&OWN[kind]&&(s.x1-s.x0<MIN_W||s.h<MIN_H)) s=null;
   if(!s&&OWN[kind]) s=Object.assign({drawn:true},OWN[kind].s);
   if(!s||s.x1-s.x0<MIN_W||s.h<MIN_H) return null;
   const R={d, kind, ax:d.x, ay:d.y, k:0, drawn:!!s.drawn};
@@ -458,7 +465,7 @@ window.drawProp=function(g,px,py,p,t){
   }
   const map=Game.world&&Game.world.map, R=p&&KIND[p.type]&&map&&map.__rooms?map.__rooms.find(r=>r.d===p):null;
   if(!R){
-    if(p&&OWN[p.type]&&!size(p)){ OWN[p.type].draw(g,px,py,p); return; }
+    if(p&&OWN[p.type]&&(!size(p)||p.room===true&&(()=>{ const s=size(p); return s.x1-s.x0<MIN_W||s.h<MIN_H; })())){ OWN[p.type].draw(g,px,py,p); return; }
     return baseDraw.apply(this,arguments);
   }
   const ox=px-p.x*TILE, oy=py-p.y*TILE;
@@ -501,6 +508,12 @@ if(typeof window.generateMap==='function'){
 { const _dp=window.drawProp;
   window.drawProp=function(g,px,py,p,t){
     const map=Game.world&&Game.world.map;
+    if(p&&(p.type==='rock'||p.type==='stone')&&p.scale>1&&!p.__scaled){
+      /* a great rock (the rock at Ḥorĕḇ, the rock at Qaḏĕsh): the engine draws a rock at one size only */
+      g.save(); g.translate(px,py); g.scale(p.scale,p.scale);
+      try{ _dp.call(this,g,0,0,Object.assign({},p,{__scaled:true}),t); } finally{ g.restore(); }
+      return;
+    }
     if(p&&p.type==='__caverock'){
       /* a mass of rock leaning out from the cave's wall */
       const r=rnd(p.seed||1), u=TILE, s=p.s||1, W=u*(1.1+r()*.6)*s, H=u*(p.side==='top'?1.3+r()*.7:p.side==='bottom'?.55:1+r()*.6)*s;
