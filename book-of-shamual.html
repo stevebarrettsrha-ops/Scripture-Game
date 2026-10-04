@@ -2619,6 +2619,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4363,9 +4366,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -5778,13 +5785,13 @@ STORY.push(
    {art:'wilderness',music:'sorrow',text:'And there was a certain man of Ramathayim Tsophim, of the mountains of Ephrayim and his name was Alqanah son of Yahroḥam, son of Alihu, son of Tohu, son of Tsuph, an Ephrayimite. And he had two wives, the name of one was Ḥannah and the name of the other Peninnah. And Peninnah had children, but Ḥannah had no children.',ref:'1 SHEMU’AL 1:1–2',stage:{set:'road',time:'dawn',cam:'pan-r',props:[{k:'tabernacle',x:0.5,z:1,s:0.8,at:4},{k:'tree',x:0.08,z:0.45},{k:'tree',x:0.93,z:0.5,h:100}],cast:[{id:'elqanah',x:0.38,z:0.12,face:'r',pose:'stand',hold2:'staff',acts:[{at:4,pose:'look'}]},{id:'channah',x:0.2,z:0.1,face:'r',at:2,acts:[{at:5,pose:'weep'},{at:6,pose:'mourn'}]},{id:'peninnah',x:0.66,z:0.14,face:'l',at:2,say:5,acts:[{at:5,pose:'point'}]}],crowd:[{kind:'children',n:3,x:0.8,w:0.1,z:0.3,face:'l',at:3}]}},
   ],
   scene:{
-   map:{biome:'wild',w:44,h:30,seed:1201,features:[{type:'tent',x:14,y:18,solid:true,clear:1},{type:'tent',x:17,y:20,solid:true,clear:1},{type:'altar',x:30,y:12,stage:2,solid:true,clear:2,id:'dwelling'},{type:'firepit',x:28,y:14,lit:true},{type:'clearing',x:24,y:20,flat:3}]},
+   map:{biome:'wild',w:44,h:30,seed:1201,features:[{type:'tent',x:14,y:18,solid:true,clear:1},{type:'tent',x:17,y:20,solid:true,clear:1},{type:'altar',x:30,y:12,stage:2,solid:true,clear:2,id:'dwelling'},{type:'firepit',x:25.5,y:16,lit:true},{type:'clearing',x:24,y:20,flat:3},{type:'mishkan',stage:2,x:30,y:6.5,solid:true,clear:4,flat:4,id:'mishkan'}]},
    time:'day',
    music:'sorrow',
    player:'channah',
    playerPos:[16,20],
    npcs:[
-     {id:'elqanah',char:'elqanah',x:14,y:19,wander:false},
+     {id:'elqanah',char:'elqanah',x:12.4,y:19.4,wander:false},
      {id:'peninnah',char:'peninnah',x:18,y:18,wander:false,noTalk:true},
      {id:'eli',char:'eli',x:29,y:13.5,wander:false,noTalk:true},
    ],
@@ -5837,21 +5844,25 @@ STORY.push(
    {art:'field',music:'holy',text:'And Ḥannah prayed and said, “My heart rejoices in YAHUAH, my horn has been high in YAHUAH. My mouth is opened wide over my enemies, for I have rejoiced in Your deliverance.',ref:'1 SHEMU’AL 2:1',stage:{set:'court',cam:'push',focus:0.5,time:'day',cast:[{id:'channah',x:0.3,z:0.1,face:'r',pose:'raise'},{id:'eli',x:0.58,z:0.12,face:'l',pose:'stand'}]}},
   ],
   scene:{
-   map:{biome:'city',w:46,h:28,seed:9101,features:[{type:'clearing',x:22,y:19,flat:3},{type:'temple',x:22,y:8,id:'house',solid:true},{type:'templealtar',x:22,y:13,id:'altar',solid:true}]},
+   map:{biome:'city',w:46,h:28,seed:9101,features:[{type:'clearing',x:22,y:19,flat:3},{type:'mishkan',x:22,y:7,id:'house',solid:true,stage:2,clear:4,flat:4},{type:'altar',x:22,y:12,id:'altar',solid:true,stage:3,clear:1},{type:'clearing',x:21,y:15,clear:1.6}]},
    time:'day',
    music:'holy',
    player:'channah',
    playerPos:[22,18],
-   npcs:[{id:'eli',char:'eli',x:27,y:17,wander:false}],
+   npcs:[
+     {id:'eli',char:'eli',x:27,y:17,wander:false},
+     {id:'hophni',char:'hophni',x:20.2,y:13.4,wander:false,noTalk:true},
+     {id:'pinchas',char:'pinchas',x:23.8,y:13.4,wander:false,noTalk:true},
+   ],
    objectives:[
-     {type:'goto',text:'There is no one qadash (Set Apart) like YAHUAH',x:14,y:16,radius:1.8,script:[
+     {type:'goto',text:'There is no one qadash (Set Apart) like YAHUAH',x:14,y:16,radius:1.8, script:[
        {say:['channah','There is no one qadash (Set Apart) like YAHUAH, for there is no one besides You and there is no rock like our Aluahim. Do not multiply words so proudly, proudly; let no arrogance come from your mouth, for YAHUAH is an Al of knowledge and by Him deeds are weighed.']},
        {say:['channah','Bows of the mighty are broken and those who stumble shall be girded with strength. The satisfied have hired themselves out for bread and the hungry have ceased. Even the barren has borne seven and she who has many children pines away. YAHUAH puts to death and makes alive, He brings down to the grave and raises up.']},
        {say:['channah','YAHUAH makes poor and makes rich, He brings low and lifts up. He raises the poor from the dust, He lifts the needy from the dunghill, to sit with princes and make them inherit a throne of esteem. For the supports of the earth belong to YAHUAH and He has set the world upon them.']},
        {say:['channah','He guards the feet of His kind ones, but the wrong are silent in darkness, for man does not become mighty by power. Those who oppose YAHUAH are shattered, from the shamayim He thunders against them. YAHUAH judges the ends of the earth and gives strength to His sovereign and exalts the horn of His anointed.']},
        {say:['narrator','And Alqanah went to his house at Ramah. But the youth served YAHUAH before Ali the kohen. And the sons of Ali were sons of Beliya‛al – they did not know YAHUAH.']},
      ]},
-     {type:'goto',text:'And the ruling of the kohanim with the…',x:32,y:16,radius:1.8,hiddenUntil:1,script:[
+     {type:'goto',text:'And the ruling of the kohanim with the…',x:32,y:16,radius:1.8,hiddenUntil:1, script:[
        {say:['narrator','And the ruling of the kohanim with the people was that when any man offered a slaughtering, the kohen’s servant shall come with a three-pronged flesh-hook in his hand while the meat was cooking, and shall thrust it into the basin, kettle, cauldron, or pot. And the kohen would take for himself all that the fleshhook brought up.']},
        {say:['narrator','Thus they did in Shiloh to all the Yahsra’Alites who came there.']},
        {say:['narrator','Also, before they burned the fat, the kohen’s servant would come and say to the man who slaughtered, “Give meat for roasting to the kohen, for he does not accept cooked meat from you, but raw.” And if the man said to him, “Let the fat be burned up first, then take as much as your being desires,” he would then answer him, “No, but give it to me now.']},
@@ -5860,7 +5871,7 @@ STORY.push(
        {say:['eli','YAHUAH give you offspring from this woman for the one she prayed for and gave to YAHUAH.']},
        {say:['narrator','Then they would go to their own home.']},
      ]},
-     {type:'talk',text:'And YAHUAH visited Ḥannah, so that she conceived…',npc:'eli',hiddenUntil:2,script:[
+     {type:'talk',text:'And YAHUAH visited Ḥannah, so that she conceived…',npc:'eli',hiddenUntil:2, script:[
        {say:['narrator','And YAHUAH visited Ḥannah, so that she conceived and bore three sons and two daughters, while the young Shamu\'Al grew before YAHUAH. And Ali was very old and had heard all that his sons were doing to all Yasharal and how they lay with the women who were assembling at the door of the Tent of Meeting.']},
        {say:['narrator','And he said to them,']},
        {say:['eli','Why do you do deeds like these? For I hear of your evil deeds from all the people. No, my sons! For it is not a good report that I hear: making the people of YAHUAH transgress. If one man sins against another, Aluahim shall judge him. But if a man sins against YAHUAH, who shall pray for him?']},
@@ -5868,7 +5879,7 @@ STORY.push(
        {say:['narrator','And a man of Aluahim came to Ali and said to him, “Thus said YAHUAH, ‘Did I not clearly reveal Myself to the house of your father when they were in Mitsrayim in Pharaoh’s house, even to choose him out of all the tribes of Yasharal to be My kohen, to offer upon My mizbe\'ach, to burn incense and to wear a shoulder garment before Me?']},
        {say:['narrator','And did I not give to the house of your father all the offerings of the children of Yasharal made by fire?']},
      ]},
-     {type:'goto',text:'Why do you kick at My slaughtering and…',x:22,y:24,radius:1.8,hiddenUntil:3,script:[
+     {type:'goto',text:'Why do you kick at My slaughtering and…',x:22,y:24,radius:1.8,hiddenUntil:3, script:[
        {say:['narrator','‘Why do you kick at My slaughtering and My offering which I have commanded in My Dwelling Place and esteem your sons above Me, to make yourselves fat with the best of all the offerings of Yasharal My people?’ “Therefore YAHUAH Aluahim of Yasharal declares, ‘I said indeed that your house and the house of your father would walk before Me forever.’ But now YAHUAH declares, ‘Far be it from Me, for those who highly esteem Me I highly esteem and those who despise Me are lightly esteemed.']},
        {say:['narrator','‘See, the days are coming that I shall cut off your arm and the arm of your father’s house, so that an old man shall not be found in your house.']},
        {say:['narrator','‘And you shall see an enemy in My Dwelling Place, despite all the good which Aluahim does for Yasharal and there shall not be an old man in your house forever.']},
@@ -5878,8 +5889,8 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'field',music:'holy',text:'‘And I shall raise up for Myself a trustworthy kohen who does according to what is in My heart and in My being. And I shall build him a steadfast house and he shall walk before My anointed forever.',ref:'1 SHEMU’AL 2:35',stage:{set:'court',cam:'push',focus:0.5,time:'day',cast:[{id:'channah',x:0.3,z:0.1,face:'r',pose:'raise'},{id:'eli',x:0.58,z:0.12,face:'l',pose:'stand'}]}},
-   {art:'field',music:'holy',text:'‘And it shall be that everyone who is left in your house shall come and bow down to him for a piece of silver and a cake of bread and say, “Please, put me in one of the kohenic positions to eat a piece of bread.” ’ ”',ref:'1 SHEMU’AL 2:36',stage:{set:'court',cam:'push',focus:0.5,time:'day',cast:[{id:'channah',x:0.3,z:0.1,face:'r',pose:'raise'},{id:'eli',x:0.58,z:0.12,face:'l',pose:'stand'}]}},
+   {art:'field',music:'holy',text:'‘And I shall raise up for Myself a trustworthy kohen who does according to what is in My heart and in My being. And I shall build him a steadfast house and he shall walk before My anointed forever.',ref:'1 SHEMU’AL 2:35',stage:{set:'court',cam:'push',focus:0.5,time:'day',cast:[{id:'eli',x:0.6,z:0.12,face:'l',pose:'stand'},{id:'manofgod',look:{name:'A Man of Aluahim',skin:'#6e4a28',hair:'#2c1a0c',robe:'#7a6a52',beard:'#2c1a0c',headcover:'#a89a7a'},x:0.32,z:0.1,face:'r',pose:'speak',say:0}]}},
+   {art:'field',music:'holy',text:'‘And it shall be that everyone who is left in your house shall come and bow down to him for a piece of silver and a cake of bread and say, “Please, put me in one of the kohenic positions to eat a piece of bread.” ’ ”',ref:'1 SHEMU’AL 2:36',stage:{set:'court',cam:'push',focus:0.5,time:'day',cast:[{id:'eli',x:0.6,z:0.12,face:'l',pose:'stand'},{id:'manofgod',look:{name:'A Man of Aluahim',skin:'#6e4a28',hair:'#2c1a0c',robe:'#7a6a52',beard:'#2c1a0c',headcover:'#a89a7a'},x:0.32,z:0.1,face:'r',pose:'speak',say:0}]}},
   ],
   complete:'…and a cake of bread and say, “Please, put me in one of the kohenic positions to eat a piece of bread.” ’ ”'
 },
@@ -5889,7 +5900,7 @@ STORY.push(
    {art:'stars',music:'night',text:'And the young Shamu\'Al was serving YAHUAH before Ali. And the Word of YAHUAH was rare in those days – no vision breaking forth.',ref:'1 SHEMU’AL 3:1',stage:{set:'tentin',time:'night',cam:'push',focus:0.5,props:[{k:'lampstand',x:0.62,z:0.5},{k:'ark',x:0.82,z:0.55}],fx:[{k:'darkness',at:1,amt:0.25},{k:'glory',x:0.82,y:0.35,at:4}],cast:[{id:'eli',x:0.2,z:0.12,face:'r',pose:'stand',hold:'staff',onbed:1,acts:[{at:2,pose:'lie'}]},{id:'shamuel_c',x:0.42,z:0.15,face:'l',pose:'carry',acts:[{at:4,to:0.6,pose:'lie'}]}]}},
   ],
   scene:{
-   map:{biome:'interior',w:30,h:20,seed:1202,floorCol:'#2a2216',wallCol:'#1a150c',features:[{type:'arkcov',x:15,y:5,id:'ark',solid:false},{type:'firepit',x:15,y:6,lit:true}]},
+   map:{biome:'interior',w:30,h:20,seed:1202,floorCol:'#2a2216',wallCol:'#1a150c',features:[{type:'arkcov',x:15,y:5,id:'ark',solid:false},{type:'menorah',x:17.6,y:5.6,clear:1}]},
    time:'night',
    music:'night',
    player:'shamuel_c',
@@ -5956,17 +5967,16 @@ STORY.push(
 
 { id:'s3', title:'Iḵaḇoḏ — The Esteem Departed', ref:'1 SHEMU’AL 4',
   intro:[
-   {art:'wasteland',music:'tense',text:'Thus the word of Shamu\'Al was to all Yasharal. And Yasharal went out to battle against the Philistines and encamped beside Eḇen Ha‛ĕzer, while the Philistines encamped in Aphĕq.',ref:'1 SHEMU’AL 4:1',stage:{set:'battle',time:'day',wx:'dust',cam:'push',props:[{k:'ark',x:0.1,z:0.2,at:3}],fx:[{k:'smoke',x:0.5,at:1}],crowd:[{kind:'army',side:'yasharal',n:7,x:0.36,w:0.3,z:0.62,face:'r',from:'fight',pose:'fall',at:1},{kind:'army',side:'pelishtim',n:8,x:0.78,w:0.28,z:0.64,face:'l',pose:'fight'},{kind:'elders',n:3,x:0.16,w:0.1,z:0.38,face:'r',at:2}],cast:[{id:'elder',x:0.3,z:0.12,face:'r',at:2,say:2,hold:'staff',acts:[{at:3,pose:'point',face:'l'}]}]}},
+   {art:'wasteland',music:'tense',text:'Thus the word of Shamu\'Al was to all Yasharal. And Yasharal went out to battle against the Philistines and encamped beside Eḇen Ha‛ĕzer, while the Philistines encamped in Aphĕq.',ref:'1 SHEMU’AL 4:1',stage:{set:'battle',time:'day',wx:'dust',cam:'push',props:[{k:'tent',x:0.08,z:0.34},{k:'tent',x:0.93,z:0.4,color:'#3f5f7a'}],fx:[{k:'smoke',x:0.5,at:1}],crowd:[{kind:'army',side:'yasharal',n:7,x:0.34,w:0.3,z:0.62,face:'r'},{kind:'army',side:'pelishtim',n:8,x:0.78,w:0.28,z:0.64,face:'l'},{kind:'elders',n:3,x:0.16,w:0.1,z:0.38,face:'r'}],cast:[{id:'elder',x:0.3,z:0.12,face:'r',hold:'staff',pose:'stand'}]}},
   ],
   scene:{
-   map:{biome:'plains',w:48,h:32,seed:1203,features:[{type:'rock',x:12,y:11,solid:true,clear:1},{type:'rock',x:34,y:13,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
+   map:{biome:'plains',w:48,h:32,seed:1203,features:[{type:'rock',x:12,y:11,solid:true,clear:1},{type:'rock',x:34,y:13,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3},{type:'tent',x:12,y:18.5,solid:true,clear:2},{type:'tent',x:31,y:19,solid:true,clear:2},{type:'tent',x:30,y:26,solid:true,clear:2},{type:'tent',x:20,y:28,solid:true,clear:2},{type:'firepit',x:27,y:23.5,lit:true,clear:1}]},
    time:'day',
    music:'tense',
    player:'hophni',
    playerPos:[20,22],
    playerHold:'staff',
    npcs:[
-     {id:'ark',char:null},
      {id:'sold1',char:'hebrew',x:22,y:21,wander:false,noTalk:true,hold:'spear'},
      {id:'sold2',char:'hebrew2',x:18,y:23,wander:false,noTalk:true,hold:'spear'},
    ],
@@ -6013,13 +6023,13 @@ STORY.push(
 
 { id:'s4', title:'Dagon Falls', ref:'1 SHEMU’AL 5–6',
   intro:[
-   {art:'throne',music:'tense',text:'And the Philistines took the ark of Aluahim and brought it from Eḇen Ha‛ĕzer to Ashdoḏ,',ref:'1 SHEMU’AL 5:1',stage:{set:'palace',time:'night',cam:'push',focus:0.55,props:[{k:'ark',x:0.36,z:0.3,at:1}],cast:[{id:'dagon',look:{name:'Dagon',skin:'#a09880',hair:'#7a7262',robe:'#8a8270',beard:'#7a7262',crown:'#c8a048'},x:0.6,z:0.34,s:1.35,face:'l',pose:'stand',acts:[{at:2,pose:'bow'}]},{id:'dagonkohen',look:{name:'Kohen of Dagon',skin:'#7a5636',hair:'#1d1208',robe:'#3f5f96',headcover:'#6a7a8a',beard:'#1d1208'},enter:'r',at:2,to:0.76,face:'l',pose:'raise'}],crowd:[{kind:'soldiers',side:'pelishtim',n:4,x:0.24,w:0.14,z:0.5,face:'r',enter:'l',at:0,pose:'carry',hold:null,exit:'l',exitAt:2},{kind:'nations',n:4,x:0.88,w:0.12,z:0.6,face:'l',at:2,pose:'weep'}]}},
+   {art:'throne',music:'tense',text:'And the Philistines took the ark of Aluahim and brought it from Eḇen Ha‛ĕzer to Ashdoḏ,',ref:'1 SHEMU’AL 5:1',stage:{set:'palace',time:'night',cam:'push',focus:0.55,props:[{k:'ark',x:0.38,z:0.3}],cast:[{id:'dagon',look:{name:'Dagon',skin:'#a09880',hair:'#7a7262',robe:'#8a8270',beard:'#7a7262',crown:'#c8a048'},x:0.6,z:0.34,s:1.35,face:'l',pose:'stand'},{id:'dagonkohen',look:{name:'Kohen of Dagon',skin:'#7a5636',hair:'#1d1208',robe:'#3f5f96',headcover:'#6a7a8a',beard:'#1d1208'},face:'l',pose:'stand',x:0.8,z:0.3}],crowd:[{kind:'soldiers',side:'pelishtim',n:4,x:0.2,w:0.14,z:0.36,face:'r',pose:'carry'}]}},
   ],
   scene:{
-   map:{biome:'interior',w:30,h:20,seed:1204,floorCol:'#241c14',wallCol:'#181008',features:[{type:'tower',x:15,y:6,stage:1,solid:true,clear:1,id:'dagon'},{type:'arkcov',x:15,y:12,id:'ark',solid:false}]},
+   map:{biome:'interior',w:30,h:20,seed:1204,floorCol:'#241c14',wallCol:'#181008',features:[{type:'idol',x:15,y:6,solid:true,clear:1,id:'dagon',broken:true},{type:'arkcov',x:18.2,y:6.8,id:'ark',solid:false}]},
    time:'day',
    music:'tense',
-   player:'achish',
+   player:'pelishti',
    playerPos:[10,14],
    npcs:[
      {id:'lord1',char:'pelishti',x:20,y:13,wander:false},
@@ -6062,15 +6072,15 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'throne',music:'tense',text:'And they sent mal\'akim to the inhabitants of Qiryath Ye‛arim, saying, “The Philistines have brought back the ark of YAHUAH, come down and take it.',ref:'1 SHEMU’AL 6:21',stage:{set:'palace',time:'night',cam:'push',focus:0.55,props:[{k:'ark',x:0.36,z:0.3,at:1}],cast:[{id:'dagon',look:{name:'Dagon',skin:'#a09880',hair:'#7a7262',robe:'#8a8270',beard:'#7a7262',crown:'#c8a048'},x:0.6,z:0.34,s:1.35,face:'l',pose:'stand',acts:[{at:2,pose:'bow'}]},{id:'dagonkohen',look:{name:'Kohen of Dagon',skin:'#7a5636',hair:'#1d1208',robe:'#3f5f96',headcover:'#6a7a8a',beard:'#1d1208'},enter:'r',at:2,to:0.76,face:'l',pose:'raise'}],crowd:[{kind:'soldiers',side:'pelishtim',n:4,x:0.24,w:0.14,z:0.5,face:'r',enter:'l',at:0,pose:'carry',hold:null,exit:'l',exitAt:2},{kind:'nations',n:4,x:0.88,w:0.12,z:0.6,face:'l',at:2,pose:'weep'}]}},
+   {art:'throne',music:'tense',text:'And they sent mal\'akim to the inhabitants of Qiryath Ye‛arim, saying, “The Philistines have brought back the ark of YAHUAH, come down and take it.',ref:'1 SHEMU’AL 6:21',stage:{set:'field',time:'day',cam:'push',focus:0.55,props:[{k:'rock',x:0.34,z:0.3,w:90,h:22},{k:'ark',x:0.34,z:0.3,dy:-0.035}],cast:[{id:'messenger',look:{name:'A Messenger',skin:'#7a4e29',hair:'#2c1a0c',robe:'#8a7048',short:1},x:0.64,z:0.12,face:'r',pose:'speak',say:0},{id:'messenger2',look:{name:'A Messenger',skin:'#6e4524',hair:'#1d1208',robe:'#7d6a52',short:1},x:0.55,z:0.18,face:'r',pose:'walk'}],crowd:[{kind:'people',n:4,x:0.16,w:0.12,z:0.36,face:'r'},{kind:'people',n:3,x:0.84,w:0.08,z:0.3,face:'l'}]}},
   ],
   complete:'And they sent mal\'akim to the inhabitants of Qiryath Ye‛arim, saying, “The Philistines have brought back the ark of YAHUAH, come down and take it.'
 },
 
 { id:'s5', title:'The Stone of Help', ref:'1 SHEMU’AL 7',
   intro:[
-   {art:'mountain',music:'sorrow',text:'And the men of Qiryath Ye‛arim came and took the ark of YAHUAH and brought it into the house of Aḇinaḏaḇ on the hill and qadash (Set Apart) Al‛azar his son to guard the ark of YAHUAH.',ref:'1 SHEMU’AL 7:1',stage:{set:'highplace',time:'dusk',cam:'push',props:[{k:'idol',x:0.86,z:0.52,horns:false,color:'#b89a70'},{k:'idol',x:0.93,z:0.62,color:'#8a8a7a'}],fx:[{k:'rays',x:0.22,at:2}],cast:[{id:'shamuel',x:0.22,z:0.12,face:'r',pose:'stand',say:1,hold2:'staff',acts:[{at:1,pose:'point'},{at:2,pose:'raise'}]}],crowd:[{kind:'people',n:8,x:0.6,w:0.42,z:0.6,face:'l',from:'mourn',pose:'pray',at:2},{kind:'people',n:6,x:0.42,w:0.24,z:0.44,face:'l',enter:'r',at:2,pose:'pray'}]}},
-   {art:'mountain',music:'sorrow',text:'And it came to be, from the day that the ark remained in Qiryath Ye‛arim, that the time increased, it came to be twenty years. And all the house of Yasharal lamented after YAHUAH.',ref:'1 SHEMU’AL 7:2',stage:{set:'highplace',time:'dusk',cam:'push',props:[{k:'idol',x:0.86,z:0.52,horns:false,color:'#b89a70'},{k:'idol',x:0.93,z:0.62,color:'#8a8a7a'}],fx:[{k:'rays',x:0.22,at:2}],cast:[{id:'shamuel',x:0.22,z:0.12,face:'r',pose:'stand',say:1,hold2:'staff',acts:[{at:1,pose:'point'},{at:2,pose:'raise'}]}],crowd:[{kind:'people',n:8,x:0.6,w:0.42,z:0.6,face:'l',from:'mourn',pose:'pray',at:2},{kind:'people',n:6,x:0.42,w:0.24,z:0.44,face:'l',enter:'r',at:2,pose:'pray'}]}},
+   {art:'mountain',music:'sorrow',text:'And the men of Qiryath Ye‛arim came and took the ark of YAHUAH and brought it into the house of Aḇinaḏaḇ on the hill and qadash (Set Apart) Al‛azar his son to guard the ark of YAHUAH.',ref:'1 SHEMU’AL 7:1',stage:{set:'highplace',time:'dusk',cam:'push',props:[{k:'house',x:0.8,z:0.5},{k:'ark',x:0.5,z:0.22}],cast:[{id:'abinadab',look:{name:'Aḇinaḏaḇ',skin:'#6b4828',hair:'#cfc8b8',robe:'#7c6442',beard:'#cfc8b8',old:true},x:0.8,z:0.16,face:'l',pose:'bless'},{id:'elazar_a',look:{name:'Al‛azar son of Aḇinaḏaḇ',skin:'#7a4e29',hair:'#2c1a0c',robe:'#9c8a6a',beard:'#2c1a0c'},x:0.64,z:0.14,face:'l',pose:'kneel'}],crowd:[{kind:'people',n:4,x:0.3,w:0.16,z:0.3,face:'r',pose:'carry'}]}},
+   {art:'mountain',music:'sorrow',text:'And it came to be, from the day that the ark remained in Qiryath Ye‛arim, that the time increased, it came to be twenty years. And all the house of Yasharal lamented after YAHUAH.',ref:'1 SHEMU’AL 7:2',stage:{set:'highplace',time:'dusk',cam:'push',props:[{k:'house',x:0.84,z:0.5},{k:'ark',x:0.8,z:0.34}],cast:[{id:'hebrew',x:0.3,z:0.12,face:'r',pose:'mourn'}],crowd:[{kind:'people',n:8,x:0.46,w:0.4,z:0.45,face:'r',pose:'mourn'}]}},
   ],
   scene:{
    map:{biome:'rocky',w:46,h:30,seed:1205,features:[{type:'altar',x:24,y:12,stage:1,solid:true,clear:2,id:'mizbeah'},{type:'rock',x:12,y:14,solid:true,clear:1},{type:'rock',x:34,y:15,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
@@ -6082,6 +6092,15 @@ STORY.push(
    npcs:[
      {id:'elder1',char:'elder',x:20,y:19,wander:false},
      {id:'man1',char:'hebrew',x:26,y:21,wander:false,noTalk:true},
+     {id:'mz1',char:'hebrew',x:17,y:16.5,wander:false,noTalk:true},
+     {id:'mz2',char:'hebreww',x:19,y:15.8,wander:false,noTalk:true},
+     {id:'mz3',char:'elder',x:21,y:16.6,wander:false,noTalk:true},
+     {id:'mz4',char:'hebrew2',x:27.4,y:16.2,wander:false,noTalk:true},
+     {id:'mz5',char:'hebreww',x:29.4,y:17,wander:false,noTalk:true},
+     {id:'mz6',char:'elder',x:31.2,y:16.4,wander:false,noTalk:true},
+     {id:'mz7',char:'hebrew',x:18,y:22.6,wander:false,noTalk:true},
+     {id:'mz8',char:'hebrew2',x:29,y:22.8,wander:false,noTalk:true},
+     {id:'mz9',char:'hebreww',x:30.6,y:20.6,wander:false,noTalk:true},
    ],
    onResume:[
      {sfx:'holy'},
@@ -6132,30 +6151,36 @@ STORY.push(
 
 { id:'sh8', title:'Give Us a Sovereign', ref:'1 SHEMU’AL 8',
   intro:[
-   {art:'field',music:'holy',text:'And it came to be, when Shamu\'Al was old, that he made his sons rulers over Yasharal. And the name of his first-born was Yo’al and the name of his second, Aḇiyah, rulers in Be’ĕrsheḇa.',ref:'1 SHEMU’AL 8:1–2',stage:{set:'city',cam:'push',focus:0.5,time:'day',cast:[{id:'shamuel_o',x:0.3,z:0.1,face:'r',pose:'raise'}],crowd:[{kind:'elders',n:7,x:0.68,w:0.4,z:0.55,face:'l'}]}},
+   {art:'field',music:'holy',text:'And it came to be, when Shamu\'Al was old, that he made his sons rulers over Yasharal. And the name of his first-born was Yo’al and the name of his second, Aḇiyah, rulers in Be’ĕrsheḇa.',ref:'1 SHEMU’AL 8:1–2',stage:{set:'city',cam:'push',focus:0.5,time:'day',cast:[{id:'shamuel_o',x:0.28,z:0.1,face:'r',pose:'bless'},{id:'yoel',look:{name:'Yo’ĕl son of Shemu’al',skin:'#7a4e29',hair:'#2c1a0c',robe:'#8a5a3a',beard:'#2c1a0c',collar:'#caa23c'},x:0.46,z:0.12,face:'l',pose:'stand'},{id:'aviyah',look:{name:'Aḇiyah son of Shemu’al',skin:'#734827',hair:'#231409',robe:'#6a5a7a',beard:'#231409',collar:'#caa23c'},x:0.56,z:0.16,face:'l',pose:'stand'}],crowd:[{kind:'elders',n:5,x:0.8,w:0.2,z:0.55,face:'l'}]}},
   ],
   scene:{
-   map:{biome:'city',w:46,h:28,seed:9102,features:[{type:'clearing',x:22,y:18,flat:3},{type:'house',x:12,y:12},{type:'house',x:32,y:12},{type:'well',x:34,y:17,id:'well'},{type:'citygate',x:22,y:7,id:'gate',solid:true}]},
+   map:{biome:'city',w:46,h:28,seed:9102,features:[{type:'clearing',x:22,y:18,flat:3},{type:'house',x:12,y:12},{type:'house',x:32,y:12},{type:'well',x:34,y:17,id:'well'},{type:'tower',x:17.5,y:7,stage:1,solid:true,clear:1},{type:'tower',x:26.5,y:7,stage:1,solid:true,clear:1}]},
    time:'day',
    music:'holy',
    player:'shamuel_o',
    playerPos:[22,18],
-   npcs:[],
+   npcs:[
+     {id:'eld1',char:'elder',x:11.5,y:16,wander:false,noTalk:true},
+     {id:'eld2',char:'elder',x:12.4,y:17.8,wander:false,noTalk:true},
+     {id:'eld3',char:'elder',x:14.6,y:18.4,wander:false,noTalk:true},
+     {id:'eld4',char:'elder',x:16.6,y:17.6,wander:false,noTalk:true},
+     {id:'eld5',char:'elder',x:17.2,y:15.6,wander:false,noTalk:true},
+   ],
    objectives:[
-     {type:'goto',text:'But his sons did not walk in his…',x:14,y:16,radius:1.8,script:[
+     {type:'goto',text:'But his sons did not walk in his…',x:14,y:16,radius:1.8, script:[
        {say:['narrator','But his sons did not walk in his ways and turned aside after own gain and took bribes and twisted right-ruling. And all the elders of Yasharal gathered together and came to Shamu\'Al at Ramah, and said to him, “Look, you are old and your sons do not walk in your ways.']},
        {say:['narrator','Now appoint for us a sovereign to rule us like all the nations.” But the word was evil in the eyes of Shamu\'Al when they said, “Give us a sovereign to rule us.” So Shamu\'Al prayed to YAHUAH. And YAHUAH said to Shamu\'Al,']},
        {say:['voice','Listen to the voice of the people in all that they say to you, for they have not rejected you, but they have rejected Me from reigning over them.']},
        {say:['voice','According to all the works which they have done since the day that I brought them up out of Mitsrayim, even to this day – forsaking Me and serving other mighty ones – so they are doing to you too.']},
      ]},
-     {type:'goto',text:'And now, listen to their voice',x:32,y:16,radius:1.8,hiddenUntil:1,script:[
+     {type:'goto',text:'And now, listen to their voice',x:32,y:16,radius:1.8,hiddenUntil:1, script:[
        {say:['voice','And now, listen to their voice, but you shall certainly warn them and shall make known to them the ruling of the sovereign who does reign over them.']},
        {say:['narrator','And Shamu\'Al spoke all the words of YAHUAH to the people who asked him for a sovereign, and said,']},
        {say:['shamuel_o','This is the ruling of the sovereign who does reign over you: He shall take your sons and appoint them for his own chariots and to be his horsemen and they shall run before his chariots,']},
        {say:['shamuel_o','and appoint commanders over his thousands and commanders over his fifties, or to plough his ground and reap his harvest, or to make his weapons and equipment for his chariots. And your daughters he is going to take to be perfumers and cooks and bakers.']},
        {say:['shamuel_o','And the best of your fields and your vineyards and your olive-trees he is going to take and give them to his servants. And a tenth of your grain and your vintage he is going to take and give it to his officers and servants.']},
      ]},
-     {type:'goto',text:'And your male servants and your female servants…',x:22,y:24,radius:1.8,hiddenUntil:2,script:[
+     {type:'goto',text:'And your male servants and your female servants…',x:22,y:24,radius:1.8,hiddenUntil:2, script:[
        {say:['shamuel_o','And your male servants and your female servants and your best young men and your donkeys he is going to take and use for his own work. A tenth of your sheep he is going to take and you are to be his servants.']},
        {say:['shamuel_o','And you shall cry out in that day because of your sovereign whom you have chosen for yourselves, but YAHUAH is not going to answer you in that day.']},
        {say:['narrator','However, the people refused to listen to the voice of Shamu\'Al and said, “No, but let a sovereign be over us.']},
@@ -6171,10 +6196,10 @@ STORY.push(
 
 { id:'s6', title:'The Sons and the Donkeys', ref:'1 SHEMU’AL 9–10',
   intro:[
-   {art:'camp',music:'tense',text:'And there was a man of Binyamin whose name was Qish, son of Aḇi’al, son of Tseror, son of Beḵorath, son of Aphiyaḥ, a Binyamite, a mighty man of power. And he had a son whose name was Sha’ul, young and handsome. And there was not a more handsome man than he among the children of Yasharal, taller than any of the people by the shoulders and upwards.',ref:'1 SHEMU’AL 9:1–2',stage:{set:'gate',time:'day',cam:'push',cast:[{id:'shamuel_o',x:0.18,z:0.12,face:'r',pose:'sit',hold2:'staff'},{id:'yoel',look:{name:'Yo’ĕl son of Shemu’al',skin:'#7a4e29',hair:'#2c1a0c',robe:'#8a5a3a',beard:'#2c1a0c',collar:'#caa23c'},x:0.34,z:0.14,face:'r',pose:'stand',acts:[{at:1,pose:'hold'},{at:2,pose:'stand'}]},{id:'aviyah',look:{name:'Aḇiyah son of Shemu’al',skin:'#734827',hair:'#231409',robe:'#6a5a7a',beard:'#231409',collar:'#caa23c'},x:0.43,z:0.24,face:'r',pose:'stand'},{id:'hebrew',at:1,x:0.52,face:'l',pose:'hold',hold:'basket',acts:[{at:2,exit:'r'}]},{id:'elder',at:3,x:0.62,face:'l',say:4,hold:'staff',acts:[{at:4,pose:'point'}]}],crowd:[{kind:'elders',n:5,x:0.78,w:0.22,z:0.5,face:'l',enter:'r',at:2}]}},
+   {art:'camp',music:'tense',text:'And there was a man of Binyamin whose name was Qish, son of Aḇi’al, son of Tseror, son of Beḵorath, son of Aphiyaḥ, a Binyamite, a mighty man of power. And he had a son whose name was Sha’ul, young and handsome. And there was not a more handsome man than he among the children of Yasharal, taller than any of the people by the shoulders and upwards.',ref:'1 SHEMU’AL 9:1–2',stage:{set:'field',time:'day',cam:'push',cast:[{id:'qish',look:{name:'Qish',skin:'#704a27',hair:'#cfc8b8',robe:'#7a6a48',beard:'#cfc8b8',old:true},x:0.34,z:0.12,face:'r',pose:'bless'},{id:'shaul',x:0.52,z:0.12,face:'l',pose:'stand',s:1.15}],crowd:[{kind:'people',n:3,x:0.76,w:0.12,z:0.14,face:'l'}]}},
   ],
   scene:{
-   map:{biome:'wild',w:46,h:30,seed:1206,features:[{type:'tent',x:14,y:16,solid:true,clear:1},{type:'rock',x:32,y:14,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
+   map:{biome:'wild',w:46,h:30,seed:1206,features:[{type:'tent',x:14,y:16,solid:true,clear:1},{type:'rock',x:32,y:14,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3},{type:'house',x:19.5,y:9.5,solid:true,clear:3.5},{type:'house',x:27,y:8.5,solid:true,clear:3.5}]},
    time:'day',
    music:'tense',
    player:'shamuel_o',
@@ -6291,7 +6316,7 @@ STORY.push(
    {art:'wasteland',music:'tense',text:'And Naḥash the Ammonite came up and camped against Yaḇĕsh Gil‛aḏ. And all the men of Yaḇĕsh said to Naḥash, “Make a berith with us and we shall serve you.”',ref:'1 SHEMU’AL 11:1',stage:{set:'walls',time:'day',cam:'push',cast:[{id:'nachash',x:0.72,z:0.12,face:'l',pose:'stand',say:2,hold:'sword',acts:[{at:2,pose:'point'}]},{id:'yavesh',look:{name:'A Man of Yaḇĕsh',skin:'#7a4e29',hair:'#3a2716',robe:'#7a6a4a',beard:'#3a2716'},x:0.42,z:0.14,face:'r',pose:'bless',say:1,acts:[{at:2,pose:'weep'}]},{id:'elder',x:0.26,z:0.2,face:'r',pose:'stand',hold:'staff',say:3,acts:[{at:3,pose:'bless'}]},{id:'runner',look:{name:'Messenger of Yaḇĕsh',skin:'#7a4e29',hair:'#2c1a0c',robe:'#8a7048',short:1},x:0.14,z:0.3,face:'r',label:false,acts:[{at:3,exit:'l',run:1}]}],crowd:[{kind:'soldiers',side:'aram',n:7,x:0.84,w:0.2,z:0.56,face:'l',enter:'r',at:0},{kind:'elders',n:3,x:0.3,w:0.14,z:0.46,face:'r'}]}},
   ],
   scene:{
-   map:{biome:'plains',w:46,h:30,seed:1207,features:[{type:'rock',x:14,y:13,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
+   map:{biome:'plains',w:46,h:30,seed:1207,features:[{type:'rock',x:14,y:13,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3},{type:'tent',x:29,y:10.5,solid:true,clear:3},{type:'tent',x:34,y:11.5,solid:true,clear:2.5},{type:'tent',x:36.5,y:15.5,solid:true,clear:2.5},{type:'firepit',x:32.5,y:13.6,lit:true,clear:1}]},
    time:'day',
    music:'tense',
    player:'shaul',
@@ -6358,7 +6383,15 @@ STORY.push(
    playerHold:'staff',
    npcs:[
      {id:'elder1',char:'elder',x:20,y:18,wander:false},
-     {id:'man1',char:'hebrew',x:27,y:20,wander:false,noTalk:true},
+     {id:'man1',char:'hebrew',x:28.6,y:18.4,wander:false,noTalk:true},
+     {id:'shaul_k',char:'shaul_k',x:26.4,y:16.6,wander:false,noTalk:true},
+     {id:'gp1',char:'hebrew',x:17,y:21.6,wander:false,noTalk:true},
+     {id:'gp2',char:'hebreww',x:19,y:22.6,wander:false,noTalk:true},
+     {id:'gp3',char:'elder',x:21.2,y:23.2,wander:false,noTalk:true},
+     {id:'gp4',char:'hebrew2',x:23.6,y:23.2,wander:false,noTalk:true},
+     {id:'gp5',char:'hebreww',x:26.4,y:23.4,wander:false,noTalk:true},
+     {id:'gp6',char:'hebrew',x:30.4,y:21.6,wander:false,noTalk:true},
+     {id:'gp7',char:'elder',x:17.6,y:16.4,wander:false,noTalk:true},
    ],
    objectives:[
      {type:'talk',npc:'elder1',text:'Call the people to witness — whose ox have you taken?', script:[
@@ -6402,24 +6435,26 @@ STORY.push(
 
 { id:'sh13', title:'You Have Done Foolishly', ref:'1 SHEMU’AL 13',
   intro:[
-   {art:'field',music:'holy',text:'Sha’ul was … years old when he began to reign. And when he had reigned two years over Yasharal, Sha’ul chose for himself three thousand men of Yasharal. And two thousand were with Sha’ul in Miḵmash and in the mountains of Bĕyth Al and a thousand were with Yonathan in Giḇ‛ah of Binyamin. And the rest of the people he sent away, each to his tent.',ref:'1 SHEMU’AL 13:1–2',stage:{set:'camp',cam:'push',focus:0.5,time:'day',cast:[{id:'shaul_k',x:0.3,z:0.1,face:'r',pose:'stand'},{id:'shamuel_o',x:0.58,z:0.12,face:'l',pose:'point'}],crowd:[{kind:'army',n:6,x:0.78,w:0.3,z:0.6,face:'l'}]}},
+   {art:'field',music:'holy',text:'Sha’ul was … years old when he began to reign. And when he had reigned two years over Yasharal, Sha’ul chose for himself three thousand men of Yasharal. And two thousand were with Sha’ul in Miḵmash and in the mountains of Bĕyth Al and a thousand were with Yonathan in Giḇ‛ah of Binyamin. And the rest of the people he sent away, each to his tent.',ref:'1 SHEMU’AL 13:1–2',stage:{set:'camp',cam:'push',focus:0.5,time:'day',cast:[{id:'shaul_k',x:0.3,z:0.1,face:'r',pose:'point'},{id:'yonathan',x:0.68,z:0.12,face:'l',pose:'stand',hold:'sword'}],crowd:[{kind:'army',side:'yasharal',n:5,x:0.16,w:0.16,z:0.5,face:'r'},{kind:'army',side:'yasharal',n:3,x:0.84,w:0.1,z:0.5,face:'l'}]}},
   ],
   scene:{
-   map:{biome:'desert',w:46,h:28,seed:9103,features:[{type:'tent',x:14,y:10},{type:'tent',x:30,y:10},{type:'tent',x:22,y:7,id:'tent'},{type:'firepit',x:22,y:14,lit:true},{type:'clearing',x:22,y:18,flat:3}]},
+   map:{biome:'desert',w:46,h:28,seed:9103,features:[{type:'tent',x:14,y:10},{type:'tent',x:30,y:10},{type:'tent',x:22,y:7,id:'tent'},{type:'firepit',x:22,y:14,lit:true},{type:'clearing',x:22,y:18,flat:3},{type:'altar',x:26.5,y:12.5,stage:3,solid:true,clear:1.5}]},
    time:'day',
    music:'holy',
    player:'shaul_k',
    playerPos:[22,19],
-   npcs:[{id:'shamuel',char:'shamuel_o',x:26,y:16,wander:false}],
+   npcs:[
+     {id:'shamuel',char:'shamuel_o',x:26,y:16,wander:false},
+   ],
    objectives:[
-     {type:'goto',text:'And Yonathan smote the watch-post of the Philistines…',x:14,y:15,radius:1.8,script:[
+     {type:'goto',text:'And Yonathan smote the watch-post of the Philistines…',x:14,y:15,radius:1.8, script:[
        {say:['narrator','And Yonathan smote the watch-post of the Philistines that was in Geḇa and the Philistines heard of it. And Sha’ul blew the ram’s horn throughout all the land, saying,']},
        {say:['shaul_k','Let the Heḇrews hear!']},
        {say:['narrator','And all Yasharal heard the news that Sha’ul had smitten a watch-post of the Philistines and also that Yasharal had become a stench to the Philistines. And the people were summoned to Sha’ul at Gilgal. And the Philistines gathered to fight Yasharal, thirty thousand chariots and six thousand horsemen and people as numerous as the sand on the seashore.']},
        {say:['narrator','And they came up and encamped in Miḵmash, east of Bĕyth Awen. And the men of Yasharal saw that they were in trouble, for the people were distressed and the people hid in caves and in thorny bushes and in rocks and in holes and in pits.']},
        {say:['narrator','And some Heḇrews passed over the Yardĕn to the land of Gaḏ and Gil‛aḏ. But Sha’ul was still in Gilgal and all the people followed him, trembling. And he waited for seven days, according to the appointment with Shamu\'Al. But Shamu\'Al did not come to Gilgal and the people were scattered from him.']},
      ]},
-     {type:'talk',text:'And Sha’ul said, Bring a burnt offering and…',npc:'shamuel',hiddenUntil:1,script:[
+     {type:'talk',text:'And Sha’ul said, Bring a burnt offering and…',npc:'shamuel',hiddenUntil:1, script:[
        {say:['narrator','And Sha’ul said,']},
        {say:['shaul_k','Bring a burnt offering and shalom offerings here to me.']},
        {say:['narrator','And he offered the burnt offering. And it came to be, as he had finished offering the burnt offering, look, Shamu\'Al came. And Sha’ul went out to meet him, to bless him. Then Shamu\'Al said,']},
@@ -6430,7 +6465,7 @@ STORY.push(
        {say:['shamuel_o','You. have been foolish. You have not guarded the command of YAHUAH your Aluahim, which He commanded you. For now YAHUAH would have established your reign over Yasharal forever.']},
        {say:['shamuel_o','But now, your reign is not going to stand. YAHUAH shall seek for Himself a man after His own heart, and YAHUAH shall command him to be leader over His people, because you have not guarded what YAHUAH commanded you.']},
      ]},
-     {type:'goto',text:'And Shamu\'Al arose and went up from Gilgal…',x:32,y:15,radius:1.8,hiddenUntil:2,script:[
+     {type:'goto',text:'And Shamu\'Al arose and went up from Gilgal…',x:32,y:15,radius:1.8,hiddenUntil:2, script:[
        {say:['narrator','And Shamu\'Al arose and went up from Gilgal to Giḇ‛ah of Binyamin. And Sha’ul mustered the people who were present with him, about six hundred men. And Sha’ul and Yonathan his son and the people who were present with them remained in Giḇ‛ah of Binyamin, while the Philistines camped at Miḵmash.']},
        {say:['narrator','And from the camp of the Philistines raiders went out in three companies. The one company turned to the way that leads to Ophrah, to the land of Shu‛al, and another company turned toward the way of Bĕyth Ḥoron and another company turned toward the way of the border that overlooks the Valley of Tseḇo‛im toward the wilderness.']},
        {say:['narrator','Now no blacksmith could be found all the land of Yasharal, for the Philistines said, “Lest the Heḇrews make swords or spears.” And all Yasharal went down to Philistines, each one to sharpen his ploughshare and his mattock and his axe and his sickle.']},
@@ -6439,17 +6474,17 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'field',music:'holy',text:'And it came to be, on the day of battle that there was neither sword nor spear found in the hand of any of the people who were with Sha’ul and Yonathan. But they were found with Sha’ul and Yonathan his son. And the outpost of the Philistines out to the pass of Mi¿mash.',ref:'1 SHEMU’AL 13:22–23',stage:{set:'camp',cam:'push',focus:0.5,time:'day',cast:[{id:'shaul_k',x:0.3,z:0.1,face:'r',pose:'stand'},{id:'shamuel_o',x:0.58,z:0.12,face:'l',pose:'point'}],crowd:[{kind:'army',n:6,x:0.78,w:0.3,z:0.6,face:'l'}]}},
+   {art:'field',music:'holy',text:'And it came to be, on the day of battle that there was neither sword nor spear found in the hand of any of the people who were with Sha’ul and Yonathan. But they were found with Sha’ul and Yonathan his son. And the outpost of the Philistines out to the pass of Mi¿mash.',ref:'1 SHEMU’AL 13:22–23',stage:{set:'camp',cam:'push',focus:0.5,time:'day',cast:[{id:'shaul_k',x:0.3,z:0.1,face:'r',pose:'stand',hold:'sword'},{id:'yonathan',x:0.42,z:0.12,face:'r',pose:'stand',hold:'sword'}],crowd:[{kind:'people',n:6,x:0.62,w:0.22,z:0.42,face:'l'},{kind:'soldiers',side:'pelishtim',n:3,x:0.88,w:0.06,z:0.66,face:'l'}],props:[{k:'rock',x:0.88,z:0.7,w:110,h:30}]}},
   ],
   complete:'And the outpost of the Philistines out to the pass of Mi¿mash.'
 },
 
 { id:'s8', title:'Yonathan at Miḵmash', ref:'1 SHEMU’AL 14',
   intro:[
-   {art:'rest',music:'holy',text:'And it came to be one day that Yonathan son of Sha’ul said to the young man who bore his armour, “Come and let us go over to the outpost of the Philistines which is on the other side.” But he did not inform his father.',ref:'1 SHEMU’AL 14:1',stage:{set:'valley',time:'dawn',cam:'push',props:[{k:'rock',x:0.82,z:0.62,w:110,h:46}],crowd:[{kind:'soldiers',side:'pelishtim',n:4,x:0.82,w:0.14,z:0.84,face:'l',exit:'r',exitAt:2,run:1},{kind:'people',n:6,x:0.56,w:0.34,z:0.72,face:'r',enter:'l',at:2}],cast:[{id:'yonathan',x:0.3,z:0.12,face:'r',pose:'point',say:0,hold:'sword',acts:[{at:1,pose:'raise'},{at:2,to:0.44,pose:'stand'}]},{id:'armorbearer',x:0.16,z:0.16,face:'r',pose:'stand',hold:'shield',hold2:'spear',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.14,face:'l',at:2,pose:'point',hold:'spear',acts:[{at:4,pose:'stand'}]},{id:'hebrew',x:0.64,z:0.22,face:'r',at:2,say:2,pose:'bless'}]}},
+   {art:'rest',music:'holy',text:'And it came to be one day that Yonathan son of Sha’ul said to the young man who bore his armour, “Come and let us go over to the outpost of the Philistines which is on the other side.” But he did not inform his father.',ref:'1 SHEMU’AL 14:1',stage:{set:'valley',time:'dawn',cam:'push',props:[{k:'rock',x:0.84,z:0.84,w:130,h:30}],crowd:[{kind:'soldiers',side:'pelishtim',n:4,x:0.84,w:0.1,z:0.8,face:'l'}],cast:[{id:'yonathan',x:0.34,z:0.12,face:'r',pose:'point',say:0,hold:'sword'},{id:'armorbearer',x:0.5,z:0.14,face:'l',pose:'stand',hold:'shield',hold2:'spear'}]}},
   ],
   scene:{
-   map:{biome:'rocky',w:48,h:32,seed:1208,overlook:{cliffY:8,drop:0.6},features:[{type:'rock',x:12,y:12,solid:true,clear:1},{type:'rock',x:36,y:11,solid:true,clear:1},{type:'rock',x:24,y:9,solid:true,clear:1},{type:'clearing',x:24,y:22,flat:3}]},
+   map:{biome:'rocky',w:48,h:32,seed:1208,overlook:{cliffY:8,drop:0.6},features:[{type:'rock',x:12,y:12,solid:true,clear:1},{type:'rock',x:36,y:11,solid:true,clear:1},{type:'rock',x:24,y:9,solid:true,clear:1},{type:'clearing',x:24,y:22,flat:3},{type:'tent',x:20,y:8.5,solid:true,clear:2},{type:'tent',x:28.5,y:8.5,solid:true,clear:2}]},
    time:'day',
    music:'tense',
    player:'yonathan',
@@ -6532,16 +6567,16 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'rest',music:'holy',text:'And Sha’ul took the reign over Yasharal and fought against all his enemies round about, against Mo’aḇ and against the children of Ammon and against Eḏom and against the sovereigns of Tsoḇah and against the Philistines. And wherever he turned, he inflicted punishment. And he gathered an army and smote the Amalĕqites and delivered Yasharal from the hands of those who plundered them.',ref:'1 SHEMU’AL 14:47–48',stage:{set:'valley',time:'dawn',cam:'push',props:[{k:'rock',x:0.82,z:0.62,w:110,h:46}],crowd:[{kind:'soldiers',side:'pelishtim',n:4,x:0.82,w:0.14,z:0.84,face:'l',exit:'r',exitAt:2,run:1},{kind:'people',n:6,x:0.56,w:0.34,z:0.72,face:'r',enter:'l',at:2}],cast:[{id:'yonathan',x:0.3,z:0.12,face:'r',pose:'point',say:0,hold:'sword',acts:[{at:1,pose:'raise'},{at:2,to:0.44,pose:'stand'}]},{id:'armorbearer',x:0.16,z:0.16,face:'r',pose:'stand',hold:'shield',hold2:'spear',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.14,face:'l',at:2,pose:'point',hold:'spear',acts:[{at:4,pose:'stand'}]},{id:'hebrew',x:0.64,z:0.22,face:'r',at:2,say:2,pose:'bless'}]}},
-   {art:'rest',music:'holy',text:'And the sons of Sha’ul were Yonathan and Yahshwi and Malkishua. And the names of his two daughters were these: the name of the first-born Mĕraḇ and the name of the younger Miḵal. The name of Sha’ul’s wife was Aḥino‛am the daughter of Aḥima‛ats and the name of the commander of his army was Aḇnĕr son of Nĕr, uncle of Sha’ul.’',ref:'1 SHEMU’AL 14:49–50',stage:{set:'valley',time:'dawn',cam:'push',props:[{k:'rock',x:0.82,z:0.62,w:110,h:46}],crowd:[{kind:'soldiers',side:'pelishtim',n:4,x:0.82,w:0.14,z:0.84,face:'l',exit:'r',exitAt:2,run:1},{kind:'people',n:6,x:0.56,w:0.34,z:0.72,face:'r',enter:'l',at:2}],cast:[{id:'yonathan',x:0.3,z:0.12,face:'r',pose:'point',say:0,hold:'sword',acts:[{at:1,pose:'raise'},{at:2,to:0.44,pose:'stand'}]},{id:'armorbearer',x:0.16,z:0.16,face:'r',pose:'stand',hold:'shield',hold2:'spear',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.14,face:'l',at:2,pose:'point',hold:'spear',acts:[{at:4,pose:'stand'}]},{id:'hebrew',x:0.64,z:0.22,face:'r',at:2,say:2,pose:'bless'}]}},
-   {art:'rest',music:'holy',text:'And Qish was the father of Sha’ul and Nĕr the father of Aḇnĕr was the son of Aḇi’al. And there was fierce fighting against the Philistines all the days of Sha’ul. When Sha’ul saw any mighty man or any brave man, he took him for himself.',ref:'1 SHEMU’AL 14:51–52',stage:{set:'valley',time:'dawn',cam:'push',props:[{k:'rock',x:0.82,z:0.62,w:110,h:46}],crowd:[{kind:'soldiers',side:'pelishtim',n:4,x:0.82,w:0.14,z:0.84,face:'l',exit:'r',exitAt:2,run:1},{kind:'people',n:6,x:0.56,w:0.34,z:0.72,face:'r',enter:'l',at:2}],cast:[{id:'yonathan',x:0.3,z:0.12,face:'r',pose:'point',say:0,hold:'sword',acts:[{at:1,pose:'raise'},{at:2,to:0.44,pose:'stand'}]},{id:'armorbearer',x:0.16,z:0.16,face:'r',pose:'stand',hold:'shield',hold2:'spear',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.14,face:'l',at:2,pose:'point',hold:'spear',acts:[{at:4,pose:'stand'}]},{id:'hebrew',x:0.64,z:0.22,face:'r',at:2,say:2,pose:'bless'}]}},
+   {art:'rest',music:'holy',text:'And Sha’ul took the reign over Yasharal and fought against all his enemies round about, against Mo’aḇ and against the children of Ammon and against Eḏom and against the sovereigns of Tsoḇah and against the Philistines. And wherever he turned, he inflicted punishment. And he gathered an army and smote the Amalĕqites and delivered Yasharal from the hands of those who plundered them.',ref:'1 SHEMU’AL 14:47–48',stage:{set:'battle',time:'dawn',cam:'push',crowd:[{kind:'army',side:'yasharal',n:7,x:0.18,w:0.2,z:0.5,face:'r',pose:'fight'},{kind:'soldiers',n:6,x:0.74,w:0.24,z:0.48,face:'l',pose:'fall'}],cast:[{id:'shaul_k',x:0.34,z:0.12,face:'r',pose:'fight',hold:'sword'}],wx:'dust',fx:[{k:'smoke',x:0.86}]}},
+   {art:'rest',music:'holy',text:'And the sons of Sha’ul were Yonathan and Yahshwi and Malkishua. And the names of his two daughters were these: the name of the first-born Mĕraḇ and the name of the younger Miḵal. The name of Sha’ul’s wife was Aḥino‛am the daughter of Aḥima‛ats and the name of the commander of his army was Aḇnĕr son of Nĕr, uncle of Sha’ul.’',ref:'1 SHEMU’AL 14:49–50',stage:{set:'palace',time:'day',cam:'push',cast:[{id:'shaul_k',x:0.18,z:0.16,face:'r',pose:'enthroned'},{id:'ahinoam',look:{name:'Aḥino‛am',skin:'#815631',hair:'#2c1a0c',hairStyle:'long',robe:'#8c6a7d',headcover:'#caa881'},x:0.32,z:0.1,face:'l',pose:'stand'},{id:'merav',look:{name:'Mĕraḇ',skin:'#83552d',hair:'#23150b',hairStyle:'long',robe:'#7d8a6a',headcover:'#c8b88e'},x:0.44,z:0.1,face:'l',pose:'stand'},{id:'michal',x:0.55,z:0.1,face:'l',pose:'stand'},{id:'yonathan',x:0.4,z:0.4,face:'l',pose:'stand'},{id:'yahshwi',look:{name:'Yahshwi',skin:'#7a4e29',hair:'#33230f',robe:'#8a6a45'},x:0.51,z:0.4,face:'l',pose:'stand'},{id:'malkishua',look:{name:'Malkishua',skin:'#734827',hair:'#2c1a0c',robe:'#6a7a8c'},x:0.62,z:0.4,face:'l',pose:'stand'},{id:'abner',look:{name:'Aḇnĕr',skin:'#704a27',hair:'#2c1a0c',robe:'#5d6e7e',beard:'#2c1a0c',collar:'#9a9a9a'},x:0.8,z:0.16,face:'l',pose:'stand',hold:'spear'}]}},
+   {art:'rest',music:'holy',text:'And Qish was the father of Sha’ul and Nĕr the father of Aḇnĕr was the son of Aḇi’al. And there was fierce fighting against the Philistines all the days of Sha’ul. When Sha’ul saw any mighty man or any brave man, he took him for himself.',ref:'1 SHEMU’AL 14:51–52',stage:{set:'camp',time:'day',cam:'push',crowd:[{kind:'soldiers',side:'yasharal',n:5,x:0.74,w:0.22,z:0.45,face:'l'}],cast:[{id:'shaul_k',x:0.3,z:0.1,face:'r',pose:'point',hold:'spear'},{id:'mightyman',look:{name:'A Mighty Man',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.48,z:0.12,face:'l',pose:'bow',hold:'sword'}],fx:[{k:'smoke',x:0.9}]}},
   ],
   complete:'When Sha’ul saw any mighty man or any brave man, he took him for himself.'
 },
 
 { id:'s9', title:'Obedience Better Than Offering', ref:'1 SHEMU’AL 15',
   intro:[
-   {art:'wasteland',music:'sorrow',text:'And Shamu\'Al said to Sha’ul, sovereign over His people, over Yasharal. And now, listen to the voice of the words of YAHUAH.',ref:'1 SHEMU’AL 15:1',stage:{set:'wilderness',time:'dusk',cam:'push',props:[{k:'tent',x:0.86,z:1,at:2,color:'#5a3a2a'},{k:'tent',x:0.96,z:1,at:2,color:'#6a4a30'}],fx:[{k:'sword',x:0.78,y:0.22,at:3}],cast:[{id:'shamuel',x:0.3,z:0.12,face:'r',pose:'speak',say:1,hold2:'staff',acts:[{at:2,pose:'raise'},{at:3,pose:'point'}]},{id:'shaul_k',x:0.6,z:0.12,face:'l',pose:'stand',hold:'spear',turn:[3,'r']}],crowd:[{kind:'soldiers',side:'yasharal',n:6,x:0.8,w:0.2,z:0.52,face:'l',enter:'r',at:3}]}},
+   {art:'wasteland',music:'sorrow',text:'And Shamu\'Al said to Sha’ul, “YAHUAH sent me to anoint you sovereign over His people, over Yasharal. And now, listen to the voice of the words of YAHUAH.',ref:'1 SHEMU’AL 15:1',stage:{set:'wilderness',time:'dusk',cam:'push',props:[{k:'tent',x:0.86,z:1,at:2,color:'#5a3a2a'},{k:'tent',x:0.96,z:1,at:2,color:'#6a4a30'}],cast:[{id:'shamuel',x:0.3,z:0.12,face:'r',pose:'speak',say:1,hold2:'staff',acts:[{at:2,pose:'raise'},{at:3,pose:'point'}]},{id:'shaul_k',x:0.6,z:0.12,face:'l',pose:'stand',hold:'spear',turn:[3,'r']}],crowd:[{kind:'soldiers',side:'yasharal',n:6,x:0.8,w:0.2,z:0.52,face:'l',enter:'r',at:3}]}},
   ],
   scene:{
    map:{biome:'desert',w:48,h:32,seed:1209,features:[{type:'rock',x:14,y:13,solid:true,clear:1},{type:'rock',x:34,y:14,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
@@ -6555,6 +6590,11 @@ STORY.push(
      {id:'agag',char:'agag',x:30,y:16,wander:false,hidden:true,noTalk:true},
      {id:'sheep1',animal:'sheep',x:16,y:24},
      {id:'ox2',animal:'cow',x:18,y:24},
+     {id:'sheep3',animal:'sheep',x:14.4,y:25.2},
+     {id:'sheep4',animal:'sheep',x:15.6,y:26.2},
+     {id:'sheep5',animal:'sheep',x:17.2,y:25.8},
+     {id:'sheep6',animal:'sheep',x:13.4,y:23.8},
+     {id:'ox3',animal:'cow',x:19.8,y:25.6},
    ],
    onResume:[
      {sfx:'holy'},
@@ -6635,7 +6675,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars',music:'sorrow',text:'And Shamu\'Al went to Ramah, while Sha’ul went up to his house at Giḇ‛ah of Sha’ul. And Shamu\'Al did not see Sha’ul again until the day of his death, for Shamu\'Al mourned for Sha’ul. And YAHUAH was grieved that He had made Sha’ul to reign over Yasharal.',ref:'1 SHEMU’AL 15:34–35',stage:{set:'camp',time:'dusk',cam:'push',props:[{k:'altar',x:0.84,z:0.38,fire:false,sacrifice:1},{k:'sheep',x:0.7,z:0.58,n:6,w:90},{k:'oxen',x:0.9,z:0.64,n:2}],fx:[{k:'darkness',at:3,amt:0.3}],cast:[{id:'shamuel',x:0.3,z:0.12,face:'r',pose:'point',say:0,hold2:'staff',acts:[{at:1,pose:'speak'},{at:2,pose:'point'},{at:3,to:0.18,pose:'mourn'}]},{id:'shaul_k',x:0.58,z:0.12,face:'l',pose:'stand',acts:[{at:2,pose:'kneel'},{at:3,exit:'r'}]},{id:'agag',x:0.76,z:0.24,face:'l',pose:'bound'}]}},
+   {art:'stars',music:'sorrow',text:'And Shamu\'Al went to Ramah, while Sha’ul went up to his house at Giḇ‛ah of Sha’ul. And Shamu\'Al did not see Sha’ul again until the day of his death, for Shamu\'Al mourned for Sha’ul. And YAHUAH was grieved that He had made Sha’ul to reign over Yasharal.',ref:'1 SHEMU’AL 15:34–35',stage:{set:'road',time:'dusk',cam:'push',fx:[{k:'darkness',amt:0.2}],cast:[{id:'shamuel',x:0.3,z:0.12,face:'l',pose:'weep',hold2:'staff'},{id:'shaul_k',x:0.72,z:0.12,face:'r',pose:'walk'}]}},
   ],
   complete:'And YAHUAH was grieved that He had made Sha’ul to reign over Yasharal.'
 }
@@ -6647,7 +6687,7 @@ STORY.push(
 
 { id:'s10', title:'The Least of the Sons', ref:'1 SHEMU’AL 16',
   intro:[
-   {art:'journey',music:'holy',text:'And YAHUAH said to Shamu\'Al, “How long are you going to mourn for Sha’ul, seeing I have rejected him from reigning over Yasharal? Fill your horn with oil and go, I am sending you to Yahshai the Bĕyth Leḥemite. For I have seen among his sons a sovereign for Myself.”',ref:'1 SHEMU’AL 16:1',stage:{set:'city',time:'dawn',cam:'pan-r',props:[{k:'altar',x:0.9,z:0.32,at:5,sacrifice:1}],cast:[{id:'voice',x:0.2},{id:'shamuel',x:0.24,z:0.12,face:'r',pose:'sitground',hold:'horn',acts:[{at:1,pose:'stand'},{at:3,to:0.44},{at:5,pose:'bless'}]},{id:'yishai',enter:'r',at:5,to:0.64,face:'l',pose:'bow'}],crowd:[{kind:'elders',n:4,x:0.74,w:0.2,z:0.46,face:'l',at:4,pose:'kneel'},{kind:'people',n:5,x:0.8,w:0.16,z:0.62,face:'l',enter:'r',at:5}]}},
+   {art:'journey',music:'holy',text:'And YAHUAH said to Shamu\'Al, “How long are you going to mourn for Sha’ul, seeing I have rejected him from reigning over Yasharal? Fill your horn with oil and go, I am sending you to Yahshai the Bĕyth Leḥemite. For I have seen among his sons a sovereign for Myself.”',ref:'1 SHEMU’AL 16:1',stage:{set:'city',time:'dawn',cam:'pan-r',cast:[{id:'voice',x:0.2},{id:'shamuel',x:0.46,z:0.12,face:'l',pose:'sitground',hold:'horn',acts:[{at:1,pose:'stand'}]}]}},
   ],
   scene:{
    map:{biome:'wild',w:46,h:30,seed:1210,features:[{type:'altar',x:24,y:12,stage:1,solid:true,clear:2,id:'mizbeah'},{type:'clearing',x:24,y:20,flat:3},{type:'tent',x:14,y:17,solid:true,clear:1}]},
@@ -6658,10 +6698,13 @@ STORY.push(
    playerHold:'staff',
    npcs:[
      {id:'yishai',char:'yishai',x:20,y:19,wander:false},
-     {id:'eliav',char:'eliav',x:26,y:18,wander:false,noTalk:true},
+     {id:'eliav',char:'eliav',x:27.6,y:18.3,wander:false,noTalk:true},
      {id:'dawid',char:'dawid_c',x:34,y:22,wander:false,hidden:true},
      {id:'sheep1',animal:'sheep',x:36,y:23},
      {id:'sheep2',animal:'sheep',x:35,y:24},
+     {id:'son2',char:'hebrew',x:29.2,y:18.6,wander:false,noTalk:true},
+     {id:'son3',char:'hebrew2',x:30.7,y:18.2,wander:false,noTalk:true},
+     {id:'son4',char:'hebrew',x:32.2,y:18.7,wander:false,noTalk:true},
    ],
    objectives:[
      {type:'talk',npc:'eliav',text:'Aliaḇ stands first — tall and fair. Look on him', script:[
@@ -6707,11 +6750,11 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars',music:'holy',text:'And the Ruach of YAHUAH turned aside from Sha’ul and an evil ruach from YAHUAH troubled him. And the servants of Sha’ul said to him, “Look, now, an evil ruach from Aluahim is troubling you.',ref:'1 SHEMU’AL 16:14–15',stage:{set:'palace',time:'night',cam:'push',fx:[{k:'darkness',at:2,amt:0.4},{k:'rays',x:0.8,at:3}],cast:[{id:'voice',x:0.2},{id:'shamuel',x:0.14,z:0.14,face:'r',pose:'look',hold:'horn',acts:[{at:2,exit:'l'}]},{id:'eliav',x:0.32,z:0.12,face:'l',s:1.12,pose:'stand',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.12,face:'l',at:2,pose:'weep',acts:[{at:3,pose:'enthroned'}]},{id:'dawid',x:0.6,z:0.12,at:2,face:'r',pose:'sit',hold:'lyre'}]}},
-   {art:'stars',music:'holy',text:'“Please, let our master command your servants who are before you, to seek out a man who is a skilled player on the lyre. It shall be that when the evil ruach from Aluahim is upon you, that he shall play with his hand and you be well.” And Sha’ul said to his servants, “Please get me a man that plays well and bring him to me.”',ref:'1 SHEMU’AL 16:16–17',stage:{set:'palace',time:'night',cam:'push',fx:[{k:'darkness',at:2,amt:0.4},{k:'rays',x:0.8,at:3}],cast:[{id:'voice',x:0.2},{id:'shamuel',x:0.14,z:0.14,face:'r',pose:'look',hold:'horn',acts:[{at:2,exit:'l'}]},{id:'eliav',x:0.32,z:0.12,face:'l',s:1.12,pose:'stand',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.12,face:'l',at:2,pose:'weep',acts:[{at:3,pose:'enthroned'}]},{id:'dawid',x:0.6,z:0.12,at:2,face:'r',pose:'sit',hold:'lyre'},{id:'shaul',x:0.72,z:0.12,face:'l',pose:'speak'}]}},
-   {art:'stars',music:'holy',text:'And one of the servants answered and said, “Look, I have seen a son of Yahshai the Bĕyth Leḥemite, who knows how to play, a brave one and a man of battle and skilled in words and a handsome man. And YAHUAH is with him.” So Sha’ul sent mal\'akim to Yahshai and said, “Send me your son Dawiḏ, who is with the sheep.”',ref:'1 SHEMU’AL 16:18–19',stage:{set:'palace',time:'night',cam:'push',fx:[{k:'darkness',at:2,amt:0.4},{k:'rays',x:0.8,at:3}],cast:[{id:'voice',x:0.2},{id:'shamuel',x:0.14,z:0.14,face:'r',pose:'look',hold:'horn',acts:[{at:2,exit:'l'}]},{id:'eliav',x:0.32,z:0.12,face:'l',s:1.12,pose:'stand',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.12,face:'l',at:2,pose:'weep',acts:[{at:3,pose:'enthroned'}]},{id:'dawid',x:0.6,z:0.12,at:2,face:'r',pose:'sit',hold:'lyre'},{id:'shaul',x:0.72,z:0.12,face:'l',pose:'speak'}]},who:[{kind:'man',key:'man'},'shaul']},
-   {art:'stars',music:'holy',text:'And Yahshai took a donkey loaded with bread, a skin of wine, a young goat and sent them by his son Dawiḏ to Sha’ul. And Dawiḏ came to Sha’ul and stood before him. And he loved him greatly and he became his armour-bearer. Sha’ul therefore sent to Yahshai, saying, “Please let Dawiḏ stand before me for he has found chen in my eyes.”',ref:'1 SHEMU’AL 16:20–22',stage:{set:'palace',time:'night',cam:'push',fx:[{k:'darkness',at:2,amt:0.4},{k:'rays',x:0.8,at:3}],cast:[{id:'voice',x:0.2},{id:'shamuel',x:0.14,z:0.14,face:'r',pose:'look',hold:'horn',acts:[{at:2,exit:'l'}]},{id:'eliav',x:0.32,z:0.12,face:'l',s:1.12,pose:'stand',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.12,face:'l',at:2,pose:'weep',acts:[{at:3,pose:'enthroned'}]},{id:'dawid',x:0.6,z:0.12,at:2,face:'r',pose:'sit',hold:'lyre'},{id:'shaul',x:0.72,z:0.12,face:'l',pose:'speak'}]}},
-   {art:'stars',music:'holy',text:'And it came to be, whenever the evil ruach from Aluahim was upon Sha’ul, that Dawiḏ would take a lyre and play it with his hand. Then Sha’ul would become refreshed and well and the evil ruach would leave him.',ref:'1 SHEMU’AL 16:23',stage:{set:'palace',time:'night',cam:'push',fx:[{k:'darkness',at:2,amt:0.4},{k:'rays',x:0.8,at:3}],cast:[{id:'voice',x:0.2},{id:'shamuel',x:0.14,z:0.14,face:'r',pose:'look',hold:'horn',acts:[{at:2,exit:'l'}]},{id:'eliav',x:0.32,z:0.12,face:'l',s:1.12,pose:'stand',acts:[{at:2,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.12,face:'l',at:2,pose:'weep',acts:[{at:3,pose:'enthroned'}]},{id:'dawid',x:0.6,z:0.12,at:2,face:'r',pose:'sit',hold:'lyre'}]}},
+   {art:'stars',music:'holy',text:'And the Ruach of YAHUAH turned aside from Sha’ul and an evil ruach from YAHUAH troubled him. And the servants of Sha’ul said to him, “Look, now, an evil ruach from Aluahim is troubling you.',ref:'1 SHEMU’AL 16:14–15',stage:{set:'palace',time:'night',cam:'push',fx:[{k:'darkness',amt:0.35}],cast:[{id:'shaul_k',x:0.78,z:0.12,face:'l',pose:'weep'},{id:'saulservant',look:{name:'A Servant of Sha’ul',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.56,z:0.12,face:'r',pose:'speak',say:1},{id:'saulservant2',look:{name:'A Servant of Sha’ul',skin:'#7a4e29',hair:'#2c1a0c',robe:'#7d6a52'},x:0.44,z:0.2,face:'r',pose:'stand'}]}},
+   {art:'stars',music:'holy',text:'“Please, let our master command your servants who are before you, to seek out a man who is a skilled player on the lyre. It shall be that when the evil ruach from Aluahim is upon you, that he shall play with his hand and you be well.” And Sha’ul said to his servants, “Please get me a man that plays well and bring him to me.”',ref:'1 SHEMU’AL 16:16–17',stage:{set:'palace',time:'night',cam:'push',fx:[{k:'darkness',amt:0.3}],cast:[{id:'shaul_k',x:0.8,z:0.12,face:'l',pose:'enthroned'},{id:'saulservant',look:{name:'A Servant of Sha’ul',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.58,z:0.12,face:'r',pose:'speak',say:0},{id:'saulservant2',look:{name:'A Servant of Sha’ul',skin:'#7a4e29',hair:'#2c1a0c',robe:'#7d6a52'},x:0.46,z:0.2,face:'r',pose:'stand'}]}},
+   {art:'stars',music:'holy',text:'And one of the servants answered and said, “Look, I have seen a son of Yahshai the Bĕyth Leḥemite, who knows how to play, a brave one and a man of battle and skilled in words and a handsome man. And YAHUAH is with him.” So Sha’ul sent mal\'akim to Yahshai and said, “Send me your son Dawiḏ, who is with the sheep.”',ref:'1 SHEMU’AL 16:18–19',stage:{set:'palace',time:'night',cam:'push',fx:[{k:'darkness',amt:0.3}],cast:[{id:'shaul_k',x:0.8,z:0.12,face:'l',pose:'enthroned'},{id:'saulservant',look:{name:'A Servant of Sha’ul',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.6,z:0.12,face:'r',pose:'speak',say:0},{id:'messenger',look:{name:'A Messenger',skin:'#7a4e29',hair:'#2c1a0c',robe:'#8a7048',short:1},x:0.22,z:0.18,face:'l',pose:'walk'},{id:'messenger2',look:{name:'A Messenger',skin:'#6e4524',hair:'#1d1208',robe:'#7d6a52',short:1},x:0.12,z:0.24,face:'l',pose:'walk'}]},who:[{kind:'man',key:'man'},'shaul']},
+   {art:'stars',music:'holy',text:'And Yahshai took a donkey loaded with bread, a skin of wine, a young goat and sent them by his son Dawiḏ to Sha’ul. And Dawiḏ came to Sha’ul and stood before him. And he loved him greatly and he became his armour-bearer. Sha’ul therefore sent to Yahshai, saying, “Please let Dawiḏ stand before me for he has found chen in my eyes.”',ref:'1 SHEMU’AL 16:20–22',stage:{set:'palace',time:'day',cam:'push',cast:[{id:'shaul_k',x:0.8,z:0.12,face:'l',pose:'enthroned'},{id:'dawid',x:0.6,z:0.12,face:'r',pose:'stand'}],props:[{k:'donkey',x:0.3,z:0.24,face:'r'},{k:'goat',x:0.42,z:0.3,face:'r'}]}},
+   {art:'stars',music:'holy',text:'And it came to be, whenever the evil ruach from Aluahim was upon Sha’ul, that Dawiḏ would take a lyre and play it with his hand. Then Sha’ul would become refreshed and well and the evil ruach would leave him.',ref:'1 SHEMU’AL 16:23',stage:{set:'palace',time:'night',cam:'push',cast:[{id:'shaul_k',x:0.8,z:0.12,face:'l',pose:'enthroned'},{id:'dawid',x:0.58,z:0.12,face:'r',pose:'sit',hold:'lyre'}]}},
   ],
   complete:'Then Sha’ul would become refreshed and well and the evil ruach would leave him.'
 },
@@ -6719,10 +6762,10 @@ STORY.push(
 { id:'s11', title:'The Valley of Ĕlah', ref:'1 SHEMU’AL 17',
   intro:[
    {art:'wasteland',music:'tense',text:'And the Philistines had gathered their armies for battle and came together at Soḵoh, which belongs to Yahuḏah and encamped between Soḵoh and Azĕqah, in Ephes Dammim. And Sha’ul and the men of Yasharal were gathered and encamped in the Valley of Alah and drew up in battle array to meet the Philistines.',ref:'1 SHEMU’AL 17:1–2',stage:{set:'valley',time:'day',cam:'push',focus:0.55,props:[{k:'tent',x:0.92,z:0.95,color:'#3f5f7a'},{k:'tent',x:0.08,z:0.95}],crowd:[{kind:'army',side:'yasharal',n:8,x:0.24,w:0.3,z:0.52,face:'r',from:'stand',pose:'weep',at:7},{kind:'army',side:'pelishtim',n:8,x:0.8,w:0.26,z:0.68,face:'l',at:1}],cast:[{id:'shaul_k',x:0.14,z:0.14,face:'r',hold:'spear',acts:[{at:7,pose:'weep'}]},{id:'golyath',enter:'r',at:2,to:0.64,z:0.24,face:'l',hold:'spear',hold2:'shield',say:5,acts:[{at:4,pose:'point'},{at:6,pose:'stand'}]}]}},
-   {art:'wasteland',music:'tense',text:'And the Philistines stood on a mountain on one side and Yasharal stood on a mountain on the other side, with the valley between them.',ref:'1 SHEMU’AL 17:3',stage:{set:'valley',time:'day',cam:'push',focus:0.55,props:[{k:'tent',x:0.92,z:0.95,color:'#3f5f7a'},{k:'tent',x:0.08,z:0.95}],crowd:[{kind:'army',side:'yasharal',n:8,x:0.24,w:0.3,z:0.52,face:'r',from:'stand',pose:'weep',at:7},{kind:'army',side:'pelishtim',n:8,x:0.8,w:0.26,z:0.68,face:'l',at:1}],cast:[{id:'shaul_k',x:0.14,z:0.14,face:'r',hold:'spear',acts:[{at:7,pose:'weep'}]},{id:'golyath',enter:'r',at:2,to:0.64,z:0.24,face:'l',hold:'spear',hold2:'shield',say:5,acts:[{at:4,pose:'point'},{at:6,pose:'stand'}]}]}},
+   {art:'wasteland',music:'tense',text:'And the Philistines stood on a mountain on one side and Yasharal stood on a mountain on the other side, with the valley between them.',ref:'1 SHEMU’AL 17:3',stage:{set:'valley',time:'day',cam:'push',focus:0.55,props:[{k:'tent',x:0.92,z:0.95,color:'#3f5f7a'},{k:'tent',x:0.08,z:0.95}],crowd:[{kind:'army',side:'yasharal',n:8,x:0.22,w:0.22,z:0.6,face:'r',dy:-0.09},{kind:'army',side:'pelishtim',n:8,x:0.8,w:0.22,z:0.66,face:'l',dy:-0.09}],cast:[{id:'shaul_k',x:0.14,z:0.3,face:'r',hold:'spear',dy:-0.08}]}},
   ],
   scene:{
-   map:{biome:'rocky',w:48,h:32,seed:1211,features:[{type:'rock',x:14,y:14,solid:true,clear:1},{type:'rock',x:34,y:15,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
+   map:{biome:'rocky',w:48,h:32,seed:1211,features:[{type:'rock',x:14,y:14,solid:true,clear:1},{type:'rock',x:34,y:15,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3},{type:'tent',x:9,y:25.5,solid:true,clear:2},{type:'tent',x:39,y:9.5,solid:true,clear:2}]},
    time:'day',
    music:'tense',
    player:'dawid',
@@ -6731,6 +6774,14 @@ STORY.push(
      {id:'eliav',char:'eliav',x:20,y:23,wander:false},
      {id:'shaul_k',char:'shaul_k',x:16,y:22,wander:false},
      {id:'golyath',char:'golyath',x:30,y:14,wander:false,noTalk:true,scale:1.7},
+     {id:'ys1',char:'hebrew',x:13,y:21.6,wander:false,noTalk:true,hold:'spear'},
+     {id:'ys2',char:'hebrew2',x:13.6,y:24,wander:false,noTalk:true,hold:'spear'},
+     {id:'ys3',char:'hebrew',x:16,y:25.6,wander:false,noTalk:true,hold:'spear'},
+     {id:'ys4',char:'hebrew2',x:21.6,y:25.6,wander:false,noTalk:true,hold:'spear'},
+     {id:'pl1',char:'pelishti',x:33.4,y:11.8,wander:false,noTalk:true},
+     {id:'pl2',char:'pelishti',x:35.4,y:13.6,wander:false,noTalk:true},
+     {id:'pl3',char:'pelishti',x:33.6,y:16,wander:false,noTalk:true},
+     {id:'pl4',char:'pelishti',x:36.8,y:11.4,wander:false,noTalk:true},
    ],
    onResume:[
      {sfx:'holy'},
@@ -6801,8 +6852,8 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'rest',music:'holy',text:'And when Sha’ul saw Dawiḏ going out against the Philistine, he said to Aḇnĕr, the commander of the army, “Aḇnĕr, whose son is this youth?” And Aḇnĕr said, “As your being lives, O sovereign, I do not know.” And the sovereign said, “Ask whose son this young man is.”',ref:'1 SHEMU’AL 17:55–56',stage:{set:'valley',time:'dusk',cam:'push',cast:[{id:'dawid',x:0.3,z:0.12,face:'r',pose:'raise',say:0,hold:'sling',acts:[{at:1,pose:'stand'}]},{id:'golyath',x:0.66,z:0.16,face:'l',pose:'stand',hold:'spear',hold2:'shield',acts:[{at:1,pose:'dead'}]},{id:'shaul_k',x:0.12,z:0.24,face:'r',at:1},{id:'shaul',x:0.82,z:0.12,face:'l',pose:'speak'}],crowd:[{kind:'women',n:7,x:0.62,w:0.46,z:0.56,face:'l',enter:'r',at:1,pose:'dance',hold:'harp'}]},who:['shaul',{kind:'man',key:'abner'},'shaul']},
-   {art:'rest',music:'holy',text:'And when Dawiḏ returned from the slaughter of the Philistine, Aḇnĕr took him and brought him before Sha’ul with the head of the Philistine in his hand. And Sha’ul said to him, “Whose son are you, young man?” And Dawiḏ said, “The son of your servant Yahshai the Bĕyth Leḥemite.”',ref:'1 SHEMU’AL 17:57–58',stage:{set:'valley',time:'dusk',cam:'push',cast:[{id:'dawid',x:0.3,z:0.12,face:'r',pose:'raise',say:0,hold:'sling',acts:[{at:1,pose:'stand'}]},{id:'golyath',x:0.66,z:0.16,face:'l',pose:'stand',hold:'spear',hold2:'shield',acts:[{at:1,pose:'dead'}]},{id:'shaul_k',x:0.12,z:0.24,face:'r',at:1},{id:'shaul',x:0.82,z:0.12,face:'l',pose:'speak'}],crowd:[{kind:'women',n:7,x:0.62,w:0.46,z:0.56,face:'l',enter:'r',at:1,pose:'dance',hold:'harp'}]}},
+   {art:'rest',music:'holy',text:'And when Sha’ul saw Dawiḏ going out against the Philistine, he said to Aḇnĕr, the commander of the army, “Aḇnĕr, whose son is this youth?” And Aḇnĕr said, “As your being lives, O sovereign, I do not know.” And the sovereign said, “Ask whose son this young man is.”',ref:'1 SHEMU’AL 17:55–56',stage:{set:'valley',time:'dusk',cam:'push',cast:[{id:'shaul_k',x:0.14,z:0.16,face:'r',pose:'speak',say:0},{id:'abner',look:{name:'Aḇnĕr',skin:'#704a27',hair:'#2c1a0c',robe:'#5d6e7e',beard:'#2c1a0c',collar:'#9a9a9a'},x:0.27,z:0.2,face:'l',pose:'speak',hold:'spear',say:1},{id:'dawid',x:0.54,z:0.14,face:'r',pose:'walk',hold:'sling'},{id:'golyath',x:0.82,z:0.2,face:'l',pose:'stand',hold:'spear',hold2:'shield'}]},who:['shaul',{kind:'man',key:'abner'},'shaul']},
+   {art:'rest',music:'holy',text:'And when Dawiḏ returned from the slaughter of the Philistine, Aḇnĕr took him and brought him before Sha’ul with the head of the Philistine in his hand. And Sha’ul said to him, “Whose son are you, young man?” And Dawiḏ said, “The son of your servant Yahshai the Bĕyth Leḥemite.”',ref:'1 SHEMU’AL 17:57–58',stage:{set:'valley',time:'dusk',cam:'push',cast:[{id:'shaul_k',x:0.2,z:0.14,face:'r',pose:'speak'},{id:'dawid',x:0.38,z:0.12,face:'l',pose:'hold',hold:'sword'},{id:'abner',look:{name:'Aḇnĕr',skin:'#704a27',hair:'#2c1a0c',robe:'#5d6e7e',beard:'#2c1a0c',collar:'#9a9a9a'},x:0.53,z:0.14,face:'l',pose:'stand',hold:'spear'},{id:'golyath',x:0.82,z:0.4,face:'l',pose:'dead'}]}},
   ],
   complete:'And Sha’ul said to him, “Whose son are you, young man?” And Dawiḏ said, “The son of your servant Yahshai the Bĕyth Leḥemite.”'
 },
@@ -6810,7 +6861,7 @@ STORY.push(
 { id:'s12', title:'The Spear and the Window', ref:'1 SHEMU’AL 18:1–19:17',
   intro:[
    {art:'throne',music:'tense',text:'And it came to be, when he had ended speaking to Sha’ul, that the being of Yahhonathan was knit to the being of Dawiḏ and Yahhonathan loved him as his own being. And Sha’ul took him that day and would not let him return to his father’s house any more. And Yahhonathan and Dawiḏ made a berith, because he loved him as his own being.',ref:'1 SHEMU’AL 18:1–3',stage:{set:'palace',time:'day',cam:'push',fx:[{k:'darkness',at:6,amt:0.35}],cast:[{id:'dawid',x:0.32,z:0.12,face:'r',pose:'stand',hold:'lyre',acts:[{at:3,pose:'carry'},{at:4,pose:'stand'},{at:6,pose:'hold'}]},{id:'yonathan',x:0.52,z:0.12,face:'l',pose:'stand',say:1,hold:'sword',hold2:'bow',acts:[{at:2,pose:'carry'},{at:3,pose:'hold'},{at:5,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.14,face:'l',pose:'enthroned',hold:'spear',acts:[{at:4,pose:'stand'},{at:5,pose:'hold'},{at:6,pose:'raise'},{at:7,pose:'fight'}]}],crowd:[{kind:'guards',side:'yasharal',n:3,x:0.6,w:0.18,z:0.62,face:'l'}]}},
-   {art:'throne',music:'tense',text:'And Yahhonathan took off the robe that was on him and gave it to Dawiḏ and his garments, even to his sword and his bow and his girdle. And Dawiḏ went out wherever Sha’ul sent him. He acted wisely and Sha’ul set him over the men of battle and it was right in the eyes of all the people and also in the eyes of Sha’ul’s servants.',ref:'1 SHEMU’AL 18:4–5',stage:{set:'palace',time:'day',cam:'push',fx:[{k:'darkness',at:6,amt:0.35}],cast:[{id:'dawid',x:0.32,z:0.12,face:'r',pose:'stand',hold:'lyre',acts:[{at:3,pose:'carry'},{at:4,pose:'stand'},{at:6,pose:'hold'}]},{id:'yonathan',x:0.52,z:0.12,face:'l',pose:'stand',say:1,hold:'sword',hold2:'bow',acts:[{at:2,pose:'carry'},{at:3,pose:'hold'},{at:5,exit:'l'}]},{id:'shaul_k',x:0.8,z:0.14,face:'l',pose:'enthroned',hold:'spear',acts:[{at:4,pose:'stand'},{at:5,pose:'hold'},{at:6,pose:'raise'},{at:7,pose:'fight'}]}],crowd:[{kind:'guards',side:'yasharal',n:3,x:0.6,w:0.18,z:0.62,face:'l'}]}},
+   {art:'throne',music:'tense',text:'And Yahhonathan took off the robe that was on him and gave it to Dawiḏ and his garments, even to his sword and his bow and his girdle. And Dawiḏ went out wherever Sha’ul sent him. He acted wisely and Sha’ul set him over the men of battle and it was right in the eyes of all the people and also in the eyes of Sha’ul’s servants.',ref:'1 SHEMU’AL 18:4–5',stage:{set:'palace',time:'day',cam:'push',fx:[{k:'darkness',at:6,amt:0.35}],cast:[{id:'dawid',x:0.34,z:0.12,face:'r',pose:'hold'},{id:'yonathan',x:0.5,z:0.12,face:'l',pose:'hold',say:1,hold:'sword',hold2:'bow'},{id:'shaul_k',x:0.8,z:0.14,face:'l',pose:'enthroned',hold:'spear',acts:[{at:4,pose:'stand'},{at:5,pose:'hold'},{at:6,pose:'raise'},{at:7,pose:'fight'}]}],crowd:[{kind:'guards',side:'yasharal',n:3,x:0.6,w:0.18,z:0.62,face:'l'}]}},
   ],
   scene:{
    map:{biome:'interior',w:30,h:20,seed:1212,floorCol:'#2a2216',wallCol:'#1a150c',features:[{type:'throne',x:8,y:8,solid:true,clear:1,id:'throne',frame:'#9a7638',seat:'#5a6a3a',trim:'#6a5228',crown:'#b89040'},{type:'banner',col:'#4a5236',trim:'#8a6a3c',emblem:'#b89040',x:8,y:3},{type:'firepit',x:22,y:8,lit:true}]},
@@ -6909,17 +6960,19 @@ STORY.push(
 
 { id:'sh19', title:'The Berith of Yonathan', ref:'1 SHEMU’AL 19:18–20:42',
   intro:[
-   {art:'field',music:'holy',text:'Now Dawiḏ fled and escaped and went to Shamu\'Al at Ramah and told him all that Sha’ul had done to him. And he and Shamu\'Al went and dwelt in Nawith.',ref:'1 SHEMU’AL 19:18',stage:{set:'field',cam:'push',focus:0.5,time:'day',cast:[{id:'dawid',x:0.3,z:0.1,face:'r',pose:'stand'},{id:'yonathan',x:0.56,z:0.12,face:'l',pose:'speak'}]}},
+   {art:'field',music:'holy',text:'Now Dawiḏ fled and escaped and went to Shamu\'Al at Ramah and told him all that Sha’ul had done to him. And he and Shamu\'Al went and dwelt in Nawith.',ref:'1 SHEMU’AL 19:18',stage:{set:'city',cam:'push',focus:0.5,time:'day',cast:[{id:'dawid',x:0.32,z:0.1,face:'r',pose:'speak'},{id:'shamuel_o',x:0.56,z:0.12,face:'l',pose:'stand'}]}},
   ],
   scene:{
-   map:{biome:'plains',w:46,h:28,seed:9104,features:[{type:'wheat',x:14,y:10},{type:'wheat',x:30,y:10},{type:'sheaf',x:24,y:12},{type:'clearing',x:22,y:17,flat:3}]},
+   map:{biome:'plains',w:46,h:28,seed:9104,features:[{type:'wheat',x:14,y:10},{type:'wheat',x:30,y:10},{type:'sheaf',x:24,y:12},{type:'clearing',x:22,y:17,flat:3},{type:'stone',x:34.6,y:13,clear:1}]},
    time:'day',
    music:'holy',
    player:'dawid',
    playerPos:[22,19],
-   npcs:[{id:'yonathan',char:'yonathan',x:26,y:16,wander:false}],
+   npcs:[
+     {id:'yonathan',char:'yonathan',x:26,y:16,wander:false},
+   ],
    objectives:[
-     {type:'goto',text:'And it was reported to Sha’ul',x:14,y:15,radius:1.8,script:[
+     {type:'goto',text:'And it was reported to Sha’ul',x:14,y:15,radius:1.8, script:[
        {say:['narrator','And it was reported to Sha’ul, saying, “See, Dawiḏ is in Nawith in Ramah!” And Sha’ul sent mal\'akim to take Dawiḏ. And they saw the qahal of the naḇi\'im prophesying and Shamu\'Al standing as leader over them and the Ruach of Aluahim came upon the mal\'akim of Sha’ul and they also prophesied.']},
        {say:['narrator','And when Sha’ul was told, he sent other mal\'akim and they prophesied likewise. So Sha’ul sent mal\'akim again, the third time, and they prophesied also. Then he himself went to Ramah and came to the great well that is at Seḵu. And he asked and said,']},
        {say:['shaul','Where are Shamu\'Al and Dawiḏ?']},
@@ -6935,7 +6988,7 @@ STORY.push(
        {say:['narrator','And Dawiḏ said to Yahhonathan,']},
        {say:['dawid','See, tomorrow is the New Moon and I ought to sit with the sovereign to eat. But let me go and I shall hide in the field until the third day at evening.']},
      ]},
-     {type:'talk',text:'If your father misses me at all',npc:'yonathan',hiddenUntil:1,script:[
+     {type:'talk',text:'If your father misses me at all',npc:'yonathan',hiddenUntil:1, script:[
        {say:['dawid','If your father misses me at all, then you shall say, ‘Dawiḏ earnestly asked my permission to run over to Bĕyth Leḥem, his city, for a yearly slaughtering is made there for all the clan.’']},
        {say:['dawid','If he says thus, ‘It is well,’ your servant is safe. But if he is very displeased, then know that he has resolved to do evil.']},
        {say:['dawid','And you shall show kindness to your servant, for you have brought your servant into a berith of YAHUAH with you. And if there is crookedness in me, put me to death yourself, for why should you bring me to your Father?']},
@@ -6953,7 +7006,7 @@ STORY.push(
        {say:['yonathan','YAHUAH shall require it at the hand of the enemies of Dawiḏ.']},
        {say:['narrator','And Yahhonathan again made Dawiḏ swear, because he loved him, for he loved him as he loved his own being.']},
      ]},
-     {type:'goto',text:'So Yahhonathan said to him',x:32,y:15,radius:1.8,hiddenUntil:2,script:[
+     {type:'goto',text:'So Yahhonathan said to him',x:32,y:15,radius:1.8,hiddenUntil:2, script:[
        {say:['narrator','So Yahhonathan said to him,']},
        {say:['yonathan','Tomorrow is the New Moon and you shall be missed, because your seat shall be empty. And on the third day, go down quickly and you shall come to the place where you hid on the day of the deed and shall remain by the stone Ĕtsal.']},
        {say:['yonathan','And let me shoot three arrows to the side of it as though shooting at a target,']},
@@ -6968,7 +7021,7 @@ STORY.push(
        {say:['yonathan','Dawiḏ earnestly asked my permission to go to Bĕyth Leḥem.']},
        {say:['yonathan','And he said, ‘Please let me go, for our clan has a slaughtering in the city and my brother has commanded me to be there. And now, if I have found chen in your eyes, please let me get away and see my brothers.’ That is why he has not come to the sovereign’s table.']},
      ]},
-     {type:'goto',text:'Then the displeasure of Sha’ul burned against Yahhonathan…',x:22,y:24,radius:1.8,hiddenUntil:3,script:[
+     {type:'goto',text:'Then the displeasure of Sha’ul burned against Yahhonathan…',x:22,y:24,radius:1.8,hiddenUntil:3, script:[
        {say:['narrator','Then the displeasure of Sha’ul burned against Yahhonathan and he said to him,']},
        {say:['shaul','You son of a perverse, rebellious woman! Do I not know that you have chosen the son of Yahshai to your own shame and to the shame of your mother’s nakedness?']},
        {say:['shaul','For as long as the son of Yahshai lives on the earth, you shall not be established, you and your reign. And now, send and bring him to me, for he is a son of death.']},
@@ -7003,13 +7056,13 @@ STORY.push(
    {art:'wilderness',music:'tense',text:'And Dawiḏ came to Noḇ, to Aḥimeleḵ the kohen. And Aḥimeleḵ trembled when he met Dawiḏ and asked him, “Why are you alone and no one is with you?”',ref:'1 SHEMU’AL 21:1',stage:{set:'court',time:'day',cam:'push',props:[{k:'table',x:0.68,z:0.4},{k:'lampstand',x:0.8,z:0.52}],cast:[{id:'dawid',enter:'l',at:0,to:0.3,face:'r',pose:'stand'},{id:'achimelech',x:0.52,z:0.14,face:'l',pose:'speak',hold:'bread',hold2:'sword',say:4,acts:[{at:1,pose:'hold'},{at:4,pose:'point'},{at:5,pose:'carry'}]},{id:'doeg',x:0.86,z:0.3,face:'l',at:2,hold:'staff',pose:'stand'}],crowd:[{kind:'kohanim',n:4,x:0.64,w:0.16,z:0.68,face:'l'}]}},
   ],
   scene:{
-   map:{biome:'wild',w:46,h:30,seed:1213,features:[{type:'altar',x:24,y:12,stage:2,solid:true,clear:2,id:'shrine'},{type:'clearing',x:24,y:20,flat:3},{type:'rock',x:34,y:16,solid:true,clear:1}]},
+   map:{biome:'wild',w:46,h:30,seed:1213,features:[{type:'altar',x:24,y:12,stage:2,solid:true,clear:2,id:'shrine'},{type:'clearing',x:24,y:20,flat:3},{type:'rock',x:34,y:16,solid:true,clear:1},{type:'house',x:12.5,y:11,solid:true,clear:3},{type:'house',x:35,y:10.5,solid:true,clear:3},{type:'house',x:11,y:20,solid:true,clear:3},{type:'shewtable',x:26.6,y:12.6,clear:1},{type:'clearing',x:20.4,y:13.2,clear:1}]},
    time:'day',
    music:'tense',
    player:'dawid',
    playerPos:[20,22],
    npcs:[
-     {id:'achimelech',char:'achimelech',x:23,y:13,wander:false},
+     {id:'achimelech',char:'achimelech',x:22.4,y:13.8,wander:false},
      {id:'doeg',char:'doeg',x:34,y:17,wander:false,noTalk:true},
    ],
    objectives:[
@@ -7074,17 +7127,17 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland',music:'sorrow',text:'“Remain with me, do not fear. For he who seeks my life seeks your life, but with me you are safe.”',ref:'1 SHEMU’AL 22:23',stage:{set:'city',time:'dusk',cam:'push',wx:'embers',wxAt:3,fx:[{k:'darkness',at:2,amt:0.25},{k:'red',at:3,amt:0.25},{k:'smoke',x:0.2,at:3},{k:'smoke',x:0.62,at:3}],cast:[{id:'shaul_k',x:0.84,z:0.14,face:'l',pose:'point',say:0,hold:'spear'},{id:'doeg',x:0.64,z:0.14,face:'r',pose:'stand',hold:'sword',acts:[{at:2,to:0.44,pose:'strike'}]},{id:'achimelech',x:0.3,z:0.14,face:'r',pose:'kneel',acts:[{at:2,pose:'dead'}]},{id:'dawid',x:0.72,z:0.12,face:'l',pose:'speak'}],crowd:[{kind:'kohanim',n:7,x:0.24,w:0.3,z:0.48,face:'r',from:'stand',pose:'dead',at:2},{kind:'guards',side:'yasharal',n:4,x:0.72,w:0.16,z:0.58,face:'l',from:'stand',pose:'kneel',at:1}]}},
+   {art:'wasteland',music:'sorrow',text:'“Remain with me, do not fear. For he who seeks my life seeks your life, but with me you are safe.”',ref:'1 SHEMU’AL 22:23',stage:{set:'cave',time:'dusk',cam:'push',wxAt:3,cast:[{id:'dawid',x:0.42,z:0.12,face:'r',pose:'speak',say:0},{id:'evyathar',look:{name:'Eḇyathar the Kohen',skin:'#6b4828',hair:'#2c1a0c',robe:'#ece6d6',beard:'#2c1a0c',headcover:'#f4f0e4',collar:'#caa23c'},x:0.6,z:0.14,face:'l',pose:'kneel'},{id:'dawidsman',look:{name:'One of Dawiḏ’s Men',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.24,z:0.2,face:'r',pose:'stand',hold:'spear'}],crowd:[{kind:'soldiers',side:'yasharal',n:3,x:0.12,w:0.08,z:0.45,face:'r'}]}},
   ],
   complete:'For he who seeks my life seeks your life, but with me you are safe.”'
 },
 
 { id:'s13b', title:'Qe‛ilah, and the Wilderness of Ziph', ref:'1 SHEMU’AL 23',
   intro:[
-   {art:'wilderness',music:'tense',text:'And they informed Dawiḏ, saying, “See, the Philistines are fighting against Qe‛ilah and they are plundering the threshing-floors.”',ref:'1 SHEMU’AL 23:1',stage:{set:'wilderness',time:'day',cam:'push',props:[{k:'tree',x:0.06,z:0.5},{k:'tree',x:0.94,z:0.45}],fx:[{k:'smoke',x:0.86},{k:'glory',x:0.46,y:0.08,at:2},{k:'rays',x:0.38,at:5}],cast:[{id:'messenger',look:{name:'A Messenger',skin:'#7a4e29',hair:'#2c1a0c',robe:'#8a7048',short:1},enter:'r',at:0,to:0.7,run:1,face:'l',say:0,acts:[{at:1,exit:'r'}]},{id:'dawid',x:0.38,z:0.12,face:'r',pose:'stand',hold:'sword',acts:[{at:1,pose:'pray'},{at:3,pose:'stand',face:'l'},{at:4,pose:'pray',face:'r'},{at:5,pose:'raise'}]},{id:'dawidsman',look:{name:'One of Dawiḏ’s Men',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.2,z:0.18,face:'r',pose:'stand',hold:'spear',say:3,acts:[{at:3,pose:'bless'}]}],crowd:[{kind:'soldiers',side:'yasharal',n:6,x:0.2,w:0.24,z:0.52,face:'r',from:'stand',pose:'raise',at:5}]}},
+   {art:'wilderness',music:'tense',text:'And they informed Dawiḏ, saying, “See, the Philistines are fighting against Qe‛ilah and they are plundering the threshing-floors.”',ref:'1 SHEMU’AL 23:1',stage:{set:'wilderness',time:'day',cam:'push',props:[{k:'tree',x:0.06,z:0.5},{k:'tree',x:0.94,z:0.45}],fx:[{k:'smoke',x:0.86}],cast:[{id:'messenger',look:{name:'A Messenger',skin:'#7a4e29',hair:'#2c1a0c',robe:'#8a7048',short:1},face:'l',say:0,x:0.62,z:0.12,pose:'speak'},{id:'dawid',x:0.38,z:0.12,face:'r',pose:'stand'},{id:'dawidsman',look:{name:'One of Dawiḏ’s Men',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.2,z:0.18,face:'r',pose:'stand',hold:'spear'}],crowd:[{kind:'soldiers',side:'yasharal',n:6,x:0.18,w:0.22,z:0.52,face:'r'}]}},
   ],
   scene:{
-   map:{biome:'rocky',w:46,h:30,seed:1219,features:[{type:'rock',x:14,y:14,solid:true,clear:1},{type:'rock',x:34,y:13,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
+   map:{biome:'rocky',w:46,h:30,seed:1219,features:[{type:'rock',x:14,y:14,solid:true,clear:1},{type:'rock',x:34,y:13,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3},{type:'house',x:26,y:10.5,solid:true,clear:3},{type:'house',x:33,y:10.5,solid:true,clear:3},{type:'house',x:39,y:15,solid:true,clear:3}]},
    time:'day',
    music:'tense',
    player:'dawid',
@@ -7145,28 +7198,28 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'mountain',music:'holy',text:'And Dawiḏ went up from there and remained in strongholds at Ĕn Geḏi.',ref:'1 SHEMU’AL 23:29',stage:{set:'wilderness',time:'dusk',cam:'push',props:[{k:'tree',x:0.1,z:0.35,h:130},{k:'tree',x:0.24,z:0.62},{k:'tree',x:0.8,z:0.58},{k:'tree',x:0.93,z:0.32,h:140}],fx:[{k:'rays',x:0.46,at:2}],cast:[{id:'dawid',x:0.44,z:0.12,face:'r',pose:'sitground',acts:[{at:1,pose:'stand'},{at:2,pose:'kneel'},{at:3,pose:'sitground'}]},{id:'yonathan',enter:'r',at:0,to:0.66,face:'l',say:0,hold:'sword',acts:[{at:2,pose:'kneel'},{at:3,exit:'r'}]}]}},
+   {art:'mountain',music:'holy',text:'And Dawiḏ went up from there and remained in strongholds at Ĕn Geḏi.',ref:'1 SHEMU’AL 23:29',stage:{set:'mountain',time:'dusk',cam:'push',props:[{k:'cavemouth',x:0.72,z:0.5},{k:'rock',x:0.14,z:0.4,w:60,h:34}],cast:[{id:'dawid',x:0.44,z:0.12,face:'r',pose:'sitground'},{id:'dawidsman',look:{name:'One of Dawiḏ’s Men',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.28,z:0.18,face:'r',pose:'sitground',hold:'spear'}]}},
   ],
   complete:'And Dawiḏ went up from there and remained in strongholds at Ĕn Geḏi.'
 },
 
 { id:'s14', title:'I Will Not Stretch Out My Hand', ref:'1 SHEMU’AL 24–26',
   intro:[
-   {art:'mountain',music:'tense',text:'And it came to be, when Sha’ul had returned from pursuing the Philistines, that it was reported to him, saying, “See, Dawiḏ is in the Wilderness of Ĕn Geḏi.”',ref:'1 SHEMU’AL 24:1',stage:{set:'cave',time:'day',cam:'push',focus:0.45,props:[{k:'sheep',x:0.7,z:0.84,n:4,at:1,w:50}],crowd:[{kind:'soldiers',side:'yasharal',n:6,x:0.82,w:0.14,z:0.9,face:'l'},{kind:'soldiers',side:'yasharal',n:4,x:0.12,w:0.12,z:0.42,face:'r',pose:'sitground',at:3,hold:'sword'}],cast:[{id:'shaul_k',enter:'r',at:2,to:0.66,face:'l',hold:'spear',turn:[3,'r']},{id:'dawid',x:0.28,z:0.2,face:'r',pose:'kneel',at:3,hold:'sword'}]},who:[{kind:'man',key:'man'}]},
+   {art:'mountain',music:'tense',text:'And it came to be, when Sha’ul had returned from pursuing the Philistines, that it was reported to him, saying, “See, Dawiḏ is in the Wilderness of Ĕn Geḏi.”',ref:'1 SHEMU’AL 24:1',stage:{set:'camp',time:'day',cam:'push',focus:0.45,crowd:[{kind:'soldiers',side:'yasharal',n:6,x:0.16,w:0.18,z:0.5,face:'r'}],cast:[{id:'shaul_k',x:0.36,z:0.12,face:'r',pose:'stand',hold:'spear'},{id:'messenger',look:{name:'A Messenger',skin:'#7a4e29',hair:'#2c1a0c',robe:'#8a7048',short:1},x:0.56,z:0.12,face:'l',pose:'speak',say:0}]},who:[{kind:'man',key:'man'}]},
   ],
   scene:{
-   map:{biome:'rocky',w:46,h:30,seed:1214,features:[{type:'rock',x:20,y:10,solid:true,clear:1},{type:'rock',x:14,y:15,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
+   map:{biome:'rocky',w:46,h:30,seed:1214,features:[{type:'rock',x:20,y:10,solid:true,clear:1},{type:'rock',x:14,y:15,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3},{type:'cave',x:14,y:11.5,solid:true,clear:5.2,flat:4,id:'cave_engedi'}]},
    time:'day',
    music:'tense',
    player:'dawid',
    playerPos:[24,22],
    playerHold:'sword',
    npcs:[
-     {id:'shaul_k',char:'shaul_k',x:24,y:12,wander:false,hidden:true},
+     {id:'shaul_k',char:'shaul_k',x:14,y:10.3,wander:false,hidden:true},
      {id:'avigail',char:'avigail',x:14,y:22,wander:false,hidden:true},
    ],
    objectives:[
-     {type:'goto',x:24,y:14,radius:2.2,text:'Creep up in the dark — and cut only the corner of his robe', script:[
+     {type:'goto',x:14,y:10.8,radius:1.8,text:'Creep up in the dark — and cut only the corner of his robe', script:[
        {show:'shaul_k'},
        {say:['narrator','So Sha’ul took three thousand chosen men from all Yasharal and went to seek Dawiḏ and his men on the Rocks of the Wild Goats. And he came to the sheepfolds, on the way and there was a cave. And Sha’ul went in to relieve himself. Now Dawiḏ and his men were sitting in the sides of the cave.']},
        {say:['narrator','Dawiḏ’s men said to him, “See, the day of which YAHUAH said to you, ‘See, I am giving your enemy into your hand and you shall do to him as it seems good to you!’ ” And Dawiḏ arose and gently cut off a corner of Sha’ul’s robe.']},
@@ -7305,10 +7358,10 @@ STORY.push(
 
 { id:'s14b', title:'Among the Pelishtim', ref:'1 SHEMU’AL 27:1–28:2',
   intro:[
-   {art:'journey',music:'sorrow',text:'And Dawiḏ said in his heart, “Now I shall perish by the hand of Sha’ul, some day. There is naught better for me than to escape to the land of the Philistines. Then Sha’ul shall give up searching for me any longer in any part of Yasharal and I shall escape out of his hand.”',ref:'1 SHEMU’AL 27:1',stage:{set:'gate',time:'day',cam:'push',cast:[{id:'dawid',x:0.2,z:0.12,face:'r',pose:'sitground',hold:'sword',acts:[{at:2,to:0.5,pose:'bow'}]},{id:'achish',x:0.72,z:0.14,face:'l',at:2,pose:'bless'},{id:'shaul_k',x:0.08,z:0.78,face:'l',at:3},{id:'dawid_k',x:0.82,z:0.12,face:'l',pose:'speak'}],crowd:[{kind:'soldiers',side:'yasharal',n:8,x:0.3,w:0.32,z:0.52,face:'r',enter:'l',at:2},{kind:'soldiers',side:'pelishtim',n:3,x:0.86,w:0.1,z:0.46,face:'l',at:2}]}},
+   {art:'journey',music:'sorrow',text:'And Dawiḏ said in his heart, “Now I shall perish by the hand of Sha’ul, some day. There is naught better for me than to escape to the land of the Philistines. Then Sha’ul shall give up searching for me any longer in any part of Yasharal and I shall escape out of his hand.”',ref:'1 SHEMU’AL 27:1',stage:{set:'wilderness',time:'dusk',cam:'push',cast:[{id:'dawid',x:0.46,z:0.12,face:'r',pose:'sitground'}],crowd:[{kind:'soldiers',side:'yasharal',n:4,x:0.2,w:0.16,z:0.45,face:'r',pose:'sitground'}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:1220,features:[{type:'tower',x:24,y:9,stage:2,solid:true,clear:3,id:'gate'},{type:'clearing',x:24,y:19,flat:3},{type:'tent',x:14,y:17,solid:true,clear:1}]},
+   map:{biome:'city',w:44,h:28,seed:1220,features:[{type:'tower',x:24,y:9,stage:2,solid:true,clear:3,id:'gate'},{type:'clearing',x:24,y:19,flat:3},{type:'tent',x:14,y:17,solid:true,clear:1},{type:'house',x:13,y:11,solid:true,clear:3},{type:'house',x:33,y:11.5,solid:true,clear:3},{type:'house',x:35,y:19.5,solid:true,clear:3}]},
    time:'day',
    music:'sorrow',
    player:'dawid_k',
@@ -7352,10 +7405,10 @@ STORY.push(
 
 { id:'s15', title:'The Shade at Ĕn-Dor', ref:'1 SHEMU’AL 28:3–25',
   intro:[
-   {art:'stars',music:'sorrow',text:'And Shamu\'Al had died and all Yasharal had mourned for him and buried him in Ramah, in his own city. And Sha’ul had put away the mediums and the spiritists from the land.',ref:'1 SHEMU’AL 28:3',stage:{set:'night',cam:'push',props:[{k:'grave',x:0.12,z:0.55},{k:'tent',x:0.8,z:0.94,at:1,color:'#3f5f7a'},{k:'tent',x:0.94,z:0.96,at:1,color:'#3f5f7a'},{k:'fire',x:0.68,z:0.9,at:1}],fx:[{k:'darkness',at:3,amt:0.35}],crowd:[{kind:'mourners',n:5,x:0.26,w:0.22,z:0.62,face:'l',exit:'l',exitAt:1},{kind:'army',side:'pelishtim',n:8,x:0.8,w:0.3,z:0.82,face:'l',at:1}],cast:[{id:'shaul_k',x:0.46,z:0.12,face:'r',at:2,pose:'weep',say:4,hold:'spear',acts:[{at:3,pose:'pray'},{at:4,pose:'stand',face:'l'}]},{id:'saulservant',look:{name:'Servant of Sha’ul',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.24,z:0.18,face:'r',at:4}]}},
+   {art:'stars',music:'sorrow',text:'And Shamu\'Al had died and all Yasharal had mourned for him and buried him in Ramah, in his own city. And Sha’ul had put away the mediums and the spiritists from the land.',ref:'1 SHEMU’AL 28:3',stage:{set:'night',cam:'push',props:[{k:'grave',x:0.12,z:0.55}],fx:[{k:'darkness',amt:0.25}],crowd:[{kind:'mourners',n:5,x:0.3,w:0.18,z:0.5,face:'l',pose:'mourn'}],cast:[{id:'shaul_k',x:0.64,z:0.12,face:'r',pose:'point',hold:'spear'}]}},
   ],
   scene:{
-   map:{biome:'interior',w:28,h:18,seed:1215,floorCol:'#20180f',wallCol:'#140c06',features:[{type:'firepit',x:14,y:9,lit:true}]},
+   map:{biome:'interior',w:28,h:18,seed:1215,floorCol:'#20180f',wallCol:'#140c06',features:[{type:'firepit',x:14,y:9,lit:true},{type:'bed',x:8.6,y:8.4,clear:0},{type:'oven',x:20.6,y:7.6,clear:0}]},
    time:'night',
    music:'sorrow',
    player:'shaul_k',
@@ -7417,7 +7470,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars',music:'sorrow',text:'And she brought it before Sha’ul and his servants. And they ate and rose up and went away that night.',ref:'1 SHEMU’AL 28:25',stage:{set:'house',time:'night',cam:'close',focus:0.5,props:[{k:'crown',x:0.5,z:0.22,at:1}],fx:[{k:'darkness',amt:0.3},{k:'darkness',at:3,amt:0.25}],cast:[{id:'shamuel_g',x:0.68,z:0.2,face:'l',pose:'point',say:0,acts:[{at:1,pose:'speak'},{at:3,pose:'point'}]},{id:'shaul_k',x:0.36,z:0.12,face:'r',pose:'bow',acts:[{at:1,pose:'kneel'},{at:3,pose:'bow'}]},{id:'endorwoman',x:0.14,z:0.24,face:'r',pose:'kneel',acts:[{at:3,pose:'weep'}]}]}},
+   {art:'stars',music:'sorrow',text:'And she brought it before Sha’ul and his servants. And they ate and rose up and went away that night.',ref:'1 SHEMU’AL 28:25',stage:{set:'house',time:'night',cam:'close',focus:0.5,props:[{k:'table',x:0.43,z:0.16}],fx:[{k:'darkness',amt:0.3}],cast:[{id:'shaul_k',x:0.3,z:0.12,face:'r',pose:'sit'},{id:'saulservant',look:{name:'A Servant of Sha’ul',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.56,z:0.14,face:'l',pose:'sit'},{id:'saulservant2',look:{name:'A Servant of Sha’ul',skin:'#7a4e29',hair:'#2c1a0c',robe:'#7d6a52'},x:0.46,z:0.3,face:'l',pose:'sit'},{id:'endorwoman',x:0.74,z:0.16,face:'l',pose:'hold',hold:'bread'}]}},
   ],
   complete:'And they ate and rose up and went away that night.'
 },
@@ -7432,20 +7485,22 @@ STORY.push(
    music:'holy',
    player:'dawid',
    playerPos:[22,19],
-   npcs:[{id:'achish',char:'achish',x:26,y:16,wander:false}],
+   npcs:[
+     {id:'achish',char:'achish',x:26,y:16,wander:false},
+   ],
    objectives:[
-     {type:'goto',text:'And the princes of the Philistines said',x:14,y:15,radius:1.8,script:[
+     {type:'goto',text:'And the princes of the Philistines said',x:14,y:15,radius:1.8, script:[
        {say:['narrator','And the princes of the Philistines said, “Who are these Heḇrews?” And Aḵish said to the princes of the Philistines,']},
        {say:['achish','Is this not Dawiḏ, the servant of Sha’ul sovereign of Yasharal, who has been with me these days, or these years? And to this day I have found no evil in him since he came over.']},
        {say:['narrator','But the princes of the Philistines were wroth with him and the princes of the Philistines said to him, “Send the man back, let him return to the place which you have appointed for him and do not let him go down with us to battle, lest in the battle he become our adversary.']},
        {say:['narrator','For with what could he appease his master, if not with the heads of these men?']},
      ]},
-     {type:'talk',text:'Is this not Dawiḏ, of whom they sang…',npc:'achish',hiddenUntil:1,script:[
+     {type:'talk',text:'Is this not Dawiḏ, of whom they sang…',npc:'achish',hiddenUntil:1, script:[
        {say:['narrator','“Is this not Dawiḏ, of whom they sang to each other in dances, saying, ‘Sha’ul smote his thousands and Dawiḏ his ten thousands’?” And Aḵish called Dawiḏ and said to him,']},
        {say:['achish','As YAHUAH lives, you have been straight and your going out and your coming in with me in the army is good in my eyes. For to this day I have not found evil in you since the day of your coming to me. But in the eyes of the princes you are not good.']},
        {say:['achish','And now, return and go in shalom and do no evil in the eyes of the princes of the Philistines.']},
      ]},
-     {type:'goto',text:'And Dawiḏ said to Aḵish, But what have I done?',x:22,y:24,radius:1.8,hiddenUntil:2,script:[
+     {type:'goto',text:'And Dawiḏ said to Aḵish, But what have I done?',x:22,y:24,radius:1.8,hiddenUntil:2, script:[
        {say:['narrator','And Dawiḏ said to Aḵish,']},
        {say:['dawid','But what have I done? And to this day what have you found in your servant as long as I have been with you, that I should not go and fight against the enemies of my master the sovereign?']},
        {say:['narrator','But Aḵish answered and said to Dawiḏ,']},
@@ -7455,17 +7510,17 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'field',music:'holy',text:'And Dawiḏ and his men rose up early to go in the morning, to return to the land of the Philistines and the Philistines went up to Yahzre‛Al.',ref:'1 SHEMU’AL 29:11',stage:{set:'camp',cam:'push',focus:0.5,time:'day',cast:[{id:'dawid',x:0.3,z:0.1,face:'r',pose:'stand'},{id:'achish',x:0.58,z:0.12,face:'l',pose:'speak'}],crowd:[{kind:'army',n:6,x:0.78,w:0.3,z:0.6,face:'l'}]}},
+   {art:'field',music:'holy',text:'And Dawiḏ and his men rose up early to go in the morning, to return to the land of the Philistines and the Philistines went up to Yahzre‛Al.',ref:'1 SHEMU’AL 29:11',stage:{set:'camp',cam:'push',focus:0.5,time:'dawn',cast:[{id:'dawid',x:0.3,z:0.1,face:'l',pose:'walk'}],crowd:[{kind:'soldiers',side:'yasharal',n:4,x:0.14,w:0.1,z:0.4,face:'l',pose:'walk'},{kind:'army',side:'pelishtim',n:6,x:0.74,w:0.26,z:0.6,face:'r',pose:'walk'}]}},
   ],
   complete:'And Dawiḏ and his men rose up early to go in the morning, to return to the land of the Philistines and the Philistines went up to Yahzre‛Al.'
 },
 
 { id:'s16', title:'Gilboa', ref:'1 SHEMU’AL 30–31',
   intro:[
-   {art:'wasteland',music:'sorrow',text:'And it came to be, when Dawiḏ and his men came to Tsiqlaḡ, on the third day, that the Amalĕqites had invaded the South and Tsiqlaḡ and smote Tsiqlaḡ and burned it with fire.',ref:'1 SHEMU’AL 30:1',stage:{set:'ruins',time:'dusk',cam:'push',wx:'embers',wxAt:2,fx:[{k:'smoke',x:0.7},{k:'smoke',x:0.24,at:2},{k:'red',at:2,amt:0.2},{k:'rays',x:0.36,at:7}],cast:[{id:'dawid',enter:'l',at:0,to:0.36,face:'r',hold:'sword',say:6,acts:[{at:4,pose:'weep'},{at:5,pose:'pray'},{at:6,pose:'stand'},{at:7,pose:'raise'}]},{id:'evyathar',look:{name:'Eḇyathar the Kohen',skin:'#6b4828',hair:'#2c1a0c',robe:'#ece6d6',beard:'#2c1a0c',headcover:'#f4f0e4',collar:'#caa23c'},x:0.56,z:0.16,face:'l',at:6}],crowd:[{kind:'soldiers',side:'yasharal',n:7,x:0.2,w:0.28,z:0.52,face:'r',from:'stand',pose:'point',at:4,hold:'stone'},{kind:'women',n:4,x:0.84,w:0.14,z:0.76,face:'r',pose:'bound',at:2,exit:'r',exitAt:4}]}},
+   {art:'wasteland',music:'sorrow',text:'And it came to be, when Dawiḏ and his men came to Tsiqlaḡ, on the third day, that the Amalĕqites had invaded the South and Tsiqlaḡ and smote Tsiqlaḡ and burned it with fire.',ref:'1 SHEMU’AL 30:1',stage:{set:'ruins',time:'dusk',cam:'push',wx:'embers',wxAt:2,fx:[{k:'smoke',x:0.7},{k:'smoke',x:0.24,at:2},{k:'red',at:2,amt:0.2}],cast:[{id:'dawid',enter:'l',at:0,to:0.36,face:'r',pose:'stand'},{id:'evyathar',look:{name:'Eḇyathar the Kohen',skin:'#6b4828',hair:'#2c1a0c',robe:'#ece6d6',beard:'#2c1a0c',headcover:'#f4f0e4',collar:'#caa23c'},x:0.56,z:0.16,face:'l'}],crowd:[{kind:'soldiers',side:'yasharal',n:7,x:0.18,w:0.26,z:0.52,face:'r'}]}},
   ],
   scene:{
-   map:{biome:'desert',w:48,h:32,seed:1216,features:[{type:'rock',x:14,y:13,solid:true,clear:1},{type:'rock',x:34,y:14,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3}]},
+   map:{biome:'desert',w:48,h:32,seed:1216,features:[{type:'rock',x:14,y:13,solid:true,clear:1},{type:'rock',x:34,y:14,solid:true,clear:1},{type:'clearing',x:24,y:20,flat:3},{type:'tent',x:31,y:12,solid:true,clear:1.5},{type:'tent',x:37,y:14.5,solid:true,clear:1.5},{type:'tent',x:34.5,y:19.5,solid:true,clear:1.5},{type:'firepit',x:33.6,y:16.4,lit:true,clear:1}]},
    time:'day',
    music:'sorrow',
    player:'dawid_k',
@@ -7551,7 +7606,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars',music:'sorrow',text:'And they took their bones and buried them under the tamarisk tree at Yaḇĕsh and fasted for seven days.',ref:'1 SHEMU’AL 31:13',stage:{set:'mountain',time:'dusk',cam:'push',focus:0.45,props:[{k:'crown',x:0.5,z:0.2}],fx:[{k:'darkness',at:1,amt:0.2},{k:'smoke',x:0.84,at:7}],cast:[{id:'dawid',x:0.3,z:0.1,face:'r',pose:'speak',say:0,look:{sack:1},acts:[{at:1,pose:'raise'},{at:2,pose:'weep'},{at:3,pose:'mourn'},{at:4,pose:'weep'},{at:7,pose:'raise'}]},{id:'shaul_k',x:0.7,z:0.42,face:'r',pose:'dead',at:3},{id:'yonathan',x:0.74,z:0.54,face:'r',pose:'dead',at:3}],crowd:[{kind:'mourners',n:5,x:0.6,w:0.44,z:0.78,face:'l'}]}},
+   {art:'stars',music:'sorrow',text:'And they took their bones and buried them under the tamarisk tree at Yaḇĕsh and fasted for seven days.',ref:'1 SHEMU’AL 31:13',stage:{set:'field',time:'dusk',cam:'push',focus:0.45,props:[{k:'tree',x:0.68,z:0.3,h:150},{k:'stones',x:0.66,z:0.26,n:8}],fx:[{k:'darkness',amt:0.15}],cast:[{id:'yaveshman',look:{name:'A Man of Yaḇĕsh',skin:'#6e4524',hair:'#1d1208',robe:'#6e6048',beard:'#1d1208'},x:0.42,z:0.12,face:'r',pose:'mourn'}],crowd:[{kind:'mourners',n:6,x:0.38,w:0.3,z:0.4,face:'r',pose:'mourn'}]}},
   ],
   complete:'And they took their bones and buried them under the tamarisk tree at Yaḇĕsh and fasted for seven days.'
 }
@@ -7813,6 +7868,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>

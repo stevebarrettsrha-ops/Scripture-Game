@@ -90,11 +90,11 @@ const POSES={
   run:   {lean:14, head:-4, aF:[0,70],   aB:[0,70],   lF:[0,0],    lB:[0,0], walk:1.9},
   kneel: {lean:2,  head:4,  aF:[38,95],  aB:[30,100], lF:[88,88],  lB:[-4,92], low:1},
   pray:  {lean:0,  head:-8, aF:[150,20], aB:[140,20], lF:[88,88],  lB:[-4,92], low:1},
-  bow:   {lean:104,head:12, aF:[32,4],   aB:[26,4],   lF:[12,102], lB:[4,96],   low:1},
+  bow:   {lean:66, head:30, aF:[-6,22],  aB:[-14,26], lF:[88,88],  lB:[-4,92],  low:1},   /* on the knees, bent low, the face toward the ground */
   sit:   {lean:-2, head:0,  aF:[25,70],  aB:[18,65],  lF:[90,88],  lB:[86,84]},
   sitground:{lean:6,head:10,aF:[40,70],  aB:[30,80],  lF:[80,150], lB:[70,160], low:1},
   mourn: {lean:22, head:30, aF:[60,150], aB:[55,150], lF:[80,150], lB:[70,160], low:1},
-  raise: {lean:-4, head:-18,aF:[165,10], aB:[160,10], lF:[3,0],    lB:[-3,0]},
+  raise: {lean:-4, head:-14,aF:[138,-12],aB:[206,4],  lF:[3,0],    lB:[-3,0]},   /* hands lifted up and apart, the face uncovered */
   bless: {lean:2,  head:-4, aF:[95,-5],  aB:[85,-5],  lF:[3,0],    lB:[-3,0]},
   point: {lean:2,  head:0,  aF:[92,0],   aB:[-6,6],   lF:[5,0],    lB:[-5,0]},
   speak: {lean:3,  head:2,  aF:[40,55],  aB:[-4,8],   lF:[4,0],    lB:[-4,0], talk:1},
@@ -527,7 +527,7 @@ function crowdLook(kind,side,r){
     case 'elders': L.robe=pick(['#4a3a2a','#3a3a4a','#5a4a3a','#6a5a48']); L.beard=pick(['#cfc8b8','#b8b0a0','#8a8478']); L.hair=L.beard; L.old=1; L.headcover=r()<.6?pick(['#d8ccb0','#b8a888','#8a7a60']):null; break;
     case 'women': L.veil=pick(PAL.veils); L.robe=pick(['#8a5a6a','#6a5a8a','#9a7a5a','#7a4a4a','#5a6a7a','#a08868']); L.beard=null; L.hairStyle='long'; break;
     case 'children': L.beard=null; L.child=1; break;
-    case 'mourners': L.robe=pick(['#3a342c','#2e2a24','#4a4034']); L.sack=1; if(r()<.5){ L.veil='#3a342c'; L.beard=null; } break;
+    case 'mourners': L.robe=pick(['#5e4e3a','#544634','#685840']); L.sack=1; if(r()<.5){ L.veil='#5a4a38'; L.beard=null; } break;   /* sackcloth: dark goat-hair brown, not black */
     case 'captives': L.robe=pick(['#6a5a48','#5a4a3a','#4e4438']); L.beard=L.hair; break;
     case 'kings': case 'princes': L.robe=pick(['#6a2a5a','#2a3a7a','#7a2a2a']); L.collar='#d8b040'; L.crown=kind==='kings'; break;
     case 'nations': L.robe=pick(['#7a3a5a','#3a5a7a','#8a5a2a','#5a2a2a','#2a5a4a']); L.headcover=r()<.5?pick(['#d8c8a0','#a8584a','#4a6a8a']):null; break;
@@ -1465,6 +1465,31 @@ function fireAt(g,x,y,w,h,t){
   for(let i=0;i<5;i++){ const k=((t/900+i*.21)%1); g.fillStyle='rgba(255,200,120,'+(1-k).toFixed(2)+')'; g.fillRect(x+Math.sin(i*7+t/400)*w*.4,y-h*(.6+k*1.2),2,2); }
 }
 
+/* one person is on the stage once: the same man in two of his looks (the young Dawiḏ and the sovereign, Mosheh
+   and Mosheh grown old), or the one who speaks set down beside the one already standing there, is one figure —
+   the one placed for the scene, in the look the scene chose for him, saying what the other said */
+function oneEach(st){
+  st._one=true;
+  const nm=c=>(c.look&&c.look.name)||(CHARS&&CHARS[c.id]&&CHARS[c.id].name)||'';
+  const many=c=>/^(A|An|The|One|Two|Some)\s|Mal['’]ak|Shining|Seraph/i.test(nm(c))||c.id==='voice'||c.id==='divine';
+  /* a name that tells what one is, not who (Daughter of Lot, Man of Yasharal, Servant): two such are two people */
+  const role=c=>/^(Daughter|Son|Wife|Man|Woman|Men|Women|Servant|Maid|Handmaid|Soldier|Guard|Elder|Kohen|Lĕwite|Levite|Builder|Watcher|Spy|Shepherd|Herdsman|Prince|Chief|Officer|Captain|Messenger|Young|Old|Child|Boy|Girl|Lad|Youth|Brother|Sister|Giant|Mighty|Worker|Slave|Captive|Stranger|Elder|Singer|Gatekeeper|Scribe|Sage|Wise)\b/i.test(nm(c));
+  const base=id=>String(id).replace(/_(k|r|o|c|p)$/,'');
+  const added=c=>!c.acts&&!c.at&&!c.enter&&c.z===.12&&c.face==='l'&&(c.pose==='speak'||c.pose==='stand');
+  const cast=st.cast, out=[];
+  for(const c of cast){
+    const o=out.find(q=>!many(q)&&!many(c)&&(q.id===c.id||base(q.id)===base(c.id)||(nm(q)&&nm(q)===nm(c)&&!role(q))));
+    if(!o){ out.push(c); continue; }
+    /* keep the one placed for the scene; between two placed, the chosen look (the sovereign, the old) */
+    let keep=o, drop=c;
+    if(added(o)&&!added(c)) { keep=c; drop=o; }
+    else if(!added(c)&&o.id===base(o.id)&&c.id!==base(c.id)) { keep=c; drop=o; }
+    if(keep.say==null&&drop.say!=null) keep.say=drop.say;
+    out[out.indexOf(o)]=keep;
+  }
+  st.cast=out;
+}
+
 /* ============================== sets ============================== */
 const SEA_SAND=x=>{ const s=1-x; return s*s*.69+2*x*s*.62+x*x*.68; };   /* where the beach meets the sea */
 /* a set paints its unchanging layers once into a cache (`paint`), and may add motion (`anim`) */
@@ -1598,7 +1623,16 @@ set('house',{horizon:.42,interior:1,paint(g,H,r){
   g.fillStyle=lin(g,0,0,0,VH*.42,[[0,'#3a2a1c'],[1,'#6a5236']]); g.fillRect(0,0,VW,VH*.42);
   g.strokeStyle='rgba(30,20,12,.25)'; g.lineWidth=1; for(let i=0;i<30;i++){ const y=r()*VH*.4; g.beginPath(); g.moveTo(r()*VW,y); g.lineTo(r()*VW,y); g.stroke(); }
   g.fillStyle='#2a1c10'; for(let i=0;i<5;i++) g.fillRect(0,VH*(.02+i*.004)+i*VH*.01,VW,VH*.012);
-  g.fillStyle='#1a120a'; rr(g,VW*.7,VH*.1,VW*.08,VH*.12,6); g.fill(); g.fillStyle=css(rgb(H.sky[1]),.9); rr(g,VW*.708,VH*.11,VW*.064,VH*.1,4); g.fill();
+  /* a small window opening in the mud wall: a deep square recess, a wooden lintel above, a lattice of crossed
+     laths over the light, a stone sill below — as an ancient house had, no glass */
+  { const wx=VW*.7, wy=VH*.1, ww=VW*.07, wh=VH*.11;
+    g.fillStyle='#2a1d12'; g.fillRect(wx-ww*.08,wy-wh*.06,ww*1.16,wh*1.12);                 /* the recess in the wall */
+    g.fillStyle=mixc(rgb(H.sky[1]),'#6a5236',.35); g.fillRect(wx,wy,ww,wh);                  /* the daylight beyond */
+    g.strokeStyle='#3a2614'; g.lineWidth=Math.max(2,VW*.004);
+    for(let i=1;i<4;i++){ g.beginPath(); g.moveTo(wx+ww*i/4,wy); g.lineTo(wx+ww*i/4,wy+wh); g.stroke(); }
+    for(let i=1;i<3;i++){ g.beginPath(); g.moveTo(wx,wy+wh*i/3); g.lineTo(wx+ww,wy+wh*i/3); g.stroke(); }
+    g.fillStyle='#4a3018'; g.fillRect(wx-ww*.22,wy-wh*.2,ww*1.44,wh*.13);                    /* the lintel beam */
+    g.fillStyle='#7a6448'; g.fillRect(wx-ww*.14,wy+wh*1.02,ww*1.28,wh*.08); }                /* the sill */
   g.fillStyle=lin(g,0,VH*.42,0,VH,[[0,'#6a563e'],[1,'#3a2e20']]); g.fillRect(0,VH*.42,VW,VH*.58);
   for(let i=0;i<5;i++){ g.fillStyle=['#7a3a2a','#3a4a6a','#6a5a2a'][i%3]; ell(g,VW*(.1+r()*.8),VH*(.7+r()*.2),VW*.07,VH*.02); g.fill(); } },
   anim(g,H,t){ const x=VW*.3, y=VH*.36; g.fillStyle='#8a5a2a'; g.fillRect(x-4,y,8,VH*.06); drawHeld(g,'lamp',x,y,VH*.3,'r',t); glow(g,x,y-10,VH*.3,'#ffb060',.18); }});
@@ -1796,7 +1830,8 @@ const Stage={
   partTimes(parts){ let acc=250; return parts.map(p=>{ const at=acc; acc+=cl(p.length*42,1300,4200); return at; }).concat([acc]); },
   cur:null,
   prepare(slide){
-    const st=slide.stage; const parts=this.parts(slide.text||''); const times=this.partTimes(parts);
+    const st=slide.stage; if(st&&st.cast&&!st._one) oneEach(st);
+    const parts=this.parts(slide.text||''); const times=this.partTimes(parts);
     this.cur={slide,st,parts,times,revealed:0,allAt:null};
     return this.cur;
   },
@@ -1991,7 +2026,8 @@ const Stage={
     const bt=i=>this.beatTime(i);
     const base=a.x!=null?a.x:.5;
     const T0=a.at!=null?bt(a.at):0;
-    let x=a.enter==='l'?-.12:a.enter==='r'?1.12:base, z=a.z||0;
+    const x0=a.enter==='l'?-.12:a.enter==='r'?1.12:base, z0=a.z||0;
+    let x=x0, z=z0;
     let face=a.face||'r', alpha=1, walking=false, shown=a.at!=null?T0:0, pose;
     if(st<T0){
       if(a.enter) return {visible:false};
@@ -1999,35 +2035,44 @@ const Stage={
       return {visible:false};
     }
     const steps=[{T:T0,to:a.enter?(a.to!=null?a.to:base):a.to,toz:a.toz,pose:a.pose,face:a.face,run:a.run}];
-    for(const q of (a.acts||[])) steps.push({T:bt(q.at||0),to:q.to,toz:q.toz,exit:q.exit,pose:q.pose,face:q.face,run:q.run});
+    /* a step set for a part the slide does not have belongs to words that are not on it: it is not taken */
+    const np=this.cur?this.cur.parts.length:1e9, inSlide=q=>q.at==null||q.at<np;
+    for(const q of (a.acts||[])) if(inSlide(q)) steps.push({T:bt(q.at||0),to:q.to,toz:q.toz,exit:q.exit,pose:q.pose,face:q.face,run:q.run});
+    /* one thing after another: a step waits until the walk before it is done (on a short verse the steps
+       would otherwise fall on one moment, and a figure would never finish walking on, or never be seen) */
+    { let px=x0, pz=z0, tEnd=-Infinity;
+      for(const sp of steps){ sp.T=Math.max(sp.T,tEnd);
+        sp.dest=sp.exit==='l'?-.15:sp.exit==='r'?1.15:(sp.to!=null?sp.to:px); sp.destz=sp.toz!=null?sp.toz:pz;
+        const dx=sp.dest-px, dz=sp.destz-pz; sp.moving=Math.abs(dx)>.001||Math.abs(dz)>.001;
+        sp.walkT=sp.moving?Math.max(Math.abs(dx)*(sp.run?3600:7400),Math.abs(dz)*(sp.run?3000:6500)):0;
+        tEnd=sp.T+sp.walkT; px=sp.dest; pz=sp.destz; } }
     let prev=a.from?(POSES[a.from]||POSES.stand):null;
     for(let i=0;i<steps.length;i++){
       const sp=steps[i]; if(st<sp.T) break;
-      const nextT=i+1<steps.length?Math.max(sp.T,steps[i+1].T):Infinity, now=Math.min(st,nextT), e=now-sp.T;
-      const dest=sp.exit==='l'?-.15:sp.exit==='r'?1.15:(sp.to!=null?sp.to:x), destz=sp.toz!=null?sp.toz:z;
-      const dx=dest-x, dz=destz-z, moving=Math.abs(dx)>.001||Math.abs(dz)>.001;
-      const walkT=moving?Math.max(Math.abs(dx)*(sp.run?3600:7400),Math.abs(dz)*(sp.run?3000:6500)):0;
+      const nextT=i+1<steps.length?steps[i+1].T:Infinity, now=Math.min(st,nextT), e=now-sp.T;
+      const dest=sp.dest, destz=sp.destz, dx=dest-x, dz=destz-z, moving=sp.moving, walkT=sp.walkT;
       const target=sp.pose?(POSES[sp.pose]||POSES.stand):(i===0?(POSES[a.pose]||POSES.stand):(prev||POSES.stand));
       if(moving){ face=(Math.abs(dz)*1.1>Math.abs(dx)&&dz>0)?'b':(dx<0?'l':(dx>0?'r':face)); }
       if(moving&&e<walkT){ const k=e/walkT; x=lerp(x,dest,k); z=lerp(z,destz,k); pose=sp.run?POSES.run:POSES.walk; walking=true; prev=POSES.stand; if(now===st) break; walking=false; continue; }
       if(moving){ x=dest; z=destz; if(sp.exit) return {visible:false}; }
       const start=moving?POSES.stand:prev, se=e-walkT;
       pose=(start&&start!==target)?blendPose(start,target,cl(se/550,0,1)):target;
-      if(i===0&&!start&&a.at!=null&&!a.enter) alpha=ease(se/600);
       if(sp.face) face=sp.face;
       if(i===0&&moving) shown=sp.T+walkT;
       prev=target; walking=false;
     }
+    /* one who appears where they stand fades in from the moment they appear, whatever follows */
+    if(a.at!=null&&!a.enter&&!a.from&&!steps[0].moving) alpha=ease((st-T0)/600);
     if(!pose) pose=POSES[a.pose]||POSES.stand;
-    if(a.until!=null&&st>=bt(a.until)){ const k=(st-bt(a.until))/450; if(k>=1) return {visible:false}; alpha*=1-k; }
-    if(a.turn&&st>=bt(a.turn[0])&&!walking) face=a.turn[1];
+    if(a.until!=null&&a.until<np&&st>=bt(a.until)){ const k=(st-bt(a.until))/450; if(k>=1) return {visible:false}; alpha*=1-k; }
+    if(a.turn&&a.turn[0]<np&&st>=bt(a.turn[0])&&!walking) face=a.turn[1];
     if(z>1.25) return {visible:false};
     return {visible:true,x,z,pose,face,alpha:alpha*(z>1.05?cl((1.25-z)/.2,0,1):1),walking,shown};
   },
   /* the face of one on the stage: the pose the verse gives them first (weeping, praying,
      fighting), else the words they are saying, else the words of the part being read when those
      name them, else the mood of the telling. The mouth moves only while they are heard. */
-  poseAt(a,st){ let n=a.pose||'stand'; for(const q of (a.acts||[])) if(q.pose&&st>=this.beatTime(q.at||0)) n=q.pose; return n; },
+  poseAt(a,st){ let n=a.pose||'stand'; const np=this.cur?this.cur.parts.length:1e9; for(const q of (a.acts||[])) if(q.pose&&(q.at==null||q.at<np)&&st>=this.beatTime(q.at||0)) n=q.pose; return n; },
   faceOf(a,id,L,st,t,speaking){
     const F=window.Face, V=window.Voice; if(!F) return {};
     let mouth=null;

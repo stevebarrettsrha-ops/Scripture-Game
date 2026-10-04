@@ -2836,6 +2836,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4578,9 +4581,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -5971,7 +5978,7 @@ STORY.push(
    {art:'swarms',music:'tense',text:'The Word of YAHUAH that came to Yo’al son of Pethu’al. Hear this, you elders and give ear, all you inhabitants of the land! Has this ever been in your days, or even in the days of your fathers?',ref:'YO’AL 1:1–2',stage:{set:'gate',time:'day',cam:'push',focus:0.45,fx:[{k:'rays',x:0.2,at:0}],cast:[{id:'yoal',x:0.2,z:0.1,face:'r',pose:'look',acts:[{at:1,pose:'point'},{at:2,pose:'raise'},{at:3,pose:'speak'}],say:1},{id:'elder',x:0.58,z:0.2,face:'l',pose:'stand',hold:'staff',acts:[{at:3,face:'r',pose:'speak'}]},{id:'daughter',x:0.78,z:0.14,face:'l',pose:'look',at:3}],crowd:[{kind:'elders',n:5,x:0.66,w:0.3,z:0.5,face:'l',enter:'r',at:1},{kind:'children',n:4,x:0.84,w:0.14,z:0.34,face:'l',at:3}]}},
   ],
   scene:{
-   map:{biome:'wilderness',w:44,h:28,seed:9101,features:[{type:'vine',x:16,y:11,id:'vine'},{type:'wheat',x:30,y:13,id:'harvest'},{type:'palm',x:34,y:18},{type:'tree',x:12,y:16},{type:'clearing',x:22,y:18,flat:3}]},
+   map:{biome:'wasteland',w:44,h:28,seed:9101,features:[{type:'vine',x:16,y:11,id:'vine'},{type:'wheat',x:30,y:13,id:'harvest'},{type:'tree',x:34,y:18,dead:true},{type:'tree',x:12,y:16,dead:true},{type:'clearing',x:22,y:18,flat:3},{type:'clearing',x:32.2,y:10.4,clear:1.2}]},
    time:'day',
    music:'tense',
    player:'yoal',
@@ -5998,7 +6005,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland',music:'sorrow',text:'The vine has dried up and the fig tree droops, pomegranate, also palm and apple tree, all the trees of the field are dried up, because joy has dried up among the sons of men.',ref:'YO’AL 1:12',stage:{set:'field',time:'noon',wx:'dust',cam:'pan-l',fx:[{k:'wind',at:1}],props:[{k:'tree',x:0.86,z:0.3,color:'#8a7448',h:120},{k:'tree',x:0.1,z:0.45,color:'#7a6a40',h:90},{k:'palm',x:0.7,z:0.62,h:120},{k:'vine',x:0.42,z:0.6,w:200}],cast:[{id:'husbandman',x:0.28,z:0.1,face:'r',from:'stand',at:0,pose:'mourn'},{id:'vinedresser',x:0.62,z:0.14,face:'l',pose:'weep',hold:'branch',acts:[{at:1,pose:'kneel'}]}],crowd:[{kind:'people',n:4,x:0.45,w:0.3,z:0.72,face:'r',pose:'weep',hold:null}]}},
+   {art:'wasteland',music:'sorrow',text:'The vine has dried up and the fig tree droops, pomegranate, also palm and apple tree, all the trees of the field are dried up, because joy has dried up among the sons of men.',ref:'YO’AL 1:12',stage:{set:'field',time:'noon',wx:'dust',cam:'pan-l',fx:[{k:'wind',at:1}],props:[{k:'tree',x:0.86,z:0.3,h:120,dead:1},{k:'tree',x:0.1,z:0.45,h:90,dead:1},{k:'tree',x:0.47,z:0.62,h:100,dead:1},{k:'palm',x:0.72,z:0.62,h:120,color:'#8a7444'},{k:'bush',x:0.36,z:0.5,color:'#7a6040'}],cast:[{id:'husbandman',x:0.28,z:0.1,face:'r',from:'stand',at:0,pose:'mourn'},{id:'vinedresser',x:0.62,z:0.14,face:'l',pose:'weep',hold:'branch',acts:[{at:1,pose:'kneel'}]}],crowd:[{kind:'people',n:4,x:0.4,w:0.2,z:0.72,face:'r',pose:'weep',hold:null}]}},
   ],
   complete:'…also palm and apple tree, all the trees of the field are dried up, because joy has dried up among the sons of men.'
 },
@@ -6047,7 +6054,7 @@ STORY.push(
 
 { id:'y3', title:'The Day of YAHUAH', ref:'YO’AL 2:1–11',
   intro:[
-   {art:'wasteland',music:'tense',text:'Blow a ram’s horn in Tsiyon and sound an alarm in My qadash (Set Apart) mountain! Let all the inhabitants of the earth tremble, for the day of YAHUAH is coming, for it is near:',ref:'YO’AL 2:1',stage:{set:'walls',time:'dusk',cam:'push',focus:0.45,fx:[{k:'darkness',amt:0.45,at:1},{k:'locusts',at:1}],props:[{k:'cloud',x:0.72,z:0.9,dark:1,s:2.5,dy:-0.25,at:1}],cast:[{id:'watchman',look:{name:'Watchman on the Wall of Tsiyon',skin:'#7a4e29',hair:'#2c1a0c',hairStyle:'short',robe:'#5a6a8a',beard:'#2c1a0c',armor:'#9a8250'},x:0.4,z:0.85,dy:-0.2,face:'r',pose:'raise',hold:'shofar',say:0},{id:'hebrew',x:0.26,z:0.1,face:'r',pose:'look',acts:[{at:1,pose:'fall'}]},{id:'hebreww',x:0.72,z:0.12,face:'l',pose:'look',acts:[{at:1,pose:'weep'}]}],crowd:[{kind:'people',n:6,x:0.5,w:0.5,z:0.45,face:'r',from:'look',at:1,pose:'kneel',hold:null}]}},
+   {art:'wasteland',music:'tense',text:'Blow a ram’s horn in Tsiyon and sound an alarm in My qadash (Set Apart) mountain! Let all the inhabitants of the earth tremble, for the day of YAHUAH is coming, for it is near:',ref:'YO’AL 2:1',stage:{set:'walls',time:'dusk',cam:'push',focus:0.45,fx:[{k:'darkness',amt:0.45,at:1},{k:'locusts',at:1}],props:[{k:'cloud',x:0.72,z:0.9,dark:1,s:2.5,dy:-0.25,at:1}],cast:[{id:'watchman',look:{name:'Watchman on the Wall of Tsiyon',skin:'#7a4e29',hair:'#2c1a0c',hairStyle:'short',robe:'#5a6a8a',beard:'#2c1a0c',armor:'#9a8250'},x:0.4,z:0.85,dy:-0.25,face:'r',pose:'raise',hold:'shofar',say:0},{id:'hebrew',x:0.26,z:0.1,face:'r',pose:'look',acts:[{at:1,pose:'fall'}]},{id:'hebreww',x:0.72,z:0.12,face:'l',pose:'look',acts:[{at:1,pose:'weep'}]}],crowd:[{kind:'people',n:6,x:0.5,w:0.5,z:0.45,face:'r',from:'look',at:1,pose:'kneel',hold:null}]}},
   ],
   scene:{
    map:{biome:'wasteland',w:44,h:28,seed:9103,features:[{type:'standard',x:16,y:11,id:'horn'},{type:'firepit',x:30,y:12,id:'flame'},{type:'rock',x:24,y:20},{type:'clearing',x:20,y:17,flat:4}]},
@@ -6080,7 +6087,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'void',music:'tense',text:'And YAHUAH shall give forth His voice before His army, for His camp is very great, for mighty is the doer of His word. For the day of YAHUAH is great and very awesome and who does bear it?',ref:'YO’AL 2:11',stage:{set:'mountain',time:'dusk',cam:'up',fx:[{k:'quake',at:0},{k:'darkness',amt:0.55,at:1},{k:'lightning',at:2},{k:'locusts',at:2}],cast:[{id:'voice',x:0.62,at:2},{id:'yoal',x:0.2,z:0.1,face:'r',pose:'look',acts:[{at:1,pose:'kneel'},{at:3,pose:'bow'}]}],crowd:[{kind:'people',n:7,x:0.58,w:0.5,z:0.45,face:'r',from:'look',at:3,pose:'bow',hold:null}]}},
+   {art:'void',music:'tense',text:'And YAHUAH shall give forth His voice before His army, for His camp is very great, for mighty is the doer of His word. For the day of YAHUAH is great and very awesome and who does bear it?',ref:'YO’AL 2:11',stage:{set:'mountain',time:'dusk',cam:'up',fx:[{k:'quake',at:0},{k:'darkness',amt:0.25,at:1},{k:'lightning',at:1},{k:'locusts',at:1}],cast:[{id:'voice',x:0.6,at:0},{id:'yoal',x:0.16,z:0.1,face:'r',pose:'look',acts:[{at:1,pose:'kneel'}]}],crowd:[{kind:'army',n:9,x:0.68,w:0.4,z:0.5,face:'l',enter:'r',at:0},{kind:'people',n:3,x:0.36,w:0.14,z:0.3,face:'r',from:'look',at:1,pose:'bow',hold:null}]}},
   ],
   complete:'For the day of YAHUAH is great and very awesome and who does bear it?'
 },
@@ -6099,6 +6106,10 @@ STORY.push(
    npcs:[
      {id:'kohen',char:'kohen',x:20,y:11,wander:false},
      {id:'bride',char:'bride',x:26,y:13,wander:false},
+     {id:'kohen2',char:'kohen',x:18,y:11.5,noTalk:true,wander:false},
+     {id:'elder1',char:'elder',x:16,y:15,noTalk:true,wander:false},
+     {id:'man1',char:'hebrew',x:28.5,y:15,noTalk:true,wander:false},
+     {id:'child1',char:'daughter',x:17.5,y:16.5,noTalk:true,wander:false},
    ],
    objectives:[
      {type:'interact',prop:'horn',text:'Blow the horn — gather the people, set the qahal apart', script:[
@@ -6124,10 +6135,10 @@ STORY.push(
 { id:'y5', title:'The Years Restored', ref:'YO’AL 2:18–27',
   intro:[
    {art:'garden',music:'holy',text:'And let YAHUAH be jealous for His land and spare His people. And let YAHUAH answer and say to His people, “See, I am sending you the grain and the new wine and the oil and you shall be satisfied by them. And no longer do I make you a reproach among the gentiles.',ref:'YO’AL 2:18–19',stage:{set:'field',time:'dawn',cam:'push',focus:0.4,fx:[{k:'glory',x:0.4,y:0.06,at:0},{k:'rays',x:0.4,at:1}],props:[{k:'sheaves',x:0.2,z:0.34,n:3,at:1},{k:'basket',x:0.46,z:0.2,fruit:'#6a3a5a',at:1},{k:'vine',x:0.4,z:0.6,w:200,at:1}],cast:[{id:'husbandman',x:0.3,z:0.1,face:'r',from:'mourn',at:1,pose:'raise'},{id:'vinedresser',x:0.56,z:0.14,face:'l',from:'mourn',at:1,pose:'carry',hold:'pitcher'},{id:'daughter',x:0.42,z:0.08,face:'r',pose:'dance',at:2},{id:'voice',x:0.7}],crowd:[{kind:'army',side:'ashshur',n:7,x:0.82,w:0.2,z:0.62,face:'l',exit:'r',exitAt:3}]}},
-   {art:'garden',music:'holy',text:'“And the Northerner I shall remove far from you and drive him away into a dry and deserted land, with his face toward the eastern sea and his rear toward the western sea. And his stench shall come up and his smell rise, for he has done greatly.”',ref:'YO’AL 2:20',stage:{set:'field',time:'dawn',cam:'push',focus:0.4,fx:[{k:'glory',x:0.4,y:0.06,at:0},{k:'rays',x:0.4,at:1}],props:[{k:'sheaves',x:0.2,z:0.34,n:3,at:1},{k:'basket',x:0.46,z:0.2,fruit:'#6a3a5a',at:1},{k:'vine',x:0.4,z:0.6,w:200,at:1}],cast:[{id:'husbandman',x:0.3,z:0.1,face:'r',from:'mourn',at:1,pose:'raise'},{id:'vinedresser',x:0.56,z:0.14,face:'l',from:'mourn',at:1,pose:'carry',hold:'pitcher'},{id:'daughter',x:0.42,z:0.08,face:'r',pose:'dance',at:2},{id:'voice',x:0.7}],crowd:[{kind:'army',side:'ashshur',n:7,x:0.82,w:0.2,z:0.62,face:'l',exit:'r',exitAt:3}]}},
+   {art:'garden',music:'holy',text:'“And the Northerner I shall remove far from you and drive him away into a dry and deserted land, with his face toward the eastern sea and his rear toward the western sea. And his stench shall come up and his smell rise, for he has done greatly.”',ref:'YO’AL 2:20',stage:{set:'desert',time:'dusk',cam:'push',focus:0.4,fx:[{k:'smoke',x:0.74,at:1}],cast:[{id:'husbandman',x:0.2,z:0.1,face:'r',pose:'look'},{id:'voice',x:0.4}],crowd:[{kind:'army',side:'ashshur',n:7,x:0.72,w:0.26,z:0.5,face:'r',pose:'flee'}]}},
   ],
   scene:{
-   map:{biome:'plains',w:44,h:28,seed:9105,features:[{type:'vine',x:16,y:11,id:'vine'},{type:'wheat',x:30,y:14,id:'floor'},{type:'well',x:14,y:17,id:'rain'},{type:'tree',x:34,y:12},{type:'clearing',x:22,y:18,flat:3}]},
+   map:{biome:'plains',w:44,h:28,seed:9105,features:[{type:'vine',x:16,y:11,id:'vine'},{type:'wheat',x:30,y:14,id:'floor'},{type:'well',x:14,y:17,id:'rain'},{type:'tree',x:34,y:12},{type:'clearing',x:22,y:18,flat:3},{type:'sheaf',x:31.6,y:14.4,clear:0},{type:'sheaf',x:28.5,y:14.6,clear:0},{type:'sheaf',x:30.2,y:15.8,clear:0}]},
    time:'day',
    music:'holy',
    player:'yoal',
@@ -6219,11 +6230,14 @@ STORY.push(
    time:'day',
    music:'tense',
    player:'yoal',
-   playerPos:[22,21],
+   playerPos:[22,23.5],
    playerHold:'scroll',
    npcs:[
      {id:'elder',char:'elder',x:18,y:13,wander:false},
      {id:'kohen',char:'kohen',x:26,y:14,wander:false},
+     {id:'gentile1',char:'raider',x:35.5,y:11,noTalk:true,wander:false},
+     {id:'gentile2',char:'raider2',x:36.5,y:13.8,noTalk:true,wander:false},
+     {id:'gentile3',char:'amorite',x:33.8,y:15.2,noTalk:true,wander:false},
    ],
    objectives:[
      {type:'interact',prop:'harvest',text:'The harvest is ripe — crowds in the valley of decision', script:[
@@ -6257,7 +6271,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'garden',music:'holy',text:'“And I shall avenge their blood, which I have not avenged. And YAHUAH shall be dwelling in Tsiyon!”',ref:'YO’AL 3:21',stage:{set:'garden',time:'dawn',cam:'pan-r',fx:[{k:'smoke',x:0.95,at:2},{k:'glory',x:0.55,y:0.04,at:5}],props:[{k:'vine',x:0.2,z:0.62,w:200},{k:'goat',x:0.82,z:0.45,face:'l'},{k:'sheep',x:0.7,z:0.55,n:4,w:100},{k:'rock',x:0.4,z:0.34,w:60,h:36,water:1,at:1}],cast:[{id:'yoal_o',x:0.16,z:0.1,face:'r',pose:'raise',say:0,acts:[{at:5,pose:'bless'}]},{id:'daughter',x:0.6,z:0.1,face:'l',pose:'dance',at:3},{id:'voice',x:0.7}],crowd:[{kind:'people',n:8,x:0.58,w:0.46,z:0.72,face:'r',enter:'l',at:3,hold:null}]}},
+   {art:'garden',music:'holy',text:'“And I shall avenge their blood, which I have not avenged. And YAHUAH shall be dwelling in Tsiyon!”',ref:'YO’AL 3:21',stage:{set:'garden',time:'dawn',cam:'pan-r',fx:[{k:'smoke',x:0.95,at:2},{k:'glory',x:0.55,y:0.04,at:5}],props:[{k:'vine',x:0.2,z:0.62,w:200},{k:'goat',x:0.82,z:0.45,face:'l'},{k:'sheep',x:0.7,z:0.55,n:4,w:100},{k:'rock',x:0.4,z:0.34,w:60,h:36,water:1,at:1}],cast:[{id:'daughter',x:0.6,z:0.1,face:'l',pose:'dance',at:3},{id:'voice',x:0.7},{id:'yoal',x:0.16,z:0.1,face:'r',pose:'raise',say:0,acts:[{at:1,pose:'bless'}]}],crowd:[{kind:'people',n:8,x:0.58,w:0.46,z:0.72,face:'r',enter:'l',at:3,hold:null}]}},
   ],
   complete:'And YAHUAH shall be dwelling in Tsiyon!”'
 }
@@ -6526,6 +6540,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>

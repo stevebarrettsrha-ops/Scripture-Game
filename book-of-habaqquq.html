@@ -2742,6 +2742,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4484,9 +4487,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -5875,7 +5882,7 @@ STORY.push(
    {art:'corrupt',music:'sorrow',text:'The message which the naḇi Ḥaḇaqquq saw.',ref:'ḤAḆAQQUQ 1:1',stage:{set:'city',time:'dusk',cam:'push',focus:0.45,cast:[{id:'habaquq',x:0.16,z:0.06,face:'r',pose:'look',say:1,acts:[{at:1,pose:'raise'},{at:3,pose:'point'},{at:4,pose:'weep'}]},{id:'poorman',x:0.48,z:0.1,face:'r',pose:'stand',acts:[{at:2,pose:'fall'}]},{id:'hebrew2',x:0.6,z:0.12,face:'l',pose:'stand',hold:'rod',acts:[{at:2,pose:'strike'}]}],crowd:[{kind:'people',n:6,x:0.76,w:0.3,z:0.5,face:'l',from:'stand',pose:'fight',at:4}],fx:[{k:'smoke',x:0.8,at:4},{k:'darkness',amt:0.2,at:5}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:6101,features:[{type:'standard',x:16,y:11,id:'violence'},{type:'standard',x:22,y:9,id:'answer'},{type:'tower',x:30,y:12,id:'chaldeans'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:6101,features:[{type:'standard',x:16,y:11,id:'violence',clear:3},{type:'standard',x:22,y:9,id:'answer'},{type:'tower',x:30,y:12,id:'chaldeans'},{type:'clearing',x:22,y:19,flat:3},{type:'house',x:9,y:12,clear:3.5},{type:'house',x:34,y:7,clear:3.5},{type:'house',x:36,y:19,clear:3.5}]},
    time:'day',
    music:'sorrow',
    player:'habaquq',
@@ -5907,14 +5914,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland',music:'tense',text:'“Then shall he pass on as a ruach and transgress and be guilty and ascribe this power to his mighty one.”',ref:'ḤAḆAQQUQ 1:11',stage:{set:'desert',time:'dusk',wx:'dust',cam:'pan-l',cast:[{id:'chaldean',x:0.52,z:0.1,face:'l',pose:'raise',at:5,say:5,acts:[{at:7,pose:'bow',face:'r'}]},{id:'habaquq',x:0.72,z:0.12,face:'l',pose:'speak'}],crowd:[{kind:'army',side:'bavel',n:6,x:0.66,w:0.3,z:0.62,face:'l',enter:'r',at:1},{kind:'captives',n:6,x:0.36,w:0.22,z:0.45,face:'l',at:4},{kind:'kings',n:3,x:0.14,w:0.12,z:0.3,face:'r',pose:'bound',at:5}],props:[{k:'horse',x:0.78,z:0.3,face:'l',color:'#3a2a1a'},{k:'horse',x:0.92,z:0.4,face:'l',color:'#6a4a2a'},{k:'tower',x:0.52,z:0.95,h:150,tiers:2,color:'#a89070',at:6},{k:'stones',x:0.58,z:0.85,n:14,at:6},{k:'idol',x:0.64,z:0.2,at:7}],fx:[{k:'ravens',n:4,x:0.5,y:0.16,at:2},{k:'wind',at:7}]}},
+   {art:'wasteland',music:'tense',text:'“Then shall he pass on as a ruach and transgress and be guilty and ascribe this power to his mighty one.”',ref:'ḤAḆAQQUQ 1:11',stage:{set:'desert',time:'dusk',wx:'dust',cam:'pan-l',cast:[{id:'habaquq',x:0.15,z:0.08,face:'r',pose:'speak',say:0},{id:'chaldean',x:0.46,z:0.1,face:'r',pose:'raise'}],crowd:[{kind:'army',side:'bavel',n:6,x:0.76,w:0.26,z:0.62,face:'l',enter:'r',at:0}],props:[{k:'horse',x:0.84,z:0.3,face:'l',color:'#3a2a1a'},{k:'horse',x:0.92,z:0.42,face:'l',color:'#6a4a2a'},{k:'tower',x:0.52,z:0.95,h:150,tiers:2,color:'#a89070'},{k:'stones',x:0.58,z:0.85,n:14},{k:'idol',x:0.6,z:0.18}],fx:[{k:'ravens',n:4,x:0.5,y:0.16,at:2},{k:'wind',at:7}]}},
   ],
   complete:'“Then shall he pass on as a ruach and transgress and be guilty and ascribe this power to his mighty one.”'
 },
 
 { id:'hb2', title:'Too Clean to See Evil', ref:'ḤAḆAQQUQ 1:12–17',
   intro:[
-   {art:'void',music:'sorrow',text:'Are You not from everlasting, O YAHUAH my Aluahim, my Qadash (Set Apart One)? you do not die! O YAHUAH, You have appointed them for right-ruling, O Rock, You have established them for reproof.',ref:'ḤAḆAQQUQ 1:12',stage:{set:'wilderness',time:'dusk',cam:'push',focus:0.4,cast:[{id:'habaquq',x:0.2,z:0.06,face:'r',pose:'pray',say:0,acts:[{at:2,pose:'raise'},{at:3,pose:'point'}]},{id:'poorman',x:0.58,z:0.12,face:'r',pose:'stand',at:2,acts:[{at:3,pose:'fall'}]},{id:'chaldean',x:0.72,z:0.1,face:'l',pose:'stand',hold:'sword',at:2,acts:[{at:3,pose:'strike'}]}],props:[{k:'rock',x:0.36,z:0.3,w:80,h:50}],fx:[{k:'glory',x:0.4,y:0.05,at:0},{k:'rays',x:0.3,at:1}]}},
+   {art:'void',music:'sorrow',text:'Are You not from everlasting, O YAHUAH my Aluahim, my Qadash (Set Apart One)? you do not die! O YAHUAH, You have appointed them for right-ruling, O Rock, You have established them for reproof.',ref:'ḤAḆAQQUQ 1:12',stage:{set:'wilderness',time:'dusk',cam:'push',focus:0.4,cast:[{id:'habaquq',x:0.2,z:0.06,face:'r',pose:'kneel',say:0},{id:'chaldean',x:0.74,z:0.1,face:'l',pose:'stand',hold:'sword',at:1}],props:[{k:'rock',x:0.36,z:0.3,w:80,h:50}],fx:[{k:'glory',x:0.4,y:0.05,at:0},{k:'rays',x:0.3,at:1}]}},
   ],
   scene:{
    map:{biome:'rocky',w:44,h:28,seed:6102,features:[{type:'rock',x:16,y:12,id:'rock'},{type:'well',x:30,y:14,id:'net'},{type:'standard',x:22,y:9,id:'silence'},{type:'clearing',x:22,y:19,flat:3}]},
@@ -5945,7 +5952,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'void',music:'sorrow',text:'Is he therefore to keep on emptying his net and slaying nations without sparing?',ref:'ḤAḆAQQUQ 1:17',stage:{set:'river',time:'day',cam:'push',focus:0.55,cast:[{id:'habaquq',x:0.1,z:0.04,face:'r',pose:'look',say:4,acts:[{at:4,pose:'raise'}]},{id:'chaldean',x:0.6,z:0.08,face:'l',pose:'hold',hold:'staff',acts:[{at:1,pose:'carry'},{at:2,pose:'raise'},{at:3,to:0.72,pose:'bow'},{at:4,pose:'stand',face:'l'}]}],crowd:[{kind:'captives',n:5,x:0.38,w:0.18,z:0.22,face:'r',at:1}],props:[{k:'fish',x:0.3,z:0.5,face:'r'},{k:'fish',x:0.52,z:0.55,face:'l'},{k:'fish',x:0.7,z:0.5,face:'r',s:0.8},{k:'altar',x:0.88,z:0.18,at:3}],fx:[{k:'red',amt:0.15,at:4}]}},
+   {art:'void',music:'sorrow',text:'Is he therefore to keep on emptying his net and slaying nations without sparing?',ref:'ḤAḆAQQUQ 1:17',stage:{set:'river',time:'day',cam:'push',focus:0.55,cast:[{id:'habaquq',x:0.1,z:0.04,face:'r',pose:'speak',say:0},{id:'chaldean',x:0.62,z:0.08,face:'l',pose:'carry',hold:'basket'}],crowd:[{kind:'captives',n:5,x:0.38,w:0.18,z:0.22,face:'r',at:1}],props:[{k:'fish',x:0.3,z:0.5,face:'r'},{k:'fish',x:0.52,z:0.55,face:'l'},{k:'fish',x:0.7,z:0.5,face:'r',s:0.8},{k:'altar',x:0.88,z:0.18,at:3},{k:'basket',x:0.53,z:0.12,fruit:'#9ab0bc'}],fx:[{k:'red',amt:0.15,at:4}]}},
   ],
   complete:'Is he therefore to keep on emptying his net and slaying nations without sparing?'
 }
@@ -5988,17 +5995,17 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light',music:'holy',text:'“And also, because wine betrays him, a man is proud and he does not stay at home. Because he enlarges his appetite as the grave and he is like death and is not satisfied and gathers to himself all nations and heaps up for himself all peoples.',ref:'ḤAḆAQQUQ 2:5',stage:{set:'city',time:'noon',cam:'push',focus:0.5,cast:[{id:'chaldean',x:0.64,z:0.1,face:'l',pose:'raise',hold:'cup',acts:[{at:2,pose:'fall'},{at:3,pose:'point',face:'r'}]},{id:'poorman',x:0.28,z:0.08,face:'r',pose:'kneel',acts:[{at:1,pose:'pray'}]},{id:'voice',x:0.7}],crowd:[{kind:'captives',n:6,x:0.8,w:0.24,z:0.5,face:'l',at:3}],props:[{k:'grave',x:0.9,z:0.3,open:1,at:3}],fx:[{k:'rays',x:0.28,at:1}]}},
+   {art:'light',music:'holy',text:'“And also, because wine betrays him, a man is proud and he does not stay at home. Because he enlarges his appetite as the grave and he is like death and is not satisfied and gathers to himself all nations and heaps up for himself all peoples.',ref:'ḤAḆAQQUQ 2:5',stage:{set:'city',time:'noon',cam:'push',focus:0.5,cast:[{id:'chaldean',x:0.64,z:0.1,face:'l',pose:'raise',hold:'cup',acts:[{at:2,pose:'fall'},{at:3,pose:'point',face:'r'}]},{id:'poorman',x:0.28,z:0.08,face:'r',pose:'kneel'},{id:'voice',x:0.7}],crowd:[{kind:'captives',n:6,x:0.8,w:0.24,z:0.5,face:'l',at:3}],props:[{k:'grave',x:0.9,z:0.3,open:1,at:3}],fx:[{k:'rays',x:0.28,at:1}]}},
   ],
   complete:'…the grave and he is like death and is not satisfied and gathers to himself all nations and heaps up for himself all peoples.'
 },
 
 { id:'hb4', title:'The Five Woes', ref:'ḤAḆAQQUQ 2:6–20',
   intro:[
-   {art:'corrupt',music:'tense',text:'“Shall not all these lift up a proverb against him and a mocking riddle against him and say, not his! Til when is he to load on himself many pledges’? “Do not your creditors rise up suddenly? And those who make you tremble wake up and you be plunder for them?',ref:'ḤAḆAQQUQ 2:6–7',stage:{set:'palace',cam:'push',focus:0.55,cast:[{id:'elder',x:0.16,z:0.06,face:'r',pose:'point',say:0},{id:'chaldean',x:0.7,z:0.12,face:'l',pose:'sit',acts:[{at:2,pose:'stand'},{at:3,pose:'fall'}]},{id:'voice',x:0.7}],crowd:[{kind:'nations',n:6,x:0.42,w:0.26,z:0.45,face:'r',from:'sitground',pose:'point',at:2}],props:[{k:'chest',x:0.84,z:0.3,gold:1},{k:'chest',x:0.9,z:0.4,gold:1,at:1},{k:'sacks',x:0.8,z:0.5,n:5,at:1}]}},
+   {art:'corrupt',music:'tense',text:'“Shall not all these lift up a proverb against him and a mocking riddle against him and say, ‘Woe to him who increases what is not his! Til when is he to load on himself many pledges’? “Do not your creditors rise up suddenly? And those who make you tremble wake up and you be plunder for them?',ref:'ḤAḆAQQUQ 2:6–7',stage:{set:'palace',cam:'push',focus:0.55,cast:[{id:'elder',x:0.16,z:0.06,face:'r',pose:'point',say:0},{id:'chaldean',x:0.7,z:0.12,face:'l',pose:'sit',acts:[{at:2,pose:'stand'},{at:3,pose:'fall'}]},{id:'voice',x:0.7}],crowd:[{kind:'nations',n:6,x:0.42,w:0.26,z:0.45,face:'r',from:'sitground',pose:'point',at:2}],props:[{k:'chest',x:0.84,z:0.3,gold:1},{k:'chest',x:0.9,z:0.4,gold:1,at:1},{k:'sacks',x:0.8,z:0.5,n:5,at:1}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:6104,features:[{type:'house',x:16,y:11,id:'nest'},{type:'wall',x:22,y:9,id:'blood'},{type:'standard',x:30,y:13,id:'idol'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:6104,features:[{type:'house',x:16,y:11,id:'nest',furnish:'palace'},{type:'citygate',x:22,y:9,id:'blood'},{type:'idol',x:30,y:13,id:'idol'},{type:'clearing',x:22,y:19,flat:3},{type:'house',x:9,y:15,clear:3.5},{type:'house',x:31,y:7.5,clear:3.5},{type:'house',x:37,y:19,clear:3.5}]},
    time:'day',
    music:'tense',
    player:'habaquq',
@@ -6044,7 +6051,7 @@ STORY.push(
 
 { id:'hb5', title:'Yet I Exult in YAHUAH', ref:'ḤAḆAQQUQ 3',
   intro:[
-   {art:'mountain',music:'holy',text:'A prayer of Ḥaḇaqquq the naḇi, on Shiḡionoth. O YAHUAH, I have heard your report, I was afraid. O YAHUAH, renew Your work in the midst of the years! Make it known in the midst of the years. In wrath remember compassion.',ref:'ḤAḆAQQUQ 3:1–2',stage:{set:'mountain',time:'dawn',cam:'push',focus:0.4,cast:[{id:'habaquq',x:0.34,z:0.08,face:'r',pose:'stand',hold:'harp',say:2,acts:[{at:1,pose:'kneel'},{at:2,pose:'pray'},{at:4,pose:'raise'}]}],crowd:[{kind:'levites',n:4,x:0.72,w:0.18,z:0.5,face:'l',hold:'harp'}],fx:[{k:'darkness',amt:0.2,at:1},{k:'rays',x:0.36,at:2},{k:'glory',x:0.5,y:0.05,at:3}]}},
+   {art:'mountain',music:'holy',text:'A prayer of Ḥaḇaqquq the naḇi, on Shiḡionoth. O YAHUAH, I have heard your report, I was afraid. O YAHUAH, renew Your work in the midst of the years! Make it known in the midst of the years. In wrath remember compassion.',ref:'ḤAḆAQQUQ 3:1–2',stage:{set:'mountain',time:'dawn',cam:'push',focus:0.4,cast:[{id:'habaquq',x:0.34,z:0.08,face:'r',pose:'stand',hold:'harp',say:2,acts:[{at:1,pose:'kneel'}]}],crowd:[{kind:'levites',n:4,x:0.72,w:0.18,z:0.5,face:'l',hold:'harp'}],fx:[{k:'darkness',amt:0.2,at:1},{k:'rays',x:0.36,at:2},{k:'glory',x:0.5,y:0.05,at:3}]}},
   ],
   scene:{
    map:{biome:'rocky',w:44,h:28,seed:6105,features:[{type:'standard',x:22,y:9,id:'theophany'},{type:'rock',x:16,y:13,id:'mountains'},{type:'tree',x:30,y:14,id:'figtree',examine:'“Though the fig tree does not blossom, and there is no fruit on the vine… yet I exult in YAHUAH.”'},{type:'clearing',x:22,y:19,flat:3}]},
@@ -6054,7 +6061,7 @@ STORY.push(
    playerPos:[22,20],
    playerHold:'scroll',
    npcs:[
-     {id:'elder',char:'elder',x:18,y:13,wander:false},
+     {id:'elder',char:'elder',x:19.4,y:15.6,wander:false},
      {id:'poorman',char:'poorman',x:27,y:15,wander:false},
    ],
    objectives:[
@@ -6351,6 +6358,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>

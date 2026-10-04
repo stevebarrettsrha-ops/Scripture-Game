@@ -2742,6 +2742,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4484,9 +4487,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -5875,7 +5882,7 @@ STORY.push(
    {art:'wasteland',music:'sorrow',text:'In the second year of Dareyawesh the sovereign, in the sixth month, on the first day of the month, the Word of YAHUAH came by Ḥaggai the naḇi to Zerubbaḇal son of She’alti’al, governor of Yahuḏah and to Yahusha son of Yahhotsaḏaq, the kohen gadol, saying,',ref:'ḤAGGAI 1:1',stage:{set:'gate',time:'dawn',cam:'push',focus:0.45,cast:[{id:'haggai',x:0.18,z:0.12,face:'r',pose:'speak',hold:'scroll',say:0},{id:'zerub',x:0.46,z:0.12,face:'l',pose:'stand'},{id:'yahushua',x:0.6,z:0.16,face:'l',pose:'stand'}],crowd:[{kind:'people',n:6,x:0.72,w:0.26,z:0.56,face:'r'}],props:[{k:'stones',x:0.86,z:0.3,n:12},{k:'pillar',x:0.94,z:0.4,h:60}],fx:[{k:'rays',x:0.2}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:6101,features:[{type:'temple',x:16,y:11,id:'ruin'},{type:'house',x:30,y:12,id:'panel',examine:'“Is it time for you yourselves to dwell in your panelled houses and this House be in ruins?”'},{type:'timber',x:22,y:9,id:'wood',examine:'“Go up to the mountain and you shall bring wood and build the House. And I will be pleased with it and let Me be esteemed.”'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:6101,features:[{type:'tower',x:16,y:11,id:'ruin',stage:1,clear:4},{type:'house',x:30,y:12,id:'panel',examine:'“Is it time for you yourselves to dwell in your panelled houses and this House be in ruins?”',furnish:'palace'},{type:'timber',x:22,y:9,id:'wood',examine:'“Go up to the mountain and you shall bring wood and build the House. And I will be pleased with it and let Me be esteemed.”'},{type:'clearing',x:22,y:19,flat:3},{type:'stone',x:12.6,y:12.2,clear:0},{type:'stone',x:19.3,y:12.6,clear:0},{type:'stone',x:14.2,y:13.1,clear:0},{type:'stone',x:20.4,y:11.4,clear:0},{type:'timber',x:12.4,y:10.6,clear:0},{type:'house',x:8,y:20.5,clear:3},{type:'house',x:36,y:20.5,clear:3}]},
    time:'day',
    music:'sorrow',
    player:'haggai',
@@ -5922,7 +5929,7 @@ STORY.push(
    {art:'journey',music:'sorrow',text:'Then Zerubbaḇal son of She’alti’al and Yahusha son of Yahhotsaḏaq, the kohen gadol, with all the remnant of the people, obeyed the voice of YAHUAH their Aluahim and the words of Ḥaggai the naḇi, as YAHUAH their Aluahim had sent him. And the people feared the presence of YAHUAH.',ref:'ḤAGGAI 1:12',stage:{set:'road',time:'dawn',cam:'push',focus:0.6,cast:[{id:'haggai',x:0.82,z:0.12,face:'l',pose:'speak',hold:'scroll',acts:[{at:1,pose:'bless'}]},{id:'zerub',x:0.2,z:0.12,face:'r',to:0.5,at:0,acts:[{at:1,pose:'bow'}]},{id:'yahushua',x:0.08,z:0.14,face:'r',to:0.36,at:0,acts:[{at:1,pose:'kneel'}]}],crowd:[{kind:'people',n:8,x:0.34,w:0.34,z:0.5,face:'r',enter:'l',at:0,pose:'kneel'}],fx:[{k:'glory',x:0.66,y:0.04,at:1},{k:'rays',x:0.66,at:1}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:6102,features:[{type:'temple',x:22,y:10,id:'house'},{type:'timber',x:15,y:13,id:'beams'},{type:'standard',x:30,y:12,id:'withyou',examine:'“I am with you, declares YAHUAH.”'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:6102,features:[{type:'tower',x:22,y:10,id:'house',stage:1,scaffold:true,clear:4},{type:'timber',x:15,y:13,id:'beams'},{type:'standard',x:30,y:12,id:'withyou',examine:'“I am with you, declares YAHUAH.”'},{type:'clearing',x:22,y:19,flat:3},{type:'stone',x:18.6,y:10.4,clear:0},{type:'stone',x:25.6,y:11,clear:0},{type:'house',x:8,y:20.5,clear:3},{type:'house',x:36,y:20.5,clear:3}]},
    time:'day',
    music:'holy',
    player:'haggai',
@@ -5931,6 +5938,8 @@ STORY.push(
    npcs:[
      {id:'zerub',char:'zerub',x:18,y:12,wander:false},
      {id:'yahushua',char:'yahushua',x:27,y:13,wander:false},
+     {id:'bld1',char:'builder2',x:20.6,y:11.4,wander:false,noTalk:true},
+     {id:'bld2',char:'builder3',x:24,y:11.6,wander:false,noTalk:true},
    ],
    objectives:[
      {type:'interact',prop:'withyou',text:'Speak the message: “I am with you”', script:[
@@ -5964,7 +5973,7 @@ STORY.push(
    {art:'vista',music:'sorrow',text:'In the seventh month, on the twenty first of the month, the Word of YAHUAH came by Ḥaggai the naḇi, saying, “Speak, please, to Zerubbaḇal son of She’alti’al, governor of Yahuḏah and to Yahusha son of Yahhotsaḏaq, the kohen gadol and to the remnant of the people, saying,',ref:'ḤAGGAI 2:1–2',stage:{set:'walls',time:'dusk',cam:'push',focus:0.5,cast:[{id:'haggai',x:0.16,z:0.12,face:'r',pose:'speak',hold:'scroll',say:0,acts:[{at:1,pose:'point'}]},{id:'zerub',x:0.38,z:0.14,face:'l',pose:'stand'},{id:'yahushua',x:0.3,z:0.18,face:'l',pose:'stand'},{id:'voice',x:0.7}],crowd:[{kind:'elders',n:5,x:0.74,w:0.26,z:0.56,face:'l',pose:'weep',at:2,hold:null,from:'look'}],props:[{k:'wall',x:0.7,z:0.4,w:0.3,h:30},{k:'stones',x:0.52,z:0.34,n:8}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:6103,features:[{type:'temple',x:22,y:10,id:'house'},{type:'standard',x:15,y:12,id:'bestrong'},{type:'pillar',x:30,y:13,id:'esteem',examine:'“I shall fill this House with esteem — the silver is Mine, and the gold is Mine.”'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:6103,features:[{type:'tower',x:22,y:10,id:'house',stage:1,scaffold:true,clear:4},{type:'standard',x:15,y:12,id:'bestrong'},{type:'pillar',x:30,y:13,id:'esteem',examine:'“I shall fill this House with esteem — the silver is Mine, and the gold is Mine.”'},{type:'clearing',x:22,y:19,flat:3},{type:'timber',x:19,y:11.6,clear:0},{type:'stone',x:25.4,y:11.2,clear:0},{type:'house',x:8,y:20.5,clear:3},{type:'house',x:36,y:20.5,clear:3}]},
    time:'day',
    music:'holy',
    player:'haggai',
@@ -5973,6 +5982,8 @@ STORY.push(
    npcs:[
      {id:'zerub',char:'zerub',x:18,y:12,wander:false},
      {id:'yahushua',char:'yahushua',x:27,y:13,wander:false},
+     {id:'bld1',char:'builder2',x:20.6,y:11.4,wander:false,noTalk:true},
+     {id:'bld2',char:'builder3',x:24,y:11.6,wander:false,noTalk:true},
    ],
    objectives:[
      {type:'interact',prop:'bestrong',text:'Strengthen the builders — “be strong, and work”', script:[
@@ -6010,7 +6021,7 @@ STORY.push(
    {art:'wasteland',music:'sorrow',text:'“If one bears qadash (Set Apart) meat in the fold of his garment and with the edge he touches bread or stew, or wine or oil, or any food, is it qadash (Set Apart)?” ’ ” And the kohanim answered and said, “No.”',ref:'ḤAGGAI 2:12',stage:{set:'court',time:'day',cam:'push',focus:0.55,cast:[{id:'haggai',x:0.14,z:0.12,face:'r',pose:'speak',hold:'scroll',say:0},{id:'yehudi',x:0.33,z:0.1,look:{name:'A Man of Yahuḏah',skin:'#83552d',hair:'#231409',hairStyle:'short',robe:'#6a5a3a',beard:'#231409',headcover:'#c8b890'},face:'r',pose:'carry',hold:'bowl'},{id:'yahushua',x:0.68,z:0.14,face:'l',pose:'stand',say:1,acts:[{at:1,pose:'point'}]},{id:'voice',x:0.7}],crowd:[{kind:'kohanim',n:5,x:0.8,w:0.2,z:0.46,face:'l',pose:'speak',at:1,from:'stand'}],props:[{k:'table',x:0.48,z:0.26,cups:1}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:6104,features:[{type:'altar',x:16,y:11,id:'torah'},{type:'temple',x:30,y:11,id:'found'},{type:'standard',x:22,y:9,id:'signet'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:6104,features:[{type:'altar',x:16,y:11,id:'torah',stage:3},{type:'tower',x:30,y:11,id:'found',stage:1,scaffold:true,clear:4},{type:'standard',x:22,y:9,id:'signet'},{type:'clearing',x:22,y:19,flat:3},{type:'house',x:8,y:20.5,clear:3},{type:'house',x:37,y:20.5,clear:3}]},
    time:'day',
    music:'sorrow',
    player:'haggai',
@@ -6054,7 +6065,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light',music:'holy',text:'‘In that day,’ declares YAHUAH of hosts, ‘I shall take you, Zerubbaḇal My servant, son of She’alti’al,’ declares YAHUAH, ‘and shall make you as a signet, for I have chosen you,’ declares YAHUAH of hosts.”',ref:'ḤAGGAI 2:23',stage:{set:'battle',time:'dusk',cam:'push',focus:0.4,cast:[{id:'haggai',x:0.12,z:0.12,face:'r',pose:'raise',say:0},{id:'zerub',x:0.36,z:0.1,face:'r',pose:'stand',acts:[{at:3,pose:'kneel'},{at:4,pose:'raise'}]},{id:'voice',x:0.7}],crowd:[{kind:'kings',n:3,x:0.82,w:0.12,z:0.5,face:'l',pose:'fall',at:1,from:'stand'},{kind:'army',n:5,x:0.72,w:0.28,z:0.62,side:'paras',face:'l',pose:'fall',at:2,from:'stand'}],props:[{k:'throne',x:0.9,z:0.44},{k:'chariot',x:0.6,z:0.34,face:'l'}],fx:[{k:'lightning',at:0},{k:'red',at:2,amt:0.15},{k:'glory',x:0.36,y:0.04,at:3},{k:'spotlight',x:0.36,at:4}]}},
+   {art:'light',music:'holy',text:'‘In that day,’ declares YAHUAH of hosts, ‘I shall take you, Zerubbaḇal My servant, son of She’alti’al,’ declares YAHUAH, ‘and shall make you as a signet, for I have chosen you,’ declares YAHUAH of hosts.”',ref:'ḤAGGAI 2:23',stage:{set:'city',time:'dusk',cam:'push',focus:0.4,cast:[{id:'haggai',x:0.16,z:0.12,face:'r',pose:'speak',say:0},{id:'zerub',x:0.44,z:0.08,face:'r',pose:'kneel'},{id:'voice',x:0.72}],fx:[{k:'glory',x:0.44,y:0.04,at:0},{k:'spotlight',x:0.44,at:0}]}},
   ],
   complete:'…Zerubbaḇal My servant, son of She’alti’al,’ declares YAHUAH, ‘and shall make you as a signet, for I have chosen you,’ declares YAHUAH of hosts.”'
 }
@@ -6322,6 +6333,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>

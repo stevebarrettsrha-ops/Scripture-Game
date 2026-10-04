@@ -2836,6 +2836,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4578,9 +4581,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -6004,9 +6011,9 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'garden',music:'holy',text:'With an overwhelming flood He makes a complete end of the place of NinewÃh and darkness pursues His enemies.',ref:'NAḤUM 1:8',stage:{set:'river',time:'dusk',wx:'rain',wxAt:2,cam:'pan-r',cast:[{id:'elder',x:0.2,z:0.06,face:'r',pose:'pray',acts:[{at:1,pose:'raise'}]},{id:'poorman',x:0.31,z:0.1,face:'r',pose:'kneel',acts:[{at:1,pose:'pray'}]},{id:'nahum',x:0.46,z:0.06,face:'r',pose:'stand',say:2,acts:[{at:2,pose:'point'}]}],crowd:[{kind:'people',n:4,x:0.1,w:0.1,z:0.2,dz:0.04,face:'r',pose:'pray',at:1},{kind:'soldiers',side:'ashshur',n:6,x:0.8,w:0.24,z:0.9,dz:0.04,face:'l',exit:'r',exitAt:2,run:1}],props:[{k:'wall',x:0.84,z:1,w:0.34,h:90,color:'#9a8a6a'},{k:'tower',x:0.72,z:1,h:150,tiers:2,color:'#8a7a5a'},{k:'cloud',x:0.8,z:1,s:3,dark:1,at:2}],fx:[{k:'glory',x:0.2,y:0.06,at:0},{k:'rays',x:0.22,at:1}]}},
+   {art:'garden',music:'holy',text:'With an overwhelming flood He makes a complete end of the place of Ninewĕh and darkness pursues His enemies.',ref:'NAḤUM 1:8',stage:{set:'river',time:'dusk',wx:'rain',wxAt:2,cam:'pan-r',cast:[{id:'elder',x:0.2,z:0.06,face:'r',pose:'pray',acts:[{at:1,pose:'raise'}]},{id:'poorman',x:0.31,z:0.1,face:'r',pose:'kneel',acts:[{at:1,pose:'pray'}]},{id:'nahum',x:0.46,z:0.06,face:'r',pose:'stand',say:2,acts:[{at:2,pose:'point'}]}],crowd:[{kind:'people',n:4,x:0.1,w:0.1,z:0.2,dz:0.04,face:'r',pose:'pray',at:1},{kind:'soldiers',side:'ashshur',n:6,x:0.8,w:0.24,z:0.9,dz:0.04,face:'l',exit:'r',exitAt:2,run:1}],props:[{k:'wall',x:0.84,z:1,w:0.34,h:90,color:'#9a8a6a'},{k:'tower',x:0.72,z:1,h:150,tiers:2,color:'#8a7a5a'},{k:'cloud',x:0.8,z:1,s:3,dark:1,at:2}],fx:[{k:'glory',x:0.2,y:0.06,at:0},{k:'rays',x:0.22,at:1}]}},
   ],
-  complete:'With an overwhelming flood He makes a complete end of the place of NinewÃh and darkness pursues His enemies.'
+  complete:'With an overwhelming flood He makes a complete end of the place of Ninewĕh and darkness pursues His enemies.'
 },
 
 { id:'n2', title:'An Utter End', ref:'NAḤUM 1:9–15',
@@ -6062,7 +6069,7 @@ STORY.push(
    {art:'fall',music:'tense',text:'The shields of his mighty men have become red, the men of battle are in scarlet. The chariots are like flaming torches in the day of his preparation and the cypresses shall be shaken.',ref:'NAḤUM 2:3',stage:{set:'walls',time:'dusk',cam:'push',focus:0.5,cast:[{id:'breaker',look:{name:'He Who Breaks in Pieces',skin:'#a07048',hair:'#1d1208',robe:'#8a1a1a',beard:'#1d1208',armor:'#a88a48',helmet:'#9a8040',crest:'#c83a2a',short:1},enter:'l',at:0,to:0.3,face:'r',pose:'stand',hold:'sword',hold2:'shield',acts:[{at:3,pose:'raise'}]},{id:'asshur',x:0.78,z:0.1,face:'l',pose:'stand',say:1,acts:[{at:1,pose:'point'},{at:2,pose:'raise'},{at:4,pose:'fall'}]}],crowd:[{kind:'army',side:'bavel',n:8,x:0.26,w:0.34,z:0.5,face:'r',enter:'l',at:0,hold:'spear'},{kind:'guards',side:'ashshur',n:6,x:0.72,w:0.3,z:0.8,face:'l',from:'stand',pose:'fight',at:2}],props:[{k:'chariot',x:0.48,z:0.3,face:'r',fire:1,at:4},{k:'tree',x:0.93,z:0.4,h:140,color:'#2e4a2a'}],fx:[{k:'red',amt:0.15,at:3},{k:'wind',at:4}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:8103,features:[{type:'gate',x:22,y:8,id:'ramparts'},{type:'well',x:16,y:14,id:'rivergates'},{type:'tower',x:30,y:12,id:'lions'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:8103,features:[{type:'citygate',x:22,y:8,id:'ramparts'},{type:'well',x:16,y:14,id:'rivergates'},{type:'tower',x:30,y:12,id:'lions'},{type:'clearing',x:22,y:19,flat:3},{type:'house',x:13.5,y:21.5,clear:3},{type:'house',x:34,y:21.5,clear:3},{type:'house',x:36.5,y:8,clear:3}],river:{x:6.5,width:4,curve:1.2}},
    time:'day',
    music:'tense',
    player:'nahum',
@@ -6094,7 +6101,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'void',music:'tense',text:'“See, I am against you,” declares YAHUAH of hosts, “and I shall burn your chariots in smoke and the sword devour your young lions. And I shall cut off your prey from the earth and no longer is the voice of your mal\'akim heard.”',ref:'NAḤUM 2:13',stage:{set:'cave',time:'dusk',cam:'push',focus:0.45,cast:[{id:'nahum',x:0.12,z:0.05,face:'r',pose:'look',say:3,acts:[{at:3,pose:'point'}]},{id:'voice',x:0.7}],props:[{k:'lion',x:0.4,z:0.2,face:'r',roar:1},{k:'lion',x:0.56,z:0.14,face:'l',s:0.55},{k:'lion',x:0.63,z:0.24,face:'l',s:0.5},{k:'bones',x:0.3,z:0.1,n:10,w:60,at:2},{k:'chariot',x:0.82,z:0.35,face:'l',at:3}],fx:[{k:'glory',x:0.5,y:0.04,at:3},{k:'smoke',x:0.82,at:3},{k:'sword',x:0.5,y:0.3,at:3},{k:'darkness',amt:0.45,at:4}]}},
+   {art:'void',music:'tense',text:'“See, I am against you,” declares YAHUAH of hosts, “and I shall burn your chariots in smoke and the sword devour your young lions. And I shall cut off your prey from the earth and no longer is the voice of your mal\'akim heard.”',ref:'NAḤUM 2:13',stage:{set:'cave',time:'dusk',cam:'push',focus:0.45,cast:[{id:'nahum',x:0.12,z:0.05,face:'r',pose:'look',say:3,acts:[{at:3,pose:'point'}]},{id:'voice',x:0.7}],props:[{k:'lion',x:0.4,z:0.2,face:'r',roar:1},{k:'lion',x:0.56,z:0.14,face:'l',s:0.55},{k:'lion',x:0.63,z:0.24,face:'l',s:0.5},{k:'bones',x:0.3,z:0.1,n:10,w:60,at:2},{k:'chariot',x:0.82,z:0.35,face:'l',at:1},{k:'fire',x:0.8,z:0.3,w:50,h:60,at:1}],fx:[{k:'glory',x:0.5,y:0.04,at:3},{k:'sword',x:0.5,y:0.3,at:3},{k:'darkness',amt:0.45,at:4},{k:'smoke',x:0.82,at:1}]}},
   ],
   complete:'And I shall cut off your prey from the earth and no longer is the voice of your mal\'akim heard.”'
 }
@@ -6109,7 +6116,7 @@ STORY.push(
    {art:'corrupt',music:'tense',text:'Woe to the city of blood! All of it is a lie, filled with plunder, the prey is not lacking.',ref:'NAḤUM 3:1',stage:{set:'city',time:'dusk',wx:'dust',cam:'push',focus:0.55,cast:[{id:'nahum',x:0.1,z:0.05,face:'r',pose:'raise',say:0,acts:[{at:1,pose:'point'},{at:2,pose:'weep'}]},{id:'asshur',x:0.36,z:0.12,face:'r',pose:'stand',hold:'rod',at:1,acts:[{at:2,pose:'fight'}]}],crowd:[{kind:'captives',n:4,x:0.5,w:0.16,z:0.45,face:'l',at:1},{kind:'people',n:4,x:0.5,w:0.3,z:0.3,pose:'dead',at:2},{kind:'army',side:'bavel',n:6,x:0.8,w:0.24,z:0.55,face:'l',pose:'fight',hold:'sword',enter:'r',at:2}],props:[{k:'chariot',x:0.68,z:0.3,face:'l',at:2},{k:'horse',x:0.9,z:0.4,face:'l',color:'#3a2a1a',at:2}],fx:[{k:'smoke',x:0.82,at:1},{k:'red',amt:0.18,at:2}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:8104,features:[{type:'standard',x:16,y:11,id:'harlot'},{type:'standard',x:22,y:9,id:'spectacle'},{type:'rock',x:30,y:13,id:'noamon'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:8104,features:[{type:'standard',x:16,y:11,id:'harlot'},{type:'standard',x:22,y:9,id:'spectacle'},{type:'rock',x:30,y:13,id:'noamon'},{type:'clearing',x:22,y:19,flat:3},{type:'citygate',x:34,y:7.5,clear:3},{type:'house',x:10,y:21.5,clear:3},{type:'house',x:34,y:21.5,clear:3},{type:'house',x:9.5,y:8.5,clear:3}]},
    time:'day',
    music:'tense',
    player:'nahum',
@@ -6140,17 +6147,17 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'fall',music:'sorrow',text:'You too are to become drunk, you are to go into hiding. You too are to seek refuge from the enemy.',ref:'NAḤUM 3:11',stage:{set:'egypt',time:'dusk',cam:'pan-r',cast:[{id:'kushite',x:0.3,z:0.12,face:'r',pose:'stand',hold:'spear',at:2,acts:[{at:3,exit:'l',run:1}]},{id:'kushite2',x:0.4,z:0.18,face:'r',pose:'stand',hold:'spear',at:2,acts:[{at:3,exit:'l',run:1}]},{id:'asshur',x:0.6,z:0.1,face:'l',pose:'kneel',hold:'stone',at:5},{id:'ninking',x:0.84,z:0.08,face:'l',pose:'fall',hold:'cup',crown:1,at:6,acts:[{at:7,exit:'r',run:1}]}],crowd:[{kind:'soldiers',side:'mitsrayim',n:5,x:0.22,w:0.2,z:0.5,face:'r',at:2,exit:'l',exitAt:3},{kind:'army',side:'ashshur',n:6,x:0.76,w:0.26,z:0.6,face:'l',enter:'r',at:3},{kind:'captives',n:5,x:0.46,w:0.2,z:0.42,face:'l',at:3},{kind:'mourners',n:3,x:0.18,w:0.1,z:0.3,at:4}],fx:[{k:'smoke',x:0.3,at:3}]}},
+   {art:'fall',music:'sorrow',text:'You too are to become drunk, you are to go into hiding. You too are to seek refuge from the enemy.',ref:'NAḤUM 3:11',stage:{set:'city',time:'dusk',cam:'pan-r',cast:[{id:'ninking',x:0.46,z:0.08,face:'l',pose:'sitground',hold:'cup',crown:1},{id:'asshur',x:0.24,z:0.1,face:'l',pose:'stand',acts:[{at:1,pose:'flee'}]}],crowd:[{kind:'army',side:'bavel',n:6,x:0.78,w:0.24,z:0.55,face:'l',enter:'r',at:1}],fx:[{k:'smoke',x:0.86,at:1}]}},
   ],
   complete:'You too are to seek refuge from the enemy.'
 },
 
 { id:'n5', title:'Your Injury Has No Healing', ref:'NAḤUM 3:12–19',
   intro:[
-   {art:'wasteland',music:'tense',text:'All your strongholds are fig trees with ripened figs, when shaken they shall fall into the mouth of the eater. See, your people in your midst are women! The gates of your land shall be opened wide to your enemies. Fire shall consume your gate bars.',ref:'NAḤUM 3:12–13',stage:{set:'gate',time:'dusk',wx:'wind',cam:'push',focus:0.5,cast:[{id:'asshur',x:0.72,z:0.08,face:'l',pose:'stand',acts:[{at:1,pose:'weep'},{at:3,exit:'r',run:1}]}],crowd:[{kind:'soldiers',side:'ashshur',n:5,x:0.66,w:0.24,z:0.4,face:'l',from:'stand',pose:'weep',at:1},{kind:'army',side:'bavel',n:7,x:0.44,w:0.3,z:0.72,face:'r',enter:'l',at:2}],props:[{k:'tree',x:0.14,z:0.25,h:110,fruit:'#5a2a4a'},{k:'basket',x:0.24,z:0.08,fruit:'#5a2a4a'}],fx:[{k:'firefall',x:0.5,y:0.52,at:3},{k:'smoke',x:0.5,at:3}]}},
+   {art:'wasteland',music:'tense',text:'All your strongholds are fig trees with ripened figs, when shaken they shall fall into the mouth of the eater. See, your people in your midst are women! The gates of your land shall be opened wide to your enemies. Fire shall consume your gate bars.',ref:'NAḤUM 3:12–13',stage:{set:'gate',time:'dusk',wx:'wind',cam:'push',focus:0.5,cast:[{id:'asshur',x:0.32,z:0.06,face:'r',pose:'stand',acts:[{at:1,pose:'weep'}]}],crowd:[{kind:'soldiers',side:'ashshur',n:5,x:0.7,w:0.24,z:0.4,face:'l',from:'stand',pose:'weep',at:1},{kind:'army',side:'bavel',n:7,x:0.5,w:0.3,z:0.72,face:'r',enter:'l',at:2}],props:[{k:'tree',x:0.14,z:0.25,h:110,fruit:'#5a2a4a'},{k:'basket',x:0.24,z:0.08,fruit:'#5a2a4a'}],fx:[{k:'firefall',x:0.5,y:0.52,at:3},{k:'smoke',x:0.5,at:3}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:8105,features:[{type:'tree',x:16,y:12,id:'figs'},{type:'firepit',x:22,y:9,id:'siege'},{type:'standard',x:30,y:13,id:'shepherds'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:8105,features:[{type:'tree',x:16,y:12,id:'figs'},{type:'firepit',x:22,y:9,id:'siege'},{type:'standard',x:30,y:13,id:'shepherds'},{type:'clearing',x:22,y:19,flat:3},{type:'citygate',x:34,y:7.5,clear:3},{type:'house',x:10,y:21.5,clear:3},{type:'house',x:34,y:21.5,clear:3},{type:'house',x:9.5,y:8.5,clear:3}]},
    time:'day',
    music:'tense',
    player:'nahum',
@@ -6180,7 +6187,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'void',music:'sorrow',text:'Your injury has no healing, your wound is grievous. All who hear news of you shall clap their hands over you. For over whom did your evil not pass continually?',ref:'NAḤUM 3:19',stage:{set:'night',cam:'pull',cast:[{id:'ninking',x:0.5,z:0.08,face:'r',pose:'stand',crown:1,acts:[{at:2,pose:'fall'},{at:3,pose:'mourn'}]},{id:'nahum_o',x:0.12,z:0.04,face:'r',pose:'point',at:4,say:4}],crowd:[{kind:'shepherds',n:3,x:0.22,w:0.14,z:0.35,pose:'lie'},{kind:'princes',n:3,x:0.78,w:0.14,z:0.35,pose:'lie'},{kind:'people',n:3,x:0.38,w:0.12,z:0.9,face:'l',at:1,exit:'l',exitAt:2},{kind:'people',n:3,x:0.62,w:0.12,z:0.9,face:'r',at:1,exit:'r',exitAt:2},{kind:'nations',n:5,x:0.5,w:0.44,z:0.62,face:'r',pose:'raise',at:3}],fx:[{k:'darkness',amt:0.25,at:2}]}},
+   {art:'void',music:'sorrow',text:'Your injury has no healing, your wound is grievous. All who hear news of you shall clap their hands over you. For over whom did your evil not pass continually?',ref:'NAḤUM 3:19',stage:{set:'night',cam:'pull',cast:[{id:'ninking',x:0.5,z:0.08,face:'r',pose:'stand',crown:1,acts:[{at:2,pose:'fall'},{at:3,pose:'mourn'}]},{id:'nahum',x:0.1,z:0.04,face:'r',pose:'point',at:4,say:4}],crowd:[{kind:'princes',n:3,x:0.78,w:0.14,z:0.35,pose:'lie'},{kind:'people',n:3,x:0.38,w:0.12,z:0.9,face:'l',at:1,exit:'l',exitAt:2},{kind:'people',n:3,x:0.62,w:0.12,z:0.9,face:'r',at:1,exit:'r',exitAt:2},{kind:'nations',n:5,x:0.5,w:0.44,z:0.62,face:'r',pose:'raise',at:3},{kind:'shepherds',n:3,x:0.3,w:0.12,z:0.35,pose:'lie'}],fx:[{k:'darkness',amt:0.25,at:2}]}},
   ],
   complete:'For over whom did your evil not pass continually?'
 }
@@ -6448,6 +6455,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>

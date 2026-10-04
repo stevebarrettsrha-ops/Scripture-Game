@@ -2836,6 +2836,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4578,9 +4581,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -6006,7 +6013,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland',music:'tense',text:'Make yourself bald and cut off your hair for the children of your delight. Enlarge your baldness like an eagle, for they shall be exiled from you.',ref:'MIḴAH 1:16',stage:{set:'road',time:'dusk',wx:'dust',cam:'pan-l',cast:[{id:'mikah',look:{sack:1},x:0.12,z:0.06,face:'r',pose:'point',say:0,acts:[{at:2,pose:'raise'},{at:5,pose:'weep'}]},{id:'tsiyon',look:{name:'The Daughter of Tsiyon',skin:'#caa06e',hair:'#3a2416',hairStyle:'long',robe:'#6a5a8a',veil:'#d8ccb0'},x:0.34,z:0.12,face:'r',pose:'mourn',acts:[{at:1,pose:'weep'},{at:5,pose:'mourn'}]}],crowd:[{kind:'captives',n:5,x:0.64,w:0.26,z:0.45,face:'l',at:5,exit:'l',exitAt:6},{kind:'soldiers',side:'ashshur',n:4,x:0.82,w:0.16,z:0.55,face:'l',at:5,exit:'l',exitAt:6}],props:[{k:'chariot',x:0.74,z:0.3,face:'l',at:3}],fx:[{k:'smoke',x:0.85,at:2}]}},
+   {art:'wasteland',music:'tense',text:'Make yourself bald and cut off your hair for the children of your delight. Enlarge your baldness like an eagle, for they shall be exiled from you.',ref:'MIḴAH 1:16',stage:{set:'road',time:'dusk',wx:'dust',cam:'pan-l',cast:[{id:'mikah',look:{sack:1},x:0.2,z:0.06,face:'r',pose:'point',say:0},{id:'tsiyon',look:{name:'The Daughter of Tsiyon',skin:'#caa06e',hair:'#3a2416',hairStyle:'long',robe:'#6a5a8a',veil:'#d8ccb0'},x:0.36,z:0.12,face:'r',pose:'mourn',acts:[{at:1,pose:'weep'}]}],crowd:[{kind:'captives',n:5,x:0.64,w:0.2,z:0.4,face:'r',pose:'bound'},{kind:'soldiers',side:'ashshur',n:3,x:0.68,w:0.34,z:0.55,face:'r'}],fx:[{k:'smoke',x:0.85,at:2}]}},
   ],
   complete:'Enlarge your baldness like an eagle, for they shall be exiled from you.'
 },
@@ -6016,7 +6023,7 @@ STORY.push(
    {art:'corrupt',music:'tense',text:'Woe to those plotting wickedness and working out evil upon their beds! In the light of the morning they practise it, because it is in the might of their hand. And they coveted fields and seized them, also houses and took them away. And they oppressed a man and his house, a man and his inheritance.',ref:'MIḴAH 2:1–2',stage:{set:'field',time:'dawn',cam:'push',focus:0.45,cast:[{id:'ruler',x:0.16,z:0.1,face:'r',pose:'lie',onbed:1,acts:[{at:1,to:0.46,pose:'point'}]},{id:'merchant',x:0.32,z:0.2,face:'l',pose:'speak',say:0,acts:[{at:1,face:'r'},{at:2,to:0.36,pose:'point'}]},{id:'poorman',x:0.7,z:0.08,face:'l',pose:'stand',acts:[{at:2,pose:'fall'},{at:3,pose:'bound'}]},{id:'matron',x:0.84,z:0.12,face:'l',pose:'stand',acts:[{at:2,pose:'weep'},{at:3,exit:'r'}]},{id:'mikah',enter:'l',at:3,to:0.12,face:'r',pose:'point',say:3,hold2:'yoke'}],crowd:[{kind:'guards',side:'yasharal',n:3,x:0.58,w:0.12,z:0.42,face:'r',enter:'l',at:2}],props:[{k:'house',x:0.86,z:0.5,w:90,h:60},{k:'sheaves',x:0.64,z:0.62,n:3}],fx:[{k:'rays',x:0.6,at:1},{k:'darkness',amt:0.3,at:3}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:7102,features:[{type:'house',x:16,y:11,id:'fields'},{type:'standard',x:22,y:9,id:'planning',examine:'“See, against this clan I am planning evil, from which you do not remove your necks.”'},{type:'gate',x:30,y:12,id:'flock'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:7102,features:[{type:'house',x:16,y:11,id:'fields'},{type:'standard',x:22,y:9,id:'planning',examine:'“See, against this clan I am planning evil, from which you do not remove your necks.”'},{type:'gate',x:30,y:12,id:'flock'},{type:'clearing',x:22,y:19,flat:3},{type:'house',x:8,y:12,clear:3.5},{type:'house',x:36,y:18,clear:3.5}]},
    time:'day',
    music:'tense',
    player:'mikah',
@@ -6050,7 +6057,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'garden',music:'holy',text:'“The breach-maker shall go up before them. They shall break out and pass through the gate and go out by it and their sovereign pass before them, with YAHUAH at their head!”',ref:'MIḴAH 2:13',stage:{set:'gate',time:'dawn',cam:'push',focus:0.55,cast:[{id:'breaker',look:{name:'The Breach-Maker',skin:'#8a6038',hair:'#2c1a0c',robe:'#6a5a3a',beard:'#2c1a0c',mantle:'#8a2a2a',sash:'#caa23c'},x:0.5,z:0.12,at:1,face:'r',pose:'raise',acts:[{at:2,exit:'r'}]},{id:'sov_m',look:{name:'Their Sovereign',skin:'#8a6038',hair:'#2c1a0c',robe:'#f0e8d8',beard:'#2c1a0c',mantle:'#5a2a6a',collar:'#d8b040'},crown:1,x:0.7,z:0.08,at:2,face:'r',pose:'bless'},{id:'voice',x:0.7}],crowd:[{kind:'people',n:8,x:0.3,w:0.36,z:0.45,face:'r',at:0,exit:'r',exitAt:2}],props:[{k:'sheep',x:0.26,z:0.12,n:8,w:170}],fx:[{k:'glory',x:0.78,y:0.06,at:2},{k:'rays',x:0.66,at:2}]}},
+   {art:'garden',music:'holy',text:'“The breach-maker shall go up before them. They shall break out and pass through the gate and go out by it and their sovereign pass before them, with YAHUAH at their head!”',ref:'MIḴAH 2:13',stage:{set:'gate',time:'dawn',cam:'push',focus:0.55,cast:[{id:'breaker',look:{name:'The Breach-Maker',skin:'#8a6038',hair:'#2c1a0c',robe:'#6a5a3a',beard:'#2c1a0c',mantle:'#8a2a2a',sash:'#caa23c'},x:0.6,z:0.1,face:'r',pose:'raise'},{id:'sov_m',look:{name:'Their Sovereign',skin:'#8a6038',hair:'#2c1a0c',robe:'#f0e8d8',beard:'#2c1a0c',mantle:'#5a2a6a',collar:'#d8b040'},crown:1,x:0.44,z:0.08,face:'r',pose:'walk'},{id:'voice',x:0.84}],crowd:[{kind:'people',n:8,x:0.22,w:0.26,z:0.4,face:'r',pose:'walk'}],fx:[{k:'glory',x:0.84,y:0.06,at:0},{k:'rays',x:0.84,at:1}]}},
   ],
   complete:'They shall break out and pass through the gate and go out by it and their sovereign pass before them, with YAHUAH at their head!”'
 }
@@ -6065,7 +6072,7 @@ STORY.push(
    {art:'corrupt',music:'tense',text:'Then I said, “Hear now, O heads of Ya‛aqoḇ and you rulers of the house of Yasharal: Should you not know right-ruling, you who are hating good and loving evil, tearing away the skin from My people and the flesh from their bones,',ref:'MIḴAH 3:1–2',stage:{set:'palace',cam:'push',cast:[{id:'mikah',x:0.18,z:0.08,face:'r',pose:'point',say:0,acts:[{at:1,pose:'stand'}]},{id:'poorman',x:0.46,z:0.16,face:'l',pose:'bow'},{id:'ruler',x:0.7,z:0.12,face:'l',pose:'enthroned',crown:1,acts:[{at:1,pose:'raise'}]}],crowd:[{kind:'princes',n:4,x:0.84,w:0.16,z:0.45,face:'l',from:'stand',pose:'raise',at:1}],fx:[{k:'darkness',amt:0.45,at:1}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:7103,features:[{type:'standard',x:16,y:11,id:'heads'},{type:'standard',x:30,y:12,id:'prophets'},{type:'tower',x:22,y:8,id:'zion'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:7103,features:[{type:'standard',x:16,y:11,id:'heads'},{type:'standard',x:30,y:12,id:'prophets'},{type:'tower',x:22,y:8,id:'zion'},{type:'clearing',x:22,y:19,flat:3},{type:'house',x:9,y:10,clear:3.5},{type:'house',x:35,y:9,clear:3.5},{type:'house',x:10,y:20,clear:3.5},{type:'house',x:34,y:20,clear:3.5}]},
    time:'day',
    music:'tense',
    player:'mikah',
@@ -6144,14 +6151,14 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland',music:'tense',text:'“Arise and thresh, O daughter of Tsiyon, for I make your horn iron and your hooves bronze. And you shall beat many peoples into pieces and I shall seclude their gain to YAHUAH and their wealth to the Master of all the earth.”',ref:'MIḴAH 4:13',stage:{set:'babylon',time:'dusk',cam:'push',focus:0.4,cast:[{id:'tsiyon',look:{name:'The Daughter of Tsiyon',skin:'#caa06e',hair:'#3a2416',hairStyle:'long',robe:'#6a5a8a',veil:'#d8ccb0'},x:0.34,z:0.08,face:'r',pose:'weep',acts:[{at:1,pose:'pray'},{at:3,pose:'kneel'},{at:4,pose:'raise'}]},{id:'voice',x:0.7}],crowd:[{kind:'captives',n:5,x:0.18,w:0.2,z:0.45,face:'r',at:1},{kind:'nations',n:7,x:0.72,w:0.3,z:0.5,face:'l',enter:'r',at:2,pose:'point',exit:'r',exitAt:4}],props:[{k:'sheaves',x:0.5,z:0.18,n:3,at:4},{k:'bull',x:0.64,z:0.12,at:4}],fx:[{k:'rays',x:0.34,at:1},{k:'glory',x:0.34,y:0.05,at:4}]}},
+   {art:'wasteland',music:'tense',text:'“Arise and thresh, O daughter of Tsiyon, for I make your horn iron and your hooves bronze. And you shall beat many peoples into pieces and I shall seclude their gain to YAHUAH and their wealth to the Master of all the earth.”',ref:'MIḴAH 4:13',stage:{set:'threshing',time:'day',cam:'push',focus:0.4,cast:[{id:'tsiyon',look:{name:'The Daughter of Tsiyon',skin:'#caa06e',hair:'#3a2416',hairStyle:'long',robe:'#6a5a8a',veil:'#d8ccb0'},x:0.3,z:0.08,face:'r',pose:'stand',hold:'rod',acts:[{at:0,pose:'strike'}]},{id:'voice',x:0.6}],crowd:[{kind:'nations',n:6,x:0.78,w:0.2,z:0.45,face:'l',pose:'bow',at:1}],props:[{k:'sheaves',x:0.42,z:0.16,n:3},{k:'bull',x:0.56,z:0.14,face:'l'}],fx:[{k:'rays',x:0.3,at:0},{k:'glory',x:0.6,y:0.05,at:1}]}},
   ],
   complete:'And you shall beat many peoples into pieces and I shall seclude their gain to YAHUAH and their wealth to the Master of all the earth.”'
 },
 
 { id:'m5', title:'Out of Bĕyth Leḥem', ref:'MIḴAH 5',
   intro:[
-   {art:'wasteland',music:'tense',text:'Now you are raided, O daughter of raiders, a siege has been laid against us. They strike the Judge of Yasharal with a rod on the cheek.',ref:'MIḴAH 5:1',stage:{set:'walls',time:'dusk',cam:'push',focus:0.45,cast:[{id:'judge',look:{name:'The Judge of Yasharal',skin:'#8a6038',hair:'#2c1a0c',robe:'#3a4a6a',beard:'#2c1a0c',collar:'#caa23c',mantle:'#6a4a8a'},x:0.44,z:0.1,face:'r',pose:'stand',acts:[{at:2,pose:'fall'}]},{id:'soldier',look:{name:'A Soldier of Ashshur',skin:'#a07048',hair:'#1d1208',robe:'#5a2a3a',beard:'#1d1208',armor:'#707078',helmet:'#686870',crest:'#3a2a2a',short:1},x:0.58,z:0.12,face:'l',pose:'stand',hold:'rod',at:1,acts:[{at:2,pose:'strike'}]},{id:'mikah',x:0.14,z:0.05,face:'r',pose:'weep',say:3,acts:[{at:3,pose:'raise',face:'l'}]}],crowd:[{kind:'army',side:'ashshur',n:8,x:0.72,w:0.4,z:0.55,face:'l',enter:'r',at:0}],fx:[{k:'smoke',x:0.82,at:1},{k:'glory',x:0.08,y:0.1,at:3},{k:'rays',x:0.1,at:4}]}},
+   {art:'wasteland',music:'tense',text:'Now you are raided, O daughter of raiders, a siege has been laid against us. They strike the Judge of Yasharal with a rod on the cheek.',ref:'MIḴAH 5:1',stage:{set:'walls',time:'dusk',cam:'push',focus:0.45,cast:[{id:'judge',look:{name:'The Judge of Yasharal',skin:'#8a6038',hair:'#2c1a0c',robe:'#3a4a6a',beard:'#2c1a0c',collar:'#caa23c',mantle:'#6a4a8a'},x:0.38,z:0.1,face:'r',pose:'stand',acts:[{at:1,pose:'fall'}]},{id:'soldier',look:{name:'A Soldier of Ashshur',skin:'#a07048',hair:'#1d1208',robe:'#5a2a3a',beard:'#1d1208',armor:'#707078',helmet:'#686870',crest:'#3a2a2a',short:1},x:0.53,z:0.1,face:'l',pose:'stand',hold:'rod',acts:[{at:1,pose:'strike'}]},{id:'mikah',x:0.14,z:0.05,face:'r',pose:'weep',say:3}],crowd:[{kind:'army',side:'ashshur',n:8,x:0.78,w:0.3,z:0.6,face:'l',enter:'r',at:0}],fx:[{k:'smoke',x:0.82,at:1},{k:'glory',x:0.08,y:0.1,at:3},{k:'rays',x:0.1,at:4}]}},
   ],
   scene:{
    map:{biome:'plains',w:44,h:28,seed:7105,features:[{type:'house',x:22,y:9,id:'bethlehem'},{type:'fold',x:16,y:13,id:'shepherd',examine:'“He shall stand and shepherd in the strength of YAHUAH” — and they shall dwell, for at that time He shall be great, to the ends of the earth.'},{type:'firepit',x:30,y:13,id:'idols',examine:'“I shall cut off your carved images and your pillars … so that you no longer bow down to the work of your hands.”'},{type:'clearing',x:22,y:19,flat:3}]},
@@ -6161,7 +6168,7 @@ STORY.push(
    playerPos:[22,20],
    playerHold:'scroll',
    npcs:[
-     {id:'elder',char:'elder',x:18,y:12,wander:false},
+     {id:'elder',char:'elder',x:19,y:11.3,wander:false},
      {id:'shepherd',char:'shepherd',x:26,y:15,wander:true},
    ],
    objectives:[
@@ -6190,7 +6197,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'corrupt',music:'tense',text:'“And I shall take vengeance in wrath and rage on the gentiles who did not obey.”',ref:'MIḴAH 5:15',stage:{set:'highplace',time:'dusk',cam:'pan-r',cast:[{id:'diviner',look:{name:'A Diviner',skin:'#8a6038',hair:'#231409',robe:'#3a2a4a',beard:'#231409',headcover:'#6a4a2a',sash:'#8a2a2a'},x:0.44,z:0.12,face:'r',pose:'raise',acts:[{at:2,pose:'fall'},{at:3,exit:'l',run:1}]},{id:'mikah',x:0.9,z:0.05,face:'l',pose:'point',say:0},{id:'voice',x:0.7}],props:[{k:'horse',x:0.1,z:0.4,face:'r'},{k:'chariot',x:0.22,z:0.5,face:'r'},{k:'idol',x:0.6,z:0.4},{k:'pillar',x:0.7,z:0.45,h:60,w:12,color:'#9a8a70'},{k:'tree',x:0.8,z:0.5,h:100,color:'#3a5a2a'}],fx:[{k:'smoke',x:0.18,at:1},{k:'firefall',x:0.64,y:0.58,at:4},{k:'firefall',x:0.8,y:0.6,at:5},{k:'red',amt:0.2,at:6},{k:'embers',at:6}]}},
+   {art:'corrupt',music:'tense',text:'“And I shall take vengeance in wrath and rage on the gentiles who did not obey.”',ref:'MIḴAH 5:15',stage:{set:'highplace',time:'dusk',cam:'pan-r',cast:[{id:'diviner',look:{name:'A Diviner',skin:'#8a6038',hair:'#231409',robe:'#3a2a4a',beard:'#231409',headcover:'#6a4a2a',sash:'#8a2a2a'},x:0.44,z:0.12,face:'r',pose:'raise'},{id:'mikah',x:0.8,z:0.05,face:'l',pose:'point',say:0},{id:'voice',x:0.7}],props:[{k:'horse',x:0.1,z:0.4,face:'r'},{k:'chariot',x:0.22,z:0.5,face:'r'},{k:'idol',x:0.6,z:0.4},{k:'pillar',x:0.7,z:0.45,h:60,w:12,color:'#9a8a70'}],fx:[{k:'smoke',x:0.18,at:1},{k:'firefall',x:0.64,y:0.58,at:4},{k:'firefall',x:0.8,y:0.6,at:5},{k:'red',amt:0.2,at:6},{k:'embers',at:6}]}},
   ],
   complete:'“And I shall take vengeance in wrath and rage on the gentiles who did not obey.”'
 }
@@ -6205,7 +6212,7 @@ STORY.push(
    {art:'mountain',music:'tense',text:'Hear now what YAHUAH is saying, “Arise, strive with the mountains and let the hills hear your voice. “Hear, O you mountains, the controversy of YAHUAH and you everlasting foundations of the earth! For YAHUAH has a controversy with His people and He shall reprove Yasharal.',ref:'MIḴAH 6:1–2',stage:{set:'mountain',time:'day',cam:'push',focus:0.4,cast:[{id:'mikah',x:0.36,z:0.08,face:'r',pose:'raise',say:0,acts:[{at:1,pose:'point'},{at:2,pose:'point',face:'l'}]},{id:'voice',x:0.7}],crowd:[{kind:'people',n:7,x:0.16,w:0.22,z:0.45,face:'r',enter:'l',at:2}],props:[{k:'rock',x:0.6,z:0.2,w:50,h:26}],fx:[{k:'glory',x:0.55,y:0.06,at:1}]}},
   ],
   scene:{
-   map:{biome:'rocky',w:44,h:28,seed:7106,features:[{type:'standard',x:22,y:9,id:'controversy',examine:'“My people, what have I done to you, and how have I wearied you? Answer Me.”'},{type:'altar',x:16,y:13,id:'require'},{type:'basket',x:30,y:14,id:'scales'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'rocky',w:44,h:28,seed:7106,features:[{type:'standard',x:22,y:9,id:'controversy',examine:'“My people, what have I done to you, and how have I wearied you? Answer Me.”'},{type:'altar',x:16,y:13,id:'require',stage:1},{type:'basket',x:30,y:14,id:'scales'},{type:'clearing',x:22,y:19,flat:3}]},
    time:'day',
    music:'tense',
    player:'mikah',
@@ -6239,18 +6246,18 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland',music:'sorrow',text:'“For the laws of Omri are strictly observed and all the works of the house of Aḥab and you walk in their counsels. Therefore I give you for a ruin and your inhabitants for a hissing and let you bear the reproach of My people.”',ref:'MIḴAH 6:16',stage:{set:'field',time:'dusk',wx:'wind',cam:'push',cast:[{id:'hebrew',x:0.3,z:0.1,face:'r',pose:'sitground',hold:'bread',acts:[{at:1,pose:'mourn'}]},{id:'hebrew2',x:0.5,z:0.16,face:'r',pose:'walk',at:3,acts:[{at:4,pose:'weep'}]},{id:'voice',x:0.7}],crowd:[{kind:'soldiers',side:'aram',n:4,x:0.66,w:0.16,z:0.45,face:'l',enter:'r',at:2,hold:'basket',exit:'r',exitAt:3},{kind:'people',n:5,x:0.8,w:0.2,z:0.62,face:'r',pose:'bow',at:4}],props:[{k:'sacks',x:0.72,z:0.3,n:5,at:2},{k:'vine',x:0.2,z:0.45,w:120},{k:'idol',x:0.92,z:0.55,at:4}],fx:[{k:'smoke',x:0.85,at:0},{k:'darkness',amt:0.25,at:4}]}},
+   {art:'wasteland',music:'sorrow',text:'“For the laws of Omri are strictly observed and all the works of the house of Aḥab and you walk in their counsels. Therefore I give you for a ruin and your inhabitants for a hissing and let you bear the reproach of My people.”',ref:'MIḴAH 6:16',stage:{set:'field',time:'dusk',wx:'wind',cam:'push',cast:[{id:'hebrew',x:0.26,z:0.1,face:'r',pose:'sitground',hold:'bread',acts:[{at:1,pose:'mourn'}]},{id:'hebrew2',look:{name:'A Man of Yasharal'},x:0.46,z:0.12,face:'r',pose:'walk'},{id:'voice',x:0.7}],crowd:[{kind:'people',n:4,x:0.72,w:0.18,z:0.5,face:'r',pose:'bow'}],props:[{k:'vine',x:0.16,z:0.45,w:120},{k:'idol',x:0.9,z:0.5}],fx:[{k:'smoke',x:0.85,at:0},{k:'darkness',amt:0.2,at:1}]}},
   ],
   complete:'Therefore I give you for a ruin and your inhabitants for a hissing and let you bear the reproach of My people.”'
 },
 
 { id:'m7', title:'Who Is an Al Like You', ref:'MIḴAH 7',
   intro:[
-   {art:'wasteland',music:'sorrow',text:'Woe to me! For I am as gatherings of summer fruit, as gleanings of the grape harvest. There is no cluster to eat. My being has desired the first-ripe fruit. The kind one has perished from the earth and there is no one straight among men. All of them lie in wait for blood, everyone hunts his brother with a net.',ref:'MIḴAH 7:1–2',stage:{set:'vineyard',time:'dusk',cam:'pan-r',cast:[{id:'mikah_o',enter:'l',at:0,to:0.26,face:'r',pose:'look',say:0,acts:[{at:1,pose:'weep'}]},{id:'hebrew',x:0.6,z:0.1,face:'r',pose:'walk',at:3,acts:[{at:4,pose:'fall'}]},{id:'hebrew2',x:0.78,z:0.14,face:'l',pose:'kneel',hold:'sword',at:3,acts:[{at:4,pose:'strike'}]},{id:'ruler',x:0.9,z:0.3,face:'l',pose:'point',at:4}],props:[{k:'basket',x:0.36,z:0.1,fruit:'#3a2a1a'}]}},
-   {art:'wasteland',music:'sorrow',text:'Both hands are on the evil, to do it well. The prince asks for gifts, the judge seeks a bribe and the great man speaks the desire of his being. And they weave it together. The best of them is like a prickly plant, the most straight is sharper than a thorn hedge. The day of your watchman and your punishment has come, now is their confusion.',ref:'MIḴAH 7:3–4',stage:{set:'vineyard',time:'dusk',cam:'pan-r',cast:[{id:'mikah_o',enter:'l',at:0,to:0.26,face:'r',pose:'look',say:0,acts:[{at:1,pose:'weep'}]},{id:'hebrew',x:0.6,z:0.1,face:'r',pose:'walk',at:3,acts:[{at:4,pose:'fall'}]},{id:'hebrew2',x:0.78,z:0.14,face:'l',pose:'kneel',hold:'sword',at:3,acts:[{at:4,pose:'strike'}]},{id:'ruler',x:0.9,z:0.3,face:'l',pose:'point',at:4}],props:[{k:'basket',x:0.36,z:0.1,fruit:'#3a2a1a'}]}},
+   {art:'wasteland',music:'sorrow',text:'Woe to me! For I am as gatherings of summer fruit, as gleanings of the grape harvest. There is no cluster to eat. My being has desired the first-ripe fruit. The kind one has perished from the earth and there is no one straight among men. All of them lie in wait for blood, everyone hunts his brother with a net.',ref:'MIḴAH 7:1–2',stage:{set:'vineyard',time:'dusk',cam:'pan-r',cast:[{id:'mikah_o',enter:'l',at:0,to:0.26,face:'r',pose:'look',say:0,acts:[{at:1,pose:'weep'}]},{id:'hebrew',x:0.56,z:0.1,face:'r',pose:'walk',at:3,acts:[{at:4,pose:'fall'}]},{id:'hebrew2',x:0.7,z:0.14,face:'l',pose:'kneel',hold:'sword',at:3,acts:[{at:4,pose:'strike'}],look:{name:'A Man of Yasharal'}},{id:'ruler',x:0.8,z:0.3,face:'l',pose:'point',at:4}],props:[{k:'basket',x:0.36,z:0.1,fruit:'#3a2a1a'}]}},
+   {art:'wasteland',music:'sorrow',text:'Both hands are on the evil, to do it well. The prince asks for gifts, the judge seeks a bribe and the great man speaks the desire of his being. And they weave it together. The best of them is like a prickly plant, the most straight is sharper than a thorn hedge. The day of your watchman and your punishment has come, now is their confusion.',ref:'MIḴAH 7:3–4',stage:{set:'gate',time:'dusk',cam:'pan-r',cast:[{id:'mikah_o',x:0.18,z:0.06,face:'r',pose:'look',say:0,acts:[{at:1,pose:'weep'}]},{id:'hebrew',x:0.44,z:0.1,face:'r',pose:'carry',hold:'basket',at:1},{id:'ruler',x:0.58,z:0.1,face:'l',pose:'hold',at:1},{id:'judge',look:{name:'A Judge',skin:'#8a6038',hair:'#1d1208',hairStyle:'short',robe:'#3a3a4a',beard:'#1d1208',headcover:'#8a7a60',collar:'#caa23c'},x:0.8,z:0.12,face:'l',pose:'hold',at:2},{id:'hebrew2',look:{name:'A Man of Yasharal'},x:0.68,z:0.14,face:'r',pose:'hold',hold:'jar',at:2}],props:[{k:'chest',x:0.74,z:0.06,at:2}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:7107,features:[{type:'standard',x:16,y:12,id:'watch'},{type:'standard',x:22,y:9,id:'wait',examine:'“As for me, I look to YAHUAH; I wait for the Aluahim of my deliverance — my Aluahim does hear me.”'},{type:'well',x:30,y:14,id:'sea'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:7107,features:[{type:'standard',x:16,y:12,id:'watch'},{type:'standard',x:22,y:9,id:'wait',examine:'“As for me, I look to YAHUAH; I wait for the Aluahim of my deliverance — my Aluahim does hear me.”'},{type:'rock',x:30,y:21.8,id:'sea'},{type:'clearing',x:22,y:19,flat:3},{type:'house',x:9,y:10,clear:3.5},{type:'house',x:35,y:10,clear:3.5},{type:'house',x:9,y:19,clear:3.5}],sea:5},
    time:'day',
    music:'sorrow',
    player:'mikah',
@@ -6289,7 +6296,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light',music:'holy',text:'You give truth to Ya‛aqoḇ, kindness to Aḇrahim, which You swore to our fathers from the days of old!',ref:'MIḴAH 7:20',stage:{set:'partedsea',time:'dawn',cam:'push',focus:0.5,cast:[{id:'mikah_o',x:0.38,z:0.04,face:'r',pose:'raise',say:0,acts:[{at:3,pose:'point'},{at:4,pose:'raise'}]},{id:'avraham',x:0.58,z:0.16,face:'l',pose:'bless',at:4},{id:'yaaqov_o',x:0.66,z:0.12,face:'l',pose:'bless',hold:'staff',at:4}],crowd:[{kind:'people',n:6,x:0.5,w:0.18,z:0.5,face:'l',from:'stand',pose:'pray',at:2}],fx:[{k:'glory',x:0.5,y:0.1,at:1},{k:'rays',x:0.5,at:2},{k:'bright',amt:0.12,at:4}]}},
+   {art:'light',music:'holy',text:'You give truth to Ya‛aqoḇ, kindness to Aḇrahim, which You swore to our fathers from the days of old!',ref:'MIḴAH 7:20',stage:{set:'field',time:'night',cam:'push',focus:0.5,cast:[{id:'mikah_o',x:0.3,z:0.04,face:'r',pose:'raise',say:0}],crowd:[{kind:'people',n:6,x:0.66,w:0.22,z:0.45,face:'l',pose:'pray'}],fx:[{k:'stars',at:0},{k:'glory',x:0.55,y:0.08,at:0},{k:'rays',x:0.5,at:0}]}},
   ],
   complete:'You give truth to Ya‛aqoḇ, kindness to Aḇrahim, which You swore to our fathers from the days of old!'
 }
@@ -6557,6 +6564,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>

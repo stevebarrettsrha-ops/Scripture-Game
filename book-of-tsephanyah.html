@@ -2742,6 +2742,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4484,9 +4487,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -5877,7 +5884,7 @@ STORY.push(
    {art:'corrupt',music:'tense',text:'“I snatch away man and beast, I snatch away the birds of the shamayim and the fish of the sea and the stumbling-blocks, with the wrong, when I shall cut off man from the face of the earth,” declares YAHUAH.',ref:'TSEPHANYAH 1:3',stage:{set:'city',time:'dusk',cam:'push',focus:0.4,cast:[{id:'tsephanyah',x:0.28,z:0.08,face:'r',pose:'look',acts:[{at:2,pose:'point'}],say:2},{id:'voice',x:0.42,at:0},{id:'yoshiyahu',look:{name:'Yoshiyahu son of Amon',skin:'#7a4e29',hair:'#2c1a0c',robe:'#5a2a4a',beard:'#2c1a0c',collar:'#caa23c',mantle:'#8a2a3a'},crown:1,x:0.72,z:0.28,face:'l',pose:'stand',at:1}],crowd:[{kind:'guards',side:'yasharal',n:3,x:0.87,w:0.1,z:0.45,face:'l',at:1}],props:[{k:'sheep',x:0.52,z:0.6,n:5,w:110}],fx:[{k:'darkness',at:2,amt:0.3},{k:'ravens',at:2,n:4,x:0.6,y:0.22},{k:'smoke',at:2,x:0.84}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:5101,features:[{type:'altar',x:16,y:11,id:'baal'},{type:'house',x:30,y:12,id:'dregs'},{type:'standard',x:22,y:9,id:'lamps'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:5101,features:[{type:'altar',x:16,y:11,id:'baal'},{type:'house',x:30,y:12,id:'dregs'},{type:'lampstand',x:22,y:9,id:'lamps'},{type:'clearing',x:22,y:19,flat:3},{type:'idol',x:13.8,y:10.8,solid:true,clear:1,id:'baalimage'},{type:'house',x:12.5,y:20.5,solid:true,clear:3},{type:'citygate',x:8.5,y:9,solid:true,clear:2}]},
    time:'day',
    music:'tense',
    player:'tsephanyah',
@@ -5918,7 +5925,7 @@ STORY.push(
 
 { id:'z2', title:'The Great Day Is Near', ref:'TSEPHANYAH 1:14–18',
   intro:[
-   {art:'void',music:'tense',text:'Near is the great day of YAHUAH, near and hurrying greatly, the noise of the day of YAHUAH. Let the mighty man then bitterly cry out!',ref:'TSEPHANYAH 1:14',stage:{set:'battle',time:'storm',wx:'storm',wxAt:2,cam:'push',focus:0.55,cast:[{id:'tsephanyah',x:0.15,z:0.06,face:'r',pose:'raise',say:0},{id:'mighty',look:{name:'A Mighty Man of Yahuḏah',skin:'#7a4e29',hair:'#2c1a0c',robe:'#5a6a8a',beard:'#2c1a0c',armor:'#9a8250',helmet:'#8a7a50'},x:0.55,z:0.1,face:'l',pose:'stand',hold:'sword',acts:[{at:1,pose:'raise'},{at:2,pose:'fall'}]}],crowd:[{kind:'soldiers',side:'yasharal',n:6,x:0.74,w:0.3,z:0.55,face:'l',from:'stand',pose:'fall',at:2}],props:[{k:'cloud',x:0.3,z:0.9,dy:-0.36,s:1.8,dark:1,at:2},{k:'cloud',x:0.75,z:0.9,dy:-0.4,s:2,dark:1,at:2}],fx:[{k:'darkness',at:2,amt:0.4},{k:'lightning',at:2}]}},
+   {art:'void',music:'tense',text:'Near is the great day of YAHUAH, near and hurrying greatly, the noise of the day of YAHUAH. Let the mighty man then bitterly cry out!',ref:'TSEPHANYAH 1:14',stage:{set:'battle',time:'storm',wx:'storm',wxAt:2,cam:'push',focus:0.55,cast:[{id:'tsephanyah',x:0.15,z:0.06,face:'r',pose:'speak',say:0},{id:'mighty',look:{name:'A Mighty Man of Yahuḏah',skin:'#7a4e29',hair:'#2c1a0c',robe:'#5a6a8a',beard:'#2c1a0c',armor:'#9a8250',helmet:'#8a7a50'},x:0.52,z:0.1,face:'l',pose:'stand',acts:[{at:1,pose:'weep'}]}],crowd:[{kind:'soldiers',side:'yasharal',n:5,x:0.76,w:0.26,z:0.5,face:'l',from:'stand',pose:'weep',at:1}],props:[{k:'cloud',x:0.3,z:0.9,dy:-0.36,s:1.8,dark:1,at:2},{k:'cloud',x:0.75,z:0.9,dy:-0.4,s:2,dark:1,at:2}],fx:[{k:'darkness',at:2,amt:0.4},{k:'lightning',at:2}]}},
   ],
   scene:{
    map:{biome:'rocky',w:44,h:28,seed:5102,features:[{type:'tower',x:22,y:9,id:'alarm'},{type:'standard',x:16,y:12,id:'blind',examine:'“They shall walk like blind men, because they have sinned against YAHUAH.”'},{type:'standard',x:30,y:13,id:'silver',examine:'Neither their silver nor their gold shall be able to deliver them in the day of the wrath of YAHUAH.'},{type:'clearing',x:22,y:19,flat:3}]},
@@ -5965,7 +5972,7 @@ STORY.push(
    {art:'wasteland',music:'sorrow',text:'Gather together, gather together, O nation without shame,',ref:'TSEPHANYAH 2:1',stage:{set:'threshing',time:'dusk',wx:'wind',cam:'push',focus:0.4,cast:[{id:'tsephanyah',x:0.5,z:0.12,face:'l',pose:'raise',say:0,acts:[{at:1,pose:'point'}]},{id:'poorman',x:0.24,z:0.08,face:'r',pose:'stand',acts:[{at:1,pose:'pray'},{at:2,pose:'bow'}]}],crowd:[{kind:'people',n:5,x:0.78,w:0.24,z:0.5,face:'l',enter:'r',at:0},{kind:'people',n:4,x:0.16,w:0.16,z:0.55,face:'r',enter:'l',at:0}],props:[{k:'sheaves',x:0.66,z:0.25,n:3},{k:'sheaves',x:0.88,z:0.3,n:2}],fx:[{k:'red',amt:0.12},{k:'rays',x:0.24,at:2}]}},
   ],
   scene:{
-   map:{biome:'plains',w:44,h:28,seed:5103,features:[{type:'standard',x:22,y:9,id:'seek',examine:'“Seek righteousness, seek meekness — if so be that you are hidden in the day of wrath of YAHUAH.”'},{type:'rock',x:16,y:12,id:'philistia'},{type:'fold',x:30,y:14,id:'coast'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'plains',w:44,h:28,seed:5103,features:[{type:'standard',x:22,y:9,id:'seek',examine:'“Seek righteousness, seek meekness — if so be that you are hidden in the day of wrath of YAHUAH.”'},{type:'rock',x:16,y:12,id:'philistia'},{type:'fold',x:30,y:14,id:'coast'},{type:'clearing',x:22,y:19,flat:3}],sea:4},
    time:'day',
    music:'sorrow',
    player:'tsephanyah',
@@ -5974,6 +5981,9 @@ STORY.push(
    npcs:[
      {id:'poorman',char:'poorman',x:18,y:13,wander:false},
      {id:'elder',char:'elder',x:27,y:15,wander:false},
+     {id:'fsheep1',animal:'sheep',x:29.3,y:13.2,wander:false,noTalk:true},
+     {id:'fsheep2',animal:'sheep',x:30.5,y:12.5,wander:false,noTalk:true},
+     {id:'fsheep3',animal:'sheep',x:31,y:13.5,wander:false,noTalk:true},
    ],
    objectives:[
      {type:'interact',prop:'seek',text:'Call the meek to seek YAHUAH before the day', script:[
@@ -6039,7 +6049,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland',music:'sorrow',text:'This is the exultant city that is dwelling in safety, that said in her heart, “I am it and there is none but me.” How has she become a waste, a place for beasts to lie down! Everyone who passes by her whistles and shakes his fist.',ref:'TSEPHANYAH 2:15',stage:{set:'ruins',time:'dusk',cam:'pan-l',cast:[{id:'tsephanyah',x:0.15,z:0.05,face:'r',pose:'point',say:0},{id:'ashking',look:{name:'The Sovereign of Ashshur',skin:'#6a4424',hair:'#14100a',robe:'#5a2a3a',beard:'#14100a',collar:'#caa23c',mantle:'#3a2a3a'},crown:1,x:0.6,z:0.3,face:'l',pose:'raise',at:3,say:4,acts:[{at:5,pose:'fall'}]},{id:'passer',look:{name:'One Who Passes By',skin:'#83552d',hair:'#3a2716',robe:'#7d6a52',beard:'#3a2716',headcover:'#b8a888'},enter:'r',at:6,to:0.8,z:0.1,face:'l',pose:'point'},{id:'voice',x:0.7}],props:[{k:'pillar',x:0.36,z:0.5,h:130},{k:'pillar',x:0.84,z:0.45,h:110},{k:'sheep',x:0.5,z:0.62,n:6,w:130,at:1,color:'#8a7a6a'},{k:'lion',x:0.42,z:0.42,face:'r',at:5}],fx:[{k:'ravens',n:3,x:0.4,y:0.18,at:2},{k:'smoke',x:0.7,at:5}]}},
+   {art:'wasteland',music:'sorrow',text:'This is the exultant city that is dwelling in safety, that said in her heart, “I am it and there is none but me.” How has she become a waste, a place for beasts to lie down! Everyone who passes by her whistles and shakes his fist.',ref:'TSEPHANYAH 2:15',stage:{set:'ruins',time:'dusk',cam:'pan-l',cast:[{id:'tsephanyah',x:0.15,z:0.05,face:'r',pose:'point',say:0},{id:'passer',look:{name:'One Who Passes By',skin:'#83552d',hair:'#3a2716',robe:'#7d6a52',beard:'#3a2716',headcover:'#b8a888'},enter:'r',at:6,to:0.83,z:0.1,face:'l',pose:'raise'},{id:'voice',x:0.7}],props:[{k:'pillar',x:0.36,z:0.5,h:130},{k:'pillar',x:0.84,z:0.45,h:110},{k:'sheep',x:0.5,z:0.62,n:6,w:130,at:1,color:'#8a7a6a'},{k:'lion',x:0.69,z:0.6,face:'l',lie:1,at:1}],fx:[{k:'ravens',n:3,x:0.4,y:0.18,at:2},{k:'smoke',x:0.7,at:5}]}},
   ],
   complete:'Everyone who passes by her whistles and shakes his fist.'
 }
@@ -6051,10 +6061,10 @@ STORY.push(
 
 { id:'z5', title:'He Rejoices Over You With Singing', ref:'TSEPHANYAH 3',
   intro:[
-   {art:'corrupt',music:'tense',text:'Woe to her who is rebellious and defiled, the oppressing city!',ref:'TSEPHANYAH 3:1',stage:{set:'city',time:'dusk',cam:'push',focus:0.55,cast:[{id:'tsephanyah',x:0.15,z:0.05,face:'r',pose:'point',say:0},{id:'judge',look:{name:'A Judge of the City',skin:'#7a5230',hair:'#4a3420',robe:'#3a3a4a',beard:'#4a3420',headcover:'#8a7a60',collar:'#caa23c'},x:0.56,z:0.15,face:'l',pose:'sit',acts:[{at:2,pose:'point'}]},{id:'poorman',x:0.38,z:0.1,face:'r',pose:'kneel',acts:[{at:2,pose:'bow'}]},{id:'falsenavi',look:{name:'A Reckless Naḇi',skin:'#8a5a34',hair:'#1d1208',robe:'#6a3a2a',beard:'#1d1208',mantle:'#3a2a1a'},x:0.76,z:0.18,face:'l',pose:'raise',at:3},{id:'idolkohen',x:0.86,z:0.1,face:'l',pose:'hold',hold:'scroll',at:4}],crowd:[{kind:'princes',n:4,x:0.6,w:0.3,z:0.55,face:'l',at:2}],props:[{k:'lion',x:0.44,z:0.4,face:'l',roar:1,at:2},{k:'dog',x:0.78,z:0.42,face:'l',color:'#6a6a70',at:2}],fx:[{k:'red',amt:0.12,at:2},{k:'smoke',x:0.9,at:4}]}},
+   {art:'corrupt',music:'tense',text:'Woe to her who is rebellious and defiled, the oppressing city!',ref:'TSEPHANYAH 3:1',stage:{set:'city',time:'dusk',cam:'push',focus:0.55,cast:[{id:'tsephanyah',x:0.15,z:0.05,face:'r',pose:'point',say:0},{id:'judge',look:{name:'A Judge of the City',skin:'#7a5230',hair:'#4a3420',robe:'#3a3a4a',beard:'#4a3420',headcover:'#8a7a60',collar:'#caa23c'},x:0.56,z:0.15,face:'l',pose:'sit',acts:[{at:2,pose:'point'}]},{id:'poorman',x:0.36,z:0.1,face:'r',pose:'kneel',acts:[{at:2,pose:'bow'}]},{id:'falsenavi',look:{name:'A Reckless Naḇi',skin:'#8a5a34',hair:'#1d1208',robe:'#6a3a2a',beard:'#1d1208',mantle:'#3a2a1a'},x:0.76,z:0.18,face:'l',pose:'raise',at:3},{id:'idolkohen',x:0.86,z:0.1,face:'l',pose:'hold',hold:'scroll',at:4}],crowd:[{kind:'princes',n:4,x:0.6,w:0.3,z:0.55,face:'l',at:2}],fx:[{k:'red',amt:0.12,at:2},{k:'smoke',x:0.9,at:4}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:5105,features:[{type:'wall',x:16,y:11,id:'city'},{type:'standard',x:22,y:9,id:'cleanlip',examine:'“Then I shall turn unto the peoples a clean lip, so that they all call on the Name of YAHUAH, to serve Him with one shoulder.”'},{type:'standard',x:30,y:13,id:'singing',examine:'“YAHUAH your Aluahim in your midst is mighty to save — He rejoices over you with singing.”'},{type:'clearing',x:22,y:19,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:5105,features:[{type:'tower',x:16,y:11,id:'city',stage:1,solid:true},{type:'standard',x:22,y:9,id:'cleanlip',examine:'“Then I shall turn unto the peoples a clean lip, so that they all call on the Name of YAHUAH, to serve Him with one shoulder.”'},{type:'standard',x:30,y:13,id:'singing',examine:'“YAHUAH your Aluahim in your midst is mighty to save — He rejoices over you with singing.”'},{type:'clearing',x:22,y:19,flat:3},{type:'house',x:9.5,y:16,solid:true,clear:3},{type:'house',x:34,y:9.5,solid:true,clear:3},{type:'house',x:35.5,y:20,solid:true,clear:3},{type:'citygate',x:27,y:6.5,solid:true,clear:2}]},
    time:'day',
    music:'sorrow',
    player:'tsephanyah',
@@ -6363,6 +6373,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>

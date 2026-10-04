@@ -2836,6 +2836,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4578,9 +4581,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -5969,7 +5976,7 @@ STORY.push(
    {art:'mountain',music:'tense',text:'The vision of Oḇaḏyah: This is what the Master YAHUAH said concerning Eḏom. We have heard a report from YAHUAH and a mal\'ak has been sent among the nations, saying, “Arise and let us rise up against her for battle!” “See, I have made you small among the nations, you are greatly despised.',ref:'OḆAḎYAH 1:1–2',stage:{set:'mountain',time:'dusk',cam:'pan-r',focus:0.55,cast:[{id:'voice',x:0.1,say:0},{id:'obadyah',x:0.14,z:0.05,face:'r',pose:'look',say:2,acts:[{at:2,pose:'point'}]},{id:'malak',look:{name:'A Mal’ak Sent Among the Nations',angel:1,robe:'#f4ecd8',skin:'#c8a080',hair:'#e8dcc0'},at:1,x:0.4,z:0.16,face:'r',pose:'raise',say:1},{id:'edomprince',x:0.8,z:0.3,dy:-0.17,face:'l',pose:'stand',say:3,acts:[{at:3,pose:'raise'}]}],crowd:[{kind:'nations',n:7,x:0.5,w:0.3,z:0.62,face:'r',enter:'l',at:1,hold:'spear'}],props:[{k:'rock',x:0.8,z:0.32,w:110,h:80,color:'#8a6a52'},{k:'rock',x:0.93,z:0.45,w:90,h:120,color:'#7a5a44'}]}},
   ],
   scene:{
-   map:{biome:'rocky',w:44,h:28,seed:9301,features:[{type:'tower',x:22,y:8,id:'nest'},{type:'rock',x:16,y:12,id:'cleft'},{type:'stone',x:30,y:14,id:'spoil'},{type:'standard',x:14,y:16},{type:'clearing',x:22,y:18,flat:3}]},
+   map:{biome:'rocky',w:44,h:28,seed:9301,features:[{type:'tower',x:22,y:8,id:'nest'},{type:'cave',x:16,y:12,id:'cleft',clear:3.5},{type:'stone',x:30,y:14,id:'spoil'},{type:'standard',x:14,y:16},{type:'clearing',x:22,y:18,flat:3}]},
    time:'day',
    music:'tense',
    player:'obadyah',
@@ -6000,17 +6007,17 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'wasteland',music:'tense',text:'“Your mighty men shall be dis-couraged, O Tĕman, so that everyone from the mountains of Ĕsaw is cut off by slaughter.',ref:'OḆAḎYAH 1:9',stage:{set:'valley',time:'dusk',cam:'push',focus:0.5,wx:'dust',wxAt:1,cast:[{id:'edomprince',x:0.5,z:0.08,face:'l',pose:'stand',acts:[{at:1,pose:'weep'}]},{id:'edomite',x:0.32,z:0.12,face:'r',pose:'fight',hold:'sword',acts:[{at:1,pose:'fall'}]},{id:'voice',x:0.7}],crowd:[{kind:'elders',n:4,x:0.18,w:0.16,z:0.45,face:'r',from:'stand',at:0,pose:'mourn'},{kind:'soldiers',n:7,x:0.72,w:0.34,z:0.55,face:'l',from:'fight',at:1,pose:'fall',look:{robe:'#6a2a2a',headcover:'#4a2020'}}],fx:[{k:'sword',x:0.6,y:0.2,at:1},{k:'smoke',x:0.8,at:1}]}},
+   {art:'wasteland',music:'tense',text:'“Your mighty men shall be dis-couraged, O Tĕman, so that everyone from the mountains of Ĕsaw is cut off by slaughter.',ref:'OḆAḎYAH 1:9',stage:{set:'valley',time:'dusk',cam:'push',focus:0.5,wx:'dust',wxAt:1,cast:[{id:'edomprince',x:0.52,z:0.08,face:'l',pose:'weep'},{id:'edomite',x:0.34,z:0.12,face:'r',pose:'mourn'},{id:'voice',x:0.7}],crowd:[{kind:'elders',n:4,x:0.16,w:0.14,z:0.45,face:'r',pose:'mourn'},{kind:'soldiers',n:7,x:0.74,w:0.32,z:0.55,face:'l',pose:'dead',look:{robe:'#6a2a2a',headcover:'#4a2020'}}],fx:[{k:'smoke',x:0.8,at:0}]}},
   ],
   complete:'“Your mighty men shall be dis-couraged, O Tĕman, so that everyone from the mountains of Ĕsaw is cut off by slaughter.'
 },
 
 { id:'o2', title:'On the Other Side', ref:'OḆAḎYAH 1:10–14',
   intro:[
-   {art:'sodom',music:'sorrow',text:'“Because of your violence against your brother Ya‛aqoḇ, let shame cover you. And you shall be cut off forever. “In the day that you stood on the other side, in the day that strangers took captive his wealth, when foreigners entered his gates and cast lots for Yahrushalayim, you also were like one of them!',ref:'OḆAḎYAH 1:10–11',stage:{set:'gate',time:'dusk',cam:'pan-r',focus:0.55,cast:[{id:'fugitive',x:0.36,z:0.06,face:'r',pose:'fall',acts:[{at:1,pose:'kneel'},{at:2,pose:'bound'}]},{id:'edomite',x:0.5,z:0.08,face:'l',pose:'strike',acts:[{at:1,pose:'stand'}]},{id:'edomprince',x:0.84,z:0.12,face:'l',pose:'stand',acts:[{at:2,pose:'point'}]},{id:'voice',x:0.7}],crowd:[{kind:'soldiers',side:'bavel',n:6,x:0.56,w:0.3,z:0.5,face:'l',enter:'r',at:2},{kind:'captives',n:5,x:0.22,w:0.22,z:0.6,face:'l',at:2}],fx:[{k:'smoke',x:0.45,at:2},{k:'red',amt:0.1,at:0}]}},
+   {art:'sodom',music:'sorrow',text:'“Because of your violence against your brother Ya‛aqoḇ, let shame cover you. And you shall be cut off forever. “In the day that you stood on the other side, in the day that strangers took captive his wealth, when foreigners entered his gates and cast lots for Yahrushalayim, you also were like one of them!',ref:'OḆAḎYAH 1:10–11',stage:{set:'gate',time:'dusk',cam:'pan-r',focus:0.55,cast:[{id:'fugitive',x:0.28,z:0.06,face:'r',pose:'kneel'},{id:'edomite',x:0.4,z:0.08,face:'l',pose:'strike',hold:'sword'},{id:'edomprince',x:0.86,z:0.12,face:'l',pose:'stand',acts:[{at:2,pose:'point'}]},{id:'voice',x:0.7}],crowd:[{kind:'soldiers',side:'bavel',n:2,x:0.7,w:0.1,z:0.4,face:'r',pose:'carry',hold:'basket',at:1},{kind:'soldiers',side:'bavel',n:2,x:0.55,w:0.07,z:0.5,face:'l',pose:'kneel',hold:null,at:2},{kind:'captives',n:5,x:0.15,w:0.13,z:0.6,face:'l',at:1}],fx:[{k:'red',amt:0.1,at:0}],props:[{k:'chest',x:0.78,z:0.34,at:1},{k:'sacks',x:0.64,z:0.36,at:1},{k:'stones',x:0.56,z:0.34,n:4,at:2}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:9302,features:[{type:'citygate',x:22,y:7,id:'gate'},{type:'standard',x:16,y:12,id:'aloof'},{type:'rock',x:30,y:15,id:'crossroad'},{type:'column',x:14,y:10},{type:'clearing',x:22,y:18,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:9302,features:[{type:'citygate',x:22,y:7,id:'gate'},{type:'standard',x:16,y:12,id:'aloof'},{type:'rock',x:30,y:15,id:'crossroad'},{type:'clearing',x:22,y:18,flat:3},{type:'house',x:12,y:9,clear:4},{type:'house',x:33,y:7,clear:4}],path:[[22,9,30,15],[30,15,40,9],[30,15,40,23]]},
    time:'day',
    music:'sorrow',
    player:'obadyah',
@@ -6048,7 +6055,7 @@ STORY.push(
 
 { id:'o3', title:'As You Have Done', ref:'OḆAḎYAH 1:15–18',
   intro:[
-   {art:'void',music:'tense',text:'“For the day of YAHUAH is near upon all the gentiles. As you have done, it shall be done to you, your reward shall come back on your own head.',ref:'OḆAḎYAH 1:15',stage:{set:'highplace',time:'dusk',cam:'push',focus:0.45,cast:[{id:'obadyah',x:0.16,z:0.05,face:'r',pose:'raise',say:0,acts:[{at:1,pose:'point'}]},{id:'edomprince',x:0.52,z:0.1,face:'r',pose:'dance',hold:'cup',acts:[{at:1,pose:'fall'}]},{id:'voice',x:0.7}],crowd:[{kind:'nations',n:9,x:0.68,w:0.4,z:0.5,pose:'dance',hold:'cup',exit:'r',exitAt:3,run:true}],props:[{k:'idol',x:0.8,z:0.8}],fx:[{k:'darkness',amt:0.22,at:0},{k:'red',amt:0.12,at:1},{k:'smoke',x:0.8,at:3},{k:'lightning',at:3}]}},
+   {art:'void',music:'tense',text:'“For the day of YAHUAH is near upon all the gentiles. As you have done, it shall be done to you, your reward shall come back on your own head.',ref:'OḆAḎYAH 1:15',stage:{set:'highplace',time:'dusk',cam:'push',focus:0.45,cast:[{id:'obadyah',x:0.16,z:0.05,face:'r',pose:'raise',say:0,acts:[{at:1,pose:'point'}]},{id:'edomprince',x:0.52,z:0.1,face:'r',pose:'dance',hold:'cup',acts:[{at:1,pose:'fall'}]},{id:'voice',x:0.7}],crowd:[{kind:'nations',n:9,x:0.76,w:0.3,z:0.5,pose:'dance',hold:'cup'}],props:[{k:'idol',x:0.8,z:0.8}],fx:[{k:'darkness',amt:0.22,at:0},{k:'red',amt:0.12,at:1},{k:'smoke',x:0.8,at:3},{k:'lightning',at:3}]}},
   ],
   scene:{
    map:{biome:'wasteland',w:44,h:28,seed:9303,features:[{type:'standard',x:16,y:12,id:'recompense'},{type:'firepit',x:22,y:11,id:'flame'},{type:'sheaf',x:30,y:14,id:'stubble'},{type:'rock',x:24,y:20},{type:'clearing',x:22,y:18,flat:3}]},
@@ -6080,7 +6087,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'altarfire',music:'tense',text:'“And the house of Ya‛aqoḇ shall be a fire and the house of Yosĕph a flame, but the house of Ĕsaw for stubble. And they shall burn among them and they shall consume them, so that no survivor is left of the house of Ĕsaw.” For YAHUAH has spoken.',ref:'OḆAḎYAH 1:18',stage:{set:'field',time:'dusk',cam:'pan-r',focus:0.55,wx:'embers',wxAt:1,cast:[{id:'yaaqov',x:0.16,z:0.08,face:'r',pose:'hold',hold:'torch'},{id:'yoseph',x:0.3,z:0.12,face:'r',pose:'hold',hold:'torch'},{id:'esav',x:0.78,z:0.1,face:'l',pose:'stand',acts:[{at:1,exit:'r',run:true}]},{id:'voice',x:0.7}],props:[{k:'fire',x:0.2,z:0.3,w:40,h:50},{k:'fire',x:0.34,z:0.4,w:30,h:44},{k:'sheaves',x:0.62,z:0.3,n:3},{k:'sheaves',x:0.82,z:0.4,n:3},{k:'sheaves',x:0.7,z:0.55,n:3}],fx:[{k:'fire',y:0.62,at:1},{k:'smoke',x:0.72,at:1},{k:'glory',x:0.5,y:0.08,at:2}]}},
+   {art:'altarfire',music:'tense',text:'“And the house of Ya‛aqoḇ shall be a fire and the house of Yosĕph a flame, but the house of Ĕsaw for stubble. And they shall burn among them and they shall consume them, so that no survivor is left of the house of Ĕsaw.” For YAHUAH has spoken.',ref:'OḆAḎYAH 1:18',stage:{set:'field',time:'dusk',cam:'pan-r',focus:0.55,wx:'embers',wxAt:1,cast:[{id:'yaaqov',x:0.16,z:0.08,face:'r',pose:'hold',hold:'torch'},{id:'yoseph',x:0.3,z:0.12,face:'r',pose:'hold',hold:'torch'},{id:'esav',x:0.8,z:0.1,face:'l',pose:'stand',acts:[{at:1,pose:'fall'}]},{id:'voice',x:0.7}],props:[{k:'sheaves',x:0.6,z:0.3,n:3},{k:'sheaves',x:0.9,z:0.4,n:3},{k:'sheaves',x:0.7,z:0.55,n:3},{k:'fire',x:0.6,z:0.29,w:40,h:50,at:1},{k:'fire',x:0.9,z:0.39,w:34,h:44,at:1},{k:'fire',x:0.7,z:0.54,w:30,h:40,at:1}],fx:[{k:'smoke',x:0.74,at:1},{k:'glory',x:0.5,y:0.08,at:2}]}},
   ],
   complete:'And they shall burn among them and they shall consume them, so that no survivor is left of the house of Ĕsaw.” For YAHUAH has spoken.'
 },
@@ -6090,7 +6097,7 @@ STORY.push(
    {art:'land',music:'holy',text:'And they shall possess the South with the mountains of Ĕsaw and low country with the Philistines. They shall possess the fields of Ephrayim and the fields of Shomeron and Binyamin with Gil‛aḏ,',ref:'OḆAḎYAH 1:19',stage:{set:'field',time:'day',cam:'pan-r',focus:0.5,cast:[{id:'fugitive',x:0.08,at:0,to:0.34,z:0.06,face:'r',pose:'raise'},{id:'exile',look:{name:'An Exile of Yerushalayim',skin:'#83552d',hair:'#23150b',hairStyle:'long',robe:'#7a6a8a',veil:'#c8b486'},at:1,x:0.12,to:0.22,z:0.12,face:'r',pose:'carry',hold:'baby'}],crowd:[{kind:'people',n:8,x:0.56,w:0.4,z:0.5,face:'r',enter:'l',at:0},{kind:'shepherds',n:4,x:0.82,w:0.16,z:0.62,face:'r',enter:'l',at:1}],props:[{k:'sheep',x:0.7,z:0.3,n:6,w:110,at:1},{k:'sheaves',x:0.9,z:0.2,n:3},{k:'house',x:0.88,z:0.95}],fx:[{k:'rays',x:0.4,at:1}]}},
   ],
   scene:{
-   map:{biome:'city',w:44,h:28,seed:9304,features:[{type:'temple',x:22,y:5,id:'house'},{type:'gate',x:22,y:9,id:'tsiyon'},{type:'standard',x:14,y:13,id:'deliverers',examine:'“And saviours shall come to Mount Tsiyon to judge the mountains of Ĕsaw. And the reign shall belong to YAHUAH.”'},{type:'well',x:30,y:16,id:'possess'},{type:'clearing',x:22,y:18,flat:3}]},
+   map:{biome:'city',w:44,h:28,seed:9304,features:[{type:'temple',x:22,y:10,id:'house'},{type:'gate',x:22,y:14.4,id:'tsiyon'},{type:'standard',x:14,y:13,id:'deliverers',examine:'“And saviours shall come to Mount Tsiyon to judge the mountains of Ĕsaw. And the reign shall belong to YAHUAH.”'},{type:'well',x:30,y:16,id:'possess'},{type:'clearing',x:22,y:18,flat:3},{type:'house',x:9,y:9,clear:4},{type:'house',x:35,y:10,clear:4}]},
    time:'day',
    music:'holy',
    player:'obadyah',
@@ -6386,6 +6393,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>

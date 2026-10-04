@@ -2742,6 +2742,9 @@ const BIOMES={
   city:    {base:[T.SAND,T.SAND,T.SAND,T.SAND],       g1:'#c8ad74',g2:'#bda269',fl:'#c8ad74',pa:'#b89a5e',treeDensity:.004,treeCol:['#7a8a4a'],water:'#3d8aaf',palm:true},
   interior:{base:[T.FLOOR,T.FLOOR,T.FLOOR,T.FLOOR],   g1:'#bfae8c',g2:'#b5a482',fl:'#bfae8c',pa:'#a8946e',treeDensity:0,treeCol:[],water:'#3d8aaf'},
   night_camp:{base:[T.DIRT,T.GRASS2,T.DIRT,T.DIRT],   g1:'#6e6a55',g2:'#696653',dirt:'#6e6a55',fl:'#6e6a55',pa:'#94865f',treeDensity:.012,treeCol:['#4e5d35'],water:'#3d6a8d'},
+  /* the wilderness of the Scriptures: dry ground and sand, scrub and dead trees; the waste: bare stony ground */
+  wilderness:{base:[T.DIRT,T.DIRT,T.GRASS2,T.DIRT], g1:'#a08a5c',g2:'#958052',dirt:'#9a845a',fl:'#a08a5c',pa:'#b09a6a',treeDensity:.006,treeCol:['#7a7a4a'],water:'#4a7a9d',dead:.6},
+  wasteland:{base:[T.DIRT,T.DIRT,T.DIRT,T.GRASS2],  g1:'#8a7e6a',g2:'#7f7562',dirt:'#847a66',fl:'#8a7e6a',pa:'#a09078',treeDensity:.004,treeCol:['#6e6a4a'],water:'#4a6a7d',dead:.9},
 };
 
 function generateMap(cfg){
@@ -4484,9 +4487,13 @@ function campLife(G,o){
   const has=c=>!!CHARS[c];
   const man=o.man||(has('hebrew')?'hebrew':'shepherd');
   const man2=o.man2||(has('hebrew2')?'hebrew2':(has('servant')?'servant':man));
-  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?'yepheth_w':man2));
-  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?'methushelah':man));
-  const child=o.child||(has('sheth')?'sheth':null);
+  /* a villager has no name: where the book has no plain woman, elder or child, one is dressed like a named
+     one but is no one in particular (not Shĕth, not Methushelaḥ, not the wife of Yahpheth) */
+  const plain=(role,src)=>{ if(!src||!CHARS[src]) return src; const k='__'+role;
+    if(!CHARS[k]) CHARS[k]=Object.assign({},CHARS[src],{name:{woman:'A Woman',elder:'An Elder',child:'A Child'}[role]}); return k; };
+  const woman=o.woman||(has('hebreww')?'hebreww':(has('yepheth_w')?plain('woman','yepheth_w'):man2));
+  const elder=o.elder||(has('elder')?'elder':(has('methushelah')?plain('elder','methushelah'):man));
+  const child=o.child||(has('sheth')?plain('child','sheth'):null);
   let id9=0;
   const add=d9=>{ const n9=makeNpc(Object.assign({id:'life'+(id9++),noTalk:true},d9)); w.npcs.push(n9); return n9; };
   const free=(x,y)=>{
@@ -5875,7 +5882,7 @@ STORY.push(
 
 { id:'m1', title:'I Have Loved You', ref:'MAL’AḴI 1:1–5',
   intro:[
-   {art:'wasteland',music:'sorrow',text:'The message of the Word of YAHUAH to Yasharal by Mal’aḵi.',ref:'MAL’AḴI 1:1',stage:{set:'gate',time:'dawn',cam:'push',focus:0.45,cast:[{id:'malaki',x:0.16,z:0.08,face:'r',pose:'speak',hold:'scroll',say:0,acts:[{at:1,pose:'raise'},{at:3,pose:'point'}]},{id:'elder',x:0.42,z:0.14,face:'l',pose:'stand',say:2},{id:'yaaqov',x:0.66,z:0.18,face:'r',pose:'stand',at:3},{id:'esav',x:0.8,z:0.2,face:'l',pose:'stand',at:3,acts:[{at:4,pose:'mourn'}]}],crowd:[{kind:'people',n:6,x:0.42,w:0.3,z:0.74,face:'l'}],fx:[{k:'glory',x:0.3,y:0.04,at:1},{k:'rays',x:0.66,at:4},{k:'smoke',x:0.86,at:4}]}},
+   {art:'wasteland',music:'sorrow',text:'The message of the Word of YAHUAH to Yasharal by Mal’aḵi.',ref:'MAL’AḴI 1:1',stage:{set:'gate',time:'dawn',cam:'push',focus:0.45,cast:[{id:'malaki',x:0.16,z:0.08,face:'r',pose:'speak',hold:'scroll',say:0},{id:'elder',x:0.44,z:0.14,face:'l',pose:'stand',say:2}],crowd:[{kind:'people',n:6,x:0.66,w:0.3,z:0.5,face:'l'}],fx:[{k:'glory',x:0.3,y:0.04,at:0}]}},
   ],
   scene:{
    map:{biome:'rocky',w:46,h:30,seed:6301,features:[{type:'rock',x:16,y:11,id:'ruins'},{type:'rock',x:14,y:13},{type:'standard',x:30,y:11,id:'border',examine:'“Your eyes shall see, and you shall say: Great is YAHUAH beyond the border of Yasharal!”'},{type:'clearing',x:23,y:20,flat:3}]},
@@ -5885,7 +5892,7 @@ STORY.push(
    playerPos:[23,21],
    playerHold:'scroll',
    npcs:[
-     {id:'elder',char:'elder',x:20,y:13,wander:false},
+     {id:'elder',char:'elder',x:21.5,y:12.6,wander:false},
      {id:'youth',char:'youth',child:true,x:26,y:14,wander:false},
    ],
    objectives:[
@@ -5918,10 +5925,10 @@ STORY.push(
 { id:'m2', title:'Where Is My Esteem?', ref:'MAL’AḴI 1:6–14',
   intro:[
    {art:'corrupt',music:'tense',text:'“A son esteems his father and a servant his master. And if I am the Father, where is My esteem? And if I am a Master, where is My fear? said YAHUAH of hosts to you kohanim who despise My Name. But you asked, ‘In what way have we despised Your Name?’',ref:'MAL’AḴI 1:6',stage:{set:'court',time:'day',cam:'push',focus:0.45,cast:[{id:'malaki',x:0.12,z:0.06,face:'r',pose:'speak',hold:'scroll',say:1,acts:[{at:3,pose:'point'}]},{id:'youth',look:{name:'A Son',child:1},x:0.6,z:0.12,face:'r',pose:'kneel',acts:[{at:3,exit:'r'}]},{id:'elder',look:{name:'His Father'},x:0.72,z:0.14,face:'l',pose:'bless',acts:[{at:3,exit:'r'}]},{id:'servant',look:{name:'A Servant'},x:0.88,z:0.12,face:'l',pose:'bow',acts:[{at:3,exit:'r'}]},{id:'kohen',x:0.34,z:0.14,face:'l',pose:'stand',at:3,say:4,hold:'bread',acts:[{at:5,to:0.42,pose:'hold'}]},{id:'voice',x:0.7}],crowd:[{kind:'kohanim',n:5,x:0.7,w:0.24,z:0.66,face:'l',at:3}],props:[{k:'altar',x:0.5,z:0.34}],fx:[{k:'smoke',x:0.5,at:5}]}},
-   {art:'corrupt',music:'tense',text:'“You are presenting defiled food on My mizbe\'ach. But you asked, ‘In what way have we defiled You?’ Because you say, ‘The table of YAHUAH is despicable.’',ref:'MAL’AḴI 1:7',stage:{set:'court',time:'day',cam:'push',focus:0.45,cast:[{id:'malaki',x:0.12,z:0.06,face:'r',pose:'speak',hold:'scroll',say:1,acts:[{at:3,pose:'point'}]},{id:'youth',look:{name:'A Son',child:1},x:0.6,z:0.12,face:'r',pose:'kneel',acts:[{at:3,exit:'r'}]},{id:'elder',look:{name:'His Father'},x:0.72,z:0.14,face:'l',pose:'bless',acts:[{at:3,exit:'r'}]},{id:'servant',look:{name:'A Servant'},x:0.88,z:0.12,face:'l',pose:'bow',acts:[{at:3,exit:'r'}]},{id:'kohen',x:0.34,z:0.14,face:'l',pose:'stand',at:3,say:4,hold:'bread',acts:[{at:5,to:0.42,pose:'hold'}]},{id:'voice',x:0.7}],crowd:[{kind:'kohanim',n:5,x:0.7,w:0.24,z:0.66,face:'l',at:3}],props:[{k:'altar',x:0.5,z:0.34}],fx:[{k:'smoke',x:0.5,at:5}]}},
+   {art:'corrupt',music:'tense',text:'“You are presenting defiled food on My mizbe\'ach. But you asked, ‘In what way have we defiled You?’ Because you say, ‘The table of YAHUAH is despicable.’',ref:'MAL’AḴI 1:7',stage:{set:'court',time:'day',cam:'push',focus:0.45,cast:[{id:'malaki',x:0.12,z:0.06,face:'r',pose:'speak',hold:'scroll',say:1},{id:'kohen',x:0.38,z:0.12,face:'r',pose:'hold',say:4,hold:'bread'},{id:'voice',x:0.7}],crowd:[{kind:'kohanim',n:5,x:0.76,w:0.22,z:0.6,face:'l'}],props:[{k:'altar',x:0.5,z:0.34}],fx:[{k:'smoke',x:0.5,at:0}]}},
   ],
   scene:{
-   map:{biome:'city',w:46,h:30,seed:6302,features:[{type:'templealtar',x:16,y:10,id:'altar'},{type:'doorway',x:23,y:9,id:'doors'},{type:'standard',x:31,y:12,id:'name'},{type:'clearing',x:23,y:20,flat:3}]},
+   map:{biome:'city',w:46,h:30,seed:6302,features:[{type:'templealtar',x:16,y:10,id:'altar'},{type:'standard',x:31,y:12,id:'name'},{type:'clearing',x:23,y:20,flat:3},{type:'temple',x:24.5,y:9,id:'doors',clear:5}]},
    time:'day',
    music:'tense',
    player:'malaki',
@@ -5960,7 +5967,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light',music:'holy',text:'“But cursed be the deceiver who has a male in his flock and makes a vow, but is slaughtering to YAHUAH what is blemished. For I am a great Sovereign,” said YAHUAH of hosts, “and My Name is feared among nations.',ref:'MAL’AḴI 1:14',stage:{set:'desert',time:'dawn',cam:'push',focus:0.5,cast:[{id:'malaki',x:0.13,z:0.06,face:'r',pose:'speak',hold:'scroll',say:0,acts:[{at:1,pose:'raise'}]},{id:'kohen',x:0.36,z:0.14,face:'r',pose:'raise',hold:'censer'},{id:'natking',look:{name:'A Sovereign of the Nations',skin:'#5a3a1e',hair:'#141008',robe:'#2e4a6a',beard:'#141008',mantle:'#caa23c',sash:'#8a2a2a'},crown:1,x:0.68,z:0.16,face:'l',from:'stand',pose:'kneel',at:1,hold:'censer'},{id:'voice',x:0.7}],crowd:[{kind:'nations',n:6,x:0.8,w:0.2,z:0.8,face:'l',hold:'censer',from:'stand',pose:'bow',at:1},{kind:'kings',n:3,x:0.28,w:0.14,z:0.9,face:'r',from:'stand',pose:'kneel',at:1}],props:[{k:'altar',x:0.52,z:0.3,sacrifice:1},{k:'camel',x:0.94,z:0.5,face:'l',load:1},{k:'camel',x:0.06,z:0.6,face:'r',load:1}],fx:[{k:'smoke',x:0.52},{k:'glory',x:0.5,y:0.03,at:1},{k:'rays',x:0.52,at:1}]}},
+   {art:'light',music:'holy',text:'“But cursed be the deceiver who has a male in his flock and makes a vow, but is slaughtering to YAHUAH what is blemished. For I am a great Sovereign,” said YAHUAH of hosts, “and My Name is feared among nations.',ref:'MAL’AḴI 1:14',stage:{set:'desert',time:'dawn',cam:'push',focus:0.5,cast:[{id:'malaki',x:0.12,z:0.06,face:'r',pose:'speak',hold:'scroll',say:0},{id:'deceiver',look:{name:'The Deceiver',skin:'#7a4e29',hair:'#2c1a0c',hairStyle:'short',robe:'#6a5a3a',beard:'#2c1a0c',headcover:'#a08a60'},x:0.43,z:0.08,face:'r',pose:'carry',hold:'lamb'},{id:'natking',look:{name:'A Sovereign of the Nations',skin:'#5a3a1e',hair:'#141008',robe:'#2e4a6a',beard:'#141008',mantle:'#caa23c',sash:'#8a2a2a'},crown:1,x:0.68,z:0.16,face:'l',from:'stand',pose:'kneel',at:1,hold:'censer'},{id:'voice',x:0.7}],crowd:[{kind:'nations',n:5,x:0.82,w:0.14,z:0.62,face:'l',hold:'censer',from:'stand',pose:'bow',at:1},{kind:'kings',n:2,x:0.78,w:0.08,z:0.4,face:'l',from:'stand',pose:'kneel',at:1}],props:[{k:'altar',x:0.54,z:0.3,sacrifice:1},{k:'ram',x:0.3,z:0.3,face:'r'},{k:'sheep',x:0.29,z:0.5,n:3,w:50},{k:'camel',x:0.9,z:0.45,face:'l',load:1}],fx:[{k:'smoke',x:0.54},{k:'glory',x:0.5,y:0.03,at:1},{k:'rays',x:0.6,at:1}]}},
   ],
   complete:'For I am a great Sovereign,” said YAHUAH of hosts, “and My Name is feared among nations.'
 }
@@ -6016,7 +6023,7 @@ STORY.push(
    {art:'corrupt',music:'sorrow',text:'Have we not all one Father? Did not one Al create us? Why do we act treacherously against one another, to profane the berith of the fathers?',ref:'MAL’AḴI 2:10',stage:{set:'city',time:'dusk',cam:'push',focus:0.55,cast:[{id:'malaki',x:0.12,z:0.06,face:'r',pose:'raise',hold:'scroll',acts:[{at:2,pose:'point'}]},{id:'hebrew',x:0.34,z:0.14,face:'r',pose:'stand',acts:[{at:2,pose:'fall'}]},{id:'husband',x:0.5,z:0.1,face:'l',pose:'stand',acts:[{at:2,pose:'strike'},{at:3,to:0.72,pose:'bow'}]}],crowd:[{kind:'people',n:6,x:0.5,w:0.4,z:0.86,face:'l'}],props:[{k:'idol',x:0.86,z:0.3,at:3,color:'#caa23c',s:1.3}],fx:[{k:'glory',x:0.3,y:0.04,at:1},{k:'darkness',amt:0.22,at:3},{k:'smoke',x:0.86,at:3}]}},
   ],
   scene:{
-   map:{biome:'city',w:46,h:30,seed:6304,features:[{type:'altar',x:16,y:11,id:'tears'},{type:'standard',x:31,y:11,id:'onefather',examine:'“Have we not all one Father? Did not one Al create us?”'},{type:'clearing',x:23,y:20,flat:3}]},
+   map:{biome:'city',w:46,h:30,seed:6304,features:[{type:'templealtar',x:16,y:11,id:'tears'},{type:'standard',x:31,y:11,id:'onefather',examine:'“Have we not all one Father? Did not one Al create us?”'},{type:'clearing',x:23,y:20,flat:3}]},
    time:'day',
    music:'sorrow',
    player:'malaki',
@@ -6051,7 +6058,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'stars',music:'holy',text:'You have wearied YAHUAH with your words and you have said, “In what way have we wearied Him?” In that you say, “Everyone who does evil is good in the eyes of YAHUAH and He is delighting in them,” or, “Where is the Aluahim of right ruling?”',ref:'MAL’AḴI 2:17',stage:{set:'house',cam:'push',focus:0.45,cast:[{id:'husband',x:0.44,z:0.1,face:'r',pose:'hold',hold:'scroll',say:3,acts:[{at:2,face:'l',pose:'stand'}]},{id:'wife',x:0.62,z:0.12,face:'l',pose:'weep',acts:[{at:1,exit:'r'}]},{id:'hebrew',look:{name:'His Neighbour'},x:0.22,z:0.14,face:'r',pose:'stand',at:2,acts:[{at:3,pose:'raise'}]},{id:'voice',x:0.7}],props:[{k:'table',x:0.12,z:0.3,cups:1,at:2}],fx:[{k:'darkness',amt:0.15,at:2}]}},
+   {art:'stars',music:'holy',text:'You have wearied YAHUAH with your words and you have said, “In what way have we wearied Him?” In that you say, “Everyone who does evil is good in the eyes of YAHUAH and He is delighting in them,” or, “Where is the Aluahim of right ruling?”',ref:'MAL’AḴI 2:17',stage:{set:'house',cam:'push',focus:0.45,cast:[{id:'husband',x:0.44,z:0.1,face:'l',pose:'speak',hold:'scroll',say:3},{id:'wife',x:0.62,z:0.12,face:'l',pose:'weep',acts:[{at:1,exit:'r'}]},{id:'hebrew',look:{name:'His Neighbour'},x:0.24,z:0.14,face:'r',pose:'stand',acts:[{at:1,pose:'raise'}]},{id:'voice',x:0.7}],props:[{k:'table',x:0.12,z:0.3,cups:1,at:2}],fx:[{k:'darkness',amt:0.15,at:2}]}},
   ],
   complete:'…who does evil is good in the eyes of YAHUAH and He is delighting in them,” or, “Where is the Aluahim of right ruling?”'
 }
@@ -6063,7 +6070,7 @@ STORY.push(
 
 { id:'m5', title:'The Refiner’s Fire', ref:'MAL’AḴI 3:1–6',
   intro:[
-   {art:'stars',music:'holy',text:'“See, I am sending My mal\'ak and he shall prepare the way before Me. Then suddenly the Master you are seeking comes to His Hĕḵal, even the Mal\'ak of the berith, in whom you delight. See, He is coming,” said YAHUAH of hosts.',ref:'MAL’AḴI 3:1',stage:{set:'temple',time:'dawn',cam:'push',focus:0.5,cast:[{id:'malak',enter:'l',at:0,x:0.3,z:0.1,face:'r',pose:'stand',hold:'staff',acts:[{at:1,pose:'point'}]},{id:'kohen',x:0.7,z:0.14,face:'l',pose:'stand',acts:[{at:1,pose:'look'},{at:3,pose:'fall'}]},{id:'voice',x:0.7}],crowd:[{kind:'people',n:6,x:0.82,w:0.16,z:0.62,face:'l',from:'stand',pose:'bow',at:2},{kind:'kohanim',n:3,x:0.64,w:0.08,z:0.84,face:'l',from:'stand',pose:'bow',at:2}],props:[{k:'pot',x:0.88,z:0.2,at:3}],fx:[{k:'shekinah',x:0.52,at:1},{k:'bright',amt:0.15,at:2},{k:'embers',at:3}]}},
+   {art:'stars',music:'holy',text:'“See, I am sending My mal\'ak and he shall prepare the way before Me. Then suddenly the Master you are seeking comes to His Hĕḵal, even the Mal\'ak of the berith, in whom you delight. See, He is coming,” said YAHUAH of hosts.',ref:'MAL’AḴI 3:1',stage:{set:'temple',time:'dawn',cam:'push',focus:0.5,cast:[{id:'malak',enter:'l',at:0,x:0.3,z:0.1,face:'r',pose:'stand',hold:'staff',acts:[{at:1,pose:'point'}]},{id:'kohen',x:0.62,z:0.12,face:'l',pose:'stand',acts:[{at:2,pose:'bow'}]},{id:'voice',x:0.7}],crowd:[{kind:'people',n:5,x:0.84,w:0.12,z:0.62,face:'l',from:'stand',pose:'bow',at:2},{kind:'kohanim',n:3,x:0.7,w:0.08,z:0.84,face:'l',from:'stand',pose:'bow',at:2}],fx:[{k:'shekinah',x:0.52,at:1},{k:'bright',amt:0.15,at:2}]}},
   ],
   scene:{
    map:{biome:'city',w:46,h:30,seed:6305,features:[{type:'temple',x:23,y:9,id:'hekal',examine:'“Suddenly the Master you are seeking comes to His Hĕḵal — the Mal’ak of the berith, in whom you delight.”'},{type:'firepit',x:16,y:12,id:'fire'},{type:'clearing',x:23,y:20,flat:3}]},
@@ -6099,7 +6106,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'furnace',music:'tense',text:'“For I am YAHUAH, I shall not change and you, O sons of Ya‛aqoḇ, shall not come to an end.',ref:'MAL’AḴI 3:6',stage:{set:'court',time:'dusk',cam:'push',focus:0.5,cast:[{id:'levikohen',look:{name:'A Kohen of Lĕwi',skin:'#704a27',hair:'#2c1a0c',robe:'#f0ead8',beard:'#2c1a0c',collar:'#caa23c',headcover:'#ece8da',sash:'#2e5f8a'},x:0.34,z:0.12,face:'r',pose:'carry',hold:'lamb',at:2},{id:'witch',look:{name:'A Practiser of Witchcraft',skin:'#644323',hair:'#1a1008',robe:'#3a2a42',beard:'#1a1008',mantle:'#1e1622',collar:'#8a6a3a'},x:0.58,z:0.14,face:'l',pose:'raise',at:3,acts:[{at:4,pose:'fall'}]},{id:'worker',look:{name:'A Wage Earner',skin:'#7a4e29',hair:'#231409',robe:'#8a7a5a',beard:'#231409',short:1},x:0.7,z:0.1,face:'r',pose:'kneel',at:4,acts:[{at:5,pose:'stand'}]},{id:'oppressor',look:{name:'One Who Oppresses the Wage Earner',skin:'#8a6038',hair:'#231409',robe:'#5a2a3a',beard:'#231409',sash:'#caa23c',mantle:'#7a4a2a'},x:0.82,z:0.16,face:'l',pose:'point',hold:'rod',at:4,acts:[{at:5,pose:'fall'}]},{id:'voice',x:0.7}],crowd:[{kind:'levites',n:4,x:0.28,w:0.12,z:0.62,face:'l',pose:'raise',at:1},{kind:'people',n:5,x:0.7,w:0.26,z:0.8,face:'l',pose:'raise',at:5}],props:[{k:'furnace',x:0.14,z:0.34,s:0.7},{k:'altar',x:0.46,z:0.3}],fx:[{k:'glory',x:0.14,y:0.04,at:0},{k:'bright',amt:0.1,at:1},{k:'lightning',at:3}]}},
+   {art:'furnace',music:'tense',text:'“For I am YAHUAH, I shall not change and you, O sons of Ya‛aqoḇ, shall not come to an end.',ref:'MAL’AḴI 3:6',stage:{set:'court',time:'dusk',cam:'push',focus:0.5,cast:[{id:'levikohen',look:{name:'A Kohen of Lĕwi',skin:'#704a27',hair:'#2c1a0c',robe:'#f0ead8',beard:'#2c1a0c',collar:'#caa23c',headcover:'#ece8da',sash:'#2e5f8a'},x:0.36,z:0.12,face:'r',pose:'carry',hold:'lamb'},{id:'voice',x:0.7}],crowd:[{kind:'levites',n:4,x:0.26,w:0.12,z:0.62,face:'r',pose:'raise'},{kind:'people',n:6,x:0.74,w:0.24,z:0.45,face:'l',pose:'raise'}],props:[{k:'furnace',x:0.14,z:0.34,s:0.7},{k:'altar',x:0.46,z:0.3}],fx:[{k:'glory',x:0.14,y:0.04,at:0},{k:'bright',amt:0.1,at:0}]}},
   ],
   complete:'“For I am YAHUAH, I shall not change and you, O sons of Ya‛aqoḇ, shall not come to an end.'
 },
@@ -6109,7 +6116,7 @@ STORY.push(
    {art:'vista',music:'tense',text:'“From the days of your fathers you have turned aside from My laws and did not guard them. Turn back to Me and I shall turn back to you,” said YAHUAH of hosts. “But you said, ‘In what shall we turn back?’',ref:'MAL’AḴI 3:7',stage:{set:'field',time:'dusk',cam:'push',focus:0.5,cast:[{id:'malaki',x:0.12,z:0.06,face:'r',pose:'point',hold:'scroll',say:0,acts:[{at:1,pose:'bless'},{at:3,pose:'speak'},{at:4,pose:'point'}]},{id:'husband',x:0.4,z:0.12,face:'l',pose:'carry',hold:'basket',say:2,acts:[{at:4,to:0.7},{at:5,face:'l',pose:'speak'},{at:6,pose:'carry'}]},{id:'voice',x:0.7}],crowd:[{kind:'people',n:5,x:0.66,w:0.26,z:0.72,face:'r',pose:'carry',hold:'basket',exit:'r',exitAt:4}],props:[{k:'sheaves',x:0.56,z:0.36,n:5},{k:'sacks',x:0.86,z:0.3,n:4},{k:'basket',x:0.8,z:0.22,fruit:'#c8a040',at:6}],fx:[{k:'glory',x:0.14,y:0.04,at:1},{k:'rays',x:0.84,at:6}]}},
   ],
   scene:{
-   map:{biome:'plains',w:46,h:30,seed:6306,features:[{type:'tower',x:16,y:11,id:'storehouse',examine:'“Bring all the tithes into the storehouse, and let there be food in My house.”'},{type:'wheat',x:14,y:13},{type:'vine',x:31,y:12,id:'vine'},{type:'clearing',x:23,y:20,flat:3}]},
+   map:{biome:'plains',w:46,h:30,seed:6306,features:[{type:'house',x:16,y:11,id:'storehouse',examine:'“Bring all the tithes into the storehouse, and let there be food in My house.”',furnish:'store',clear:3.5},{type:'wheat',x:14,y:13},{type:'vine',x:31,y:12,id:'vine'},{type:'clearing',x:23,y:20,flat:3}]},
    time:'day',
    music:'tense',
    player:'malaki',
@@ -6153,7 +6160,7 @@ STORY.push(
    {art:'stars',music:'sorrow',text:'“Your words have been harsh against Me,” said YAHUAH, “but you have said, ‘What have we spoken against You?’',ref:'MAL’AḴI 3:13',stage:{set:'city',time:'night',cam:'push',focus:0.5,cast:[{id:'husband',x:0.36,z:0.1,face:'r',pose:'speak',say:0,acts:[{at:1,pose:'point'}]},{id:'elder',x:0.2,z:0.12,face:'r',pose:'stand',say:2,acts:[{at:2,pose:'weep'}]},{id:'proud',look:{name:'The Proud',skin:'#8a6038',hair:'#231409',robe:'#7a2a5a',beard:'#231409',mantle:'#b88a2a',sash:'#caa23c'},x:0.78,z:0.16,face:'l',pose:'enthroned',at:3},{id:'voice',x:0.7}],crowd:[{kind:'mourners',n:4,x:0.28,w:0.2,z:0.58,face:'r',at:2},{kind:'people',n:4,x:0.6,w:0.12,z:0.46,face:'r',from:'stand',pose:'bow',at:3}],props:[{k:'table',x:0.9,z:0.26,cups:1,at:3}],fx:[{k:'glory',x:0.1,y:0.02}]}},
   ],
   scene:{
-   map:{biome:'city',w:46,h:30,seed:6307,features:[{type:'standard',x:16,y:11,id:'harsh',examine:'“It is worthless to serve Aluahim… and now we are calling the proud baruk.”'},{type:'tablets',x:31,y:11,id:'book'},{type:'clearing',x:23,y:20,flat:3}]},
+   map:{biome:'city',w:46,h:30,seed:6307,features:[{type:'standard',x:16,y:11,id:'harsh',examine:'“It is worthless to serve Aluahim… and now we are calling the proud baruk.”'},{type:'tablets',x:31,y:11,id:'book'},{type:'clearing',x:23,y:20,flat:3},{type:'house',x:10,y:10,id:'mh1',clear:4},{type:'house',x:36,y:9,id:'mh2',clear:4},{type:'house',x:37,y:20,id:'mh3',clear:4}]},
    time:'night',
    music:'sorrow',
    player:'malaki',
@@ -6231,7 +6238,7 @@ STORY.push(
    ],
   },
   outro:[
-   {art:'light',music:'holy',text:'“And he shall turn the hearts of the fathers to the children and the hearts of the children to their fathers, lest I come and smite the earth with utter destruction.”',ref:'MAL’AḴI 4:6',stage:{set:'mountain',time:'dusk',cam:'push',focus:0.5,cast:[{id:'mosheh_o',x:0.14,z:0.22,dy:-0.04,face:'r',pose:'hold',hold:'tablets'},{id:'eliyahu',enter:'l',at:1,x:0.4,z:0.1,face:'r',pose:'stand',hold:'staff',acts:[{at:2,pose:'bless'}]},{id:'elder',look:{name:'A Father'},x:0.6,z:0.12,face:'l',pose:'stand',acts:[{at:2,pose:'bless',face:'r'}]},{id:'youth',look:{name:'His Son',child:1},x:0.8,z:0.08,face:'r',pose:'stand',acts:[{at:2,to:0.72,pose:'kneel',face:'l'}]},{id:'voice',x:0.7}],crowd:[{kind:'elders',n:3,x:0.5,w:0.1,z:0.78,face:'r',from:'stand',pose:'bless',at:2},{kind:'children',n:4,x:0.74,w:0.14,z:0.76,face:'l',enter:'r',at:2}],fx:[{k:'glory',x:0.16,y:0.03},{k:'rays',x:0.4,at:1}]}},
+   {art:'light',music:'holy',text:'“And he shall turn the hearts of the fathers to the children and the hearts of the children to their fathers, lest I come and smite the earth with utter destruction.”',ref:'MAL’AḴI 4:6',stage:{set:'mountain',time:'dusk',cam:'push',focus:0.5,cast:[{id:'eliyahu',x:0.3,z:0.08,face:'r',pose:'bless',hold:'staff'},{id:'elder',look:{name:'A Father'},x:0.54,z:0.1,face:'r',pose:'bless'},{id:'youth',look:{name:'His Son',child:1},x:0.66,z:0.08,face:'l',pose:'kneel'},{id:'voice',x:0.7}],crowd:[{kind:'elders',n:3,x:0.46,w:0.1,z:0.62,face:'r',pose:'bless'},{kind:'children',n:4,x:0.66,w:0.12,z:0.6,face:'l'}],fx:[{k:'glory',x:0.3,y:0.03},{k:'rays',x:0.3,at:0}]}},
   ],
   complete:'…the fathers to the children and the hearts of the children to their fathers, lest I come and smite the earth with utter destruction.”'
 }
@@ -6499,6 +6506,7 @@ setTimeout(()=>{ $('fader').style.opacity='0'; },150);
 <script src="cinema.js"></script>
 <script src="gfx.js"></script>
 <script src="play.js"></script>
+<script src="rooms.js"></script>
 <script src="voice.js"></script>
 <script src="face.js"></script>
 <script src="music.js"></script>
