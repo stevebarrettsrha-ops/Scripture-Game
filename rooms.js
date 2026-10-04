@@ -135,10 +135,35 @@ function roomsOf(map){
 }
 
 /* ------------------------------------------------------------------ what stands in each room */
+/* a dwelling may be furnished for what the story makes of it (its feature's furnish):
+     palace   — beds of ivory with their canopies, a table set with bowls of wine, a harp, the lampstand
+     feast    — a long low table spread with bread and bowls, cushions about it, jars of wine
+     court    — a king's seat on a step, a rug before it, a lampstand on either side, arms
+     chamber  — the little upper room: a bed, a table, a stool and a lampstand (MELAḴIM B 4:10)
+     poor     — a hearth, a mat, one jar and a lamp, and nothing else
+     store    — jars and sacks and baskets, stacked
+     shrine   — a carved image on its stand, incense burning before it, lamps (a house of idols)
+     prison   — straw, fetters on the wall, the stocks, a jar of water
+     scribe   — a table of scrolls with a stool, scroll jars, a fire-pot burning */
+const STYLE={
+  palace:[['rug',.5,.55,{under:true}],['bed',.24,.3,{solid:.45,ivory:true}],['bed',.76,.3,{solid:.45,ivory:true}],['table',.5,.72,{solid:.35,bowls:true}],
+          ['harp',.08,.62,{solid:.2}],['lampstand',.93,.1,{solid:.15}],['jars',.06,.12,{solid:.4}],['lamp',.5,-.05,{wall:true}]],
+  feast:[['rug',.5,.55,{under:true}],['table',.5,.5,{solid:.4,long:true,bread:true,bowls:true}],['cushion',.2,.5],['cushion',.8,.5],['cushion',.36,.86],['cushion',.64,.86],
+         ['cushion',.36,.16],['cushion',.64,.16],['jars',.95,.12,{solid:.4}],['lampstand',.05,.12,{solid:.15}],['lamp',.5,-.05,{wall:true}]],
+  court:[['rug',.5,.62,{under:true}],['throne',.5,.12,{solid:.45}],['lampstand',.22,.1,{solid:.15}],['lampstand',.78,.1,{solid:.15}],['arms',.92,.7,{solid:.3}],['chest',.08,.72,{solid:.3}]],
+  chamber:[['bed',.22,.32,{solid:.45}],['table',.6,.38,{solid:.3}],['seat',.8,.72,{solid:.2}],['lampstand',.92,.12,{solid:.15}],['lamp',.45,-.05,{wall:true}]],
+  poor:[['hearth',.15,.25,{solid:.42}],['mat',.75,.7],['jar',.88,.18,{solid:.2}],['lamp',.55,-.05,{wall:true}]],
+  store:[['jars',.1,.15,{solid:.45}],['jars',.32,.12,{solid:.45}],['jars',.9,.15,{solid:.45}],['sacks',.68,.15,{solid:.4}],['sacks',.12,.72,{solid:.4}],
+         ['basket',.88,.75],['basket',.78,.82],['jar',.5,.2,{solid:.2}],['lamp',.5,-.05,{wall:true}]],
+  shrine:[['idol',.5,.12,{solid:.4}],['incense',.5,.5,{solid:.25}],['lamp',.3,.2],['lamp',.7,.2],['jars',.08,.15,{solid:.4}],['mat',.5,.85]],
+  prison:[['straw',.3,.6,{under:true}],['straw',.75,.4,{under:true}],['chains',.25,-.03,{wall:true}],['chains',.75,-.03,{wall:true}],['stocks',.7,.75,{solid:.3}],['jar',.08,.2,{solid:.2}]],
+  scribe:[['table',.4,.35,{solid:.35,scrolls:true}],['seat',.4,.68,{solid:.2}],['jars',.9,.14,{solid:.4,scroll:true}],['brazier',.12,.62,{solid:.3}],['lamp',.65,-.05,{wall:true}],['mat',.78,.75]]};
 function furnish(R){
   const r=rnd(Math.round(R.ax*97+R.ay*131)+R.kind.length), W=R.R-R.L, D=R.F-R.fy0;
   const at=(u,v)=>({x:R.L+.3+(W-.6)*u, y:R.fy0+.1+(D-.25)*v});
   const out=[]; const put=(kind,u,v,o)=>out.push(Object.assign(at(u,v),{kind},o||{}));
+  const st=R.kind!=='cave'&&STYLE[R.d.furnish];
+  if(st){ for(const [k,u,v,o] of st) put(k,u,v,Object.assign({},o)); return out; }
   if(R.kind==='house'){
     const left=r()<.5;
     put(r()<.5?'oven':'hearth', left?.12:.88, .2, {solid:.42});
@@ -328,6 +353,68 @@ function drawFurn(g,R,f,x,y,t,ox,oy){
     case 'skins': { g.fillStyle='#7a5a3a'; g.beginPath(); g.ellipse(x,y-2*u,10*u,5*u,.2,0,Math.PI*2); g.fill();
       g.fillStyle='#9a7a52'; g.beginPath(); g.ellipse(x+3*u,y-3*u,6*u,3.4*u,-.3,0,Math.PI*2); g.fill(); break; }
     case 'stone': { g.fillStyle='#6e675c'; g.beginPath(); g.ellipse(x,y-1.4*u,2.6*u,1.8*u,0,0,Math.PI*2); g.fill(); break; }
+    case 'bed': { sh(13); /* a bed on its frame (of ivory in the palaces of the rich), with its coverlet and canopy */
+      const fr=f.ivory?'#e8dcc0':'#6e4a2a', fr2=f.ivory?'#c8b890':'#5a3c22';
+      g.fillStyle=fr2; g.fillRect(x-13*u,y-3*u,2*u,4*u); g.fillRect(x+11*u,y-3*u,2*u,4*u);
+      g.fillStyle=fr; g.fillRect(x-13*u,y-8*u,26*u,6*u); g.fillRect(x-13*u,y-13*u,3*u,10*u);
+      g.fillStyle=f.ivory?'#7a3a5a':'#9a8a64'; g.fillRect(x-10*u,y-10*u,22*u,5*u);
+      g.fillStyle=f.ivory?'#c8a24a':'#b8a478'; g.fillRect(x-10*u,y-6*u,22*u,1*u);
+      g.fillStyle='#e8e0cc'; g.beginPath(); g.ellipse(x-7*u,y-10*u,3.4*u,2*u,0,0,Math.PI*2); g.fill();
+      if(f.ivory){ g.strokeStyle='#d8c8a0'; g.lineWidth=Math.max(1,1*u); g.beginPath(); g.moveTo(x-13*u,y-8*u); g.lineTo(x-13*u,y-22*u); g.moveTo(x+13*u,y-8*u); g.lineTo(x+13*u,y-22*u); g.stroke();
+        g.fillStyle='rgba(240,228,200,.3)'; g.beginPath(); g.moveTo(x-14*u,y-22*u); g.lineTo(x+14*u,y-22*u); g.lineTo(x+15*u,y-7*u); g.lineTo(x-15*u,y-7*u); g.closePath(); g.fill(); }
+      break; }
+    case 'table': { const L2=f.long?20:10; sh(L2+2); /* a low table of wood, and what is set on it */
+      g.fillStyle='#5a3c22'; g.fillRect(x-(L2-1)*u,y-3*u,2*u,4*u); g.fillRect(x+(L2-3)*u,y-3*u,2*u,4*u);
+      g.fillStyle='#7a5432'; g.fillRect(x-L2*u,y-7*u,2*L2*u,5*u); g.fillStyle='#8e6640'; g.fillRect(x-L2*u,y-7*u,2*L2*u,1.4*u);
+      if(f.bread) for(let i=0;i<Math.round(L2/5);i++){ g.fillStyle='#c8964e'; g.beginPath(); g.ellipse(x-L2*u+(4+i*8)*u,y-7.6*u,2.6*u,1.4*u,0,0,Math.PI*2); g.fill(); }
+      if(f.bowls) for(let i=0;i<Math.round(L2/4);i++){ const bx=x-L2*u+(6.5+i*7.2)*u; g.fillStyle=i%2?'#c8a24a':'#b8b0a0'; g.beginPath(); g.ellipse(bx,y-7.4*u,2.2*u,1*u,0,0,Math.PI*2); g.fill();
+        g.fillStyle='#6a1e2a'; g.beginPath(); g.ellipse(bx,y-7.7*u,1.5*u,.5*u,0,0,Math.PI*2); g.fill(); }
+      if(f.scrolls) for(let i=0;i<3;i++){ g.fillStyle='#e0d0a8'; g.fillRect(x-7*u+i*5*u,y-9.4*u,4*u,2*u); g.fillStyle='#8a6038'; g.fillRect(x-7.6*u+i*5*u,y-9.8*u,1*u,2.8*u); g.fillRect(x-3.4*u+i*5*u,y-9.8*u,1*u,2.8*u); }
+      break; }
+    case 'seat': { sh(5); /* a stool of wood */
+      g.fillStyle='#5a3c22'; g.fillRect(x-4*u,y-5*u,1.4*u,6*u); g.fillRect(x+2.6*u,y-5*u,1.4*u,6*u);
+      g.fillStyle='#7a5432'; g.fillRect(x-5*u,y-7*u,10*u,2.6*u); break; }
+    case 'throne': { sh(14); /* the king's seat upon its step, with arms and a high back */
+      g.fillStyle='#8a7a5a'; g.fillRect(x-14*u,y-3*u,28*u,4*u); g.fillStyle='#a8966e'; g.fillRect(x-14*u,y-3*u,28*u,1.2*u);
+      g.fillStyle='#b08a3a'; g.fillRect(x-8*u,y-24*u,16*u,18*u); g.fillStyle='#d4b25a'; g.fillRect(x-8*u,y-24*u,16*u,2*u);
+      g.fillStyle='#7a2a2a'; g.fillRect(x-6*u,y-20*u,12*u,10*u); g.fillRect(x-7*u,y-9*u,14*u,4*u);
+      g.fillStyle='#c8a24a'; g.fillRect(x-10*u,y-13*u,3*u,8*u); g.fillRect(x+7*u,y-13*u,3*u,8*u); break; }
+    case 'lampstand': { sh(4); /* a lamp set up on its tall stand */
+      g.fillStyle='#8a6a34'; g.fillRect(x-4*u,y-1.6*u,8*u,1.8*u); g.fillRect(x-.8*u,y-20*u,1.6*u,19*u);
+      g.fillStyle='#a8683a'; g.beginPath(); g.ellipse(x,y-20.5*u,3.6*u,1.5*u,0,0,Math.PI*2); g.fill();
+      const fl=.7+.3*Math.sin(t/90+R.ax+x); g.fillStyle=`rgba(255,${200+fl*40|0},110,.95)`; g.beginPath(); g.ellipse(x+2.6*u,y-23*u,1*u,2*u*fl,0,0,Math.PI*2); g.fill();
+      glow(g,x+2.6*u,y-22*u,26*u,.22*fl); break; }
+    case 'harp': { sh(5); /* a harp of wood, its strings */
+      g.strokeStyle='#7a5432'; g.lineWidth=Math.max(1.5,1.6*u); g.beginPath(); g.moveTo(x-4*u,y); g.lineTo(x-4*u,y-16*u); g.quadraticCurveTo(x+2*u,y-19*u,x+5*u,y-12*u); g.lineTo(x-4*u,y); g.stroke();
+      g.strokeStyle='rgba(230,215,170,.8)'; g.lineWidth=Math.max(1,.4*u); for(let i=1;i<5;i++){ g.beginPath(); g.moveTo(x-4*u+i*1.7*u,y-2*u-i*1.2*u); g.lineTo(x-4*u+i*1.7*u,y-15.5*u+i*.5*u); g.stroke(); } break; }
+    case 'sacks': { sh(9); for(const [dx,dy,s] of [[-4,0,1],[4,1,1.05],[0,-4,.9]]){ g.fillStyle='#b8a074'; g.beginPath(); g.ellipse(x+dx*u,y+dy*u-6*s*u,5*s*u,6.4*s*u,0,0,Math.PI*2); g.fill();
+        g.fillStyle='#9a8258'; g.fillRect(x+dx*u-2*s*u,y+dy*u-13*s*u,4*s*u,2*s*u); } break; }
+    case 'idol': { sh(7); /* a carved image upon its stand */
+      g.fillStyle='#7a6e5a'; g.fillRect(x-6*u,y-5*u,12*u,5*u); g.fillStyle='#968a72'; g.fillRect(x-6*u,y-5*u,12*u,1.2*u);
+      g.fillStyle='#a8925a'; g.fillRect(x-3*u,y-19*u,6*u,14*u); g.beginPath(); g.arc(x,y-21*u,3.2*u,0,Math.PI*2); g.fill();
+      g.fillStyle='#d4b25a'; g.beginPath(); g.moveTo(x-3.2*u,y-23*u); g.lineTo(x,y-28*u); g.lineTo(x+3.2*u,y-23*u); g.closePath(); g.fill();
+      g.fillStyle='#4a3a22'; g.fillRect(x-1.6*u,y-21.6*u,1*u,1*u); g.fillRect(x+.6*u,y-21.6*u,1*u,1*u); break; }
+    case 'incense': { sh(5); /* a little altar of incense, its smoke going up */
+      g.fillStyle='#8a7a62'; g.fillRect(x-3.4*u,y-9*u,6.8*u,9*u); g.fillStyle='#a8966e'; g.fillRect(x-4*u,y-10*u,8*u,2*u);
+      g.fillRect(x-4*u,y-11.4*u,1.6*u,1.6*u); g.fillRect(x+2.4*u,y-11.4*u,1.6*u,1.6*u);
+      for(let i=0;i<4;i++){ const k=((t/1400+i/4)%1); g.fillStyle=`rgba(210,205,195,${.35*(1-k)})`; g.beginPath(); g.arc(x+Math.sin(k*6+i)*2*u,y-12*u-k*18*u,(1.6+k*3)*u,0,Math.PI*2); g.fill(); }
+      break; }
+    case 'chains': { /* fetters of bronze hung from the wall */
+      const cy=y-R.bw*TILE*.6; g.strokeStyle='#6e5a3a'; g.lineWidth=Math.max(1,1*u);
+      for(const dx of [-5,5]){ g.beginPath(); for(let i=0;i<6;i++){ g.moveTo(x+dx*u+1.4*u,cy+i*2.2*u); g.arc(x+dx*u,cy+i*2.2*u,1.4*u,0,Math.PI*2); } g.stroke();
+        g.strokeStyle='#8a7248'; g.beginPath(); g.ellipse(x+dx*u,cy+15*u,2.6*u,1.6*u,0,0,Math.PI*2); g.stroke(); g.strokeStyle='#6e5a3a'; }
+      g.fillStyle='#4a3a28'; g.fillRect(x-7*u,cy-2*u,14*u,2*u); break; }
+    case 'straw': { g.fillStyle='rgba(196,168,96,.75)'; g.beginPath(); g.ellipse(x,y,11*u,5*u,0,0,Math.PI*2); g.fill();
+      g.strokeStyle='rgba(150,120,60,.7)'; g.lineWidth=Math.max(1,.5*u); for(let i=0;i<12;i++){ const a=i*2.4; g.beginPath(); g.moveTo(x+Math.cos(a)*8*u,y+Math.sin(a)*3*u); g.lineTo(x+Math.cos(a+.6)*3*u,y+Math.sin(a+.6)*1.4*u); g.stroke(); } break; }
+    case 'stocks': { sh(11); /* the stocks: two beams of wood, holes for the feet */
+      g.fillStyle='#5a3c22'; g.fillRect(x-11*u,y-3*u,2*u,4*u); g.fillRect(x+9*u,y-3*u,2*u,4*u);
+      g.fillStyle='#6e4a2a'; g.fillRect(x-12*u,y-8*u,24*u,5*u); g.fillStyle='#8a6038'; g.fillRect(x-12*u,y-8*u,24*u,1.2*u);
+      g.fillStyle='#21180e'; for(const dx of [-6,-2,2,6]){ g.beginPath(); g.arc(x+dx*u,y-5.6*u,1.3*u,0,Math.PI*2); g.fill(); } break; }
+    case 'brazier': { sh(7); /* a fire-pot burning on its stand */
+      g.fillStyle='#4a3a28'; g.fillRect(x-4*u,y-6*u,1.4*u,6*u); g.fillRect(x+2.6*u,y-6*u,1.4*u,6*u);
+      g.fillStyle='#7a5a3a'; g.beginPath(); g.ellipse(x,y-7*u,6*u,3*u,0,0,Math.PI); g.fill(); g.fillStyle='#5a4028'; g.beginPath(); g.ellipse(x,y-7*u,6*u,1.6*u,0,0,Math.PI*2); g.fill();
+      const fl=.6+.4*Math.sin(t/110+R.ax); g.fillStyle=`rgba(255,${130+fl*90|0},40,.95)`; g.beginPath(); g.moveTo(x-3.4*u,y-7*u); g.quadraticCurveTo(x,y-(15+fl*3)*u,x+3.4*u,y-7*u); g.closePath(); g.fill();
+      glow(g,x,y-9*u,34*u,.24*fl); break; }
     case 'drips': { /* the cave's roof hangs down in drips of stone over the back */
       g.fillStyle='#4a433a'; for(let i=0;i<7;i++){ const dx=x+(i-3)*TILE*.45, len=(6+((i*37)%9))*u;
         g.beginPath(); g.moveTo(dx-2.4*u,y-R.bw*TILE*.9); g.lineTo(dx+2.4*u,y-R.bw*TILE*.9); g.lineTo(dx,y-R.bw*TILE*.9+len); g.closePath(); g.fill(); } break; }
