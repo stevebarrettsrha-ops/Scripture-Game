@@ -64,6 +64,25 @@ function drawWartent(g,px,py,p){
   g.fillStyle='#c8a24a'; g.beginPath(); g.moveTo(0,-h-.5*TILE); g.lineTo(.5*TILE,-h-.38*TILE); g.lineTo(0,-h-.26*TILE); g.closePath(); g.fill();
   g.restore();
 }
+function drawGate(g,px,py,p){
+  /* a city gate where the engine draws none: two towers of brick on stone footings, the passage between them with
+     its doors of wood standing open, a parapet along the top */
+  const u=TILE/40, w=3.8*TILE, h=3.1*TILE, tw=1.15*TILE, c=p.col||'#b0895a';
+  g.save(); g.translate(px,py);
+  g.fillStyle='rgba(0,0,0,.24)'; g.beginPath(); g.ellipse(0,2,w*.58,TILE*.42,0,0,Math.PI*2); g.fill();
+  g.fillStyle=c; g.fillRect(-w/2,-h*.82,w,h*.82);                           /* the wall over the passage */
+  g.fillStyle='rgba(0,0,0,.12)'; g.fillRect(-w/2,-h*.82,w,h*.82);
+  for(const sx of [-w/2, w/2-tw]){ g.fillStyle=c; g.fillRect(sx,-h,tw,h);        /* the towers */
+    g.fillStyle='#8a7a62'; g.fillRect(sx-2*u,-h*.22,tw+4*u,h*.22);             /* stone footings */
+    g.fillStyle='rgba(60,40,20,.2)'; for(let i=1;i<8;i++) g.fillRect(sx,-h+i*h*.1,tw,Math.max(1,u));
+    g.fillStyle='#d2b88c'; for(let i=0;i<3;i++) g.fillRect(sx+i*tw/2.6,-h-6*u,tw/4,6*u);   /* parapet */
+    g.fillStyle='#21180e'; g.fillRect(sx+tw*.38,-h*.7,tw*.24,TILE*.32); }        /* a slit */
+  g.fillStyle='#d2b88c'; for(let i=0;i<4;i++) g.fillRect(-w/2+tw+i*(w-2*tw)/4+3*u,-h*.82-5*u,(w-2*tw)/7,5*u);
+  g.fillStyle='#1a120a'; g.beginPath(); g.moveTo(-.75*TILE,0); g.lineTo(-.75*TILE,-1.7*TILE); g.lineTo(.75*TILE,-1.7*TILE); g.lineTo(.75*TILE,0); g.closePath(); g.fill();
+  g.fillStyle='#6e5232'; g.fillRect(-.95*TILE,-1.86*TILE,1.9*TILE,.2*TILE);      /* the lintel beam */
+  g.fillStyle='#5a3c22'; g.fillRect(-.75*TILE,-1.66*TILE,.28*TILE,1.66*TILE); g.fillRect(.47*TILE,-1.66*TILE,.28*TILE,1.66*TILE);   /* the doors, open */
+  g.restore();
+}
 function drawCave(g,px,py){
   /* a hill of rock with a dark mouth */
   const cw=TILE*5.4, ch=TILE*4;
@@ -465,6 +484,7 @@ window.drawProp=function(g,px,py,p,t){
   }
   const map=Game.world&&Game.world.map, R=p&&KIND[p.type]&&map&&map.__rooms?map.__rooms.find(r=>r.d===p):null;
   if(!R){
+    if(p&&p.type==='citygate'&&!size(p)){ drawGate(g,px,py,p); return; }
     if(p&&OWN[p.type]&&(!size(p)||p.room===true&&(()=>{ const s=size(p); return s.x1-s.x0<MIN_W||s.h<MIN_H; })())){ OWN[p.type].draw(g,px,py,p); return; }
     return baseDraw.apply(this,arguments);
   }
