@@ -226,6 +226,7 @@ window.walkable=function(map,x,y,fx,fy){
 
 /* ------------------------------------------------------------------ painting */
 const baseDraw=drawProp;
+const LOOSE=new Set(['bed','couch','table','seat','lampstand','harp','sacks','brazier','stocks','incense','jars','quern','loom','mat','cushion','rug','chest','arms','oven','hearth','chains','straw']);
 const COL={
   house:{floor:'#8c6c4a', wall:'#a5825a', top:'#5e4528', face:'#cdb48a', faceLo:'#b39a70'},
   tent:{floor:'#9b8462', wall:'#3e3128', top:'#2a211a', face:'#4a3b2f', faceLo:'#3a2e24'},
@@ -277,7 +278,7 @@ function drawFront(g,R,ox,oy,t,a){
 
 /* ------------------------------------------------------------------ the things of the house, the tent and the cave */
 function drawFurn(g,R,f,x,y,t,ox,oy){
-  const u=TILE/40*(R.kind==='tent'?1.45:1.75);                /* things drawn to the size of the people */
+  const u=TILE/40*(R.kind==='tent'?1.45:1.75)*(f.scale||1);   /* things drawn to the size of the people */
   const sh=(w)=>{ g.fillStyle='rgba(0,0,0,.25)'; g.beginPath(); g.ellipse(x,y+1*u,w*u,w*u*.35,0,0,Math.PI*2); g.fill(); };
   const jar=(jx,jy,s,c)=>{ g.fillStyle=c||'#b0703e'; g.beginPath(); g.ellipse(jx,jy-7*s*u,5*s*u,7*s*u,0,0,Math.PI*2); g.fill();
     g.fillStyle='rgba(0,0,0,.18)'; g.beginPath(); g.ellipse(jx+1.6*s*u,jy-6*s*u,3*s*u,6*s*u,0,0,Math.PI*2); g.fill();
@@ -440,6 +441,10 @@ window.drawProp=function(g,px,py,p,t){
     }
     else if(!p.f.wall&&!p.f.under){ g.save(); g.globalAlpha=R.k; drawFurn(g,R,p.f,px,py,t,ox,oy); g.restore(); }
     return;
+  }
+  /* the things of a house may also stand on a map of their own (a hall, a sickroom), where the engine draws none */
+  if(p&&LOOSE.has(p.type)&&!size(p)){
+    drawFurn(g,{kind:'house',ax:p.x||0,ay:p.y||0,bw:.8,L:(p.x||0)-1.6,R:(p.x||0)+1.6,fy0:(p.y||0)-1,F:(p.y||0)+1},Object.assign({},p,{kind:p.type,wall:false,scale:(p.scale||1)*1.3}),px,py,t,0,0); return;
   }
   const map=Game.world&&Game.world.map, R=p&&KIND[p.type]&&map&&map.__rooms?map.__rooms.find(r=>r.d===p):null;
   if(!R){
