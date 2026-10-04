@@ -528,7 +528,7 @@ if(typeof window.generateMap==='function'){
 { const _dp=window.drawProp;
   window.drawProp=function(g,px,py,p,t){
     const map=Game.world&&Game.world.map;
-    if(p&&(p.type==='rock'||p.type==='stone')&&p.scale>1&&!p.__scaled){
+    if(p&&(p.type==='rock'||p.type==='stone'||p.type==='pit')&&p.scale>1&&!p.__scaled){
       /* a great rock (the rock at Ḥorĕḇ, the rock at Qaḏĕsh): the engine draws a rock at one size only */
       g.save(); g.translate(px,py); g.scale(p.scale,p.scale);
       try{ _dp.call(this,g,0,0,Object.assign({},p,{__scaled:true}),t); } finally{ g.restore(); }
