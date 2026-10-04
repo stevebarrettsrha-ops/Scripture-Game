@@ -2004,73 +2004,155 @@ function drawProp(g,px,py,p,t){
       R(-5.4,-9.4,10.8,1.6,'#8d7048');
       break; }
     case 'tower': {
-      /* the ziggurat of Baḇel in three dimensions, after the Etemenanki: stepped
-         tiers with buttressed faces, a sunlit deck on every stage, the side wall
-         receding in depth, and the great stair climbing the front — all of it
-         built of blocks, laid block upon block */
-      const st=p.stage||1;
-      const W0=TILE*5.6, BH=TILE*1.5, DEP=TILE*2.0;
-      const sxd=DEP*.60, syd=DEP*.36;                    /* the depth vector, receding up-right */
-      const F='#b58450', F2='#a8794a';
-      g.fillStyle='rgba(0,0,0,.3)';
-      g.beginPath(); g.ellipse(sxd*.4,TILE*.3,W0*.8,TILE*.62,0,0,Math.PI*2); g.fill();
-      const tierGeom=lv=>{ const w=W0*(1-lv*.15);
-        return { w:w, cx:lv*sxd*.30, yb:-lv*(BH+syd*.30) }; };
-      const face=(pts,col)=>{ g.fillStyle=col; g.beginPath();
-        g.moveTo(pts[0][0],pts[0][1]); for(let i=1;i<pts.length;i++) g.lineTo(pts[i][0],pts[i][1]);
-        g.closePath(); g.fill(); };
-      for(let lv=0;lv<st;lv++){
-        const tg=tierGeom(lv), w=tg.w, cx=tg.cx, yb=tg.yb, yt=yb-BH;
-        /* the side wall, receding into the light */
-        face([[cx+w/2,yt],[cx+w/2,yb],[cx+w/2+sxd,yb-syd],[cx+w/2+sxd,yt-syd]],shadeHex(F,-34));
-        g.fillStyle='rgba(0,0,0,.12)';
-        for(let i=1;i<4;i++) g.fillRect(cx+w/2+i*sxd/4-1,yt-i*syd/4,2,BH);
-        /* the sunlit deck */
-        face([[cx-w/2,yt],[cx+w/2,yt],[cx+w/2+sxd,yt-syd],[cx-w/2+sxd,yt-syd]],shadeHex(F,30));
-        g.fillStyle='rgba(0,0,0,.10)'; g.fillRect(cx-w/2,yt,w,2);
-        /* the front face: chunky blocks with lit tops */
-        const cols=Math.max(3,6-lv), bw=w/cols;
-        for(let cI=0;cI<cols;cI++){ const base=(cI+lv)%2?F2:F, bx=cx-w/2+cI*bw;
-          g.fillStyle=shadeHex(base,14); g.fillRect(bx+.5,yt,bw-1,BH*.30);
-          g.fillStyle=base; g.fillRect(bx+.5,yt+BH*.30,bw-1,BH*.70);
-          g.fillStyle=shadeHex(base,-24); g.fillRect(bx+bw-2,yt,1.6,BH);
-        }
-        g.fillStyle='rgba(0,0,0,.16)';                   /* buttress ribs, as on the walls of Etemenanki */
-        for(let i=0;i<Math.floor(w/9);i++) g.fillRect(cx-w/2+4+i*9,yt+BH*.30,2.5,BH*.70-2);
-        g.fillStyle='rgba(0,0,0,.22)'; g.fillRect(cx-w/2,yb-1.6,w,1.6);
+      /* the tower of Baḇel: a great round tower of baked brick (BERĔSHITH 11:3), tier upon tier, with a ramp winding
+         about it on which the builders go up; arched openings in every tier. Where it is being built the builders stand
+         on the ramp of every tier and hand the bricks up from one to the next, and others go up and come down
+         (YASHAR 9:27–28); and if a brick falls from their hands and is broken, they all weep over it. After their
+         speech is confused the bricks are cast down (YASHAR 9:33); when they are scattered the tower stands empty. */
+      const TL=TILE, st=p.stage||1, rising=!!(p.rise&&!p.rise.done);
+      const tierF=Math.min(9,1+2*st+(rising?2*(p.prog||0):0));      /* the tiers standing, and how far the next has risen */
+      const nFull=Math.floor(tierF+1e-6), part=tierF-nFull;
+      const W0=TL*7.4, H=TL*1.62, SHR=.08, F='#b4824e';
+      const tw=lv=>W0*(1-lv*SHR), tyb=lv=>-lv*H, ry=w=>w*.12;
+      const TH=Math.PI;
+      const ex=(w,th)=>Math.cos(th)*w/2, ey=(w,th)=>Math.sin(th)*ry(w);      /* a point on the front of a tier's round */
+      const rampY=(lv,th)=>tyb(lv)-H*(.1+.78*(1-th/TH));                        /* the ramp's walk, climbing the front of each tier */
+      const paintDeck=(c,lv)=>{ const w=tw(lv), y=tyb(lv)-H;
+        c.fillStyle=shadeHex(F,26); c.beginPath(); c.ellipse(0,y,w/2,ry(w),0,0,Math.PI*2); c.fill();
+        c.strokeStyle='rgba(60,36,14,.35)'; c.lineWidth=1.2; c.stroke(); }
+      const band=(c,lv,y0,y1,fill)=>{                                          /* a band of the round face between two heights */
+        const w=tw(lv); c.beginPath();
+        for(let k=0;k<=16;k++){ const th=TH-k/16*TH; c.lineTo(ex(w,th),y0+ey(w,th)); }
+        for(let k=16;k>=0;k--){ const th=TH-k/16*TH; c.lineTo(ex(w,th),y1+ey(w,th)); }
+        c.closePath(); c.fillStyle=fill; c.fill(); }
+      const paintTier=(c,lv)=>{
+        const w=tw(lv), yb=tyb(lv), yt=yb-H;
+        if(lv>0){ /* the ledge the tier stands back on */ paintDeckRing(c,lv-1); }
+        const gr=c.createLinearGradient(-w/2,0,w/2,0);
+        gr.addColorStop(0,shadeHex(F,10)); gr.addColorStop(.3,shadeHex(F,22)); gr.addColorStop(.62,F); gr.addColorStop(1,shadeHex(F,-46));
+        band(c,lv,yt,yb,gr);
+        /* the courses of brick, and their joints, following the round */
+        const courses=7;
+        c.strokeStyle='rgba(70,40,16,.30)'; c.lineWidth=1;
+        for(let k=1;k<courses;k++){ const y=yb-k*H/courses; c.beginPath();
+          for(let s=0;s<=16;s++){ const th=TH-s/16*TH; s?c.lineTo(ex(w,th),y+ey(w,th)):c.moveTo(ex(w,th),y+ey(w,th)); } c.stroke(); }
+        c.fillStyle='rgba(70,40,16,.26)';
+        for(let k=0;k<courses;k++){ const y=yb-(k+1)*H/courses, n=Math.round(w/(TL*.42));
+          for(let s=0;s<n;s++){ const th=TH*(s+(k%2?.5:0)+.25)/n; if(th>=TH) continue;
+            c.fillRect(ex(w,th),y+ey(w,th),1,H/courses); } }
+        /* a row of arched openings near the top of the tier, and small ones low on the right */
+        const na=Math.max(5,Math.round(w/(TL*.62)));
+        for(let s=0;s<na;s++){ const th=TH*(s+.5)/na, sx=ex(w,th), sc=Math.sin(th), aw=TL*.26*sc+1, ah=H*.26;
+          const ry0=rampY(lv,th), y=(ry0-yt>H*.5?yt+(ry0-H*.14-yt)*.5+ah*.5:ry0+(yb-ry0)*.5+ah*.62)+ey(w,th);
+          c.fillStyle='#2a1a0e'; c.beginPath(); c.moveTo(sx-aw/2,y); c.lineTo(sx-aw/2,y-ah*.6); c.arc(sx,y-ah*.6,aw/2,Math.PI,0); c.lineTo(sx+aw/2,y); c.closePath(); c.fill();
+          c.strokeStyle='rgba(230,200,150,.25)'; c.lineWidth=1; c.stroke(); }
+
+        /* the ramp: a walk of brick with its low parapet, rising from the left across the front */
+        const T=H*.27;
+        c.beginPath();
+        for(let s=0;s<=20;s++){ const th=TH-s/20*TH; c.lineTo(ex(w,th)*1.035,rampY(lv,th)+ey(w,th)-T*.5); }
+        for(let s=20;s>=0;s--){ const th=TH-s/20*TH; c.lineTo(ex(w,th)*1.035,rampY(lv,th)+ey(w,th)+T*.5); }
+        c.closePath(); c.fillStyle=shadeHex('#c9a06a',8); c.fill();
+        c.beginPath();
+        for(let s=0;s<=20;s++){ const th=TH-s/20*TH; c.lineTo(ex(w,th)*1.035,rampY(lv,th)+ey(w,th)+T*.5); }
+        for(let s=20;s>=0;s--){ const th=TH-s/20*TH; c.lineTo(ex(w,th)*1.035,rampY(lv,th)+ey(w,th)+T*.95); }
+        c.closePath(); c.fillStyle=shadeHex(F,-30); c.fill();
+        c.strokeStyle='rgba(60,36,14,.45)'; c.lineWidth=1.2; c.beginPath();
+        for(let s=0;s<=20;s++){ const th=TH-s/20*TH; s?c.lineTo(ex(w,th)*1.035,rampY(lv,th)+ey(w,th)-T*.5):c.moveTo(ex(w,th)*1.035,rampY(lv,th)+ey(w,th)-T*.5); } c.stroke();
+        c.fillStyle=shadeHex(F,-12);                                        /* the low wall along the ramp's edge */
+        for(let s=1;s<20;s++){ const th=TH-s/20*TH, x=ex(w,th)*1.035, y=rampY(lv,th)+ey(w,th)+T*.5; c.fillRect(x-1.5,y-T*.42,3,T*.42); }
+        c.strokeStyle=shadeHex(F,-40); c.lineWidth=1.6; c.beginPath();
+        for(let s=0;s<=20;s++){ const th=TH-s/20*TH, x=ex(w,th)*1.035, y=rampY(lv,th)+ey(w,th)+T*.08; s?c.lineTo(x,y):c.moveTo(x,y); } c.stroke();
       }
-      /* the great stair, from the ground to the height */
-      { const top=tierGeom(st-1), topY=top.yb-BH, stW=TILE*1.15;
-        face([[-stW,0],[stW,0],[stW*.55+top.cx,topY],[-stW*.55+top.cx,topY]],'#c8a266');
-        g.strokeStyle='rgba(0,0,0,.28)'; g.lineWidth=1.4;
-        const steps=st*7;
-        for(let i=1;i<steps;i++){ const t9=i/steps, sy2=t9*topY, hw=stW*(1-.45*t9);
-          g.beginPath(); g.moveTo(-hw+top.cx*t9,sy2); g.lineTo(hw+top.cx*t9,sy2); g.stroke(); }
-        g.strokeStyle='#8a6a3e'; g.lineWidth=2.4;
-        g.beginPath(); g.moveTo(-stW,0); g.lineTo(-stW*.55+top.cx,topY);
-        g.moveTo(stW,0); g.lineTo(stW*.55+top.cx,topY); g.stroke(); }
-      /* the rising course on the working stage — block upon block, in real time */
-      if(p.rise&&!p.rise.done){
-        const nx9=tierGeom(st), w9=nx9.w, yb9=nx9.yb, cx9=nx9.cx;
-        const cols=Math.max(3,6-st), bw=w9/cols;
-        const pr=p.prog||0, nb=Math.floor(pr*cols), hh=BH*.62;
-        const blk=(bx,by,base)=>{ g.fillStyle=shadeHex(base,20); g.fillRect(bx,by,bw-1,hh*.34);
-          g.fillStyle=base; g.fillRect(bx,by+hh*.34,bw-1,hh*.66);
-          g.fillStyle=shadeHex(base,-26); g.fillRect(bx+bw-2.4,by,1.6,hh); };
-        for(let cI=0;cI<nb;cI++) blk(cx9-w9/2+cI*bw+.5,yb9-hh,(cI+st)%2?F2:F);
-        if(nb<cols){ const bt=(pr*cols)%1;                /* the block now being set descends into place */
-          blk(cx9-w9/2+nb*bw+.5,yb9-hh-(1-bt)*TILE*1.6,'#c9995f'); }
-        g.strokeStyle='#6e552f'; g.lineWidth=3;
-        g.beginPath(); g.moveTo(cx9+w9*.58,yb9+BH*.3); g.lineTo(cx9+w9*.64,yb9-BH);
-        g.moveTo(cx9-w9*.58,yb9+BH*.3); g.lineTo(cx9-w9*.64,yb9-BH); g.stroke();
-      } else if((p.rise&&p.rise.done)||(!p.rise&&st>=3)){
-        /* the high place stands on the summit */
-        const t9=tierGeom(st-1), ty=t9.yb-BH, hw=t9.w*.20, hh=BH*.85;
-        const hx=t9.cx+sxd*.30, hy=ty-syd*.32;
-        face([[hx+hw,hy-hh],[hx+hw,hy],[hx+hw+sxd*.26,hy-syd*.26],[hx+hw+sxd*.26,hy-hh-syd*.26]],shadeHex('#7a5844',-26));
-        face([[hx-hw,hy-hh],[hx+hw,hy-hh],[hx+hw+sxd*.26,hy-hh-syd*.26],[hx-hw+sxd*.26,hy-hh-syd*.26]],shadeHex('#7a5844',20));
-        g.fillStyle='#7a5844'; g.fillRect(hx-hw,hy-hh,hw*2,hh);
-        g.fillStyle='#241a0e'; g.fillRect(hx-hw*.3,hy-hh*.66,hw*.6,hh*.66);
+      const paintDeckRing=(c,lv)=>{ const w=tw(lv), y=tyb(lv)-H;           /* the top of the tier below, seen as a ledge */
+        c.fillStyle=shadeHex(F,24); c.beginPath(); c.ellipse(0,y,w/2,ry(w),0,0,Math.PI*2); c.fill(); }
+      /* the standing tiers are painted once and kept */
+      const key=nFull+'|'+TL;
+      const cache=drawProp._babel||(drawProp._babel={});
+      if(!cache[key]){
+        const pad=TL*1.5, CW=Math.ceil(W0+pad*2), CH=Math.ceil(nFull*H+ry(W0)*2+pad*2+TL*2);
+        const cv=document.createElement('canvas'); cv.width=CW; cv.height=CH; const c=cv.getContext('2d');
+        const ox=CW/2, oy=CH-pad;                                                 /* the foot of the tower */
+        c.translate(ox,oy);
+        c.fillStyle='rgba(0,0,0,.3)'; c.beginPath(); c.ellipse(TL*.4,ry(W0)*.6,W0*.62,ry(W0)*1.5,0,0,Math.PI*2); c.fill();
+        for(let lv=0;lv<nFull;lv++) paintTier(c,lv);
+        if(nFull>0) paintDeck(c,nFull-1);
+        cache[key]={cv,ox,oy};
+      }
+      const C=cache[key];
+      const sc=p.scale||1;
+      if(sc!==1){ g.scale(sc,sc); }
+      g.drawImage(C.cv,-C.ox,-C.oy);
+      /* the tier now rising: its wall climbing within its scaffold of poles */
+      if(part>0.01&&nFull<9){ const lv=nFull, w=tw(lv), yb=tyb(lv), hh=H*part;
+        const gr=g.createLinearGradient(-w/2,0,w/2,0); gr.addColorStop(0,shadeHex(F,14)); gr.addColorStop(.62,F); gr.addColorStop(1,shadeHex(F,-46));
+        g.beginPath(); for(let k=0;k<=16;k++){ const th=TH-k/16*TH; g.lineTo(ex(w,th),yb-hh+ey(w,th)); }
+        for(let k=16;k>=0;k--){ const th=TH-k/16*TH; g.lineTo(ex(w,th),yb+ey(w,th)); } g.closePath(); g.fillStyle=gr; g.fill();
+        g.strokeStyle='#6e552f'; g.lineWidth=2.2;
+        for(const fx of [-.52,-.2,.2,.52]){ g.beginPath(); g.moveTo(fx*w,yb+ry(w)*.6); g.lineTo(fx*w,yb-H*1.1); g.stroke(); }
+        g.beginPath(); g.moveTo(-.55*w,yb-H*.55); g.lineTo(.55*w,yb-H*.55); g.moveTo(-.55*w,yb-H*1.05); g.lineTo(.55*w,yb-H*1.05); g.stroke();
+      } else if(nFull>=7&&!rising){
+        /* the house on the summit (they would set their mighty ones on high: YASHAR 9:26) */
+        const lv=nFull-1, w=tw(lv)*.34, y=tyb(lv)-H;
+        g.fillStyle=shadeHex('#8a6044',-20); g.fillRect(-w/2,y-H*.75,w,H*.75);
+        g.fillStyle='#8a6044'; g.fillRect(-w/2,y-H*.75,w*.6,H*.75);
+        g.fillStyle=shadeHex('#8a6044',24); g.fillRect(-w/2-2,y-H*.82,w+4,H*.1);
+        g.fillStyle='#21160c'; g.beginPath(); g.moveTo(-w*.14,y); g.lineTo(-w*.14,y-H*.36); g.arc(0,y-H*.36,w*.14,Math.PI,0); g.lineTo(w*.14,y); g.fill();
+      }
+      /* ---- the builders ---- */
+      if((p.scaffold||p.rise)&&!p.abandoned&&nFull>0){
+        const tms=t||0, BS=.6, chars=['builder','builder2','builder3'];
+        const th3=lv=>{ const o=(lv%3-1)*.07*TH; return [.82*TH+o*.5,.5*TH+o,.2*TH+o*.5]; };
+        const feet=(lv,th)=>{ const w=tw(lv); return [ex(w,th)*1.035, rampY(lv,th)+ey(w,th)-H*.07]; };
+        const hands=(lv,th)=>{ const f=feet(lv,th); return [f[0]+TL*.12,f[1]-TL*.36]; };
+        /* when a brick falls (one in each span of a few heartbeats), from whose hands, and when it breaks */
+        const PER=p.confused?2600:6800, cyc=Math.floor(tms/PER), ph=tms%PER;
+        const fl=Math.floor(hash2(cyc,77)*nFull), fb=1+Math.floor(hash2(cyc,91)*2);
+        const fh=hands(fl,th3(fl)[fb]), groundY=ry(W0)*1.1, Gp=.0011*TL/40;
+        const fallT=Math.sqrt(Math.max(1,2*(groundY-fh[1]))/Gp), weep=!p.confused&&ph>fallT&&ph<fallT+2900;
+        /* the bricks handed on from one to the next: all at once, as a line of men passes them up */
+        const PP=1300, f=weep?0:((tms%PP)/PP);
+        const brick=(x,y,a,al)=>{ g.save(); g.translate(x,y); g.rotate(a||0); if(al!==undefined) g.globalAlpha*=al;
+          g.fillStyle='#5a3418'; g.fillRect(-TL*.16,-TL*.085,TL*.32,TL*.17); g.fillStyle='#c0864c'; g.fillRect(-TL*.14,-TL*.065,TL*.28,TL*.13); g.fillStyle='#dca46a'; g.fillRect(-TL*.14,-TL*.065,TL*.28,TL*.04);
+          g.restore(); };
+        for(let lv=0;lv<nFull;lv++){
+          const w=tw(lv);
+          /* one going up with a brick on his shoulder, one coming down */
+          const up=((tms/9000)+lv*.37)%1, dn=((tms/8000)+lv*.61)%1;
+          for(const [ff,dir,hold] of [[up,'right','brick'],[dn,'left',null]]){
+            const th=dir==='right'?TH*(1-ff):TH*ff; if(th3(lv).some(q=>Math.abs(th-q)<.2)) continue;
+            if(Math.sin(th)<.3) continue;                                  /* round the side and behind the tower */
+            const ft=feet(lv,th); drawChar(g,ft[0],ft[1],chars[(lv+(hold?1:2))%3],{t:tms+lv*300,dir,moving:true,scale:BS,hold:hold||undefined}); }
+          /* the three who stand and hand on */
+          const TH3=th3(lv);
+          for(let b=0;b<3;b++){ const th=TH3[b], ft=feet(lv,th), conf=p.confused&&hash2(lv*7+b,Math.floor(tms/1500))>.5;
+            const bob=weep?Math.sin(tms/90+b)*1.2:0;
+            drawChar(g,ft[0],ft[1]+bob,chars[(lv+b)%3],{t:0,dir:conf?(b%2?'left':'right'):'down',scale:BS});
+            if(weep){ /* they weep over the broken brick */
+              const eu=BS*2.6*(TILE/40), eyeY=ft[1]-TL*.76;
+              for(let k=0;k<2;k++){ const tp=((tms/560)+k*.5+b*.3)%1, exx=ft[0]+(k?2.3:-2.3)*eu;
+                g.fillStyle='rgba(175,220,255,.85)'; g.fillRect(exx-1,eyeY,2,TL*.16);                  /* the tears running down */
+                g.fillStyle='rgba(175,220,255,'+(.95*(1-tp)).toFixed(2)+')';
+                g.beginPath(); g.ellipse(exx,eyeY+TL*.16+tp*TL*.42,TL*.05,TL*.075,0,0,Math.PI*2); g.fill(); } }
+          }
+          if(p.confused) continue;
+          /* the bricks: from the ground (or from round the back) to the first, from each to the next, and on round the back */
+          const pts=[lv===0?[-w*.62,ry(W0)*.4-TL*.3]:[-w*.42,rampY(lv,TH*.93)-TL*.45], hands(lv,TH3[0]), hands(lv,TH3[1]), hands(lv,TH3[2]), [w*.42,rampY(lv,TH*.07)-TL*.45]];
+          for(let s=0;s<4;s++){
+            if(lv===fl&&s===fb+1&&ph<fallT) continue;                       /* this one is falling */
+            const a=pts[s], b2=pts[s+1], x=a[0]+(b2[0]-a[0])*f, y=a[1]+(b2[1]-a[1])*f-Math.sin(f*Math.PI)*TL*.22;
+            const al=s===0&&lv>0?Math.min(1,f*4):(s===3?Math.max(0,Math.min(1,(1-f)*4-.6)):1);
+            brick(x,y,0,al);
+          }
+        }
+        /* the falling brick, and its breaking at the foot of the tower */
+        if(ph<fallT){ const tt=ph, x=fh[0]+(fh[0]<0?-1:1)*tt*.03*TL/40, y=fh[1]+.5*Gp*tt*tt;
+          g.strokeStyle='rgba(255,240,210,.35)'; g.lineWidth=TL*.08; g.beginPath(); g.moveTo(x,y-Math.min(TL*.9,Gp*tt*tt*.35)); g.lineTo(x,y); g.stroke();
+          g.save(); g.translate(x,y); g.scale(1.4,1.4); brick(0,0,tt/120); g.restore(); }
+        else if(ph<fallT+1500){ const tt=ph-fallT, x0=fh[0]+(fh[0]<0?-1:1)*fallT*.03*TL/40, k=1-tt/1500;
+          g.fillStyle='rgba(190,160,120,'+(.45*k).toFixed(2)+')'; g.beginPath(); g.ellipse(x0,groundY,TL*.5*(1-k*.5),TL*.16,0,0,Math.PI*2); g.fill();
+          for(let s=0;s<5;s++){ const ang=-Math.PI*(.15+s*.17), v=TL*(.03+s*.006), px2=x0+Math.cos(ang)*v*tt*.06, py2=groundY+Math.sin(ang)*v*tt*.06+.5*Gp*.5*tt*tt*.05;
+            g.fillStyle=s%2?'#b9814b':'#9a6a3e'; g.fillRect(px2-2,Math.min(groundY+2,py2)-2,4+s%3,3+s%2); } }
       }
       break; }
     case 'pillar': {
@@ -4690,7 +4772,7 @@ const Game={
           d.prog=0; d.stage=(d.stage||0)+1;
           try{Sound.sfx('pickup');}catch(_){}
           Camera.shake=Math.max(Camera.shake,.8);
-          Particles.burst(d.x*TILE,(d.y-(d.stage-1)*1.6)*TILE,'ash',12);
+          Particles.burst(d.x*TILE,(d.y-(d.type==='tower'?(1+2*d.stage)*1.35:(d.stage-1)*1.6))*TILE,'ash',12);
           if(d.stage>=(r.max||3)) r.done=true;
         }
       }
@@ -5650,7 +5732,7 @@ function drawSlideArt(g,key,st,t,slide){
       Sky.sun(g,VW*.2,VH*.18,26,'rgba(255,230,170,.9)');
       Sky.hills(g,'#7a5d3a',VH*.7,28,5);
       g.fillStyle='#8a7048'; g.fillRect(0,VH*.78,VW,VH*.22);
-      g.save(); g.translate(VW*.55,VH*.82); g.scale(1.5,1.5);
+      g.save(); g.translate(VW*.55,VH*.84); g.scale(Math.min(1.1,VH/560),Math.min(1.1,VH/560));
       drawProp(g,0,0,{type:'tower',stage:3,scaffold:true},t);
       g.restore();
       for(let i=0;i<6;i++) Sky.figure(g,VW*(.2+i*.12),VH*(.9+hash2(i,4)*.06),['builder','builder2','builder3'][i%3],{t:t+i*200,scale:1.6,moving:true,dir:i%2?'left':'right'});
@@ -7242,7 +7324,7 @@ STORY.push(
   complete:'And from these the nations were divided on the earth after the flood.'
 },
 
-{ id:'c11', title:'A Tower to the Shamayim', ref:'BERĔSHITH 11:1–9 · YASHAR 7:24–29 · YASHAR 7:30–33; BERĔSHITH 10:9 · YASHAR 9:35–39',
+{ id:'c11', title:'A Tower to the Shamayim', ref:'BERĔSHITH 11:1–9 · YASHAR 7:24–29 · YASHAR 7:30–33; BERĔSHITH 10:9 · YASHAR 9:24–28 · YASHAR 9:33 · YASHAR 9:35–39',
   intro:[
    {art:'babel',music:'royal',text:'And all the earth had one language/lip and one speech. And it came to be, as they set out from the east, that they found a plain in the land of Shin‛ar and they dwelt there.',ref:'BERĔSHITH 11:1–2'},
    {art:'expulsion',music:'tense',text:'And the garments of skin which Aluahim made for Aḏam and his wife… Noaḥ took them and brought them to the ark… And in their going out, Ḥam stole those garments from Noaḥ his father, and he took them and hid them from his brothers. And when Ḥam begat his first born Cush, he gave him the garments in secret… and when Cush had begotten Nimroḏ, he gave him those garments through his love for him.',ref:'YASHAR 7:24–29',stage:{set:'camp',time:'dusk',cam:'pan-l',props:[{k:'noahark',x:0.84,z:0.75,s:0.8}],cast:[{id:'noach',x:0.6,z:0.12,face:'r',pose:'carry',acts:[{at:1,to:0.76}]},{id:'cham',x:0.82,at:2,to:0.46,z:0.1,face:'l',pose:'carry',acts:[{at:3,pose:'hold'}]},{id:'cush',look:{name:'Cush son of Ḥam',skin:'#4e3018',hair:'#120b04',robe:'#6a5a3a',beard:'#120b04'},x:0.32,z:0.12,face:'r',at:3,acts:[{at:4,pose:'hold',face:'l'}]},{id:'nimrod',look:{child:1,beard:null},x:0.18,z:0.1,face:'r',at:4}]}},
@@ -7260,8 +7342,8 @@ STORY.push(
      {id:'amb_hauler1',char:'builder',route:[[16,18],[23,14],[19,21]],noTalk:true,x:16,y:18,hold:'brick'},
      {id:'amb_hauler2',char:'builder2',route:[[28,18],[24,13],[30,21]],noTalk:true,x:28,y:18,hold:'brick'},
      {id:'amb_hauler3',char:'builder3',route:[[14,14],[22,13.6],[15,17]],routeSpeed:0.03,noTalk:true,x:14,y:14,hold:'brick'},
-     {id:'amb_mason1',char:'builder',x:21.6,y:13.2,wander:false,dir:'up',noTalk:true},
-     {id:'amb_mason2',char:'builder2',x:24.4,y:13.3,wander:false,dir:'up',noTalk:true},
+     {id:'amb_mason1',char:'builder',x:19.3,y:14.2,wander:false,dir:'up',noTalk:true},
+     {id:'amb_mason2',char:'builder2',x:26.7,y:14.3,wander:false,dir:'up',noTalk:true},
      {id:'nimrod',char:'nimrod',x:23,y:17,wander:false},
      {id:'b2',char:'builder2',x:18,y:20,wander:true,range:2},
      {id:'b3',char:'builder3',x:28,y:21,wander:true,range:2},
@@ -7280,14 +7362,15 @@ STORY.push(
        {say:['narrator','And they said to each other, “Come, let us make bricks and bake them thoroughly.” And they had brick for stone and they had asphalt for mortar.']},
      ]},
      {type:'interact',prop:'tower',text:'Lay your course of bricks',hiddenUntil:1, script:[
-       {fade:'out'},
-       {prop:['tower',{stage:2}]},
-       {fade:'in'},
-       {wait:800},
-       {fade:'out'},
+       {say:['narrator','And they began to make bricks and burn fires to build the city and the tower that they had imagined to complete.']},
        {prop:['tower',{stage:3}]},
-       {fade:'in'},
-       {wait:800},
+       {say:['narrator','And the building of the tower was unto them a transgression and a sin, and they began to build it, and whilst they were building against YAHUAH Aluahim of shamayim, they imagined in their hearts to war against him and to ascend into shamayim.']},
+       {say:['narrator','And all these people and all the families divided themselves in three parts; the first said We will ascend into shamayim and fight against him; the second said, We will ascend to shamayim and place our own Aluahims there and serve them; and the third part said, We will ascend to shamayim and smite him with bows and spears; and Aluahim knew all their works and all their evil thoughts, and he saw the city and the tower which they were building.']},
+       {prop:['tower',{stage:4,rise:{done:true}}]},
+       {shake:1.2},
+       {say:['narrator','And when they were building they built themselves a great city and a very high and strong tower; and on account of its height the mortar and bricks did not reach the builders in their ascent to it, until those who went up had completed a full year, and after that, they reached to the builders and gave them the mortar and the bricks; thus was it done daily.']},
+       {say:['narrator','And behold these ascended and others descended the whole day; and if a brick should fall from their hands and get broken, they would all weep over it, and if a man fell and died, none of them would look at him.']},
+       {wait:900},
        {rays:0.9,raysX:23},
        {sfx:'holy'},
        {music:'tense'},
@@ -7304,9 +7387,12 @@ STORY.push(
      ]},
      {type:'talk',npc:'b3',text:'Try to speak with the mason',hiddenUntil:3, script:[
        {say:['voice','Come, let Us go there and confuse their language, so that they do not understand one another’s speech.']},
+       {call:g=>{ const tw=g.world.map.decor.find(d=>d.id==='tower'); if(tw) tw.confused=true; }},
+       {say:['narrator','And from that day following, they forgot each man his neighbor\'s tongue, and they could not understand to speak in one tongue, and when the builder took from the hands of his neighbor lime or stone which he did not order, the builder would cast it away and throw it upon his neighbor, that he would die.']},
      ]},
    ],
    onComplete:[
+     {call:g=>{ const tw=g.world.map.decor.find(d=>d.id==='tower'); if(tw){ tw.confused=false; tw.abandoned=true; } }},
      {say:['narrator','And YAHUAH scattered them from there, over the face of all the earth and they left off building the city. That is why its name was called Baḇal (Baḇylon), because there YAHUAH confused the language of all the earth and from there YAHUAH scattered them over the face of all the earth.']},
      {move:['b2',4,28,0.07,'bg']},
      {move:['b3',42,27,0.07,'bg']},
