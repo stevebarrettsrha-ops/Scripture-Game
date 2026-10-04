@@ -2107,7 +2107,7 @@ function drawProp(g,px,py,p,t){
         const hands=(lv,th)=>{ const f=feet(lv,th); return [f[0]+TL*.12,f[1]-TL*.36]; };
         /* when a brick falls (one in each span of a few heartbeats), from whose hands, and when it breaks */
         const PER=p.confused?2600:6800, cyc=Math.floor(tms/PER), ph=tms%PER;
-        const fl=Math.floor(hash2(cyc,77)*nFull), fb=1+Math.floor(hash2(cyc,91)*2);
+        const fl=Math.floor(hash2(cyc,77)*nFull), fb=hash2(cyc,91)<.5?0:2;            /* from one at the edge of the ramp */
         const fh=hands(fl,th3(fl)[fb]), groundY=ry(W0)*1.1, Gp=.0011*TL/40;
         const fallT=Math.sqrt(Math.max(1,2*(groundY-fh[1]))/Gp), weep=!p.confused&&ph>fallT&&ph<fallT+2900;
         /* the bricks handed on from one to the next: all at once, as a line of men passes them up */
@@ -2146,10 +2146,11 @@ function drawProp(g,px,py,p,t){
           }
         }
         /* the falling brick, and its breaking at the foot of the tower */
-        if(ph<fallT){ const tt=ph, x=fh[0]+(fh[0]<0?-1:1)*tt*.03*TL/40, y=fh[1]+.5*Gp*tt*tt;
-          g.strokeStyle='rgba(255,240,210,.35)'; g.lineWidth=TL*.08; g.beginPath(); g.moveTo(x,y-Math.min(TL*.9,Gp*tt*tt*.35)); g.lineTo(x,y); g.stroke();
-          g.save(); g.translate(x,y); g.scale(1.4,1.4); brick(0,0,tt/120); g.restore(); }
-        else if(ph<fallT+1500){ const tt=ph-fallT, x0=fh[0]+(fh[0]<0?-1:1)*fallT*.03*TL/40, k=1-tt/1500;
+        const out=(fh[0]<0?-1:1), dX=tt=>out*TL*1.7*Math.min(1,tt/420);   /* it tumbles off the ramp's edge and falls beside the tower */
+        if(ph<fallT){ const tt=ph, x=fh[0]+dX(tt), y=fh[1]+.5*Gp*tt*tt;
+          g.strokeStyle='rgba(255,246,225,.7)'; g.lineWidth=TL*.07; g.beginPath(); g.moveTo(x-(dX(tt)-dX(Math.max(0,tt-160))),y-Math.min(TL*1.2,Gp*tt*160)); g.lineTo(x,y); g.stroke();
+          g.save(); g.translate(x,y); g.scale(1.7,1.7); brick(0,0,tt/110); g.restore(); }
+        else if(ph<fallT+1500){ const tt=ph-fallT, x0=fh[0]+dX(fallT), k=1-tt/1500;
           g.fillStyle='rgba(190,160,120,'+(.45*k).toFixed(2)+')'; g.beginPath(); g.ellipse(x0,groundY,TL*.5*(1-k*.5),TL*.16,0,0,Math.PI*2); g.fill();
           for(let s=0;s<5;s++){ const ang=-Math.PI*(.15+s*.17), v=TL*(.03+s*.006), px2=x0+Math.cos(ang)*v*tt*.06, py2=groundY+Math.sin(ang)*v*tt*.06+.5*Gp*.5*tt*tt*.05;
             g.fillStyle=s%2?'#b9814b':'#9a6a3e'; g.fillRect(px2-2,Math.min(groundY+2,py2)-2,4+s%3,3+s%2); } }
